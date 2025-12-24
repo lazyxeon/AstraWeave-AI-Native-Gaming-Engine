@@ -1,0 +1,11 @@
+Filename                                         Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+astraweave-asset\src\lib.rs                         2329              2329     0.00%         130               130     0.00%        1271              1271     0.00%           0                 0         -
+astraweave-asset\src\nanite_preprocess.rs              7                 7     0.00%           2                 2     0.00%           7                 7     0.00%           0                 0         -
+astraweave-scene\src\gpu_resource_manager.rs         181               181     0.00%          18                18     0.00%         169               169     0.00%           0                 0         -
+astraweave-scene\src\lib.rs                          423                 1    99.76%          38                 0   100.00%         250                 0   100.00%           0                 0         -
+astraweave-scene\src\partitioned_scene.rs            212               212     0.00%          21                21     0.00%         148               148     0.00%           0                 0         -
+astraweave-scene\src\streaming.rs                    329               329     0.00%          33                33     0.00%         219               219     0.00%           0                 0         -
+astraweave-scene\src\world_partition.rs             1158                66    94.30%          93                12    87.10%         662                51    92.30%           0                 0         -
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                               4639              3125    32.64%         335               216    35.52%        2726              1865    31.58%           0                 0         -

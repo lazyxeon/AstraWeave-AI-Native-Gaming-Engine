@@ -98,7 +98,7 @@ async fn test_no_duplicate_packets_baseline() {
 async fn test_state_consistency_no_loss() {
     let server = spawn_test_server_with_packet_loss(0.0).await.unwrap();
 
-    let snap1 = server.get_snapshot().await;
+    let _snap1 = server.get_snapshot().await;
 
     // Make deterministic changes
     let id = server

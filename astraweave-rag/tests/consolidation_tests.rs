@@ -1,4 +1,3 @@
-use anyhow::Result;
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::consolidation::{ConsolidationConfig, ConsolidationEngine, ConsolidationStrategy};
 use std::collections::HashMap;

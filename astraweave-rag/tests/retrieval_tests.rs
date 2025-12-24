@@ -51,7 +51,7 @@ fn create_test_memories() -> Vec<Memory> {
 #[test]
 fn test_engine_initialization() {
     let config = RetrievalConfig::default();
-    let engine = RetrievalEngine::new(config);
+    let _engine = RetrievalEngine::new(config);
     // Just checking it constructs
     assert!(true);
 }

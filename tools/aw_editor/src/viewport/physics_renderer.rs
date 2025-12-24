@@ -42,9 +42,9 @@ impl Default for PhysicsDebugOptions {
             show_bounds: false,
             show_velocities: false,
             show_contacts: false,
-            collider_color: [0.0, 1.0, 0.5],      // Cyan-green for dynamic
-            kinematic_color: [1.0, 0.5, 0.0],     // Orange for kinematic
-            static_color: [0.5, 0.5, 0.5],        // Gray for static
+            collider_color: [0.0, 1.0, 0.5], // Cyan-green for dynamic
+            kinematic_color: [1.0, 0.5, 0.0], // Orange for kinematic
+            static_color: [0.5, 0.5, 0.5],   // Gray for static
         }
     }
 }
@@ -235,7 +235,8 @@ impl PhysicsDebugRenderer {
             view_proj: view_proj.to_cols_array_2d(),
         };
 
-        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
+        self.queue
+            .write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
         // Convert debug lines to vertices
         let mut vertices: Vec<PhysicsDebugVertex> = Vec::with_capacity(debug_lines.len() * 2);

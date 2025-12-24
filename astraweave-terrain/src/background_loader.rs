@@ -132,6 +132,144 @@ pub struct StreamingStats {
     pub memory_usage_mb: f32,
     pub chunks_loaded_this_frame: usize,
     pub chunks_unloaded_this_frame: usize,
+    /// Terrain task stats (Phase 10: AI-Orchestrated Dynamic Terrain)
+    pub terrain_tasks_pending: usize,
+    pub terrain_tasks_completed: usize,
+    pub terrain_tasks_rate_limited: usize,
+}
+
+// ============================================================================
+// TERRAIN MODIFICATION TASKS - Phase 10: AI-Orchestrated Dynamic Terrain
+// ============================================================================
+
+/// Terrain modification task types
+#[derive(Debug, Clone)]
+pub enum TerrainTask {
+    /// Generate terrain feature at resolved location
+    Generate {
+        /// Unique request identifier
+        request_id: String,
+        /// World position to modify
+        position: Vec3,
+        /// Feature type identifier
+        feature_type: String,
+        /// Intensity of the modification (0.0-1.0)
+        intensity: f32,
+        /// Deterministic seed for reproducible generation
+        seed: u64,
+        /// Affected chunk IDs
+        affected_chunks: Vec<ChunkId>,
+    },
+    /// Revert a previous terrain modification
+    Revert {
+        /// Request ID of the modification to revert
+        request_id: String,
+    },
+}
+
+impl TerrainTask {
+    /// Get the request ID for this task
+    pub fn request_id(&self) -> &str {
+        match self {
+            TerrainTask::Generate { request_id, .. } => request_id,
+            TerrainTask::Revert { request_id } => request_id,
+        }
+    }
+}
+
+/// Rate limiter for terrain modification tasks
+/// Enforces per-player cooldowns to prevent terrain spam
+#[derive(Debug, Clone)]
+pub struct TerrainRateLimiter {
+    /// Cooldown duration in seconds
+    cooldown_seconds: f32,
+    /// Player ID -> last modification time (in seconds since start)
+    last_modification: HashMap<String, f64>,
+    /// Maximum concurrent terrain tasks
+    max_concurrent_tasks: usize,
+    /// Currently active task count
+    active_task_count: usize,
+}
+
+impl TerrainRateLimiter {
+    /// Create a new rate limiter with specified cooldown
+    pub fn new(cooldown_seconds: f32, max_concurrent_tasks: usize) -> Self {
+        Self {
+            cooldown_seconds,
+            last_modification: HashMap::new(),
+            max_concurrent_tasks,
+            active_task_count: 0,
+        }
+    }
+
+    /// Check if a player can request a terrain modification
+    pub fn can_request(&self, player_id: &str, current_time_seconds: f64) -> bool {
+        // Check concurrent limit
+        if self.active_task_count >= self.max_concurrent_tasks {
+            return false;
+        }
+
+        // Check per-player cooldown
+        if let Some(&last_time) = self.last_modification.get(player_id) {
+            let elapsed = current_time_seconds - last_time;
+            elapsed >= self.cooldown_seconds as f64
+        } else {
+            true // No previous request
+        }
+    }
+
+    /// Record a terrain modification request
+    pub fn record_request(&mut self, player_id: &str, current_time_seconds: f64) {
+        self.last_modification
+            .insert(player_id.to_string(), current_time_seconds);
+        self.active_task_count += 1;
+    }
+
+    /// Mark a task as completed
+    pub fn task_completed(&mut self) {
+        self.active_task_count = self.active_task_count.saturating_sub(1);
+    }
+
+    /// Get remaining cooldown for a player (0.0 if ready)
+    pub fn remaining_cooldown(&self, player_id: &str, current_time_seconds: f64) -> f32 {
+        if let Some(&last_time) = self.last_modification.get(player_id) {
+            let elapsed = current_time_seconds - last_time;
+            let remaining = self.cooldown_seconds as f64 - elapsed;
+            remaining.max(0.0) as f32
+        } else {
+            0.0
+        }
+    }
+
+    /// Get the current active task count
+    pub fn active_count(&self) -> usize {
+        self.active_task_count
+    }
+
+    /// Clear expired entries (called periodically to prevent memory growth)
+    pub fn cleanup(&mut self, current_time_seconds: f64) {
+        let threshold = current_time_seconds - (self.cooldown_seconds as f64 * 10.0);
+        self.last_modification.retain(|_, &mut v| v >= threshold);
+    }
+}
+
+impl Default for TerrainRateLimiter {
+    fn default() -> Self {
+        Self::new(10.0, 4) // 10 second cooldown, max 4 concurrent
+    }
+}
+
+/// Result of attempting to queue a terrain task
+#[derive(Debug, Clone)]
+pub enum TerrainTaskResult {
+    /// Task was queued successfully
+    Queued { request_id: String },
+    /// Task was rejected due to rate limiting
+    RateLimited { remaining_cooldown: f32 },
+    /// Task was rejected due to max concurrent tasks
+    MaxConcurrentReached { active_count: usize },
+    /// Task was rejected due to invalid request
+    InvalidRequest { reason: String },
 }
 
 /// Background chunk loader with priority queue
@@ -174,12 +312,37 @@ pub struct BackgroundChunkLoader {
 
     /// Smoothed frame time (exponential moving average for hysteresis)
     smoothed_frame_time_ms: Arc<RwLock<f32>>,
+
+    // ========================================================================
+    // TERRAIN MODIFICATION SUPPORT - Phase 10: AI-Orchestrated Dynamic Terrain
+    // ========================================================================
+    /// Terrain task queue (pending modifications)
+    terrain_task_queue: Arc<RwLock<Vec<TerrainTask>>>,
+
+    /// Terrain rate limiter
+    terrain_rate_limiter: Arc<RwLock<TerrainRateLimiter>>,
+
+    /// Completed terrain tasks channel (for async notification)
+    terrain_completed_tx: mpsc::UnboundedSender<String>,
+    terrain_completed_rx: Arc<tokio::sync::Mutex<mpsc::UnboundedReceiver<String>>>,
+
+    /// Terrain task statistics
+    terrain_stats: Arc<RwLock<TerrainTaskStats>>,
+}
+
+/// Internal terrain task statistics
+#[derive(Debug, Clone, Default)]
+struct TerrainTaskStats {
+    pending: usize,
+    completed: usize,
+    rate_limited: usize,
 }
 
 impl BackgroundChunkLoader {
     /// Create a new background chunk loader
     pub fn new(config: StreamingConfig, world_gen: Arc<RwLock<WorldGenerator>>) -> Self {
         let (completed_tx, completed_rx) = mpsc::unbounded_channel();
+        let (terrain_completed_tx, terrain_completed_rx) = mpsc::unbounded_channel();
 
         Self {
             config,
@@ -191,11 +354,17 @@ impl BackgroundChunkLoader {
             completed_rx: Arc::new(tokio::sync::Mutex::new(completed_rx)),
             next_timestamp: Arc::new(RwLock::new(0)),
             camera_position: Arc::new(RwLock::new(Vec3::ZERO)),
-            prev_camera_position: Arc::new(RwLock::new(Vec3::ZERO)), // Phase 3: velocity tracking
+            prev_camera_position: Arc::new(RwLock::new(Vec3::ZERO)),
             camera_direction: Arc::new(RwLock::new(Vec3::X)),
-            camera_velocity: Arc::new(RwLock::new(Vec3::ZERO)), // Phase 3: prefetch prediction
-            last_frame_time_ms: Arc::new(RwLock::new(0.0)),     // Phase 2: adaptive throttling
-            smoothed_frame_time_ms: Arc::new(RwLock::new(0.0)), // Phase 2: hysteresis
+            camera_velocity: Arc::new(RwLock::new(Vec3::ZERO)),
+            last_frame_time_ms: Arc::new(RwLock::new(0.0)),
+            smoothed_frame_time_ms: Arc::new(RwLock::new(0.0)),
+            // Phase 10: Terrain modification support
+            terrain_task_queue: Arc::new(RwLock::new(Vec::new())),
+            terrain_rate_limiter: Arc::new(RwLock::new(TerrainRateLimiter::default())),
+            terrain_completed_tx,
+            terrain_completed_rx: Arc::new(tokio::sync::Mutex::new(terrain_completed_rx)),
+            terrain_stats: Arc::new(RwLock::new(TerrainTaskStats::default())),
         }
     }
 
@@ -401,6 +570,7 @@ impl BackgroundChunkLoader {
         let loaded = self.loaded_chunks.read().await;
         let queue = self.load_queue.read().await;
         let loading = self.loading.read().await;
+        let terrain_stats = self.terrain_stats.read().await;
 
         // Rough memory estimate (chunk data + overhead)
         let bytes_per_chunk = 128 * 128 * 4; // Heightmap (f32)
@@ -413,6 +583,9 @@ impl BackgroundChunkLoader {
             memory_usage_mb,
             chunks_loaded_this_frame: 0,   // Updated by caller
             chunks_unloaded_this_frame: 0, // Updated by caller
+            terrain_tasks_pending: terrain_stats.pending,
+            terrain_tasks_completed: terrain_stats.completed,
+            terrain_tasks_rate_limited: terrain_stats.rate_limited,
         }
     }
 
@@ -467,6 +640,124 @@ impl BackgroundChunkLoader {
         }
 
         unloaded
+    }
+
+    // ========================================================================
+    // TERRAIN MODIFICATION METHODS - Phase 10: AI-Orchestrated Dynamic Terrain
+    // ========================================================================
+
+    /// Queue a terrain modification task with rate limiting
+    ///
+    /// # Arguments
+    /// * `task` - The terrain task to queue
+    /// * `player_id` - Player requesting the modification (for rate limiting)
+    /// * `current_time_seconds` - Current game time in seconds
+    pub async fn queue_terrain_task(
+        &self,
+        task: TerrainTask,
+        player_id: &str,
+        current_time_seconds: f64,
+    ) -> TerrainTaskResult {
+        let mut rate_limiter = self.terrain_rate_limiter.write().await;
+        let mut stats = self.terrain_stats.write().await;
+
+        // Check rate limiting
+        if !rate_limiter.can_request(player_id, current_time_seconds) {
+            let remaining = rate_limiter.remaining_cooldown(player_id, current_time_seconds);
+            stats.rate_limited += 1;
+            return TerrainTaskResult::RateLimited {
+                remaining_cooldown: remaining,
+            };
+        }
+
+        // Record the request
+        rate_limiter.record_request(player_id, current_time_seconds);
+        let request_id = task.request_id().to_string();
+
+        // Add to queue
+        let mut queue = self.terrain_task_queue.write().await;
+        queue.push(task);
+        stats.pending += 1;
+
+        TerrainTaskResult::Queued { request_id }
+    }
+
+    /// Process pending terrain tasks (called each frame)
+    ///
+    /// Returns the number of tasks processed this frame
+    pub async fn process_terrain_tasks(&self, max_tasks_per_frame: usize) -> usize {
+        let mut queue = self.terrain_task_queue.write().await;
+        let mut stats = self.terrain_stats.write().await;
+        let completed_tx = self.terrain_completed_tx.clone();
+        let rate_limiter = Arc::clone(&self.terrain_rate_limiter);
+
+        let drain_count = max_tasks_per_frame.min(queue.len());
+        let tasks_to_process: Vec<TerrainTask> = queue.drain(..drain_count).collect();
+
+        let count = tasks_to_process.len();
+        stats.pending = stats.pending.saturating_sub(count);
+
+        // For each task, spawn async processing
+        for task in tasks_to_process {
+            let request_id = task.request_id().to_string();
+            let tx = completed_tx.clone();
+            let rate_limiter_clone = Arc::clone(&rate_limiter);
+
+            tokio::spawn(async move {
+                // TODO: Phase 4 will implement actual terrain modification here
+                // For now, just mark as completed after a simulated delay
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+                // Notify completion
+                let _ = tx.send(request_id);
+
+                // Release rate limiter slot
+                rate_limiter_clone.write().await.task_completed();
+            });
+        }
+
+        count
+    }
+
+    /// Collect completed terrain task IDs
+    ///
+    /// Returns a list of request IDs that have completed since last check
+    pub async fn collect_completed_terrain_tasks(&self) -> Vec<String> {
+        let mut rx = self.terrain_completed_rx.lock().await;
+        let mut stats = self.terrain_stats.write().await;
+        let mut completed = Vec::new();
+
+        while let Ok(request_id) = rx.try_recv() {
+            completed.push(request_id);
+            stats.completed += 1;
+        }
+
+        completed
+    }
+
+    /// Get the terrain rate limiter for external query
+    pub async fn get_terrain_rate_limiter(&self) -> TerrainRateLimiter {
+        self.terrain_rate_limiter.read().await.clone()
+    }
+
+    /// Check if a player can request a terrain modification
+    pub async fn can_request_terrain(&self, player_id: &str, current_time_seconds: f64) -> bool {
+        self.terrain_rate_limiter
+            .read()
+            .await
+            .can_request(player_id, current_time_seconds)
+    }
+
+    /// Get remaining cooldown for a player
+    pub async fn terrain_cooldown_remaining(
+        &self,
+        player_id: &str,
+        current_time_seconds: f64,
+    ) -> f32 {
+        self.terrain_rate_limiter
+            .read()
+            .await
+            .remaining_cooldown(player_id, current_time_seconds)
     }
 }
 
@@ -650,17 +941,26 @@ mod tests {
             memory_usage_mb: 64.5,
             chunks_loaded_this_frame: 3,
             chunks_unloaded_this_frame: 1,
+            terrain_tasks_pending: 2,
+            terrain_tasks_completed: 5,
+            terrain_tasks_rate_limited: 1,
         };
 
         let json = serde_json::to_string(&stats).unwrap();
         let deserialized: StreamingStats = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(stats.loaded_chunk_count, deserialized.loaded_chunk_count);
         assert_eq!(stats.pending_load_count, deserialized.pending_load_count);
         assert_eq!(stats.active_load_count, deserialized.active_load_count);
         assert!((stats.memory_usage_mb - deserialized.memory_usage_mb).abs() < 0.001);
-        assert_eq!(stats.chunks_loaded_this_frame, deserialized.chunks_loaded_this_frame);
-        assert_eq!(stats.chunks_unloaded_this_frame, deserialized.chunks_unloaded_this_frame);
+        assert_eq!(
+            stats.chunks_loaded_this_frame,
+            deserialized.chunks_loaded_this_frame
+        );
+        assert_eq!(
+            stats.chunks_unloaded_this_frame,
+            deserialized.chunks_unloaded_this_frame
+        );
     }
 
     #[test]
@@ -810,8 +1110,12 @@ mod tests {
 
     #[test]
     fn test_loader_status_all_variants() {
-        let statuses = [LoaderStatus::Idle, LoaderStatus::Loading, LoaderStatus::Unloading];
-        
+        let statuses = [
+            LoaderStatus::Idle,
+            LoaderStatus::Loading,
+            LoaderStatus::Unloading,
+        ];
+
         // All variants should be distinguishable
         for (i, s1) in statuses.iter().enumerate() {
             for (j, s2) in statuses.iter().enumerate() {
@@ -833,6 +1137,9 @@ mod tests {
             memory_usage_mb: 128.0,
             chunks_loaded_this_frame: 4,
             chunks_unloaded_this_frame: 2,
+            terrain_tasks_pending: 0,
+            terrain_tasks_completed: 0,
+            terrain_tasks_rate_limited: 0,
         };
 
         let cloned = stats.clone();
@@ -875,7 +1182,7 @@ mod tests {
         #[tokio::test]
         async fn test_background_loader_creation() {
             let loader = create_test_loader();
-            
+
             // Verify initial state
             let stats = loader.get_stats().await;
             assert_eq!(stats.loaded_chunk_count, 0);
@@ -886,27 +1193,27 @@ mod tests {
         #[tokio::test]
         async fn test_set_frame_time() {
             let loader = create_test_loader();
-            
+
             // Set frame time
             loader.set_frame_time(16.67).await;
-            
+
             // Set another frame time to test smoothing
             loader.set_frame_time(20.0).await;
             loader.set_frame_time(15.0).await;
-            
+
             // Just verify no panic - internal state is private
         }
 
         #[tokio::test]
         async fn test_update_camera() {
             let loader = create_test_loader();
-            
+
             // Update camera position and direction
             let pos = Vec3::new(100.0, 50.0, 100.0);
             let dir = Vec3::new(1.0, 0.0, 0.0);
-            
+
             loader.update_camera(pos, dir).await;
-            
+
             // Move camera to test velocity calculation
             let new_pos = Vec3::new(110.0, 50.0, 100.0);
             loader.update_camera(new_pos, dir).await;
@@ -915,36 +1222,39 @@ mod tests {
         #[tokio::test]
         async fn test_get_predicted_position_stationary() {
             let loader = create_test_loader();
-            
+
             // Set initial camera position
             let pos = Vec3::new(0.0, 0.0, 0.0);
             let dir = Vec3::new(1.0, 0.0, 0.0);
             loader.update_camera(pos, dir).await;
-            
+
             // Get predicted position (cold start - should use direction)
             let predicted = loader.get_predicted_position(1.0).await;
-            
+
             // With zero velocity, should use direction * assumed speed (10.0)
             // So predicted = pos + direction * 10.0 * 1.0
-            assert!(predicted.x > pos.x, "Predicted position should be ahead in camera direction");
+            assert!(
+                predicted.x > pos.x,
+                "Predicted position should be ahead in camera direction"
+            );
         }
 
         #[tokio::test]
         async fn test_get_predicted_position_moving() {
             let loader = create_test_loader();
-            
+
             // Set initial position
             let pos1 = Vec3::new(0.0, 0.0, 0.0);
             let dir = Vec3::new(1.0, 0.0, 0.0);
             loader.update_camera(pos1, dir).await;
-            
+
             // Move camera (creates velocity)
             let pos2 = Vec3::new(10.0, 0.0, 0.0);
             loader.update_camera(pos2, dir).await;
-            
+
             // Predict 1 second ahead
             let predicted = loader.get_predicted_position(1.0).await;
-            
+
             // Should be ahead of current position
             assert!(predicted.x > pos2.x);
         }
@@ -952,16 +1262,16 @@ mod tests {
         #[tokio::test]
         async fn test_get_predicted_position_teleport_detection() {
             let loader = create_test_loader();
-            
+
             // Set initial position
             let pos1 = Vec3::new(0.0, 0.0, 0.0);
             let dir = Vec3::new(1.0, 0.0, 0.0);
             loader.update_camera(pos1, dir).await;
-            
+
             // Teleport (>100 m/s threshold)
             let pos2 = Vec3::new(1000.0, 0.0, 0.0);
             loader.update_camera(pos2, dir).await;
-            
+
             // Should return current position (no prediction on teleport)
             let predicted = loader.get_predicted_position(1.0).await;
             assert_eq!(predicted, pos2);
@@ -970,7 +1280,7 @@ mod tests {
         #[tokio::test]
         async fn test_is_loaded_empty() {
             let loader = create_test_loader();
-            
+
             // Nothing should be loaded initially
             let chunk_id = ChunkId::new(0, 0);
             assert!(!loader.is_loaded(chunk_id).await);
@@ -979,7 +1289,7 @@ mod tests {
         #[tokio::test]
         async fn test_is_loading_empty() {
             let loader = create_test_loader();
-            
+
             // Nothing should be loading initially
             let chunk_id = ChunkId::new(0, 0);
             assert!(!loader.is_loading(chunk_id).await);
@@ -988,7 +1298,7 @@ mod tests {
         #[tokio::test]
         async fn test_get_chunk_empty() {
             let loader = create_test_loader();
-            
+
             // Should return None for non-existent chunk
             let chunk_id = ChunkId::new(0, 0);
             assert!(loader.get_chunk(chunk_id).await.is_none());
@@ -997,7 +1307,7 @@ mod tests {
         #[tokio::test]
         async fn test_get_loaded_chunk_ids_empty() {
             let loader = create_test_loader();
-            
+
             // Should return empty vec initially
             let ids = loader.get_loaded_chunk_ids().await;
             assert!(ids.is_empty());
@@ -1006,7 +1316,7 @@ mod tests {
         #[tokio::test]
         async fn test_collect_completed_chunks_empty() {
             let loader = create_test_loader();
-            
+
             // Should return 0 when no chunks completed
             let count = loader.collect_completed_chunks().await;
             assert_eq!(count, 0);
@@ -1015,7 +1325,7 @@ mod tests {
         #[tokio::test]
         async fn test_unload_distant_chunks_under_budget() {
             let loader = create_test_loader();
-            
+
             // With no chunks loaded, unload should do nothing
             let camera_pos = Vec3::ZERO;
             let unloaded = loader.unload_distant_chunks(camera_pos).await;
@@ -1025,9 +1335,9 @@ mod tests {
         #[tokio::test]
         async fn test_get_stats_initial() {
             let loader = create_test_loader();
-            
+
             let stats = loader.get_stats().await;
-            
+
             assert_eq!(stats.loaded_chunk_count, 0);
             assert_eq!(stats.pending_load_count, 0);
             assert_eq!(stats.active_load_count, 0);
@@ -1037,7 +1347,7 @@ mod tests {
         #[tokio::test]
         async fn test_get_adaptive_concurrent_limit() {
             let loader = create_test_loader();
-            
+
             // Should return max_concurrent_loads (adaptive throttling disabled)
             let limit = loader.get_adaptive_concurrent_limit().await;
             assert_eq!(limit, loader.config.max_concurrent_loads);
@@ -1046,27 +1356,30 @@ mod tests {
         #[tokio::test]
         async fn test_request_chunks_around_camera() {
             let loader = create_test_loader();
-            
+
             // Set camera position
             let pos = Vec3::new(0.0, 0.0, 0.0);
             let dir = Vec3::new(1.0, 0.0, 0.0);
             loader.update_camera(pos, dir).await;
-            
+
             // Request chunks - this should populate the load queue
             loader.request_chunks_around_camera().await;
-            
+
             // Verify queue has entries
             let stats = loader.get_stats().await;
-            assert!(stats.pending_load_count > 0, "Should have pending chunks to load");
+            assert!(
+                stats.pending_load_count > 0,
+                "Should have pending chunks to load"
+            );
         }
 
         #[tokio::test]
         async fn test_process_load_queue_empty() {
             let loader = create_test_loader();
-            
+
             // Process empty queue should not panic
             loader.process_load_queue().await;
-            
+
             let stats = loader.get_stats().await;
             assert_eq!(stats.active_load_count, 0);
         }
@@ -1074,39 +1387,41 @@ mod tests {
         #[tokio::test]
         async fn test_full_loading_cycle() {
             let loader = create_test_loader();
-            
+
             // Set camera position
             let pos = Vec3::new(0.0, 0.0, 0.0);
             let dir = Vec3::new(1.0, 0.0, 0.0);
             loader.update_camera(pos, dir).await;
-            
+
             // Request chunks
             loader.request_chunks_around_camera().await;
-            
+
             // Process load queue
             loader.process_load_queue().await;
-            
+
             // Give spawned tasks time to complete
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-            
+
             // Collect completed chunks
             let completed = loader.collect_completed_chunks().await;
-            
+
             // Should have loaded some chunks
             let stats = loader.get_stats().await;
-            assert!(completed > 0 || stats.loaded_chunk_count > 0 || stats.active_load_count > 0,
-                "Should have made progress loading chunks");
+            assert!(
+                completed > 0 || stats.loaded_chunk_count > 0 || stats.active_load_count > 0,
+                "Should have made progress loading chunks"
+            );
         }
 
         #[tokio::test]
         async fn test_frame_time_smoothing() {
             let loader = create_test_loader();
-            
+
             // Set multiple frame times to test exponential moving average
             for frame_time in [16.67, 20.0, 15.0, 18.0, 12.0] {
                 loader.set_frame_time(frame_time).await;
             }
-            
+
             // The smoothed value should be somewhere between min and max
             // (Internal state is private, but we verify no panics)
         }
@@ -1114,7 +1429,7 @@ mod tests {
         #[tokio::test]
         async fn test_camera_velocity_calculation() {
             let loader = create_test_loader();
-            
+
             // Set sequence of positions to test velocity tracking
             let positions = [
                 Vec3::new(0.0, 0.0, 0.0),
@@ -1122,13 +1437,13 @@ mod tests {
                 Vec3::new(2.0, 0.0, 0.0),
                 Vec3::new(3.0, 0.0, 0.0),
             ];
-            
+
             let dir = Vec3::new(1.0, 0.0, 0.0);
-            
+
             for pos in positions {
                 loader.update_camera(pos, dir).await;
             }
-            
+
             // Predicted position should account for velocity
             let predicted = loader.get_predicted_position(1.0).await;
             assert!(predicted.x > 3.0, "Should predict ahead based on velocity");

@@ -1,0 +1,94 @@
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+warning: use of deprecated method `rand::Rng::gen_range`: Renamed to `random_range`
+   --> astraweave-terrain\src\solver.rs:260:35
+    |
+260 |         let actual_distance = rng.gen_range(min_dist..max_dist);
+    |                                   ^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: `astraweave-terrain` (lib) generated 1 warning
+error[E0308]: mismatched types
+   --> astraweave-terrain\src\solver.rs:555:40
+    |
+554 |             (CardinalDirection::North, |p: Vec3| p.z < camera_pos.z),
+    |                                        --------- the expected closure
+555 |             (CardinalDirection::South, |p: Vec3| p.z > camera_pos.z),
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected closure, found a different closure
+    |
+    = note: expected closure `{closure@astraweave-terrain\src\solver.rs:554:40: 554:49}`
+               found closure `{closure@astraweave-terrain\src\solver.rs:555:40: 555:49}`
+    = note: no two closures, even if identical, have the same type
+    = help: consider boxing your closure and/or using it as a trait object
+
+error[E0308]: mismatched types
+   --> astraweave-terrain\src\solver.rs:556:39
+    |
+554 |             (CardinalDirection::North, |p: Vec3| p.z < camera_pos.z),
+    |                                        --------- the expected closure
+555 |             (CardinalDirection::South, |p: Vec3| p.z > camera_pos.z),
+556 |             (CardinalDirection::East, |p: Vec3| p.x > camera_pos.x),
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected closure, found a different closure
+    |
+    = note: expected closure `{closure@astraweave-terrain\src\solver.rs:554:40: 554:49}`
+               found closure `{closure@astraweave-terrain\src\solver.rs:556:39: 556:48}`
+    = note: no two closures, even if identical, have the same type
+    = help: consider boxing your closure and/or using it as a trait object
+
+error[E0308]: mismatched types
+   --> astraweave-terrain\src\solver.rs:557:39
+    |
+554 |             (CardinalDirection::North, |p: Vec3| p.z < camera_pos.z),
+    |                                        --------- the expected closure
+...
+557 |             (CardinalDirection::West, |p: Vec3| p.x < camera_pos.x),
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected closure, found a different closure
+    |
+    = note: expected closure `{closure@astraweave-terrain\src\solver.rs:554:40: 554:49}`
+               found closure `{closure@astraweave-terrain\src\solver.rs:557:39: 557:48}`
+    = note: no two closures, even if identical, have the same type
+    = help: consider boxing your closure and/or using it as a trait object
+
+warning: variable does not need to be mutable
+   --> astraweave-terrain\src\streaming_diagnostics.rs:714:13
+    |
+714 |         let mut diag = StreamingDiagnostics::new(16.67, 100);
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-terrain\src\structures.rs:629:13
+    |
+629 |         let mut world_gen = WorldGenerator::new(world_config);
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `initial_dirty`
+   --> astraweave-terrain\src\voxel_data_tests.rs:249:13
+    |
+249 |         let initial_dirty = chunk.is_dirty();
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_initial_dirty`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-terrain\src\lib.rs:324:13
+    |
+324 |         let mut generator = WorldGenerator::new(config);
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+For more information about this error, try `rustc --explain E0308`.
+warning: `astraweave-terrain` (lib test) generated 5 warnings (1 duplicate)
+error: could not compile `astraweave-terrain` (lib test) due to 3 previous errors; 5 warnings emitted
+warning: build failed, waiting for other jobs to finish...

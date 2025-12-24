@@ -56,10 +56,7 @@ impl TextureType {
             TextureType::ORM
         } else if stem.ends_with("_mra") {
             TextureType::MRA
-        } else if stem.ends_with("_r")
-            || stem.ends_with("_rough")
-            || stem.ends_with("_roughness")
-        {
+        } else if stem.ends_with("_r") || stem.ends_with("_rough") || stem.ends_with("_roughness") {
             TextureType::Roughness
         } else if stem.ends_with("_m")
             || stem.ends_with("_metal")
@@ -217,7 +214,10 @@ pub enum AssetAction {
     /// Import a 3D model into the scene as a new entity
     ImportModel { path: PathBuf },
     /// Apply a texture to the selected entity's material
-    ApplyTexture { path: PathBuf, texture_type: TextureType },
+    ApplyTexture {
+        path: PathBuf,
+        texture_type: TextureType,
+    },
     /// Apply a material file to the selected entity
     ApplyMaterial { path: PathBuf },
     /// Load a scene file
@@ -560,7 +560,11 @@ impl AssetBrowser {
             ui.separator();
 
             ui.checkbox(&mut self.show_texture_badges, "🏷️");
-            if ui.small_button("⚙️").on_hover_text("Thumbnail size").clicked() {
+            if ui
+                .small_button("⚙️")
+                .on_hover_text("Thumbnail size")
+                .clicked()
+            {
                 // Toggle between size presets
                 self.thumbnail_size = match self.thumbnail_size as i32 {
                     64 => 80.0,
@@ -588,7 +592,10 @@ impl AssetBrowser {
 
             for cat in categories {
                 let label = format!("{} {}", cat.icon(), cat.label());
-                if ui.selectable_label(self.category_filter == cat, label).clicked() {
+                if ui
+                    .selectable_label(self.category_filter == cat, label)
+                    .clicked()
+                {
                     self.category_filter = cat;
                     // Clear texture type filter when changing category
                     if cat != AssetCategory::Textures {
@@ -604,7 +611,10 @@ impl AssetBrowser {
             ui.horizontal(|ui| {
                 ui.label("Type:");
 
-                if ui.selectable_label(self.texture_type_filter.is_none(), "All").clicked() {
+                if ui
+                    .selectable_label(self.texture_type_filter.is_none(), "All")
+                    .clicked()
+                {
                     self.texture_type_filter = None;
                     self.scan_current_directory();
                 }
@@ -785,7 +795,10 @@ impl AssetBrowser {
                                                 if let Some(tex_type) = entry_texture_type {
                                                     let badge_size = 18.0;
                                                     let badge_rect = egui::Rect::from_min_size(
-                                                        egui::pos2(rect.max.x - badge_size - 4.0, rect.max.y - badge_size - 4.0),
+                                                        egui::pos2(
+                                                            rect.max.x - badge_size - 4.0,
+                                                            rect.max.y - badge_size - 4.0,
+                                                        ),
                                                         egui::vec2(badge_size, badge_size),
                                                     );
                                                     ui.painter().rect_filled(
@@ -863,7 +876,13 @@ impl AssetBrowser {
 
             let asset_type = AssetType::from_path(selected);
             let texture_type = if asset_type == AssetType::Texture {
-                Some(TextureType::from_filename(selected.file_name().unwrap_or_default().to_str().unwrap_or("")))
+                Some(TextureType::from_filename(
+                    selected
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or(""),
+                ))
             } else {
                 None
             };
@@ -871,7 +890,13 @@ impl AssetBrowser {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
                     ui.label(asset_type.icon());
-                    ui.strong(selected.file_name().unwrap_or_default().to_string_lossy().to_string());
+                    ui.strong(
+                        selected
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string(),
+                    );
                     if let Some(tex_type) = texture_type {
                         ui.colored_label(tex_type.color(), format!("[{}]", tex_type.label()));
                     }
@@ -899,7 +924,10 @@ impl AssetBrowser {
                         }
                         AssetType::Texture => {
                             let tex_type = texture_type.unwrap_or(TextureType::Albedo);
-                            if ui.button(format!("🎨 Apply as {}", tex_type.label())).clicked() {
+                            if ui
+                                .button(format!("🎨 Apply as {}", tex_type.label()))
+                                .clicked()
+                            {
                                 self.pending_actions.push(AssetAction::ApplyTexture {
                                     path: selected.clone(),
                                     texture_type: tex_type,

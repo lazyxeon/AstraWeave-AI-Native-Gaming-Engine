@@ -5,7 +5,7 @@ use astraweave_prompts::{
     PromptContext, PromptTemplate, TemplateEngine, ContextValue,
     helpers::{
         PromptValidator, PromptFormatter, PromptAnalyzer,
-        ValidationRules, FormattingOptions, AnalysisResult,
+        ValidationRules, FormattingOptions,
     },
 };
 use std::collections::HashMap;

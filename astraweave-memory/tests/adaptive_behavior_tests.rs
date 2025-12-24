@@ -164,7 +164,7 @@ fn test_weight_reset() {
     }
 
     manager.update_from_profile(&storage).unwrap();
-    let adapted_weight = manager.get_weight(BehaviorNodeType::Combat);
+    let _adapted_weight = manager.get_weight(BehaviorNodeType::Combat);
 
     // Reset should restore base weight
     manager.reset_weights();
@@ -401,7 +401,7 @@ fn test_weight_evolution_over_time() {
     }
 
     manager.update_from_profile(&storage).unwrap();
-    let combat_weight_phase1 = manager.get_weight(BehaviorNodeType::Combat);
+    let _combat_weight_phase1 = manager.get_weight(BehaviorNodeType::Combat);
 
     // Second phase: shift to support
     for i in 0..10 {

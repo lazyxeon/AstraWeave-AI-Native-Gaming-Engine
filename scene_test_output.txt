@@ -1,0 +1,25 @@
+   Compiling naga v25.0.1
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+warning: unused import: `std::f32::consts::PI`
+   --> astraweave-materials\src\lib.rs:619:13
+    |
+619 |         use std::f32::consts::PI;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-materials\src\lib.rs:468:13
+    |
+468 | ...   let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total...
+    |           ----^^^^^^^^^^^^^^^^^^
+    |           |
+    |           help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-materials` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-materials` to apply 2 suggestions)
+   Compiling aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling wgpu-hal v25.0.2
+   Compiling wgpu-core-deps-windows-linux-android v25.0.0
+   Compiling wgpu-core v25.0.2

@@ -1,7 +1,7 @@
 # AstraWeave: Master Test Coverage Report
 
-**Version**: 1.39  
-**Last Updated**: December 3, 2025 (🎉 **UI/Scene/SDK Coverage Sprint** - astraweave-ui hud.rs 30.51%→52.08%, scene lib.rs 0%→99.76%, scene world_partition.rs 0%→94.30%, sdk 77.01%→91.36%, asset lib.rs 5.77%→32.65%. 190+ tests added, ⭐⭐⭐⭐⭐)  
+**Version**: 2.2.0  
+**Last Updated**: December 20, 2025 (🎉 **RENDERER HEADLESS REFACTOR & TEST EXPANSION** - Refactored `Renderer` to support headless initialization for CI-safe testing. Added 365 tests to `astraweave-render`, increasing coverage from 36% to ~42%. Corrected workspace crate count from 82+27=109 to 47+74=121. Synchronized with MASTER_ROADMAP.md v1.41.)  
 **Status**: ✅ Authoritative Source  
 **Maintainer**: Core Team  
 **Tool**: cargo-llvm-cov 0.6.21 (industry standard)
@@ -18,26 +18,33 @@ This document is the **single authoritative source** for all AstraWeave test cov
 
 ## Executive Summary
 
-### Overall Coverage
+### Overall Coverage (v2.2.0 - Full Workspace Audit December 20, 2025)
 
-**Total Workspace**: 109 members (82 crates + 27 examples)  
-**Production Crates**: 47 (examples excluded)  
-**Measured Crates**: **26 of 47 (55% coverage of workspace, +7 P2 crates!)** **[+7 from v1.21]**  
-**Overall Coverage**: **68.42%** (TOTAL lines from llvm-cov, Dec 1 2025, **llvm-cov**) **[+2.06pp from v1.36, Context/LLM Sprint improvements]**
-**Test Count**: **~1,830 tests** (was 1,745, +~85 from Context/LLM Coverage Sprint: context +30, llm +30, memory +25 new tests) **[+581 from v1.0]**
+**Total Workspace**: 121 members (47 production + 74 examples/tools)  
+**Breakdown**: 47 production (`astraweave-*`) + 13 tools (`aw-*`, `aw_*`) + 3 astract + 58 examples  
+**Production Crates**: 47 (examples excluded from coverage tracking)  
+**Measured Crates**: **47 of 47 (100% production workspace measured!)**  
+**Overall Coverage**: **~54%** (weighted average across all 47 production crates, Dec 20 2025, **llvm-cov**)
+**Test Count**: **~2,500+ tests** (estimated from individual crate measurements)
 
-**Last Full Measurement**: October 29, 2025 (llvm-cov, industry standard)
+**Last Full Measurement**: December 20, 2025 (llvm-cov, industry standard)
 
 **CRITICAL**: llvm-cov measurements are authoritative. Previous tarpaulin measurements over-reported coverage by 12-44pp in some crates.
 
-### Coverage Distribution (llvm-cov v1.10 - P1-C BASELINES COMPLETE)
+### Coverage Distribution (v2.2.0 - Full Workspace)
 
-**Excellent (90%+)**: 11 crates - ✅ **93.63% average** (Math 98.05%, AI 97.39%, ECS 96.67%, Physics 95.07%, Core 95.24%, Behavior 94.34%, Nav 94.66%, **Weaving 94.26%**, PCG 93.46%, Audio 91.42%, Materials 90.11%) **[Weaving improved: 90.66% → 94.26% +3.60pp]**  
-**Good (70-89%)**: 6 crates - ✅ **78.64% average** (Memory 85.22%, Context 92.11%, Input 84.98%, Terrain 80.72%, Cinematics 76.19%, Embeddings 69.65%) **[+1 from v1.36: Context improved from Critical tier]**
-**Needs Work (50-69%)**: 4 crates - ⚠️ **55.49% average** (LLM 72.30%, Render 63.62%, Scene 48.54%, Asset 68.05%) **[LLM improved from 64.30%]**  
-**Critical (25-49%)**: 0 crates - ✅ **None!** **[-1 from v1.36: Context graduated to Good tier]**  
-**Very Critical (<25%)**: 4 crates - ⚠️ **16.81% average** (RAG 21.44%, Persona 17.67%, Prompts 12.35%, **UI 19.20%**) **[UI needs work]**  
-**Unknown**: 21 crates (P2-blocked + P3) - ❓ **Unmeasured** **[-7 from v1.21: +7 P2 measured, net -7]**
+**Excellent (90%+)**: 11 crates (23%) - ✅ **95.4% average** (profiling 100%, cinematics 98.75%, embeddings 98.13%, math 98.05%, ecs 97.10%, input 96.21%, weaving 94.71%, pcg 94.78%, prompts 93.98%, memory 93.58%, nav 91.29%)  
+**Good (70-89%)**: 6 crates (13%) - ✅ **79.4% average** (materials 88.18%, core 84.29%, physics 78.86%, persistence-player 76.74%, security 70.63%, ai 70.41%)  
+**Needs Work (50-69%)**: 4 crates (9%) - ⚠️ **58.5% average** (behavior 66.83%, llm 65.84%, assets 51.66%, terrain 50.67%)  
+**Critical (<50%)**: 26 crates (55%) - ❌ **20.5% average** (see COVERAGE_BASELINE_REPORT.md for full breakdown)
+
+### Key Findings (v2.2.0)
+
+1. **Core Infrastructure Strong**: ECS (97%), math (98%), physics (79%), core (84%) well-tested
+2. **LLM Support Mixed**: embeddings (98%), memory (94%), prompts (94%) excellent; persona (14%), rag (24%) critical
+3. **6 Zero-Coverage Crates**: fluids, author, dialogue, ipc, npc, secrets need immediate attention
+4. **Rendering Progress**: `astraweave-render` refactored for headless testing (365 tests, ~42% coverage). `ui` (20%), `scene` (33%) still need GPU test infrastructure.
+5. **Network Security Risk**: net (24%), net-ecs (38%) security-critical but undertested
 
 ---
 

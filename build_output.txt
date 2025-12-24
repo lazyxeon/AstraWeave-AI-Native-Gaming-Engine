@@ -1,0 +1,177 @@
+warning: unused import: `std::f32::consts::PI`
+   --> astraweave-materials\src\lib.rs:619:13
+    |
+619 |         use std::f32::consts::PI;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-materials\src\lib.rs:468:13
+    |
+468 |         let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+    |             ----^^^^^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-materials` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-materials` to apply 2 suggestions)
+warning: unused import: `image::GenericImageView`
+    --> astraweave-render\src\renderer.rs:3703:17
+     |
+3703 | ...se image::GenericImageView;
+     |       ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::sync::Arc`
+ --> astraweave-fluids\src\renderer.rs:1:5
+  |
+1 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `shader`
+  --> astraweave-fluids\src\sdf.rs:22:13
+   |
+22 | ...   let shader = device.cre...
+   |           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_shader`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `config_buffer`
+  --> astraweave-fluids\src\sdf.rs:27:13
+   |
+27 | ... let config_buffer = devic...
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_config_buffer`
+
+warning: unused variable: `jfa_params_buffer`
+  --> astraweave-fluids\src\sdf.rs:33:13
+   |
+33 | ...et jfa_params_buffer = dev...
+   |       ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_jfa_params_buffer`
+
+warning: unused variable: `texture_a`
+  --> astraweave-fluids\src\sdf.rs:55:13
+   |
+55 | ...   let texture_a = device....
+   |           ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_texture_a`
+
+warning: unused variable: `texture_b`
+  --> astraweave-fluids\src\sdf.rs:56:13
+   |
+56 | ...   let texture_b = device....
+   |           ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_texture_b`
+
+warning: struct `FluidRenderer` is never constructed
+  --> astraweave-fluids\src\renderer.rs:21:12
+   |
+21 | pub struct FluidRenderer {
+   |            ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: associated items `new` and `render` are never used
+   --> astraweave-fluids\src\renderer.rs:41:12
+    |
+40  | impl FluidRenderer {
+    | ------------------ associated items in this implementation
+41  |     pub fn new(
+    |            ^^^
+...
+376 |     pub fn render(
+    |            ^^^^^^
+
+warning: struct `SdfSystem` is never constructed
+ --> astraweave-fluids\src\sdf.rs:3:12
+  |
+3 | pub struct SdfSystem {
+  |            ^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> astraweave-fluids\src\sdf.rs:21:12
+   |
+20 | impl SdfSystem {
+   | -------------- associated function in this implementation
+21 |     pub fn new(device: &wgpu:...
+   |            ^^^
+
+warning: `astraweave-render` (lib) generated 1 warning
+warning: `astraweave-fluids` (lib) generated 10 warnings (run `cargo fix --lib -p astraweave-fluids` to apply 1 suggestion)
+   Compiling fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
+error[E0432]: unresolved imports `scenarios::LaboratoryScenario`, `scenarios::OceanScenario`
+  --> examples\fluids_demo\src\main.rs:18:17
+   |
+18 | use scenarios::{LaboratoryScenario, OceanScenario, ScenarioManager};
+   |                 ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^ no `OceanScenario` in `scenarios`
+   |                 |
+   |                 no `LaboratoryScenario` in `scenarios`
+
+warning: unused import: `std::sync::Arc`
+ --> examples\fluids_demo\src\scenarios\mod.rs:3:5
+  |
+3 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `ocean_renderer::OceanRenderer`
+  --> examples\fluids_demo\src\main.rs:21:5
+   |
+21 | use ocean_renderer::OceanRenderer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0560]: struct `ocean_renderer::Uniforms` has no field named `metallic`
+   --> examples\fluids_demo\src\ocean_renderer.rs:107:13
+    |
+107 |             metallic: 0.0,
+    |             ^^^^^^^^ `ocean_renderer::Uniforms` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0560]: struct `ocean_renderer::Uniforms` has no field named `roughness`
+   --> examples\fluids_demo\src\ocean_renderer.rs:108:13
+    |
+108 |             roughness: 0.02,
+    |             ^^^^^^^^^ `ocean_renderer::Uniforms` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0560]: struct `ocean_renderer::Uniforms` has no field named `near`
+   --> examples\fluids_demo\src\ocean_renderer.rs:109:13
+    |
+109 |             near: 1.0,
+    |             ^^^^ `ocean_renderer::Uniforms` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0560]: struct `ocean_renderer::Uniforms` has no field named `metallic`
+   --> examples\fluids_demo\src\ocean_renderer.rs:570:13
+    |
+570 |             metallic: 0.0,
+    |             ^^^^^^^^ `ocean_renderer::Uniforms` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0560]: struct `ocean_renderer::Uniforms` has no field named `roughness`
+   --> examples\fluids_demo\src\ocean_renderer.rs:571:13
+    |
+571 |             roughness: 0.02,
+    |             ^^^^^^^^^ `ocean_renderer::Uniforms` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+error[E0560]: struct `ocean_renderer::Uniforms` has no field named `near`
+   --> examples\fluids_demo\src\ocean_renderer.rs:572:13
+    |
+572 |             near: 1.0,
+    |             ^^^^ `ocean_renderer::Uniforms` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+Some errors have detailed explanations: E0432, E0560.
+For more information about an error, try `rustc --explain E0432`.
+warning: `fluids_demo` (bin "fluids_demo") generated 2 warnings
+error: could not compile `fluids_demo` (bin "fluids_demo") due to 7 previous errors; 2 warnings emitted

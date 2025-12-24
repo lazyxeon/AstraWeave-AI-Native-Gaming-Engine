@@ -118,13 +118,15 @@ impl Default for TransformSnapshot {
 pub struct GizmoState {
     /// Current operation mode.
     pub mode: GizmoMode,
+    /// Last non-inactive mode (needed for deferred commits).
+    pub last_mode: GizmoMode,
 
     /// Selected entity ID (if any).
     pub selected_entity: Option<u32>,
 
     /// Transform before operation started (for undo/cancel).
     pub start_transform: Option<TransformSnapshot>,
-    
+
     /// Position when axis constraint was first applied (for locking).
     /// This captures the entity's position at the moment the user presses X/Y/Z,
     /// not the start position of the operation. This ensures that if the user
@@ -155,6 +157,7 @@ impl Default for GizmoState {
     fn default() -> Self {
         Self {
             mode: GizmoMode::Inactive,
+            last_mode: GizmoMode::Inactive,
             selected_entity: None,
             start_transform: None,
             constraint_position: None,
@@ -180,6 +183,7 @@ impl GizmoState {
             self.mode = GizmoMode::Translate {
                 constraint: AxisConstraint::None,
             };
+            self.last_mode = self.mode;
             self.reset_operation_state();
         }
     }
@@ -190,6 +194,7 @@ impl GizmoState {
             self.mode = GizmoMode::Rotate {
                 constraint: AxisConstraint::None,
             };
+            self.last_mode = self.mode;
             self.reset_operation_state();
             println!("🔄 Rotate mode started - constraint reset to None");
         }
@@ -202,6 +207,7 @@ impl GizmoState {
                 constraint: AxisConstraint::None,
                 uniform,
             };
+            self.last_mode = self.mode;
             self.reset_operation_state();
         }
     }
@@ -232,6 +238,7 @@ impl GizmoState {
     pub fn confirm_transform(&mut self) {
         if self.mode != GizmoMode::Inactive {
             self.confirmed = true;
+            self.last_mode = self.mode;
             self.mode = GizmoMode::Inactive;
             self.numeric_buffer.clear();
         }
@@ -241,6 +248,7 @@ impl GizmoState {
     pub fn cancel_transform(&mut self) {
         if self.mode != GizmoMode::Inactive {
             self.cancelled = true;
+            self.last_mode = self.mode;
             self.mode = GizmoMode::Inactive;
             self.numeric_buffer.clear();
         }

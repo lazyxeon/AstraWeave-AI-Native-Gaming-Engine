@@ -12,10 +12,12 @@ use winit::{
 
 mod fluid_renderer;
 mod ocean_renderer;
+mod scenarios;
 mod skybox_renderer;
 
+use scenarios::{LaboratoryScenario, OceanScenario, ScenarioManager};
+
 use fluid_renderer::FluidRenderer;
-use ocean_renderer::OceanRenderer;
 use skybox_renderer::SkyboxRenderer;
 
 struct Camera {
@@ -36,10 +38,7 @@ impl Camera {
     }
 }
 
-enum RenderMode {
-    ParticleFluid,
-    InfiniteOcean,
-}
+// RenderMode is now handled by ScenarioManager
 
 struct State {
     surface: wgpu::Surface<'static>,
@@ -52,10 +51,8 @@ struct State {
     physics_world: PhysicsWorld,
     fluid_system: FluidSystem,
     fluid_renderer: FluidRenderer,
-    ocean_renderer: OceanRenderer,
-    skybox_renderer: SkyboxRenderer,
-
-    render_mode: RenderMode,
+    scenario_manager: ScenarioManager,
+    skybox_renderer: Option<SkyboxRenderer>,
 
     camera: Camera,
     depth_texture: wgpu::Texture,
@@ -66,16 +63,11 @@ struct State {
 
 impl State {
     fn toggle_render_mode(&mut self) {
-        self.render_mode = match self.render_mode {
-            RenderMode::ParticleFluid => {
-                log::info!("Switching to Infinite Ocean mode");
-                RenderMode::InfiniteOcean
-            }
-            RenderMode::InfiniteOcean => {
-                log::info!("Switching to Particle Fluid mode");
-                RenderMode::ParticleFluid
-            }
-        };
+        self.scenario_manager.next();
+        if let Some(scenario) = self.scenario_manager.current() {
+            log::info!("Switching to scenario: {}", scenario.name());
+            scenario.init(&self.device, &self.queue, &mut self.fluid_system);
+        }
     }
 
     async fn new(window: std::sync::Arc<winit::window::Window>) -> Self {
@@ -165,27 +157,35 @@ impl State {
 
         log::info!("Initialized fluid system with {} particles", particle_count);
 
+        // Initialize scenarios
+        let mut scenario_manager = ScenarioManager::new();
+        scenario_manager.add_scenario(Box::new(LaboratoryScenario::new()));
+        scenario_manager.add_scenario(Box::new(OceanScenario::new(
+            &device,
+            &queue,
+            surface_format,
+        )));
+
+        if let Some(scenario) = scenario_manager.current() {
+            scenario.init(&device, &queue, &mut fluid_system);
+        }
+
         // Initialize skybox renderer
         let skybox_path = "assets/hdri/polyhaven/kloppenheim_02_puresky_2k.hdr";
-        // Check if file exists, fallback if not
-        let skybox_path = if std::path::Path::new(skybox_path).exists() {
-            skybox_path
+        let skybox_renderer = if std::path::Path::new(skybox_path).exists() {
+            Some(SkyboxRenderer::new(
+                &device,
+                &queue,
+                surface_format,
+                skybox_path,
+            ))
         } else {
-            log::warn!(
-                "HDR file not found at {}, trying alternative...",
-                skybox_path
-            );
-            "assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr"
+            None
         };
-
-        let skybox_renderer = SkyboxRenderer::new(&device, &queue, surface_format, skybox_path);
 
         // Initialize fluid renderer
         let max_particles = particle_count;
         let fluid_renderer = FluidRenderer::init(&device, surface_format, max_particles);
-
-        // Initialize ocean renderer
-        let ocean_renderer = OceanRenderer::new(&device, &queue, surface_format);
 
         // Setup camera
         let camera = Camera {
@@ -208,9 +208,8 @@ impl State {
             physics_world,
             fluid_system,
             fluid_renderer,
-            ocean_renderer,
+            scenario_manager,
             skybox_renderer,
-            render_mode: RenderMode::InfiniteOcean,
             camera,
             depth_texture,
             depth_view,
@@ -257,33 +256,34 @@ impl State {
         // Cap dt to avoid instability
         let dt = dt.min(0.016);
 
-        match self.render_mode {
-            RenderMode::ParticleFluid => {
-                // Create encoder for fluid simulation
-                let mut encoder =
-                    self.device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Fluid Update Encoder"),
-                        });
+        // Create encoder for fluid simulation
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Fluid Update Encoder"),
+            });
 
-                // Update fluid simulation
-                self.fluid_system.step(&mut encoder, &self.queue, dt);
+        // Update fluid simulation
+        self.fluid_system.step(&mut encoder, &self.queue, dt);
 
-                // Submit encoder
-                self.queue.submit(std::iter::once(encoder.finish()));
-
-                log::debug!(
-                    "Frame time: {:.3}ms, Particles: {}",
-                    dt * 1000.0,
-                    self.fluid_system.particle_count
-                );
-            }
-            RenderMode::InfiniteOcean => {
-                // Update ocean
-                self.ocean_renderer.update(dt, self.camera.eye);
-                log::debug!("Ocean Frame time: {:.3}ms", dt * 1000.0);
-            }
+        // Update current scenario
+        if let Some(scenario) = self.scenario_manager.current() {
+            scenario.update(
+                dt,
+                &mut self.fluid_system,
+                &mut self.physics_world,
+                self.camera.eye,
+            );
         }
+
+        // Submit encoder
+        self.queue.submit(std::iter::once(encoder.finish()));
+
+        log::debug!(
+            "Frame time: {:.3}ms, Particles: {}",
+            dt * 1000.0,
+            self.fluid_system.particle_count
+        );
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -332,40 +332,53 @@ impl State {
         let view_proj = self.camera.build_view_projection_matrix();
 
         // Render skybox
-        self.skybox_renderer.render(
-            &mut encoder,
-            &view,
-            &self.depth_view,
-            &self.queue,
-            view_proj,
-            self.camera.eye,
-        );
+        /*
+        if let Some(ref skybox) = self.skybox_renderer {
+            skybox.render(
+                &mut encoder,
+                &view,
+                &self.depth_view,
+                &self.queue,
+                view_proj,
+                self.camera.eye,
+            );
+        }
+        */
 
-        match self.render_mode {
-            RenderMode::ParticleFluid => {
-                let particle_buffer = self.fluid_system.get_particle_buffer();
+        // Render current scenario
+        if let Some(scenario) = self.scenario_manager.current() {
+            let skybox_view = if let Some(ref skybox) = self.skybox_renderer {
+                skybox.get_skybox_view()
+            } else {
+                &self.depth_view // DUMMY
+            };
 
-                self.fluid_renderer.render(
-                    &mut encoder,
-                    &view,
-                    &self.depth_view,
-                    &self.device,
-                    &self.queue,
-                    particle_buffer,
-                    self.fluid_system.particle_count,
-                    view_proj,
-                    self.skybox_renderer.get_skybox_view(),
-                );
-            }
-            RenderMode::InfiniteOcean => {
-                self.ocean_renderer.render(
-                    &mut encoder,
-                    &view,
-                    &self.depth_view,
-                    &self.queue,
-                    view_proj,
-                );
-            }
+            scenario.render(
+                &mut encoder,
+                &view,
+                &self.depth_view,
+                &self.device,
+                &self.queue,
+                &self.fluid_system,
+                view_proj,
+                skybox_view,
+            );
+        }
+
+        // Render fluid particles (using current renderer for now)
+        let particle_buffer = self.fluid_system.get_particle_buffer();
+        if let Some(ref skybox) = self.skybox_renderer {
+            self.fluid_renderer.render(
+                &mut encoder,
+                &view,
+                &self.depth_view,
+                &self.device,
+                &self.queue,
+                particle_buffer,
+                self.fluid_system.particle_count,
+                view_proj,
+                skybox.get_skybox_view(),
+            );
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

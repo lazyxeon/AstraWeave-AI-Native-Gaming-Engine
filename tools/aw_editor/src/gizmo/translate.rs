@@ -11,18 +11,18 @@ impl TranslateGizmo {
     pub fn snap_position(position: Vec3, snapping: &SnappingConfig) -> Vec3 {
         snapping.snap_position(position)
     }
-    
+
     /// Snap position to grid, respecting axis constraints.
-    /// 
+    ///
     /// When an axis is locked (not part of the constraint), that axis won't snap.
     /// For example, with AxisConstraint::X, only the X axis is snapped.
-    /// 
+    ///
     /// # Arguments
     /// * `position` - Current position to snap
     /// * `original_position` - Position before translation started (for locked axes)
     /// * `constraint` - Current axis constraint (determines which axes can move)
     /// * `snapping` - Snapping configuration (grid size, enabled state)
-    /// 
+    ///
     /// # Returns
     /// Position with moveable axes snapped and locked axes preserved from original
     pub fn snap_position_constrained(
@@ -34,9 +34,9 @@ impl TranslateGizmo {
         if !snapping.grid_enabled || snapping.grid_size <= 0.0 {
             return position;
         }
-        
+
         let snap = |v: f32| (v / snapping.grid_size).round() * snapping.grid_size;
-        
+
         match constraint {
             AxisConstraint::None => {
                 // Free movement: snap all axes

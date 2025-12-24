@@ -33,10 +33,8 @@ fn test_engine_missing_template() {
 
 #[test]
 fn test_prompt_engine_limits() {
-    let config = EngineConfig {
-        max_template_size: 10,
-        enable_caching: true,
-    };
+    let mut config = EngineConfig::default();
+    config.max_template_size = 10;
     let mut engine = PromptEngine::new(config);
     
     // "Hello World" is 11 bytes, should fail
@@ -61,3 +59,4 @@ fn test_load_templates_from_dir() {
     let result = engine.render("t1", &ctx).unwrap();
     assert_eq!(result.trim(), "Template 1");
 }
+

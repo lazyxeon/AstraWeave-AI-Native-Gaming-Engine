@@ -5,6 +5,9 @@
 #[path = "common/mod.rs"]
 mod common;
 
+#[path = "integration/auth_tests.rs"]
+mod auth_tests;
+
 #[path = "integration/sync_tests.rs"]
 mod sync_tests;
 

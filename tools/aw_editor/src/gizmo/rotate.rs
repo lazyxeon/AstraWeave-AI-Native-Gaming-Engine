@@ -66,7 +66,7 @@ impl RotateGizmo {
             AxisConstraint::Y => Vec3::Y,
             AxisConstraint::Z => Vec3::Z,
             AxisConstraint::None => return Quat::IDENTITY, // None constraint not supported for rotation
-            _ => return Quat::IDENTITY,                    // Planar constraints not supported for rotation
+            _ => return Quat::IDENTITY, // Planar constraints not supported for rotation
         };
 
         // Create rotation quaternion

@@ -24,6 +24,7 @@ pub fn test_quest() -> Quest {
 }
 
 /// Test enemy at origin
+#[allow(dead_code)]
 pub fn test_enemy(id: u32) -> EnemyData {
     EnemyData::new(id, (0.0, 1.0, 0.0), 100.0, EnemyFaction::Hostile)
 }
@@ -34,6 +35,7 @@ pub fn assert_float_eq(a: f32, b: f32, epsilon: f32) {
 }
 
 /// Time-stepped update helper
+#[allow(dead_code)]
 pub fn advance_time(hud: &mut HudManager, dt: f32) {
     hud.update(dt);
 }

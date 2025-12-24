@@ -253,6 +253,139 @@ mod tests {
         assert!(wgsl.contains("anisotropy"));
         assert!(wgsl.contains("transmission"));
     }
+
+    #[test]
+    fn test_missing_node_error() {
+        let nodes = std::collections::BTreeMap::new();
+        let g = Graph {
+            nodes,
+            base_color: "missing".into(),
+            mr: None,
+            normal: None,
+            clearcoat: None,
+            anisotropy: None,
+            transmission: None,
+        };
+        let result = compile_to_wgsl(&g);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing node"));
+    }
+
+    #[test]
+    fn test_multiply_node() {
+        let mut nodes = std::collections::BTreeMap::new();
+        nodes.insert("a".into(), Node::Constant1 { value: 2.0 });
+        nodes.insert("b".into(), Node::Constant1 { value: 3.0 });
+        nodes.insert(
+            "m".into(),
+            Node::Multiply {
+                a: "a".into(),
+                b: "b".into(),
+            },
+        );
+        nodes.insert(
+            "c".into(),
+            Node::Constant3 {
+                value: [1.0, 1.0, 1.0],
+            },
+        );
+        let g = Graph {
+            nodes,
+            base_color: "c".into(),
+            mr: None,
+            normal: None,
+            clearcoat: None,
+            anisotropy: None,
+            transmission: None,
+        };
+        let (wgsl, _binds) = compile_to_wgsl(&g).unwrap();
+        assert!(wgsl.contains("eval_material"));
+    }
+
+    #[test]
+    fn test_add_node() {
+        let mut nodes = std::collections::BTreeMap::new();
+        nodes.insert("a".into(), Node::Constant1 { value: 1.0 });
+        nodes.insert("b".into(), Node::Constant1 { value: 2.0 });
+        nodes.insert(
+            "sum".into(),
+            Node::Add {
+                a: "a".into(),
+                b: "b".into(),
+            },
+        );
+        nodes.insert(
+            "c".into(),
+            Node::Constant3 {
+                value: [1.0, 1.0, 1.0],
+            },
+        );
+        let g = Graph {
+            nodes,
+            base_color: "c".into(),
+            mr: None,
+            normal: None,
+            clearcoat: None,
+            anisotropy: None,
+            transmission: None,
+        };
+        let (wgsl, _binds) = compile_to_wgsl(&g).unwrap();
+        assert!(wgsl.contains("eval_material"));
+    }
+
+    #[test]
+    fn test_normal_map_node() {
+        let mut nodes = std::collections::BTreeMap::new();
+        nodes.insert(
+            "c".into(),
+            Node::Constant3 {
+                value: [1.0, 1.0, 1.0],
+            },
+        );
+        nodes.insert(
+            "nrm".into(),
+            Node::NormalMap {
+                id: "normal_tex".into(),
+                uv: "uv".into(),
+                scale: 1.0,
+            },
+        );
+        let g = Graph {
+            nodes,
+            base_color: "c".into(),
+            mr: None,
+            normal: Some("nrm".into()),
+            clearcoat: None,
+            anisotropy: None,
+            transmission: None,
+        };
+        let (wgsl, binds) = compile_to_wgsl(&g).unwrap();
+        assert!(wgsl.contains("textureSample"));
+        assert!(binds.contains(&"normal_tex".to_string()));
+    }
+
+    #[test]
+    fn test_material_package_from_graph() {
+        let mut nodes = std::collections::BTreeMap::new();
+        nodes.insert(
+            "c".into(),
+            Node::Constant3 {
+                value: [1.0, 0.5, 0.2],
+            },
+        );
+        let g = Graph {
+            nodes,
+            base_color: "c".into(),
+            mr: None,
+            normal: None,
+            clearcoat: None,
+            anisotropy: None,
+            transmission: None,
+        };
+        let pkg = MaterialPackage::from_graph(&g).unwrap();
+        assert!(pkg.wgsl.contains("eval_material"));
+        assert!(pkg.bindings.is_empty());
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -332,7 +465,7 @@ impl MaterialBaker {
         // Initialize textures with default values
         // These are filled by evaluating constant nodes from the graph
         let mut base_color = vec![[0.8f32, 0.8, 0.8, 1.0]; total_pixels];
-        let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+        let metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
         let mut normal = vec![[0.5f32, 0.5, 1.0, 1.0]; total_pixels];
 
         // Sample the material at each UV coordinate
@@ -371,7 +504,7 @@ impl MaterialBaker {
 
         // Check for extreme values
         for (i, pixel) in baked.base_color.iter().enumerate() {
-            if pixel.iter().any(|&v| v < 0.0 || v > 1.0) {
+            if pixel.iter().any(|&v| !(0.0..=1.0).contains(&v)) {
                 warnings.push(format!("Base color pixel {} out of range", i));
                 break;
             }
@@ -483,8 +616,6 @@ impl BrdfLut {
 
     /// Importance sample GGX to integrate BRDF
     fn integrate_brdf(n_dot_v: f32, roughness: f32, samples: u32) -> (f32, f32) {
-        use std::f32::consts::PI;
-
         let v = [(1.0 - n_dot_v * n_dot_v).sqrt(), 0.0, n_dot_v];
 
         let mut a = 0.0f32;
@@ -523,14 +654,8 @@ impl BrdfLut {
     }
 
     fn hammersley(i: u32, n: u32) -> [f32; 2] {
-        let mut bits = i;
-        bits = (bits << 16) | (bits >> 16);
-        bits = ((bits & 0x55555555) << 1) | ((bits & 0xAAAAAAAA) >> 1);
-        bits = ((bits & 0x33333333) << 2) | ((bits & 0xCCCCCCCC) >> 2);
-        bits = ((bits & 0x0F0F0F0F) << 4) | ((bits & 0xF0F0F0F0) >> 4);
-        bits = ((bits & 0x00FF00FF) << 8) | ((bits & 0xFF00FF00) >> 8);
-
-        [i as f32 / n as f32, bits as f32 * 2.3283064365386963e-10]
+        let bits = i.reverse_bits();
+        [i as f32 / n as f32, bits as f32 * 2.328_306_4e-10]
     }
 
     fn importance_sample_ggx(xi: [f32; 2], roughness: f32) -> [f32; 3] {

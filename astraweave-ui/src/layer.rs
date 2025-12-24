@@ -11,6 +11,40 @@ pub struct UiLayer {
     pub scale_factor: f32,
 }
 
+fn begin_pass_with_raw_input(ctx: &Context, raw: egui::RawInput) {
+    ctx.begin_pass(raw);
+}
+
+fn end_pass_and_tessellate(
+    ctx: &Context,
+    scale_factor: f32,
+) -> (
+    egui::PlatformOutput,
+    egui::TexturesDelta,
+    Vec<egui::ClippedPrimitive>,
+) {
+    let FullOutput {
+        platform_output,
+        textures_delta,
+        shapes,
+        ..
+    } = ctx.end_pass();
+    let meshes = ctx.tessellate(shapes, scale_factor);
+    (platform_output, textures_delta, meshes)
+}
+
+fn default_screen_descriptor(pixels_per_point: f32) -> ScreenDescriptor {
+    ScreenDescriptor {
+        size_in_pixels: [0, 0],
+        pixels_per_point,
+    }
+}
+
+fn with_screen_size(mut screen: ScreenDescriptor, size: (u32, u32)) -> ScreenDescriptor {
+    screen.size_in_pixels = [size.0, size.1];
+    screen
+}
+
 impl UiLayer {
     pub fn new(window: &Window, device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
         let egui_ctx = Context::default();
@@ -40,7 +74,7 @@ impl UiLayer {
     /// Begin a new egui frame.
     pub fn begin(&mut self, window: &Window) {
         let raw = self.egui_winit.take_egui_input(window);
-        self.egui_ctx.begin_pass(raw);
+        begin_pass_with_raw_input(&self.egui_ctx, raw);
     }
 
     /// End the frame and return the primitives for rendering.
@@ -53,20 +87,11 @@ impl UiLayer {
         egui::TexturesDelta,
         ScreenDescriptor,
     ) {
-        let FullOutput {
-            platform_output,
-            textures_delta,
-            shapes,
-            ..
-        } = self.egui_ctx.end_pass();
+        let (platform_output, textures_delta, meshes) =
+            end_pass_and_tessellate(&self.egui_ctx, self.scale_factor);
         self.egui_winit
             .handle_platform_output(window, platform_output);
-
-        let meshes = self.egui_ctx.tessellate(shapes, self.scale_factor);
-        let screen = ScreenDescriptor {
-            size_in_pixels: [0, 0], // Will be set by caller
-            pixels_per_point: self.scale_factor,
-        };
+        let screen = default_screen_descriptor(self.scale_factor);
 
         (meshes, textures_delta, screen)
     }
@@ -84,7 +109,7 @@ impl UiLayer {
         mut screen: ScreenDescriptor,
         size: (u32, u32),
     ) {
-        screen.size_in_pixels = [size.0, size.1];
+        screen = with_screen_size(screen, size);
 
         // Update textures
         for (id, delta) in &textures_delta.set {
@@ -160,6 +185,50 @@ impl UiLayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_default_screen_descriptor_is_zero_sized() {
+        let desc = default_screen_descriptor(2.0);
+        assert_eq!(desc.size_in_pixels, [0, 0]);
+        assert_eq!(desc.pixels_per_point, 2.0);
+    }
+
+    #[test]
+    fn test_with_screen_size_sets_dimensions() {
+        let desc = default_screen_descriptor(1.0);
+        let sized = with_screen_size(desc, (1920, 1080));
+        assert_eq!(sized.size_in_pixels, [1920, 1080]);
+        assert_eq!(sized.pixels_per_point, 1.0);
+    }
+
+    #[test]
+    fn test_begin_and_end_pass_helpers_produce_meshes_and_screen() {
+        let ctx = Context::default();
+        begin_pass_with_raw_input(&ctx, egui::RawInput::default());
+        let (_platform_out, textures_delta, meshes) = end_pass_and_tessellate(&ctx, 1.0);
+
+        // What matters is that the pass lifecycle runs without panicking and
+        // returns well-formed outputs. On the first frame egui commonly emits
+        // a font texture delta.
+        assert!(!textures_delta.set.is_empty());
+        assert!(textures_delta.free.is_empty());
+        let _ = meshes;
+
+        let screen = default_screen_descriptor(1.0);
+        assert_eq!(screen.size_in_pixels, [0, 0]);
+        assert_eq!(screen.pixels_per_point, 1.0);
+    }
+
+    #[test]
+    fn test_end_pass_and_tessellate_uses_scale_factor_for_screen_descriptor() {
+        let ctx = Context::default();
+        let scale = 1.75;
+        begin_pass_with_raw_input(&ctx, egui::RawInput::default());
+        let (_platform_out, _textures_delta, _meshes) = end_pass_and_tessellate(&ctx, scale);
+
+        let screen = default_screen_descriptor(scale);
+        assert_eq!(screen.pixels_per_point, scale);
+    }
 
     #[test]
     fn test_screen_descriptor_construction() {

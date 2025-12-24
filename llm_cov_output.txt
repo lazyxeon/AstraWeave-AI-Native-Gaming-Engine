@@ -1,0 +1,288 @@
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: unused variable: `layer`
+   --> astraweave-llm\src\production_hardening.rs:891:13
+    |
+891 |         let layer = ProductionHardeningLayer::new(config);
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_layer`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-llm` (lib test) generated 1 warning
+    Finished `test` profile [optimized + debuginfo] target(s) in 59.21s
+     Running unittests src\lib.rs (target\llvm-cov-target\debug\deps\astraweave_llm-0751c89f6e23db51.exe)
+
+running 216 tests
+test ab_testing::tests::test_hash_consistency ... ok
+test backpressure::tests::test_backpressure_config_custom ... ok
+test backpressure::tests::test_backpressure_config_default ... ok
+test ab_testing::tests::test_variant_assignment ... ok
+test ab_testing::tests::test_record_outcome ... ok
+test ab_testing::tests::test_start_stop_experiment ... ok
+test ab_testing::tests::test_create_experiment ... ok
+test backpressure::tests::test_backpressure_manager_creation ... ok
+test backpressure::tests::test_backpressure_metrics_clone ... ok
+test backpressure::tests::test_backpressure_metrics_default ... ok
+test backpressure::tests::test_backpressure_result_variants ... ok
+test backpressure::tests::test_backpressure_metrics_serialization ... ok
+test backpressure::tests::test_priority_all ... ok
+test backpressure::tests::test_priority_equality ... ok
+test backpressure::tests::test_priority_queues_new ... ok
+test backpressure::tests::test_priority_order_in_manager ... ok
+test backpressure::tests::test_metrics_tracking ... ok
+test backpressure::tests::test_priority_ordering ... ok
+test backpressure::tests::test_request_acceptance ... ok
+test backpressure::tests::test_request_metadata_creation ... ok
+test backpressure::tests::test_request_metadata_with_tags ... ok
+test backpressure::tests::test_request_queuing ... ok
+test batch_executor::tests::test_batch_executor_custom_size ... ok
+test batch_executor::tests::test_batch_executor_flush ... ok
+test batch_executor::tests::test_batch_executor_queuing ... ok
+test batch_executor::tests::test_batch_prompt_builder ... ok
+test batch_executor::tests::test_batch_request_add_agent ... ok
+test batch_executor::tests::test_batch_request_determinism ... ok
+test batch_executor::tests::test_batch_response_operations ... ok
+test batch_executor::tests::test_execute_batch_empty_error ... ok
+test batch_executor::tests::test_batch_response_parser_simple ... ok
+test batch_executor::tests::test_execute_batch_deterministic_ordering ... ok
+test cache::key::tests::test_key_equality_same_normalized ... ok
+test cache::key::tests::test_key_inequality_different_model ... ok
+test batch_executor::tests::test_execute_batch_with_mock_llm ... ok
+test batch_executor::tests::test_execute_batch_with_streaming ... ok
+test batch_executor::tests::test_execute_batch_invalid_response ... ok
+test cache::key::tests::test_key_inequality_different_prompt ... ok
+test cache::key::tests::test_key_inequality_different_temperature ... ok
+test cache::key::tests::test_key_temperature_quantization ... ok
+test cache::key::tests::test_prompt_normalization_timestamps ... ok
+test cache::key::tests::test_prompt_normalization_volatile_sections ... ok
+test cache::key::tests::test_tools_hash_order_independence ... ok
+test cache::key::tests::test_prompt_normalization_whitespace ... ok
+test cache::key::tests::test_tools_hash_sensitivity ... ok
+test cache::lru::tests::test_lru_access_updates_order ... ok
+test cache::lru::tests::test_lru_basic_operations ... ok
+test cache::lru::tests::test_lru_clear ... ok
+test cache::lru::tests::test_lru_clone_shares_data ... ok
+test cache::similarity::tests::test_extract_key_tokens_filters_stopwords ... ok
+test cache::similarity::tests::test_jaccard_disjoint ... ok
+test cache::lru::tests::test_lru_eviction_order ... ok
+test cache::lru::tests::test_lru_update_existing ... ok
+test cache::similarity::tests::test_jaccard_high_overlap ... ok
+test cache::similarity::tests::test_jaccard_identical ... ok
+test cache::similarity::tests::test_jaccard_partial_overlap ... ok
+test cache::similarity::tests::test_prompt_similarity_different_actions ... ok
+test cache::similarity::tests::test_prompt_similarity_identical ... ok
+test cache::similarity::tests::test_prompt_similarity_similar_tactics ... ok
+test cache::similarity::tests::test_prompt_similarity_threshold ... ok
+test cache::similarity::tests::test_tokenize_basic ... ok
+test cache::similarity::tests::test_tokenize_empty ... ok
+test cache::tests::test_lru_eviction ... ok
+test cache::tests::test_cache_stats ... ok
+test cache::tests::test_cache_hit_miss ... ok
+test circuit_breaker::tests::test_circuit_breaker_closed_state ... ok
+test circuit_breaker::tests::test_circuit_breaker_metrics ... ok
+test circuit_breaker::tests::test_circuit_breaker_opens_on_failures ... ok
+test compression::tests::test_action_docs_compact ... ok
+test compression::tests::test_compress_tactical_prompt ... ok
+test compression::tests::test_build_optimized_prompt ... ok
+test compression::tests::test_compact_json_snapshot ... ok
+test compression::tests::test_compression_ratio ... ok
+test compression::tests::test_compress_stealth_prompt ... ok
+test fallback_system::tests::test_batch_planning_fallback_to_heuristic ... ok
+test fallback_system::tests::test_batch_planning_success ... ok
+test fallback_system::tests::test_batch_planning_empty ... ok
+test fallback_system::tests::test_batch_planning_deterministic ... ok
+test fallback_system::tests::test_emergency_always_succeeds ... ok
+test fallback_system::tests::test_fallback_to_heuristic ... ok
+test fallback_system::tests::test_batch_vs_single_agent_compatibility ... ok
+test few_shot::tests::test_max_examples_limit ... ok
+test fallback_system::tests::test_heuristic_no_ammo ... ok
+test fallback_system::tests::test_heuristic_low_morale ... ok
+test few_shot::tests::test_stealth_examples ... ok
+test few_shot::tests::test_add_few_shot_to_prompt ... ok
+test fallback_system::tests::test_full_llm_success ... ok
+test fallback_system::tests::test_metrics_tracking ... ok
+test few_shot::tests::test_support_examples ... ok
+test few_shot::tests::test_tactical_examples ... ok
+test few_shot::tests::test_unknown_role_returns_base ... ok
+test plan_parser::tests::test_direct_parse_valid_json ... ok
+test plan_parser::tests::test_code_fence_extraction ... ok
+test plan_parser::tests::test_empty_steps_warning ... ok
+test plan_parser::tests::test_envelope_extraction ... ok
+test plan_parser::tests::test_malformed_json_fails ... ok
+test plan_parser::tests::test_non_json_text_fails ... ok
+test plan_parser::tests::test_hallucination_detection ... ok
+test production_hardening::tests::test_component_health_clone ... ok
+test plan_parser::tests::test_object_extraction ... ok
+test production_hardening::tests::test_component_health_creation ... ok
+test plan_parser::tests::test_tolerant_plan_id_variations ... ok
+test production_hardening::tests::test_component_health_deserialization ... ok
+test production_hardening::tests::test_component_health_with_error ... ok
+test production_hardening::tests::test_component_health_serialization ... ok
+test production_hardening::tests::test_hardened_request_clone ... ok
+test production_hardening::tests::test_hardened_request_creation ... ok
+test production_hardening::tests::test_hardened_request_no_timeout ... ok
+test production_hardening::tests::test_hardened_request_debug ... ok
+test production_hardening::tests::test_hardened_request_with_metadata ... ok
+test production_hardening::tests::test_hardened_request_with_timeout ... ok
+test production_hardening::tests::test_hardening_config_clone ... ok
+test production_hardening::tests::test_hardening_config_debug ... ok
+test production_hardening::tests::test_hardening_config_default ... ok
+test production_hardening::tests::test_hardening_result_variants ... ok
+test production_hardening::tests::test_health_check_config_clone ... ok
+test production_hardening::tests::test_hardening_result_debug ... ok
+test production_hardening::tests::test_hardening_result_rejected_with_no_retry ... ok
+test production_hardening::tests::test_health_check_config_debug ... ok
+test production_hardening::tests::test_health_checker_get_overall_health ... ok
+test production_hardening::tests::test_health_check_config_default ... ok
+test production_hardening::tests::test_health_checker_get_overall_health_unhealthy ... ok
+test production_hardening::tests::test_health_checker_get_overall_health_with_mixed_status ... ok
+test production_hardening::tests::test_health_checker_initial_status ... ok
+test production_hardening::tests::test_health_status_equality ... ok
+test production_hardening::tests::test_health_status_serialization ... ok
+test production_hardening::tests::test_successful_request_processing ... ignored
+test production_hardening::tests::test_system_health_clone ... ok
+test production_hardening::tests::test_health_checker_new ... ok
+test production_hardening::tests::test_production_layer_shutdown_without_start ... ok
+test production_hardening::tests::test_health_status_deserialization ... ok
+test production_hardening::tests::test_priority_usage ... ok
+test production_hardening::tests::test_system_health_creation ... ok
+test production_hardening::tests::test_production_hardening_layer_creation ... ok
+test production_hardening::tests::test_system_health_deserialization ... ok
+test production_hardening::tests::test_system_health_serialization ... ok
+test production_hardening::tests::test_system_status ... ok
+test prompt_template::tests::test_config_options ... ok
+test prompt_template::tests::test_build_enhanced_prompt ... ok
+test prompt_template::tests::test_tool_vocabulary_includes_all_categories ... ok
+test prompt_template::tests::test_json_schema_has_all_tools ... ok
+test prompt_template::tests::test_few_shot_examples_count ... ok
+test prompts::tests::test_action_history ... ok
+test prompts::tests::test_constraints ... ok
+test prompts::tests::test_prompt_builder_basic ... ok
+test prompts::tests::test_prompt_builder_roles ... ok
+test prompts::tests::test_quick_prompts ... ok
+test prompts::tests::test_snapshot_json_format ... ok
+test retry::tests::test_backoff_cap ... ok
+test rate_limiter::tests::test_rate_limiter_creation ... ok
+test rate_limiter::tests::test_adaptive_rate_limiting ... ok
+test retry::tests::test_exponential_backoff ... ok
+test rate_limiter::tests::test_rate_limit_enforcement ... ok
+test retry::tests::test_retry_config_production ... ok
+test retry::tests::test_retry_config_disabled ... ok
+test retry::tests::test_jitter_adds_randomness ... ok
+test retry::tests::test_retry_executor_permanent_error_no_retry ... ok
+test retry::tests::test_should_retry_transient_errors ... ok
+test retry::tests::test_retry_executor_success_first_try ... ok
+test retry::tests::test_should_not_retry_permanent_errors ... ok
+test schema::tests::test_empty_steps_array ... ok
+test schema::tests::test_invalid_json ... ok
+test schema::tests::test_missing_plan_id ... ok
+test schema::tests::test_schema_description ... ok
+test schema::tests::test_step_missing_act ... ok
+test schema::tests::test_valid_plan ... ok
+test schema::tests::test_wrong_type_steps ... ok
+test streaming_parser::tests::test_finalize_validates_count ... ok
+test streaming_parser::tests::test_parse_complete_batch_helper ... ok
+test streaming_parser::tests::test_parse_streaming_batch_from_reader ... ok
+test streaming_parser::tests::test_streaming_parser_byte_by_byte ... ok
+test streaming_parser::tests::test_streaming_parser_escaped_strings ... ok
+test streaming_parser::tests::test_streaming_parser_incomplete_json ... ok
+test streaming_parser::tests::test_streaming_parser_incremental ... ok
+test streaming_parser::tests::test_streaming_parser_single_chunk ... ok
+test streaming_parser::tests::test_streaming_parser_with_whitespace ... ok
+test telemetry::tests::test_cache_metrics ... ok
+test telemetry::tests::test_format_output ... ok
+test telemetry::tests::test_latency_tracking ... ok
+test telemetry::tests::test_operation_timer ... ok
+test telemetry::tests::test_record_requests ... ok
+test telemetry::tests::test_reset ... ok
+test telemetry::tests::test_success_rate_calculation ... ok
+test telemetry::tests::test_telemetry_creation ... ok
+test tests::test_build_prompt ... ok
+test tests::test_mock_llm_client ... ok
+test tests::test_parse_llm_plan_all_action_types ... ok
+test tests::test_parse_llm_plan_disallowed_tool ... ok
+test tests::test_parse_llm_plan_empty_steps ... ok
+test tests::test_parse_llm_plan_from_envelope_message_content ... ok
+test tests::test_parse_llm_plan_from_fenced_json ... ok
+test tests::test_parse_llm_plan_invalid_json ... ok
+test tests::test_parse_llm_plan_malformed_step ... ok
+test retry::tests::test_retry_executor_exhausts_retries ... ok
+test retry::tests::test_retry_executor_success_after_retries ... ok
+test tests::test_parse_llm_plan_missing_plan_id ... ok
+test tests::test_parse_llm_plan_valid ... ok
+test tests::test_parse_llm_plan_pick_last_json_object ... ok
+test tests::test_parse_llm_plan_with_nonstandard_planid_key ... ok
+test tests::test_plan_from_llm_disallowed_tool ... ok
+test tests::test_plan_from_llm_invalid_response ... ok
+test tests::test_plan_from_llm_success ... ok
+test tests::test_prompt_includes_constraints ... ok
+test tool_guard::tests::test_audit_log ... ok
+test tool_guard::tests::test_batch_validation ... ok
+test tool_guard::tests::test_custom_policy ... ok
+test tool_guard::tests::test_denied_action ... ok
+test tool_guard::tests::test_restricted_action_invalid ... ok
+test tool_guard::tests::test_restricted_action_valid ... ok
+test tool_guard::tests::test_tool_guard_basic ... ok
+test tool_guard::tests::test_validation_stats ... ok
+test scheduler::tests::test_scheduler_stats ... ok
+test scheduler::tests::test_scheduler_basic ... ok
+test scheduler::tests::test_submit_and_wait ... ok
+test scheduler::tests::test_scheduler_priority ... ok
+test circuit_breaker::tests::test_circuit_breaker_recovery ... ok
+
+test result: ok. 215 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.02s
+
+Filename                                          Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+astraweave-behavior\src\goap_cache.rs                   6                 6     0.00%           3                 3     0.00%           3                 3     0.00%           0                 0         -
+astraweave-core\src\capture_replay.rs                  62                62     0.00%           4                 4     0.00%          35                35     0.00%           0                 0         -
+astraweave-core\src\ecs_adapter.rs                      4                 4     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-core\src\ecs_components.rs                  21                21     0.00%           3                 3     0.00%          13                13     0.00%           0                 0         -
+astraweave-core\src\lib.rs                             39                 0   100.00%           1                 0   100.00%          34                 0   100.00%           0                 0         -
+astraweave-core\src\metrics.rs                        112                64    42.86%          15                 8    46.67%          61                31    49.18%           0                 0         -
+astraweave-core\src\perception.rs                      26                26     0.00%           2                 2     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\schema.rs                          77                62    19.48%          13                10    23.08%          98                71    27.55%           0                 0         -
+astraweave-core\src\sim.rs                              5                 5     0.00%           1                 1     0.00%           3                 3     0.00%           0                 0         -
+astraweave-core\src\tool_vocabulary.rs                821                32    96.10%           5                 2    60.00%         656                20    96.95%           0                 0         -
+astraweave-core\src\world.rs                          217               217     0.00%          29                29     0.00%         144               144     0.00%           0                 0         -
+astraweave-ecs\src\archetype.rs                       250               250     0.00%          30                30     0.00%         163               163     0.00%           0                 0         -
+astraweave-ecs\src\blob_vec.rs                        207               207     0.00%          16                16     0.00%         134               134     0.00%           0                 0         -
+astraweave-ecs\src\command_buffer.rs                   27                27     0.00%           4                 4     0.00%          23                23     0.00%           0                 0         -
+astraweave-ecs\src\entity_allocator.rs                122               122     0.00%          23                23     0.00%         114               114     0.00%           0                 0         -
+astraweave-ecs\src\events.rs                          119               119     0.00%          22                22     0.00%          90                90     0.00%           0                 0         -
+astraweave-ecs\src\lib.rs                             404               404     0.00%          36                36     0.00%         271               271     0.00%           0                 0         -
+astraweave-ecs\src\rng.rs                              35                35     0.00%           7                 7     0.00%          29                29     0.00%           0                 0         -
+astraweave-ecs\src\sparse_set.rs                      240               240     0.00%          31                31     0.00%         154               154     0.00%           0                 0         -
+astraweave-ecs\src\system_param.rs                    173               173     0.00%           8                 8     0.00%         133               133     0.00%           0                 0         -
+astraweave-ecs\src\type_registry.rs                    80                80     0.00%           9                 9     0.00%          65                65     0.00%           0                 0         -
+astraweave-llm\src\ab_testing.rs                      618               165    73.30%          48                11    77.08%         448               125    72.10%           0                 0         -
+astraweave-llm\src\backpressure.rs                    779               217    72.14%          58                12    79.31%         602               148    75.42%           0                 0         -
+astraweave-llm\src\batch_executor.rs                  666                47    92.94%          47                 6    87.23%         419                33    92.12%           0                 0         -
+astraweave-llm\src\cache\key.rs                       258                 7    97.29%          17                 1    94.12%         153                 9    94.12%           0                 0         -
+astraweave-llm\src\cache\lru.rs                       259                 1    99.61%          15                 0   100.00%         148                 0   100.00%           0                 0         -
+astraweave-llm\src\cache\mod.rs                       311                42    86.50%          14                 3    78.57%         184                24    86.96%           0                 0         -
+astraweave-llm\src\cache\similarity.rs                253                 8    96.84%          22                 0   100.00%         117                 3    97.44%           0                 0         -
+astraweave-llm\src\circuit_breaker.rs                 458               127    72.27%          67                20    70.15%         375                92    75.47%           0                 0         -
+astraweave-llm\src\compression.rs                     275                59    78.55%          19                 5    73.68%         224                55    75.45%           0                 0         -
+astraweave-llm\src\fallback_system.rs                1038               327    68.50%          60                 7    88.33%         798               225    71.80%           0                 0         -
+astraweave-llm\src\few_shot.rs                        142                33    76.76%          13                 4    69.23%          81                20    75.31%           0                 0         -
+astraweave-llm\src\heuristics.rs                      103                26    74.76%          11                 2    81.82%         114                28    75.44%           0                 0         -
+astraweave-llm\src\lib.rs                             996               208    79.12%          77                17    77.92%         722               128    82.27%           0                 0         -
+astraweave-llm\src\llm_adapter.rs                      16                16     0.00%           2                 2     0.00%          13                13     0.00%           0                 0         -
+astraweave-llm\src\plan_parser.rs                     667               128    80.81%          31                 4    87.10%         455                86    81.10%           0                 0         -
+astraweave-llm\src\production_hardening.rs           1079               368    65.89%          72                24    66.67%         830               307    63.01%           0                 0         -
+astraweave-llm\src\prompt_template.rs                 256                 8    96.88%          17                 2    88.24%         292                 4    98.63%           0                 0         -
+astraweave-llm\src\prompts.rs                         358                57    84.08%          24                 5    79.17%         235                29    87.66%           0                 0         -
+astraweave-llm\src\rate_limiter.rs                    406                52    87.19%          49                 6    87.76%         360                60    83.33%           0                 0         -
+astraweave-llm\src\retry.rs                           291                34    88.32%          33                 3    90.91%         228                26    88.60%           0                 0         -
+astraweave-llm\src\scheduler.rs                       322                51    84.16%          25                 3    88.00%         212                27    87.26%           0                 0         -
+astraweave-llm\src\schema.rs                          310                74    76.13%          21                 3    85.71%         193                52    73.06%           0                 0         -
+astraweave-llm\src\streaming_parser.rs                389                44    88.69%          23                 3    86.96%         229                21    90.83%           0                 0         -
+astraweave-llm\src\telemetry.rs                       323                30    90.71%          25                 5    80.00%         196                19    90.31%           0                 0         -
+astraweave-llm\src\tool_guard.rs                      388                67    82.73%          32                 4    87.50%         280                58    79.29%           0                 0         -
+astraweave-observability\src\llm_telemetry.rs         615               573     6.83%          39                33    15.38%         566               523     7.60%           0                 0         -
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                               14623              4925    66.32%        1124               434    61.39%       10713              3627    66.14%           0                 0         -

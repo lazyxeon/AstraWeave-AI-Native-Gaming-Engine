@@ -18,8 +18,9 @@ use astraweave_gameplay::{
     combat_physics::perform_attack_sweep, Combatant, DamageType, IFrame, Parry,
 };
 use astraweave_physics::{Layers, PhysicsWorld};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use glam::Vec3;
+use std::hint::black_box;
 
 // ============================================================================
 // Test Helpers
@@ -45,9 +46,11 @@ fn create_combat_world(combatant_count: usize) -> (PhysicsWorld, Vec<Combatant>)
             body: body_id,
             stats: astraweave_gameplay::Stats {
                 hp: 100,
-                max_hp: 100,
-                armor: 10,
-                attack_power: 20,
+                stamina: 100,
+                power: 20,
+                defense: 10,
+                echo_amp: 1.0,
+                effects: Vec::new(),
             },
             iframes: None,
             parry: None,
@@ -74,9 +77,11 @@ fn create_parrying_combatants(
             body: body_id,
             stats: astraweave_gameplay::Stats {
                 hp: 100,
-                max_hp: 100,
-                armor: 10,
-                attack_power: 20,
+                stamina: 100,
+                power: 20,
+                defense: 10,
+                echo_amp: 1.0,
+                effects: Vec::new(),
             },
             iframes: None,
             parry: Some(Parry {
@@ -102,9 +107,11 @@ fn create_iframe_combatants(physics: &mut PhysicsWorld, count: usize) -> Vec<Com
             body: body_id,
             stats: astraweave_gameplay::Stats {
                 hp: 100,
-                max_hp: 100,
-                armor: 10,
-                attack_power: 20,
+                stamina: 100,
+                power: 20,
+                defense: 10,
+                echo_amp: 1.0,
+                effects: Vec::new(),
             },
             iframes: Some(IFrame { time_left: 0.5 }),
             parry: None,
@@ -216,9 +223,11 @@ fn bench_single_attack_with_parry(c: &mut Criterion) {
         body: attacker_body,
         stats: astraweave_gameplay::Stats {
             hp: 100,
-            max_hp: 100,
-            armor: 10,
-            attack_power: 20,
+            stamina: 100,
+            power: 20,
+            defense: 10,
+            echo_amp: 1.0,
+            effects: Vec::new(),
         },
         iframes: None,
         parry: None,
@@ -254,9 +263,11 @@ fn bench_single_attack_with_iframe(c: &mut Criterion) {
         body: attacker_body,
         stats: astraweave_gameplay::Stats {
             hp: 100,
-            max_hp: 100,
-            armor: 10,
-            attack_power: 20,
+            stamina: 100,
+            power: 20,
+            defense: 10,
+            echo_amp: 1.0,
+            effects: Vec::new(),
         },
         iframes: None,
         parry: None,

@@ -1,0 +1,409 @@
+warning: unused import: `VoxelChunk`
+  --> astraweave-terrain\src\terrain_modifier.rs:20:32
+   |
+20 | use crate::{ChunkCoord, Voxel, VoxelChunk, VoxelGrid};
+   |                                ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashMap`
+  --> astraweave-terrain\src\terrain_modifier.rs:22:24
+   |
+22 | use std::collections::{HashMap, HashSet, VecDeque};
+   |                        ^^^^^^^
+
+warning: `astraweave-terrain` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-terrain` to apply 2 suggestions)
+warning: unused import: `std::f32::consts::PI`
+   --> astraweave-materials\src\lib.rs:619:13
+    |
+619 |         use std::f32::consts::PI;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-materials\src\lib.rs:468:13
+    |
+468 |         let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+    |             ----^^^^^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+    Checking astraweave-ui v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui)
+warning: `astraweave-materials` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-materials` to apply 2 suggestions)
+    Checking astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: variable does not need to be mutable
+   --> astraweave-render\src\gpu_memory.rs:136:13
+    |
+136 |         let mut mgr = Self::new();
+    |             ----^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: field `skinned_pipeline` is never read
+   --> astraweave-render\src\renderer.rs:378:5
+    |
+284 | pub struct Renderer {
+    |            -------- field in this struct
+...
+378 |     skinned_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-render` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-render` to apply 1 suggestion)
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+warning: enum `AIMode` is never used
+  --> examples\hello_companion\src\main.rs:71:6
+   |
+71 | enum AIMode {
+   |      ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `update_ecs_from_legacy` is never used
+   --> examples\hello_companion\src\main.rs:281:4
+    |
+281 | fn update_ecs_from_legacy(world: &mut ecs::World, legacy_id: u32) {
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `run_single_demo` is never used
+   --> examples\hello_companion\src\main.rs:416:4
+    |
+416 | fn run_single_demo(mode: AIMode) -> Result<()> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `setup_world` is never used
+   --> examples\hello_companion\src\main.rs:477:4
+    |
+477 | fn setup_world() -> Result<(World, u32, u32, u32, WorldSnapshot)> {
+    |    ^^^^^^^^^^^
+
+warning: function `select_ai_mode` is never used
+   --> examples\hello_companion\src\main.rs:509:4
+    |
+509 | fn select_ai_mode(args: &[String]) -> AIMode {
+    |    ^^^^^^^^^^^^^^
+
+warning: function `generate_plan` is never used
+   --> examples\hello_companion\src\main.rs:604:4
+    |
+604 | fn generate_plan(snap: &WorldSnapshot, mode: AIMode) -> Result<PlanIntent> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `generate_classical_plan` is never used
+   --> examples\hello_companion\src\main.rs:651:4
+    |
+651 | fn generate_classical_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_bt_plan` is never used
+   --> examples\hello_companion\src\main.rs:680:4
+    |
+680 | fn generate_bt_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `generate_utility_plan` is never used
+   --> examples\hello_companion\src\main.rs:753:4
+    |
+753 | fn generate_utility_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `calculate_move_score` is never used
+   --> examples\hello_companion\src\main.rs:829:4
+    |
+829 | fn calculate_move_score(snap: &WorldSnapshot) -> f32 {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `calculate_smoke_score` is never used
+   --> examples\hello_companion\src\main.rs:844:4
+    |
+844 | fn calculate_smoke_score(snap: &WorldSnapshot) -> f32 {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `calculate_coverfire_score` is never used
+   --> examples\hello_companion\src\main.rs:865:4
+    |
+865 | fn calculate_coverfire_score(snap: &WorldSnapshot) -> f32 {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_llm_plan` is never used
+   --> examples\hello_companion\src\main.rs:883:4
+    |
+883 | fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `check_ollama_available` is never used
+   --> examples\hello_companion\src\main.rs:925:4
+    |
+925 | fn check_ollama_available() -> Result<()> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `create_tool_registry` is never used
+   --> examples\hello_companion\src\main.rs:979:4
+    |
+979 | fn create_tool_registry() -> ToolRegistry {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_ensemble_plan` is never used
+    --> examples\hello_companion\src\main.rs:1069:4
+     |
+1069 | fn generate_ensemble_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+     |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `calculate_plan_similarity` is never used
+    --> examples\hello_companion\src\main.rs:1132:4
+     |
+1132 | fn calculate_plan_similarity(plan_a: &PlanIntent, plan_b: &PlanIntent) -> f32 {
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `action_type_string` is never used
+    --> examples\hello_companion\src\main.rs:1150:4
+     |
+1150 | fn action_type_string(step: &ActionStep) -> String {
+     |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `extract_tools_used` is never used
+    --> examples\hello_companion\src\main.rs:1212:4
+     |
+1212 | fn extract_tools_used(plan: &PlanIntent) -> Vec<String> {
+     |    ^^^^^^^^^^^^^^^^^^
+
+warning: field `timestamp` is never read
+  --> examples\hello_companion\src\chat_ui.rs:12:9
+   |
+9  | pub struct ChatMessage {
+   |            ----------- field in this struct
+...
+12 |     pub timestamp: std::time::Instant,
+   |         ^^^^^^^^^
+   |
+   = note: `ChatMessage` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `visible` is never read
+  --> examples\hello_companion\src\chat_ui.rs:31:9
+   |
+23 | pub struct ChatUi {
+   |            ------ field in this struct
+...
+31 |     pub visible: bool,
+   |         ^^^^^^^
+
+warning: multiple methods are never used
+   --> examples\hello_companion\src\dialogue_bank.rs:130:12
+    |
+24  | impl DialogueBank {
+    | ----------------- methods in this implementation
+...
+130 |     pub fn random_thinking(&self) -> &'static str {
+    |            ^^^^^^^^^^^^^^^
+...
+135 |     pub fn random_action(&self) -> &'static str {
+    |            ^^^^^^^^^^^^^
+...
+140 |     pub fn random_idle(&self) -> &'static str {
+    |            ^^^^^^^^^^^
+...
+145 |     pub fn random_greeting(&self) -> &'static str {
+    |            ^^^^^^^^^^^^^^^
+...
+159 |     pub fn farewell(&self) -> &'static str {
+    |            ^^^^^^^^
+...
+175 |     pub fn goap_fallback(&self) -> &'static str {
+    |            ^^^^^^^^^^^^^
+...
+199 |     pub fn thinking_sequence_contextual(&self, duration_seconds: f32, user_input: &str) -> Vec<String> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+278 |     pub fn thinking_sequence(&self, duration_seconds: f32) -> Vec<&'static str> {
+    |            ^^^^^^^^^^^^^^^^^
+
+warning: constant `FAREWELLS_GENERAL` is never used
+  --> examples\hello_companion\src\dialogue_content.rs:81:18
+   |
+81 | pub(super) const FAREWELLS_GENERAL: &[&str] = &[
+   |                  ^^^^^^^^^^^^^^^^^
+
+warning: constant `IDLE_GENERAL` is never used
+  --> examples\hello_companion\src\dialogue_content.rs:98:18
+   |
+98 | pub(super) const IDLE_GENERAL: &[&str] = &[
+   |                  ^^^^^^^^^^^^
+
+warning: methods `hdri_path` and `npc_model_path` are never used
+  --> examples\hello_companion\src\scene.rs:24:12
+   |
+22 | impl DemoMode {
+   | ------------- methods in this implementation
+23 |     /// Get HDRI path for this mode
+24 |     pub fn hdri_path(&self) -> &'static str {
+   |            ^^^^^^^^^
+...
+33 |     pub fn npc_model_path(&self) -> &'static str {
+   |            ^^^^^^^^^^^^^^
+
+warning: fields `house_position`, `npc_position`, `camera_position`, and `camera_target` are never read
+  --> examples\hello_companion\src\scene.rs:62:9
+   |
+60 | pub struct SceneConfig {
+   |            ----------- fields in this struct
+61 |     /// House position
+62 |     pub house_position: Vec3,
+   |         ^^^^^^^^^^^^^^
+63 |     /// NPC spawn position
+64 |     pub npc_position: Vec3,
+   |         ^^^^^^^^^^^^
+65 |     /// Camera start position
+66 |     pub camera_position: Vec3,
+   |         ^^^^^^^^^^^^^^^
+67 |     /// Camera look-at target
+68 |     pub camera_target: Vec3,
+   |         ^^^^^^^^^^^^^
+
+warning: associated function `desc` is never used
+   --> examples\hello_companion\src\scene.rs:120:12
+    |
+119 | impl TerrainVertex {
+    | ------------------ associated function in this implementation
+120 |     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+    |            ^^^^
+
+warning: function `generate_terrain_mesh` is never used
+   --> examples\hello_companion\src\scene.rs:146:8
+    |
+146 | pub fn generate_terrain_mesh(size: f32, subdivisions: u32) -> (Vec<TerrainVertex>, Vec<u32>) {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `position`, `rotation`, and `animation_state` are never read
+   --> examples\hello_companion\src\scene.rs:190:9
+    |
+189 | pub struct NpcState {
+    |            -------- fields in this struct
+190 |     pub position: Vec3,
+    |         ^^^^^^^^
+191 |     pub rotation: f32,
+    |         ^^^^^^^^
+192 |     pub animation_state: NpcAnimationState,
+    |         ^^^^^^^^^^^^^^^
+    |
+    = note: `NpcState` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Walking`, `Thinking`, `Talking`, and `Gesturing` are never constructed
+   --> examples\hello_companion\src\scene.rs:199:5
+    |
+197 | pub enum NpcAnimationState {
+    |          ----------------- variants in this enum
+198 |     Idle,
+199 |     Walking,
+    |     ^^^^^^^
+200 |     Thinking,
+    |     ^^^^^^^^
+201 |     Talking,
+    |     ^^^^^^^
+202 |     Gesturing,
+    |     ^^^^^^^^^
+    |
+    = note: `NpcAnimationState` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variant `Listening` is never constructed
+   --> examples\hello_companion\src\scene.rs:210:5
+    |
+206 | pub enum NpcDialogueState {
+    |          ---------------- variant in this enum
+...
+210 |     Listening,
+    |     ^^^^^^^^^
+    |
+    = note: `NpcDialogueState` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: constant `HOUSE` is never used
+  --> examples\hello_companion\src\scene.rs:85:15
+   |
+85 |     pub const HOUSE: &str = "assets/house1.glb";
+   |               ^^^^^
+
+warning: constant `GRASS_ALBEDO` is never used
+  --> examples\hello_companion\src\scene.rs:89:19
+   |
+89 |         pub const GRASS_ALBEDO: &str = "assets/grass.png";
+   |                   ^^^^^^^^^^^^
+
+warning: constant `GRASS_NORMAL` is never used
+  --> examples\hello_companion\src\scene.rs:90:19
+   |
+90 |         pub const GRASS_NORMAL: &str = "assets/grass_n.png";
+   |                   ^^^^^^^^^^^^
+
+warning: constant `GRASS_MRA` is never used
+  --> examples\hello_companion\src\scene.rs:91:19
+   |
+91 |         pub const GRASS_MRA: &str = "assets/grass_mra.png";
+   |                   ^^^^^^^^^
+
+warning: constant `CHARACTER_A` is never used
+  --> examples\hello_companion\src\scene.rs:96:19
+   |
+96 |         pub const CHARACTER_A: &str = "assets/models/character-a.glb";
+   |                   ^^^^^^^^^^^
+
+warning: constant `AMBER` is never used
+  --> examples\hello_companion\src\scene.rs:97:19
+   |
+97 |         pub const AMBER: &str = "assets/models/Amber-Npc/Amber.Fbx";
+   |                   ^^^^^
+
+warning: constant `AMBER_MOTION` is never used
+  --> examples\hello_companion\src\scene.rs:98:19
+   |
+98 |         pub const AMBER_MOTION: &str = "assets/models/Amber-Npc/Amber_Motion.Fbx";
+   |                   ^^^^^^^^^^^^
+
+warning: constant `SPRUIT_SUNRISE` is never used
+   --> examples\hello_companion\src\scene.rs:103:19
+    |
+103 |         pub const SPRUIT_SUNRISE: &str =
+    |                   ^^^^^^^^^^^^^^
+
+warning: constant `VENICE_SUNSET` is never used
+   --> examples\hello_companion\src\scene.rs:105:19
+    |
+105 |         pub const VENICE_SUNSET: &str = "assets/hdri/polyhaven/venice_sunset/venice_sunset_2k.hdr";
+    |                   ^^^^^^^^^^^^^
+
+warning: constant `KLOPPENHEIM` is never used
+   --> examples\hello_companion\src\scene.rs:106:19
+    |
+106 |         pub const KLOPPENHEIM: &str = "assets/hdri/polyhaven/kloppenheim_02_puresky_2k.hdr";
+    |                   ^^^^^^^^^^^
+
+warning: fields `scene_config` and `pending_chat_input` are never read
+   --> examples\hello_companion\src\visual_demo.rs:100:5
+    |
+82  | struct CompanionApp {
+    |        ------------ fields in this struct
+...
+100 |     scene_config: SceneConfig,
+    |     ^^^^^^^^^^^^
+...
+117 |     pending_chat_input: Option<String>,
+    |     ^^^^^^^^^^^^^^^^^^
+
+warning: methods `complete_llm_response` and `generate_contextual_response` are never used
+   --> examples\hello_companion\src\visual_demo.rs:674:8
+    |
+128 | impl CompanionApp {
+    | ----------------- methods in this implementation
+...
+674 |     fn complete_llm_response(&mut self) {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+...
+695 |     fn generate_contextual_response(&self, input: &str) -> String {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `hello_companion` (bin "hello_companion") generated 43 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 27.39s

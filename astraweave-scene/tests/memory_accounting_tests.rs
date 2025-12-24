@@ -1,6 +1,5 @@
 use astraweave_scene::gpu_resource_manager::{CellGpuResources, AssetId};
 use astraweave_scene::world_partition::GridCoord;
-use wgpu::TextureFormat;
 
 async fn create_device() -> (wgpu::Device, wgpu::Queue) {
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());

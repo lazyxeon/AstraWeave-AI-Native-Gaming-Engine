@@ -365,7 +365,7 @@ mod tests {
         let (consolidated, result) = engine.consolidate(memories).unwrap();
 
         // Should merge similar memories
-        assert!(result.merged_count >= 0); // At least some processing happened
+        let _ = consolidated; // Verify consolidation ran
         assert_eq!(result.processed_count, 2);
     }
 

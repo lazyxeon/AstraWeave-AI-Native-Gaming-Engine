@@ -272,10 +272,11 @@ impl ComponentType {
                     } else {
                         "📍 Pose"
                     };
-                    
+
                     if is_overridden {
                         ui.push_id("pose_override", |ui| {
-                            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(100, 150, 255));
+                            ui.visuals_mut().override_text_color =
+                                Some(egui::Color32::from_rgb(100, 150, 255));
                             pose.ui(ui, label);
                         });
                     } else {
@@ -293,16 +294,18 @@ impl ComponentType {
                     } else {
                         "❤️ Health"
                     };
-                    
+
                     let changed = if is_overridden {
                         ui.push_id("health_override", |ui| {
-                            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(100, 150, 255));
+                            ui.visuals_mut().override_text_color =
+                                Some(egui::Color32::from_rgb(100, 150, 255));
                             health.ui(ui, label)
-                        }).inner
+                        })
+                        .inner
                     } else {
                         health.ui(ui, label)
                     };
-                    
+
                     if changed {
                         return Some(ComponentEdit::Health {
                             entity,

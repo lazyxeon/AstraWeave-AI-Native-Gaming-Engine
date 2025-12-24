@@ -365,4 +365,313 @@ mod tests {
         assert!(desc.contains("plan_id"));
         assert!(desc.contains("steps"));
     }
+
+    // ============================================================
+    // ValidationError Display Tests
+    // ============================================================
+
+    #[test]
+    fn test_validation_error_parse_error_display() {
+        let err = ValidationError::ParseError("unexpected token".to_string());
+        let msg = format!("{}", err);
+        assert!(msg.contains("JSON parse error"));
+        assert!(msg.contains("unexpected token"));
+    }
+
+    #[test]
+    fn test_validation_error_missing_field_display() {
+        let err = ValidationError::MissingField {
+            field: "name".to_string(),
+            path: "/user".to_string(),
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("Missing required field"));
+        assert!(msg.contains("name"));
+        assert!(msg.contains("/user"));
+    }
+
+    #[test]
+    fn test_validation_error_wrong_type_display() {
+        let err = ValidationError::WrongType {
+            field: "count".to_string(),
+            expected: "number".to_string(),
+            actual: "string".to_string(),
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("wrong type"));
+        assert!(msg.contains("count"));
+        assert!(msg.contains("number"));
+        assert!(msg.contains("string"));
+    }
+
+    #[test]
+    fn test_validation_error_out_of_range_display() {
+        let err = ValidationError::OutOfRange {
+            field: "age".to_string(),
+            value: "-5".to_string(),
+            constraint: "must be >= 0".to_string(),
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("age"));
+        assert!(msg.contains("-5"));
+        assert!(msg.contains("must be >= 0"));
+    }
+
+    #[test]
+    fn test_validation_error_unknown_field_display() {
+        let err = ValidationError::UnknownField {
+            field: "extra_field".to_string(),
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("Unknown field"));
+        assert!(msg.contains("extra_field"));
+        assert!(msg.contains("strict mode"));
+    }
+
+    #[test]
+    fn test_validation_error_array_length_display() {
+        let err = ValidationError::ArrayLength {
+            field: "items".to_string(),
+            actual: 0,
+            constraint: "minimum 1".to_string(),
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("items"));
+        assert!(msg.contains("0 elements"));
+        assert!(msg.contains("minimum 1"));
+    }
+
+    #[test]
+    fn test_validation_error_custom_rule_display() {
+        let err = ValidationError::CustomRule {
+            rule: "date_format".to_string(),
+            message: "Invalid ISO 8601 format".to_string(),
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("date_format"));
+        assert!(msg.contains("Invalid ISO 8601 format"));
+    }
+
+    #[test]
+    fn test_validation_error_is_error_trait() {
+        let err: Box<dyn std::error::Error> =
+            Box::new(ValidationError::ParseError("test".to_string()));
+        assert!(!err.to_string().is_empty());
+    }
+
+    // ============================================================
+    // ValidationError Clone Tests
+    // ============================================================
+
+    #[test]
+    fn test_validation_error_clone() {
+        let err = ValidationError::MissingField {
+            field: "test".to_string(),
+            path: "/root".to_string(),
+        };
+        let cloned = err.clone();
+        
+        match cloned {
+            ValidationError::MissingField { field, path } => {
+                assert_eq!(field, "test");
+                assert_eq!(path, "/root");
+            }
+            _ => panic!("Clone changed variant"),
+        }
+    }
+
+    // ============================================================
+    // Helper Method Tests
+    // ============================================================
+
+    #[test]
+    fn test_require_field_present() {
+        let json: Value = serde_json::from_str(r#"{"name": "test"}"#).unwrap();
+        let result = TestPlan::require_field(&json, "name");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_require_field_missing() {
+        let json: Value = serde_json::from_str(r#"{"other": "test"}"#).unwrap();
+        let result = TestPlan::require_field(&json, "name");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_require_field_null() {
+        let json: Value = serde_json::from_str(r#"{"name": null}"#).unwrap();
+        let result = TestPlan::require_field(&json, "name");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_require_string_valid() {
+        let json: Value = serde_json::from_str(r#"{"name": "test"}"#).unwrap();
+        let result = TestPlan::require_string(&json, "name");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_require_string_wrong_type() {
+        let json: Value = serde_json::from_str(r#"{"name": 123}"#).unwrap();
+        let result = TestPlan::require_string(&json, "name");
+        assert!(result.is_some());
+        assert!(matches!(result.unwrap(), ValidationError::WrongType { .. }));
+    }
+
+    #[test]
+    fn test_require_string_missing() {
+        let json: Value = serde_json::from_str(r#"{}"#).unwrap();
+        let result = TestPlan::require_string(&json, "name");
+        assert!(result.is_some());
+        assert!(matches!(result.unwrap(), ValidationError::MissingField { .. }));
+    }
+
+    #[test]
+    fn test_require_array_valid() {
+        let json: Value = serde_json::from_str(r#"{"items": [1, 2, 3]}"#).unwrap();
+        let result = TestPlan::require_array(&json, "items");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_require_array_wrong_type() {
+        let json: Value = serde_json::from_str(r#"{"items": "not-array"}"#).unwrap();
+        let result = TestPlan::require_array(&json, "items");
+        assert!(result.is_some());
+        assert!(matches!(result.unwrap(), ValidationError::WrongType { .. }));
+    }
+
+    #[test]
+    fn test_require_array_missing() {
+        let json: Value = serde_json::from_str(r#"{}"#).unwrap();
+        let result = TestPlan::require_array(&json, "items");
+        assert!(result.is_some());
+        assert!(matches!(result.unwrap(), ValidationError::MissingField { .. }));
+    }
+
+    #[test]
+    fn test_require_number_valid() {
+        let json: Value = serde_json::from_str(r#"{"count": 42}"#).unwrap();
+        let result = TestPlan::require_number(&json, "count");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_require_number_float() {
+        let json: Value = serde_json::from_str(r#"{"value": 3.14}"#).unwrap();
+        let result = TestPlan::require_number(&json, "value");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_require_number_wrong_type() {
+        let json: Value = serde_json::from_str(r#"{"count": "not-number"}"#).unwrap();
+        let result = TestPlan::require_number(&json, "count");
+        assert!(result.is_some());
+        assert!(matches!(result.unwrap(), ValidationError::WrongType { .. }));
+    }
+
+    #[test]
+    fn test_require_number_missing() {
+        let json: Value = serde_json::from_str(r#"{}"#).unwrap();
+        let result = TestPlan::require_number(&json, "count");
+        assert!(result.is_some());
+        assert!(matches!(result.unwrap(), ValidationError::MissingField { .. }));
+    }
+
+    // ============================================================
+    // json_type_name Tests
+    // ============================================================
+
+    #[test]
+    fn test_json_type_name_null() {
+        let val = Value::Null;
+        assert_eq!(json_type_name(&val), "null");
+    }
+
+    #[test]
+    fn test_json_type_name_bool() {
+        let val = Value::Bool(true);
+        assert_eq!(json_type_name(&val), "boolean");
+    }
+
+    #[test]
+    fn test_json_type_name_number() {
+        let val = serde_json::json!(42);
+        assert_eq!(json_type_name(&val), "number");
+    }
+
+    #[test]
+    fn test_json_type_name_string() {
+        let val = serde_json::json!("hello");
+        assert_eq!(json_type_name(&val), "string");
+    }
+
+    #[test]
+    fn test_json_type_name_array() {
+        let val = serde_json::json!([1, 2, 3]);
+        assert_eq!(json_type_name(&val), "array");
+    }
+
+    #[test]
+    fn test_json_type_name_object() {
+        let val = serde_json::json!({"key": "value"});
+        assert_eq!(json_type_name(&val), "object");
+    }
+
+    // ============================================================
+    // Schema Name Tests
+    // ============================================================
+
+    #[test]
+    fn test_schema_name() {
+        assert_eq!(TestPlan::schema_name(), "TestPlan");
+    }
+
+    // ============================================================
+    // Complex Validation Tests
+    // ============================================================
+
+    #[test]
+    fn test_valid_plan_with_multiple_steps() {
+        let json = r#"{
+            "plan_id": "multi-step",
+            "steps": [
+                {"act": "MoveTo", "x": 1, "y": 1},
+                {"act": "Wait", "duration": 2.0},
+                {"act": "Attack", "target_id": 99}
+            ]
+        }"#;
+        let result = TestPlan::parse_validated(json);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().steps.len(), 3);
+    }
+
+    #[test]
+    fn test_valid_plan_with_whitespace() {
+        let json = r#"   {"plan_id": "test", "steps": [{"act": "Wait"}]}   "#;
+        let result = TestPlan::parse_validated(json);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_multiple_validation_errors() {
+        // Missing both plan_id and steps
+        let json = r#"{}"#;
+        let result = TestPlan::parse_validated(json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        // Should mention both missing fields
+        assert!(err.contains("plan_id") || err.contains("steps"));
+    }
+
+    #[test]
+    fn test_nested_step_validation() {
+        // Multiple steps with missing act fields
+        let json = r#"{"plan_id": "test", "steps": [{"x": 1}, {"y": 2}]}"#;
+        let result = TestPlan::parse_validated(json);
+        assert!(result.is_err());
+    }
 }

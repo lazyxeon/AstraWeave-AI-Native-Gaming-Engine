@@ -188,4 +188,215 @@ mod tests {
         assert!(enhanced.contains("1. Input:"));
         assert!(!enhanced.contains("2. Input:")); // Second example not included
     }
+
+    #[test]
+    fn test_example_struct_clone() {
+        let example = FewShotExample {
+            input: "test input".to_string(),
+            output: "test output".to_string(),
+            reasoning: "test reasoning".to_string(),
+            tags: vec!["tactical".to_string(), "combat".to_string()],
+        };
+        
+        let cloned = example.clone();
+        assert_eq!(cloned.input, "test input");
+        assert_eq!(cloned.output, "test output");
+        assert_eq!(cloned.reasoning, "test reasoning");
+        assert_eq!(cloned.tags.len(), 2);
+    }
+
+    #[test]
+    fn test_example_struct_debug() {
+        let example = FewShotExample {
+            input: "input".to_string(),
+            output: "output".to_string(),
+            reasoning: "reason".to_string(),
+            tags: vec!["tag1".to_string()],
+        };
+        
+        let debug_str = format!("{:?}", example);
+        assert!(debug_str.contains("FewShotExample"));
+        assert!(debug_str.contains("input"));
+    }
+
+    #[test]
+    fn test_few_shot_registry_new() {
+        let registry = FewShotRegistry::new();
+        let examples = registry.get_examples_with_budget(&["any"], 1000);
+        assert!(examples.is_empty());
+    }
+
+    #[test]
+    fn test_few_shot_registry_add_example() {
+        let mut registry = FewShotRegistry::new();
+        
+        registry.add_example(FewShotExample {
+            input: "test input".to_string(),
+            output: "test output".to_string(),
+            reasoning: "reasoning".to_string(),
+            tags: vec!["tactical".to_string()],
+        });
+        
+        let examples = registry.get_examples_with_budget(&["tactical"], 1000);
+        assert_eq!(examples.len(), 1);
+    }
+
+    #[test]
+    fn test_few_shot_registry_tag_filtering() {
+        let mut registry = FewShotRegistry::new();
+        
+        registry.add_example(FewShotExample {
+            input: "tactical input".to_string(),
+            output: "tactical output".to_string(),
+            reasoning: "".to_string(),
+            tags: vec!["tactical".to_string()],
+        });
+        
+        registry.add_example(FewShotExample {
+            input: "stealth input".to_string(),
+            output: "stealth output".to_string(),
+            reasoning: "".to_string(),
+            tags: vec!["stealth".to_string()],
+        });
+        
+        // Only tactical
+        let tactical = registry.get_examples_with_budget(&["tactical"], 1000);
+        assert_eq!(tactical.len(), 1);
+        assert!(tactical[0].input.contains("tactical"));
+        
+        // Only stealth
+        let stealth = registry.get_examples_with_budget(&["stealth"], 1000);
+        assert_eq!(stealth.len(), 1);
+        assert!(stealth[0].input.contains("stealth"));
+        
+        // Both tags
+        let both = registry.get_examples_with_budget(&["tactical", "stealth"], 1000);
+        assert_eq!(both.len(), 2);
+    }
+
+    #[test]
+    fn test_few_shot_registry_token_budget() {
+        let mut registry = FewShotRegistry::new();
+        
+        // Add a large example (100 chars = ~25 tokens)
+        registry.add_example(FewShotExample {
+            input: "a".repeat(50),
+            output: "b".repeat(50),
+            reasoning: "".to_string(),
+            tags: vec!["tag".to_string()],
+        });
+        
+        // Add another example
+        registry.add_example(FewShotExample {
+            input: "c".repeat(50),
+            output: "d".repeat(50),
+            reasoning: "".to_string(),
+            tags: vec!["tag".to_string()],
+        });
+        
+        // Budget of 30 tokens should fit 1 example (25 tokens each)
+        let examples = registry.get_examples_with_budget(&["tag"], 30);
+        assert_eq!(examples.len(), 1);
+        
+        // Budget of 60 tokens should fit 2 examples
+        let examples = registry.get_examples_with_budget(&["tag"], 60);
+        assert_eq!(examples.len(), 2);
+    }
+
+    #[test]
+    fn test_few_shot_registry_no_matching_tags() {
+        let mut registry = FewShotRegistry::new();
+        
+        registry.add_example(FewShotExample {
+            input: "tactical".to_string(),
+            output: "output".to_string(),
+            reasoning: "".to_string(),
+            tags: vec!["tactical".to_string()],
+        });
+        
+        let examples = registry.get_examples_with_budget(&["support"], 1000);
+        assert!(examples.is_empty());
+    }
+
+    #[test]
+    fn test_few_shot_registry_multi_tag_example() {
+        let mut registry = FewShotRegistry::new();
+        
+        registry.add_example(FewShotExample {
+            input: "multi-tag".to_string(),
+            output: "output".to_string(),
+            reasoning: "".to_string(),
+            tags: vec!["tactical".to_string(), "stealth".to_string(), "support".to_string()],
+        });
+        
+        // Should match any of the tags
+        assert_eq!(registry.get_examples_with_budget(&["tactical"], 1000).len(), 1);
+        assert_eq!(registry.get_examples_with_budget(&["stealth"], 1000).len(), 1);
+        assert_eq!(registry.get_examples_with_budget(&["support"], 1000).len(), 1);
+        assert_eq!(registry.get_examples_with_budget(&["unknown"], 1000).len(), 0);
+    }
+
+    #[test]
+    fn test_example_registry_static_initialization() {
+        // Verify static registry is properly initialized
+        assert!(EXAMPLE_REGISTRY.contains_key("tactical"));
+        assert!(EXAMPLE_REGISTRY.contains_key("stealth"));
+        assert!(EXAMPLE_REGISTRY.contains_key("support"));
+    }
+
+    #[test]
+    fn test_tactical_examples_content() {
+        let examples = get_examples("tactical");
+        
+        // Verify tactical examples have required content
+        for example in &examples {
+            assert!(example.tags.contains(&"tactical".to_string()));
+            assert!(!example.input.is_empty());
+            assert!(!example.output.is_empty());
+            assert!(!example.reasoning.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_stealth_examples_content() {
+        let examples = get_examples("stealth");
+        
+        for example in &examples {
+            assert!(example.tags.contains(&"stealth".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_support_examples_content() {
+        let examples = get_examples("support");
+        
+        for example in &examples {
+            assert!(example.tags.contains(&"support".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_get_examples_empty_vec_for_unknown_role() {
+        let examples = get_examples("nonexistent_role");
+        assert!(examples.is_empty());
+    }
+
+    #[test]
+    fn test_add_few_shot_examples_preserves_base() {
+        let base = "Original prompt content.";
+        let enhanced = add_few_shot_examples(base, "tactical", 1);
+        
+        // Enhanced should start with original content
+        assert!(enhanced.starts_with(base));
+    }
+
+    #[test]
+    fn test_add_few_shot_max_examples_zero() {
+        let base = "Test prompt.";
+        let enhanced = add_few_shot_examples(base, "tactical", 0);
+        
+        // With max_examples=0, should still have Examples header but no content
+        assert!(enhanced.contains("Examples:"));
+        assert!(!enhanced.contains("1. Input:"));
+    }
 }

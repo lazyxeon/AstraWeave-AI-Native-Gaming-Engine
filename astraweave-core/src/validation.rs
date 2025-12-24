@@ -338,6 +338,28 @@ pub fn validate_and_execute(
                 }
                 log(format!("  [{}] REVIVE #{}", i, ally_id));
             }
+
+            // ═══════════════════════════════════════
+            // TERRAIN (AI-Orchestrated Dynamic Terrain)
+            // ═══════════════════════════════════════
+            ActionStep::ModifyTerrain {
+                request_id,
+                payload,
+            } => {
+                // Validate the terrain request
+                if let Err(e) = payload.validate() {
+                    return Err(EngineError::InvalidAction(format!(
+                        "Invalid terrain request: {}",
+                        e
+                    )));
+                }
+                log(format!(
+                    "  [{}] MODIFY_TERRAIN request_id={} feature={:?}",
+                    i, request_id, payload.feature_type
+                ));
+                // Note: Actual terrain modification is handled by TerrainSolver
+                // This validation ensures the request is structurally valid
+            }
         }
     }
     Ok(())

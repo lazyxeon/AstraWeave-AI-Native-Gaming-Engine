@@ -127,10 +127,18 @@ impl Default for BuildConfig {
 /// Message types for build thread communication
 #[derive(Debug)]
 pub enum BuildMessage {
-    Progress { percent: f32, step: String },
+    Progress {
+        percent: f32,
+        step: String,
+    },
     LogLine(String),
-    Complete { output_path: PathBuf, duration_secs: f32 },
-    Failed { error: String },
+    Complete {
+        output_path: PathBuf,
+        duration_secs: f32,
+    },
+    Failed {
+        error: String,
+    },
 }
 
 /// Build Manager Panel - Phase 5.2
@@ -168,8 +176,9 @@ impl BuildManagerPanel {
     /// Start a build in a background thread
     pub fn start_build(&mut self) {
         // Reset cancel flag
-        self.cancel_requested.store(false, std::sync::atomic::Ordering::SeqCst);
-        
+        self.cancel_requested
+            .store(false, std::sync::atomic::Ordering::SeqCst);
+
         let (tx, rx) = channel::<BuildMessage>();
         self.log_receiver = Some(rx);
         self.build_logs.clear();
@@ -185,13 +194,15 @@ impl BuildManagerPanel {
             Self::run_build(config, tx, cancel_flag);
         });
     }
-    
+
     /// Cancel the current build
     pub fn cancel_build(&mut self) {
-        self.cancel_requested.store(true, std::sync::atomic::Ordering::SeqCst);
-        self.build_logs.push("⚠️ Build cancellation requested...".to_string());
+        self.cancel_requested
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        self.build_logs
+            .push("⚠️ Build cancellation requested...".to_string());
     }
-    
+
     /// Launch the built executable
     fn launch_executable(&mut self, output_path: &std::path::Path) {
         let executable = if cfg!(target_os = "windows") {
@@ -199,25 +210,32 @@ impl BuildManagerPanel {
         } else {
             output_path.join(&self.config.project_name)
         };
-        
+
         if executable.exists() {
-            self.build_logs.push(format!("🚀 Launching {}...", executable.display()));
-            
+            self.build_logs
+                .push(format!("🚀 Launching {}...", executable.display()));
+
             match Command::new(&executable).spawn() {
                 Ok(_) => {
-                    self.build_logs.push("✅ Application launched successfully".to_string());
+                    self.build_logs
+                        .push("✅ Application launched successfully".to_string());
                 }
                 Err(e) => {
                     self.build_logs.push(format!("❌ Failed to launch: {}", e));
                 }
             }
         } else {
-            self.build_logs.push(format!("❌ Executable not found: {}", executable.display()));
+            self.build_logs
+                .push(format!("❌ Executable not found: {}", executable.display()));
         }
     }
 
     /// Execute the build process
-    fn run_build(config: BuildConfig, tx: Sender<BuildMessage>, cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>) {
+    fn run_build(
+        config: BuildConfig,
+        tx: Sender<BuildMessage>,
+        cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) {
         let start_time = std::time::Instant::now();
 
         // Step 1: Validate configuration
@@ -226,9 +244,19 @@ impl BuildManagerPanel {
             step: "Validating configuration...".to_string(),
         });
         let _ = tx.send(BuildMessage::LogLine("📋 Build configuration:".to_string()));
-        let _ = tx.send(BuildMessage::LogLine(format!("   Target: {} {}", config.target.icon(), config.target.name())));
-        let _ = tx.send(BuildMessage::LogLine(format!("   Profile: {}", config.profile.name())));
-        let _ = tx.send(BuildMessage::LogLine(format!("   Output: {}", config.output_dir.display())));
+        let _ = tx.send(BuildMessage::LogLine(format!(
+            "   Target: {} {}",
+            config.target.icon(),
+            config.target.name()
+        )));
+        let _ = tx.send(BuildMessage::LogLine(format!(
+            "   Profile: {}",
+            config.profile.name()
+        )));
+        let _ = tx.send(BuildMessage::LogLine(format!(
+            "   Output: {}",
+            config.output_dir.display()
+        )));
 
         // Step 2: Create output directory
         let _ = tx.send(BuildMessage::Progress {
@@ -248,7 +276,9 @@ impl BuildManagerPanel {
             percent: 0.15,
             step: "Compiling Rust code...".to_string(),
         });
-        let _ = tx.send(BuildMessage::LogLine("🔧 Running cargo build...".to_string()));
+        let _ = tx.send(BuildMessage::LogLine(
+            "🔧 Running cargo build...".to_string(),
+        ));
 
         let mut cmd = Command::new("cargo");
         cmd.arg("build");
@@ -270,10 +300,12 @@ impl BuildManagerPanel {
         // Simulate build progress for demo (real implementation would parse cargo output)
         // Check for cancellation between steps
         if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-            let _ = tx.send(BuildMessage::Failed { error: "Build cancelled by user".to_string() });
+            let _ = tx.send(BuildMessage::Failed {
+                error: "Build cancelled by user".to_string(),
+            });
             return;
         }
-        
+
         let _ = tx.send(BuildMessage::Progress {
             percent: 0.30,
             step: "Compiling dependencies...".to_string(),
@@ -281,10 +313,12 @@ impl BuildManagerPanel {
         thread::sleep(std::time::Duration::from_millis(500));
 
         if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-            let _ = tx.send(BuildMessage::Failed { error: "Build cancelled by user".to_string() });
+            let _ = tx.send(BuildMessage::Failed {
+                error: "Build cancelled by user".to_string(),
+            });
             return;
         }
-        
+
         let _ = tx.send(BuildMessage::Progress {
             percent: 0.50,
             step: "Compiling game code...".to_string(),
@@ -292,10 +326,12 @@ impl BuildManagerPanel {
         thread::sleep(std::time::Duration::from_millis(500));
 
         if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-            let _ = tx.send(BuildMessage::Failed { error: "Build cancelled by user".to_string() });
+            let _ = tx.send(BuildMessage::Failed {
+                error: "Build cancelled by user".to_string(),
+            });
             return;
         }
-        
+
         let _ = tx.send(BuildMessage::Progress {
             percent: 0.70,
             step: "Linking...".to_string(),
@@ -307,14 +343,20 @@ impl BuildManagerPanel {
             percent: 0.80,
             step: "Bundling assets...".to_string(),
         });
-        let _ = tx.send(BuildMessage::LogLine("📦 Bundling game assets...".to_string()));
+        let _ = tx.send(BuildMessage::LogLine(
+            "📦 Bundling game assets...".to_string(),
+        ));
 
         if config.strip_unused_assets {
-            let _ = tx.send(BuildMessage::LogLine("   ✂️ Stripping unused assets".to_string()));
+            let _ = tx.send(BuildMessage::LogLine(
+                "   ✂️ Stripping unused assets".to_string(),
+            ));
         }
 
         if config.compress_assets {
-            let _ = tx.send(BuildMessage::LogLine("   🗜️ Compressing assets".to_string()));
+            let _ = tx.send(BuildMessage::LogLine(
+                "   🗜️ Compressing assets".to_string(),
+            ));
         }
 
         thread::sleep(std::time::Duration::from_millis(300));
@@ -343,8 +385,14 @@ impl BuildManagerPanel {
 
         let duration = start_time.elapsed().as_secs_f32();
 
-        let _ = tx.send(BuildMessage::LogLine(format!("✅ Build complete: {}", output_path.display())));
-        let _ = tx.send(BuildMessage::LogLine(format!("⏱️ Duration: {:.2}s", duration)));
+        let _ = tx.send(BuildMessage::LogLine(format!(
+            "✅ Build complete: {}",
+            output_path.display()
+        )));
+        let _ = tx.send(BuildMessage::LogLine(format!(
+            "⏱️ Duration: {:.2}s",
+            duration
+        )));
 
         let _ = tx.send(BuildMessage::Complete {
             output_path,
@@ -355,7 +403,7 @@ impl BuildManagerPanel {
     /// Poll for build updates from background thread
     fn poll_build_updates(&mut self) {
         let mut should_clear_receiver = false;
-        
+
         if let Some(rx) = &self.log_receiver {
             while let Ok(msg) = rx.try_recv() {
                 match msg {
@@ -368,7 +416,10 @@ impl BuildManagerPanel {
                     BuildMessage::LogLine(line) => {
                         self.build_logs.push(line);
                     }
-                    BuildMessage::Complete { output_path, duration_secs } => {
+                    BuildMessage::Complete {
+                        output_path,
+                        duration_secs,
+                    } => {
                         self.status = BuildStatus::Success {
                             output_path,
                             duration_secs,
@@ -384,7 +435,7 @@ impl BuildManagerPanel {
                 }
             }
         }
-        
+
         if should_clear_receiver {
             self.log_receiver = None;
         }
@@ -395,7 +446,10 @@ impl BuildManagerPanel {
             BuildStatus::Idle => {
                 ui.label(RichText::new("Ready to build").color(Color32::GRAY));
             }
-            BuildStatus::Building { progress, current_step } => {
+            BuildStatus::Building {
+                progress,
+                current_step,
+            } => {
                 ui.horizontal(|ui| {
                     ui.spinner();
                     ui.label(RichText::new("Building...").color(Color32::YELLOW));
@@ -403,7 +457,10 @@ impl BuildManagerPanel {
                 ui.add(egui::ProgressBar::new(*progress).show_percentage());
                 ui.label(RichText::new(current_step).small());
             }
-            BuildStatus::Success { output_path, duration_secs } => {
+            BuildStatus::Success {
+                output_path,
+                duration_secs,
+            } => {
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("✅ Build Successful").color(Color32::GREEN));
                     ui.label(format!("({:.2}s)", duration_secs));
@@ -412,7 +469,11 @@ impl BuildManagerPanel {
             }
             BuildStatus::Failed { error_message } => {
                 ui.label(RichText::new("❌ Build Failed").color(Color32::RED));
-                ui.label(RichText::new(error_message).color(Color32::LIGHT_RED).small());
+                ui.label(
+                    RichText::new(error_message)
+                        .color(Color32::LIGHT_RED)
+                        .small(),
+                );
             }
         }
     }
@@ -427,7 +488,11 @@ impl BuildManagerPanel {
                         ui.label(log);
                     }
                     if self.build_logs.is_empty() {
-                        ui.label(RichText::new("No build output yet").italics().color(Color32::GRAY));
+                        ui.label(
+                            RichText::new("No build output yet")
+                                .italics()
+                                .color(Color32::GRAY),
+                        );
                     }
                 });
         });
@@ -470,7 +535,11 @@ impl Panel for BuildManagerPanel {
             ui.label(RichText::new("Build Profile").strong());
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.config.profile, BuildProfile::Debug, "🐛 Debug");
-                ui.selectable_value(&mut self.config.profile, BuildProfile::Release, "🚀 Release");
+                ui.selectable_value(
+                    &mut self.config.profile,
+                    BuildProfile::Release,
+                    "🚀 Release",
+                );
             });
         });
 
@@ -497,7 +566,10 @@ impl Panel for BuildManagerPanel {
 
         // Advanced Options
         ui.collapsing("⚙️ Advanced Options", |ui| {
-            ui.checkbox(&mut self.config.include_debug_symbols, "Include debug symbols");
+            ui.checkbox(
+                &mut self.config.include_debug_symbols,
+                "Include debug symbols",
+            );
             ui.checkbox(&mut self.config.strip_unused_assets, "Strip unused assets");
             ui.checkbox(&mut self.config.compress_assets, "Compress assets");
         });
@@ -509,7 +581,10 @@ impl Panel for BuildManagerPanel {
 
         ui.horizontal(|ui| {
             if ui
-                .add_enabled(!is_building, egui::Button::new("🔨 Build").min_size(egui::vec2(100.0, 30.0)))
+                .add_enabled(
+                    !is_building,
+                    egui::Button::new("🔨 Build").min_size(egui::vec2(100.0, 30.0)),
+                )
                 .clicked()
             {
                 self.run_after_build = false;
@@ -517,7 +592,10 @@ impl Panel for BuildManagerPanel {
             }
 
             if ui
-                .add_enabled(!is_building, egui::Button::new("📦 Build & Run").min_size(egui::vec2(100.0, 30.0)))
+                .add_enabled(
+                    !is_building,
+                    egui::Button::new("📦 Build & Run").min_size(egui::vec2(100.0, 30.0)),
+                )
                 .clicked()
             {
                 self.run_after_build = true;
@@ -528,9 +606,12 @@ impl Panel for BuildManagerPanel {
                 self.cancel_build();
             }
         });
-        
+
         // Handle run after build completion
-        if let BuildStatus::Success { ref output_path, .. } = self.status {
+        if let BuildStatus::Success {
+            ref output_path, ..
+        } = self.status
+        {
             if self.run_after_build {
                 let path = output_path.clone();
                 self.run_after_build = false; // Reset flag
@@ -567,8 +648,14 @@ mod tests {
     #[test]
     fn test_build_target_cargo_flags() {
         assert!(BuildTarget::Windows.cargo_target().is_none());
-        assert_eq!(BuildTarget::Linux.cargo_target(), Some("x86_64-unknown-linux-gnu"));
-        assert_eq!(BuildTarget::Web.cargo_target(), Some("wasm32-unknown-unknown"));
+        assert_eq!(
+            BuildTarget::Linux.cargo_target(),
+            Some("x86_64-unknown-linux-gnu")
+        );
+        assert_eq!(
+            BuildTarget::Web.cargo_target(),
+            Some("wasm32-unknown-unknown")
+        );
     }
 
     #[test]

@@ -648,7 +648,7 @@ mod tests {
         let removed = manager.cleanup_weak_memories().unwrap();
         // Note: whether it removes depends on the threshold calculation
         // The test verifies the cleanup mechanism works
-        assert!(removed >= 0);
+        let _ = removed; // Verify it runs without error
     }
 
     #[test]

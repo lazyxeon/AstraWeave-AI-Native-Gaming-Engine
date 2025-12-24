@@ -25,7 +25,7 @@ use aw_editor_lib::runtime::{EditorRuntime, RuntimeState};
 use aw_editor_lib::scene_serialization::SceneData;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use tempfile::tempdir;
+use tempfile::{tempdir, tempdir_in, TempDir};
 
 // ============================================================================
 // Test Utilities
@@ -80,6 +80,23 @@ fn sample_prefab() -> PrefabData {
     }
 }
 
+fn content_scene_path(file_name: &str) -> (TempDir, std::path::PathBuf) {
+    let workspace_root =
+        std::env::current_dir().expect("tests should have access to current directory");
+    let content_root = workspace_root.join("content");
+    let tests_root = content_root.join("tests");
+    std::fs::create_dir_all(&tests_root).expect("failed to create content/tests directory");
+    let temp_dir =
+        tempdir_in(&tests_root).expect("failed to create content-scoped temporary directory");
+    let relative_dir = temp_dir
+        .path()
+        .strip_prefix(&content_root)
+        .expect("temp dir should be inside content/")
+        .to_path_buf();
+    let relative_path = relative_dir.join(file_name);
+    (temp_dir, relative_path)
+}
+
 // ============================================================================
 // 1. Entity Lifecycle Tests
 // ============================================================================
@@ -131,21 +148,30 @@ fn test_delete_undo() {
     delete_cmd.execute(&mut world).expect("delete");
 
     // Entity should be destroyed after delete
-    assert!(world.pose(entity).is_none(), "entity destroyed after delete");
+    assert!(
+        world.pose(entity).is_none(),
+        "entity destroyed after delete"
+    );
 
     // Undo delete - creates a NEW entity with same data (not same ID)
     delete_cmd.undo(&mut world).expect("undo delete");
-    
+
     // After undo, there should be an entity with the original position
     // Note: The restored entity may have a different ID
     let entities = world.entities();
     assert!(!entities.is_empty(), "undo should restore an entity");
-    
+
     // Find the restored entity and check its position
     let has_restored_position = entities.iter().any(|&e| {
-        world.pose(e).map(|p| p.pos == IVec2::new(5, 5)).unwrap_or(false)
+        world
+            .pose(e)
+            .map(|p| p.pos == IVec2::new(5, 5))
+            .unwrap_or(false)
     });
-    assert!(has_restored_position, "restored entity should have original position");
+    assert!(
+        has_restored_position,
+        "restored entity should have original position"
+    );
 }
 
 // ============================================================================
@@ -329,10 +355,7 @@ fn test_undo_stack_basic_operations() {
     let new_pos = IVec2::new(20, 20);
 
     undo_stack
-        .execute(
-            MoveEntityCommand::new(entity, old_pos, new_pos),
-            &mut world,
-        )
+        .execute(MoveEntityCommand::new(entity, old_pos, new_pos), &mut world)
         .expect("execute");
 
     assert!(undo_stack.can_undo());
@@ -354,9 +377,13 @@ fn test_undo_stack_multiple_operations() {
     let entity = world.spawn("TestEntity", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
     let mut undo_stack = UndoStack::new(64);
     undo_stack.set_auto_merge(false); // Disable merging to test individual operations
-    
+
     let initial_pos = world.pose(entity).unwrap().pos;
-    assert_eq!(initial_pos, IVec2::new(0, 0), "Initial position should be (0,0)");
+    assert_eq!(
+        initial_pos,
+        IVec2::new(0, 0),
+        "Initial position should be (0,0)"
+    );
 
     // Perform multiple operations - each move to a new position
     let positions = [
@@ -366,7 +393,7 @@ fn test_undo_stack_multiple_operations() {
         IVec2::new(40, 40),
         IVec2::new(50, 50),
     ];
-    
+
     let mut prev_pos = initial_pos;
     for &new_pos in &positions {
         undo_stack
@@ -564,8 +591,8 @@ fn test_prefab_from_entity() {
     let mut world = World::new();
     let entity = world.spawn("TestEntity", IVec2::new(10, 20), Team { id: 2 }, 75, 15);
 
-    let prefab = PrefabData::from_entity(&world, entity, "EntityPrefab".to_string())
-        .expect("create prefab");
+    let prefab =
+        PrefabData::from_entity(&world, entity, "EntityPrefab".to_string()).expect("create prefab");
 
     assert_eq!(prefab.name, "EntityPrefab");
     assert_eq!(prefab.entities.len(), 1);
@@ -582,10 +609,8 @@ fn test_prefab_from_entity() {
 // These tests need to be refactored to use content/ relative paths or mocked paths.
 
 #[test]
-#[ignore = "Requires content/ directory setup - scene path security constraint"]
 fn test_scene_save_load() {
-    let temp = tempdir().expect("temp dir");
-    let scene_path = temp.path().join("test_scene.ron");
+    let (_content_dir, scene_path) = content_scene_path("test_scene.ron");
 
     let world = create_test_world();
     let scene_data = SceneData::from_world(&world);
@@ -604,10 +629,8 @@ fn test_scene_save_load() {
 }
 
 #[test]
-#[ignore = "Requires content/ directory setup - scene path security constraint"]
 fn test_scene_preserves_components() {
-    let temp = tempdir().expect("temp dir");
-    let scene_path = temp.path().join("components.ron");
+    let (_content_dir, scene_path) = content_scene_path("components.ron");
 
     let mut world = World::new();
     let entity = world.spawn("TestEntity", IVec2::new(5, 10), Team { id: 2 }, 75, 15);
@@ -644,10 +667,8 @@ fn test_scene_preserves_components() {
 // ============================================================================
 
 #[test]
-#[ignore = "Requires content/ directory setup - scene path security constraint"]
 fn test_complex_workflow_edit_save_load() {
-    let temp = tempdir().expect("temp dir");
-    let scene_path = temp.path().join("workflow.ron");
+    let (_content_dir, scene_path) = content_scene_path("workflow.ron");
 
     let mut world = World::new();
     let mut undo_stack = UndoStack::new(64);
@@ -701,7 +722,10 @@ fn test_complex_undo_redo_sequence() {
         .expect("health");
 
     undo_stack
-        .execute(EditTeamCommand::new(entity, Team { id: 0 }, Team { id: 3 }), &mut world)
+        .execute(
+            EditTeamCommand::new(entity, Team { id: 0 }, Team { id: 3 }),
+            &mut world,
+        )
         .expect("team");
 
     // Undo all
@@ -732,11 +756,10 @@ fn test_empty_world_operations() {
     let world = World::new();
     let mut runtime = EditorRuntime::new();
 
-    runtime.enter_play(&world).expect("enter play with empty world");
-    assert_eq!(
-        runtime.sim_world().expect("sim world").entities().len(),
-        0
-    );
+    runtime
+        .enter_play(&world)
+        .expect("enter play with empty world");
+    assert_eq!(runtime.sim_world().expect("sim world").entities().len(), 0);
 
     let restored = runtime.exit_play().expect("exit play");
     assert_eq!(restored.expect("world").entities().len(), 0);
@@ -763,11 +786,7 @@ fn test_undo_stack_max_size() {
     for i in 0..10 {
         undo_stack
             .execute(
-                MoveEntityCommand::new(
-                    entity,
-                    IVec2::new(i, i),
-                    IVec2::new(i + 1, i + 1),
-                ),
+                MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
                 &mut world,
             )
             .expect("execute");
@@ -782,7 +801,6 @@ fn test_undo_stack_max_size() {
 // ============================================================================
 
 #[test]
-#[ignore = "Requires content/ directory setup - scene path security constraint"]
 fn test_many_entities() {
     let mut world = World::new();
 
@@ -800,8 +818,7 @@ fn test_many_entities() {
     assert_eq!(world.entities().len(), 100);
 
     // Save and load
-    let temp = tempdir().expect("temp dir");
-    let scene_path = temp.path().join("many_entities.ron");
+    let (_content_dir, scene_path) = content_scene_path("many_entities.ron");
 
     let scene_data = SceneData::from_world(&world);
     scene_data.save_to_file(&scene_path).expect("save");
@@ -823,11 +840,7 @@ fn test_many_undo_operations() {
     for i in 0..100 {
         undo_stack
             .execute(
-                MoveEntityCommand::new(
-                    entity,
-                    IVec2::new(i, i),
-                    IVec2::new(i + 1, i + 1),
-                ),
+                MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
                 &mut world,
             )
             .expect("execute");

@@ -19,10 +19,10 @@ pub enum GridType {
     /// Infinite ground plane grid with distance fading
     #[default]
     Infinite,
-    
+
     /// Crosshair-style grid (XZ axis lines only, no full grid)
     Crosshair,
-    
+
     /// No grid (same as show_grid = false, but separate option)
     None,
 }
@@ -36,7 +36,7 @@ impl GridType {
             GridType::None => GridType::Infinite,
         }
     }
-    
+
     /// Display name for UI
     pub fn name(&self) -> &'static str {
         match self {
@@ -57,7 +57,7 @@ pub struct ViewportToolbar {
 
     /// Grid visibility
     pub show_grid: bool,
-    
+
     /// Grid display type (infinite plane vs crosshair)
     pub grid_type: GridType,
 
@@ -114,15 +114,23 @@ impl ViewportToolbar {
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.checkbox(&mut self.show_grid, "Grid");
-                            
+
                             // Grid type selector (only show when grid is visible)
                             if self.show_grid {
                                 egui::ComboBox::from_id_salt("grid_type")
                                     .selected_text(self.grid_type.name())
                                     .width(80.0)
                                     .show_ui(ui, |ui| {
-                                        ui.selectable_value(&mut self.grid_type, GridType::Infinite, "Infinite");
-                                        ui.selectable_value(&mut self.grid_type, GridType::Crosshair, "Crosshair");
+                                        ui.selectable_value(
+                                            &mut self.grid_type,
+                                            GridType::Infinite,
+                                            "Infinite",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.grid_type,
+                                            GridType::Crosshair,
+                                            "Crosshair",
+                                        );
                                     });
                             }
 

@@ -1140,4 +1140,393 @@ mod tests {
         vehicle.update_orientation(rotation);
         assert!((vehicle.forward - Vec3::X).length() < 0.1);
     }
+
+    #[test]
+    fn test_total_suspension_force() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Set suspension forces on wheels
+        vehicle.wheels[0].suspension_force = 1000.0;
+        vehicle.wheels[1].suspension_force = 1000.0;
+        vehicle.wheels[2].suspension_force = 800.0;
+        vehicle.wheels[3].suspension_force = 800.0;
+
+        let total = vehicle.total_suspension_force();
+        assert!((total - 3600.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_average_slip_ratio_all_grounded() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Ground all wheels and set slip ratios
+        for (i, wheel) in vehicle.wheels.iter_mut().enumerate() {
+            wheel.grounded = true;
+            wheel.slip_ratio = (i as f32 + 1.0) * 0.1; // 0.1, 0.2, 0.3, 0.4
+        }
+
+        let avg = vehicle.average_slip_ratio();
+        // Average of 0.1 + 0.2 + 0.3 + 0.4 = 1.0 / 4 = 0.25
+        assert!((avg - 0.25).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_average_slip_ratio_some_airborne() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Only ground front wheels
+        vehicle.wheels[0].grounded = true;
+        vehicle.wheels[0].slip_ratio = 0.2;
+        vehicle.wheels[1].grounded = true;
+        vehicle.wheels[1].slip_ratio = 0.4;
+        vehicle.wheels[2].grounded = false;
+        vehicle.wheels[3].grounded = false;
+
+        let avg = vehicle.average_slip_ratio();
+        // Average of 0.2 + 0.4 = 0.6 / 2 = 0.3
+        assert!((avg - 0.3).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_average_slip_ratio_airborne() {
+        let config = VehicleConfig::default();
+        let vehicle = Vehicle::new(1, 42, config);
+
+        // All wheels airborne by default
+        let avg = vehicle.average_slip_ratio();
+        assert!((avg).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_average_slip_angle() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Ground all wheels and set slip angles
+        for (i, wheel) in vehicle.wheels.iter_mut().enumerate() {
+            wheel.grounded = true;
+            wheel.slip_angle = (i as f32 + 1.0) * 0.05; // 0.05, 0.10, 0.15, 0.20
+        }
+
+        let avg = vehicle.average_slip_angle();
+        // Average of 0.05 + 0.10 + 0.15 + 0.20 = 0.50 / 4 = 0.125
+        assert!((avg - 0.125).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_friction_curve_gravel() {
+        let curve = FrictionCurve::gravel();
+        
+        assert!((curve.optimal_slip - 0.15).abs() < 0.01);
+        assert!(curve.peak_friction < FrictionCurve::tarmac().peak_friction);
+    }
+
+    #[test]
+    fn test_friction_curve_mud() {
+        let curve = FrictionCurve::mud();
+        
+        assert!((curve.optimal_slip - 0.2).abs() < 0.01);
+        assert!(curve.peak_friction < FrictionCurve::gravel().peak_friction);
+    }
+
+    #[test]
+    fn test_friction_curve_defaults() {
+        let curve = FrictionCurve::default();
+        
+        assert!(curve.optimal_slip > 0.0);
+        assert!(curve.peak_friction > 0.0);
+        assert!(curve.sliding_friction > 0.0);
+        assert!(curve.stiffness > 0.0);
+    }
+
+    #[test]
+    fn test_friction_rising_portion() {
+        let curve = FrictionCurve::tarmac();
+        
+        // Below optimal slip, friction should be increasing
+        let f1 = curve.friction_at_slip(0.02);
+        let f2 = curve.friction_at_slip(0.05);
+        assert!(f2 > f1);
+    }
+
+    #[test]
+    fn test_friction_falling_portion() {
+        let curve = FrictionCurve::tarmac();
+        
+        // Well above optimal slip, friction should be lower than peak
+        let peak = curve.friction_at_slip(curve.optimal_slip);
+        let high_slip = curve.friction_at_slip(0.5);
+        assert!(high_slip < peak);
+    }
+
+    #[test]
+    fn test_wheel_config_with_radius() {
+        let wheel = WheelConfig::default().with_radius(0.5);
+        assert!((wheel.radius - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_wheel_config_with_suspension() {
+        let wheel = WheelConfig::default().with_suspension(40000.0, 5000.0, 0.35);
+        assert!((wheel.suspension_stiffness - 40000.0).abs() < 0.01);
+        assert!((wheel.suspension_damping - 5000.0).abs() < 0.01);
+        assert!((wheel.suspension_rest_length - 0.35).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_wheel_position_custom() {
+        let wheel = WheelConfig {
+            position_id: WheelPosition::Custom(5),
+            ..Default::default()
+        };
+        assert_eq!(wheel.position_id, WheelPosition::Custom(5));
+    }
+
+    #[test]
+    fn test_vehicle_config_mass() {
+        let config = VehicleConfig::default();
+        assert!(config.mass > 0.0);
+        assert!((config.mass - 1500.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_vehicle_config_drag() {
+        let config = VehicleConfig::default();
+        assert!(config.drag_coefficient > 0.0);
+        assert!(config.frontal_area > 0.0);
+    }
+
+    #[test]
+    fn test_vehicle_config_brake_force() {
+        let config = VehicleConfig::default();
+        assert!(config.brake_force > 0.0);
+        assert!(config.handbrake_multiplier > 1.0);
+    }
+
+    #[test]
+    fn test_transmission_num_gears() {
+        let trans = TransmissionConfig::default();
+        assert_eq!(trans.num_gears(), 6);
+    }
+
+    #[test]
+    fn test_engine_idle_torque() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.idle_rpm);
+        assert!(torque >= 0.0);
+    }
+
+    #[test]
+    fn test_vehicle_manager_get_nonexistent() {
+        let manager = VehicleManager::new();
+        assert!(manager.get(999).is_none());
+    }
+
+    #[test]
+    fn test_vehicle_shift_to_neutral() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Start in 1st, shift to neutral (0)
+        assert_eq!(vehicle.current_gear, 1);
+        vehicle.shift_down();
+        vehicle.shift_timer = 0.0; // Clear shift timer
+        assert_eq!(vehicle.current_gear, 0);
+    }
+
+    #[test]
+    fn test_vehicle_shift_to_reverse() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Shift from 1st to neutral to reverse
+        vehicle.shift_down();
+        vehicle.shift_timer = 0.0;
+        vehicle.shift_down();
+        vehicle.shift_timer = 0.0;
+        
+        assert_eq!(vehicle.current_gear, -1);
+    }
+
+    #[test]
+    fn test_vehicle_shift_down_limit() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Shift all the way down
+        for _ in 0..5 {
+            vehicle.shift_down();
+            vehicle.shift_timer = 0.0;
+        }
+
+        // Should not go below -1
+        assert!(vehicle.current_gear >= -1);
+    }
+
+    #[test]
+    fn test_vehicle_shift_up_limit() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+
+        // Shift all the way up
+        for _ in 0..10 {
+            vehicle.shift_up();
+            vehicle.shift_timer = 0.0;
+        }
+
+        // Should not exceed max gears
+        let max_gear = vehicle.config.transmission.num_gears() as i32;
+        assert!(vehicle.current_gear <= max_gear);
+    }
+
+    #[test]
+    fn test_vehicle_input_creation() {
+        let input = VehicleInput {
+            throttle: 0.8,
+            brake: 0.0,
+            steering: -0.5,
+            handbrake: 0.0,
+            clutch: 0.0,
+            shift: 1,
+        };
+
+        assert!((input.throttle - 0.8).abs() < 0.01);
+        assert!((input.steering - -0.5).abs() < 0.01);
+        assert_eq!(input.shift, 1);
+    }
+
+    #[test]
+    fn test_wheel_state_contact_normal() {
+        let mut state = WheelState::default();
+        state.contact_normal = Vec3::new(0.0, 1.0, 0.0);
+        
+        assert!((state.contact_normal.y - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_vehicle_manager_default() {
+        let manager = VehicleManager::default();
+        assert!(manager.vehicles().is_empty());
+    }
+
+    #[test]
+    fn test_vehicle_config_center_of_mass() {
+        let config = VehicleConfig::default();
+        // Center of mass should be slightly below geometric center
+        assert!(config.center_of_mass_offset.y < 0.0);
+    }
+
+    #[test]
+    fn test_vehicle_config_steering_angle() {
+        let config = VehicleConfig::default();
+        // Max steering angle should be reasonable (e.g., 30-45 degrees)
+        assert!(config.max_steering_angle > 0.4);
+        assert!(config.max_steering_angle < 1.0);
+    }
+
+    #[test]
+    fn test_vehicle_manager_spawn_and_get() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut manager = VehicleManager::new();
+        let config = VehicleConfig::default();
+        
+        let id = manager.spawn(&mut physics, Vec3::ZERO, config);
+        assert_eq!(manager.vehicles().len(), 1);
+        assert!(manager.get(id).is_some());
+        assert!(manager.get_mut(id).is_some());
+    }
+
+    #[test]
+    fn test_vehicle_orientation_update() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+        
+        let rotation = Quat::from_rotation_y(std::f32::consts::FRAC_PI_2);
+        vehicle.update_orientation(rotation);
+        
+        // Forward should now be along X axis
+        assert!(vehicle.forward.x > 0.9);
+    }
+
+    #[test]
+    fn test_vehicle_slip_averages() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+        
+        // Airborne case
+        assert_eq!(vehicle.average_slip_ratio(), 0.0);
+        assert_eq!(vehicle.average_slip_angle(), 0.0);
+        
+        // Grounded case
+        vehicle.wheels[0].grounded = true;
+        vehicle.wheels[0].slip_ratio = 0.5;
+        vehicle.wheels[0].slip_angle = 0.1;
+        
+        assert!((vehicle.average_slip_ratio() - 0.5).abs() < 0.01);
+        assert!((vehicle.average_slip_angle() - 0.1).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_engine_torque_falling_curve() {
+        let engine = EngineConfig {
+            max_torque: 400.0,
+            max_torque_rpm: 4000.0,
+            max_rpm: 6000.0,
+            idle_rpm: 1000.0,
+            ..Default::default()
+        };
+        
+        // In falling portion (between 4000 and 6000)
+        let torque = engine.torque_at_rpm(5000.0);
+        assert!(torque > 0.0 && torque < 400.0);
+    }
+
+    #[test]
+    fn test_vehicle_manager_update_logic() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut manager = VehicleManager::new();
+        let id = manager.spawn(&mut physics, Vec3::ZERO, VehicleConfig::default());
+        
+        // Update without input
+        manager.update(&mut physics, 0.016);
+        
+        // Update with input
+        let input = VehicleInput {
+            throttle: 1.0,
+            steering: 0.5,
+            shift: 1,
+            ..Default::default()
+        };
+        manager.update_with_input(id, &mut physics, &input, 0.016);
+        
+        let vehicle = manager.get(id).unwrap();
+        assert_eq!(vehicle.current_gear, 2);
+    }
+
+    #[test]
+    fn test_vehicle_suspension_force() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+        vehicle.wheels[0].suspension_force = 1000.0;
+        assert_eq!(vehicle.total_suspension_force(), 1000.0);
+    }
+
+    #[test]
+    fn test_friction_curves_all() {
+        let _ = FrictionCurve::gravel();
+        let _ = FrictionCurve::mud();
+        let _ = FrictionCurve::default();
+    }
+
+    #[test]
+    fn test_wheel_config_setters() {
+        let wheel = WheelConfig::default()
+            .with_radius(0.5)
+            .with_suspension(40000.0, 5000.0, 0.4);
+        assert_eq!(wheel.radius, 0.5);
+        assert_eq!(wheel.suspension_stiffness, 40000.0);
+    }
 }

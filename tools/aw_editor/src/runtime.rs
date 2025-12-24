@@ -3,7 +3,10 @@
 //! Provides deterministic play/pause/stop functionality with snapshot-based state management.
 
 use anyhow::Result;
+use astraweave_core::ecs_adapter::build_app;
 use astraweave_core::World;
+use astraweave_ecs::App as SimulationApp;
+use astraweave_profiling::{frame_mark, plot, span};
 use std::time::Instant;
 
 use crate::scene_serialization::SceneData;
@@ -32,6 +35,8 @@ pub struct RuntimeStats {
     pub tick_count: u64,
     /// Frames per second
     pub fps: f32,
+    /// Fixed 60 Hz steps executed during the last tick (for diagnostics)
+    pub fixed_steps_last_tick: u32,
 }
 
 impl Default for RuntimeStats {
@@ -41,6 +46,7 @@ impl Default for RuntimeStats {
             entity_count: 0,
             tick_count: 0,
             fps: 0.0,
+            fixed_steps_last_tick: 0,
         }
     }
 }
@@ -52,8 +58,8 @@ pub struct EditorRuntime {
     /// Snapshot captured when entering play mode
     edit_snapshot: Option<SceneData>,
 
-    /// Active simulation world (Some when playing/paused)
-    sim_world: Option<World>,
+    /// Active simulation app (drives ECS/physics/audio once play mode starts)
+    sim_app: Option<SimulationApp>,
 
     /// Current tick number (deterministic frame counter)
     tick_count: u64,
@@ -69,6 +75,12 @@ pub struct EditorRuntime {
 
     /// Last frame timestamp
     last_frame_time: Option<Instant>,
+
+    /// Fixed 60 Hz timestep (seconds) used by the runtime
+    fixed_dt: f32,
+
+    /// Accumulated time waiting to be consumed by fixed steps
+    time_accumulator: f32,
 }
 
 impl Default for EditorRuntime {
@@ -82,12 +94,14 @@ impl EditorRuntime {
     pub fn new() -> Self {
         Self {
             edit_snapshot: None,
-            sim_world: None,
+            sim_app: None,
             tick_count: 0,
             state: RuntimeState::Editing,
             stats: RuntimeStats::default(),
             frame_times: Vec::with_capacity(60),
             last_frame_time: None,
+            fixed_dt: 1.0 / 60.0,
+            time_accumulator: 0.0,
         }
     }
 
@@ -116,12 +130,16 @@ impl EditorRuntime {
 
     /// Get simulation world (if running)
     pub fn sim_world(&self) -> Option<&World> {
-        self.sim_world.as_ref()
+        self.sim_app
+            .as_ref()
+            .and_then(|app| app.world.get_resource::<World>())
     }
 
     /// Get mutable simulation world (if running)
     pub fn sim_world_mut(&mut self) -> Option<&mut World> {
-        self.sim_world.as_mut()
+        self.sim_app
+            .as_mut()
+            .and_then(|app| app.world.get_resource_mut::<World>())
     }
 
     /// Capture current scene and enter play mode
@@ -133,14 +151,22 @@ impl EditorRuntime {
         // Capture snapshot of edit state
         let snapshot = SceneData::from_world(world);
 
-        // Clone world for simulation via snapshot
+        // Clone world for simulation via snapshot and boot the ECS app
         let sim_world = snapshot.to_world();
+        let sim_app = build_app(sim_world, self.fixed_dt);
 
         self.edit_snapshot = Some(snapshot);
-        self.sim_world = Some(sim_world);
+        self.sim_app = Some(sim_app);
         self.tick_count = 0;
         self.state = RuntimeState::Playing;
         self.last_frame_time = Some(Instant::now());
+        self.time_accumulator = 0.0;
+        self.stats = RuntimeStats::default();
+        self.frame_times.clear();
+
+        if let Some(world) = self.sim_world() {
+            self.stats.entity_count = world.entities().len();
+        }
 
         Ok(())
     }
@@ -162,16 +188,19 @@ impl EditorRuntime {
 
     /// Advance exactly one frame then pause
     pub fn step_frame(&mut self) -> Result<()> {
-        if self.sim_world.is_none() {
+        if self.sim_app.is_none() {
             return Ok(()); // Not in play mode
         }
 
         // Set state to stepping
         let was_paused = self.state == RuntimeState::Paused;
         self.state = RuntimeState::SteppingOneFrame;
+        self.time_accumulator = 0.0;
+        let start = Instant::now();
 
         // Tick once at fixed 60Hz (16.67ms)
-        self.tick(1.0 / 60.0)?;
+        self.run_fixed_steps(1)?;
+        self.finish_tick(start, 1);
 
         // Return to paused state
         if was_paused || self.state == RuntimeState::SteppingOneFrame {
@@ -181,35 +210,31 @@ impl EditorRuntime {
         Ok(())
     }
 
-    /// Advance simulation one frame
-    pub fn tick(&mut self, _dt: f32) -> Result<()> {
+    /// Advance simulation using variable `dt`, internally respecting the fixed 60 Hz step.
+    pub fn tick(&mut self, dt: f32) -> Result<()> {
         if !self.is_playing() {
             return Ok(());
         }
 
+        span!("editor_runtime.tick");
         let start = Instant::now();
 
-        if let Some(world) = &mut self.sim_world {
-            // Fixed 60Hz tick
-            let fixed_dt = 1.0 / 60.0;
+        let clamped_dt = if dt.is_finite() {
+            dt.clamp(0.0, self.fixed_dt * 5.0)
+        } else {
+            self.fixed_dt
+        };
+        self.time_accumulator = (self.time_accumulator + clamped_dt).min(self.fixed_dt * 5.0);
 
-            // Update world time
-            world.t += fixed_dt;
-
-            self.tick_count += 1;
+        let mut steps_to_run = 0u32;
+        while self.time_accumulator + f32::EPSILON >= self.fixed_dt {
+            self.time_accumulator -= self.fixed_dt;
+            steps_to_run += 1;
         }
 
-        // Update frame timing
-        let frame_time_ms = start.elapsed().as_secs_f32() * 1000.0;
-        self.update_frame_time(frame_time_ms);
+        self.run_fixed_steps(steps_to_run)?;
+        self.finish_tick(start, steps_to_run);
 
-        // Update stats
-        if let Some(world) = &self.sim_world {
-            self.stats.entity_count = world.entities().len();
-            self.stats.tick_count = self.tick_count;
-        }
-
-        // If stepping, we're done
         if self.state == RuntimeState::SteppingOneFrame {
             self.state = RuntimeState::Paused;
         }
@@ -231,15 +256,50 @@ impl EditorRuntime {
         };
 
         // Reset runtime state
-        self.sim_world = None;
+        self.sim_app = None;
         self.edit_snapshot = None;
         self.tick_count = 0;
         self.state = RuntimeState::Editing;
         self.stats = RuntimeStats::default();
         self.frame_times.clear();
         self.last_frame_time = None;
+        self.time_accumulator = 0.0;
 
         Ok(restored_world)
+    }
+
+    fn run_fixed_steps(&mut self, steps: u32) -> Result<()> {
+        if steps == 0 {
+            return Ok(());
+        }
+
+        if let Some(mut app) = self.sim_app.take() {
+            for _ in 0..steps {
+                span!("editor_runtime.fixed_step");
+                app = app.run_fixed(1);
+                self.tick_count += 1;
+            }
+            self.sim_app = Some(app);
+        }
+
+        Ok(())
+    }
+
+    fn finish_tick(&mut self, start: Instant, steps: u32) {
+        self.stats.fixed_steps_last_tick = steps;
+        let frame_time_ms = start.elapsed().as_secs_f32() * 1000.0;
+        self.update_frame_time(frame_time_ms);
+
+        if let Some(world) = self.sim_world() {
+            self.stats.entity_count = world.entities().len();
+        } else {
+            self.stats.entity_count = 0;
+        }
+        self.stats.tick_count = self.tick_count;
+
+        plot!("EditorRuntime::frame_ms", self.stats.frame_time_ms as f64);
+        plot!("EditorRuntime::entities", self.stats.entity_count as f64);
+        frame_mark!();
     }
 
     /// Update frame time statistics
@@ -398,5 +458,35 @@ mod tests {
         let stats = runtime.stats();
         assert_eq!(stats.tick_count, 1);
         assert_eq!(stats.entity_count, 2); // Should match spawned entities
+    }
+
+    #[test]
+    fn tick_accumulates_until_full_step() {
+        let mut runtime = EditorRuntime::new();
+        let world = World::new();
+        runtime.enter_play(&world).expect("enter play");
+
+        let half_dt = (1.0 / 60.0) * 0.5;
+        runtime.tick(half_dt).expect("fractional tick");
+        assert_eq!(runtime.stats().tick_count, 0);
+        assert_eq!(runtime.stats().fixed_steps_last_tick, 0);
+
+        runtime.tick(half_dt).expect("second fractional tick");
+        assert_eq!(runtime.stats().tick_count, 1);
+        assert_eq!(runtime.stats().fixed_steps_last_tick, 1);
+    }
+
+    #[test]
+    fn step_frame_executes_single_fixed_step() {
+        let mut runtime = EditorRuntime::new();
+        let world = World::new();
+        runtime.enter_play(&world).expect("enter play");
+        runtime.pause();
+
+        runtime.step_frame().expect("step frame");
+
+        assert_eq!(runtime.stats().tick_count, 1);
+        assert_eq!(runtime.stats().fixed_steps_last_tick, 1);
+        assert!(runtime.is_paused());
     }
 }

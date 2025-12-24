@@ -219,6 +219,7 @@ impl ToolGuard {
             ActionStep::Interact { .. } => "Interact",
             ActionStep::UseAbility { .. } => "UseAbility",
             ActionStep::Taunt { .. } => "Taunt",
+            ActionStep::ModifyTerrain { .. } => "ModifyTerrain",
         }
     }
 
@@ -484,5 +485,309 @@ mod tests {
 
         let result = guard.validate_action(&action, &|_| false); // Validator says no
         assert!(result.is_valid()); // But policy says yes (Allowed overrides validator)
+    }
+
+    // ============================================================
+    // ValidationResult Tests
+    // ============================================================
+
+    #[test]
+    fn test_validation_result_is_valid() {
+        assert!(ValidationResult::Valid.is_valid());
+        
+        assert!(!ValidationResult::Invalid {
+            reason: "test".to_string(),
+        }.is_valid());
+        
+        assert!(!ValidationResult::Denied {
+            action: "test".to_string(),
+        }.is_valid());
+    }
+
+    #[test]
+    fn test_validation_result_reason() {
+        assert!(ValidationResult::Valid.reason().is_none());
+        
+        let invalid = ValidationResult::Invalid {
+            reason: "test error".to_string(),
+        };
+        assert_eq!(invalid.reason(), Some("test error"));
+        
+        let denied = ValidationResult::Denied {
+            action: "Forbidden".to_string(),
+        };
+        assert_eq!(denied.reason(), Some("Forbidden"));
+    }
+
+    // ============================================================
+    // ToolPolicy Tests
+    // ============================================================
+
+    #[test]
+    fn test_tool_policy_serialization() {
+        let allowed = ToolPolicy::Allowed;
+        let restricted = ToolPolicy::Restricted;
+        let denied = ToolPolicy::Denied;
+        
+        assert_eq!(serde_json::to_string(&allowed).unwrap(), "\"Allowed\"");
+        assert_eq!(serde_json::to_string(&restricted).unwrap(), "\"Restricted\"");
+        assert_eq!(serde_json::to_string(&denied).unwrap(), "\"Denied\"");
+    }
+
+    #[test]
+    fn test_tool_policy_deserialization() {
+        let allowed: ToolPolicy = serde_json::from_str("\"Allowed\"").unwrap();
+        let restricted: ToolPolicy = serde_json::from_str("\"Restricted\"").unwrap();
+        let denied: ToolPolicy = serde_json::from_str("\"Denied\"").unwrap();
+        
+        assert_eq!(allowed, ToolPolicy::Allowed);
+        assert_eq!(restricted, ToolPolicy::Restricted);
+        assert_eq!(denied, ToolPolicy::Denied);
+    }
+
+    #[test]
+    fn test_tool_policy_equality() {
+        assert_eq!(ToolPolicy::Allowed, ToolPolicy::Allowed);
+        assert_eq!(ToolPolicy::Restricted, ToolPolicy::Restricted);
+        assert_eq!(ToolPolicy::Denied, ToolPolicy::Denied);
+        assert_ne!(ToolPolicy::Allowed, ToolPolicy::Denied);
+    }
+
+    #[test]
+    fn test_tool_policy_copy() {
+        let policy = ToolPolicy::Allowed;
+        let copied = policy; // Copy
+        assert_eq!(policy, copied);
+    }
+
+    // ============================================================
+    // AuditEntry Tests
+    // ============================================================
+
+    #[test]
+    fn test_audit_entry_serialization() {
+        let entry = AuditEntry {
+            timestamp: chrono::Utc::now(),
+            action_type: "MoveTo".to_string(),
+            result: "valid".to_string(),
+            reason: None,
+        };
+        
+        let json = serde_json::to_string(&entry).unwrap();
+        assert!(json.contains("MoveTo"));
+        assert!(json.contains("valid"));
+    }
+
+    #[test]
+    fn test_audit_entry_with_reason() {
+        let entry = AuditEntry {
+            timestamp: chrono::Utc::now(),
+            action_type: "Attack".to_string(),
+            result: "invalid".to_string(),
+            reason: Some("Target out of range".to_string()),
+        };
+        
+        let json = serde_json::to_string(&entry).unwrap();
+        assert!(json.contains("Target out of range"));
+    }
+
+    #[test]
+    fn test_audit_entry_clone() {
+        let entry = AuditEntry {
+            timestamp: chrono::Utc::now(),
+            action_type: "Wait".to_string(),
+            result: "valid".to_string(),
+            reason: None,
+        };
+        
+        let cloned = entry.clone();
+        assert_eq!(entry.action_type, cloned.action_type);
+        assert_eq!(entry.result, cloned.result);
+    }
+
+    // ============================================================
+    // Default Policy Tests
+    // ============================================================
+
+    #[test]
+    fn test_default_policy() {
+        let guard = ToolGuard::new();
+        
+        // Unknown action should use default policy (Restricted)
+        let unknown_policy = guard.get_policy("UnknownAction");
+        assert_eq!(unknown_policy, ToolPolicy::Restricted);
+    }
+
+    #[test]
+    fn test_set_default_policy() {
+        let mut guard = ToolGuard::new();
+        guard.set_default_policy(ToolPolicy::Denied);
+        
+        let unknown_policy = guard.get_policy("UnknownAction");
+        assert_eq!(unknown_policy, ToolPolicy::Denied);
+    }
+
+    // ============================================================
+    // Clear Audit Log Test
+    // ============================================================
+
+    #[test]
+    fn test_clear_audit_log() {
+        let guard = ToolGuard::new();
+        
+        // Add some entries
+        guard.validate_action(
+            &ActionStep::MoveTo { x: 0, y: 0, speed: None },
+            &|_| true,
+        );
+        guard.validate_action(
+            &ActionStep::Wait { duration: 1.0 },
+            &|_| true,
+        );
+        
+        // Verify entries exist
+        let log_before = guard.get_audit_log(10);
+        assert_eq!(log_before.len(), 2);
+        
+        // Clear log
+        guard.clear_audit_log();
+        
+        // Verify empty
+        let log_after = guard.get_audit_log(10);
+        assert_eq!(log_after.len(), 0);
+    }
+
+    // ============================================================
+    // ValidationStats Tests
+    // ============================================================
+
+    #[test]
+    fn test_validation_stats_default() {
+        let stats = ValidationStats::default();
+        assert_eq!(stats.valid, 0);
+        assert_eq!(stats.invalid, 0);
+        assert_eq!(stats.denied, 0);
+    }
+
+    #[test]
+    fn test_validation_stats_total() {
+        let stats = ValidationStats {
+            valid: 10,
+            invalid: 3,
+            denied: 2,
+        };
+        assert_eq!(stats.total(), 15);
+    }
+
+    #[test]
+    fn test_validation_stats_rejection_rate() {
+        let stats = ValidationStats {
+            valid: 8,
+            invalid: 1,
+            denied: 1,
+        };
+        assert!((stats.rejection_rate() - 0.2).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_validation_stats_rejection_rate_zero_total() {
+        let stats = ValidationStats::default();
+        assert_eq!(stats.rejection_rate(), 0.0);
+    }
+
+    #[test]
+    fn test_validation_stats_serialization() {
+        let stats = ValidationStats {
+            valid: 100,
+            invalid: 5,
+            denied: 2,
+        };
+        
+        let json = serde_json::to_string(&stats).unwrap();
+        let parsed: ValidationStats = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(stats.valid, parsed.valid);
+        assert_eq!(stats.invalid, parsed.invalid);
+        assert_eq!(stats.denied, parsed.denied);
+    }
+
+    // ============================================================
+    // Action Name Coverage Tests
+    // ============================================================
+
+    #[test]
+    fn test_action_name_all_variants() {
+        use astraweave_core::IVec2;
+        // Test a variety of action types to ensure action_name() handles them
+        let actions: Vec<ActionStep> = vec![
+            ActionStep::Approach { target_id: 1, distance: 5.0 },
+            ActionStep::Retreat { target_id: 1, distance: 10.0 },
+            ActionStep::TakeCover { position: None },
+            ActionStep::Strafe { target_id: 1, direction: astraweave_core::StrafeDirection::Left },
+            ActionStep::Patrol { waypoints: vec![] },
+            ActionStep::Attack { target_id: 1 },
+            ActionStep::AimedShot { target_id: 1 },
+            ActionStep::QuickAttack { target_id: 1 },
+            ActionStep::HeavyAttack { target_id: 1 },
+            ActionStep::AoEAttack { x: 0, y: 0, radius: 5.0 },
+            ActionStep::ThrowExplosive { x: 0, y: 0 },
+            ActionStep::Charge { target_id: 1 },
+            ActionStep::Block,
+            ActionStep::Dodge { direction: None },
+            ActionStep::Parry,
+            ActionStep::ThrowSmoke { x: 0, y: 0 },
+            ActionStep::Heal { target_id: Some(1) },
+            ActionStep::UseDefensiveAbility { ability_name: "shield".to_string() },
+            ActionStep::EquipWeapon { weapon_name: "sword".to_string() },
+            ActionStep::SwitchWeapon { slot: 1 },
+            ActionStep::Reload,
+            ActionStep::UseItem { item_name: "potion".to_string() },
+            ActionStep::DropItem { item_name: "junk".to_string() },
+            ActionStep::CallReinforcements { count: 3 },
+            ActionStep::MarkTarget { target_id: 1 },
+            ActionStep::RequestCover { duration: 5.0 },
+            ActionStep::CoordinateAttack { target_id: 1 },
+            ActionStep::SetAmbush { position: IVec2 { x: 10, y: 10 } },
+            ActionStep::Distract { target_id: 1 },
+            ActionStep::Regroup { rally_point: IVec2 { x: 5, y: 5 } },
+            ActionStep::Scan { radius: 15.0 },
+            ActionStep::Wait { duration: 2.0 },
+            ActionStep::Interact { target_id: 1 },
+            ActionStep::UseAbility { ability_name: "fireball".to_string() },
+            ActionStep::Taunt { target_id: 1 },
+        ];
+
+        let guard = ToolGuard::new();
+        for action in actions {
+            let _ = guard.validate_action(&action, &|_| true);
+        }
+        
+        // Verify we logged all actions
+        let log = guard.get_audit_log(50);
+        assert!(log.len() >= 30, "Should have logged many actions");
+    }
+
+    // ============================================================
+    // Edge Cases
+    // ============================================================
+
+    #[test]
+    fn test_validate_empty_batch() {
+        let guard = ToolGuard::new();
+        let results = guard.validate_actions(&[], &|_| true);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_all_valid_empty_batch() {
+        let guard = ToolGuard::new();
+        let result = guard.all_valid(&[], &|_| true);
+        assert!(result); // Empty batch is considered all valid
+    }
+
+    #[test]
+    fn test_default_trait_impl() {
+        let guard = ToolGuard::default();
+        assert_eq!(guard.get_policy("Wait"), ToolPolicy::Allowed);
     }
 }

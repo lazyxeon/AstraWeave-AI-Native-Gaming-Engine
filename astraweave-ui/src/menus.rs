@@ -259,6 +259,7 @@ pub fn show_settings_menu(
                 );
                 ui.add_space(10.0);
 
+
                 let current_res_text = format!(
                     "{}x{}",
                     settings.graphics.resolution.0, settings.graphics.resolution.1
@@ -625,4 +626,61 @@ pub fn show_settings_menu(
         }); // Close Window.show()
 
     action
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn run_frame<T>(f: impl FnOnce(&egui::Context) -> T) -> T {
+        let ctx = egui::Context::default();
+        let mut input = egui::RawInput::default();
+        input.screen_rect = Some(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            egui::vec2(1280.0, 720.0),
+        ));
+
+        ctx.begin_pass(input);
+        let out = f(&ctx);
+        let _ = ctx.end_pass();
+        out
+    }
+
+    #[test]
+    fn test_show_main_menu_runs_without_input() {
+        let action = run_frame(|ctx| show_main_menu(ctx));
+        assert_eq!(action, MenuAction::None);
+    }
+
+    #[test]
+    fn test_show_pause_menu_runs_without_input() {
+        let action = run_frame(|ctx| show_pause_menu(ctx));
+        assert_eq!(action, MenuAction::None);
+    }
+
+    #[test]
+    fn test_show_settings_menu_runs_without_input_and_does_not_modify_state() {
+        run_frame(|ctx| {
+            let mut settings = crate::menu::SettingsState::default();
+            let settings_before = settings.clone();
+            let mut rebinding_key: Option<String> = None;
+
+            let action = show_settings_menu(ctx, &mut settings, &mut rebinding_key);
+            assert_eq!(action, MenuAction::None);
+            assert_eq!(settings, settings_before);
+            assert!(rebinding_key.is_none());
+        });
+    }
+
+    #[test]
+    fn test_styled_button_executes_both_color_paths() {
+        run_frame(|ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let a = styled_button(ui, "Test A", egui::vec2(100.0, 30.0), false);
+                let b = styled_button(ui, "Test B", egui::vec2(100.0, 30.0), true);
+                assert!(!a.clicked());
+                assert!(!b.clicked());
+            });
+        });
+    }
 }

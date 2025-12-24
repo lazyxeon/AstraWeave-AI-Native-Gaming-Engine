@@ -144,4 +144,125 @@ mod tests {
         assert_eq!(max, 30.0);
         assert_eq!(avg, 20.0);
     }
+
+    // ===== Additional Coverage Tests =====
+
+    #[test]
+    fn test_record_duration() {
+        let metrics = MetricsRegistry::new();
+        metrics.record_duration("test.duration", Duration::from_millis(100));
+        metrics.record_duration("test.duration", Duration::from_millis(200));
+
+        let (count, min, max, avg) = metrics.get_histogram_stats("test.duration").unwrap();
+        assert_eq!(count, 2);
+        assert!((min - 100.0).abs() < 0.1);
+        assert!((max - 200.0).abs() < 0.1);
+        assert!((avg - 150.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_histogram_stats_nonexistent() {
+        let metrics = MetricsRegistry::new();
+        let stats = metrics.get_histogram_stats("nonexistent");
+        assert!(stats.is_none());
+    }
+
+    #[test]
+    fn test_histogram_stats_empty() {
+        let metrics = MetricsRegistry::new();
+        // Force create empty histogram
+        {
+            let mut histograms = metrics.histograms.lock().unwrap();
+            histograms.insert("empty.hist".to_string(), Vec::new());
+        }
+        let stats = metrics.get_histogram_stats("empty.hist");
+        assert!(stats.is_none());
+    }
+
+    #[test]
+    fn test_gauge_overwrite() {
+        let metrics = MetricsRegistry::new();
+        metrics.gauge("cpu", 50.0);
+        metrics.gauge("cpu", 75.0);
+
+        let gauges = metrics.get_gauges();
+        assert_eq!(gauges.get("cpu"), Some(&75.0));
+    }
+
+    #[test]
+    fn test_multiple_counters() {
+        let metrics = MetricsRegistry::new();
+        metrics.increment("a");
+        metrics.increment("b");
+        metrics.add("a", 10);
+
+        let counters = metrics.get_counters();
+        assert_eq!(counters.get("a"), Some(&11));
+        assert_eq!(counters.get("b"), Some(&1));
+    }
+
+    #[test]
+    fn test_global_metrics_increment() {
+        // Note: Uses global state, but tests should still run
+        increment("global.test.counter");
+        let counters = global_metrics().get_counters();
+        assert!(counters.contains_key("global.test.counter"));
+    }
+
+    #[test]
+    fn test_global_metrics_gauge() {
+        gauge("global.test.gauge", 123.456);
+        let gauges = global_metrics().get_gauges();
+        assert_eq!(gauges.get("global.test.gauge"), Some(&123.456));
+    }
+
+    #[test]
+    fn test_global_metrics_histogram() {
+        histogram("global.test.hist", 1.0);
+        histogram("global.test.hist", 2.0);
+        let stats = global_metrics().get_histogram_stats("global.test.hist");
+        assert!(stats.is_some());
+    }
+
+    #[test]
+    fn test_metrics_registry_clone() {
+        let metrics = MetricsRegistry::new();
+        metrics.increment("cloned.counter");
+        
+        let cloned = metrics.clone();
+        cloned.increment("cloned.counter");
+        
+        // Both share the same Arc'd data
+        let counters = metrics.get_counters();
+        assert_eq!(counters.get("cloned.counter"), Some(&2));
+    }
+
+    #[test]
+    fn test_metrics_registry_default() {
+        let metrics = MetricsRegistry::default();
+        assert!(metrics.get_counters().is_empty());
+        assert!(metrics.get_gauges().is_empty());
+    }
+
+    #[test]
+    fn test_histogram_single_value() {
+        let metrics = MetricsRegistry::new();
+        metrics.histogram("single", 42.0);
+
+        let (count, min, max, avg) = metrics.get_histogram_stats("single").unwrap();
+        assert_eq!(count, 1);
+        assert_eq!(min, 42.0);
+        assert_eq!(max, 42.0);
+        assert_eq!(avg, 42.0);
+    }
+
+    #[test]
+    fn test_record_duration_microseconds() {
+        let metrics = MetricsRegistry::new();
+        metrics.record_duration("micro", Duration::from_micros(500));
+
+        let (count, _, _, avg) = metrics.get_histogram_stats("micro").unwrap();
+        assert_eq!(count, 1);
+        assert!((avg - 0.5).abs() < 0.01); // 500µs = 0.5ms
+    }
 }

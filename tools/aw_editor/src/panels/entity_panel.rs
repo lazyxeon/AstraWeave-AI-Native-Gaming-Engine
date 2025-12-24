@@ -12,7 +12,7 @@ use egui::Ui;
 pub enum PrefabAction {
     RevertToOriginal(Entity),
     ApplyChangesToFile(Entity),
-    RevertAllToOriginal(Entity),  // Revert all entities in prefab instance (entity is any member)
+    RevertAllToOriginal(Entity), // Revert all entities in prefab instance (entity is any member)
     ApplyAllChangesToFile(Entity), // Apply all entities in prefab instance (entity is any member)
 }
 
@@ -156,7 +156,7 @@ impl EntityPanel {
                             egui::Color32::from_rgb(100, 150, 255),
                             "⚠️ Modified components (blue text indicates overrides)",
                         );
-                        
+
                         // Single entity operations
                         ui.horizontal(|ui| {
                             if ui.button("💾 Apply to Prefab").clicked() {
@@ -168,11 +168,11 @@ impl EntityPanel {
                         });
                         ui.label("💾 Apply: save changes back to prefab file");
                         ui.label("🔄 Revert: discard changes and restore original");
-                        
+
                         ui.add_space(8.0);
                         ui.separator();
                         ui.add_space(4.0);
-                        
+
                         // Bulk operations for entire prefab instance
                         ui.colored_label(
                             egui::Color32::from_rgb(255, 180, 100),
@@ -202,12 +202,18 @@ impl EntityPanel {
                     ui.label("No components");
                 } else {
                     // Get override information for this entity
-                    let entity_overrides = prefab_instance.and_then(|inst| inst.overrides.get(&entity));
-                    
+                    let entity_overrides =
+                        prefab_instance.and_then(|inst| inst.overrides.get(&entity));
+
                     for component_type in components {
                         let edit = {
                             let world = scene_state.world_mut();
-                            component_type.show_ui_with_overrides(world, entity, ui, entity_overrides)
+                            component_type.show_ui_with_overrides(
+                                world,
+                                entity,
+                                ui,
+                                entity_overrides,
+                            )
                         };
                         if let Some(edit) = edit {
                             component_edit = Some(edit);

@@ -133,7 +133,7 @@ impl GpuMemoryBudget {
 
     /// Create with custom total budget
     pub fn with_total_budget(total_bytes: u64) -> Self {
-        let mut mgr = Self::new();
+        let mgr = Self::new();
         mgr.total_budget.store(total_bytes, Ordering::SeqCst);
 
         // Distribute budget proportionally

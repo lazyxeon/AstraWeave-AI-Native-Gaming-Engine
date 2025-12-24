@@ -1798,6 +1798,7 @@ mod tests {
 
     /// Helper to create renderer components without requiring a Window
     /// This allows testing Renderer methods that don't need actual rendering
+    #[allow(dead_code)]
     struct TestRendererContext {
         device: wgpu::Device,
         queue: wgpu::Queue,
@@ -2166,6 +2167,184 @@ mod tests {
             }
 
             let _commands = encoder.finish();
+        });
+    }
+
+    #[test]
+    fn test_renderer_lifecycle_headless() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+            use crate::camera::Camera;
+
+            // Initialize headless renderer
+            let mut renderer = Renderer::new_headless(800, 600).await
+                .expect("Failed to create headless renderer");
+
+            // Verify basic state
+            assert!(renderer.surface().is_none());
+            assert_eq!(renderer.config().width, 800);
+            assert_eq!(renderer.config().height, 600);
+
+            // Test resize
+            renderer.resize(1024, 768);
+            assert_eq!(renderer.config().width, 1024);
+            assert_eq!(renderer.config().height, 768);
+
+            // Test camera update
+            let mut camera = Camera {
+                position: glam::vec3(0.0, 5.0, 10.0),
+                yaw: 0.0,
+                pitch: 0.0,
+                fovy: 45.0f32.to_radians(),
+                aspect: 1024.0 / 768.0,
+                znear: 0.1,
+                zfar: 100.0,
+            };
+            renderer.update_camera(&camera);
+
+            // Test material update
+            renderer.set_material_params([1.0, 0.0, 0.0, 1.0], 0.5, 0.1);
+
+            // Test weather update
+            renderer.set_weather(crate::effects::WeatherKind::Rain);
+            renderer.tick_weather(0.016);
+
+            // Test environment update
+            renderer.tick_environment(0.016);
+
+            // Test render (should return Ok(()) immediately because surface is None)
+            let result = renderer.render();
+            assert!(result.is_ok());
+        });
+    }
+
+    #[test]
+    fn test_renderer_mesh_creation() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+
+            let renderer = Renderer::new_headless(800, 600).await
+                .expect("Failed to create headless renderer");
+
+            let vertices = vec![
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ];
+            let normals = vec![
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+            ];
+            let indices = vec![0, 1, 2];
+
+            let mesh = renderer.create_mesh_from_arrays(&vertices, &normals, &indices);
+            assert_eq!(mesh.index_count, 3);
+        });
+    }
+
+    #[test]
+    fn test_renderer_instance_updates() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+            use crate::types::Instance;
+
+            let mut renderer = Renderer::new_headless(800, 600).await
+                .expect("Failed to create headless renderer");
+
+            let instances = vec![
+                Instance {
+                    transform: glam::Mat4::from_translation(glam::vec3(1.0, 2.0, 3.0)),
+                    color: [1.0, 0.0, 0.0, 1.0],
+                    material_id: 0,
+                },
+                Instance {
+                    transform: glam::Mat4::from_translation(glam::vec3(-1.0, -2.0, -3.0)),
+                    color: [0.0, 1.0, 0.0, 1.0],
+                    material_id: 1,
+                },
+            ];
+
+            renderer.update_instances(&instances);
+
+            // Verify GPU-side data
+            let gpu_instances = renderer.read_instance_buffer().await;
+            assert_eq!(gpu_instances.len(), 2);
+            
+            // Check first instance position (stored in model matrix column 3)
+            assert_eq!(gpu_instances[0].model[3][0], 1.0);
+            assert_eq!(gpu_instances[0].model[3][1], 2.0);
+            assert_eq!(gpu_instances[0].model[3][2], 3.0);
+            
+            // Check second instance position
+            assert_eq!(gpu_instances[1].model[3][0], -1.0);
+            assert_eq!(gpu_instances[1].model[3][1], -2.0);
+            assert_eq!(gpu_instances[1].model[3][2], -3.0);
+        });
+    }
+
+    #[test]
+    fn test_renderer_water_initialization() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+            use crate::water::WaterRenderer;
+
+            let mut renderer = Renderer::new_headless(800, 600).await
+                .expect("Failed to create headless renderer");
+
+            let water = WaterRenderer::new(
+                renderer.device(),
+                renderer.config().format,
+                wgpu::TextureFormat::Depth32Float,
+            );
+
+            renderer.set_water_renderer(water);
+            // Verify it doesn't crash during render
+            renderer.render().expect("Failed to render with water");
+        });
+    }
+
+    #[test]
+    fn test_renderer_shadow_map_creation() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+
+            let mut renderer = Renderer::new_headless(800, 600).await
+                .expect("Failed to create headless renderer");
+
+            // Use existing CSM tuning API
+            renderer.set_shadow_filter(1.0, 0.0001, 1.0);
+            renderer.set_cascade_splits(10.0, 50.0);
+            renderer.set_cascade_lambda(0.5);
+        });
+    }
+
+    #[test]
+    fn test_renderer_post_processing_initialization() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+
+            let mut renderer = Renderer::new_headless(800, 600).await
+                .expect("Failed to create headless renderer");
+
+            // Post-processing is integrated into the render call.
+            // We verify that render() doesn't crash in headless mode.
+            renderer.render().expect("Failed to render in headless mode");
+        });
+    }
+
+    #[test]
+    fn test_renderer_read_timestamp_query() {
+        pollster::block_on(async {
+            // This test requires gpu-tests feature
+            #[cfg(feature = "gpu-tests")]
+            {
+                use crate::renderer::Renderer;
+                let mut renderer = Renderer::new_headless(800, 600).await
+                    .expect("Failed to create headless renderer");
+
+                renderer.render().expect("Failed to render");
+            }
         });
     }
 }

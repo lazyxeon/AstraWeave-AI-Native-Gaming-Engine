@@ -136,6 +136,7 @@ pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
 /// - No cluster-based refinement
 /// - Quality is lower than production encoders
 #[cfg(feature = "bc7")]
+#[allow(dead_code)] // Reserved for future BC7 compression pipeline
 fn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {
     let (width, height) = rgba.dimensions();
     let num_blocks_x = width / 4;
@@ -178,6 +179,7 @@ fn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {
 
 /// Encode a single 4×4 BC7 block (simplified mode 6)
 #[cfg(feature = "bc7")]
+#[allow(dead_code)] // Used by compress_bc7_simple when bc7 feature is enabled
 fn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {
     // BC7 Mode 6 (simplified):
     // - Byte 0: Mode bits (0b01000000 for mode 6)

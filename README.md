@@ -96,6 +96,7 @@ flowchart TB
 -   **Multi-Modal Intelligence**: 6 validated AI modes including LLM (Hermes 2 Pro), GOAP, Behavior Trees, and Hybrid ensembles.
 -   **Massive Scale**: Orchestrates 12,700+ agents @ 60 FPS.
 -   **LLM Integration**: Streaming API, batch executor, and response caching.
+-   **Dynamic Terrain**: ✅ **Production** AI-orchestrated terrain generation with LLM integration.
 -   **Scripting**: **Active/Alpha** Rhai-based scripting system for behavior logic (`astraweave-scripting`).
 -   **Generative AI**: **Experimental** Asset generation pipeline (`astraweave-ai-gen`).
 
@@ -114,6 +115,7 @@ flowchart TB
 ### 🍎 Physics & Simulation
 -   **Rapier3D Integration**: Rigid bodies, character controllers, and spatial queries.
 -   **Navigation**: Navmesh generation (Delaunay) + A* pathfinding (142k queries/sec).
+-   **Terrain**: Voxel-based terrain with AI-orchestrated dynamic modification.
 -   **Audio**: Spatial audio with occlusion and dialogue runtime.
 
 ---
@@ -166,6 +168,8 @@ AstraWeave is a workspace of **80+ crates**. Here are the highlights:
 ### Gameplay & Tools
 -   `astraweave-physics`: Physics integration.
 -   `astraweave-nav`: Navigation and pathfinding.
+-   `astraweave-terrain`: Voxel terrain with AI-orchestrated dynamic generation.
+-   `astraweave-quests`: LLM-powered quest generation with terrain integration.
 -   `astraweave-ui`: Egui-based UI framework.
 -   `tools/aw_editor`: The editor (currently in remediation).
 

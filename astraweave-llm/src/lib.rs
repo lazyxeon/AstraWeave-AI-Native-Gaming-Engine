@@ -1629,7 +1629,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_plan_from_llm_success() {
-        let snap = create_test_world_snapshot();
+        let mut snap = create_test_world_snapshot();
+        snap.t = 100.1; // Unique for cache
         let reg = create_test_registry();
         let client = MockLlm;
 
@@ -1648,7 +1649,8 @@ mod tests {
         #[cfg(feature = "llm_cache")]
         super::clear_global_cache();
 
-        let snap = create_test_world_snapshot();
+        let mut snap = create_test_world_snapshot();
+        snap.t = 100.2; // Unique for cache
         let reg = create_test_registry();
         let client = TestLlmClient {
             response: "invalid json".to_string(),
@@ -1675,7 +1677,8 @@ mod tests {
         #[cfg(feature = "llm_cache")]
         super::clear_global_cache();
 
-        let snap = create_test_world_snapshot();
+        let mut snap = create_test_world_snapshot();
+        snap.t = 100.3; // Unique for cache
         let mut reg = create_test_registry();
         // Remove all tools
         reg.tools.clear();
@@ -1864,5 +1867,589 @@ mod tests {
         let res = parse_llm_plan(text, &reg).unwrap();
         assert_eq!(res.plan_id, "final");
         assert_eq!(res.steps.len(), 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Additional Coverage Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_plan_source_llm_variant() {
+        let plan = PlanIntent {
+            plan_id: "test-llm".to_string(),
+            steps: vec![ActionStep::Reload],
+        };
+        let source = PlanSource::Llm(plan.clone());
+        
+        if let PlanSource::Llm(p) = &source {
+            assert_eq!(p.plan_id, "test-llm");
+            assert_eq!(p.steps.len(), 1);
+        } else {
+            panic!("Expected LLM variant");
+        }
+    }
+
+    #[test]
+    fn test_plan_source_fallback_variant() {
+        let plan = PlanIntent {
+            plan_id: "test-fallback".to_string(),
+            steps: vec![ActionStep::Scan { radius: 10.0 }],
+        };
+        let source = PlanSource::Fallback {
+            plan: plan.clone(),
+            reason: "LLM unavailable".to_string(),
+        };
+        
+        if let PlanSource::Fallback { plan: p, reason } = &source {
+            assert_eq!(p.plan_id, "test-fallback");
+            assert_eq!(reason, "LLM unavailable");
+        } else {
+            panic!("Expected Fallback variant");
+        }
+    }
+
+    #[test]
+    fn test_plan_source_clone() {
+        let plan = PlanIntent {
+            plan_id: "clone-test".to_string(),
+            steps: vec![],
+        };
+        let source = PlanSource::Llm(plan);
+        let cloned = source.clone();
+        
+        if let PlanSource::Llm(p) = cloned {
+            assert_eq!(p.plan_id, "clone-test");
+        } else {
+            panic!("Clone should preserve variant");
+        }
+    }
+
+    #[test]
+    fn test_plan_source_debug() {
+        let plan = PlanIntent {
+            plan_id: "debug-test".to_string(),
+            steps: vec![],
+        };
+        let source = PlanSource::Llm(plan);
+        let debug = format!("{:?}", source);
+        assert!(debug.contains("Llm"));
+        assert!(debug.contains("debug-test"));
+        
+        let fallback = PlanSource::Fallback {
+            plan: PlanIntent { plan_id: "fb".to_string(), steps: vec![] },
+            reason: "test".to_string(),
+        };
+        let debug = format!("{:?}", fallback);
+        assert!(debug.contains("Fallback"));
+    }
+
+    #[tokio::test]
+    async fn test_mock_llm_returns_valid_steps() {
+        let client = MockLlm;
+        let response = client.complete("test").await.unwrap();
+        
+        // Parse as JSON to verify structure
+        let json: serde_json::Value = serde_json::from_str(&response).unwrap();
+        
+        assert!(json.get("plan_id").is_some());
+        assert!(json.get("steps").is_some());
+        
+        let steps = json.get("steps").unwrap().as_array().unwrap();
+        assert!(!steps.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_always_err_mock() {
+        let client = AlwaysErrMock;
+        let result = client.complete("test").await;
+        
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("AlwaysErrMock"));
+    }
+
+    #[tokio::test]
+    async fn test_llm_client_streaming_default() {
+        let client = MockLlm;
+        use futures_util::StreamExt;
+        
+        // MockLlm uses default streaming implementation
+        let mut stream = client.complete_streaming("test").await.unwrap();
+        
+        let mut chunks = Vec::new();
+        while let Some(chunk) = stream.next().await {
+            chunks.push(chunk.unwrap());
+        }
+        
+        // Default implementation returns single chunk
+        assert_eq!(chunks.len(), 1);
+        assert!(chunks[0].contains("llm-mock"));
+    }
+
+    #[test]
+    fn test_create_test_registry_content() {
+        let reg = create_test_registry();
+        
+        // Verify registry has expected tools
+        assert!(reg.tools.iter().any(|t| t.name == "MoveTo"));
+        assert!(reg.tools.iter().any(|t| t.name == "Attack"));
+        assert!(reg.tools.iter().any(|t| t.name == "CoverFire"));
+        
+        // Verify constraints
+        assert!(reg.constraints.enforce_cooldowns);
+        assert!(reg.constraints.enforce_los);
+    }
+
+    #[test]
+    fn test_create_test_world_snapshot_content() {
+        let snap = create_test_world_snapshot();
+        
+        assert_eq!(snap.t, 1.0);
+        assert_eq!(snap.player.hp, 100);
+        assert_eq!(snap.me.ammo, 30);
+        assert_eq!(snap.enemies.len(), 1);
+        assert_eq!(snap.enemies[0].id, 99);
+        assert_eq!(snap.objective, Some("extract".into()));
+    }
+
+    #[tokio::test]
+    async fn test_test_llm_client_returns_configured_response() {
+        let client = TestLlmClient {
+            response: r#"{"plan_id": "configured", "steps": []}"#.to_string(),
+        };
+        
+        let result = client.complete("ignored prompt").await.unwrap();
+        assert!(result.contains("configured"));
+    }
+
+    #[test]
+    fn test_parse_llm_plan_with_extra_fields() {
+        let reg = create_test_registry();
+        let json = r#"{
+            "plan_id": "extra-fields",
+            "steps": [{"act": "MoveTo", "x": 1, "y": 2}],
+            "extra_field": "ignored",
+            "another": 42
+        }"#;
+
+        let result = parse_llm_plan(json, &reg);
+        // Should still parse successfully, ignoring extra fields
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().plan_id, "extra-fields");
+    }
+
+    #[tokio::test]
+    async fn test_plan_from_llm_with_valid_tool() {
+        let mut snap = create_test_world_snapshot();
+        snap.t = 100.4; // Unique for cache
+        let reg = create_test_registry();
+        let client = MockLlm;
+
+        let result = plan_from_llm(&client, &snap, &reg).await;
+        
+        // MockLlm returns valid plan with ThrowSmoke, MoveTo, Attack
+        if let PlanSource::Llm(plan) = result {
+            assert!(!plan.steps.is_empty());
+            // Verify at least one step exists
+            assert!(plan.steps.len() >= 1);
+        } else {
+            panic!("Expected LLM plan from MockLlm");
+        }
+    }
+
+    #[test]
+    fn test_parse_llm_plan_with_case_variations() {
+        let reg = create_test_registry();
+        
+        // Test with different JSON formatting
+        let compact = r#"{"plan_id":"compact","steps":[{"act":"MoveTo","x":1,"y":1}]}"#;
+        assert!(parse_llm_plan(compact, &reg).is_ok());
+        
+        // Test with extra whitespace
+        let spaced = r#"  {  "plan_id" : "spaced" , "steps" : [ { "act" : "MoveTo" , "x" : 1 , "y" : 1 } ] }  "#;
+        assert!(parse_llm_plan(spaced, &reg).is_ok());
+    }
+
+    #[cfg(feature = "llm_cache")]
+    #[test]
+    fn test_clear_global_cache_does_not_panic() {
+        // Just ensure it doesn't panic
+        super::clear_global_cache();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Coverage Tests for Helper Functions
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_strip_code_fences_with_fence() {
+        let text = r#"```json
+{"plan_id": "test", "steps": []}
+```"#;
+        let result = strip_code_fences(text);
+        assert!(result.contains("plan_id"));
+        assert!(!result.contains("```"));
+    }
+
+    #[test]
+    fn test_strip_code_fences_without_fence() {
+        let text = r#"{"plan_id": "test", "steps": []}"#;
+        let result = strip_code_fences(text);
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_strip_code_fences_incomplete_fence() {
+        // Only opening fence, no closing
+        let text = r#"```json
+{"plan_id": "test"}"#;
+        let result = strip_code_fences(text);
+        // Should return original since no closing fence
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_extract_json_object_simple() {
+        let text = r#"Here is the plan: {"plan_id": "test", "steps": []}"#;
+        let result = extract_json_object(text);
+        assert!(result.is_some());
+        let json = result.unwrap();
+        assert!(json.starts_with('{'));
+        assert!(json.ends_with('}'));
+        assert!(json.contains("plan_id"));
+    }
+
+    #[test]
+    fn test_extract_json_object_nested() {
+        let text = r#"{"outer": {"inner": "value"}, "array": [1, 2, 3]}"#;
+        let result = extract_json_object(text);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), text);
+    }
+
+    #[test]
+    fn test_extract_json_object_no_json() {
+        let text = "This is plain text without JSON";
+        let result = extract_json_object(text);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_json_object_with_string_braces() {
+        // Braces inside strings should not confuse parser
+        let text = r#"{"message": "Use { braces } in text", "value": 1}"#;
+        let result = extract_json_object(text);
+        assert!(result.is_some());
+        let json = result.unwrap();
+        assert!(json.contains("braces"));
+    }
+
+    #[test]
+    fn test_extract_last_json_object_single() {
+        let text = r#"{"plan_id": "only", "steps": []}"#;
+        let result = extract_last_json_object(text);
+        assert!(result.is_some());
+        assert!(result.unwrap().contains("only"));
+    }
+
+    #[test]
+    fn test_extract_last_json_object_multiple() {
+        let text = r#"{"plan_id": "first", "steps": []}
+Some text
+{"plan_id": "second", "steps": [{"act": "Scan"}]}"#;
+        let result = extract_last_json_object(text);
+        assert!(result.is_some());
+        assert!(result.unwrap().contains("second"));
+    }
+
+    #[test]
+    fn test_extract_last_json_object_none() {
+        let text = "No JSON here";
+        let result = extract_last_json_object(text);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_json_from_fenced_json_tag() {
+        let text = r#"Here's the plan:
+```json
+{"plan_id": "fenced", "steps": []}
+```
+Done!"#;
+        let result = extract_json_from_fenced(text);
+        assert!(result.is_some());
+        let json = result.unwrap();
+        assert!(json.contains("fenced"));
+    }
+
+    #[test]
+    fn test_extract_json_from_fenced_no_tag() {
+        let text = r#"Here:
+```
+{"plan_id": "no-tag", "steps": []}
+```"#;
+        let result = extract_json_from_fenced(text);
+        assert!(result.is_some());
+        assert!(result.unwrap().contains("no-tag"));
+    }
+
+    #[test]
+    fn test_extract_json_from_fenced_none() {
+        let text = r#"No code fences here"#;
+        let result = extract_json_from_fenced(text);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_estimate_tokens() {
+        // 4 chars per token estimate
+        assert_eq!(estimate_tokens("test"), 1);
+        assert_eq!(estimate_tokens("12345678"), 2);
+        assert_eq!(estimate_tokens(""), 0);
+        assert_eq!(estimate_tokens("a".repeat(100).as_str()), 25);
+    }
+
+    #[test]
+    fn test_fallback_heuristic_plan_with_objective() {
+        let mut snap = create_test_world_snapshot();
+        snap.objective = Some("extract".to_string());
+        snap.me.pos = IVec2 { x: 100, y: 100 }; // Far from player
+        
+        let mut reg = create_test_registry();
+        reg.tools.push(ToolSpec {
+            name: "move_to".into(),
+            args: std::collections::BTreeMap::new(),
+        });
+        reg.tools.push(ToolSpec {
+            name: "cover_fire".into(),
+            args: std::collections::BTreeMap::new(),
+        });
+
+        let plan = fallback_heuristic_plan(&snap, &reg);
+        assert_eq!(plan.plan_id, "heuristic-fallback");
+        // Should have steps since we have tools and conditions
+    }
+
+    #[test]
+    fn test_fallback_heuristic_plan_empty_tools() {
+        let snap = create_test_world_snapshot();
+        let reg = ToolRegistry {
+            tools: vec![],
+            constraints: Constraints {
+                enforce_cooldowns: false,
+                enforce_los: false,
+                enforce_stamina: false,
+            },
+        };
+
+        let plan = fallback_heuristic_plan(&snap, &reg);
+        assert_eq!(plan.plan_id, "heuristic-fallback");
+        // No tools means empty steps
+        assert!(plan.steps.is_empty());
+    }
+
+    #[test]
+    fn test_fallback_heuristic_plan_with_enemies() {
+        let snap = create_test_world_snapshot();
+        let mut reg = ToolRegistry {
+            tools: vec![],
+            constraints: Constraints {
+                enforce_cooldowns: false,
+                enforce_los: false,
+                enforce_stamina: false,
+            },
+        };
+        reg.tools.push(ToolSpec {
+            name: "cover_fire".into(),
+            args: std::collections::BTreeMap::new(),
+        });
+
+        let plan = fallback_heuristic_plan(&snap, &reg);
+        // Should have CoverFire step since we have enemies and the tool
+        assert!(!plan.steps.is_empty());
+        assert!(plan.steps.iter().any(|s| matches!(s, ActionStep::CoverFire { .. })));
+    }
+
+    #[test]
+    fn test_sanitize_plan_removes_out_of_bounds() {
+        let snap = create_test_world_snapshot();
+        let reg = create_test_registry();
+        
+        let mut plan = PlanIntent {
+            plan_id: "sanitize-test".to_string(),
+            steps: vec![
+                ActionStep::MoveTo { x: 5, y: 5, speed: None },
+                ActionStep::MoveTo { x: 999, y: 999, speed: None }, // Out of bounds
+            ],
+        };
+
+        sanitize_plan(&mut plan, &snap, &reg).unwrap();
+        assert_eq!(plan.steps.len(), 1); // Out of bounds step removed
+    }
+
+    #[test]
+    fn test_sanitize_plan_validates_throw_items() {
+        let snap = create_test_world_snapshot();
+        let reg = create_test_registry();
+        
+        let mut plan = PlanIntent {
+            plan_id: "throw-test".to_string(),
+            steps: vec![
+                ActionStep::Throw { item: "smoke".to_string(), x: 5, y: 5 },
+                ActionStep::Throw { item: "invalid".to_string(), x: 5, y: 5 }, // Invalid item
+            ],
+        };
+
+        sanitize_plan(&mut plan, &snap, &reg).unwrap();
+        assert_eq!(plan.steps.len(), 1); // Invalid item removed
+    }
+
+    #[test]
+    fn test_sanitize_plan_validates_cover_fire() {
+        let snap = create_test_world_snapshot();
+        let reg = create_test_registry();
+        
+        let mut plan = PlanIntent {
+            plan_id: "cover-test".to_string(),
+            steps: vec![
+                ActionStep::CoverFire { target_id: 99, duration: 3.0 }, // Valid target
+                ActionStep::CoverFire { target_id: 999, duration: 3.0 }, // Invalid target
+                ActionStep::CoverFire { target_id: 99, duration: 0.0 }, // Invalid duration
+                ActionStep::CoverFire { target_id: 99, duration: 100.0 }, // Duration too long
+            ],
+        };
+
+        sanitize_plan(&mut plan, &snap, &reg).unwrap();
+        assert_eq!(plan.steps.len(), 1); // Only valid CoverFire remains
+    }
+
+    #[test]
+    fn test_sanitize_plan_allows_other_steps() {
+        let snap = create_test_world_snapshot();
+        let reg = create_test_registry();
+        
+        let mut plan = PlanIntent {
+            plan_id: "other-test".to_string(),
+            steps: vec![
+                ActionStep::Reload,
+                ActionStep::Scan { radius: 10.0 },
+                ActionStep::Wait { duration: 1.0 },
+            ],
+        };
+
+        sanitize_plan(&mut plan, &snap, &reg).unwrap();
+        // All these steps should be retained (matched by _ => true)
+        assert_eq!(plan.steps.len(), 3);
+    }
+
+    #[test]
+    fn test_validate_plan_disallowed_move_to() {
+        let mut reg = create_test_registry();
+        reg.tools.retain(|t| t.name != "MoveTo");
+        
+        let plan = PlanIntent {
+            plan_id: "validate-test".to_string(),
+            steps: vec![ActionStep::MoveTo { x: 5, y: 5, speed: None }],
+        };
+
+        let result = validate_plan(&plan, &reg);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("disallowed tool MoveTo"));
+    }
+
+    #[test]
+    fn test_validate_plan_disallowed_throw() {
+        let mut reg = create_test_registry();
+        reg.tools.retain(|t| t.name != "Throw");
+        
+        let plan = PlanIntent {
+            plan_id: "validate-throw".to_string(),
+            steps: vec![ActionStep::Throw { item: "smoke".to_string(), x: 1, y: 1 }],
+        };
+
+        let result = validate_plan(&plan, &reg);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("disallowed tool Throw"));
+    }
+
+    #[test]
+    fn test_validate_plan_disallowed_cover_fire() {
+        let mut reg = create_test_registry();
+        reg.tools.retain(|t| t.name != "CoverFire");
+        
+        let plan = PlanIntent {
+            plan_id: "validate-cover".to_string(),
+            steps: vec![ActionStep::CoverFire { target_id: 1, duration: 2.0 }],
+        };
+
+        let result = validate_plan(&plan, &reg);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("disallowed tool CoverFire"));
+    }
+
+    #[test]
+    fn test_validate_plan_disallowed_revive() {
+        let mut reg = create_test_registry();
+        reg.tools.retain(|t| t.name != "Revive");
+        
+        let plan = PlanIntent {
+            plan_id: "validate-revive".to_string(),
+            steps: vec![ActionStep::Revive { ally_id: 1 }],
+        };
+
+        let result = validate_plan(&plan, &reg);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("disallowed tool Revive"));
+    }
+
+    #[test]
+    fn test_validate_plan_allows_generic_steps() {
+        let reg = create_test_registry();
+        
+        let plan = PlanIntent {
+            plan_id: "generic-test".to_string(),
+            steps: vec![
+                ActionStep::Reload,
+                ActionStep::Scan { radius: 15.0 },
+                ActionStep::Wait { duration: 2.0 },
+            ],
+        };
+
+        // These should pass because they match the _ => {} arm
+        let result = validate_plan(&plan, &reg);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_max_coord_bound_constant() {
+        assert_eq!(MAX_COORD_BOUND, 100);
+    }
+
+    #[test]
+    fn test_build_prompt_includes_enemies() {
+        let snap = create_test_world_snapshot();
+        let reg = create_test_registry();
+        
+        let prompt = build_prompt(&snap, &reg);
+        // Should include enemy information
+        assert!(prompt.contains("99") || prompt.contains("enemy"));
+    }
+
+    #[test]
+    fn test_build_prompt_includes_world_state() {
+        let snap = create_test_world_snapshot();
+        let reg = create_test_registry();
+        
+        let prompt = build_prompt(&snap, &reg);
+        // Should include position and state info
+        assert!(prompt.contains("pos"));
+    }
+
+    #[cfg(not(feature = "llm_cache"))]
+    #[test]
+    fn test_get_cache_stats_without_feature() {
+        let stats = get_cache_stats();
+        // Returns () when cache feature disabled
+        assert_eq!(stats, ());
     }
 }

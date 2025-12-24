@@ -1,0 +1,126 @@
+[
+  {
+    "package": "astraweave-core",
+    "success": true
+  },
+  {
+    "package": "astraweave-ecs",
+    "success": true
+  },
+  {
+    "package": "astraweave-ai",
+    "success": true
+  },
+  {
+    "package": "astraweave-physics",
+    "success": true
+  },
+  {
+    "package": "astraweave-nav",
+    "success": true
+  },
+  {
+    "package": "astraweave-render",
+    "success": true
+  },
+  {
+    "package": "astraweave-ui",
+    "success": true
+  },
+  {
+    "package": "astraweave-audio",
+    "success": true
+  },
+  {
+    "package": "astraweave-gameplay",
+    "success": true
+  },
+  {
+    "package": "astraweave-persistence-ecs",
+    "success": true
+  },
+  {
+    "package": "astraweave-net-ecs",
+    "success": true
+  },
+  {
+    "package": "astraweave-terrain",
+    "success": true
+  },
+  {
+    "package": "astraweave-math",
+    "success": true
+  },
+  {
+    "package": "astraweave-input",
+    "success": true
+  },
+  {
+    "package": "astraweave-pcg",
+    "success": true
+  },
+  {
+    "package": "astraweave-weaving",
+    "success": true
+  },
+  {
+    "package": "astraweave-memory",
+    "success": true
+  },
+  {
+    "package": "astraweave-context",
+    "success": true
+  },
+  {
+    "package": "astraweave-persona",
+    "success": true
+  },
+  {
+    "package": "astraweave-prompts",
+    "success": true
+  },
+  {
+    "package": "astraweave-rag",
+    "success": true
+  },
+  {
+    "package": "astraweave-scripting",
+    "success": true
+  },
+  {
+    "package": "astraweave-sdk",
+    "success": true
+  },
+  {
+    "package": "astraweave-stress-test",
+    "success": true
+  },
+  {
+    "package": "astract",
+    "success": true
+  },
+  {
+    "package": "aw_build",
+    "success": true
+  },
+  {
+    "package": "aw_editor",
+    "success": true
+  },
+  {
+    "package": "aw-save",
+    "success": true
+  },
+  {
+    "package": "astraweave-behavior",
+    "success": true
+  },
+  {
+    "package": "astraweave-llm",
+    "success": true
+  },
+  {
+    "package": "astraweave-llm-eval",
+    "success": true
+  }
+]

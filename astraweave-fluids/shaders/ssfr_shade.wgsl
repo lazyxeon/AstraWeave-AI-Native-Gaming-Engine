@@ -1,0 +1,87 @@
+// SSFR Shading Pass - Final Fluid Appearance
+// Computes normals, refraction, Fresnel, and absorption
+
+struct CameraUniform {
+    view_proj: mat4x4<f32>,
+    inv_view_proj: mat4x4<f32>,
+    cam_pos: vec4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> camera: CameraUniform;
+@group(0) @binding(1) var smoothed_depth: texture_2d<f32>;
+@group(0) @binding(2) var scene_texture: texture_2d<f32>;
+@group(0) @binding(3) var skybox_texture: texture_2d<f32>;
+@group(0) @binding(4) var default_sampler: sampler;
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
+    var out: VertexOutput;
+    let u = f32((vertex_index << 1u) & 2u);
+    let v = f32(vertex_index & 2u);
+    out.uv = vec2<f32>(u, v);
+    out.clip_position = vec4<f32>(u * 2.0 - 1.0, 1.0 - v * 2.0, 0.0, 1.0);
+    return out;
+}
+
+fn world_pos_from_depth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let clip_pos = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+    let world_pos = camera.inv_view_proj * clip_pos;
+    return world_pos.xyz / world_pos.w;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let depth = textureSample(smoothed_depth, default_sampler, in.uv).r;
+    if (depth >= 1.0) {
+        discard;
+    }
+    
+    // Reconstruct world position
+    let pos = world_pos_from_depth(in.uv, depth);
+    
+    // Compute normal from depth gradient
+    let size = vec2<f32>(textureDimensions(smoothed_depth));
+    let texel_size = 1.0 / size;
+    
+    let depth_x = textureSample(smoothed_depth, default_sampler, in.uv + vec2<f32>(texel_size.x, 0.0)).r;
+    let depth_y = textureSample(smoothed_depth, default_sampler, in.uv + vec2<f32>(0.0, texel_size.y)).r;
+    
+    let pos_x = world_pos_from_depth(in.uv + vec2<f32>(texel_size.x, 0.0), depth_x);
+    let pos_y = world_pos_from_depth(in.uv + vec2<f32>(0.0, texel_size.y), depth_y);
+    
+    let normal = normalize(cross(pos_x - pos, pos_y - pos));
+    let view_dir = normalize(camera.cam_pos.xyz - pos);
+    
+    // Fresnel
+    let f0 = 0.02; // Water IOR ≈ 1.33
+    let fresnel = f0 + (1.0 - f0) * pow(1.0 - max(dot(normal, view_dir), 0.0), 5.0);
+    
+    // Refraction
+    let refraction_strength = 0.05;
+    let RefractOffset = normal.xy * refraction_strength;
+    let scene_color = textureSample(scene_texture, default_sampler, in.uv + RefractOffset).rgb;
+    
+    // Absorption (Beer-Lambert: I = I0 * exp(-k * d))
+    // We approximate 'd' (thickness) here. For a full version we'd need back-side depth pass.
+    let thickness = 0.5; 
+    let absorb_color = vec3<f32>(0.1, 0.4, 0.8);
+    let absorption = exp(-absorb_color * thickness);
+    let refracted_color = scene_color * absorption;
+    
+    // Reflection (Skybox)
+    let reflect_dir = reflect(-view_dir, normal);
+    // Simple equirectangular skybox sampling
+    let PI = 3.14159265359;
+    let u = atan2(reflect_dir.z, reflect_dir.x) / (2.0 * PI) + 0.5;
+    let v = asin(reflect_dir.y) / PI + 0.5;
+    let reflected_color = textureSample(skybox_texture, default_sampler, vec2<f32>(u, v)).rgb;
+    
+    let final_color = mix(refracted_color, reflected_color, fresnel);
+    
+    return vec4<f32>(final_color, 1.0);
+}

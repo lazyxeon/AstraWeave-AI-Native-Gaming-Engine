@@ -410,4 +410,139 @@ mod tests {
         let stats = scheduler.stats();
         assert!(stats.total() >= 2);
     }
+
+    #[test]
+    fn test_request_priority_ordering() {
+        assert!(RequestPriority::High > RequestPriority::Normal);
+        assert!(RequestPriority::Normal > RequestPriority::Low);
+        assert!(RequestPriority::High > RequestPriority::Low);
+    }
+
+    #[test]
+    fn test_request_priority_equality() {
+        assert_eq!(RequestPriority::Normal, RequestPriority::Normal);
+        assert_ne!(RequestPriority::High, RequestPriority::Low);
+    }
+
+    #[test]
+    fn test_request_priority_clone() {
+        let priority = RequestPriority::High;
+        let cloned = priority;  // Copy
+        assert_eq!(priority, cloned);
+    }
+
+    #[test]
+    fn test_request_priority_debug() {
+        let priority = RequestPriority::Normal;
+        let debug = format!("{:?}", priority);
+        assert!(debug.contains("Normal"));
+    }
+
+    #[test]
+    fn test_request_status_equality() {
+        assert_eq!(RequestStatus::Queued, RequestStatus::Queued);
+        assert_ne!(RequestStatus::Queued, RequestStatus::Processing);
+        assert_ne!(RequestStatus::Completed, RequestStatus::Failed);
+    }
+
+    #[test]
+    fn test_request_status_clone() {
+        let status = RequestStatus::Processing;
+        let cloned = status;  // Copy
+        assert_eq!(status, cloned);
+    }
+
+    #[test]
+    fn test_request_status_debug() {
+        let statuses = [
+            RequestStatus::Queued,
+            RequestStatus::Processing,
+            RequestStatus::Completed,
+            RequestStatus::Failed,
+            RequestStatus::TimedOut,
+        ];
+        for status in statuses {
+            let debug = format!("{:?}", status);
+            assert!(!debug.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_request_result_clone() {
+        let result = RequestResult {
+            request_id: Uuid::new_v4(),
+            response: "test response".to_string(),
+            elapsed_ms: 100,
+        };
+        let cloned = result.clone();
+        assert_eq!(cloned.response, "test response");
+        assert_eq!(cloned.elapsed_ms, 100);
+    }
+
+    #[test]
+    fn test_request_result_debug() {
+        let result = RequestResult {
+            request_id: Uuid::new_v4(),
+            response: "debug test".to_string(),
+            elapsed_ms: 50,
+        };
+        let debug = format!("{:?}", result);
+        assert!(debug.contains("RequestResult"));
+        assert!(debug.contains("debug test"));
+        assert!(debug.contains("50"));
+    }
+
+    #[test]
+    fn test_scheduler_stats_default() {
+        let stats = SchedulerStats::default();
+        assert_eq!(stats.queued, 0);
+        assert_eq!(stats.processing, 0);
+        assert_eq!(stats.completed, 0);
+        assert_eq!(stats.failed, 0);
+        assert_eq!(stats.timed_out, 0);
+        assert_eq!(stats.total(), 0);
+    }
+
+    #[test]
+    fn test_scheduler_stats_total() {
+        let stats = SchedulerStats {
+            queued: 5,
+            processing: 3,
+            completed: 10,
+            failed: 2,
+            timed_out: 1,
+        };
+        assert_eq!(stats.total(), 21);
+    }
+
+    #[test]
+    fn test_scheduler_stats_clone() {
+        let stats = SchedulerStats {
+            queued: 1,
+            processing: 2,
+            completed: 3,
+            failed: 0,
+            timed_out: 0,
+        };
+        let cloned = stats.clone();
+        assert_eq!(stats.total(), cloned.total());
+        assert_eq!(cloned.queued, 1);
+    }
+
+    #[test]
+    fn test_scheduler_stats_debug() {
+        let stats = SchedulerStats::default();
+        let debug = format!("{:?}", stats);
+        assert!(debug.contains("SchedulerStats"));
+    }
+
+    #[tokio::test]
+    async fn test_get_status_nonexistent() {
+        let scheduler = LlmScheduler::new(Arc::new(MockLlm), 5, 30);
+        let fake_id = Uuid::new_v4();
+        
+        // Should return None for unknown request
+        let status = scheduler.get_status(fake_id);
+        assert!(status.is_none());
+    }
 }

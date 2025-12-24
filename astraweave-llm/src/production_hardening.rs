@@ -13,6 +13,7 @@ use crate::rate_limiter::{RateLimitContext, RateLimiter, RateLimiterConfig, Requ
 use astraweave_observability::llm_telemetry::{LlmTelemetry, TelemetryConfig};
 
 /// Production hardening layer that integrates all reliability systems
+#[derive(Clone)]
 pub struct ProductionHardeningLayer {
     /// Rate limiting
     rate_limiter: Arc<RateLimiter>,
@@ -154,6 +155,7 @@ pub struct ComponentHealth {
     pub status: HealthStatus,
     pub last_check: String,
     pub consecutive_failures: u32,
+    pub consecutive_successes: u32,
     pub last_error: Option<String>,
     pub response_time_ms: Option<u64>,
 }
@@ -184,6 +186,7 @@ impl HealthChecker {
                     status: HealthStatus::Healthy,
                     last_check: chrono::Utc::now().to_rfc3339(),
                     consecutive_failures: 0,
+                    consecutive_successes: 0,
                     last_error: None,
                     response_time_ms: None,
                 },
@@ -213,6 +216,7 @@ impl HealthChecker {
                 status: HealthStatus::Healthy,
                 last_check: chrono::Utc::now().to_rfc3339(),
                 consecutive_failures: 0,
+                consecutive_successes: 0,
                 last_error: None,
                 response_time_ms: None,
             });
@@ -220,26 +224,35 @@ impl HealthChecker {
         match result {
             Ok(Ok(response_time)) => {
                 component_health.consecutive_failures = 0;
+                component_health.consecutive_successes += 1;
                 component_health.last_error = None;
                 component_health.response_time_ms = Some(response_time.as_millis() as u64);
 
                 // Update status based on consecutive successes
                 if component_health.status != HealthStatus::Healthy {
-                    if component_health.consecutive_failures == 0 {
-                        // First success after being unhealthy
+                    if component_health.consecutive_successes >= self.config.healthy_threshold {
+                        component_health.status = HealthStatus::Healthy;
+                    } else {
                         component_health.status = HealthStatus::Degraded;
                     }
-                } else {
-                    component_health.status = HealthStatus::Healthy;
                 }
             }
             Ok(Err(e)) => {
                 component_health.consecutive_failures += 1;
+                component_health.consecutive_successes = 0;
                 component_health.last_error = Some(format!("{:?}", e));
                 component_health.response_time_ms = Some(elapsed.as_millis() as u64);
+
+                // Update status based on consecutive failures
+                if component_health.consecutive_failures >= self.config.unhealthy_threshold {
+                    component_health.status = HealthStatus::Unhealthy;
+                } else {
+                    component_health.status = HealthStatus::Degraded;
+                }
             }
             Err(timeout_err) => {
                 component_health.consecutive_failures += 1;
+                component_health.consecutive_successes = 0;
                 component_health.last_error = Some(format!("Timeout: {:?}", timeout_err));
                 component_health.response_time_ms = Some(elapsed.as_millis() as u64);
 
@@ -416,7 +429,7 @@ impl ProductionHardeningLayer {
                     .await?;
 
                 match backpressure_result {
-                    crate::backpressure::BackpressureResult::Accepted => {
+                    crate::backpressure::BackpressureResult::Accepted { request_id } => {
                         // 4. A/B testing (if applicable)
                         let _assignment: Option<String> = if let Some(_user_id) = &request.user_id {
                             // This would be used to determine which model variant to use
@@ -427,7 +440,19 @@ impl ProductionHardeningLayer {
                         };
 
                         // 5. Execute the actual operation
-                        operation().await
+                        let _start = Instant::now();
+                        let op_result = if let Some(timeout) = request.timeout {
+                            tokio::time::timeout(timeout, operation()).await.map_err(|_| anyhow!("Request timed out"))?
+                        } else {
+                            operation().await
+                        };
+                        
+                        let success = op_result.is_ok();
+                        
+                        // Update backpressure metrics
+                        self.backpressure_manager.read().await.complete_request(&request_id, success).await.ok();
+                        
+                        op_result
                     }
                     crate::backpressure::BackpressureResult::Queued {
                         position,
@@ -442,10 +467,22 @@ impl ProductionHardeningLayer {
                     crate::backpressure::BackpressureResult::Rejected { reason, .. } => {
                         return Err(anyhow!("Request rejected: {}", reason));
                     }
-                    crate::backpressure::BackpressureResult::Degraded { reason } => {
+                    crate::backpressure::BackpressureResult::Degraded { request_id, reason } => {
                         warn!("Request degraded: {}", reason);
                         // Continue with degraded processing
-                        operation().await
+                        let _start = Instant::now();
+                        let op_result = if let Some(timeout) = request.timeout {
+                            tokio::time::timeout(timeout, operation()).await.map_err(|_| anyhow!("Request timed out"))?
+                        } else {
+                            operation().await
+                        };
+                        
+                        let success = op_result.is_ok();
+                        
+                        // Update backpressure metrics
+                        self.backpressure_manager.read().await.complete_request(&request_id, success).await.ok();
+                        
+                        op_result
                     }
                 }
             })
@@ -498,9 +535,24 @@ impl ProductionHardeningLayer {
                 match circuit_result.state {
                     crate::circuit_breaker::CircuitState::Open => HardeningResult::CircuitOpen {
                         model: request.model,
-                        retry_after: Duration::from_secs(30),
+                        retry_after: Duration::from_secs(self.config.circuit_breaker.recovery_timeout),
                     },
-                    _ => HardeningResult::Error(e),
+                    _ => {
+                        let err_msg = e.to_string();
+                        if err_msg.contains("Request rejected:") {
+                            HardeningResult::Rejected {
+                                reason: err_msg.replace("Request rejected: ", ""),
+                                retry_after: Some(Duration::from_secs(1)),
+                            }
+                        } else if err_msg.contains("Request queued:") {
+                            HardeningResult::Queued {
+                                position: 0,
+                                estimated_wait: Duration::from_secs(1),
+                            }
+                        } else {
+                            HardeningResult::Error(e)
+                        }
+                    }
                 }
             }
         }
@@ -660,6 +712,11 @@ pub struct ProductionStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::backpressure::BackpressureConfig;
+    use crate::circuit_breaker::CircuitBreakerConfig;
+    use crate::rate_limiter::RateLimiterConfig;
+    use crate::ab_testing::ABTestConfig;
+    use astraweave_observability::llm_telemetry::TelemetryConfig;
 
     #[test]
     fn test_hardening_config_default() {
@@ -743,6 +800,7 @@ mod tests {
             status: HealthStatus::Healthy,
             last_check: "2025-01-01T00:00:00Z".to_string(),
             consecutive_failures: 0,
+            consecutive_successes: 0,
             last_error: None,
             response_time_ms: Some(15),
         };
@@ -759,6 +817,7 @@ mod tests {
             status: HealthStatus::Unhealthy,
             last_check: "2025-01-01T00:00:00Z".to_string(),
             consecutive_failures: 5,
+            consecutive_successes: 0,
             last_error: Some("Connection timeout".to_string()),
             response_time_ms: None,
         };
@@ -777,6 +836,7 @@ mod tests {
                 status: HealthStatus::Healthy,
                 last_check: "2025-01-01T00:00:00Z".to_string(),
                 consecutive_failures: 0,
+                consecutive_successes: 0,
                 last_error: None,
                 response_time_ms: Some(10),
             },
@@ -888,7 +948,7 @@ mod tests {
     #[tokio::test]
     async fn test_production_hardening_layer_creation() {
         let config = HardeningConfig::default();
-        let layer = ProductionHardeningLayer::new(config);
+        let _layer = ProductionHardeningLayer::new(config);
 
         // Test that layer can be created without panicking
         assert!(true);
@@ -904,9 +964,9 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // TODO: Fix shutdown hang - health checker background task
     async fn test_successful_request_processing() {
-        let config = HardeningConfig::default();
+        let mut config = HardeningConfig::default();
+        config.health_check.check_interval = Duration::from_millis(100);
         let layer = ProductionHardeningLayer::new(config);
         layer.start().await.unwrap();
 
@@ -931,7 +991,7 @@ mod tests {
             HardeningResult::Success(response) => {
                 assert_eq!(response, "Hello response");
             }
-            _ => panic!("Expected successful result"),
+            _ => panic!("Expected successful result, got {:?}", result),
         }
 
         layer.shutdown().await.unwrap();
@@ -957,6 +1017,7 @@ mod tests {
             status: HealthStatus::Degraded,
             last_check: "2025-01-01T00:00:00Z".to_string(),
             consecutive_failures: 2,
+            consecutive_successes: 0,
             last_error: Some("Test error".to_string()),
             response_time_ms: Some(100),
         };
@@ -975,5 +1036,1113 @@ mod tests {
         assert_eq!(serde_json::to_string(&healthy).unwrap(), "\"Healthy\"");
         assert_eq!(serde_json::to_string(&degraded).unwrap(), "\"Degraded\"");
         assert_eq!(serde_json::to_string(&unhealthy).unwrap(), "\"Unhealthy\"");
+    }
+
+    #[test]
+    fn test_health_status_deserialization() {
+        let healthy: HealthStatus = serde_json::from_str("\"Healthy\"").unwrap();
+        let degraded: HealthStatus = serde_json::from_str("\"Degraded\"").unwrap();
+        let unhealthy: HealthStatus = serde_json::from_str("\"Unhealthy\"").unwrap();
+
+        assert_eq!(healthy, HealthStatus::Healthy);
+        assert_eq!(degraded, HealthStatus::Degraded);
+        assert_eq!(unhealthy, HealthStatus::Unhealthy);
+    }
+
+    #[test]
+    fn test_component_health_deserialization() {
+        let json = r#"{
+            "status": "Degraded",
+            "last_check": "2025-01-01T00:00:00Z",
+            "consecutive_failures": 2,
+            "consecutive_successes": 0,
+            "last_error": "Connection refused",
+            "response_time_ms": 500
+        }"#;
+        
+        let health: ComponentHealth = serde_json::from_str(json).unwrap();
+        assert_eq!(health.status, HealthStatus::Degraded);
+        assert_eq!(health.consecutive_failures, 2);
+        assert_eq!(health.last_error, Some("Connection refused".to_string()));
+        assert_eq!(health.response_time_ms, Some(500));
+    }
+
+    #[test]
+    fn test_system_health_deserialization() {
+        let json = r#"{
+            "overall_status": "Healthy",
+            "components": {},
+            "last_check": "2025-01-01T00:00:00Z",
+            "uptime_seconds": 5000
+        }"#;
+        
+        let health: SystemHealth = serde_json::from_str(json).unwrap();
+        assert_eq!(health.overall_status, HealthStatus::Healthy);
+        assert!(health.components.is_empty());
+        assert_eq!(health.uptime_seconds, 5000);
+    }
+
+    #[test]
+    fn test_hardening_config_clone() {
+        let config = HardeningConfig::default();
+        let cloned = config.clone();
+        assert_eq!(
+            config.graceful_shutdown_timeout,
+            cloned.graceful_shutdown_timeout
+        );
+    }
+
+    #[test]
+    fn test_hardening_result_debug() {
+        let success: HardeningResult<String> = HardeningResult::Success("test".to_string());
+        let debug_str = format!("{:?}", success);
+        assert!(debug_str.contains("Success"));
+
+        let error: HardeningResult<String> =
+            HardeningResult::Error(anyhow::anyhow!("test error"));
+        let debug_str = format!("{:?}", error);
+        assert!(debug_str.contains("Error"));
+    }
+
+    #[test]
+    fn test_hardened_request_clone() {
+        let request = HardenedRequest {
+            user_id: Some("user1".to_string()),
+            session_id: Some("session1".to_string()),
+            model: "gpt-4".to_string(),
+            prompt: "Hello".to_string(),
+            estimated_tokens: 50,
+            priority: Priority::High,
+            timeout: Some(Duration::from_secs(30)),
+            metadata: {
+                let mut m = HashMap::new();
+                m.insert("key".to_string(), "value".to_string());
+                m
+            },
+        };
+
+        let cloned = request.clone();
+        assert_eq!(request.user_id, cloned.user_id);
+        assert_eq!(request.model, cloned.model);
+        assert_eq!(request.estimated_tokens, cloned.estimated_tokens);
+        assert_eq!(request.metadata, cloned.metadata);
+    }
+
+    #[test]
+    fn test_hardened_request_debug() {
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+        let debug_str = format!("{:?}", request);
+        assert!(debug_str.contains("HardenedRequest"));
+        assert!(debug_str.contains("test"));
+    }
+
+    #[test]
+    fn test_health_checker_get_overall_health_with_mixed_status() {
+        let config = HealthCheckConfig::default();
+        let mut checker = HealthChecker::new(config);
+
+        // Set one component to degraded
+        if let Some(health) = checker.components.get_mut("rate_limiter") {
+            health.status = HealthStatus::Degraded;
+            health.consecutive_failures = 1;
+        }
+
+        let overall = checker.get_overall_health();
+        assert_eq!(overall.overall_status, HealthStatus::Degraded);
+    }
+
+    #[test]
+    fn test_health_checker_get_overall_health_unhealthy() {
+        let config = HealthCheckConfig::default();
+        let mut checker = HealthChecker::new(config);
+
+        // Set one component to unhealthy
+        if let Some(health) = checker.components.get_mut("circuit_breaker") {
+            health.status = HealthStatus::Unhealthy;
+            health.consecutive_failures = 5;
+        }
+
+        let overall = checker.get_overall_health();
+        assert_eq!(overall.overall_status, HealthStatus::Unhealthy);
+    }
+
+    #[test]
+    fn test_component_health_clone() {
+        let health = ComponentHealth {
+            status: HealthStatus::Healthy,
+            last_check: "2025-01-01T00:00:00Z".to_string(),
+            consecutive_failures: 0,
+            consecutive_successes: 0,
+            last_error: None,
+            response_time_ms: Some(10),
+        };
+        let cloned = health.clone();
+        assert_eq!(health.status, cloned.status);
+        assert_eq!(health.response_time_ms, cloned.response_time_ms);
+    }
+
+    #[test]
+    fn test_system_health_clone() {
+        let mut components = HashMap::new();
+        components.insert(
+            "test".to_string(),
+            ComponentHealth {
+                status: HealthStatus::Healthy,
+                last_check: "now".to_string(),
+                consecutive_failures: 0,
+                consecutive_successes: 0,
+                last_error: None,
+                response_time_ms: None,
+            },
+        );
+        let health = SystemHealth {
+            overall_status: HealthStatus::Healthy,
+            components,
+            last_check: "now".to_string(),
+            uptime_seconds: 100,
+        };
+        let cloned = health.clone();
+        assert_eq!(health.overall_status, cloned.overall_status);
+        assert_eq!(health.uptime_seconds, cloned.uptime_seconds);
+        assert_eq!(health.components.len(), cloned.components.len());
+    }
+
+    #[tokio::test]
+    async fn test_production_layer_shutdown_without_start() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        // Shutdown should work even without start
+        let result = layer.shutdown().await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hardened_request_no_timeout() {
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Low,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+        assert!(request.timeout.is_none());
+    }
+
+    #[test]
+    fn test_hardened_request_with_timeout() {
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Critical,
+            timeout: Some(Duration::from_secs(60)),
+            metadata: HashMap::new(),
+        };
+        assert_eq!(request.timeout, Some(Duration::from_secs(60)));
+    }
+
+    #[test]
+    fn test_hardening_result_rejected_with_no_retry() {
+        let rejected: HardeningResult<String> = HardeningResult::Rejected {
+            reason: "Test".to_string(),
+            retry_after: None,
+        };
+        match rejected {
+            HardeningResult::Rejected { retry_after, .. } => {
+                assert!(retry_after.is_none());
+            }
+            _ => panic!("Wrong variant"),
+        }
+    }
+
+    #[test]
+    fn test_hardening_config_debug() {
+        let config = HardeningConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("HardeningConfig"));
+    }
+
+    #[test]
+    fn test_health_check_config_debug() {
+        let config = HealthCheckConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("HealthCheckConfig"));
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_check_health_success() {
+        let config = HealthCheckConfig {
+            check_interval: Duration::from_secs(1),
+            check_timeout: Duration::from_secs(5),
+            unhealthy_threshold: 3,
+            healthy_threshold: 2,
+        };
+        let mut checker = HealthChecker::new(config);
+        
+        // Perform a successful health check
+        checker.check_health("rate_limiter", async {
+            Ok(Duration::from_millis(10))
+        }).await;
+        
+        let health = checker.components.get("rate_limiter").unwrap();
+        assert_eq!(health.status, HealthStatus::Healthy);
+        assert_eq!(health.consecutive_failures, 0);
+        assert!(health.last_error.is_none());
+        assert!(health.response_time_ms.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_check_health_failure() {
+        let config = HealthCheckConfig {
+            check_interval: Duration::from_secs(1),
+            check_timeout: Duration::from_secs(5),
+            unhealthy_threshold: 3,
+            healthy_threshold: 2,
+        };
+        let mut checker = HealthChecker::new(config);
+        
+        // Perform a failed health check
+        checker.check_health("rate_limiter", async {
+            Err(anyhow::anyhow!("Connection failed"))
+        }).await;
+        
+        let health = checker.components.get("rate_limiter").unwrap();
+        assert_eq!(health.consecutive_failures, 1);
+        assert!(health.last_error.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_consecutive_failures_threshold() {
+        let config = HealthCheckConfig {
+            check_interval: Duration::from_secs(1),
+            check_timeout: Duration::from_millis(10),
+            unhealthy_threshold: 2, // Need 2 failures to become unhealthy
+            healthy_threshold: 2,
+        };
+        let mut checker = HealthChecker::new(config);
+        
+        // First failure - should be degraded
+        checker.check_health("backpressure", async {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            Ok(Duration::from_millis(100))
+        }).await;
+        
+        let health = checker.components.get("backpressure").unwrap();
+        assert_eq!(health.status, HealthStatus::Degraded);
+        
+        // Second failure - should become unhealthy
+        checker.check_health("backpressure", async {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            Ok(Duration::from_millis(100))
+        }).await;
+        
+        let health = checker.components.get("backpressure").unwrap();
+        assert_eq!(health.status, HealthStatus::Unhealthy);
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_new_component() {
+        let config = HealthCheckConfig::default();
+        let mut checker = HealthChecker::new(config);
+        
+        // Check a new component not in initial set
+        checker.check_health("new_component", async {
+            Ok(Duration::from_millis(5))
+        }).await;
+        
+        assert!(checker.components.contains_key("new_component"));
+        let health = checker.components.get("new_component").unwrap();
+        assert_eq!(health.status, HealthStatus::Healthy);
+    }
+
+    #[tokio::test]
+    async fn test_record_success() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        // Just test that it doesn't panic
+        layer.record_success("test-model").await;
+    }
+
+    #[tokio::test]
+    async fn test_record_failure() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        // Just test that it doesn't panic
+        layer.record_failure("test-model", "Test error").await;
+    }
+
+    #[tokio::test]
+    async fn test_production_layer_start() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        let result = layer.start().await;
+        assert!(result.is_ok());
+        
+        // Clean up
+        layer.shutdown().await.ok();
+    }
+
+    #[tokio::test]
+    async fn test_get_system_status_after_start() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        layer.start().await.unwrap();
+        
+        let status = layer.get_system_status().await;
+        assert!(!status.last_updated.is_empty());
+        
+        // Clean up
+        layer.shutdown().await.ok();
+    }
+
+    #[test]
+    fn test_priority_conversion_all_variants() {
+        // Test that all Priority variants can be used in a HardenedRequest
+        let priorities = [
+            Priority::Critical,
+            Priority::High,
+            Priority::Normal,
+            Priority::Low,
+            Priority::Background,
+        ];
+        
+        for priority in priorities {
+            let request = HardenedRequest {
+                user_id: None,
+                session_id: None,
+                model: "test".to_string(),
+                prompt: "test".to_string(),
+                estimated_tokens: 10,
+                priority,
+                timeout: None,
+                metadata: HashMap::new(),
+            };
+            
+            // Verify request was created
+            assert_eq!(request.model, "test");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_health_recovery_from_degraded() {
+        let config = HealthCheckConfig {
+            check_interval: Duration::from_secs(1),
+            check_timeout: Duration::from_secs(5),
+            unhealthy_threshold: 3,
+            healthy_threshold: 2,
+        };
+        let mut checker = HealthChecker::new(config);
+        
+        // First, make it degraded by a failure
+        checker.check_health("rate_limiter", async {
+            Err(anyhow::anyhow!("error"))
+        }).await;
+        
+        let health = checker.components.get("rate_limiter").unwrap();
+        assert_eq!(health.consecutive_failures, 1);
+        
+        // Now success should recover
+        checker.check_health("rate_limiter", async {
+            Ok(Duration::from_millis(5))
+        }).await;
+        
+        // Should be Degraded after 1 success
+        assert_eq!(checker.components.get("rate_limiter").unwrap().status, HealthStatus::Degraded);
+
+        checker.check_health("rate_limiter", async {
+            Ok(Duration::from_millis(5))
+        }).await;
+        
+        let health = checker.components.get("rate_limiter").unwrap();
+        assert_eq!(health.consecutive_failures, 0);
+        assert_eq!(health.status, HealthStatus::Healthy);
+    }
+
+    #[test]
+    fn test_hardening_config_custom_values() {
+        let config = HardeningConfig {
+            rate_limiter: RateLimiterConfig::default(),
+            circuit_breaker: CircuitBreakerConfig::default(),
+            backpressure: BackpressureConfig::default(),
+            ab_testing: ABTestConfig::default(),
+            telemetry: TelemetryConfig::default(),
+            health_check: HealthCheckConfig {
+                check_interval: Duration::from_secs(60),
+                check_timeout: Duration::from_secs(10),
+                unhealthy_threshold: 5,
+                healthy_threshold: 3,
+            },
+            graceful_shutdown_timeout: Duration::from_secs(60),
+        };
+        
+        assert_eq!(config.graceful_shutdown_timeout, Duration::from_secs(60));
+        assert_eq!(config.health_check.unhealthy_threshold, 5);
+    }
+
+    #[tokio::test]
+    async fn test_process_request_rate_limited() {
+        let mut config = HardeningConfig::default();
+        // Set very low rate limit
+        config.rate_limiter.global_rpm = 0;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("ok".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::RateLimited { .. } => {
+                // Success
+            }
+            _ => panic!("Expected RateLimited, got {:?}", result),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_process_request_circuit_breaker_open() {
+        let mut config = HardeningConfig::default();
+        // Configure circuit breaker to open immediately
+        config.circuit_breaker.failure_threshold = 1;
+        config.circuit_breaker.minimum_requests = 1;
+        // Ensure backpressure doesn't interfere
+        config.backpressure.max_concurrent_requests = 100;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_cb".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        // First request fails to open circuit
+        let _ = layer.process_request(request.clone(), || async {
+            Err::<String, anyhow::Error>(anyhow::anyhow!("fail"))
+        }).await;
+
+        // Second request should be rejected by circuit breaker
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("ok".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::CircuitOpen { .. } => {
+                // Success
+            }
+            _ => panic!("Expected CircuitOpen, got {:?}", result),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_process_request_backpressure_rejected() {
+        let mut config = HardeningConfig::default();
+        // Set very low concurrency to force rejection
+        config.backpressure.max_concurrent_requests = 1;
+        config.backpressure.max_queue_size = 0;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_bp".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+        
+        // Start a request that takes some time
+        let layer_clone = layer.clone();
+        let request_clone = request.clone();
+        tokio::spawn(async move {
+            layer_clone.process_request(request_clone, || async {
+                tx.send(()).await.unwrap();
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                Ok::<String, anyhow::Error>("ok".to_string())
+            }).await
+        });
+        
+        // Wait for it to start
+        rx.recv().await.unwrap();
+
+        // Next request should be rejected
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("ok".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::Rejected { .. } => {
+                // Success
+            }
+            _ => panic!("Expected Rejected due to backpressure, got {:?}", result),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_process_request_timeout() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_timeout".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: Some(Duration::from_millis(10)),
+            metadata: HashMap::new(),
+        };
+
+        let result = layer
+            .process_request(request, || async {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                Ok::<String, anyhow::Error>("ok".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::Error(e) => {
+                assert!(e.to_string().contains("timed out"));
+            }
+            _ => panic!("Expected Error due to timeout, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_health_status_clone() {
+        let status = HealthStatus::Healthy;
+        let cloned = status.clone();
+        assert_eq!(status, cloned);
+    }
+
+    #[test]
+    fn test_component_health_debug() {
+        let health = ComponentHealth {
+            status: HealthStatus::Healthy,
+            last_check: "now".to_string(),
+            consecutive_failures: 0,
+            consecutive_successes: 0,
+            last_error: None,
+            response_time_ms: None,
+        };
+        let debug = format!("{:?}", health);
+        assert!(debug.contains("Healthy"));
+    }
+
+    #[test]
+    fn test_system_health_debug() {
+        let health = SystemHealth {
+            overall_status: HealthStatus::Healthy,
+            components: HashMap::new(),
+            last_check: "now".to_string(),
+            uptime_seconds: 0,
+        };
+        let debug = format!("{:?}", health);
+        assert!(debug.contains("Healthy"));
+    }
+
+    #[tokio::test]
+    async fn test_process_request_backpressure_queued() {
+        let mut config = HardeningConfig::default();
+        // Set low concurrency but allow queueing
+        config.backpressure.max_concurrent_requests = 1;
+        config.backpressure.max_queue_size = 10;
+        // Disable graceful degradation to ensure we hit the queue
+        config.backpressure.enable_graceful_degradation = false;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_queued".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+        
+        // Start a request that takes some time
+        let layer_clone = layer.clone();
+        let request_clone = request.clone();
+        tokio::spawn(async move {
+            layer_clone.process_request(request_clone, || async {
+                tx.send(()).await.unwrap();
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                Ok::<String, anyhow::Error>("ok".to_string())
+            }).await
+        });
+        
+        // Wait for it to start
+        rx.recv().await.unwrap();
+
+        // Next request should be queued
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("ok".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::Queued { .. } => {
+                // Success
+            }
+            _ => panic!("Expected Queued, got {:?}", result),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_process_request_backpressure_degraded() {
+        let mut config = HardeningConfig::default();
+        // Enable graceful degradation
+        config.backpressure.enable_graceful_degradation = true;
+        config.backpressure.load_shedding_threshold = 0.95; 
+        config.backpressure.max_concurrent_requests = 10;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_degraded".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        // Block 9 slots to get load_factor = 0.9
+        let (tx, mut rx) = tokio::sync::mpsc::channel(9);
+        for _ in 0..9 {
+            let layer_clone = layer.clone();
+            let request_clone = request.clone();
+            let tx_clone = tx.clone();
+            tokio::spawn(async move {
+                layer_clone.process_request(request_clone, || async {
+                    tx_clone.send(()).await.unwrap();
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                    Ok::<String, anyhow::Error>("ok".to_string())
+                }).await
+            });
+        }
+        
+        for _ in 0..9 {
+            rx.recv().await.unwrap();
+        }
+
+        // Next request should be degraded (load_factor 0.9 > 0.8) but not rejected (0.9 <= 0.95)
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("ok_degraded".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::Success(val) => {
+                assert_eq!(val, "ok_degraded");
+            }
+            _ => panic!("Expected Success (degraded), got {:?}", result),
+        }
+        
+        layer.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_process_request_backpressure_degraded_full_failure() {
+        let mut config = HardeningConfig::default();
+        config.backpressure.enable_graceful_degradation = true;
+        config.backpressure.load_shedding_threshold = 0.95;
+        config.backpressure.max_concurrent_requests = 10;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_degraded_full_fail".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        // Block 9 slots
+        let (tx, mut rx) = tokio::sync::mpsc::channel(9);
+        for _ in 0..9 {
+            let layer_clone = layer.clone();
+            let request_clone = request.clone();
+            let tx_clone = tx.clone();
+            tokio::spawn(async move {
+                layer_clone.process_request(request_clone, || async {
+                    tx_clone.send(()).await.unwrap();
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                    Ok::<String, anyhow::Error>("ok".to_string())
+                }).await
+            });
+        }
+        
+        for _ in 0..9 {
+            rx.recv().await.unwrap();
+        }
+
+        // Next request should be degraded and we'll make it fail
+        let result = layer
+            .process_request(request, || async {
+                Err::<String, anyhow::Error>(anyhow!("degraded failure"))
+            })
+            .await;
+
+        match result {
+            HardeningResult::Error(e) => {
+                assert_eq!(e.to_string(), "degraded failure");
+            }
+            _ => panic!("Expected Error (degraded), got {:?}", result),
+        }
+        
+        layer.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_process_request_priority_background() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_background".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Background,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("ok".to_string())
+            })
+            .await;
+
+        match result {
+            HardeningResult::Success(val) => {
+                assert_eq!(val, "ok");
+            }
+            _ => panic!("Expected Success, got {:?}", result),
+        }
+        
+        layer.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_panic() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        // Manually set a panicking handle
+        let handle = tokio::spawn(async {
+            panic!("Simulated panic");
+        });
+        
+        {
+            let mut h = layer.health_checker_handle.write().await;
+            *h = Some(handle);
+        }
+        
+        // Shutdown should handle the panic gracefully
+        layer.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_unhealthy_threshold_err() {
+        let config = HealthCheckConfig {
+            unhealthy_threshold: 2,
+            ..Default::default()
+        };
+        let mut checker = HealthChecker::new(config);
+
+        // First failure -> Degraded
+        checker.check_health("test", async { Err(anyhow!("fail")) }).await;
+        assert_eq!(checker.components.get("test").unwrap().status, HealthStatus::Degraded);
+
+        // Second failure -> Unhealthy
+        checker.check_health("test", async { Err(anyhow!("fail")) }).await;
+        assert_eq!(checker.components.get("test").unwrap().status, HealthStatus::Unhealthy);
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_recovery_steps() {
+        let config = HealthCheckConfig {
+            healthy_threshold: 3,
+            ..Default::default()
+        };
+        let mut checker = HealthChecker::new(config);
+
+        // Make it degraded
+        checker.check_health("test", async { Err(anyhow!("fail")) }).await;
+        assert_eq!(checker.components.get("test").unwrap().status, HealthStatus::Degraded);
+
+        // First success -> Still Degraded
+        checker.check_health("test", async { Ok(Duration::from_millis(10)) }).await;
+        assert_eq!(checker.components.get("test").unwrap().status, HealthStatus::Degraded);
+
+        // Second success -> Still Degraded
+        checker.check_health("test", async { Ok(Duration::from_millis(10)) }).await;
+        assert_eq!(checker.components.get("test").unwrap().status, HealthStatus::Degraded);
+
+        // Third success -> Healthy
+        checker.check_health("test", async { Ok(Duration::from_millis(10)) }).await;
+        assert_eq!(checker.components.get("test").unwrap().status, HealthStatus::Healthy);
+    }
+
+    #[tokio::test]
+    async fn test_process_request_all_priorities() {
+        let layer = ProductionHardeningLayer::new(HardeningConfig::default());
+        
+        let priorities = vec![Priority::Critical, Priority::High, Priority::Low];
+        for p in priorities {
+            let req = HardenedRequest {
+                user_id: Some("user1".to_string()), // Also test user_id Some
+                session_id: None,
+                model: "test-model".to_string(),
+                prompt: "test".to_string(),
+                estimated_tokens: 10,
+                priority: p,
+                timeout: None,
+                metadata: HashMap::new(),
+            };
+            
+            let result = layer.process_request(req, || async { Ok("ok".to_string()) }).await;
+            assert!(matches!(result, HardeningResult::Success(_)));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_process_request_degraded_with_timeout() {
+        let mut config = HardeningConfig::default();
+        config.backpressure.load_shedding_threshold = 0.1; // Force degradation
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        // Fill up some load
+        {
+            let mut manager = layer.backpressure_manager.write().await;
+            for _ in 0..50 {
+                let metadata = RequestMetadata {
+                    user_id: None,
+                    model: "test".to_string(),
+                    estimated_tokens: 10,
+                    estimated_cost: 0.01,
+                    tags: HashMap::new(),
+                };
+                manager.submit_request(Priority::Normal, None, metadata).await.unwrap();
+            }
+        }
+
+        let req = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test-model".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::High, // High priority gets degraded but not rejected
+            timeout: Some(Duration::from_secs(5)),
+            metadata: HashMap::new(),
+        };
+
+        let result = layer.process_request(req, || async { 
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            Ok("ok".to_string()) 
+        }).await;
+        
+        assert!(matches!(result, HardeningResult::Success(_)));
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_check_health_timeout() {
+        let mut config = HealthCheckConfig::default();
+        config.check_timeout = Duration::from_millis(50);
+        let mut checker = HealthChecker::new(config);
+        
+        checker.check_health("timeout_comp", async {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            Ok(Duration::from_millis(200))
+        }).await;
+        
+        assert_eq!(checker.components.get("timeout_comp").unwrap().status, HealthStatus::Degraded);
+        assert!(checker.components.get("timeout_comp").unwrap().last_error.as_ref().unwrap().contains("Timeout"));
+    }
+
+    #[tokio::test]
+    async fn test_health_checker_unknown_component() {
+        let config = HealthCheckConfig::default();
+        let mut checker = HealthChecker::new(config);
+        
+        // Check a component that doesn't exist
+        checker.check_health("unknown", async {
+            Ok(Duration::from_millis(5))
+        }).await;
+        
+        assert!(checker.components.contains_key("unknown"));
+        assert_eq!(checker.components.get("unknown").unwrap().status, HealthStatus::Healthy);
+    }
+
+    #[tokio::test]
+    async fn test_production_layer_shutdown_timeout() {
+        let config = HardeningConfig::default();
+        let layer = ProductionHardeningLayer::new(config);
+        
+        // Manually set a handle that will take a long time
+        let handle = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(10)).await;
+        });
+        *layer.health_checker_handle.write().await = Some(handle);
+        
+        // Shutdown should timeout for the health checker but still complete
+        let result = layer.shutdown().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_process_request_backpressure_queued_error_path() {
+        let mut config = HardeningConfig::default();
+        config.backpressure.max_concurrent_requests = 1;
+        config.backpressure.max_queue_size = 10;
+        config.backpressure.enable_graceful_degradation = false;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_queued_err".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        // Block the first slot
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let layer_clone = layer.clone();
+        let request_clone = request.clone();
+        tokio::spawn(async move {
+            layer_clone.process_request(request_clone, || async {
+                tx.send(()).await.unwrap();
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                Ok::<String, anyhow::Error>("ok".to_string())
+            }).await
+        });
+        rx.recv().await.unwrap();
+
+        // Second request should be queued
+        let result = layer.process_request(request, || async {
+            Ok::<String, anyhow::Error>("ok".to_string())
+        }).await;
+
+        assert!(matches!(result, HardeningResult::Queued { .. }));
+    }
+
+    #[tokio::test]
+    async fn test_process_request_backpressure_rejected_error_path() {
+        let mut config = HardeningConfig::default();
+        config.backpressure.max_concurrent_requests = 1;
+        config.backpressure.max_queue_size = 0;
+        
+        let layer = ProductionHardeningLayer::new(config);
+        layer.start().await.unwrap();
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "test_rejected_err".to_string(),
+            prompt: "test".to_string(),
+            estimated_tokens: 10,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata: HashMap::new(),
+        };
+
+        // Block the first slot
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let layer_clone = layer.clone();
+        let request_clone = request.clone();
+        tokio::spawn(async move {
+            layer_clone.process_request(request_clone, || async {
+                tx.send(()).await.unwrap();
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                Ok::<String, anyhow::Error>("ok".to_string())
+            }).await
+        });
+        rx.recv().await.unwrap();
+
+        // Second request should be rejected
+        let result = layer.process_request(request, || async {
+            Ok::<String, anyhow::Error>("ok".to_string())
+        }).await;
+
+        assert!(matches!(result, HardeningResult::Rejected { .. }));
     }
 }

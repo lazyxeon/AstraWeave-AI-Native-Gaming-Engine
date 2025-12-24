@@ -17,8 +17,11 @@ pub mod noise_gen;
 pub mod noise_simd; // SIMD-optimized noise generation (Week 3 Action 8)
 pub mod partition_integration;
 pub mod scatter;
+pub mod solver; // Phase 10: AI-Orchestrated Dynamic Terrain
 pub mod streaming_diagnostics; // Week 4 Action 14: Diagnostics overlay
 pub mod structures;
+pub mod terrain_modifier; // Phase 10: Batched voxel updates
+pub mod terrain_persistence; // Phase 10: Terrain save/load
 pub mod voxel_data;
 
 pub use background_loader::{BackgroundChunkLoader, StreamingConfig, StreamingStats}; // Week 4
@@ -40,12 +43,16 @@ pub use partition_integration::{
     VoxelPartitionStats,
 };
 pub use scatter::{ScatterConfig, ScatterResult, VegetationInstance, VegetationScatter};
+pub use solver::{ResolvedLocation, SolverError, TerrainSolver, ValidationStatus};
 pub use streaming_diagnostics::{
     ChunkLoadState, DiagnosticReport, FrameStats, HitchDetector, MemoryStats, StreamingDiagnostics,
 }; // Week 4
 pub use structures::{
     StructureConfig, StructureGenerator, StructureInstance, StructureResult, StructureType,
 };
+pub use terrain_modifier::{
+    ModifierStats, NavMeshRegion, TerrainModifier, TerrainModifierConfig, VoxelOp, VoxelOpType,
+}; // Phase 10
 pub use voxel_data::{ChunkCoord, Density, MaterialId, Voxel, VoxelChunk, VoxelGrid, CHUNK_SIZE};
 
 use glam::Vec3;
@@ -319,7 +326,7 @@ mod tests {
     #[test]
     fn test_chunk_generation() -> anyhow::Result<()> {
         let config = WorldConfig::default();
-        let mut generator = WorldGenerator::new(config);
+        let generator = WorldGenerator::new(config);
 
         let chunk_id = ChunkId::new(0, 0);
         let chunk = generator.generate_chunk(chunk_id)?;

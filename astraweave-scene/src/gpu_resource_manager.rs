@@ -307,3 +307,74 @@ pub struct GpuMemoryStats {
     pub active_cells: usize,
     pub utilization: f32, // Percentage
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cell_resources_new_and_unload_all() {
+        let coord = GridCoord::new(1, 0, -2);
+        let mut cell = CellGpuResources::new(coord);
+        assert_eq!(cell.coord, coord);
+        assert_eq!(cell.memory_usage, 0);
+        assert!(cell.get_vertex_buffer(123).is_none());
+        assert!(cell.get_index_buffer(123).is_none());
+        assert!(cell.get_texture(123).is_none());
+
+        // Mutate usage and ensure unload resets everything.
+        cell.memory_usage = 42;
+        cell.texture_sizes.insert(7, 128);
+        cell.unload_all();
+        assert_eq!(cell.memory_usage, 0);
+        assert!(cell.vertex_buffers.is_empty());
+        assert!(cell.index_buffers.is_empty());
+        assert!(cell.textures.is_empty());
+        assert!(cell.texture_sizes.is_empty());
+    }
+
+    #[test]
+    fn test_budget_can_allocate_and_stats() {
+        let mut budget = GpuResourceBudget::new(100);
+        assert!(budget.can_allocate(0));
+        assert!(budget.can_allocate(100));
+        assert!(!budget.can_allocate(101));
+
+        budget.current_usage = 25;
+        assert!(budget.can_allocate(75));
+        assert!(!budget.can_allocate(76));
+
+        let stats = budget.stats();
+        assert_eq!(stats.total_allocated, 25);
+        assert_eq!(stats.max_budget, 100);
+        assert_eq!(stats.active_cells, 0);
+        assert!((stats.utilization - 25.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_enforce_budget_unloads_furthest_cell() {
+        let mut budget = GpuResourceBudget::new(150);
+
+        // Seed cells with artificial memory usage (no wgpu objects needed).
+        let near = GridCoord::new(0, 0, 0);
+        let far = GridCoord::new(10, 0, 10);
+
+        budget
+            .get_or_create_cell(near)
+            .memory_usage = 100;
+        budget
+            .get_or_create_cell(far)
+            .memory_usage = 100;
+
+        budget.update_usage();
+        assert_eq!(budget.current_usage, 200);
+
+        let camera = near.to_world_center(100.0);
+        budget.enforce_budget(camera, 100.0);
+
+        // Should have unloaded the furthest cell.
+        assert!(budget.cells.contains_key(&near));
+        assert!(!budget.cells.contains_key(&far));
+        assert!(budget.current_usage <= budget.max_memory_bytes);
+    }
+}

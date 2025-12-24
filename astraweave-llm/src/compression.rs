@@ -318,4 +318,258 @@ mod tests {
         assert!(docs.contains("Actions(4)"));
         assert!(docs.len() < 150); // Compact representation
     }
+
+    // ============================================================
+    // PromptCompressor Instance Tests
+    // ============================================================
+
+    #[test]
+    fn test_prompt_compressor_new() {
+        let compressor = PromptCompressor::new();
+        // Verify it's created successfully (unit struct)
+        let _ = compressor;
+    }
+
+    #[test]
+    fn test_compress_generic_text() {
+        let compressor = PromptCompressor::new();
+        
+        let text = "The quick brown fox jumps over the lazy dog.";
+        let compressed = compressor.compress(text);
+        
+        // Stop words should be removed
+        assert!(!compressed.contains(" the "));
+        assert!(!compressed.contains(" a "));
+        assert!(compressed.contains("quick"));
+        assert!(compressed.contains("brown"));
+        assert!(compressed.contains("fox"));
+    }
+
+    #[test]
+    fn test_compress_removes_stop_words() {
+        let compressor = PromptCompressor::new();
+        
+        let text = "a an the is are was were that this of to in on at by for with";
+        let compressed = compressor.compress(text);
+        
+        // All stop words should be removed, resulting in empty or minimal string
+        assert!(compressed.is_empty() || compressed.trim().is_empty());
+    }
+
+    #[test]
+    fn test_compress_punctuation_spacing() {
+        let compressor = PromptCompressor::new();
+        
+        let text = "Hello , world . Test : value ( example )";
+        let compressed = compressor.compress(text);
+        
+        // Spaces around punctuation should be removed
+        assert!(compressed.contains(","));
+        assert!(!compressed.contains(" ,"));
+        assert!(compressed.contains("."));
+        assert!(!compressed.contains(" ."));
+        assert!(compressed.contains(":"));
+        assert!(!compressed.contains(" :"));
+    }
+
+    #[test]
+    fn test_compress_whitespace_normalization() {
+        let compressor = PromptCompressor::new();
+        
+        let text = "Hello    world\n\ntest\t\ttab";
+        let compressed = compressor.compress(text);
+        
+        // Multiple whitespace should be normalized to single space
+        assert!(!compressed.contains("  "));
+        assert!(!compressed.contains("\n"));
+        assert!(!compressed.contains("\t"));
+    }
+
+    // ============================================================
+    // Prompt Type Tests
+    // ============================================================
+
+    #[test]
+    fn test_compress_support_prompt() {
+        let prompt = PromptCompressor::compress_support_prompt();
+        assert!(prompt.contains("Support AI"));
+        assert!(prompt.contains("allies"));
+        assert!(prompt.contains("Revive"));
+        assert!(prompt.len() < 400);
+    }
+
+    #[test]
+    fn test_compress_exploration_prompt() {
+        let prompt = PromptCompressor::compress_exploration_prompt();
+        assert!(prompt.contains("Exploration AI"));
+        assert!(prompt.contains("territory"));
+        assert!(prompt.contains("unexplored"));
+        assert!(prompt.len() < 400);
+    }
+
+    #[test]
+    fn test_all_prompts_have_json_schema() {
+        let tactical = PromptCompressor::compress_tactical_prompt();
+        let stealth = PromptCompressor::compress_stealth_prompt();
+        let support = PromptCompressor::compress_support_prompt();
+        let exploration = PromptCompressor::compress_exploration_prompt();
+        
+        // All prompts should include JSON schema
+        assert!(tactical.contains("JSON:"));
+        assert!(stealth.contains("JSON:"));
+        assert!(support.contains("JSON:"));
+        assert!(exploration.contains("JSON:"));
+    }
+
+    #[test]
+    fn test_all_prompts_have_rules() {
+        let tactical = PromptCompressor::compress_tactical_prompt();
+        let stealth = PromptCompressor::compress_stealth_prompt();
+        let support = PromptCompressor::compress_support_prompt();
+        let exploration = PromptCompressor::compress_exploration_prompt();
+        
+        // All prompts should have rules section
+        assert!(tactical.contains("Rules:"));
+        assert!(stealth.contains("Rules:"));
+        assert!(support.contains("Rules:"));
+        assert!(exploration.contains("Rules:"));
+    }
+
+    // ============================================================
+    // Snapshot Compression Tests
+    // ============================================================
+
+    #[test]
+    fn test_snapshot_json_contains_all_sections() {
+        let snapshot = create_test_snapshot();
+        let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        assert!(parsed["plr"].is_object(), "Should have player section");
+        assert!(parsed["me"].is_object(), "Should have me section");
+        assert!(parsed["enemies"].is_array(), "Should have enemies section");
+        assert!(parsed["pois"].is_array(), "Should have pois section");
+        assert!(parsed["obs"].is_array(), "Should have obstacles section");
+    }
+
+    #[test]
+    fn test_snapshot_json_me_fields() {
+        let snapshot = create_test_snapshot();
+        let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        let me = &parsed["me"];
+        assert!(me["pos"].is_array());
+        assert!(me["morale"].is_number());
+        assert!(me["cooldowns"].is_object());
+        assert!(me["ammo"].is_number());
+    }
+
+    #[test]
+    fn test_snapshot_json_enemies_fields() {
+        let snapshot = create_test_snapshot();
+        let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        let enemy = &parsed["enemies"][0];
+        assert_eq!(enemy["id"], 99);
+        assert!(enemy["pos"].is_array());
+        assert!(enemy["hp"].is_number());
+        assert!(enemy["cover"].is_string());
+        assert!(enemy["seen"].is_number());
+    }
+
+    #[test]
+    fn test_snapshot_json_pois_fields() {
+        let snapshot = create_test_snapshot();
+        let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        let poi = &parsed["pois"][0];
+        assert_eq!(poi["k"], "ammo");
+        assert!(poi["pos"].is_array());
+    }
+
+    #[test]
+    fn test_snapshot_empty_arrays() {
+        let mut snapshot = create_test_snapshot();
+        snapshot.enemies.clear();
+        snapshot.pois.clear();
+        snapshot.obstacles.clear();
+        
+        let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        assert!(parsed["enemies"].as_array().unwrap().is_empty());
+        assert!(parsed["pois"].as_array().unwrap().is_empty());
+        assert!(parsed["obs"].as_array().unwrap().is_empty());
+    }
+
+    // ============================================================
+    // build_optimized_prompt Tests
+    // ============================================================
+
+    #[test]
+    fn test_build_optimized_prompt_support() {
+        let snapshot = create_test_snapshot();
+        let tools = "MoveTo|Revive|Throw";
+        
+        let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "support");
+        assert!(prompt.contains("Support AI"));
+        assert!(prompt.contains("Tools:"));
+        assert!(prompt.contains("MoveTo|Revive|Throw"));
+    }
+
+    #[test]
+    fn test_build_optimized_prompt_exploration() {
+        let snapshot = create_test_snapshot();
+        let tools = "MoveTo|Interact|Wait";
+        
+        let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "exploration");
+        assert!(prompt.contains("Exploration AI"));
+    }
+
+    #[test]
+    fn test_build_optimized_prompt_unknown_role_defaults_to_tactical() {
+        let snapshot = create_test_snapshot();
+        let tools = "MoveTo|Attack";
+        
+        let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "unknown_role");
+        assert!(prompt.contains("Tactical AI")); // Default fallback
+    }
+
+    #[test]
+    fn test_build_optimized_prompt_includes_snapshot() {
+        let snapshot = create_test_snapshot();
+        let tools = "MoveTo";
+        
+        let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "tactical");
+        
+        // Should include compact JSON snapshot
+        assert!(prompt.contains("Snapshot:"));
+        assert!(prompt.contains("\"plr\""));
+        assert!(prompt.contains("\"me\""));
+    }
+
+    // ============================================================
+    // Constant Tests
+    // ============================================================
+
+    #[test]
+    fn test_compact_schema_content() {
+        let schema = COMPACT_SCHEMA;
+        assert!(schema.contains("plan_id"));
+        assert!(schema.contains("steps"));
+        assert!(schema.contains("act"));
+        assert!(schema.contains("JSON")); // Should say "ONLY JSON"
+    }
+
+    #[test]
+    fn test_action_docs_all_actions() {
+        let docs = ACTION_DOCS;
+        assert!(docs.contains("MoveTo"));
+        assert!(docs.contains("Throw"));
+        assert!(docs.contains("CoverFire"));
+        assert!(docs.contains("Revive"));
+    }
 }

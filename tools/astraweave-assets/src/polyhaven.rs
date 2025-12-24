@@ -360,11 +360,206 @@ impl Default for PolyHavenClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_client_creation() {
         let client = PolyHavenClient::new();
         assert!(client.is_ok(), "Should create client successfully");
+    }
+
+    #[test]
+    fn test_resolution_fallback_order_known_resolutions() {
+        let client = PolyHavenClient::new().unwrap();
+
+        assert_eq!(client.resolution_fallback_order("8k"), vec!["8k", "4k", "2k", "1k"]);
+        assert_eq!(client.resolution_fallback_order("4k"), vec!["4k", "2k", "1k", "8k"]);
+        assert_eq!(client.resolution_fallback_order("2k"), vec!["2k", "1k", "4k", "8k"]);
+        assert_eq!(client.resolution_fallback_order("1k"), vec!["1k", "2k", "4k", "8k"]);
+    }
+
+    #[test]
+    fn test_resolution_fallback_order_unknown_defaults_to_2k() {
+        let client = PolyHavenClient::new().unwrap();
+        assert_eq!(client.resolution_fallback_order("banana"), vec!["2k", "1k", "4k", "8k"]);
+    }
+
+    #[test]
+    fn test_polyhaven_map_names_mappings() {
+        let client = PolyHavenClient::new().unwrap();
+        let albedo = client.polyhaven_map_names("albedo");
+        assert!(albedo.contains(&"Diffuse"));
+        assert!(albedo.contains(&"Color"));
+
+        let normal = client.polyhaven_map_names("normal");
+        assert!(normal.contains(&"nor_gl"));
+        assert!(normal.contains(&"Normal"));
+
+        let unknown = client.polyhaven_map_names("does_not_exist");
+        assert!(unknown.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_get_info_http_error_propagates() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/info/bad_asset"))
+            .respond_with(ResponseTemplate::new(500).set_body_string("nope"))
+            .mount(&server)
+            .await;
+
+        let client = PolyHavenClient::new_with_base_url(&server.uri()).unwrap();
+        let err = client.get_info("bad_asset").await.unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(msg.contains("HTTP"), "unexpected error: {msg}");
+    }
+
+    #[tokio::test]
+    async fn test_resolve_texture_selects_fallback_resolution_and_urls() {
+        let server = MockServer::start().await;
+
+        let base = server.uri();
+        let files_body = json!({
+            "Diffuse": {
+                "2k": {
+                    "png": { "url": format!("{base}/dl/tex_diff_2k.png"), "size": 5, "md5": "" }
+                }
+            },
+            "nor_gl": {
+                "2k": {
+                    "png": { "url": format!("{base}/dl/tex_nor_2k.png"), "size": 5, "md5": "" }
+                }
+            }
+        });
+
+        let info_body = json!({
+            "name": "Test Texture",
+            "categories": ["test"],
+            "tags": ["albedo", "normal"],
+            "download_count": 42
+        });
+
+        Mock::given(method("GET"))
+            .and(path("/files/tex01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(files_body))
+            .mount(&server)
+            .await;
+
+        Mock::given(method("GET"))
+            .and(path("/info/tex01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(info_body))
+            .mount(&server)
+            .await;
+
+        let client = PolyHavenClient::new_with_base_url(&server.uri()).unwrap();
+        let requested_maps = vec!["albedo".to_string(), "normal".to_string()];
+
+        let resolved = client
+            .resolve_texture("tex01", "8k", &requested_maps)
+            .await
+            .unwrap();
+
+        assert_eq!(resolved.id, "tex01");
+        assert_eq!(resolved.kind, "texture");
+        assert_eq!(resolved.resolution, "2k");
+        assert_eq!(resolved.info.name, "Test Texture");
+
+        assert_eq!(
+            resolved.urls.get("albedo").map(|s| s.as_str()),
+            Some(format!("{base}/dl/tex_diff_2k.png").as_str())
+        );
+        assert_eq!(
+            resolved.urls.get("normal").map(|s| s.as_str()),
+            Some(format!("{base}/dl/tex_nor_2k.png").as_str())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_hdri_falls_back_and_picks_preferred_format() {
+        let server = MockServer::start().await;
+
+        let base = server.uri();
+        let files_body = json!({
+            "hdri": {
+                "1k": {
+                    "hdr": { "url": format!("{base}/dl/hdri_1k.hdr"), "size": 3, "md5": "" },
+                    "exr": { "url": format!("{base}/dl/hdri_1k.exr"), "size": 4, "md5": "" }
+                }
+            }
+        });
+
+        let info_body = json!({
+            "name": "Test HDRI",
+            "categories": ["hdri"],
+            "tags": ["sky"],
+            "download_count": 7
+        });
+
+        Mock::given(method("GET"))
+            .and(path("/files/hdri01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(files_body))
+            .mount(&server)
+            .await;
+
+        Mock::given(method("GET"))
+            .and(path("/info/hdri01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(info_body))
+            .mount(&server)
+            .await;
+
+        let client = PolyHavenClient::new_with_base_url(&server.uri()).unwrap();
+        let resolved = client.resolve_hdri("hdri01", "2k").await.unwrap();
+
+        assert_eq!(resolved.kind, "hdri");
+        assert_eq!(resolved.resolution, "1k");
+        assert_eq!(resolved.urls.get("hdri").unwrap(), &format!("{base}/dl/hdri_1k.exr"));
+    }
+
+    #[tokio::test]
+    async fn test_resolve_model_picks_preferred_model_format() {
+        let server = MockServer::start().await;
+
+        let base = server.uri();
+        let files_body = json!({
+            "gltf": {
+                "2k": {
+                    "gltf": { "url": format!("{base}/dl/model_2k.gltf"), "size": 10, "md5": "" },
+                    "glb": { "url": format!("{base}/dl/model_2k.glb"), "size": 11, "md5": "" }
+                }
+            }
+        });
+
+        let info_body = json!({
+            "name": "Test Model",
+            "categories": ["model"],
+            "tags": ["mesh"],
+            "download_count": 9
+        });
+
+        Mock::given(method("GET"))
+            .and(path("/files/model01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(files_body))
+            .mount(&server)
+            .await;
+
+        Mock::given(method("GET"))
+            .and(path("/info/model01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(info_body))
+            .mount(&server)
+            .await;
+
+        let client = PolyHavenClient::new_with_base_url(&server.uri()).unwrap();
+        let resolved = client
+            .resolve_model("model01", "4k", "fbx")
+            .await
+            .unwrap();
+
+        assert_eq!(resolved.kind, "model");
+        assert_eq!(resolved.resolution, "2k");
+        assert_eq!(resolved.urls.get("model").unwrap(), &format!("{base}/dl/model_2k.glb"));
     }
 
     #[tokio::test]

@@ -21,3 +21,11 @@ astraweave-ecs = { workspace = true }
 astraweave-input = { path = "../astraweave-input" }
 astraweave-scene = { path = "../astraweave-scene" }
 tracing = { workspace = true }
+
+[dev-dependencies]
+astraweave-asset = { path = "../astraweave-asset" }
+criterion = { workspace = true }
+
+[[bench]]
+name = "combat_pipeline"
+harness = false

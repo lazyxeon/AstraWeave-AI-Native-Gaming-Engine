@@ -111,7 +111,11 @@ impl std::fmt::Display for PluginError {
             PluginError::ConfigError(msg) => write!(f, "Plugin configuration error: {}", msg),
             PluginError::MissingDependency(dep) => write!(f, "Missing dependency: {}", dep),
             PluginError::IncompatibleVersion { required, actual } => {
-                write!(f, "Incompatible version: requires {}, got {}", required, actual)
+                write!(
+                    f,
+                    "Incompatible version: requires {}, got {}",
+                    required, actual
+                )
             }
             PluginError::Other(msg) => write!(f, "Plugin error: {}", msg),
         }
@@ -233,7 +237,10 @@ impl PluginManager {
         let id = metadata.id.clone();
 
         if self.plugins.contains_key(&id) {
-            return Err(PluginError::Other(format!("Plugin '{}' already registered", id)));
+            return Err(PluginError::Other(format!(
+                "Plugin '{}' already registered",
+                id
+            )));
         }
 
         // Version compatibility check
@@ -244,7 +251,11 @@ impl PluginManager {
             });
         }
 
-        tracing::info!("Registering plugin: {} v{}", metadata.name, metadata.version);
+        tracing::info!(
+            "Registering plugin: {} v{}",
+            metadata.name,
+            metadata.version
+        );
 
         self.plugins.insert(
             id,
@@ -485,7 +496,11 @@ impl PluginManagerPanel {
         let plugins = manager.list_plugins();
 
         if plugins.is_empty() {
-            ui.label(egui::RichText::new("No plugins loaded").italics().color(egui::Color32::GRAY));
+            ui.label(
+                egui::RichText::new("No plugins loaded")
+                    .italics()
+                    .color(egui::Color32::GRAY),
+            );
             ui.add_space(8.0);
             ui.label("Place plugins in the 'plugins/' directory");
         } else {
@@ -495,7 +510,11 @@ impl PluginManagerPanel {
                     if !self.filter_text.is_empty() {
                         let filter_lower = self.filter_text.to_lowercase();
                         if !info.metadata.name.to_lowercase().contains(&filter_lower)
-                            && !info.metadata.description.to_lowercase().contains(&filter_lower)
+                            && !info
+                                .metadata
+                                .description
+                                .to_lowercase()
+                                .contains(&filter_lower)
                         {
                             continue;
                         }
@@ -527,7 +546,11 @@ impl PluginManagerPanel {
 
                 // Plugin name and version
                 ui.label(egui::RichText::new(&info.metadata.name).strong());
-                ui.label(egui::RichText::new(format!("v{}", info.metadata.version)).small().color(egui::Color32::GRAY));
+                ui.label(
+                    egui::RichText::new(format!("v{}", info.metadata.version))
+                        .small()
+                        .color(egui::Color32::GRAY),
+                );
 
                 // Panel indicator
                 if info.has_panel {
@@ -542,12 +565,20 @@ impl PluginManagerPanel {
 
             // Author
             if !info.metadata.author.is_empty() {
-                ui.label(egui::RichText::new(format!("by {}", info.metadata.author)).small().color(egui::Color32::GRAY));
+                ui.label(
+                    egui::RichText::new(format!("by {}", info.metadata.author))
+                        .small()
+                        .color(egui::Color32::GRAY),
+                );
             }
 
             // Error message
             if let Some(error) = &info.error {
-                ui.label(egui::RichText::new(format!("Error: {}", error)).small().color(egui::Color32::RED));
+                ui.label(
+                    egui::RichText::new(format!("Error: {}", error))
+                        .small()
+                        .color(egui::Color32::RED),
+                );
             }
 
             // Actions
@@ -694,8 +725,7 @@ mod tests {
 
     #[test]
     fn test_plugin_menu_item() {
-        let item = PluginMenuItem::new("Tools/Test", "test_action")
-            .with_shortcut("Ctrl+T");
+        let item = PluginMenuItem::new("Tools/Test", "test_action").with_shortcut("Ctrl+T");
 
         assert_eq!(item.path, "Tools/Test");
         assert_eq!(item.action_id, "test_action");
@@ -745,6 +775,9 @@ mod tests {
         }
 
         let result = manager.register(Box::new(NewVersionPlugin));
-        assert!(matches!(result, Err(PluginError::IncompatibleVersion { .. })));
+        assert!(matches!(
+            result,
+            Err(PluginError::IncompatibleVersion { .. })
+        ));
     }
 }

@@ -1,9 +1,59 @@
 use anyhow::{Context, Result};
-use astraweave_core::{Entity, World};
+use astraweave_core::{Entity, Health, Pose, World};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+
+/// Immutable snapshot of the scene hierarchy used when serializing prefabs.
+#[derive(Debug, Clone, Default)]
+pub struct PrefabHierarchySnapshot {
+    children: HashMap<Entity, Vec<Entity>>,
+}
+
+impl PrefabHierarchySnapshot {
+    /// Create an empty snapshot.
+    pub fn new() -> Self {
+        Self {
+            children: HashMap::new(),
+        }
+    }
+
+    /// Build a snapshot from an iterator of `(parent, children)` pairs.
+    pub fn from_iter<T: IntoIterator<Item = (Entity, Vec<Entity>)>>(iter: T) -> Self {
+        Self {
+            children: iter.into_iter().collect(),
+        }
+    }
+
+    /// Insert or replace the children recorded for `parent`.
+    pub fn insert_children(&mut self, parent: Entity, children: Vec<Entity>) {
+        self.children.insert(parent, children);
+    }
+
+    /// Append a single child to `parent` while preserving insertion order.
+    pub fn add_child(&mut self, parent: Entity, child: Entity) {
+        self.children.entry(parent).or_default().push(child);
+    }
+
+    /// Return the children recorded for `parent`.
+    pub fn children_of(&self, parent: Entity) -> &[Entity] {
+        // Reuse a single empty slice to avoid allocations for nodes without children.
+        static EMPTY: [Entity; 0] = [];
+        self.children
+            .get(&parent)
+            .map(|v| v.as_slice())
+            .unwrap_or(&EMPTY)
+    }
+}
+
+impl FromIterator<(Entity, Vec<Entity>)> for PrefabHierarchySnapshot {
+    fn from_iter<T: IntoIterator<Item = (Entity, Vec<Entity>)>>(iter: T) -> Self {
+        Self {
+            children: iter.into_iter().collect(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrefabData {
@@ -24,6 +74,33 @@ pub struct PrefabEntityData {
     pub children_indices: Vec<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefab_reference: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PrefabEntitySnapshot {
+    pub entity: Entity,
+    pub prefab_index: usize,
+    pub pose: Pose,
+    pub health: Option<Health>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PrefabInstanceSnapshot {
+    pub root_entity: Entity,
+    pub entities: Vec<PrefabEntitySnapshot>,
+}
+
+impl PrefabInstanceSnapshot {
+    pub fn new(root_entity: Entity) -> Self {
+        Self {
+            root_entity,
+            entities: Vec::new(),
+        }
+    }
+
+    pub fn push(&mut self, snapshot: PrefabEntitySnapshot) {
+        self.entities.push(snapshot);
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -61,10 +138,25 @@ impl EntityOverrides {
 
 impl PrefabData {
     pub fn from_entity(world: &World, entity: Entity, name: String) -> Result<Self> {
+        Self::from_entity_with_hierarchy(world, entity, name, None)
+    }
+
+    pub fn from_entity_with_hierarchy(
+        world: &World,
+        entity: Entity,
+        name: String,
+        hierarchy: Option<&PrefabHierarchySnapshot>,
+    ) -> Result<Self> {
         let mut entities = Vec::new();
         let mut entity_index_map = HashMap::new();
 
-        Self::collect_entity_recursive(world, entity, &mut entities, &mut entity_index_map, 0)?;
+        Self::collect_entity_recursive(
+            world,
+            entity,
+            hierarchy,
+            &mut entities,
+            &mut entity_index_map,
+        )?;
 
         Ok(PrefabData {
             name,
@@ -77,10 +169,14 @@ impl PrefabData {
     fn collect_entity_recursive(
         world: &World,
         entity: Entity,
+        hierarchy: Option<&PrefabHierarchySnapshot>,
         entities: &mut Vec<PrefabEntityData>,
         entity_index_map: &mut HashMap<Entity, usize>,
-        current_index: usize,
-    ) -> Result<()> {
+    ) -> Result<usize> {
+        if let Some(&existing) = entity_index_map.get(&entity) {
+            return Ok(existing);
+        }
+
         let name = world
             .name(entity)
             .context("Entity name not found")?
@@ -92,6 +188,7 @@ impl PrefabData {
 
         let team_id = world.team(entity).map(|t| t.id as u32).unwrap_or(0);
 
+        let current_index = entities.len();
         entity_index_map.insert(entity, current_index);
 
         entities.push(PrefabEntityData {
@@ -105,7 +202,29 @@ impl PrefabData {
             prefab_reference: None,
         });
 
-        Ok(())
+        if let Some(snapshot) = hierarchy {
+            let mut child_indices = Vec::new();
+            for child in snapshot.children_of(entity) {
+                // Skip children that no longer exist in the world.
+                if world.pose(*child).is_none() {
+                    continue;
+                }
+                let child_index = Self::collect_entity_recursive(
+                    world,
+                    *child,
+                    hierarchy,
+                    entities,
+                    entity_index_map,
+                )?;
+                child_indices.push(child_index);
+            }
+
+            if let Some(prefab_entity) = entities.get_mut(current_index) {
+                prefab_entity.children_indices = child_indices;
+            }
+        }
+
+        Ok(current_index)
     }
 
     pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
@@ -181,14 +300,25 @@ impl PrefabData {
 
 impl PrefabInstance {
     pub fn track_override(&mut self, entity: Entity, world: &World) {
+        let pose = world.pose(entity);
+        let health = world.health(entity);
+        self.track_override_with_values(entity, pose, health);
+    }
+
+    pub fn track_override_with_values(
+        &mut self,
+        entity: Entity,
+        pose: Option<Pose>,
+        health: Option<Health>,
+    ) {
         let overrides = self.overrides.entry(entity).or_default();
 
-        if let Some(pose) = world.pose(entity) {
+        if let Some(pose) = pose {
             overrides.pos_x = Some(pose.pos.x);
             overrides.pos_y = Some(pose.pos.y);
         }
 
-        if let Some(health) = world.health(entity) {
+        if let Some(health) = health {
             overrides.health = Some(health.hp);
             overrides.max_health = Some(health.hp);
         }
@@ -206,17 +336,17 @@ impl PrefabInstance {
                 self.source.display()
             );
         }
-        
+
         let metadata = std::fs::metadata(&self.source)
             .context("Cannot revert: Unable to read prefab file metadata")?;
-        
+
         if !metadata.is_file() {
             anyhow::bail!(
                 "Cannot revert: Path is not a file: {}",
                 self.source.display()
             );
         }
-        
+
         let prefab_data = PrefabData::load_from_file(&self.source)
             .context("Cannot revert: Failed to load prefab file")?;
 
@@ -233,7 +363,7 @@ impl PrefabInstance {
                     pose.pos.y = prefab_entity_data.pos_y;
                     reverted_count += 1;
                 }
-                
+
                 // Restore health
                 if let Some(health) = world.health_mut(*entity) {
                     health.hp = prefab_entity_data.health;
@@ -243,11 +373,11 @@ impl PrefabInstance {
 
         // Clear all overrides since we've reverted to prefab state
         self.overrides.clear();
-        
+
         if reverted_count == 0 {
             anyhow::bail!("Cannot revert: No entities were reverted (possible data mismatch)");
         }
-        
+
         Ok(())
     }
 
@@ -259,18 +389,18 @@ impl PrefabInstance {
                 self.source.display()
             );
         }
-        
+
         // Check if file is read-only
         let metadata = std::fs::metadata(&self.source)
             .context("Cannot apply: Unable to read prefab file metadata")?;
-        
+
         if metadata.permissions().readonly() {
             anyhow::bail!(
                 "Cannot apply: Prefab file is read-only: {}. Please change file permissions.",
                 self.source.display()
             );
         }
-        
+
         let mut prefab_data = PrefabData::load_from_file(&self.source)
             .context("Cannot apply: Failed to load prefab file")?;
 
@@ -301,12 +431,13 @@ impl PrefabInstance {
         }
 
         // Save updated prefab to file
-        prefab_data.save_to_file(&self.source)
-            .context("Cannot apply: Failed to save prefab file (check disk space and permissions)")?;
-        
+        prefab_data.save_to_file(&self.source).context(
+            "Cannot apply: Failed to save prefab file (check disk space and permissions)",
+        )?;
+
         // Clear overrides since current state is now the prefab state
         self.overrides.clear();
-        
+
         Ok(())
     }
 
@@ -319,18 +450,18 @@ impl PrefabInstance {
                 self.source.display()
             );
         }
-        
+
         let prefab_data = PrefabData::load_from_file(&self.source)
             .context("Cannot revert all: Failed to load prefab file")?;
-        
+
         if prefab_data.entities.is_empty() {
             anyhow::bail!("Cannot revert all: Prefab file contains no entities");
         }
-        
+
         if self.entity_mapping.is_empty() {
             anyhow::bail!("Cannot revert all: No entities in prefab instance");
         }
-        
+
         let mut reverted_count = 0;
 
         for (prefab_idx, entity) in &self.entity_mapping {
@@ -340,12 +471,12 @@ impl PrefabInstance {
                     pose.pos.x = prefab_entity_data.pos_x;
                     pose.pos.y = prefab_entity_data.pos_y;
                 }
-                
+
                 // Restore health
                 if let Some(health) = world.health_mut(*entity) {
                     health.hp = prefab_entity_data.health;
                 }
-                
+
                 reverted_count += 1;
             }
         }
@@ -356,7 +487,7 @@ impl PrefabInstance {
 
         // Clear all overrides since we've reverted all entities
         self.overrides.clear();
-        
+
         println!("✅ Reverted {} entities to prefab state", reverted_count);
         Ok(())
     }
@@ -370,29 +501,29 @@ impl PrefabInstance {
                 self.source.display()
             );
         }
-        
+
         // Check if file is read-only
         let metadata = std::fs::metadata(&self.source)
             .context("Cannot apply all: Unable to read prefab file metadata")?;
-        
+
         if metadata.permissions().readonly() {
             anyhow::bail!(
                 "Cannot apply all: Prefab file is read-only: {}. Please change file permissions.",
                 self.source.display()
             );
         }
-        
+
         let mut prefab_data = PrefabData::load_from_file(&self.source)
             .context("Cannot apply all: Failed to load prefab file")?;
-        
+
         if prefab_data.entities.is_empty() {
             anyhow::bail!("Cannot apply all: Prefab file contains no entities");
         }
-        
+
         if self.entity_mapping.is_empty() {
             anyhow::bail!("Cannot apply all: No entities in prefab instance");
         }
-        
+
         let mut applied_count = 0;
 
         for (prefab_idx, entity) in &self.entity_mapping {
@@ -408,7 +539,7 @@ impl PrefabInstance {
                     prefab_entity_data.health = health.hp;
                     prefab_entity_data.max_health = health.hp;
                 }
-                
+
                 applied_count += 1;
             }
         }
@@ -418,12 +549,13 @@ impl PrefabInstance {
         }
 
         // Save updated prefab to file
-        prefab_data.save_to_file(&self.source)
-            .context("Cannot apply all: Failed to save prefab file (check disk space and permissions)")?;
-        
+        prefab_data.save_to_file(&self.source).context(
+            "Cannot apply all: Failed to save prefab file (check disk space and permissions)",
+        )?;
+
         // Clear all overrides since current state is now the prefab state
         self.overrides.clear();
-        
+
         println!("✅ Applied {} entities to prefab file", applied_count);
         Ok(())
     }
@@ -451,7 +583,18 @@ impl PrefabManager {
     }
 
     pub fn create_prefab(&self, world: &World, entity: Entity, name: &str) -> Result<PathBuf> {
-        let prefab_data = PrefabData::from_entity(world, entity, name.to_string())?;
+        self.create_prefab_with_hierarchy(world, entity, name, None)
+    }
+
+    pub fn create_prefab_with_hierarchy(
+        &self,
+        world: &World,
+        entity: Entity,
+        name: &str,
+        hierarchy: Option<&PrefabHierarchySnapshot>,
+    ) -> Result<PathBuf> {
+        let prefab_data =
+            PrefabData::from_entity_with_hierarchy(world, entity, name.to_string(), hierarchy)?;
         let prefab_path = self.prefab_directory.join(format!("{}.prefab.ron", name));
         prefab_data.save_to_file(&prefab_path)?;
         Ok(prefab_path)
@@ -485,6 +628,71 @@ impl PrefabManager {
         })
     }
 
+    pub fn capture_snapshot(
+        &self,
+        world: &World,
+        entity: Entity,
+    ) -> Result<PrefabInstanceSnapshot> {
+        let instance = self
+            .find_instance(entity)
+            .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", entity))?;
+
+        let mut snapshot = PrefabInstanceSnapshot::new(instance.root_entity);
+        for (&prefab_index, &instance_entity) in &instance.entity_mapping {
+            let pose = world
+                .pose(instance_entity)
+                .with_context(|| format!("Missing pose for entity {}", instance_entity))?;
+            let health = world.health(instance_entity);
+            snapshot.push(PrefabEntitySnapshot {
+                entity: instance_entity,
+                prefab_index,
+                pose,
+                health,
+            });
+        }
+        Ok(snapshot)
+    }
+
+    pub fn restore_snapshot(
+        &mut self,
+        snapshot: &PrefabInstanceSnapshot,
+        world: &mut World,
+    ) -> Result<()> {
+        let instance = self
+            .find_instance_mut(snapshot.root_entity)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Prefab instance for entity {} not found",
+                    snapshot.root_entity
+                )
+            })?;
+
+        for entry in &snapshot.entities {
+            if let Some(pose) = world.pose_mut(entry.entity) {
+                *pose = entry.pose;
+            }
+
+            if let (Some(saved), Some(current)) = (entry.health, world.health_mut(entry.entity)) {
+                current.hp = saved.hp;
+            }
+
+            instance.track_override_with_values(entry.entity, Some(entry.pose), entry.health);
+        }
+
+        Ok(())
+    }
+
+    pub fn track_override_snapshot(
+        &mut self,
+        entity: Entity,
+        pose: Option<Pose>,
+        health: Option<Health>,
+    ) {
+        if let Some(instance) = self.find_instance_mut(entity) {
+            instance.track_override_with_values(entity, pose, health);
+        }
+    }
+
     pub fn get_all_prefab_files(&self) -> Result<Vec<PathBuf>> {
         let mut prefab_files = Vec::new();
 
@@ -510,22 +718,23 @@ impl PrefabManager {
 
         Ok(prefab_files)
     }
-    
+
     /// Remove a tracked prefab instance (for undo support)
     pub fn remove_instance(&mut self, entity: Entity) {
         self.instances.retain(|inst| {
             inst.root_entity != entity && !inst.entity_mapping.values().any(|&e| e == entity)
         });
     }
-    
+
     /// Apply overrides from an instance back to its prefab file
     pub fn apply_overrides_to_prefab(&mut self, entity: Entity, world: &World) -> Result<()> {
-        let instance = self.find_instance(entity)
+        let instance = self
+            .find_instance(entity)
             .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", entity))?;
-        
+
         let prefab_path = instance.source.clone();
         let mut prefab_data = PrefabData::load_from_file(&prefab_path)?;
-        
+
         // Apply overrides from the instance to the prefab data
         for (&inst_entity, overrides) in &instance.overrides {
             // Find which prefab entity this corresponds to
@@ -548,7 +757,7 @@ impl PrefabManager {
                 }
             }
         }
-        
+
         // Also capture current world state for root entity
         if let Some(pose) = world.pose(entity) {
             if let Some(prefab_entity_data) = prefab_data.entities.get_mut(0) {
@@ -556,22 +765,23 @@ impl PrefabManager {
                 prefab_entity_data.pos_y = pose.pos.y;
             }
         }
-        
+
         prefab_data.save_to_file(&prefab_path)?;
-        
+
         // Clear overrides since they're now in the prefab
         if let Some(instance) = self.find_instance_mut(entity) {
             instance.overrides.clear();
         }
-        
+
         Ok(())
     }
-    
+
     /// Revert an instance to match its prefab file
     pub fn revert_instance_to_prefab(&mut self, entity: Entity, world: &mut World) -> Result<()> {
-        let instance = self.find_instance_mut(entity)
+        let instance = self
+            .find_instance_mut(entity)
             .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", entity))?;
-        
+
         instance.revert_to_prefab(world)?;
         Ok(())
     }
@@ -625,5 +835,46 @@ mod tests {
 
         instance.track_override(entity, &world);
         assert!(instance.has_overrides(entity));
+    }
+
+    #[test]
+    fn prefab_serialization_records_hierarchy() {
+        let mut world = World::new();
+        let root = world.spawn("Root", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
+        let child_a = world.spawn("ChildA", IVec2 { x: 1, y: 1 }, Team { id: 0 }, 100, 0);
+        let child_b = world.spawn("ChildB", IVec2 { x: -1, y: 1 }, Team { id: 0 }, 100, 0);
+        let grandchild = world.spawn("Grandchild", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
+
+        let snapshot = PrefabHierarchySnapshot::from_iter([
+            (root, vec![child_a, child_b]),
+            (child_a, vec![grandchild]),
+        ]);
+
+        let prefab = PrefabData::from_entity_with_hierarchy(
+            &world,
+            root,
+            "HierPrefab".into(),
+            Some(&snapshot),
+        )
+        .expect("prefab builds");
+
+        assert_eq!(prefab.entities.len(), 4);
+
+        let root_data = &prefab.entities[prefab.root_entity_index];
+        assert_eq!(root_data.children_indices.len(), 2);
+
+        let first_child_idx = root_data.children_indices[0];
+        let second_child_idx = root_data.children_indices[1];
+        assert_eq!(prefab.entities[first_child_idx].name, "ChildA");
+        assert_eq!(prefab.entities[second_child_idx].name, "ChildB");
+
+        let grandchild_indices = &prefab.entities[first_child_idx].children_indices;
+        assert_eq!(grandchild_indices.len(), 1);
+        let grandchild_index = prefab
+            .entities
+            .iter()
+            .position(|e| e.name == "Grandchild")
+            .expect("grandchild entity present");
+        assert_eq!(grandchild_indices[0], grandchild_index);
     }
 }

@@ -55,11 +55,11 @@ impl Default for EntityMaterial {
         Self {
             name: "Default".to_string(),
             texture_slots: HashMap::new(),
-            base_color: Vec4::ONE,  // White
-            metallic: 0.0,          // Dielectric by default
-            roughness: 0.5,         // Medium roughness
-            emissive: Vec3::ZERO,   // No emission
-            normal_strength: 1.0,   // Full normal strength
+            base_color: Vec4::ONE, // White
+            metallic: 0.0,         // Dielectric by default
+            roughness: 0.5,        // Medium roughness
+            emissive: Vec3::ZERO,  // No emission
+            normal_strength: 1.0,  // Full normal strength
         }
     }
 }

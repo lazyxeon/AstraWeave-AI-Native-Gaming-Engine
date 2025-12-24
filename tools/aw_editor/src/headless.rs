@@ -67,7 +67,7 @@ impl GizmoHarness {
         });
         Ok(())
     }
-    
+
     /// Begin a rotation operation on the selected entity
     pub fn begin_rotate(&mut self) -> Result<()> {
         let entity = self.selected_entity()?;
@@ -79,7 +79,7 @@ impl GizmoHarness {
         });
         Ok(())
     }
-    
+
     /// Begin a scale operation on the selected entity
     pub fn begin_scale(&mut self) -> Result<()> {
         let entity = self.selected_entity()?;
@@ -101,7 +101,7 @@ impl GizmoHarness {
             // Apply delta to get new position
             let new_x = pose.pos.x + delta.x;
             let new_y = pose.pos.y + delta.y;
-            
+
             // Apply grid snapping if enabled
             if self.snapping.grid_enabled && self.snapping.grid_size > 0.0 {
                 let grid = self.snapping.grid_size;
@@ -114,7 +114,7 @@ impl GizmoHarness {
         }
         Ok(())
     }
-    
+
     /// Drag rotate by the given angle in radians
     pub fn drag_rotate(&mut self, angle_radians: f32) -> Result<()> {
         let entity = self.selected_entity()?;
@@ -123,13 +123,13 @@ impl GizmoHarness {
 
         if let Some(pose) = self.world.pose_mut(entity) {
             let new_rotation = pose.rotation + angle_radians;
-            
+
             // Apply angle snapping if enabled
             pose.rotation = self.snapping.snap_angle(new_rotation);
         }
         Ok(())
     }
-    
+
     /// Drag scale by the given factor (1.0 = no change, 2.0 = double size)
     pub fn drag_scale(&mut self, factor: f32) -> Result<()> {
         let entity = self.selected_entity()?;
@@ -173,11 +173,7 @@ impl GizmoHarness {
     }
 
     pub fn undo_depth(&self) -> usize {
-        if self.undo_stack.can_undo() {
-            self.undo_stack.len() - self.undo_stack.cursor()
-        } else {
-            0
-        }
+        self.undo_stack.cursor()
     }
 
     pub fn undo_last(&mut self) -> Result<(), String> {

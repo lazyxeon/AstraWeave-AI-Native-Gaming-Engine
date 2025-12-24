@@ -105,6 +105,10 @@ impl Panel for PerformancePanel {
                 ui.label(format!("FPS: {:.0}", stats.fps));
                 ui.label(format!("Entities: {}", stats.entity_count));
                 ui.label(format!("Tick #: {}", stats.tick_count));
+                ui.label(format!(
+                    "Fixed Steps (last frame): {}",
+                    stats.fixed_steps_last_tick
+                ));
 
                 if stats.frame_time_ms > 20.0 {
                     ui.colored_label(egui::Color32::RED, "⚠️ Over budget (>20ms)");

@@ -1,0 +1,167 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+warning: unused import: `VoxelChunk`
+  --> astraweave-terrain\src\terrain_modifier.rs:20:32
+   |
+20 | use crate::{ChunkCoord, Voxel, VoxelChunk, VoxelGrid};
+   |                                ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashMap`
+  --> astraweave-terrain\src\terrain_modifier.rs:22:24
+   |
+22 | use std::collections::{HashMap, HashSet, VecDeque};
+   |                        ^^^^^^^
+
+warning: `astraweave-terrain` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-terrain` to apply 2 suggestions)
+warning: variable does not need to be mutable
+   --> astraweave-render\src\gpu_memory.rs:136:13
+    |
+136 |         let mut mgr = Self::new();
+    |             ----^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: field `skinned_pipeline` is never read
+   --> astraweave-render\src\renderer.rs:378:5
+    |
+284 | pub struct Renderer {
+    |            -------- field in this struct
+...
+378 |     skinned_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-render` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-render` to apply 1 suggestion)
+warning: fields `head_pointers` and `next_pointers` are never read
+  --> astraweave-fluids\src\lib.rs:41:5
+   |
+33 | pub struct FluidSystem {
+   |            ----------- fields in this struct
+...
+41 |     head_pointers: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^
+42 |     next_pointers: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-fluids` (lib) generated 1 warning
+warning: unused variable: `wave_texture`
+  --> examples\fluids_demo\src\ocean_renderer.rs:73:14
+   |
+73 |         let (wave_texture, wave_view) = Self::generate_wave_texture(device, queue, 512);
+   |              ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_wave_texture`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `wave_bump_texture`
+  --> examples\fluids_demo\src\ocean_renderer.rs:74:14
+   |
+74 |         let (wave_bump_texture, wave_bump_view) = Self::generate_wave_bump_texture(device, queue, 512);
+   |              ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_wave_bump_texture`
+
+warning: unused variable: `normal_texture`
+  --> examples\fluids_demo\src\ocean_renderer.rs:75:14
+   |
+75 |         let (normal_texture, normal_view) = Self::generate_normal_texture(device, queue, 512);
+   |              ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_normal_texture`
+
+warning: unused variable: `normal2_texture`
+  --> examples\fluids_demo\src\ocean_renderer.rs:76:14
+   |
+76 |         let (normal2_texture, normal2_view) = Self::generate_normal_texture(device, queue, 512);
+   |              ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_normal2_texture`
+
+warning: field `physics_world` is never read
+  --> examples\fluids_demo\src\main.rs:52:5
+   |
+44 | struct State {
+   |        ----- field in this struct
+...
+52 |     physics_world: PhysicsWorld,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `transform` is never read
+  --> examples\fluids_demo\src\ocean_renderer.rs:58:5
+   |
+54 | struct OceanTile {
+   |        --------- field in this struct
+...
+58 |     transform: Mat4,
+   |     ^^^^^^^^^
+
+warning: `fluids_demo` (bin "fluids_demo") generated 6 warnings
+warning: unused imports: `Entity` and `World`
+ --> examples\scripting_advanced_demo\src\main.rs:1:27
+  |
+1 | use astraweave_ecs::{App, World, Entity};
+  |                           ^^^^^  ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `Layers`
+ --> examples\scripting_advanced_demo\src\main.rs:3:40
+  |
+3 | use astraweave_physics::{PhysicsWorld, Layers};
+  |                                        ^^^^^^
+
+warning: unused import: `loader`
+ --> examples\scripting_advanced_demo\src\main.rs:5:54
+  |
+5 | use astraweave_scripting::{ScriptingPlugin, CScript, loader};
+  |                                                      ^^^^^^
+
+warning: function `compress_bc7_simple` is never used
+   --> astraweave-asset-pipeline\src\texture.rs:139:4
+    |
+139 | fn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {
+    |    ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `encode_bc7_block` is never used
+   --> astraweave-asset-pipeline\src\texture.rs:181:4
+    |
+181 | fn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: `scripting_advanced_demo` (bin "scripting_advanced_demo") generated 3 warnings (run `cargo fix --bin "scripting_advanced_demo"` to apply 3 suggestions)
+warning: `astraweave-asset-pipeline` (lib) generated 2 warnings
+warning: unused import: `LevelStats`
+  --> examples\veilweaver_quest_demo\src\main.rs:11:26
+   |
+11 | use astraweave_weaving::{LevelStats, VeilweaverLevel};
+   |                          ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: `veilweaver_quest_demo` (bin "veilweaver_quest_demo") generated 1 warning (run `cargo fix --bin "veilweaver_quest_demo"` to apply 1 suggestion)
+warning: unused import: `Context`
+  --> examples\hello_companion\src\main.rs:69:14
+   |
+69 | use anyhow::{Context, Result};
+   |              ^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: `hello_companion` (bin "hello_companion") generated 1 warning (run `cargo fix --bin "hello_companion"` to apply 1 suggestion)
+warning: method `create_plane_mesh` is never used
+    --> examples\unified_showcase\src\main.rs:1584:8
+     |
+177  | impl ShowcaseApp {
+     | ---------------- method in this implementation
+...
+1584 |     fn create_plane_mesh(&mut self, size: f32, mat_idx: usize) -> usize {
+     |        ^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` on by default
+
+warning: `unified_showcase` (bin "unified_showcase") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.87s

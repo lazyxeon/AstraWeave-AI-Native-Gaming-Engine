@@ -626,7 +626,7 @@ mod tests {
 
         // Create a test chunk
         let world_config = WorldConfig::default();
-        let mut world_gen = WorldGenerator::new(world_config);
+        let world_gen = WorldGenerator::new(world_config);
         let chunk = world_gen.generate_chunk(ChunkId::new(0, 0))?;
 
         let _result = generator.generate_structures(&chunk, 256.0, BiomeType::Grassland)?;

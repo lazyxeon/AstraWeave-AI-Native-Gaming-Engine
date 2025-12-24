@@ -418,7 +418,7 @@ mod tests {
         let test_path = Path::new("test_scenes/aw_editor_test_save_load.ron");
 
         save_scene(&world, &test_path).unwrap();
-        
+
         // Construct full path for assertions
         let base = env::current_dir().unwrap();
         let full_path = base.join("content").join(test_path);

@@ -14,6 +14,190 @@ pub mod nanite_preprocess;
 // World Partition cell loader
 pub mod cell_loader;
 
+// Blender .blend file import support
+#[cfg(feature = "blend")]
+pub mod blend_import {
+    //! Blender file import integration.
+    //!
+    //! This module provides seamless import of `.blend` files by leveraging
+    //! the `astraweave-blend` crate to convert them to glTF format.
+
+    use anyhow::{Context, Result};
+    use std::path::{Path, PathBuf};
+    use tracing::{debug, info, warn};
+
+    pub use astraweave_blend::{
+        BlendImporter, BlendImporterConfig, ConversionOptions, ConversionResult,
+        BlenderDiscovery, BlenderInstallation, ImportHandle,
+        CancellationToken, ConversionProgress, ProgressReceiver,
+    };
+
+    /// State of the blend import system within the asset database.
+    pub struct BlendImportSystem {
+        importer: Option<BlendImporter>,
+        project_root: Option<PathBuf>,
+        initialized: bool,
+    }
+
+    impl Default for BlendImportSystem {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl BlendImportSystem {
+        /// Creates a new uninitialized blend import system.
+        pub fn new() -> Self {
+            Self {
+                importer: None,
+                project_root: None,
+                initialized: false,
+            }
+        }
+
+        /// Initializes the blend import system for a project.
+        ///
+        /// This discovers Blender and sets up the cache directory.
+        pub async fn initialize(&mut self, project_root: Option<PathBuf>) -> Result<()> {
+            if self.initialized {
+                return Ok(());
+            }
+
+            self.project_root = project_root.clone();
+
+            let config = BlendImporterConfig {
+                project_root,
+                cache_enabled: true,
+                ..Default::default()
+            };
+
+            match BlendImporter::with_config(config).await {
+                Ok(importer) => {
+                    info!("Blend import system initialized successfully");
+                    self.importer = Some(importer);
+                    self.initialized = true;
+                    Ok(())
+                }
+                Err(e) => {
+                    warn!("Failed to initialize blend import system: {}. Blender may not be installed.", e);
+                    // Don't fail - just disable blend import
+                    self.initialized = true;
+                    Ok(())
+                }
+            }
+        }
+
+        /// Returns whether Blender is available for imports.
+        pub fn is_available(&self) -> bool {
+            self.importer.is_some()
+        }
+
+        /// Returns the Blender installation info if available.
+        pub async fn blender_info(&mut self) -> Option<&BlenderInstallation> {
+            if let Some(ref mut importer) = self.importer {
+                importer.blender_installation().await.ok()
+            } else {
+                None
+            }
+        }
+
+        /// Imports a .blend file, converting it to glTF.
+        ///
+        /// Returns the path to the converted glTF file and conversion result.
+        pub async fn import_blend(
+            &mut self,
+            blend_path: &Path,
+            options: Option<ConversionOptions>,
+            output_path: Option<PathBuf>,
+        ) -> Result<ConversionResult> {
+            let importer = self.importer.as_mut()
+                .context("Blend import system not initialized or Blender not available")?;
+
+            info!("Importing blend file: {}", blend_path.display());
+
+            // Apply options if provided
+            if let Some(opts) = options.clone() {
+                importer.set_default_options(opts);
+            }
+
+            // Use appropriate import method based on whether output path is specified
+            let result = if let Some(out_path) = output_path {
+                if let Some(opts) = options {
+                    importer.import_to_with_options(blend_path, out_path, opts).await?
+                } else {
+                    importer.import_to(blend_path, out_path).await?
+                }
+            } else if let Some(opts) = options {
+                importer.import_with_options(blend_path, opts).await?
+            } else {
+                importer.import(blend_path).await?
+            };
+
+            debug!(
+                "Blend conversion complete: {} -> {} ({}ms, from_cache: {})",
+                blend_path.display(),
+                result.output_path.display(),
+                result.duration.as_millis(),
+                result.from_cache
+            );
+
+            Ok(result)
+        }
+
+        /// Imports a .blend file with progress tracking.
+        /// 
+        /// Returns an import handle for monitoring progress and the result.
+        pub async fn import_blend_with_progress(
+            &mut self,
+            blend_path: &Path,
+            options: Option<ConversionOptions>,
+        ) -> Result<ImportHandle> {
+            let importer = self.importer.as_mut()
+                .context("Blend import system not initialized or Blender not available")?;
+
+            let handle = if let Some(opts) = options {
+                importer.start_import_with_options(blend_path, opts).await?
+            } else {
+                importer.start_import(blend_path).await?
+            };
+
+            Ok(handle)
+        }
+
+        /// Sets a custom Blender executable path.
+        pub fn set_blender_path(&mut self, path: impl Into<PathBuf>) {
+            if let Some(ref mut importer) = self.importer {
+                importer.set_blender_path(path);
+            }
+        }
+
+        /// Returns the cache directory path if caching is enabled.
+        pub fn cache_dir(&self) -> Option<PathBuf> {
+            self.project_root.as_ref().map(|p| p.join(".astraweave/blend_cache"))
+        }
+    }
+
+    /// Checks if a path is a Blender source file.
+    pub fn is_blend_file(path: &Path) -> bool {
+        path.extension()
+            .and_then(|e| e.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("blend"))
+            .unwrap_or(false)
+    }
+
+    /// Returns the expected glTF output path for a blend file.
+    pub fn blend_to_gltf_path(blend_path: &Path, cache_dir: Option<&Path>) -> PathBuf {
+        let stem = blend_path.file_stem().unwrap_or_default();
+        let output_name = format!("{}.glb", stem.to_string_lossy());
+
+        if let Some(cache) = cache_dir {
+            cache.join(&output_name)
+        } else {
+            blend_path.with_file_name(output_name)
+        }
+    }
+}
+
 #[cfg(feature = "gltf")]
 pub mod gltf_loader {
     use anyhow::{anyhow, bail, Context, Result};
@@ -139,6 +323,93 @@ pub mod gltf_loader {
             tangents,
             texcoords,
             indices,
+        })
+    }
+
+    /// Load ALL meshes from a GLB and merge them into a single MeshData.
+    /// This is useful for models with multiple parts (e.g., tree trunk + foliage).
+    pub fn load_all_meshes_merged(bytes: &[u8]) -> Result<MeshData> {
+        use gltf::buffer::Data as BufferData;
+
+        // Parse GLB container
+        let glb = gltf::binary::Glb::from_slice(bytes).context("Invalid GLB container")?;
+        let json = std::str::from_utf8(&glb.json).context("GLB JSON is not UTF-8")?;
+        let doc = Gltf::from_slice(json.as_bytes()).context("Failed to parse glTF JSON")?;
+        let bin = glb.bin.context("GLB missing BIN chunk")?;
+
+        // Build buffer lookup
+        let mut buffers: Vec<BufferData> = Vec::new();
+        for b in doc.buffers() {
+            match b.source() {
+                gltf::buffer::Source::Bin => buffers.push(BufferData(bin.clone().into_owned())),
+                gltf::buffer::Source::Uri(_) => {
+                    bail!("External buffer URIs not supported")
+                }
+            }
+        }
+
+        let mut all_positions: Vec<[f32; 3]> = Vec::new();
+        let mut all_normals: Vec<[f32; 3]> = Vec::new();
+        let mut all_tangents: Vec<[f32; 4]> = Vec::new();
+        let mut all_texcoords: Vec<[f32; 2]> = Vec::new();
+        let mut all_indices: Vec<u32> = Vec::new();
+
+        // Iterate all meshes and all primitives
+        for mesh in doc.meshes() {
+            for prim in mesh.primitives() {
+                let reader = prim.reader(|buf| buffers.get(buf.index()).map(|d| d.0.as_slice()));
+
+                let positions_iter = match reader.read_positions() {
+                    Some(it) => it,
+                    None => continue, // Skip primitives without positions
+                };
+                let normals_iter = match reader.read_normals() {
+                    Some(it) => it,
+                    None => continue, // Skip primitives without normals
+                };
+                let indices_read = match reader.read_indices() {
+                    Some(it) => it,
+                    None => continue, // Skip primitives without indices
+                };
+
+                let base_vertex = all_positions.len() as u32;
+
+                let positions: Vec<[f32; 3]> = positions_iter.collect();
+                let normals: Vec<[f32; 3]> = normals_iter.collect();
+                let tangents: Vec<[f32; 4]> = match reader.read_tangents() {
+                    Some(it) => it.collect(),
+                    None => vec![[1.0, 0.0, 0.0, 1.0]; positions.len()],
+                };
+                let texcoords: Vec<[f32; 2]> = match reader.read_tex_coords(0) {
+                    Some(c) => c.into_f32().collect(),
+                    None => vec![[0.0, 0.0]; positions.len()],
+                };
+                let indices: Vec<u32> = match indices_read {
+                    gltf::mesh::util::ReadIndices::U16(it) => {
+                        it.map(|v| v as u32 + base_vertex).collect()
+                    }
+                    gltf::mesh::util::ReadIndices::U32(it) => it.map(|v| v + base_vertex).collect(),
+                    gltf::mesh::util::ReadIndices::U8(_) => continue, // Skip u8 indices
+                };
+
+                all_positions.extend(positions);
+                all_normals.extend(normals);
+                all_tangents.extend(tangents);
+                all_texcoords.extend(texcoords);
+                all_indices.extend(indices);
+            }
+        }
+
+        if all_positions.is_empty() {
+            bail!("No valid mesh data found in GLB");
+        }
+
+        Ok(MeshData {
+            positions: all_positions,
+            normals: all_normals,
+            tangents: all_tangents,
+            texcoords: all_texcoords,
+            indices: all_indices,
         })
     }
 
@@ -528,7 +799,8 @@ pub mod gltf_loader {
                             let idx = base + (row * 4 + col) * 4;
                             if idx + 4 <= buffer_data.len() {
                                 let bytes = &buffer_data[idx..idx + 4];
-                                matrix[col][row] = f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                                matrix[col][row] =
+                                    f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
                             }
                         }
                     }
@@ -1332,11 +1604,11 @@ mod tests {
     #[test]
     fn test_cache_multiple_items() {
         let mut cache = AssetCache::<String>::default();
-        
+
         let id1 = cache.insert("path1.png", "Asset1".to_string());
         let id2 = cache.insert("path2.png", "Asset2".to_string());
         let id3 = cache.insert("path3.png", "Asset3".to_string());
-        
+
         assert_eq!(cache.len(), 3);
         assert_eq!(cache.get(&id1), Some(&"Asset1".to_string()));
         assert_eq!(cache.get(&id2), Some(&"Asset2".to_string()));
@@ -1355,7 +1627,7 @@ mod tests {
         let mut cache = AssetCache::<i32>::default();
         let id1 = cache.insert("asset.png", 10);
         let id2 = cache.insert("asset.png", 20);
-        
+
         // Same path produces same GUID
         assert_eq!(id1, id2);
         // Second insert overwrites first
@@ -1367,7 +1639,7 @@ mod tests {
     fn test_cache_is_empty() {
         let cache = AssetCache::<i32>::default();
         assert!(cache.is_empty());
-        
+
         let mut cache2 = AssetCache::<i32>::default();
         cache2.insert("a.png", 1);
         assert!(!cache2.is_empty());
@@ -1380,7 +1652,7 @@ mod tests {
         let guid1 = guid_for_path(path);
         let guid2 = guid_for_path(path);
         let guid3 = guid_for_path(path);
-        
+
         assert_eq!(guid1, guid2);
         assert_eq!(guid2, guid3);
     }
@@ -1391,12 +1663,12 @@ mod tests {
         let guid1 = guid_for_path("path/to/file with spaces.png");
         let guid2 = guid_for_path("path-to-file.png");
         let guid3 = guid_for_path("path_to_file.png");
-        
+
         // All should produce valid 32-char hex GUIDs
         assert_eq!(guid1.len(), 32);
         assert_eq!(guid2.len(), 32);
         assert_eq!(guid3.len(), 32);
-        
+
         // All should be different
         assert_ne!(guid1, guid2);
         assert_ne!(guid2, guid3);
@@ -1424,7 +1696,7 @@ mod tests {
             AssetKind::Script,
             AssetKind::Other,
         ];
-        
+
         for kind in kinds {
             let json = serde_json::to_string(&kind).unwrap();
             let deserialized: AssetKind = serde_json::from_str(&json).unwrap();
@@ -1445,10 +1717,10 @@ mod tests {
             last_modified: 1234567890,
             size_bytes: 1024,
         };
-        
+
         let json = serde_json::to_string(&meta).unwrap();
         let deserialized: AssetMetadata = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(meta.guid, deserialized.guid);
         assert_eq!(meta.path, deserialized.path);
         assert_eq!(meta.kind, deserialized.kind);
@@ -1516,7 +1788,7 @@ mod tests {
         manager.add_event("guid1".to_string());
         manager.add_event("guid1".to_string()); // Duplicate
         manager.add_event("guid2".to_string());
-        
+
         // guid1 should be in queue only once, guid2 once = 2 total
         assert_eq!(manager.pending_count(), 2);
     }
@@ -1526,7 +1798,7 @@ mod tests {
         let mut manager = HotReloadManager::new(0);
         manager.add_event("guid1".to_string());
         manager.add_event("guid2".to_string());
-        
+
         assert_eq!(manager.process_next(), Some("guid1".to_string()));
         assert_eq!(manager.process_next(), Some("guid2".to_string()));
         assert_eq!(manager.process_next(), None);
@@ -1538,7 +1810,7 @@ mod tests {
         manager.add_event("first".to_string());
         manager.add_event("second".to_string());
         manager.add_event("third".to_string());
-        
+
         assert_eq!(manager.process_next(), Some("first".to_string()));
         assert_eq!(manager.process_next(), Some("second".to_string()));
         assert_eq!(manager.process_next(), Some("third".to_string()));
@@ -1584,7 +1856,10 @@ mod tests {
     #[test]
     fn test_infer_asset_kind_script() {
         use std::path::Path;
-        assert_eq!(infer_asset_kind(Path::new("script.rhai")), AssetKind::Script);
+        assert_eq!(
+            infer_asset_kind(Path::new("script.rhai")),
+            AssetKind::Script
+        );
     }
 
     #[test]
@@ -1596,10 +1871,29 @@ mod tests {
     }
 
     #[test]
+    fn test_infer_asset_kind_blender_source() {
+        use std::path::Path;
+        assert_eq!(
+            infer_asset_kind(Path::new("model.blend")),
+            AssetKind::BlenderSource
+        );
+        assert_eq!(
+            infer_asset_kind(Path::new("assets/characters/hero.blend")),
+            AssetKind::BlenderSource
+        );
+    }
+
+    #[test]
     fn test_infer_asset_kind_with_path() {
         use std::path::Path;
-        assert_eq!(infer_asset_kind(Path::new("assets/models/hero.gltf")), AssetKind::Mesh);
-        assert_eq!(infer_asset_kind(Path::new("textures/albedo.png")), AssetKind::Texture);
+        assert_eq!(
+            infer_asset_kind(Path::new("assets/models/hero.gltf")),
+            AssetKind::Mesh
+        );
+        assert_eq!(
+            infer_asset_kind(Path::new("textures/albedo.png")),
+            AssetKind::Texture
+        );
     }
 
     // ===== AssetManifest Tests =====
@@ -1618,7 +1912,7 @@ mod tests {
         // Test Unicode path handling
         let guid = guid_for_path("assets/日本語/texture.png");
         assert_eq!(guid.len(), 32);
-        
+
         // Different Unicode should produce different GUIDs
         let guid2 = guid_for_path("assets/中文/texture.png");
         assert_ne!(guid, guid2);
@@ -1656,10 +1950,21 @@ mod tests {
             name: String,
             value: i32,
         }
-        
-        let mut cache: AssetCache<TestAsset> = AssetCache { map: HashMap::new() };
-        let asset = TestAsset { name: "test".to_string(), value: 42 };
-        let id = cache.insert("asset.dat", TestAsset { name: "test".to_string(), value: 42 });
+
+        let mut cache: AssetCache<TestAsset> = AssetCache {
+            map: HashMap::new(),
+        };
+        let asset = TestAsset {
+            name: "test".to_string(),
+            value: 42,
+        };
+        let id = cache.insert(
+            "asset.dat",
+            TestAsset {
+                name: "test".to_string(),
+                value: 42,
+            },
+        );
         assert_eq!(cache.get(&id).unwrap().name, asset.name);
         assert_eq!(cache.get(&id).unwrap().value, asset.value);
     }
@@ -1669,10 +1974,10 @@ mod tests {
     #[test]
     fn test_asset_database_hot_reload_channel() {
         let db = AssetDatabase::new();
-        
+
         // The hot reload channel should be set up
-        let mut rx = db.hot_reload_rx.clone();
-        
+        let rx = db.hot_reload_rx.clone();
+
         // Initial state should not have pending messages
         assert!(!rx.has_changed().unwrap_or(true));
     }
@@ -1680,7 +1985,7 @@ mod tests {
     #[test]
     fn test_asset_database_invalidate_empty() {
         let mut db = AssetDatabase::new();
-        
+
         // Invalidating a nonexistent asset should succeed (no-op)
         let result = db.invalidate_asset("nonexistent_guid");
         assert!(result.is_ok());
@@ -1700,7 +2005,7 @@ mod tests {
             AssetKind::Script,
             AssetKind::Other,
         ];
-        
+
         for kind in kinds {
             let meta = AssetMetadata {
                 guid: "test".to_string(),
@@ -1711,7 +2016,7 @@ mod tests {
                 last_modified: 0,
                 size_bytes: 0,
             };
-            
+
             // Verify round-trip through JSON
             let json = serde_json::to_string(&meta).unwrap();
             let parsed: AssetMetadata = serde_json::from_str(&json).unwrap();
@@ -1730,7 +2035,7 @@ mod tests {
             last_modified: 1234567890,
             size_bytes: 2048,
         };
-        
+
         assert_eq!(meta.dependencies.len(), 3);
         assert!(meta.dependencies.contains(&"dep1".to_string()));
         assert!(meta.dependencies.contains(&"dep2".to_string()));
@@ -1845,7 +2150,7 @@ mod tests {
                 texcoords: vec![[0.0, 0.0]; 3],
                 indices: vec![0, 1, 2],
             };
-            
+
             assert_eq!(mesh.positions.len(), 3);
             assert_eq!(mesh.normals.len(), 3);
             assert_eq!(mesh.indices.len(), 3);
@@ -1858,7 +2163,7 @@ mod tests {
                 height: 512,
                 rgba8: vec![255; 512 * 512 * 4],
             };
-            
+
             assert_eq!(img.width, 512);
             assert_eq!(img.height, 512);
             assert_eq!(img.rgba8.len(), 512 * 512 * 4);
@@ -1867,7 +2172,7 @@ mod tests {
         #[test]
         fn test_material_data_default() {
             let mat = gltf_loader::MaterialData::default();
-            
+
             assert_eq!(mat.base_color_factor, [0.0, 0.0, 0.0, 0.0]);
             assert_eq!(mat.metallic_factor, 0.0);
             assert_eq!(mat.roughness_factor, 0.0);
@@ -1886,7 +2191,7 @@ mod tests {
         #[test]
         fn test_interpolation_equality() {
             use gltf_loader::Interpolation;
-            
+
             assert_eq!(Interpolation::Linear, Interpolation::Linear);
             assert_ne!(Interpolation::Step, Interpolation::Linear);
             assert_ne!(Interpolation::CubicSpline, Interpolation::Step);
@@ -1895,21 +2200,21 @@ mod tests {
         #[test]
         fn test_channel_data_variants() {
             use gltf_loader::ChannelData;
-            
+
             let translation = ChannelData::Translation(vec![[1.0, 2.0, 3.0]]);
             let rotation = ChannelData::Rotation(vec![[0.0, 0.0, 0.0, 1.0]]);
             let scale = ChannelData::Scale(vec![[1.0, 1.0, 1.0]]);
-            
+
             match translation {
                 ChannelData::Translation(data) => assert_eq!(data.len(), 1),
                 _ => panic!("Expected translation"),
             }
-            
+
             match rotation {
                 ChannelData::Rotation(data) => assert_eq!(data.len(), 1),
                 _ => panic!("Expected rotation"),
             }
-            
+
             match scale {
                 ChannelData::Scale(data) => assert_eq!(data.len(), 1),
                 _ => panic!("Expected scale"),
@@ -1919,20 +2224,18 @@ mod tests {
         #[test]
         fn test_animation_clip_structure() {
             use gltf_loader::{AnimationChannel, AnimationClip, ChannelData, Interpolation};
-            
+
             let clip = AnimationClip {
                 name: "walk".to_string(),
-                channels: vec![
-                    AnimationChannel {
-                        target_joint_index: 0,
-                        times: vec![0.0, 0.5, 1.0],
-                        data: ChannelData::Translation(vec![[0.0, 0.0, 0.0]; 3]),
-                        interpolation: Interpolation::Linear,
-                    },
-                ],
+                channels: vec![AnimationChannel {
+                    target_joint_index: 0,
+                    times: vec![0.0, 0.5, 1.0],
+                    data: ChannelData::Translation(vec![[0.0, 0.0, 0.0]; 3]),
+                    interpolation: Interpolation::Linear,
+                }],
                 duration: 1.0,
             };
-            
+
             assert_eq!(clip.name, "walk");
             assert_eq!(clip.channels.len(), 1);
             assert_eq!(clip.duration, 1.0);
@@ -1948,10 +2251,10 @@ mod tests {
                 joints: [0, 1, 2, 3],
                 weights: [0.5, 0.3, 0.1, 0.1],
             };
-            
+
             assert_eq!(vertex.position, [1.0, 2.0, 3.0]);
             assert_eq!(vertex.joints, [0, 1, 2, 3]);
-            
+
             // Weights should sum to approximately 1.0
             let weight_sum: f32 = vertex.weights.iter().sum();
             assert!((weight_sum - 1.0).abs() < 0.001);
@@ -1964,7 +2267,7 @@ mod tests {
                 indices: vec![0, 1, 2],
                 joint_count: 10,
             };
-            
+
             assert!(mesh.vertices.is_empty());
             assert_eq!(mesh.indices.len(), 3);
             assert_eq!(mesh.joint_count, 10);
@@ -1975,7 +2278,7 @@ mod tests {
             // Empty bytes should fail
             let result = gltf_loader::load_gltf_bytes(&[]);
             assert!(result.is_err());
-            
+
             // Random bytes should fail
             let result = gltf_loader::load_gltf_bytes(&[1, 2, 3, 4, 5]);
             assert!(result.is_err());
@@ -1989,9 +2292,671 @@ mod tests {
                 0x02, 0x00, 0x00, 0x00, // version 2
                 0x14, 0x00, 0x00, 0x00, // length 20
             ];
-            
+
             let result = gltf_loader::load_gltf_bytes(&glb_header);
             assert!(result.is_ok());
+        }
+    }
+
+    // ===== Import Pipelines Tests =====
+
+    mod import_pipeline_tests {
+        use super::*;
+        use tempfile::TempDir;
+
+        #[test]
+        fn test_import_texture_png() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+
+            // Create a minimal valid PNG file
+            let source = temp_dir.path().join("source.png");
+            let output = temp_dir.path().join("output.png");
+
+            // Create a 1x1 red PNG using image crate
+            let img = image::RgbaImage::from_pixel(1, 1, image::Rgba([255, 0, 0, 255]));
+            img.save(&source).expect("Failed to create test image");
+
+            let result = import_pipelines::import_texture(&source, &output);
+            assert!(result.is_ok());
+            assert!(output.exists());
+        }
+
+        #[test]
+        fn test_import_texture_nonexistent() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let source = temp_dir.path().join("nonexistent.png");
+            let output = temp_dir.path().join("output.png");
+
+            let result = import_pipelines::import_texture(&source, &output);
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_import_audio_copy() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let source = temp_dir.path().join("audio.wav");
+            let output = temp_dir.path().join("copied.wav");
+
+            // Create a dummy audio file (just bytes)
+            std::fs::write(&source, b"RIFF....WAVEfmt ").expect("Failed to write");
+
+            let result = import_pipelines::import_audio(&source, &output);
+            assert!(result.is_ok());
+            assert!(output.exists());
+        }
+
+        #[test]
+        fn test_import_audio_nonexistent() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let source = temp_dir.path().join("nonexistent.wav");
+            let output = temp_dir.path().join("output.wav");
+
+            let result = import_pipelines::import_audio(&source, &output);
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_import_dialogue_valid_toml() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let source = temp_dir.path().join("dialogue.toml");
+            let output = temp_dir.path().join("output.toml");
+
+            let toml_content = r#"
+[dialogue]
+speaker = "NPC"
+text = "Hello!"
+"#;
+            std::fs::write(&source, toml_content).expect("Failed to write");
+
+            let result = import_pipelines::import_dialogue(&source, &output);
+            assert!(result.is_ok());
+            assert!(output.exists());
+        }
+
+        #[test]
+        fn test_import_dialogue_invalid_toml() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let source = temp_dir.path().join("invalid.toml");
+            let output = temp_dir.path().join("output.toml");
+
+            std::fs::write(&source, "not valid [[ toml").expect("Failed to write");
+
+            let result = import_pipelines::import_dialogue(&source, &output);
+            assert!(result.is_err());
+        }
+    }
+
+    // ===== compute_file_hash Tests =====
+
+    mod hash_tests {
+        use super::*;
+        use tempfile::TempDir;
+
+        #[test]
+        fn test_compute_file_hash_deterministic() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("test.txt");
+
+            std::fs::write(&file_path, "Hello, World!").expect("Failed to write");
+
+            let hash1 = compute_file_hash(&file_path).expect("Failed to hash");
+            let hash2 = compute_file_hash(&file_path).expect("Failed to hash");
+
+            assert_eq!(hash1, hash2);
+            assert_eq!(hash1.len(), 64); // SHA256 hex is 64 chars
+        }
+
+        #[test]
+        fn test_compute_file_hash_different_content() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file1 = temp_dir.path().join("file1.txt");
+            let file2 = temp_dir.path().join("file2.txt");
+
+            std::fs::write(&file1, "Content A").expect("Failed to write");
+            std::fs::write(&file2, "Content B").expect("Failed to write");
+
+            let hash1 = compute_file_hash(&file1).expect("Failed to hash");
+            let hash2 = compute_file_hash(&file2).expect("Failed to hash");
+
+            assert_ne!(hash1, hash2);
+        }
+
+        #[test]
+        fn test_compute_file_hash_nonexistent() {
+            let result = compute_file_hash(Path::new("nonexistent_file.txt"));
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_compute_file_hash_empty_file() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("empty.txt");
+
+            std::fs::write(&file_path, "").expect("Failed to write");
+
+            let hash = compute_file_hash(&file_path).expect("Failed to hash");
+            assert_eq!(hash.len(), 64);
+        }
+    }
+
+    // ===== infer_dependencies Tests =====
+
+    mod dependency_tests {
+        use super::*;
+        use tempfile::TempDir;
+
+        #[test]
+        fn test_infer_dependencies_mesh_glb() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("model.glb");
+            std::fs::write(&file_path, b"glTF").expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Mesh).expect("Failed");
+            // GLB files don't have external dependencies (embedded)
+            assert!(deps.is_empty());
+        }
+
+        #[test]
+        fn test_infer_dependencies_material_toml() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("material.material");
+
+            let toml_content = r#"
+[textures]
+albedo = "textures/albedo.png"
+normal = "textures/normal.png"
+"#;
+            std::fs::write(&file_path, toml_content).expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Material).expect("Failed");
+            assert_eq!(deps.len(), 2);
+        }
+
+        #[test]
+        fn test_infer_dependencies_material_no_textures() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("simple.material");
+
+            let toml_content = r#"
+[properties]
+color = [1.0, 0.0, 0.0, 1.0]
+"#;
+            std::fs::write(&file_path, toml_content).expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Material).expect("Failed");
+            assert!(deps.is_empty());
+        }
+
+        #[test]
+        fn test_infer_dependencies_audio() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("sound.wav");
+            std::fs::write(&file_path, b"RIFF").expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Audio).expect("Failed");
+            assert!(deps.is_empty());
+        }
+
+        #[test]
+        fn test_infer_dependencies_texture() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("texture.png");
+            std::fs::write(&file_path, b"PNG").expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Texture).expect("Failed");
+            assert!(deps.is_empty());
+        }
+
+        #[test]
+        fn test_infer_dependencies_gltf_with_uri() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("model.gltf");
+
+            let gltf_content = r#"{
+                "asset": {"version": "2.0"},
+                "images": [
+                    {"uri": "textures/diffuse.png"},
+                    {"uri": "textures/normal.png"}
+                ]
+            }"#;
+            std::fs::write(&file_path, gltf_content).expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Mesh).expect("Failed");
+            assert_eq!(deps.len(), 2);
+        }
+
+        #[test]
+        fn test_infer_dependencies_gltf_no_uri_key() {
+            // Test gltf without "uri" keys - should have no dependencies
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("model.gltf");
+
+            let gltf_content = r#"{
+                "asset": {"version": "2.0"},
+                "buffers": [{"byteLength": 1024}]
+            }"#;
+            std::fs::write(&file_path, gltf_content).expect("Failed to write");
+
+            let deps = infer_dependencies(&file_path, AssetKind::Mesh).expect("Failed");
+            assert!(deps.is_empty());
+        }
+    }
+
+    // ===== AssetDatabase Advanced Tests =====
+
+    mod database_tests {
+        use super::*;
+        use tempfile::TempDir;
+
+        #[test]
+        fn test_asset_database_register_real_file() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("test_asset.png");
+            std::fs::write(&file_path, b"fake PNG data").expect("Failed to write");
+
+            let mut db = AssetDatabase::new();
+            let guid = db
+                .register_asset(&file_path, AssetKind::Texture, vec![])
+                .expect("Failed to register");
+
+            assert_eq!(guid.len(), 32);
+            assert!(db.get_asset(&guid).is_some());
+            assert!(db.get_guid_by_path(&file_path).is_some());
+        }
+
+        #[test]
+        fn test_asset_database_register_with_dependencies() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+
+            // Create "dependency" file
+            let dep_path = temp_dir.path().join("texture.png");
+            std::fs::write(&dep_path, b"PNG data").expect("Failed to write");
+
+            // Create main file
+            let main_path = temp_dir.path().join("material.mat");
+            std::fs::write(&main_path, b"material data").expect("Failed to write");
+
+            let mut db = AssetDatabase::new();
+
+            // Register dependency first
+            let dep_guid = db
+                .register_asset(&dep_path, AssetKind::Texture, vec![])
+                .expect("Failed to register dep");
+
+            // Register main with dependency
+            let main_guid = db
+                .register_asset(&main_path, AssetKind::Material, vec![dep_guid.clone()])
+                .expect("Failed to register main");
+
+            // Check dependency graph
+            let dependents = db.get_dependents(&dep_guid);
+            assert!(dependents.is_some());
+            assert!(dependents.unwrap().contains(&main_guid));
+
+            let deps = db.get_dependencies(&main_guid);
+            assert!(deps.is_some());
+            assert!(deps.unwrap().contains(&dep_guid));
+        }
+
+        #[test]
+        fn test_asset_database_save_and_load_manifest() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+
+            // Create test files
+            let file1 = temp_dir.path().join("mesh.glb");
+            let file2 = temp_dir.path().join("texture.png");
+            std::fs::write(&file1, b"GLB data").expect("Failed to write");
+            std::fs::write(&file2, b"PNG data").expect("Failed to write");
+
+            let mut db = AssetDatabase::new();
+            db.register_asset(&file1, AssetKind::Mesh, vec![])
+                .expect("Failed");
+            db.register_asset(&file2, AssetKind::Texture, vec![])
+                .expect("Failed");
+
+            // Save manifest
+            let manifest_path = temp_dir.path().join("manifest.json");
+            db.save_manifest(&manifest_path).expect("Failed to save");
+            assert!(manifest_path.exists());
+
+            // Load into new database
+            let mut db2 = AssetDatabase::new();
+            db2.load_manifest(&manifest_path).expect("Failed to load");
+
+            assert_eq!(db2.assets.len(), 2);
+        }
+
+        #[test]
+        fn test_asset_database_invalidate_with_dependents() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+
+            let dep_path = temp_dir.path().join("base.png");
+            let main_path = temp_dir.path().join("derived.mat");
+            std::fs::write(&dep_path, b"PNG").expect("Failed");
+            std::fs::write(&main_path, b"MAT").expect("Failed");
+
+            let mut db = AssetDatabase::new();
+            let dep_guid = db
+                .register_asset(&dep_path, AssetKind::Texture, vec![])
+                .expect("Failed");
+            let main_guid = db
+                .register_asset(&main_path, AssetKind::Material, vec![dep_guid.clone()])
+                .expect("Failed");
+
+            // Invalidate the dependency
+            db.invalidate_asset(&dep_guid)
+                .expect("Failed to invalidate");
+
+            // Dependent should be marked as invalidated
+            let main_meta = db.get_asset(&main_guid).expect("Main should exist");
+            assert_eq!(main_meta.hash, "invalidated");
+        }
+
+        #[test]
+        fn test_asset_database_scan_directory() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+
+            // Create nested structure
+            let subdir = temp_dir.path().join("models");
+            std::fs::create_dir(&subdir).expect("Failed to create dir");
+
+            std::fs::write(temp_dir.path().join("texture.png"), b"PNG").expect("Failed");
+            std::fs::write(subdir.join("hero.glb"), b"GLB").expect("Failed");
+            std::fs::write(subdir.join("enemy.glb"), b"GLB").expect("Failed");
+
+            let mut db = AssetDatabase::new();
+            db.scan_directory(temp_dir.path()).expect("Failed to scan");
+
+            assert!(db.assets.len() >= 3);
+        }
+
+        #[test]
+        fn test_asset_database_re_register_same_path() {
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let file_path = temp_dir.path().join("asset.png");
+            std::fs::write(&file_path, b"content v1").expect("Failed");
+
+            let mut db = AssetDatabase::new();
+            let guid1 = db
+                .register_asset(&file_path, AssetKind::Texture, vec![])
+                .expect("Failed");
+
+            // Re-register same path
+            std::fs::write(&file_path, b"content v2").expect("Failed");
+            let guid2 = db
+                .register_asset(&file_path, AssetKind::Texture, vec![])
+                .expect("Failed");
+
+            // Should get same GUID
+            assert_eq!(guid1, guid2);
+
+            // But content hash should be updated
+            let meta = db.get_asset(&guid1).unwrap();
+            assert_ne!(meta.hash, ""); // Hash should exist
+        }
+
+        #[test]
+        fn test_asset_database_get_dependents_none() {
+            let db = AssetDatabase::new();
+            // No dependents for a GUID that was never registered
+            assert!(db.get_dependents("unknown_guid").is_none());
+        }
+
+        #[test]
+        fn test_asset_database_get_dependencies_none() {
+            let db = AssetDatabase::new();
+            // No dependencies for a GUID that was never registered
+            assert!(db.get_dependencies("unknown_guid").is_none());
+        }
+    }
+
+    // ===== HotReloadManager Advanced Tests =====
+
+    mod hot_reload_manager_tests {
+        use super::*;
+
+        #[test]
+        fn test_hot_reload_manager_debounce_skips_rapid_events() {
+            let mut manager = HotReloadManager::new(500); // 500ms debounce
+            
+            // First event goes through
+            manager.add_event("guid1".to_string());
+            assert_eq!(manager.pending_count(), 1);
+            
+            // Immediate second event for same GUID is debounced (timestamp updated, not re-queued)
+            manager.add_event("guid1".to_string());
+            assert_eq!(manager.pending_count(), 1); // Still 1, not 2
+        }
+
+        #[test]
+        fn test_hot_reload_manager_different_guids_not_debounced() {
+            let mut manager = HotReloadManager::new(500);
+            
+            manager.add_event("guid1".to_string());
+            manager.add_event("guid2".to_string());
+            manager.add_event("guid3".to_string());
+            
+            assert_eq!(manager.pending_count(), 3);
+        }
+
+        #[test]
+        fn test_hot_reload_manager_process_clears_queue() {
+            let mut manager = HotReloadManager::new(0);
+            
+            manager.add_event("a".to_string());
+            manager.add_event("b".to_string());
+            
+            manager.process_next();
+            assert_eq!(manager.pending_count(), 1);
+            
+            manager.process_next();
+            assert_eq!(manager.pending_count(), 0);
+        }
+
+        #[test]
+        fn test_hot_reload_manager_empty_process_returns_none() {
+            let mut manager = HotReloadManager::new(100);
+            assert!(manager.process_next().is_none());
+        }
+    }
+
+    // ===== AssetKind Serialization Tests =====
+
+    mod asset_kind_tests {
+        use super::*;
+
+        #[test]
+        fn test_asset_kind_serialize_roundtrip() {
+            let kinds = vec![
+                AssetKind::Mesh,
+                AssetKind::Texture,
+                AssetKind::Audio,
+                AssetKind::Dialogue,
+                AssetKind::Material,
+                AssetKind::Animation,
+                AssetKind::Script,
+                AssetKind::Other,
+            ];
+
+            for kind in kinds {
+                let json = serde_json::to_string(&kind).unwrap();
+                let parsed: AssetKind = serde_json::from_str(&json).unwrap();
+                assert_eq!(parsed, kind);
+            }
+        }
+
+        #[test]
+        fn test_asset_kind_equality() {
+            assert_eq!(AssetKind::Mesh, AssetKind::Mesh);
+            assert_ne!(AssetKind::Mesh, AssetKind::Texture);
+            assert_ne!(AssetKind::Audio, AssetKind::Script);
+        }
+
+        #[test]
+        fn test_asset_kind_clone() {
+            let original = AssetKind::Animation;
+            let cloned = original.clone();
+            assert_eq!(original, cloned);
+        }
+    }
+
+    // ===== AssetMetadata Serialization Tests =====
+
+    mod asset_metadata_tests {
+        use super::*;
+
+        #[test]
+        fn test_asset_metadata_serialize_roundtrip() {
+            let meta = AssetMetadata {
+                guid: "abc123def456".to_string(),
+                path: "assets/models/hero.glb".to_string(),
+                kind: AssetKind::Mesh,
+                hash: "sha256hash".to_string(),
+                dependencies: vec!["dep1".to_string(), "dep2".to_string()],
+                last_modified: 1702569600,
+                size_bytes: 1024000,
+            };
+
+            let json = serde_json::to_string(&meta).unwrap();
+            let parsed: AssetMetadata = serde_json::from_str(&json).unwrap();
+
+            assert_eq!(parsed.guid, meta.guid);
+            assert_eq!(parsed.path, meta.path);
+            assert_eq!(parsed.kind, meta.kind);
+            assert_eq!(parsed.hash, meta.hash);
+            assert_eq!(parsed.dependencies, meta.dependencies);
+            assert_eq!(parsed.last_modified, meta.last_modified);
+            assert_eq!(parsed.size_bytes, meta.size_bytes);
+        }
+
+        #[test]
+        fn test_asset_metadata_empty_dependencies() {
+            let meta = AssetMetadata {
+                guid: "guid".to_string(),
+                path: "path".to_string(),
+                kind: AssetKind::Other,
+                hash: "hash".to_string(),
+                dependencies: vec![],
+                last_modified: 0,
+                size_bytes: 0,
+            };
+
+            let json = serde_json::to_string(&meta).unwrap();
+            let parsed: AssetMetadata = serde_json::from_str(&json).unwrap();
+            assert!(parsed.dependencies.is_empty());
+        }
+
+        #[test]
+        fn test_asset_metadata_large_file() {
+            let meta = AssetMetadata {
+                guid: "large_file_guid".to_string(),
+                path: "assets/large_texture.ktx2".to_string(),
+                kind: AssetKind::Texture,
+                hash: "longhash".to_string(),
+                dependencies: vec![],
+                last_modified: u64::MAX,
+                size_bytes: u64::MAX,
+            };
+
+            assert_eq!(meta.size_bytes, u64::MAX);
+            assert_eq!(meta.last_modified, u64::MAX);
+        }
+    }
+
+    // ===== AssetCache Advanced Tests =====
+
+    mod asset_cache_advanced_tests {
+        use super::*;
+
+        #[test]
+        fn test_asset_cache_is_empty() {
+            let cache = AssetCache::<i32>::default();
+            assert!(cache.is_empty());
+            assert_eq!(cache.len(), 0);
+        }
+
+        #[test]
+        fn test_asset_cache_not_empty_after_insert() {
+            let mut cache = AssetCache::<i32>::default();
+            cache.insert("path", 42);
+            assert!(!cache.is_empty());
+            assert_eq!(cache.len(), 1);
+        }
+
+        #[test]
+        fn test_asset_cache_multiple_types() {
+            // Test with different value types
+            let mut int_cache = AssetCache::<i32>::default();
+            let mut str_cache = AssetCache::<String>::default();
+            let mut vec_cache = AssetCache::<Vec<u8>>::default();
+
+            int_cache.insert("int.dat", 42);
+            str_cache.insert("str.dat", "hello".to_string());
+            vec_cache.insert("vec.dat", vec![1, 2, 3]);
+
+            assert_eq!(int_cache.len(), 1);
+            assert_eq!(str_cache.len(), 1);
+            assert_eq!(vec_cache.len(), 1);
+        }
+    }
+
+    // ===== infer_asset_kind Edge Cases =====
+
+    mod infer_asset_kind_edge_cases {
+        use super::*;
+        use std::path::Path;
+
+        #[test]
+        fn test_infer_dialogue_extension() {
+            assert_eq!(
+                infer_asset_kind(Path::new("npc.dialogue")),
+                AssetKind::Dialogue
+            );
+        }
+
+        #[test]
+        fn test_infer_material_extension() {
+            assert_eq!(
+                infer_asset_kind(Path::new("metal.material")),
+                AssetKind::Material
+            );
+        }
+
+        #[test]
+        fn test_infer_animation_extension() {
+            assert_eq!(
+                infer_asset_kind(Path::new("walk.anim")),
+                AssetKind::Animation
+            );
+            assert_eq!(
+                infer_asset_kind(Path::new("run.animation")),
+                AssetKind::Animation
+            );
+        }
+
+        #[test]
+        fn test_infer_uppercase_extension() {
+            // Extensions are case-sensitive in the current implementation
+            assert_eq!(infer_asset_kind(Path::new("model.GLTF")), AssetKind::Other);
+            assert_eq!(infer_asset_kind(Path::new("tex.PNG")), AssetKind::Other);
+        }
+
+        #[test]
+        fn test_infer_hidden_file() {
+            assert_eq!(infer_asset_kind(Path::new(".gitignore")), AssetKind::Other);
+        }
+
+        #[test]
+        fn test_infer_double_extension() {
+            // Only the last extension is considered
+            assert_eq!(
+                infer_asset_kind(Path::new("file.tar.gz")),
+                AssetKind::Other
+            );
+            assert_eq!(
+                infer_asset_kind(Path::new("model.backup.glb")),
+                AssetKind::Mesh
+            );
         }
     }
 }
@@ -2018,6 +2983,8 @@ pub enum AssetKind {
     Material,
     Animation,
     Script,
+    /// Blender source file - requires conversion to Mesh via astraweave-blend
+    BlenderSource,
     Other,
 }
 
@@ -2180,6 +3147,7 @@ impl AssetDatabase {
 fn infer_asset_kind(path: &Path) -> AssetKind {
     match path.extension().and_then(|e| e.to_str()) {
         Some("gltf") | Some("glb") | Some("obj") => AssetKind::Mesh,
+        Some("blend") => AssetKind::BlenderSource,
         Some("png") | Some("jpg") | Some("jpeg") | Some("ktx2") | Some("dds") => AssetKind::Texture,
         Some("wav") | Some("ogg") | Some("mp3") => AssetKind::Audio,
         Some("dialogue") | Some("dialogue.toml") => AssetKind::Dialogue,
@@ -2409,5 +3377,133 @@ pub mod import_pipelines {
         let _: toml::Value = toml::from_str(&content)?;
         fs::copy(source, output)?;
         Ok(())
+    }
+
+    /// Import a Blender file by converting it to glTF.
+    ///
+    /// This is a synchronous wrapper for the async blend import.
+    /// For async usage, use `blend_import::BlendImportSystem` directly.
+    #[cfg(feature = "blend")]
+    pub fn import_blend_sync(source: &Path, output: &Path) -> Result<()> {
+        use tokio::runtime::Runtime;
+
+        let rt = Runtime::new()?;
+        rt.block_on(async {
+            let mut importer = super::blend_import::BlendImportSystem::new();
+            importer.initialize(output.parent().map(|p| p.to_path_buf())).await?;
+
+            if !importer.is_available() {
+                anyhow::bail!("Blender is not available for .blend file conversion");
+            }
+
+            let result = importer.import_blend(source, None, Some(output.to_path_buf())).await?;
+
+            // Verify output was created
+            if !result.output_path.exists() {
+                anyhow::bail!("Blend conversion failed: output file not created");
+            }
+
+            Ok(())
+        })
+    }
+}
+
+/// Integration helper for using blend import with AssetDatabase.
+#[cfg(feature = "blend")]
+pub mod blend_asset_integration {
+    use super::*;
+    use super::blend_import::BlendImportSystem;
+
+    /// Integrates blend import capabilities with an AssetDatabase.
+    pub struct BlendAssetIntegration {
+        blend_system: BlendImportSystem,
+    }
+
+    impl Default for BlendAssetIntegration {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl BlendAssetIntegration {
+        /// Creates a new blend asset integration.
+        pub fn new() -> Self {
+            Self {
+                blend_system: BlendImportSystem::new(),
+            }
+        }
+
+        /// Initializes the blend system for a project.
+        pub async fn initialize(&mut self, project_root: Option<PathBuf>) -> Result<()> {
+            self.blend_system.initialize(project_root).await
+        }
+
+        /// Returns whether blend import is available.
+        pub fn is_available(&self) -> bool {
+            self.blend_system.is_available()
+        }
+
+        /// Imports a blend file and registers it in the asset database.
+        ///
+        /// The blend file is converted to glTF and both the source and
+        /// converted asset are registered in the database.
+        pub async fn import_and_register(
+            &mut self,
+            db: &mut AssetDatabase,
+            blend_path: &Path,
+        ) -> Result<(String, String)> {
+            // First, register the source blend file
+            let source_guid = db.register_asset(
+                blend_path,
+                AssetKind::BlenderSource,
+                vec![],
+            )?;
+
+            // Convert to glTF
+            let result = self.blend_system.import_blend(blend_path, None, None).await?;
+
+            // Register the converted mesh asset
+            let mesh_guid = db.register_asset(
+                &result.output_path,
+                AssetKind::Mesh,
+                vec![source_guid.clone()], // Mesh depends on source blend
+            )?;
+
+            // Update the source to point to its converted output
+            if let Some(source_meta) = db.assets.get_mut(&source_guid) {
+                source_meta.dependencies.push(mesh_guid.clone());
+            }
+
+            Ok((source_guid, mesh_guid))
+        }
+
+        /// Batch imports all blend files in a directory.
+        pub async fn import_directory(
+            &mut self,
+            db: &mut AssetDatabase,
+            directory: &Path,
+        ) -> Result<Vec<(PathBuf, String, String)>> {
+            let mut results = Vec::new();
+
+            for entry in walkdir::WalkDir::new(directory)
+                .follow_links(true)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
+                let path = entry.path();
+                if blend_import::is_blend_file(path) {
+                    match self.import_and_register(db, path).await {
+                        Ok((source_guid, mesh_guid)) => {
+                            results.push((path.to_path_buf(), source_guid, mesh_guid));
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to import {}: {}", path.display(), e);
+                        }
+                    }
+                }
+            }
+
+            Ok(results)
+        }
     }
 }
