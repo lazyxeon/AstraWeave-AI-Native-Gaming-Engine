@@ -182,6 +182,11 @@ impl ViewportRenderer {
         self.depth_view = Some(depth_view);
         self.size = (width, height);
 
+        #[cfg(feature = "astraweave-render")]
+        if let Some(adapter) = &mut self.engine_adapter {
+            adapter.resize(width, height);
+        }
+
         Ok(())
     }
 

@@ -69,6 +69,12 @@ impl EngineRenderAdapter {
     pub fn renderer_mut(&mut self) -> &mut astraweave_render::Renderer {
         &mut self.renderer
     }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        if width > 0 && height > 0 {
+            self.renderer.resize(width, height);
+        }
+    }
 }
 
 #[cfg(not(feature = "astraweave-render"))]
