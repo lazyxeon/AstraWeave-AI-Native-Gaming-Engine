@@ -221,7 +221,7 @@ impl GizmoRendererWgpu {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
         let camera_distance = (camera.position() - world_position).length();
-        let gizmo_scale = (camera_distance * 0.08).max(0.1).min(10.0);
+        let gizmo_scale = (camera_distance * 0.08).clamp(0.1, 10.0);
 
         // Extract constraint from mode
         let constraint = match gizmo_state.mode {

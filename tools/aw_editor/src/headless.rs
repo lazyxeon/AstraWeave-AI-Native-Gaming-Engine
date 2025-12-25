@@ -62,7 +62,7 @@ impl GizmoHarness {
         self.gizmo.start_translate();
         interaction::ensure_world_snapshot(&mut self.gizmo, &self.world);
         telemetry::record(EditorTelemetryEvent::GizmoStarted {
-            entity: entity,
+            entity,
             operation: GizmoOperationKind::Translate,
         });
         Ok(())
@@ -74,7 +74,7 @@ impl GizmoHarness {
         self.gizmo.start_rotate();
         interaction::ensure_world_snapshot(&mut self.gizmo, &self.world);
         telemetry::record(EditorTelemetryEvent::GizmoStarted {
-            entity: entity,
+            entity,
             operation: GizmoOperationKind::Rotate,
         });
         Ok(())
@@ -86,7 +86,7 @@ impl GizmoHarness {
         self.gizmo.start_scale(true); // Uniform scaling by default
         interaction::ensure_world_snapshot(&mut self.gizmo, &self.world);
         telemetry::record(EditorTelemetryEvent::GizmoStarted {
-            entity: entity,
+            entity,
             operation: GizmoOperationKind::Scale,
         });
         Ok(())
@@ -160,7 +160,7 @@ impl GizmoHarness {
         }) = interaction::cancel_active_gizmo(&mut self.gizmo, &mut self.world)
         {
             telemetry::record(EditorTelemetryEvent::GizmoCancelled {
-                entity: entity,
+                entity,
                 operation,
             });
         }

@@ -523,7 +523,7 @@ impl ViewportWidget {
 
         // Update picker scale based on camera distance
         let camera_distance = (self.camera.position() - gizmo_pos).length();
-        let gizmo_scale = (camera_distance * 0.08).max(0.1).min(10.0);
+        let gizmo_scale = (camera_distance * 0.08).clamp(0.1, 10.0);
 
         // Create picker with appropriate scale
         let mut picker = self.gizmo_picker.clone();
@@ -892,7 +892,7 @@ impl ViewportWidget {
                             if let Some(pose_mut) = world.pose_mut(selected_id) {
                                 // Scale by 1% per scroll tick (very smooth, gradual scaling)
                                 let scale_delta = 1.0 + (scroll * 0.01);
-                                let new_scale = (pose_mut.scale * scale_delta).max(0.1).min(10.0);
+                                let new_scale = (pose_mut.scale * scale_delta).clamp(0.1, 10.0);
                                 pose_mut.scale = new_scale;
 
                                 debug!(
