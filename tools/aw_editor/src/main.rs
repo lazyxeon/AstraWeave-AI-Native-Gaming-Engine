@@ -31,6 +31,43 @@ struct QuestStep {
     completed: bool,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum ToastLevel {
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
+struct Toast {
+    message: String,
+    level: ToastLevel,
+    created: std::time::Instant,
+}
+
+impl Toast {
+    fn new(message: impl Into<String>, level: ToastLevel) -> Self {
+        Self {
+            message: message.into(),
+            level,
+            created: std::time::Instant::now(),
+        }
+    }
+
+    fn color(&self) -> egui::Color32 {
+        match self.level {
+            ToastLevel::Info => egui::Color32::from_rgb(100, 149, 237),
+            ToastLevel::Success => egui::Color32::from_rgb(50, 205, 50),
+            ToastLevel::Warning => egui::Color32::from_rgb(255, 165, 0),
+            ToastLevel::Error => egui::Color32::from_rgb(220, 20, 60),
+        }
+    }
+
+    fn is_expired(&self, duration_secs: f32) -> bool {
+        self.created.elapsed().as_secs_f32() > duration_secs
+    }
+}
+
 mod behavior_graph;
 mod brdf_preview;
 mod clipboard; // Phase 3.4 - Copy/Paste/Duplicate
@@ -268,6 +305,8 @@ struct EditorApp {
     // Phase 6: Dirty flag for unsaved changes
     is_dirty: bool,
     show_quit_dialog: bool,
+    // Phase 6: Toast notifications
+    toasts: Vec<Toast>,
 }
 
 impl Default for EditorApp {
@@ -393,6 +432,8 @@ impl Default for EditorApp {
             // Phase 6: Dirty flag for unsaved changes
             is_dirty: false,
             show_quit_dialog: false,
+            // Phase 6: Toast notifications
+            toasts: Vec::new(),
         }
     }
 }
@@ -411,6 +452,73 @@ impl EditorApp {
             self.edit_world()
         } else {
             self.runtime.sim_world()
+        }
+    }
+
+    fn toast(&mut self, message: impl Into<String>, level: ToastLevel) {
+        self.toasts.push(Toast::new(message, level));
+    }
+
+    fn toast_success(&mut self, message: impl Into<String>) {
+        self.toast(message, ToastLevel::Success);
+    }
+
+    fn toast_error(&mut self, message: impl Into<String>) {
+        self.toast(message, ToastLevel::Error);
+    }
+
+    fn toast_info(&mut self, message: impl Into<String>) {
+        self.toast(message, ToastLevel::Info);
+    }
+
+    fn render_toasts(&mut self, ctx: &egui::Context) {
+        const TOAST_DURATION: f32 = 4.0;
+        const TOAST_WIDTH: f32 = 300.0;
+        const TOAST_PADDING: f32 = 10.0;
+
+        self.toasts.retain(|t| !t.is_expired(TOAST_DURATION));
+
+        let screen_rect = ctx.screen_rect();
+        let mut y_offset = screen_rect.max.y - TOAST_PADDING;
+
+        for toast in self.toasts.iter().rev() {
+            let age = toast.created.elapsed().as_secs_f32();
+            let alpha = if age < 0.3 {
+                age / 0.3
+            } else if age > TOAST_DURATION - 0.5 {
+                (TOAST_DURATION - age) / 0.5
+            } else {
+                1.0
+            };
+
+            let color = toast.color();
+            let bg_color = egui::Color32::from_rgba_unmultiplied(
+                color.r(),
+                color.g(),
+                color.b(),
+                (200.0 * alpha) as u8,
+            );
+
+            let toast_rect = egui::Rect::from_min_size(
+                egui::pos2(screen_rect.max.x - TOAST_WIDTH - TOAST_PADDING, y_offset - 40.0),
+                egui::vec2(TOAST_WIDTH, 35.0),
+            );
+
+            let painter = ctx.layer_painter(egui::LayerId::new(
+                egui::Order::Foreground,
+                egui::Id::new("toasts"),
+            ));
+
+            painter.rect_filled(toast_rect, 5.0, bg_color);
+            painter.text(
+                toast_rect.center(),
+                egui::Align2::CENTER_CENTER,
+                &toast.message,
+                egui::FontId::proportional(14.0),
+                egui::Color32::from_rgba_unmultiplied(255, 255, 255, (255.0 * alpha) as u8),
+            );
+
+            y_offset -= 45.0;
         }
     }
 
@@ -1737,15 +1845,17 @@ impl eframe::App for EditorApp {
                                 .push(format!("Scene saved: {:?}", path));
                             self.last_autosave = std::time::Instant::now();
                             self.is_dirty = false;
+                            self.toasts.push(Toast::new("Scene saved successfully", ToastLevel::Success));
                         }
                         Err(e) => {
-                            self.status = format!("❌ Scene save failed: {}", e);
+                            self.status = format!("Scene save failed: {}", e);
                             self.console_logs
-                                .push(format!("❌ Failed to save scene: {}", e));
+                                .push(format!("Failed to save scene: {}", e));
+                            self.toasts.push(Toast::new(format!("Save failed: {}", e), ToastLevel::Error));
                         }
                     }
                 } else {
-                    self.console_logs.push("⚠️  No world to save".into());
+                    self.console_logs.push("No world to save".into());
                 }
             }
 
@@ -2842,9 +2952,12 @@ impl eframe::App for EditorApp {
                 ui.collapsing("Asset Inspector", |ui| self.show_asset_inspector(ui));
             });
         });
+
+        self.render_toasts(ctx);
+
         if let Err(e) = self.runtime.tick(frame_time) {
             self.console_logs
-                .push(format!("❌ Runtime tick failed: {}", e));
+                .push(format!("Runtime tick failed: {}", e));
         }
     }
 }
