@@ -309,10 +309,7 @@ impl Panel for ChartsPanel {
     }
 
     fn update(&mut self) {
-        // Update at ~60 FPS
-        if self.frame_count % 1 == 0 {
-            self.simulate_frame_timing();
-        }
+        self.simulate_frame_timing();
     }
 }
 
