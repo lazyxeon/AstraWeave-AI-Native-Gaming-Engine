@@ -25,6 +25,7 @@ pub struct FluidRenderer {
     depth_pipeline: wgpu::RenderPipeline,
     smooth_pipeline: wgpu::ComputePipeline,
     shade_pipeline: wgpu::RenderPipeline,
+    secondary_pipeline: wgpu::RenderPipeline,
 
     camera_buffer: wgpu::Buffer,
     smooth_params_buffer: wgpu::Buffer,
@@ -141,7 +142,7 @@ impl FluidRenderer {
                 module: &depth_shader,
                 entry_point: Some("vs_main"),
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: 64, // Particle size
+                    array_stride: 80, // Extended Particle size
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &[wgpu::VertexAttribute {
                         offset: 0,
@@ -337,6 +338,75 @@ impl FluidRenderer {
             cache: None,
         });
 
+        let secondary_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Secondary Particle Shader"),
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                "../shaders/secondary.wgsl"
+            ))),
+        });
+
+        let secondary_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Secondary Particle Pipeline"),
+            layout: Some(&depth_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &secondary_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: 48, // SecondaryParticle size
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            offset: 0,
+                            shader_location: 0,
+                            format: wgpu::VertexFormat::Float32x4,
+                        },
+                        wgpu::VertexAttribute {
+                            offset: 16,
+                            shader_location: 1,
+                            format: wgpu::VertexFormat::Float32x4,
+                        },
+                        wgpu::VertexAttribute {
+                            offset: 32,
+                            shader_location: 2,
+                            format: wgpu::VertexFormat::Float32x4,
+                        },
+                    ],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &secondary_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format, // Match main surface format
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent::REPLACE,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
         // --- Bind Groups ---
         let depth_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("SSFR Depth Bind Group"),
@@ -374,6 +444,7 @@ impl FluidRenderer {
             depth_pipeline,
             smooth_pipeline,
             shade_pipeline,
+            secondary_pipeline,
             camera_buffer,
             smooth_params_buffer,
             depth_texture,
@@ -491,6 +562,8 @@ impl FluidRenderer {
         skybox_view: &wgpu::TextureView,
         particle_buffer: &wgpu::Buffer,
         particle_count: u32,
+        secondary_particle_buffer: &wgpu::Buffer,
+        secondary_particle_count: u32,
         camera: CameraUniform,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
@@ -587,6 +660,33 @@ impl FluidRenderer {
             rpass.set_pipeline(&self.shade_pipeline);
             rpass.set_bind_group(0, &shade_bind_group, &[]);
             rpass.draw(0..3, 0..1); // Full screen triangle
+        }
+
+        // 3. Secondary Particles (Whitewater/Spray)
+        if secondary_particle_count > 0 {
+            let depth_view = self.depth_texture.create_view(&Default::default());
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("SSFR Secondary Pass"),
+                color_attachments: &[Some(wgpu::ColorTargetAttachment {
+                    view: target_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &depth_view,
+                    depth_ops: None, // Only testing
+                    stencil_ops: None,
+                }),
+                ..Default::default()
+            });
+
+            rpass.set_pipeline(&self.secondary_pipeline);
+            rpass.set_bind_group(0, &self.depth_bind_group, &[]); // Layout 0 has ViewParams
+            rpass.set_vertex_buffer(0, secondary_particle_buffer.slice(..));
+            rpass.draw(0..4, 0..secondary_particle_count);
         }
     }
 }

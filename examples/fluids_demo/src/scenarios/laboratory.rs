@@ -21,7 +21,13 @@ impl FluidScenario for LaboratoryScenario {
         &self.name
     }
 
-    fn init(&mut self, _device: &wgpu::Device, queue: &wgpu::Queue, system: &mut FluidSystem) {
+    fn init(
+        &mut self,
+        _device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        system: &mut FluidSystem,
+        physics: &mut PhysicsWorld,
+    ) {
         // Reset system for dam break
         system.smoothing_radius = 0.5;
         system.target_density = 10.0;
@@ -49,32 +55,32 @@ impl FluidScenario for LaboratoryScenario {
                 position: [x, y, z, 1.0],
                 velocity: [0.0; 4],
                 predicted_position: [x, y, z, 1.0],
+                color: [0.3, 0.6, 1.0, 1.0], // Azure blue water
                 lambda: 0.0,
                 density: 0.0,
-                padding1: 0.0,
-                padding2: 0.0,
+                _pad: [0.0; 2],
             });
         }
 
         system.reset_particles(queue, &particles);
 
         // Add some dynamic objects for buoyancy testing
-        let box_id = _physics.add_dynamic_box(
+        let box_id = physics.add_dynamic_box(
             Vec3::new(10.0, 15.0, 10.0),
             Vec3::new(1.0, 1.0, 1.0),
             10.0,
             Layers::DEFAULT,
         );
-        _physics.add_buoyancy(box_id, 8.0, 5.0); // Floats well (volume > mass/density ratio)
+        physics.add_buoyancy(box_id, 8.0, 5.0); // Floats well (volume > mass/density ratio)
 
-        let sphere_id = _physics.add_dynamic_box(
+        let sphere_id = physics.add_dynamic_box(
             // Using box for simplicity in physics lib wrapper
             Vec3::new(5.0, 20.0, 5.0),
             Vec3::new(0.5, 0.5, 0.5),
             5.0,
             Layers::DEFAULT,
         );
-        _physics.add_buoyancy(sphere_id, 0.4, 2.0); // Sinks (volume < mass/density ratio)
+        physics.add_buoyancy(sphere_id, 0.4, 2.0); // Sinks (volume < mass/density ratio)
     }
 
     fn update(
@@ -83,6 +89,7 @@ impl FluidScenario for LaboratoryScenario {
         system: &mut FluidSystem,
         physics: &mut PhysicsWorld,
         _camera_pos: glam::Vec3,
+        _device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) {
         // Dynamic water level based on scenario state
@@ -132,6 +139,8 @@ impl FluidScenario for LaboratoryScenario {
             skybox,
             system.get_particle_buffer(),
             system.particle_count,
+            system.secondary_particle_buffer(),
+            system.secondary_particle_count(),
             camera_uniform,
             queue,
             device,

@@ -4,6 +4,12 @@
 //! Every action (transform, create, delete, edit) is wrapped in a command
 //! that can be undone and redone.
 //!
+//! Commands return `Box<dyn EditorCommand>` from `new()` to enable polymorphic
+//! storage in the undo stack. This is an intentional deviation from the typical
+//! `new() -> Self` convention.
+
+#![allow(clippy::new_ret_no_self)]
+
 //! # Architecture
 //!
 //! ```text

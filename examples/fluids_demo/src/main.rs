@@ -75,7 +75,12 @@ impl State {
         self.scenario_manager.next();
         if let Some(scenario) = self.scenario_manager.current() {
             log::info!("Switching to scenario: {}", scenario.name());
-            scenario.init(&self.device, &self.queue, &mut self.fluid_system);
+            scenario.init(
+                &self.device,
+                &self.queue,
+                &mut self.fluid_system,
+                &mut self.physics_world,
+            );
         }
     }
 
@@ -153,7 +158,7 @@ impl State {
         let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Initialize physics world with gravity
-        let physics_world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut physics_world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
 
         // Initialize fluid system with 20000 particles
         let particle_count = 20000;
@@ -182,7 +187,7 @@ impl State {
         )));
 
         if let Some(scenario) = scenario_manager.current() {
-            scenario.init(&device, &queue, &mut fluid_system);
+            scenario.init(&device, &queue, &mut fluid_system, &mut physics_world);
         }
 
         // Initialize skybox renderer
@@ -319,15 +324,16 @@ impl State {
             });
 
         // Update fluid simulation
-        self.fluid_system.step(&mut encoder, &self.queue, dt);
+        self.fluid_system.step(&self.device, &mut encoder, &self.queue, dt);
 
         // Update current scenario
-        if let Some(scenario) = self.scenario_manager.current_mut() {
+        if let Some(scenario) = self.scenario_manager.current() {
             scenario.update(
                 dt,
                 &mut self.fluid_system,
                 &mut self.physics_world,
-                self.camera.eye, // Use .eye as it was likely intended or position
+                self.camera.eye,
+                &self.device,
                 &self.queue,
             );
         }

@@ -31,3 +31,7 @@ harness = false
 [[bench]]
 name = "persistence_stress"
 harness = false
+
+[[bench]]
+name = "stress_test_adversarial"
+harness = false

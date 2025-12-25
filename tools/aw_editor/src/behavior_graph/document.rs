@@ -265,9 +265,9 @@ impl BehaviorGraphDocument {
             return Err(BehaviorGraphDocumentError::NodeCannotHaveChildren(parent));
         }
         let child_id = self.add_node(label, kind);
-        let parent_node = self
-            .node_mut(parent)
-            .expect("parent must exist after snapshot");
+        let Some(parent_node) = self.node_mut(parent) else {
+            return Err(BehaviorGraphDocumentError::MissingNode(parent));
+        };
         match parent_node.kind.children_mut() {
             Some(children) => {
                 children.push(child_id);

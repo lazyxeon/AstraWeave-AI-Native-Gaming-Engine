@@ -1755,6 +1755,17 @@ impl eframe::App for EditorApp {
             60.0
         };
 
+        // Phase 7: Dynamic window title with file name and dirty state
+        let file_name = self
+            .current_scene_path
+            .as_ref()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            .unwrap_or("Untitled");
+        let dirty_marker = if self.is_dirty { "*" } else { "" };
+        let title = format!("AstraWeave Editor - {}{}", file_name, dirty_marker);
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
+
         // Phase 6: Quit confirmation dialog
         if self.show_quit_dialog {
             egui::Window::new("Unsaved Changes")

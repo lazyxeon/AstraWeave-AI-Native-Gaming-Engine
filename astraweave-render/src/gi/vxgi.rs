@@ -56,6 +56,7 @@ pub struct VxgiRenderer {
     // Bind groups
     vxgi_bind_group_layout: wgpu::BindGroupLayout,
     vxgi_bind_group: wgpu::BindGroup,
+    voxelization_bind_group: wgpu::BindGroup,
 
     // Compute pipeline for voxelization
     voxelization_pipeline: wgpu::ComputePipeline,
@@ -187,6 +188,28 @@ impl VxgiRenderer {
                 cache: None,
             });
 
+        // Create a single-mip view for storage writing
+        let voxelization_view = voxel_texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("VXGI Voxelization View"),
+            format: Some(wgpu::TextureFormat::Rgba16Float),
+            dimension: Some(wgpu::TextureViewDimension::D3),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: None,
+            usage: None,
+        });
+
+        let voxelization_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("VXGI Voxelization Bind Group"),
+            layout: &voxelization_pipeline.get_bind_group_layout(0),
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&voxelization_view),
+            }],
+        });
+
         Self {
             config,
             _voxel_texture: voxel_texture,
@@ -195,6 +218,7 @@ impl VxgiRenderer {
             _config_buffer: config_buffer,
             vxgi_bind_group_layout,
             vxgi_bind_group,
+            voxelization_bind_group,
             voxelization_pipeline,
             needs_update: true,
         }
@@ -218,10 +242,13 @@ impl VxgiRenderer {
         });
 
         compute_pass.set_pipeline(&self.voxelization_pipeline);
+        compute_pass.set_bind_group(0, &self.voxelization_bind_group, &[]);
 
-        let workgroup_size = 8;
-        let dispatch_size = self.config.voxel_resolution.div_ceil(workgroup_size);
-        compute_pass.dispatch_workgroups(dispatch_size, dispatch_size, dispatch_size);
+        let workgroup_size_xy = 8;
+        let workgroup_size_z = 4;
+        let dispatch_size_xy = self.config.voxel_resolution.div_ceil(workgroup_size_xy);
+        let dispatch_size_z = self.config.voxel_resolution.div_ceil(workgroup_size_z);
+        compute_pass.dispatch_workgroups(dispatch_size_xy, dispatch_size_xy, dispatch_size_z);
 
         drop(compute_pass);
 
@@ -248,7 +275,7 @@ impl VxgiRenderer {
 const VOXELIZATION_SHADER: &str = r#"
 @group(0) @binding(0) var voxel_texture: texture_storage_3d<rgba16float, write>;
 
-@compute @workgroup_size(8, 8, 8)
+@compute @workgroup_size(8, 8, 4)
 fn voxelize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let voxel_pos = vec3<f32>(global_id);
     

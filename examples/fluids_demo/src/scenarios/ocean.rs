@@ -24,7 +24,13 @@ impl FluidScenario for OceanScenario {
         "Infinite Ocean"
     }
 
-    fn init(&mut self, _device: &wgpu::Device, _queue: &wgpu::Queue, system: &mut FluidSystem) {
+    fn init(
+        &mut self,
+        _device: &wgpu::Device,
+        _queue: &wgpu::Queue,
+        system: &mut FluidSystem,
+        _physics: &mut PhysicsWorld,
+    ) {
         system.smoothing_radius = 1.0;
         system.gravity = -9.81;
     }
@@ -35,6 +41,7 @@ impl FluidScenario for OceanScenario {
         _system: &mut FluidSystem,
         _physics: &mut PhysicsWorld,
         camera_pos: Vec3,
+        _device: &wgpu::Device,
         _queue: &wgpu::Queue,
     ) {
         self.camera_pos = camera_pos;
@@ -45,15 +52,15 @@ impl FluidScenario for OceanScenario {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
-        _scene_view: &wgpu::TextureView,
-        _scene_depth_view: &wgpu::TextureView,
+        scene_view: &wgpu::TextureView,
+        scene_depth_view: &wgpu::TextureView,
         depth: &wgpu::TextureView,
-        _device: &wgpu::Device,
+        device: &wgpu::Device,
         queue: &wgpu::Queue,
-        _system: &FluidSystem,
-        _renderer: &FluidRenderer,
+        system: &FluidSystem,
+        renderer: &FluidRenderer,
         camera_uniform: CameraUniform,
-        _skybox: &wgpu::TextureView,
+        skybox: &wgpu::TextureView,
     ) {
         let view_proj = glam::Mat4::from_cols_array_2d(&camera_uniform.view_proj);
         self.renderer.render(encoder, view, depth, queue, view_proj);

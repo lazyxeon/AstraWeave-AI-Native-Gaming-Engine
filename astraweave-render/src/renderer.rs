@@ -751,7 +751,8 @@ impl Renderer {
                 },
             ],
         });
-        let _post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        #[cfg(not(feature = "postfx"))]
+        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("post bg"),
             layout: &post_bgl,
             entries: &[
@@ -1126,32 +1127,6 @@ impl Renderer {
             bind_group_layouts: &[&post_fx_bgl],
             push_constant_ranges: &[],
         });
-        #[cfg(feature = "postfx")]
-        let _post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            cache: None,
-            label: Some("post fx pipeline"),
-            layout: Some(&post_fx_pl),
-            vertex: wgpu::VertexState {
-                module: &post_fx_shader,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &post_fx_shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        });
 
         // Shadow bind group layout (declared early so we can include it in main pipeline layout)
         let shadow_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -1327,23 +1302,33 @@ impl Renderer {
         sky.init_gpu_resources(&device, wgpu::TextureFormat::Rgba16Float)?;
 
         // Post pipeline uses surface format
+        #[cfg(not(feature = "postfx"))]
         let post_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("post layout"),
             bind_group_layouts: &[&post_bgl],
             push_constant_ranges: &[],
         });
+        #[cfg(feature = "postfx")]
+        let post_pipeline_layout = post_fx_pl;
+
         let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             cache: None,
             label: Some("post pipeline"),
             layout: Some(&post_pipeline_layout),
             vertex: wgpu::VertexState {
+                #[cfg(not(feature = "postfx"))]
                 module: &post_shader,
+                #[cfg(feature = "postfx")]
+                module: &post_fx_shader,
                 entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
+                #[cfg(not(feature = "postfx"))]
                 module: &post_shader,
+                #[cfg(feature = "postfx")]
+                module: &post_fx_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,

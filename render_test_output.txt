@@ -1,0 +1,142 @@
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+error[E0432]: unresolved import `astraweave_render::voxel_mesh`
+ --> astraweave-render\tests\coverage_booster_render.rs:7:24
+  |
+7 | use astraweave_render::voxel_mesh::VoxelVertex;
+  |                        ^^^^^^^^^^ could not find `voxel_mesh` in `astraweave_render`
+
+error[E0432]: unresolved import `astraweave_render::voxel_mesh`
+  --> astraweave-render\tests\coverage_booster_render.rs:84:28
+   |
+84 |     use astraweave_render::voxel_mesh::VoxelMesh;
+   |                            ^^^^^^^^^^ could not find `voxel_mesh` in `astraweave_render`
+
+warning: unused import: `Vec3`
+ --> astraweave-render\tests\coverage_booster_render.rs:8:24
+  |
+8 | use glam::{vec3, Mat4, Vec3};
+  |                        ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+error[E0063]: missing field `trace` in initializer of `DeviceDescriptor<Option<&str>>`
+  --> astraweave-render\tests\coverage_booster_render.rs:24:14
+   |
+24 |             &wgpu::DeviceDescriptor {
+   |              ^^^^^^^^^^^^^^^^^^^^^^ missing `trace`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+  --> astraweave-render\tests\coverage_booster_render.rs:23:10
+   |
+23 |         .request_device(
+   |          ^^^^^^^^^^^^^^
+...
+30 |             None,
+   |             ---- unexpected argument #2 of type `Option<_>`
+   |
+note: method defined here
+  --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+   |
+60 |     pub fn request_device(
+   |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+   |
+29 -             },
+30 -             None,
+29 +             },
+   |
+
+error[E0061]: this function takes 4 arguments but 3 arguments were supplied
+   --> astraweave-render\tests\coverage_booster_render.rs:110:24
+    |
+110 |         let _gbuffer = GBuffer::new(&device, 800, 600);
+    |                        ^^^^^^^^^^^^------------------- argument #4 of type `GBufferFormats` is missing
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render\src\deferred.rs:66:12
+    |
+66  |     pub fn new(device: &wgpu::Device, width: u32, height: u32, formats: GBufferFormats) -> Self {
+    |            ^^^
+help: provide the argument
+    |
+110 |         let _gbuffer = GBuffer::new(&device, 800, 600, /* GBufferFormats */);
+    |                                                      ++++++++++++++++++++++
+
+error[E0599]: no method named `update_camera` found for struct `TextureStreamingManager` in the current scope
+   --> astraweave-render\tests\coverage_booster_render.rs:178:13
+    |
+178 |     manager.update_camera(vec3(0.0, 0.0, 0.0));
+    |             ^^^^^^^^^^^^^ method not found in `TextureStreamingManager`
+
+error[E0599]: no method named `process_results` found for struct `TextureStreamingManager` in the current scope
+   --> astraweave-render\tests\coverage_booster_render.rs:184:13
+    |
+184 |     manager.process_results();
+    |             ^^^^^^^^^^^^^^^ method not found in `TextureStreamingManager`
+
+error[E0061]: this function takes 4 arguments but 3 arguments were supplied
+   --> astraweave-render\tests\coverage_booster_render.rs:191:27
+    |
+191 |         let mut gbuffer = GBuffer::new(&device, 800, 600);
+    |                           ^^^^^^^^^^^^------------------- argument #4 of type `GBufferFormats` is missing
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render\src\deferred.rs:66:12
+    |
+66  |     pub fn new(device: &wgpu::Device, width: u32, height: u32, formats: GBufferFormats) -> Self {
+    |            ^^^
+help: provide the argument
+    |
+191 |         let mut gbuffer = GBuffer::new(&device, 800, 600, /* GBufferFormats */);
+    |                                                         ++++++++++++++++++++++
+
+error[E0599]: no method named `width` found for struct `GBuffer` in the current scope
+   --> astraweave-render\tests\coverage_booster_render.rs:193:28
+    |
+193 |         assert_eq!(gbuffer.width(), 1024);
+    |                            ^^^^^ field, not a method
+    |
+help: remove the arguments
+    |
+193 -         assert_eq!(gbuffer.width(), 1024);
+193 +         assert_eq!(gbuffer.width, 1024);
+    |
+help: some of the expressions' fields have a method of the same name
+    |
+193 |         assert_eq!(gbuffer.albedo_texture.width(), 1024);
+    |                            +++++++++++++++
+193 |         assert_eq!(gbuffer.depth_texture.width(), 1024);
+    |                            ++++++++++++++
+193 |         assert_eq!(gbuffer.emissive_texture.width(), 1024);
+    |                            +++++++++++++++++
+193 |         assert_eq!(gbuffer.normal_texture.width(), 1024);
+    |                            +++++++++++++++
+      and 1 other candidate
+
+error[E0599]: no method named `height` found for struct `GBuffer` in the current scope
+   --> astraweave-render\tests\coverage_booster_render.rs:194:28
+    |
+194 |         assert_eq!(gbuffer.height(), 768);
+    |                            ^^^^^^ field, not a method
+    |
+help: remove the arguments
+    |
+194 -         assert_eq!(gbuffer.height(), 768);
+194 +         assert_eq!(gbuffer.height, 768);
+    |
+help: some of the expressions' fields have a method of the same name
+    |
+194 |         assert_eq!(gbuffer.albedo_texture.height(), 768);
+    |                            +++++++++++++++
+194 |         assert_eq!(gbuffer.depth_texture.height(), 768);
+    |                            ++++++++++++++
+194 |         assert_eq!(gbuffer.emissive_texture.height(), 768);
+    |                            +++++++++++++++++
+194 |         assert_eq!(gbuffer.normal_texture.height(), 768);
+    |                            +++++++++++++++
+      and 1 other candidate
+
+Some errors have detailed explanations: E0061, E0063, E0432, E0599.
+For more information about an error, try `rustc --explain E0061`.
+warning: `astraweave-render` (test "coverage_booster_render") generated 1 warning
+error: could not compile `astraweave-render` (test "coverage_booster_render") due to 10 previous errors; 1 warning emitted

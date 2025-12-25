@@ -17,6 +17,7 @@ rand = "0.9"
 
 [dev-dependencies]
 tokio = { workspace = true }
+criterion = { workspace = true }
 
 [[bin]]
 name = "evaluate"

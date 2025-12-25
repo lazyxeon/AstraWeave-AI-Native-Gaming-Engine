@@ -236,6 +236,12 @@ pub struct ABMetrics {
     pub successes: HashMap<String, u64>,
 }
 
+impl Default for ABTestingEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ABTestingEngine {
     pub fn new() -> Self {
         Self {

@@ -281,7 +281,7 @@ impl PromptFormatter {
     /// Format a prompt according to options
     pub fn format(prompt: &str, options: &FormattingOptions) -> String {
         let indent = if options.use_tabs {
-            "\t".repeat(1)
+            "\t".to_string()
         } else {
             " ".repeat(options.indent_size)
         };
@@ -393,7 +393,7 @@ impl PromptAnalyzer {
         while let Some(char) = chars.next() {
             if char == '{' {
                 let mut var_name = String::new();
-                while let Some(char) = chars.next() {
+                for char in chars.by_ref() {
                     if char == '}' {
                         break;
                     }
@@ -424,7 +424,7 @@ impl PromptAnalyzer {
             40 - ((avg_words_per_sentence - 25.0) * 1.5) as u8
         };
 
-        score.max(0).min(100)
+        score.min(100)
     }
 
     /// Generate prompt statistics

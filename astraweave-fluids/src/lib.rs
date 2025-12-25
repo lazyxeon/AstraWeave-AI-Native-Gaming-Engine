@@ -15,8 +15,8 @@ pub struct Particle {
     pub predicted_position: [f32; 4],
     pub lambda: f32,
     pub density: f32,
-    pub padding1: f32,
-    pub padding2: f32,
+    pub _pad: [f32; 2],
+    pub color: [f32; 4],
 }
 
 #[repr(C)]
@@ -67,6 +67,9 @@ pub struct FluidSystem {
     lambda_pipeline: wgpu::ComputePipeline,
     delta_pos_pipeline: wgpu::ComputePipeline,
     integrate_pipeline: wgpu::ComputePipeline,
+    mix_dye_pipeline: wgpu::ComputePipeline,
+    emit_whitewater_pipeline: wgpu::ComputePipeline,
+    update_whitewater_pipeline: wgpu::ComputePipeline,
 
     params_buffer: wgpu::Buffer,
     pub particle_count: u32,
@@ -87,10 +90,20 @@ pub struct FluidSystem {
     pub grid_height: u32,
     pub grid_depth: u32,
 
-    pub sdf_view: Option<Arc<wgpu::TextureView>>,
+    pub sdf_system: crate::sdf::SdfSystem,
     pub objects_buffer: wgpu::Buffer,
     pub objects_bind_group: wgpu::BindGroup,
     pub default_sampler: wgpu::Sampler,
+    secondary_particle_buffer: wgpu::Buffer,
+    secondary_counter: wgpu::Buffer,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct SecondaryParticle {
+    pub position: [f32; 4],
+    pub velocity: [f32; 4],
+    pub info: [f32; 4], // x: lifetime, y: type, z: alpha, w: scale
 }
 
 impl FluidSystem {
@@ -116,8 +129,8 @@ impl FluidSystem {
                 predicted_position: [x, y, z, 1.0],
                 lambda: 0.0,
                 density: 0.0,
-                padding1: 0.0,
-                padding2: 0.0,
+                _pad: [0.0; 2],
+                color: [0.2, 0.5, 0.8, 1.0],
             });
         }
 
@@ -287,7 +300,45 @@ impl FluidSystem {
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 7,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 8,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
+        });
+
+        // Create secondary particle buffer (65536 * 48 bytes)
+        let secondary_particle_count = 65536;
+        let secondary_particle_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Secondary Particle Buffer"),
+            size: (secondary_particle_count * std::mem::size_of::<SecondaryParticle>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        });
+
+        let secondary_counter = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Secondary Counter"),
+            size: 4,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         // Create 2 Bind Groups (Ping-Pong)
@@ -324,6 +375,14 @@ impl FluidSystem {
                     wgpu::BindGroupEntry {
                         binding: 6,
                         resource: wgpu::BindingResource::Sampler(&default_sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 7,
+                        resource: secondary_particle_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 8,
+                        resource: secondary_counter.as_entire_binding(),
                     },
                 ],
             });
@@ -375,14 +434,17 @@ impl FluidSystem {
             lambda_pipeline,
             delta_pos_pipeline,
             integrate_pipeline,
+            mix_dye_pipeline,
+            emit_whitewater_pipeline,
+            update_whitewater_pipeline,
         ) = {
-            let create_p = |label, entry| {
+            let create_p = |label, entry_point| {
                 device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                     label: Some(label),
                     layout: Some(&pipeline_layout),
                     module: &shader,
-                    entry_point: Some(entry),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some(entry_point),
+                    compilation_options: Default::default(),
                     cache: None,
                 })
             };
@@ -393,8 +455,13 @@ impl FluidSystem {
                 create_p("Lambda", "compute_lambda"),
                 create_p("Delta Pos", "compute_delta_pos"),
                 create_p("Integrate", "integrate"),
+                create_p("Mix Dye", "mix_dye"),
+                create_p("Emit Whitewater", "emit_whitewater"),
+                create_p("Update Whitewater", "update_whitewater"),
             )
         };
+
+        let sdf_system = crate::sdf::SdfSystem::new(device, &objects_buffer, 64, 60.0);
 
         Self {
             particle_buffers,
@@ -421,10 +488,15 @@ impl FluidSystem {
             grid_width,
             grid_height,
             grid_depth,
-            sdf_view: None,
+            sdf_system,
             objects_buffer,
             objects_bind_group,
             default_sampler,
+            secondary_particle_buffer,
+            secondary_counter,
+            mix_dye_pipeline,
+            emit_whitewater_pipeline,
+            update_whitewater_pipeline,
         }
     }
 
@@ -441,7 +513,13 @@ impl FluidSystem {
         }
     }
 
-    pub fn step(&mut self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue, dt: f32) {
+    pub fn step(
+        &mut self,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
+        dt: f32,
+    ) {
         // Update Uniforms
         let params = SimParams {
             smoothing_radius: self.smoothing_radius,
@@ -463,31 +541,87 @@ impl FluidSystem {
         };
         queue.write_buffer(&self.params_buffer, 0, bytemuck::bytes_of(&params));
 
-        let current_src = self.frame_index % 2;
-        let particle_workgroups = (self.particle_count + 63) / 64;
-        let grid_size = self.grid_width * self.grid_height * self.grid_depth;
-        let grid_workgroups = (grid_size + 63) / 64;
+        // 1. Generate SDF
+        self.sdf_system.generate(encoder, queue);
 
+        let particle_workgroups = (self.particle_count + 63) / 64;
+        let current_src = (self.frame_index % 2) as usize;
         let bg = &self.bind_groups[current_src];
         let obj_bg = &self.objects_bind_group;
 
-        // 1. Predict and Clear Grid
+        // Create a temporary bind group for the SDF texture and sampler
+        // This should really be part of the FluidSystem's bind group layout for performance,
+        // but for now we'll bind it to group 2.
+        let sdf_view = self
+            .sdf_system
+            .texture_a
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        // We need a bind group layout for the SDF
+        let sdf_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Fluid SDF Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D3,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    count: None,
+                },
+            ],
+        });
+
+        let sdf_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Fluid SDF BG"),
+            layout: &sdf_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&sdf_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.default_sampler),
+                },
+            ],
+        });
+
+        // 2. Predict and Clear Grid
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("Fluid::PredictAndClear"),
+                label: Some("Fluid::Predict"),
                 ..Default::default()
             });
             cpass.set_bind_group(0, bg, &[]);
             cpass.set_bind_group(1, obj_bg, &[]);
-
             cpass.set_pipeline(&self.predict_pipeline);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
-
-            cpass.set_pipeline(&self.clear_grid_pipeline);
-            cpass.dispatch_workgroups(grid_workgroups, 1, 1);
         }
 
-        // 2. Build Grid
+        {
+            let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("Fluid::ClearGrid"),
+                ..Default::default()
+            });
+            cpass.set_bind_group(0, bg, &[]);
+            cpass.set_pipeline(&self.clear_grid_pipeline);
+            cpass.dispatch_workgroups(
+                (self.grid_width * self.grid_height * self.grid_depth + 63) / 64,
+                1,
+                1,
+            );
+        }
+
+        // 3. Build Grid
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("Fluid::BuildGrid"),
@@ -506,6 +640,7 @@ impl FluidSystem {
                     ..Default::default()
                 });
                 cpass.set_bind_group(0, bg, &[]);
+                cpass.set_bind_group(2, &sdf_bg, &[]); // Global SDF
                 cpass.set_pipeline(&self.lambda_pipeline);
                 cpass.dispatch_workgroups(particle_workgroups, 1, 1);
             }
@@ -516,6 +651,7 @@ impl FluidSystem {
                 });
                 cpass.set_bind_group(0, bg, &[]);
                 cpass.set_bind_group(1, obj_bg, &[]);
+                cpass.set_bind_group(2, &sdf_bg, &[]); // Global SDF
                 cpass.set_pipeline(&self.delta_pos_pipeline);
                 cpass.dispatch_workgroups(particle_workgroups, 1, 1);
             }
@@ -528,8 +664,30 @@ impl FluidSystem {
                 ..Default::default()
             });
             cpass.set_bind_group(0, bg, &[]);
+            cpass.set_bind_group(2, &sdf_bg, &[]); // Global SDF
             cpass.set_pipeline(&self.integrate_pipeline);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
+        }
+
+        // 5. Dye Mixing & Whitewater
+        {
+            let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("Fluid::Dye&Whitewater"),
+                ..Default::default()
+            });
+            cpass.set_bind_group(0, bg, &[]);
+
+            // Dye mixing
+            cpass.set_pipeline(&self.mix_dye_pipeline);
+            cpass.dispatch_workgroups(particle_workgroups, 1, 1);
+
+            // Whitewater emission
+            cpass.set_pipeline(&self.emit_whitewater_pipeline);
+            cpass.dispatch_workgroups(particle_workgroups, 1, 1);
+
+            // Whitewater update (max 65536 particles)
+            cpass.set_pipeline(&self.update_whitewater_pipeline);
+            cpass.dispatch_workgroups(1024, 1, 1); // 1024 * 64 = 65536
         }
 
         self.frame_index += 1;
@@ -545,6 +703,14 @@ impl FluidSystem {
         // If frame_index is Even, result is in 0.
         &self.particle_buffers[self.frame_index % 2]
     }
+
+    pub fn secondary_particle_buffer(&self) -> &wgpu::Buffer {
+        &self.secondary_particle_buffer
+    }
+
+    pub fn secondary_particle_count(&self) -> u32 {
+        65536
+    }
 }
 
 #[cfg(test)]
@@ -559,8 +725,8 @@ mod tests {
             predicted_position: [0.0, 0.0, 0.0, 1.0],
             lambda: 0.0,
             density: 0.0,
-            padding1: 0.0,
-            padding2: 0.0,
+            _pad: [0.0; 2],
+            color: [0.0; 4],
         };
         assert_eq!(particle.position[3], 1.0);
         assert_eq!(particle.density, 0.0);
@@ -574,8 +740,8 @@ mod tests {
             predicted_position: [1.0, 1.0, 3.0, 1.0],
             lambda: 1.0,
             density: 1.0,
-            padding1: 0.0,
-            padding2: 0.0,
+            _pad: [0.0; 2],
+            color: [1.0, 0.0, 0.0, 1.0],
         };
         assert_eq!(particle.velocity[1], -1.0);
         assert_eq!(particle.lambda, 1.0);
@@ -585,9 +751,9 @@ mod tests {
     #[test]
     fn test_particle_size() {
         // Ensure Particle is exactly the size we expect for GPU alignment
-        // 4 f32 (position) + 4 f32 (velocity) + 4 f32 (force) + 4 f32 (density, pressure, padding)
-        // = 16 * 4 = 64 bytes
-        assert_eq!(std::mem::size_of::<Particle>(), 64);
+        // 3 * vec4 (pos, vel, pred) + 1 * vec4 (lambda, density, pad) + 1 * vec4 (color)
+        // = 80 bytes
+        assert_eq!(std::mem::size_of::<Particle>(), 80);
     }
 
     #[test]
@@ -650,8 +816,8 @@ mod tests {
                 predicted_position: [1.0, 2.0, 3.0, 1.0],
                 lambda: 0.0,
                 density: 1.0,
-                padding1: 0.0,
-                padding2: 0.0,
+                _pad: [0.0; 2],
+                color: [0.0; 4],
             },
             Particle {
                 position: [4.0, 5.0, 6.0, 1.0],
@@ -659,8 +825,8 @@ mod tests {
                 predicted_position: [5.0, 6.0, 7.0, 1.0],
                 lambda: 2.0,
                 density: 2.0,
-                padding1: 0.0,
-                padding2: 0.0,
+                _pad: [0.0; 2],
+                color: [1.0; 4],
             },
         ];
 

@@ -140,6 +140,12 @@ pub struct TemplateEngine {
     inner: PromptEngine,
 }
 
+impl Default for TemplateEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TemplateEngine {
     pub fn new() -> Self {
         let mut engine = Self {

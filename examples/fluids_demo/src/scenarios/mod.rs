@@ -11,7 +11,13 @@ use astraweave_physics::PhysicsWorld;
 pub trait FluidScenario {
     fn name(&self) -> &str;
 
-    fn init(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, system: &mut FluidSystem);
+    fn init(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        system: &mut FluidSystem,
+        physics: &mut PhysicsWorld,
+    );
 
     fn update(
         &mut self,
@@ -19,6 +25,7 @@ pub trait FluidScenario {
         system: &mut FluidSystem,
         physics: &mut PhysicsWorld,
         camera_pos: glam::Vec3,
+        device: &wgpu::Device,
         queue: &wgpu::Queue,
     );
 

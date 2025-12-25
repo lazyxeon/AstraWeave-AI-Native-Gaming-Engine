@@ -209,7 +209,7 @@ pub fn sanitize_variable_name(name: &str, config: &SanitizationConfig) -> Result
     
     // Must start with letter or underscore
     if !valid_chars.chars().next().unwrap().is_alphabetic() 
-        && valid_chars.chars().next().unwrap() != '_' {
+        && !valid_chars.starts_with('_') {
         bail!("Variable name must start with letter or underscore");
     }
     
