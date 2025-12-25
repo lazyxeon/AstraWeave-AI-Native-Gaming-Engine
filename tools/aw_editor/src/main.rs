@@ -2577,6 +2577,9 @@ impl eframe::App for EditorApp {
 
                         ui.add_space(10.0);
 
+                        let mut hierarchy_toasts: Vec<(String, bool)> = Vec::new();
+                        let mut hierarchy_updates: Vec<(Option<u32>, Option<u64>, bool)> = Vec::new();
+
                         ui.collapsing("🌲 Hierarchy", |ui| {
                             let runtime_state = self.runtime.state();
                             let world_opt = if runtime_state == RuntimeState::Editing {
@@ -2594,8 +2597,77 @@ impl eframe::App for EditorApp {
                                 {
                                     self.selected_entity = Some(selected as u64);
                                 }
+
+                                for action in self.hierarchy_panel.take_pending_actions() {
+                                    use crate::panels::hierarchy_panel::HierarchyAction;
+                                    match action {
+                                        HierarchyAction::DeleteEntity(entity) => {
+                                            world.destroy_entity(entity);
+                                            hierarchy_updates.push((None, None, true));
+                                            hierarchy_toasts.push((
+                                                format!("Deleted entity {}", entity),
+                                                true,
+                                            ));
+                                        }
+                                        HierarchyAction::DuplicateEntity(entity) => {
+                                            if let Some(name) = world.name(entity) {
+                                                let new_name = format!("{}_copy", name);
+                                                let new_entity = world.spawn(
+                                                    &new_name,
+                                                    astraweave_core::IVec2 { x: 0, y: 0 },
+                                                    astraweave_core::Team { id: 0 },
+                                                    0,
+                                                    0,
+                                                );
+                                                hierarchy_updates.push((
+                                                    Some(new_entity),
+                                                    Some(new_entity as u64),
+                                                    true,
+                                                ));
+                                                hierarchy_toasts.push((
+                                                    format!(
+                                                        "Duplicated entity {} -> {}",
+                                                        entity, new_entity
+                                                    ),
+                                                    true,
+                                                ));
+                                            }
+                                        }
+                                        HierarchyAction::CreatePrefab(entity) => {
+                                            if let Some(name) = world.name(entity) {
+                                                hierarchy_toasts.push((
+                                                    format!(
+                                                        "Create prefab from '{}' (not yet implemented)",
+                                                        name
+                                                    ),
+                                                    false,
+                                                ));
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         });
+
+                        for (selected_entity, entity_id, is_dirty) in hierarchy_updates {
+                            if let Some(sel) = selected_entity {
+                                self.hierarchy_panel.set_selected(Some(sel));
+                            } else {
+                                self.hierarchy_panel.set_selected(None);
+                            }
+                            self.selected_entity = entity_id;
+                            if is_dirty {
+                                self.is_dirty = true;
+                            }
+                        }
+
+                        for (msg, is_success) in hierarchy_toasts {
+                            if is_success {
+                                self.toast_success(msg);
+                            } else {
+                                self.toast_info(msg);
+                            }
+                        }
 
                         let all_selected = self.hierarchy_panel.get_all_selected();
                         self.selection_set.clear();
