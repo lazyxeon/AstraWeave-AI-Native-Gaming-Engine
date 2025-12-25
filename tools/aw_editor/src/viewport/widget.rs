@@ -1690,6 +1690,21 @@ impl ViewportWidget {
         &self.toolbar
     }
 
+    #[cfg(feature = "astraweave-render")]
+    pub fn load_gltf_model(&self, name: impl Into<String>, path: &std::path::Path) -> anyhow::Result<()> {
+        let mut renderer = self.renderer.lock().map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+        if let Some(adapter) = renderer.engine_adapter_mut() {
+            adapter.load_gltf_model(name, path)
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn load_gltf_model(&self, _name: impl Into<String>, _path: &std::path::Path) -> anyhow::Result<()> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
     /// Toggle entity selection
     pub fn toggle_selection(&mut self, entity: Entity) {
         if self.selected_entities.contains(&entity) {

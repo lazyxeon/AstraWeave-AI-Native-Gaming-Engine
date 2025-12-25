@@ -1,6 +1,7 @@
 #![cfg(feature = "astraweave-render")]
 
 use anyhow::{Context, Result};
+use std::path::Path;
 use std::sync::Arc;
 use wgpu;
 
@@ -74,6 +75,35 @@ impl EngineRenderAdapter {
         if width > 0 && height > 0 {
             self.renderer.resize(width, height);
         }
+    }
+
+    pub fn load_gltf_model(&mut self, name: impl Into<String>, path: &Path) -> Result<()> {
+        use astraweave_render::{mesh_gltf, Instance};
+
+        let opts = mesh_gltf::GltfOptions::default();
+        let cpu_meshes = mesh_gltf::load_gltf(path, &opts)
+            .with_context(|| format!("Failed to load glTF: {}", path.display()))?;
+
+        if cpu_meshes.is_empty() {
+            anyhow::bail!("glTF file contains no meshes: {}", path.display());
+        }
+
+        let mesh = self.renderer.create_mesh_from_cpu_mesh(&cpu_meshes[0]);
+        let instance = Instance::from_pos_scale_color(
+            glam::Vec3::ZERO,
+            glam::Vec3::ONE,
+            [1.0, 1.0, 1.0, 1.0],
+        );
+        self.renderer.add_model(name, mesh, &[instance]);
+        Ok(())
+    }
+
+    pub fn has_model(&self, name: &str) -> bool {
+        self.renderer.has_model(name)
+    }
+
+    pub fn clear_model(&mut self, name: &str) {
+        self.renderer.clear_model(name);
     }
 }
 

@@ -1015,6 +1015,20 @@ impl EditorApp {
                         editor_entity.set_mesh(path.display().to_string());
                     }
 
+                    // Load the glTF model into the engine renderer
+                    #[cfg(feature = "astraweave-render")]
+                    if let Some(viewport) = &self.viewport {
+                        if let Err(e) = viewport.load_gltf_model(&model_name, &path) {
+                            warn!("Failed to load glTF model into renderer: {}", e);
+                            self.console_logs.push(format!(
+                                "⚠️ glTF loading failed: {}",
+                                e
+                            ));
+                        } else {
+                            debug!("Loaded glTF model '{}' into engine renderer", model_name);
+                        }
+                    }
+
                     self.selected_entity = Some(entity as u64);
                     info!("Imported model '{}' as entity #{}", model_name, entity);
                     self.console_logs.push(format!(

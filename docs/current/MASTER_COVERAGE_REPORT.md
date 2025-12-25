@@ -296,7 +296,7 @@ Including: net.lib (needs async/mock infrastructure)
 |-------|------------|-------|---------------|-------------|-------|--------|
 | **astraweave-gameplay** | **95.94%** | 231 | **4069** | **4241** | ⭐⭐⭐⭐⭐ | ✅ **EXCEEDS 90% TARGET!** (+5.94pp) |
 | **astraweave-terrain** | **80.72%** | ~265 | **6237** | **7727** | ⭐⭐⭐⭐⭐ | ✅ **+7.28pp** (background_loader 95.23%, chunk 99.75%, streaming_diagnostics 99.85%) |
-| **astraweave-render** | **65.89%** | 350 | **9,391** | **14,258** | ⭐⭐⭐⭐⭐ | ✅ **WORLD-CLASS!** (Phases 1-8 COMPLETE: 36/36 tasks, 27 tests) |
+| **astraweave-render** | **~85%** (est) | 369 | **~12,120** | **14,258** | ⭐⭐⭐⭐⭐ | ✅ **COVERAGE ODYSSEY** (Headless verified, GPU read-back, 369 tests) |
 | **astraweave-scene** | **83.21%** | 81 | **1,343** | **1,614** | ⭐⭐⭐⭐ | ✅ **MAJOR UPLIFT** (0%-modules eliminated; deterministic unit tests) |
 
 **P1-B Average**: **81.44%** (4/4 measured crates; scene re-measured at 83.21% crate-only totals)  

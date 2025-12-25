@@ -2712,6 +2712,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
     }
 
+    pub fn create_mesh_from_cpu_mesh(&self, cpu_mesh: &crate::mesh::CpuMesh) -> Mesh {
+        let positions: Vec<_> = cpu_mesh.vertices.iter().map(|v| v.position).collect();
+        let normals: Vec<_> = cpu_mesh.vertices.iter().map(|v| v.normal).collect();
+        let tangents: Vec<_> = cpu_mesh.vertices.iter().map(|v| v.tangent).collect();
+        let uvs: Vec<_> = cpu_mesh.vertices.iter().map(|v| v.uv).collect();
+        self.create_mesh_from_full_arrays(&positions, &normals, &tangents, &uvs, &cpu_mesh.indices)
+    }
+
     pub fn set_external_mesh(&mut self, mesh: Mesh) {
         self.mesh_external = Some(mesh);
     }
