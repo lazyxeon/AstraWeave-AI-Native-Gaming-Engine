@@ -34,10 +34,8 @@
 //! - Total: <12ms (26% headroom)
 
 use anyhow::{Context, Result};
-use egui;
 use std::sync::{Arc, Mutex};
 use tracing::{debug, trace, warn};
-use wgpu;
 
 use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
@@ -365,7 +363,7 @@ impl ViewportWidget {
 
                 // Check if mouse is over button
                 let pointer_pos = ui.ctx().pointer_latest_pos();
-                let is_hovering = pointer_pos.map_or(false, |pos| button_rect.contains(pos));
+                let is_hovering = pointer_pos.is_some_and(|pos| button_rect.contains(pos));
 
                 // Button background (highlight on hover)
                 let button_color = if is_hovering {
@@ -1321,7 +1319,7 @@ impl ViewportWidget {
                         if let Some(distance) =
                             Self::ray_intersects_aabb(ray.origin, ray.direction, aabb_min, aabb_max)
                         {
-                            let is_closer = closest_entity.map_or(true, |(_, d)| distance < d);
+                            let is_closer = closest_entity.is_none_or(|(_, d)| distance < d);
                             if is_closer {
                                 closest_entity = Some((entity, distance));
                             }
@@ -1432,7 +1430,7 @@ impl ViewportWidget {
 
         // Calculate buffer size (RGBA8 = 4 bytes per pixel)
         let bytes_per_row = size.0 * 4;
-        let padded_bytes_per_row = ((bytes_per_row + 255) / 256) * 256; // wgpu requires 256-byte alignment
+        let padded_bytes_per_row = bytes_per_row.div_ceil(256) * 256; // wgpu requires 256-byte alignment
         let buffer_size = (padded_bytes_per_row * size.1) as u64;
 
         // Create staging buffer if needed (reuse if size matches)
@@ -1730,7 +1728,7 @@ impl ViewportWidget {
             return;
         }
 
-        let entities: Vec<_> = self.selected_entities.iter().copied().collect();
+        let entities: Vec<_> = self.selected_entities.to_vec();
         self.clipboard = Some(crate::clipboard::ClipboardData::from_entities(
             world, &entities,
         ));
@@ -1776,7 +1774,7 @@ impl ViewportWidget {
         );
 
         // Use DuplicateEntitiesCommand for proper undo support
-        let source_entities: Vec<_> = self.selected_entities.iter().copied().collect();
+        let source_entities: Vec<_> = self.selected_entities.to_vec();
         let offset = astraweave_core::IVec2 { x: 2, y: 0 }; // Offset 2 units right
 
         let duplicate_cmd = crate::command::DuplicateEntitiesCommand::new(source_entities, offset);
@@ -1800,7 +1798,7 @@ impl ViewportWidget {
             return;
         }
 
-        let entities_to_delete: Vec<_> = self.selected_entities.iter().copied().collect();
+        let entities_to_delete: Vec<_> = self.selected_entities.to_vec();
 
         let delete_cmd = crate::command::DeleteEntitiesCommand::new(entities_to_delete);
         if let Err(e) = undo_stack.execute(delete_cmd, world) {

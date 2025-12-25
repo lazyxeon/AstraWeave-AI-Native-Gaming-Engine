@@ -22,7 +22,6 @@
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
-use wgpu;
 use wgpu::util::DeviceExt;
 
 use super::camera::{Frustum, OrbitCamera};

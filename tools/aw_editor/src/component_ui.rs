@@ -266,7 +266,7 @@ impl ComponentType {
         match self {
             ComponentType::Pose => {
                 if let Some(pose) = world.pose_mut(entity) {
-                    let is_overridden = overrides.map_or(false, |o| o.has_pose_override());
+                    let is_overridden = overrides.is_some_and(|o| o.has_pose_override());
                     let label = if is_overridden {
                         "⚠️ 📍 Pose *"
                     } else {
@@ -288,7 +288,7 @@ impl ComponentType {
             ComponentType::Health => {
                 if let Some(health) = world.health_mut(entity) {
                     let old_hp = health.hp;
-                    let is_overridden = overrides.map_or(false, |o| o.has_health_override());
+                    let is_overridden = overrides.is_some_and(|o| o.has_health_override());
                     let label = if is_overridden {
                         "⚠️ ❤️ Health *"
                     } else {

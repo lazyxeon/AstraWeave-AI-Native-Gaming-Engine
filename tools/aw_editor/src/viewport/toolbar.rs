@@ -11,7 +11,6 @@
 //! - Performance stats display
 //! - Camera bookmarks
 
-use egui;
 
 /// Grid display type for viewport
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

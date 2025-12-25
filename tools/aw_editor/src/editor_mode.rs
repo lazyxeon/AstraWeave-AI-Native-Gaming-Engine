@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum EditorMode {
+    #[default]
     Edit,
     Play,
     Paused,
@@ -41,11 +43,6 @@ impl EditorMode {
     }
 }
 
-impl Default for EditorMode {
-    fn default() -> Self {
-        EditorMode::Edit
-    }
-}
 
 #[cfg(test)]
 mod tests {

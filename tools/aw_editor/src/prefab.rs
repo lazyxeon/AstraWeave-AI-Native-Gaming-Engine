@@ -705,8 +705,8 @@ impl PrefabManager {
             let entry = entry?;
             let path = entry.path();
 
-            if path.extension().and_then(|s| s.to_str()) == Some("ron") {
-                if path
+            if path.extension().and_then(|s| s.to_str()) == Some("ron")
+                && path
                     .file_stem()
                     .and_then(|s| s.to_str())
                     .map(|s| s.ends_with(".prefab"))
@@ -714,7 +714,6 @@ impl PrefabManager {
                 {
                     prefab_files.push(path);
                 }
-            }
         }
 
         Ok(prefab_files)

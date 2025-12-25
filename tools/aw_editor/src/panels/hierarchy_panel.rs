@@ -62,14 +62,11 @@ impl HierarchyPanel {
             .retain(|e| world_entities.contains(e));
 
         for entity in world.entities() {
-            if !self.hierarchy.contains_key(&entity) {
-                self.hierarchy.insert(
-                    entity,
-                    HierarchyNode {
+            if let std::collections::hash_map::Entry::Vacant(e) = self.hierarchy.entry(entity) {
+                e.insert(HierarchyNode {
                         entity,
                         children: Vec::new(),
-                    },
-                );
+                    });
                 self.root_entities.push(entity);
             }
         }

@@ -9,7 +9,6 @@ use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::{Quat, Vec3};
 use tracing::debug;
-use wgpu;
 
 use super::camera::OrbitCamera;
 use crate::gizmo::{

@@ -12,7 +12,6 @@
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use wgpu;
 
 use super::camera::OrbitCamera;
 

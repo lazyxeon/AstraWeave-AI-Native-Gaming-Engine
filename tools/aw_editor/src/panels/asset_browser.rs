@@ -435,11 +435,10 @@ impl AssetBrowser {
 
                 // Texture type filter (only applies to textures)
                 if let Some(tex_filter) = &self.texture_type_filter {
-                    if entry.asset_type == AssetType::Texture {
-                        if entry.texture_type.as_ref() != Some(tex_filter) {
+                    if entry.asset_type == AssetType::Texture
+                        && entry.texture_type.as_ref() != Some(tex_filter) {
                             return false;
                         }
-                    }
                 }
 
                 // Legacy filter_type support
@@ -450,15 +449,14 @@ impl AssetBrowser {
                 }
 
                 // Search query filter
-                if !self.search_query.is_empty() {
-                    if !entry
+                if !self.search_query.is_empty()
+                    && !entry
                         .name
                         .to_lowercase()
                         .contains(&self.search_query.to_lowercase())
                     {
                         return false;
                     }
-                }
 
                 true
             })
@@ -683,11 +681,10 @@ impl AssetBrowser {
                                 }
                             }
 
-                            if response.double_clicked() {
-                                if entry.asset_type == AssetType::Directory {
+                            if response.double_clicked()
+                                && entry.asset_type == AssetType::Directory {
                                     path_to_navigate = Some(entry.path.clone());
                                 }
-                            }
 
                             if response.hovered() {
                                 response
@@ -695,11 +692,10 @@ impl AssetBrowser {
                                     .on_hover_text(entry.path.display().to_string());
                             }
 
-                            if entry.asset_type == AssetType::Prefab {
-                                if response.drag_started() {
+                            if entry.asset_type == AssetType::Prefab
+                                && response.drag_started() {
                                     self.dragged_prefab = Some(entry.path.clone());
                                 }
-                            }
                         }
 
                         if self.entries.is_empty() {
@@ -825,11 +821,10 @@ impl AssetBrowser {
                                             }
                                         }
 
-                                        if response.double_clicked() {
-                                            if entry_asset_type == AssetType::Directory {
+                                        if response.double_clicked()
+                                            && entry_asset_type == AssetType::Directory {
                                                 path_to_navigate = Some(entry_path.clone());
                                             }
-                                        }
 
                                         if response.hovered() {
                                             response
@@ -837,11 +832,10 @@ impl AssetBrowser {
                                                 .on_hover_text(entry_path.display().to_string());
                                         }
 
-                                        if entry_asset_type == AssetType::Prefab {
-                                            if response.drag_started() {
+                                        if entry_asset_type == AssetType::Prefab
+                                            && response.drag_started() {
                                                 self.dragged_prefab = Some(entry_path.clone());
                                             }
-                                        }
 
                                         ui.add(
                                             egui::Label::new(&entry_name)

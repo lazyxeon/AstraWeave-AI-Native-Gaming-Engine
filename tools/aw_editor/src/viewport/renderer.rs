@@ -24,7 +24,6 @@
 use anyhow::{Context, Result};
 use std::sync::Arc;
 use tracing::debug;
-use wgpu;
 
 use super::camera::OrbitCamera;
 use super::entity_renderer::EntityRenderer;
@@ -321,14 +320,11 @@ impl ViewportRenderer {
         if let (Some(selected), Some(gizmo)) = (self.selected_entity(), gizmo_state) {
             if gizmo.mode != crate::gizmo::GizmoMode::Inactive {
                 // DEBUG: Log gizmo mode and constraint
-                match &gizmo.mode {
-                    crate::gizmo::GizmoMode::Rotate { constraint } => {
-                        debug!(
-                            "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
-                            constraint
-                        );
-                    }
-                    _ => {}
+                if let crate::gizmo::GizmoMode::Rotate { constraint } = &gizmo.mode {
+                    debug!(
+                        "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
+                        constraint
+                    );
                 }
 
                 // Get entity position from world (old astraweave-core API)

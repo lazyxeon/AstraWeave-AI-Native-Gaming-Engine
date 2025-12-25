@@ -3,7 +3,6 @@
 use anyhow::{Context, Result};
 use std::path::Path;
 use std::sync::Arc;
-use wgpu;
 
 use super::camera::OrbitCamera;
 

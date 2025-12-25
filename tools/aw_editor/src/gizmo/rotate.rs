@@ -70,16 +70,16 @@ impl RotateGizmo {
         };
 
         // Create rotation quaternion
-        let rotation = if local_space {
+        
+
+        if local_space {
             // Rotate axis to local space
             let local_axis = object_rotation * axis;
             Quat::from_axis_angle(local_axis, angle)
         } else {
             // Direct world-space rotation
             Quat::from_axis_angle(axis, angle)
-        };
-
-        rotation
+        }
     }
 
     /// Calculate rotation from numeric input value (in degrees).

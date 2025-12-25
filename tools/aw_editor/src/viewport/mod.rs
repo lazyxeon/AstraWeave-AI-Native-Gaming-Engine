@@ -50,5 +50,3 @@ mod widget;
 pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
 pub use widget::ViewportWidget;
 
-#[cfg(feature = "astraweave-render")]
-pub use engine_adapter::EngineRenderAdapter;

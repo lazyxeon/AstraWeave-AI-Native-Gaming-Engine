@@ -307,13 +307,11 @@ impl Panel for EntityPanel {
         let (filter, set_filter) = use_state(ui, "entity_filter", String::new());
 
         // Mock entity list (in real app, this would come from ECS world)
-        let entities = vec![
-            ("Player", "Companion", 100, 10),
+        let entities = [("Player", "Companion", 100, 10),
             ("Enemy_1", "Grunt", 50, 5),
             ("Enemy_2", "Elite", 150, 15),
             ("NPC_Merchant", "Civilian", 80, 0),
-            ("Boss_Dragon", "Boss", 500, 50),
-        ];
+            ("Boss_Dragon", "Boss", 500, 50)];
 
         // Memoized filtered list
         let filtered_entities = use_memo(ui, "filtered_entities", filter.clone(), |f| {

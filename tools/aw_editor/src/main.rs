@@ -1063,7 +1063,7 @@ impl EditorApp {
                         if let Some(editor_entity) = scene_state
                             .get_editor_entity_mut(selected_id as astraweave_core::Entity)
                         {
-                            editor_entity.set_texture(slot.clone(), path.clone());
+                            editor_entity.set_texture(slot, path.clone());
                             info!(
                                 "Applied {:?} texture '{}' to entity #{}",
                                 slot,
@@ -1826,8 +1826,8 @@ impl eframe::App for EditorApp {
             }
 
             // Delete: Delete selected entities
-            if i.key_pressed(egui::Key::Delete) {
-                if self.editor_mode.can_edit() {
+            if i.key_pressed(egui::Key::Delete)
+                && self.editor_mode.can_edit() {
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         let selected = self.hierarchy_panel.get_all_selected();
                         if !selected.is_empty() {
@@ -1855,7 +1855,6 @@ impl eframe::App for EditorApp {
                         }
                     }
                 }
-            }
         });
 
         // Phase 2.2: Autosave every 5 minutes
@@ -2149,7 +2148,7 @@ impl eframe::App for EditorApp {
                 });
                 if ui.button("Diff Assets").clicked() {
                     match std::process::Command::new("git")
-                        .args(&["diff", "assets"])
+                        .args(["diff", "assets"])
                         .output()
                     {
                         Ok(output) => {
