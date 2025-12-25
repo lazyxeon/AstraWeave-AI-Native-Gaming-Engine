@@ -2974,6 +2974,12 @@ impl eframe::App for EditorApp {
             });
 
         // BOTTOM PANEL - StatusBar (Phase 3.5 & 4)
+        let entity_count = self
+            .scene_state
+            .as_ref()
+            .map(|s| s.world().entities().len())
+            .unwrap_or(0);
+
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
             .show(ctx, |ui| {
@@ -2986,6 +2992,7 @@ impl eframe::App for EditorApp {
                     &self.snapping_config,
                     self.current_fps,
                     self.is_dirty,
+                    entity_count,
                 );
             });
 

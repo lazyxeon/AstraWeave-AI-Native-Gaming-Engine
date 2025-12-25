@@ -27,6 +27,7 @@ impl StatusBar {
         snap_config: &SnappingConfig,
         fps: f32,
         is_dirty: bool,
+        entity_count: usize,
     ) {
         ui.horizontal(|ui| {
             if is_dirty {
@@ -48,6 +49,10 @@ impl StatusBar {
             ui.separator();
 
             Self::show_undo_redo(ui, undo_stack);
+            ui.separator();
+
+            ui.label(format!("Entities: {}", entity_count))
+                .on_hover_text("Total number of entities in the scene");
 
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 Self::show_fps(ui, fps);
