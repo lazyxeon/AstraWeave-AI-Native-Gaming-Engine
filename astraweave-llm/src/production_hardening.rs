@@ -458,14 +458,14 @@ impl ProductionHardeningLayer {
                         position,
                         estimated_wait,
                     } => {
-                        return Err(anyhow!(
+                        Err(anyhow!(
                             "Request queued: position {}, wait time: {:?}",
                             position,
                             estimated_wait
-                        ));
+                        ))
                     }
                     crate::backpressure::BackpressureResult::Rejected { reason, .. } => {
-                        return Err(anyhow!("Request rejected: {}", reason));
+                        Err(anyhow!("Request rejected: {}", reason))
                     }
                     crate::backpressure::BackpressureResult::Degraded { request_id, reason } => {
                         warn!("Request degraded: {}", reason);

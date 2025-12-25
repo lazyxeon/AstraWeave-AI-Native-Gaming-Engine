@@ -28,6 +28,12 @@ pub struct FewShotRegistry {
     examples: Vec<FewShotExample>,
 }
 
+impl Default for FewShotRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FewShotRegistry {
     pub fn new() -> Self {
         Self { examples: Vec::new() }
@@ -126,8 +132,7 @@ pub fn add_few_shot_examples(base_prompt: &str, role: &str, max_examples: usize)
 /// Get few-shot examples for a specific role
 pub fn get_examples(role: &str) -> Vec<FewShotExample> {
     EXAMPLE_REGISTRY
-        .get(role)
-        .map(|v| v.clone())
+        .get(role).cloned()
         .unwrap_or_default()
 }
 

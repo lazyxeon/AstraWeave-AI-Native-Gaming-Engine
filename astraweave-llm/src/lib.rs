@@ -1409,7 +1409,7 @@ pub fn fallback_heuristic_plan(snap: &WorldSnapshot, reg: &ToolRegistry) -> Plan
         if obj == "extract" {
             // Move towards player if far
             let dist = ((snap.me.pos.x - snap.player.pos.x).abs()
-                + (snap.me.pos.y - snap.player.pos.y).abs()) as i32;
+                + (snap.me.pos.y - snap.player.pos.y).abs());
             if dist > 3 && reg.tools.iter().any(|t| t.name == "move_to") {
                 steps.push(ActionStep::MoveTo {
                     x: snap.player.pos.x,

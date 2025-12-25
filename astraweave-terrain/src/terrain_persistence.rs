@@ -339,7 +339,7 @@ impl TerrainPersistence {
             let entry = entry?;
             let path = entry.path();
 
-            if path.extension().map_or(false, |ext| ext == "terrain") {
+            if path.extension().is_some_and(|ext| ext == "terrain") {
                 if let Ok(info) = self.read_save_info(&path) {
                     saves.push(info);
                 }

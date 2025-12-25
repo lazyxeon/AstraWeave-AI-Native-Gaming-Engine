@@ -23,6 +23,12 @@ pub const COMPACT_SCHEMA: &str = r#"{plan_id:str,steps:[{act,args}]} ONLY JSON."
 /// Compresses verbose prompt templates
 pub struct PromptCompressor;
 
+impl Default for PromptCompressor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PromptCompressor {
     /// Create a new PromptCompressor instance
     pub fn new() -> Self {

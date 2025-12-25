@@ -226,15 +226,15 @@ fn extract_code_fence(text: &str) -> Result<&str> {
 /// Clean common JSON issues (trailing commas, extra fields)
 fn clean_json(text: &str) -> String {
     // Remove trailing commas before closing brackets/braces
-    let cleaned = text
+    
+
+    text
         .replace(",\n  ]", "\n  ]")
         .replace(", ]", "]")
         .replace(",]", "]")
         .replace(",\n}", "\n}")
         .replace(", }", "}")
-        .replace(",}", "}");
-
-    cleaned
+        .replace(",}", "}")
 }
 
 // ============================================================================
@@ -493,9 +493,9 @@ fn action_step_to_tool_name(step: &ActionStep) -> &str {
         ActionStep::ThrowExplosive { .. } => "ThrowExplosive",
         ActionStep::CoverFire { .. } => "CoverFire",
         ActionStep::Charge { .. } => "Charge",
-        ActionStep::Block { .. } => "Block",
+        ActionStep::Block => "Block",
         ActionStep::Dodge { .. } => "Dodge",
-        ActionStep::Parry { .. } => "Parry",
+        ActionStep::Parry => "Parry",
         ActionStep::ThrowSmoke { .. } => "ThrowSmoke",
         ActionStep::Heal { .. } => "Heal",
         ActionStep::UseDefensiveAbility { .. } => "UseDefensiveAbility",
