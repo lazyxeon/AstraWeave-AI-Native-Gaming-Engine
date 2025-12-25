@@ -265,6 +265,9 @@ struct EditorApp {
     prefab_manager: PrefabManager,
     // Phase 4.2: Play-in-Editor
     editor_mode: EditorMode,
+    // Phase 6: Dirty flag for unsaved changes
+    is_dirty: bool,
+    show_quit_dialog: bool,
 }
 
 impl Default for EditorApp {
@@ -387,6 +390,9 @@ impl Default for EditorApp {
             prefab_manager: PrefabManager::new("prefabs"),
             // Phase 4.2: Play-in-Editor
             editor_mode: EditorMode::default(),
+            // Phase 6: Dirty flag for unsaved changes
+            is_dirty: false,
+            show_quit_dialog: false,
         }
     }
 }
@@ -1641,6 +1647,42 @@ impl eframe::App for EditorApp {
             60.0
         };
 
+        // Phase 6: Quit confirmation dialog
+        if self.show_quit_dialog {
+            egui::Window::new("Unsaved Changes")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.label("You have unsaved changes. What would you like to do?");
+                    ui.add_space(10.0);
+                    ui.horizontal(|ui| {
+                        if ui.button("Save & Quit").clicked() {
+                            if let Some(world) = self.edit_world() {
+                                let path = self.current_scene_path.clone().unwrap_or_else(|| {
+                                    self.content_root.join("scenes/untitled.scene.ron")
+                                });
+                                let _ = scene_serialization::save_scene(world, &path);
+                            }
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                        if ui.button("Quit Without Saving").clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                        if ui.button("Cancel").clicked() {
+                            self.show_quit_dialog = false;
+                        }
+                    });
+                });
+        }
+
+        // Check for close request
+        ctx.input(|i| {
+            if i.viewport().close_requested() && self.is_dirty && !self.show_quit_dialog {
+                self.show_quit_dialog = true;
+            }
+        });
+
         // Phase 2.1 & 2.2: Global hotkeys for undo/redo and scene save/load
         ctx.input(|i| {
             // Ctrl+Z: Undo
@@ -1649,10 +1691,11 @@ impl eframe::App for EditorApp {
                     let undo_error = self.undo_stack.undo(scene_state.world_mut()).err();
 
                     if let Some(e) = undo_error {
-                        self.console_logs.push(format!("❌ Undo failed: {}", e));
+                        self.console_logs.push(format!("Undo failed: {}", e));
                     } else if let Some(desc) = self.undo_stack.redo_description() {
-                        self.status = format!("⏮️  Undid: {}", desc);
-                        self.console_logs.push(format!("⏮️  Undo: {}", desc));
+                        self.status = format!("Undid: {}", desc);
+                        self.console_logs.push(format!("Undo: {}", desc));
+                        self.is_dirty = true;
                     }
                 }
             }
@@ -1665,10 +1708,11 @@ impl eframe::App for EditorApp {
                     let redo_error = self.undo_stack.redo(scene_state.world_mut()).err();
 
                     if let Some(e) = redo_error {
-                        self.console_logs.push(format!("❌ Redo failed: {}", e));
+                        self.console_logs.push(format!("Redo failed: {}", e));
                     } else if let Some(desc) = self.undo_stack.undo_description() {
-                        self.status = format!("⏭️  Redid: {}", desc);
-                        self.console_logs.push(format!("⏭️  Redo: {}", desc));
+                        self.status = format!("Redid: {}", desc);
+                        self.console_logs.push(format!("Redo: {}", desc));
+                        self.is_dirty = true;
                     }
                 }
             }
@@ -1688,10 +1732,11 @@ impl eframe::App for EditorApp {
                         Ok(()) => {
                             self.current_scene_path = Some(path.clone());
                             self.recent_files.add_file(path.clone());
-                            self.status = format!("💾 Saved scene to {:?}", path);
+                            self.status = format!("Saved scene to {:?}", path);
                             self.console_logs
-                                .push(format!("✅ Scene saved: {:?}", path));
+                                .push(format!("Scene saved: {:?}", path));
                             self.last_autosave = std::time::Instant::now();
+                            self.is_dirty = false;
                         }
                         Err(e) => {
                             self.status = format!("❌ Scene save failed: {}", e);
