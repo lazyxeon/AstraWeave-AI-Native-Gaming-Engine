@@ -1782,6 +1782,22 @@ impl eframe::App for EditorApp {
         let title = format!("AstraWeave Editor - {}{}", file_name, dirty_marker);
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
 
+        // Phase 8: Auto-save logic
+        if self.auto_save_enabled
+            && self.is_dirty
+            && self.last_auto_save.elapsed().as_secs_f32() > self.auto_save_interval_secs
+        {
+            if let Some(world) = self.edit_world() {
+                let path = self.current_scene_path.clone().unwrap_or_else(|| {
+                    self.content_root.join("scenes/autosave.scene.ron")
+                });
+                if scene_serialization::save_scene(world, &path).is_ok() {
+                    self.last_auto_save = std::time::Instant::now();
+                    self.toast_info(format!("Auto-saved to {:?}", path.file_name().unwrap_or_default()));
+                }
+            }
+        }
+
         // Phase 6: Quit confirmation dialog
         if self.show_quit_dialog {
             egui::Window::new("Unsaved Changes")
@@ -1852,6 +1868,8 @@ impl eframe::App for EditorApp {
 
                     ui.heading("View");
                     ui.label("F1              Show This Help");
+                    ui.label("G               Toggle Grid");
+                    ui.label("G               Toggle Grid");
                     ui.add_space(12.0);
 
                     ui.horizontal(|ui| {
@@ -2208,6 +2226,16 @@ impl eframe::App for EditorApp {
             // F1: Show keyboard shortcuts help
             if i.key_pressed(egui::Key::F1) {
                 self.show_help_dialog = !self.show_help_dialog;
+            }
+
+            // G: Toggle grid visibility
+            if i.key_pressed(egui::Key::G) && !i.modifiers.ctrl {
+                self.show_grid = !self.show_grid;
+                self.status = if self.show_grid {
+                    "Grid enabled".to_string()
+                } else {
+                    "Grid disabled".to_string()
+                };
             }
 
             // Ctrl+D: Duplicate selected entities
