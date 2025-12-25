@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use tracing::debug;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EntityData {
@@ -150,7 +151,7 @@ impl SceneData {
         fs::write(&safe_path, ron_string)
             .context(format!("Failed to write scene to {:?}", safe_path))?;
 
-        println!("💾 Saved scene to {:?}", safe_path);
+        debug!("💾 Saved scene to {:?}", safe_path);
         Ok(())
     }
 
@@ -173,7 +174,7 @@ impl SceneData {
         let scene: SceneData = ron::from_str(&contents)
             .context(format!("Failed to deserialize scene from {:?}", safe_path))?;
 
-        println!("📂 Loaded scene from {:?}", safe_path);
+        debug!("📂 Loaded scene from {:?}", safe_path);
         Ok(scene)
     }
 }

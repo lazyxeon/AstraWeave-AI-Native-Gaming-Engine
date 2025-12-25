@@ -655,7 +655,7 @@ impl EditorApp {
             Err(e) => {
                 app.console_logs
                     .push(format!("⚠️  Viewport init failed: {}", e));
-                eprintln!("❌ Viewport initialization failed: {}", e);
+                warn!("❌ Viewport initialization failed: {}", e);
                 // Continue without viewport (fallback to 2D mode)
             }
         }
@@ -2587,7 +2587,7 @@ impl eframe::App for EditorApp {
                             Some(&mut self.prefab_manager),
                         ) {
                             self.console_logs.push(format!("❌ Viewport error: {}", e));
-                            eprintln!("❌ Viewport error: {}", e);
+                            warn!("❌ Viewport error: {}", e);
                         }
                     } else {
                         ui.label("⚠️ No world available for rendering");

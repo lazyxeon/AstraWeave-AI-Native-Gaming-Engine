@@ -383,9 +383,17 @@ impl AdversarialInputs {
 #[cfg(feature = "test-utils")]
 pub mod generators {
     use super::*;
+    use crate::cache::CacheEntry;
+    use crate::conversion::ConversionResult;
+    use crate::options::{
+        AnimationOptions, CacheOptions, ConversionOptions, GltfExportOptions,
+        LinkedLibraryOptions, MaterialOptions, MeshOptions, MissingLibraryAction,
+        OutputFormat, ProcessOptions, TextureFormat, TextureOptions,
+    };
     use rand::distributions::{Alphanumeric, DistString};
     use rand::prelude::*;
     use rand_chacha::ChaCha8Rng;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     /// Seeded random number generator for reproducible tests.
     pub fn seeded_rng(seed: u64) -> ChaCha8Rng {

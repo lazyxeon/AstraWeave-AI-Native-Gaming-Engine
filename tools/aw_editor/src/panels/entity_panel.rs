@@ -6,6 +6,7 @@ use crate::scene_state::{EditorSceneState, TransformableScene};
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
 use egui::Ui;
+use tracing::debug;
 
 /// Actions that require prefab manager access
 #[derive(Debug, Clone, Copy)]
@@ -99,7 +100,7 @@ impl EntityPanel {
                 )
             };
             scene_state.sync_entity(entity);
-            println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
+            debug!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
         }
 
         if spawn_enemy {
@@ -119,7 +120,7 @@ impl EntityPanel {
                 )
             };
             scene_state.sync_entity(entity);
-            println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
+            debug!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
         }
 
         if clear_all {
@@ -128,7 +129,7 @@ impl EntityPanel {
                 *world = World::new();
             }
             scene_state.sync_all();
-            println!("🗑️ Cleared all entities");
+            debug!("🗑️ Cleared all entities");
         }
 
         let mut component_edit = None;
@@ -412,13 +413,13 @@ impl Panel for EntityPanel {
 
                 ui.horizontal(|ui| {
                     if ui.button("🔫 Damage").clicked() {
-                        println!("💥 Damaged {}", name);
+                        debug!("💥 Damaged {}", name);
                     }
                     if ui.button("❤️‍🩹 Heal").clicked() {
-                        println!("💚 Healed {}", name);
+                        debug!("💚 Healed {}", name);
                     }
                     if ui.button("🗑️ Delete").clicked() {
-                        println!("🗑️ Deleted {}", name);
+                        debug!("🗑️ Deleted {}", name);
                     }
                 });
             });
@@ -429,7 +430,7 @@ impl Panel for EntityPanel {
         // Effect: log when selection changes
         use_effect(ui, "entity_selection_log", selected_entity, |&idx| {
             if idx < entities.len() {
-                println!("🎯 Selected entity: {}", entities[idx].0);
+                debug!("🎯 Selected entity: {}", entities[idx].0);
             }
         });
     }

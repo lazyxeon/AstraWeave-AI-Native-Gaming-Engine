@@ -21,9 +21,6 @@ struct FuzzSerializationInput {
     
     // Options fields
     output_format: u8,
-    export_animations: bool,
-    export_materials: bool,
-    apply_modifiers: bool,
     
     // Cache fields
     source_hash_bytes: Vec<u8>,
@@ -75,30 +72,28 @@ fuzz_target!(|input: FuzzSerializationInput| {
     // ========================================================================
     
     let format = match input.output_format % 3 {
-        0 => OutputFormat::Gltf,
-        1 => OutputFormat::Glb,
-        _ => OutputFormat::Both,
+        0 => OutputFormat::GlbBinary,
+        1 => OutputFormat::GltfEmbedded,
+        _ => OutputFormat::GltfSeparate,
     };
     
     let options = ConversionOptions::builder()
-        .output_format(format)
-        .export_animations(input.export_animations)
-        .export_materials(input.export_materials)
-        .apply_modifiers(input.apply_modifiers)
+        .format(format)
         .build();
     
     // ConversionOptions RON roundtrip
     if let Ok(ron_str) = ron::to_string(&options) {
         if let Ok(deserialized) = ron::from_str::<ConversionOptions>(&ron_str) {
-            assert_eq!(options.export_animations, deserialized.export_animations);
-            assert_eq!(options.export_materials, deserialized.export_materials);
+            // Compare nested fields that exist on ConversionOptions
+            assert_eq!(options.animation.export_animations, deserialized.animation.export_animations);
+            assert_eq!(options.materials.export_materials, deserialized.materials.export_materials);
         }
     }
     
     // ConversionOptions JSON roundtrip
     if let Ok(json_str) = serde_json::to_string(&options) {
         if let Ok(deserialized) = serde_json::from_str::<ConversionOptions>(&json_str) {
-            assert_eq!(options.apply_modifiers, deserialized.apply_modifiers);
+            assert_eq!(options.mesh.apply_modifiers, deserialized.mesh.apply_modifiers);
         }
     }
     

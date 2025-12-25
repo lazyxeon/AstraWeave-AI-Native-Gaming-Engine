@@ -4,7 +4,8 @@ mod ocean;
 pub use laboratory::LaboratoryScenario;
 pub use ocean::OceanScenario;
 
-use astraweave_fluids::FluidSystem;
+use astraweave_fluids::renderer::CameraUniform;
+use astraweave_fluids::{FluidRenderer, FluidSystem};
 use astraweave_physics::PhysicsWorld;
 
 pub trait FluidScenario {
@@ -18,17 +19,21 @@ pub trait FluidScenario {
         system: &mut FluidSystem,
         physics: &mut PhysicsWorld,
         camera_pos: glam::Vec3,
+        queue: &wgpu::Queue,
     );
 
     fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
+        scene_view: &wgpu::TextureView,
+        scene_depth_view: &wgpu::TextureView,
         depth: &wgpu::TextureView,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         system: &FluidSystem,
-        view_proj: glam::Mat4,
+        renderer: &FluidRenderer,
+        camera_uniform: CameraUniform,
         skybox: &wgpu::TextureView,
     );
 }

@@ -1,5 +1,6 @@
-use astraweave_fluids::FluidSystem;
 use astraweave_physics::PhysicsWorld;
+use egui_wgpu::Renderer as EguiRenderer;
+use egui_winit::State as EguiState;
 use glam::{Mat4, Vec3};
 use std::time::Instant;
 use winit::{
@@ -10,14 +11,14 @@ use winit::{
     window::{Window, WindowId},
 };
 
-mod fluid_renderer;
 mod ocean_renderer;
 mod scenarios;
 mod skybox_renderer;
 
-use scenarios::{LaboratoryScenario, OceanScenario, ScenarioManager};
+use astraweave_fluids::renderer::CameraUniform;
+use astraweave_fluids::{FluidRenderer, FluidSystem};
 
-use fluid_renderer::FluidRenderer;
+use scenarios::{LaboratoryScenario, OceanScenario, ScenarioManager};
 use skybox_renderer::SkyboxRenderer;
 
 struct Camera {
@@ -58,6 +59,14 @@ struct State {
     depth_texture: wgpu::Texture,
     depth_view: wgpu::TextureView,
 
+    scene_texture: wgpu::Texture,
+    scene_view: wgpu::TextureView,
+
+    egui_ctx: egui::Context,
+    egui_state: EguiState,
+    egui_renderer: EguiRenderer,
+
+    start_time: Instant,
     last_update: Instant,
 }
 
@@ -68,6 +77,12 @@ impl State {
             log::info!("Switching to scenario: {}", scenario.name());
             scenario.init(&self.device, &self.queue, &mut self.fluid_system);
         }
+    }
+
+    fn handle_window_event(&mut self, event: &WindowEvent) -> bool {
+        self.egui_state
+            .on_window_event(&self.window, event)
+            .consumed
     }
 
     async fn new(window: std::sync::Arc<winit::window::Window>) -> Self {
@@ -184,8 +199,24 @@ impl State {
         };
 
         // Initialize fluid renderer
-        let max_particles = particle_count;
-        let fluid_renderer = FluidRenderer::init(&device, surface_format, max_particles);
+        let fluid_renderer = FluidRenderer::new(&device, size.width, size.height, surface_format);
+
+        // Scene background texture for refraction
+        let scene_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Scene Background Texture"),
+            size: wgpu::Extent3d {
+                width: size.width,
+                height: size.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: surface_format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let scene_view = scene_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Setup camera
         let camera = Camera {
@@ -197,6 +228,18 @@ impl State {
             znear: 0.1,
             zfar: 100.0,
         };
+
+        // Initialize Egui
+        let egui_ctx = egui::Context::default();
+        let egui_state = EguiState::new(
+            egui_ctx.clone(),
+            egui::viewport::ViewportId::ROOT,
+            &window,
+            None,
+            None,
+            None,
+        );
+        let egui_renderer = EguiRenderer::new(&device, surface_format, None, 1, false);
 
         Self {
             surface,
@@ -213,6 +256,15 @@ impl State {
             camera,
             depth_texture,
             depth_view,
+            scene_texture,
+            scene_view,
+
+            // Egui
+            egui_ctx,
+            egui_state,
+            egui_renderer,
+
+            start_time: Instant::now(),
             last_update: Instant::now(),
         }
     }
@@ -240,9 +292,12 @@ impl State {
                     | wgpu::TextureUsages::TEXTURE_BINDING,
                 view_formats: &[],
             });
-            self.depth_view = self
-                .depth_texture
+            self.scene_view = self
+                .scene_texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
+
+            self.fluid_renderer
+                .resize(&self.device, new_size.width, new_size.height);
 
             self.camera.aspect = new_size.width as f32 / new_size.height as f32;
         }
@@ -267,12 +322,13 @@ impl State {
         self.fluid_system.step(&mut encoder, &self.queue, dt);
 
         // Update current scenario
-        if let Some(scenario) = self.scenario_manager.current() {
+        if let Some(scenario) = self.scenario_manager.current_mut() {
             scenario.update(
                 dt,
                 &mut self.fluid_system,
                 &mut self.physics_world,
-                self.camera.eye,
+                self.camera.eye, // Use .eye as it was likely intended or position
+                &self.queue,
             );
         }
 
@@ -298,12 +354,25 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        // Clear pass
+        // Build Camera Uniform
+        let view_proj = self.camera.build_view_projection_matrix();
+        let inv_view_proj = view_proj.inverse();
+        let light_dir = glam::Vec3::new(0.5, 1.0, 0.2).normalize();
+        let camera_uniform = CameraUniform {
+            view_proj: view_proj.to_cols_array_2d(),
+            inv_view_proj: inv_view_proj.to_cols_array_2d(),
+            cam_pos: [self.camera.eye.x, self.camera.eye.y, self.camera.eye.z, 1.0],
+            light_dir: [light_dir.x, light_dir.y, light_dir.z, 1.0],
+            time: self.start_time.elapsed().as_secs_f32(),
+            padding: [0.0; 3],
+        };
+
+        // Render to scene texture (Background Pass)
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Clear Pass"),
+            let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Background Pass - Clear"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view: &self.scene_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -323,29 +392,24 @@ impl State {
                     }),
                     stencil_ops: None,
                 }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
+                ..Default::default()
             });
+            // Drop _rpass here
         }
 
-        // Render based on mode
-        let view_proj = self.camera.build_view_projection_matrix();
-
-        // Render skybox
-        /*
+        // Render skybox to scene texture
         if let Some(ref skybox) = self.skybox_renderer {
             skybox.render(
                 &mut encoder,
-                &view,
+                &self.scene_view,
                 &self.depth_view,
                 &self.queue,
                 view_proj,
                 self.camera.eye,
             );
         }
-        */
 
-        // Render current scenario
+        // Render current scenario to main view
         if let Some(scenario) = self.scenario_manager.current() {
             let skybox_view = if let Some(ref skybox) = self.skybox_renderer {
                 skybox.get_skybox_view()
@@ -356,28 +420,15 @@ impl State {
             scenario.render(
                 &mut encoder,
                 &view,
-                &self.depth_view,
+                &self.scene_view,
+                &self.depth_view, // Scene depth
+                &self.depth_view, // Fluid raw depth target
                 &self.device,
                 &self.queue,
                 &self.fluid_system,
-                view_proj,
+                &self.fluid_renderer,
+                camera_uniform,
                 skybox_view,
-            );
-        }
-
-        // Render fluid particles (using current renderer for now)
-        let particle_buffer = self.fluid_system.get_particle_buffer();
-        if let Some(ref skybox) = self.skybox_renderer {
-            self.fluid_renderer.render(
-                &mut encoder,
-                &view,
-                &self.depth_view,
-                &self.device,
-                &self.queue,
-                particle_buffer,
-                self.fluid_system.particle_count,
-                view_proj,
-                skybox.get_skybox_view(),
             );
         }
 
@@ -414,6 +465,9 @@ impl ApplicationHandler for App {
     ) {
         if let Some(state) = &mut self.state {
             if window_id == state.window.id() {
+                if state.handle_window_event(&event) {
+                    return;
+                }
                 match event {
                     WindowEvent::CloseRequested
                     | WindowEvent::KeyboardInput {

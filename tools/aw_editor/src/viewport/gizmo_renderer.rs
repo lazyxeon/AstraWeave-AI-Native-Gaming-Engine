@@ -8,6 +8,7 @@
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::{Quat, Vec3};
+use tracing::debug;
 use wgpu;
 
 use super::camera::OrbitCamera;
@@ -233,7 +234,7 @@ impl GizmoRendererWgpu {
 
         // DEBUG: Log constraint for rotate mode
         if matches!(gizmo_state.mode, GizmoMode::Rotate { .. }) {
-            println!("🎨 Gizmo Renderer: Rotate constraint = {:?}", constraint);
+            debug!("🎨 Gizmo Renderer: Rotate constraint = {:?}", constraint);
         }
 
         let params = GizmoRenderParams {

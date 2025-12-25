@@ -95,10 +95,19 @@ fn handle_malformed_blend_gracefully() {
         // Test that we can at least process the content without panicking
         // Actual validation would reject these
         
-        let is_valid_header = content.starts_with(b"BLENDER-") || content.starts_with(b"BLENDER_");
+        // Simple prefix check - not full validation
+        let has_blend_prefix = content.starts_with(b"BLENDER-") || content.starts_with(b"BLENDER_");
         
-        if name.starts_with("truncated") || name.starts_with("wrong_magic") {
-            assert!(!is_valid_header, "Should not accept {}", name);
+        // Full validation requires at least 12 bytes (BLENDER-v300)
+        let is_complete_header = has_blend_prefix && content.len() >= 12;
+        
+        if name.starts_with("wrong_magic") {
+            assert!(!has_blend_prefix, "Should not have blend prefix: {}", name);
+        }
+        
+        if name.starts_with("truncated") {
+            // Truncated headers may start correctly but are incomplete
+            assert!(!is_complete_header, "Should not be complete header: {}", name);
         }
         
         // The content should be hashable without panic

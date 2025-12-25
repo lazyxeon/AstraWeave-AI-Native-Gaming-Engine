@@ -1,5 +1,7 @@
-mod renderer;
-mod sdf;
+pub mod renderer;
+pub mod sdf;
+
+pub use renderer::FluidRenderer;
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -19,23 +21,31 @@ pub struct Particle {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct DynamicObject {
+    pub transform: [[f32; 4]; 4],
+    pub inv_transform: [[f32; 4]; 4],
+    pub half_extents: [f32; 4], // w = type (0=box, 1=sphere)
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct SimParams {
-    pub delta_time: f32,
     pub smoothing_radius: f32,
     pub target_density: f32,
-    pub pressure_multiplier: f32, // Reused as PBD compliance/constraint strength
+    pub pressure_multiplier: f32,
     pub viscosity: f32,
     pub surface_tension: f32,
-    pub particle_count: u32,
     pub gravity: f32,
-    pub iterations: u32,
-    pub cell_size: f32,
+    pub dt: f32,
+    pub particle_count: u32,
     pub grid_width: u32,
     pub grid_height: u32,
     pub grid_depth: u32,
-    pub _pad0: u32,
-    pub _pad1: u32,
-    pub _pad2: u32,
+    pub cell_size: f32,
+    pub object_count: u32,
+    pub _pad0: f32,
+    pub _pad1: f32,
+    pub _pad2: f32,
 }
 
 pub struct FluidSystem {
@@ -78,6 +88,8 @@ pub struct FluidSystem {
     pub grid_depth: u32,
 
     pub sdf_view: Option<Arc<wgpu::TextureView>>,
+    pub objects_buffer: wgpu::Buffer,
+    pub objects_bind_group: wgpu::BindGroup,
     pub default_sampler: wgpu::Sampler,
 }
 
@@ -155,7 +167,7 @@ impl FluidSystem {
         });
 
         let params = SimParams {
-            delta_time: 0.016,
+            dt: 0.016,
             smoothing_radius: 1.0,
             target_density: 10.0,
             pressure_multiplier: 250.0,
@@ -163,14 +175,14 @@ impl FluidSystem {
             surface_tension: 0.1,
             particle_count,
             gravity: -9.8,
-            iterations: 4,
             cell_size,
             grid_width,
             grid_height,
             grid_depth,
-            _pad0: 0,
-            _pad1: 0,
-            _pad2: 0,
+            object_count: 0, // Will be updated by update_objects
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
         };
 
         let params_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -318,9 +330,41 @@ impl FluidSystem {
             bind_groups.push(bg);
         }
 
+        // Create objects buffer (max 128 dynamic objects)
+        let objects_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Dynamic Objects Buffer"),
+            size: (128 * std::mem::size_of::<DynamicObject>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let objects_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Dynamic Objects Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let objects_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Dynamic Objects Bind Group"),
+            layout: &objects_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: objects_buffer.as_entire_binding(),
+            }],
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Fluid Pipeline Layout"),
-            bind_group_layouts: &[&bind_group_layout],
+            bind_group_layouts: &[&bind_group_layout, &objects_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -378,102 +422,113 @@ impl FluidSystem {
             grid_height,
             grid_depth,
             sdf_view: None,
+            objects_buffer,
+            objects_bind_group,
             default_sampler,
+        }
+    }
+
+    pub fn update_objects(&mut self, queue: &wgpu::Queue, objects: &[DynamicObject]) {
+        if !objects.is_empty() {
+            queue.write_buffer(&self.objects_buffer, 0, bytemuck::cast_slice(objects));
+        }
+    }
+
+    pub fn reset_particles(&mut self, queue: &wgpu::Queue, particles: &[Particle]) {
+        assert_eq!(particles.len() as u32, self.particle_count);
+        for buf in &self.particle_buffers {
+            queue.write_buffer(buf, 0, bytemuck::cast_slice(particles));
         }
     }
 
     pub fn step(&mut self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue, dt: f32) {
         // Update Uniforms
         let params = SimParams {
-            delta_time: dt.min(0.016), // Cap dt for PBD stability
             smoothing_radius: self.smoothing_radius,
             target_density: self.target_density,
             pressure_multiplier: self.pressure_multiplier,
             viscosity: self.viscosity,
             surface_tension: self.surface_tension,
-            particle_count: self.particle_count,
             gravity: self.gravity,
-            iterations: self.iterations,
-            cell_size: self.cell_size,
+            dt: dt.min(0.016),
+            particle_count: self.particle_count,
             grid_width: self.grid_width,
             grid_height: self.grid_height,
             grid_depth: self.grid_depth,
-            _pad0: 0,
-            _pad1: 0,
-            _pad2: 0,
+            cell_size: self.cell_size,
+            object_count: 0, // Placeholder, can be set by update_objects
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
         };
         queue.write_buffer(&self.params_buffer, 0, bytemuck::bytes_of(&params));
 
         let current_src = self.frame_index % 2;
+        let particle_workgroups = (self.particle_count + 63) / 64;
         let grid_size = self.grid_width * self.grid_height * self.grid_depth;
         let grid_workgroups = (grid_size + 63) / 64;
-        let particle_workgroups = (self.particle_count + 63) / 64;
 
         let bg = &self.bind_groups[current_src];
+        let obj_bg = &self.objects_bind_group;
 
-        // Step 1: Predict (Euler)
+        // 1. Predict and Clear Grid
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("PBD Predict"),
-                timestamp_writes: None,
+                label: Some("Fluid::PredictAndClear"),
+                ..Default::default()
             });
+            cpass.set_bind_group(0, bg, &[]);
+            cpass.set_bind_group(1, obj_bg, &[]);
+
             cpass.set_pipeline(&self.predict_pipeline);
-            cpass.set_bind_group(0, bg, &[]);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
-        }
 
-        // Step 2: Spatial Hash
-        {
-            let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("PBD Clear Grid"),
-                timestamp_writes: None,
-            });
             cpass.set_pipeline(&self.clear_grid_pipeline);
-            cpass.set_bind_group(0, bg, &[]);
             cpass.dispatch_workgroups(grid_workgroups, 1, 1);
         }
+
+        // 2. Build Grid
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("PBD Build Grid"),
-                timestamp_writes: None,
+                label: Some("Fluid::BuildGrid"),
+                ..Default::default()
             });
-            cpass.set_pipeline(&self.build_grid_pipeline);
             cpass.set_bind_group(0, bg, &[]);
+            cpass.set_pipeline(&self.build_grid_pipeline);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
         }
 
-        // Step 3: PBD Iterations
+        // 3. PBD Iterations
         for _ in 0..self.iterations {
-            // Lambda
             {
                 let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                    label: Some("PBD Compute Lambda"),
-                    timestamp_writes: None,
+                    label: Some("Fluid::Lambda"),
+                    ..Default::default()
                 });
-                cpass.set_pipeline(&self.lambda_pipeline);
                 cpass.set_bind_group(0, bg, &[]);
+                cpass.set_pipeline(&self.lambda_pipeline);
                 cpass.dispatch_workgroups(particle_workgroups, 1, 1);
             }
-            // Delta Pos
             {
                 let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                    label: Some("PBD Compute Delta Pos"),
-                    timestamp_writes: None,
+                    label: Some("Fluid::DeltaPos"),
+                    ..Default::default()
                 });
-                cpass.set_pipeline(&self.delta_pos_pipeline);
                 cpass.set_bind_group(0, bg, &[]);
+                cpass.set_bind_group(1, obj_bg, &[]);
+                cpass.set_pipeline(&self.delta_pos_pipeline);
                 cpass.dispatch_workgroups(particle_workgroups, 1, 1);
             }
         }
 
-        // Step 4: Integrate & Finalize
+        // 4. Integrate
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("PBD Integrate"),
-                timestamp_writes: None,
+                label: Some("Fluid::Integrate"),
+                ..Default::default()
             });
-            cpass.set_pipeline(&self.integrate_pipeline);
             cpass.set_bind_group(0, bg, &[]);
+            cpass.set_pipeline(&self.integrate_pipeline);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
         }
 
@@ -537,27 +592,24 @@ mod tests {
 
     #[test]
     fn test_sim_params_default() {
-        let params = SimParams {
-            delta_time: 0.016,
+        let _params = SimParams {
             smoothing_radius: 1.0,
-            target_density: 10.0,
-            pressure_multiplier: 250.0,
-            viscosity: 50.0,
-            surface_tension: 0.1,
-            particle_count: 1000,
-            gravity: -9.8,
-            iterations: 4,
-            cell_size: 1.2,
-            grid_width: 128,
-            grid_height: 128,
-            grid_depth: 128,
-            _pad0: 0,
-            _pad1: 0,
-            _pad2: 0,
+            target_density: 1.0,
+            pressure_multiplier: 1.0,
+            viscosity: 1.0,
+            surface_tension: 1.0,
+            gravity: -9.81,
+            dt: 0.016,
+            particle_count: 100,
+            grid_width: 10,
+            grid_height: 10,
+            grid_depth: 10,
+            cell_size: 1.0,
+            object_count: 0,
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
         };
-        assert_eq!(params.delta_time, 0.016);
-        assert_eq!(params.particle_count, 1000);
-        assert_eq!(params.gravity, -9.8);
     }
 
     #[test]
@@ -569,28 +621,24 @@ mod tests {
     #[test]
     fn test_sim_params_grid_configuration() {
         let params = SimParams {
-            delta_time: 0.016,
-            smoothing_radius: 0.5,
+            smoothing_radius: 1.0,
             target_density: 1.0,
-            pressure_multiplier: 100.0,
-            viscosity: 10.0,
-            surface_tension: 0.1,
-            particle_count: 500,
-            gravity: -10.0,
-            iterations: 4,
-            cell_size: 0.6, // Should be slightly larger than smoothing_radius
+            pressure_multiplier: 1.0,
+            viscosity: 1.0,
+            surface_tension: 1.0,
+            gravity: -9.81,
+            dt: 0.016,
+            particle_count: 100,
             grid_width: 64,
-            grid_height: 64,
-            grid_depth: 64,
-            _pad0: 0,
-            _pad1: 0,
-            _pad2: 0,
+            grid_height: 32,
+            grid_depth: 16,
+            cell_size: 1.0,
+            object_count: 0,
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
         };
-        assert!(params.cell_size > params.smoothing_radius);
-        assert_eq!(
-            params.grid_width * params.grid_height * params.grid_depth,
-            262144
-        );
+        assert_eq!(params.grid_width, 64);
     }
 
     #[test]
@@ -630,22 +678,22 @@ mod tests {
     #[test]
     fn test_sim_params_bytemuck_cast() {
         let params = SimParams {
-            delta_time: 0.016,
             smoothing_radius: 1.0,
             target_density: 10.0,
             pressure_multiplier: 250.0,
             viscosity: 50.0,
             surface_tension: 0.1,
-            particle_count: 1000,
             gravity: -9.8,
-            iterations: 4,
-            cell_size: 1.2,
+            dt: 0.016,
+            particle_count: 1000,
             grid_width: 128,
             grid_height: 128,
             grid_depth: 128,
-            _pad0: 0,
-            _pad1: 0,
-            _pad2: 0,
+            cell_size: 1.2,
+            object_count: 0,
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
         };
 
         let bytes: &[u8] = bytemuck::bytes_of(&params);

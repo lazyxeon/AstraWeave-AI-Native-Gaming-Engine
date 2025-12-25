@@ -4,6 +4,7 @@
 //! and constraint application (None → X → Y → Z → XY → XZ → YZ).
 
 use glam::{Quat, Vec2, Vec3};
+use tracing::debug;
 use winit::keyboard::KeyCode;
 
 /// Gizmo operation mode (modal, like Blender).
@@ -196,7 +197,7 @@ impl GizmoState {
             };
             self.last_mode = self.mode;
             self.reset_operation_state();
-            println!("🔄 Rotate mode started - constraint reset to None");
+            debug!("🔄 Rotate mode started - constraint reset to None");
         }
     }
 
@@ -218,17 +219,17 @@ impl GizmoState {
             GizmoMode::Translate { constraint } => {
                 let old = *constraint;
                 *constraint = constraint.cycle(axis);
-                println!("🎯 Translate constraint: {:?} → {:?}", old, *constraint);
+                debug!("🎯 Translate constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Rotate { constraint } => {
                 let old = *constraint;
                 *constraint = constraint.cycle(axis);
-                println!("🎯 Rotate constraint: {:?} → {:?}", old, *constraint);
+                debug!("🎯 Rotate constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Scale { constraint, .. } => {
                 let old = *constraint;
                 *constraint = constraint.cycle(axis);
-                println!("🎯 Scale constraint: {:?} → {:?}", old, *constraint);
+                debug!("🎯 Scale constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Inactive => {}
         }

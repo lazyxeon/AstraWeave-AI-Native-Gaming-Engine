@@ -23,6 +23,7 @@
 
 use anyhow::{Context, Result};
 use std::sync::Arc;
+use tracing::debug;
 use wgpu;
 
 use super::camera::OrbitCamera;
@@ -322,7 +323,7 @@ impl ViewportRenderer {
                 // DEBUG: Log gizmo mode and constraint
                 match &gizmo.mode {
                     crate::gizmo::GizmoMode::Rotate { constraint } => {
-                        println!(
+                        debug!(
                             "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
                             constraint
                         );

@@ -6,7 +6,6 @@ use arbitrary::Arbitrary;
 use astraweave_blend::cache::CacheEntry;
 use astraweave_blend::version::BlenderVersion;
 use std::path::PathBuf;
-use std::time::Duration;
 
 #[derive(Debug, Arbitrary)]
 struct FuzzCacheEntryInput {

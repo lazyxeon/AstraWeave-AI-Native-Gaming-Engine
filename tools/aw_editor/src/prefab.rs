@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use tracing::debug;
 
 /// Immutable snapshot of the scene hierarchy used when serializing prefabs.
 #[derive(Debug, Clone, Default)]
@@ -488,7 +489,7 @@ impl PrefabInstance {
         // Clear all overrides since we've reverted all entities
         self.overrides.clear();
 
-        println!("✅ Reverted {} entities to prefab state", reverted_count);
+        debug!("✅ Reverted {} entities to prefab state", reverted_count);
         Ok(())
     }
 
@@ -556,7 +557,7 @@ impl PrefabInstance {
         // Clear all overrides since current state is now the prefab state
         self.overrides.clear();
 
-        println!("✅ Applied {} entities to prefab file", applied_count);
+        debug!("✅ Applied {} entities to prefab file", applied_count);
         Ok(())
     }
 }

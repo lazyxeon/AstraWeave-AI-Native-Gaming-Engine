@@ -1,6 +1,7 @@
 use super::FluidScenario;
 use crate::ocean_renderer::OceanRenderer;
-use astraweave_fluids::FluidSystem;
+use astraweave_fluids::renderer::CameraUniform;
+use astraweave_fluids::{FluidRenderer, FluidSystem};
 use astraweave_physics::PhysicsWorld;
 use glam::{Mat4, Vec3};
 
@@ -34,6 +35,7 @@ impl FluidScenario for OceanScenario {
         _system: &mut FluidSystem,
         _physics: &mut PhysicsWorld,
         camera_pos: Vec3,
+        _queue: &wgpu::Queue,
     ) {
         self.camera_pos = camera_pos;
         self.renderer.update(dt, camera_pos);
@@ -43,13 +45,17 @@ impl FluidScenario for OceanScenario {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
+        _scene_view: &wgpu::TextureView,
+        _scene_depth_view: &wgpu::TextureView,
         depth: &wgpu::TextureView,
         _device: &wgpu::Device,
         queue: &wgpu::Queue,
         _system: &FluidSystem,
-        view_proj: Mat4,
+        _renderer: &FluidRenderer,
+        camera_uniform: CameraUniform,
         _skybox: &wgpu::TextureView,
     ) {
+        let view_proj = glam::Mat4::from_cols_array_2d(&camera_uniform.view_proj);
         self.renderer.render(encoder, view, depth, queue, view_proj);
     }
 }

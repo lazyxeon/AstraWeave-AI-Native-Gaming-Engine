@@ -20,10 +20,10 @@ fuzz_target!(|input: FuzzInput| {
     let v1 = BlenderVersion::new(input.major, input.minor, input.patch);
     let v2 = BlenderVersion::new(input.other_major, input.other_minor, input.other_patch);
     
-    // Test accessors (should not panic)
-    let _ = v1.major();
-    let _ = v1.minor();
-    let _ = v1.patch();
+    // Test field accessors (should not panic)
+    let _ = v1.major;
+    let _ = v1.minor;
+    let _ = v1.patch;
     
     // Test comparison operations (should satisfy mathematical properties)
     // Reflexivity

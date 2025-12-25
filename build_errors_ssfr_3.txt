@@ -1,4 +1,3 @@
-    Blocking waiting for file lock on build directory
 warning: unused import: `std::sync::Arc`
  --> astraweave-fluids\src\renderer.rs:1:5
   |
@@ -65,62 +64,26 @@ warning: multiple fields are never read
 
 warning: `astraweave-fluids` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-fluids` to apply 1 suggestion)
     Checking fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
-error[E0425]: cannot find value `_physics` in this scope
-  --> examples\fluids_demo\src\scenarios\laboratory.rs:62:22
-   |
-62 |         let box_id = _physics.add_dynamic_box(
-   |                      ^^^^^^^^ not found in this scope
-
-error[E0425]: cannot find value `_physics` in this scope
-  --> examples\fluids_demo\src\scenarios\laboratory.rs:68:9
-   |
-68 |         _physics.add_buoyancy(box_id, 8.0, 5.0); // Floats well (volume > mass/density ratio)
-   |         ^^^^^^^^ not found in this scope
-
-error[E0425]: cannot find value `_physics` in this scope
-  --> examples\fluids_demo\src\scenarios\laboratory.rs:70:25
-   |
-70 |         let sphere_id = _physics.add_dynamic_box(
-   |                         ^^^^^^^^ not found in this scope
-
-error[E0425]: cannot find value `_physics` in this scope
-  --> examples\fluids_demo\src\scenarios\laboratory.rs:77:9
-   |
-77 |         _physics.add_buoyancy(sphere_id, 0.4, 2.0); // Sinks (volume < mass/density ratio)
-   |         ^^^^^^^^ not found in this scope
-
-warning: unused import: `Mat4`
- --> examples\fluids_demo\src\scenarios\laboratory.rs:5:12
-  |
-5 | use glam::{Mat4, Vec3};
-  |            ^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
 warning: unused import: `Mat4`
  --> examples\fluids_demo\src\scenarios\ocean.rs:6:12
   |
 6 | use glam::{Mat4, Vec3};
   |            ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
 
-error[E0599]: no method named `current_mut` found for struct `ScenarioManager` in the current scope
-   --> examples\fluids_demo\src\main.rs:325:55
+error[E0499]: cannot borrow `encoder` as mutable more than once at a time
+   --> examples\fluids_demo\src\main.rs:395:21
     |
-325 |         if let Some(scenario) = self.scenario_manager.current_mut() {
-    |                                                       ^^^^^^^^^^^
-    |
-   ::: examples\fluids_demo\src\scenarios\mod.rs:41:1
-    |
-41  | pub struct ScenarioManager {
-    | -------------------------- method `current_mut` not found for this struct
-    |
-help: there is a method `current` with a similar name
-    |
-325 -         if let Some(scenario) = self.scenario_manager.current_mut() {
-325 +         if let Some(scenario) = self.scenario_manager.current() {
-    |
+366 |             let mut _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    |                              ------- first mutable borrow occurs here
+...
+395 |                     &mut encoder,
+    |                     ^^^^^^^^^^^^ second mutable borrow occurs here
+...
+403 |         }
+    |         - first borrow might be used here, when `_rpass` is dropped and runs the destructor for type `wgpu::RenderPass<'_>`
 
-Some errors have detailed explanations: E0425, E0599.
-For more information about an error, try `rustc --explain E0425`.
-warning: `fluids_demo` (bin "fluids_demo") generated 2 warnings
-error: could not compile `fluids_demo` (bin "fluids_demo") due to 5 previous errors; 2 warnings emitted
+For more information about this error, try `rustc --explain E0499`.
+warning: `fluids_demo` (bin "fluids_demo") generated 1 warning
+error: could not compile `fluids_demo` (bin "fluids_demo") due to 1 previous error; 1 warning emitted

@@ -169,7 +169,7 @@ fuzz_target!(|input: FuzzOptionsInput| {
     // Test CacheOptions
     let cache_options = CacheOptions {
         enabled: input.cache_enabled,
-        max_size_bytes: Some(input.max_cache_size_mb.clamp(1, 10000) * 1024 * 1024),
+        max_cache_size: Some(input.max_cache_size_mb.clamp(1, 10000) as u64 * 1024 * 1024),
         ..Default::default()
     };
     

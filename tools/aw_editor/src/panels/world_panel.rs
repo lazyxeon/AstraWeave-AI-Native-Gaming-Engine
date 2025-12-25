@@ -3,6 +3,7 @@
 use super::Panel;
 use astract::prelude::*;
 use egui::Ui;
+use tracing::debug;
 
 /// World panel - displays and edits world state
 ///
@@ -126,7 +127,7 @@ impl Panel for WorldPanel {
 
         // Effect example: log when seed changes
         use_effect(ui, "seed_change_log", seed, |&s| {
-            println!("🌍 World seed changed to: {}", s);
+            debug!("🌍 World seed changed to: {}", s);
         });
     }
 }

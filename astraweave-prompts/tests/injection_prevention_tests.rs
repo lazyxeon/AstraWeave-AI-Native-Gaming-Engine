@@ -14,7 +14,7 @@
 
 use astraweave_prompts::{
     sanitize::{
-        contains_suspicious_patterns, detect_suspicious_patterns, escape_html,
+        contains_suspicious_patterns, escape_html,
         escape_template_syntax, normalize_whitespace, sanitize_input,
         sanitize_variable_name, truncate_input, validate_safe_charset,
         PromptSanitizer, SanitizationConfig, TrustLevel,

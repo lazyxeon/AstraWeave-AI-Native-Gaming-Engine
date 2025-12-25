@@ -14,6 +14,7 @@ use egui::{Color32, ColorImage, TextureHandle, Ui};
 use image::DynamicImage;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use tracing::{debug, warn};
 
 use crate::brdf_preview::BrdfPreview;
 use crate::file_watcher::{FileWatcher, ReloadEvent};
@@ -184,7 +185,7 @@ impl MaterialInspector {
         // Try to create file watcher (may fail if assets/materials doesn't exist)
         let file_watcher = FileWatcher::new("assets/materials")
             .map_err(|e| {
-                eprintln!("[MaterialInspector] File watcher disabled: {}", e);
+                warn!("[MaterialInspector] File watcher disabled: {}", e);
                 e
             })
             .ok();
@@ -482,7 +483,7 @@ impl MaterialInspector {
                     // Only reload if this is the currently loaded material
                     if let Some(ref current_path) = self.material_path {
                         if current_path == &path {
-                            println!(
+                            debug!(
                                 "[MaterialInspector] Hot-reloading material: {}",
                                 path.display()
                             );
@@ -521,7 +522,7 @@ impl MaterialInspector {
                     };
 
                     if should_reload {
-                        println!(
+                        debug!(
                             "[MaterialInspector] Hot-reloading texture: {}",
                             path.display()
                         );

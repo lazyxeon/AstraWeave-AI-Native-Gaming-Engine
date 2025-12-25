@@ -42,6 +42,7 @@ use crate::clipboard::ClipboardData;
 use anyhow::Result;
 use astraweave_core::{Entity, IVec2, Team, World};
 use std::fmt;
+use tracing::debug;
 
 // ============================================================================
 // Command Trait
@@ -172,7 +173,7 @@ impl UndoStack {
             if let Some(last_cmd) = self.commands.last_mut() {
                 if last_cmd.try_merge(command.as_ref()) {
                     // Merge successful, don't add new command
-                    println!("🔄 Merged command: {}", command.describe());
+                    debug!("🔄 Merged command: {}", command.describe());
                     return Ok(());
                 }
             }
@@ -205,7 +206,7 @@ impl UndoStack {
         self.cursor -= 1;
         let cmd = &mut self.commands[self.cursor];
 
-        println!("⏮️  Undo: {}", cmd.describe());
+        debug!("⏮️  Undo: {}", cmd.describe());
         cmd.undo(world)?;
 
         Ok(())
@@ -223,7 +224,7 @@ impl UndoStack {
 
         let cmd = &mut self.commands[self.cursor];
 
-        println!("⏭️  Redo: {}", cmd.describe());
+        debug!("⏭️  Redo: {}", cmd.describe());
         cmd.execute(world)?;
 
         self.cursor += 1;
@@ -300,7 +301,7 @@ impl UndoStack {
         if self.auto_merge && self.cursor > 0 {
             if let Some(last_cmd) = self.commands.last_mut() {
                 if last_cmd.try_merge(command.as_ref()) {
-                    println!("🔄 Merged command: {}", command.describe());
+                    debug!("🔄 Merged command: {}", command.describe());
                     return;
                 }
             }

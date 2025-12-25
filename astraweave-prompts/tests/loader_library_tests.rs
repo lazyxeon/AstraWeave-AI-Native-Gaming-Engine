@@ -6,7 +6,6 @@ use astraweave_prompts::{
     LibraryMetadata, CollectionMetadata, TemplateMetadata, TemplateCategory,
 };
 use std::fs;
-use std::io::Write;
 use tempfile::tempdir;
 
 // ========================================

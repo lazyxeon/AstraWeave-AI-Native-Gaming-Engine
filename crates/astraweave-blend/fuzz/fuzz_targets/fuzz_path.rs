@@ -3,7 +3,7 @@
 use libfuzzer_sys::fuzz_target;
 use arbitrary::Arbitrary;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Fuzz target for path handling security
 /// Tests path manipulation, normalization, and security checks

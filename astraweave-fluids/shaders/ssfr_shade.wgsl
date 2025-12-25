@@ -5,6 +5,11 @@ struct CameraUniform {
     view_proj: mat4x4<f32>,
     inv_view_proj: mat4x4<f32>,
     cam_pos: vec4<f32>,
+    light_dir: vec4<f32>,
+    time: f32,
+    _pad0: f32,
+    _pad1: f32,
+    _pad2: f32,
 };
 
 @group(0) @binding(0) var<uniform> camera: CameraUniform;
@@ -12,6 +17,29 @@ struct CameraUniform {
 @group(0) @binding(2) var scene_texture: texture_2d<f32>;
 @group(0) @binding(3) var skybox_texture: texture_2d<f32>;
 @group(0) @binding(4) var default_sampler: sampler;
+@group(0) @binding(5) var scene_depth: texture_2d<f32>;
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(443.897, 441.423, 437.195));
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn voronoi(p: vec2<f32>) -> f32 {
+    let n = floor(p);
+    let f = fract(p);
+    var res = 8.0;
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let g = vec2<f32>(f32(i), f32(j));
+            let o = hash22(n + g);
+            let r = g + o - f;
+            let d = dot(r, r);
+            res = min(res, d);
+        }
+    }
+    return sqrt(res);
+}
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
@@ -66,22 +94,39 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let RefractOffset = normal.xy * refraction_strength;
     let scene_color = textureSample(scene_texture, default_sampler, in.uv + RefractOffset).rgb;
     
-    // Absorption (Beer-Lambert: I = I0 * exp(-k * d))
-    // We approximate 'd' (thickness) here. For a full version we'd need back-side depth pass.
-    let thickness = 0.5; 
-    let absorb_color = vec3<f32>(0.1, 0.4, 0.8);
+    // Caustics & Volumetrics
+    let ground_depth = textureSample(scene_depth, default_sampler, in.uv + RefractOffset).r;
+    let ground_pos = world_pos_from_depth(in.uv + RefractOffset, ground_depth);
+    
+    // Procedural Caustics
+    let caustic_scale = 1.5;
+    let caustic_speed = 0.2;
+    let caustic_uv = ground_pos.xz * caustic_scale + normal.xz * 0.1;
+    let caustic1 = voronoi(caustic_uv + camera.light_dir.xz * camera.time * caustic_speed);
+    let caustic2 = voronoi(caustic_uv * 1.5 - camera.light_dir.zx * camera.time * caustic_speed * 1.3);
+    let caustic_pattern = pow(1.0 - min(caustic1, caustic2), 12.0) * 3.0;
+    
+    // Absorption depth (distance from fluid surface to ground)
+    let thickness = max(pos.y - ground_pos.y, 0.0);
+    
+    let absorb_color = vec3<f32>(0.5, 0.2, 0.05); // Red/Green absorbed more by water
     let absorption = exp(-absorb_color * thickness);
-    let refracted_color = scene_color * absorption;
+    
+    // Light attenuation & Caustics apply to refraction
+    let caustic_fade = exp(-thickness * 0.8);
+    let final_caustic = caustic_pattern * caustic_fade * max(camera.light_dir.y, 0.0);
+    
+    let total_refracted = (scene_color + final_caustic * vec3<f32>(0.8, 0.9, 1.0)) * absorption;
     
     // Reflection (Skybox)
     let reflect_dir = reflect(-view_dir, normal);
     // Simple equirectangular skybox sampling
     let PI = 3.14159265359;
-    let u = atan2(reflect_dir.z, reflect_dir.x) / (2.0 * PI) + 0.5;
-    let v = asin(reflect_dir.y) / PI + 0.5;
-    let reflected_color = textureSample(skybox_texture, default_sampler, vec2<f32>(u, v)).rgb;
+    let sky_u = atan2(reflect_dir.z, reflect_dir.x) / (2.0 * PI) + 0.5;
+    let sky_v = asin(reflect_dir.y) / PI + 0.5;
+    let reflected_color = textureSample(skybox_texture, default_sampler, vec2<f32>(sky_u, sky_v)).rgb;
     
-    let final_color = mix(refracted_color, reflected_color, fresnel);
+    let final_color = mix(total_refracted, reflected_color, fresnel);
     
     return vec4<f32>(final_color, 1.0);
 }

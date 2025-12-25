@@ -1,3 +1,7 @@
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
 warning: unused import: `std::sync::Arc`
  --> astraweave-fluids\src\renderer.rs:1:5
   |
@@ -72,28 +76,23 @@ warning: associated function `new` is never used
    |            ^^^
 
 warning: `astraweave-fluids` (lib) generated 10 warnings (run `cargo fix --lib -p astraweave-fluids` to apply 1 suggestion)
-    Checking astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
-    Checking fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
-error[E0599]: no method named `get_current_particle_buffer` found for reference `&FluidSystem` in the current scope
-  --> examples\fluids_demo\src\scenarios\laboratory.rs:89:20
+   Compiling astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+   Compiling aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+   Compiling fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
+warning: fields `egui_ctx` and `egui_renderer` are never read
+  --> examples\fluids_demo\src\main.rs:64:5
    |
-89 |             system.get_current_particle_buffer(),
-   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+45 | struct State {
+   |        ----- fields in this struct
+...
+64 |     egui_ctx: egui::Context,
+   |     ^^^^^^^^
+65 |     egui_state: EguiState,
+66 |     egui_renderer: EguiRenderer,
+   |     ^^^^^^^^^^^^^
    |
-help: there is a method `get_particle_buffer` with a similar name
-   |
-89 -             system.get_current_particle_buffer(),
-89 +             system.get_particle_buffer(),
-   |
+   = note: `#[warn(dead_code)]` on by default
 
-warning: unused variable: `depth`
-  --> examples\fluids_demo\src\scenarios\laboratory.rs:40:13
-   |
-40 |         let depth = 20;
-   |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
-   |
-   = note: `#[warn(unused_variables)]` on by default
-
-For more information about this error, try `rustc --explain E0599`.
-warning: `fluids_demo` (bin "fluids_demo") generated 1 warning
-error: could not compile `fluids_demo` (bin "fluids_demo") due to 1 previous error; 1 warning emitted
