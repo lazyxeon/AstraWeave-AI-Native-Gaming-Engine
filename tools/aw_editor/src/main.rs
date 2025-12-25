@@ -307,6 +307,8 @@ struct EditorApp {
     show_quit_dialog: bool,
     // Phase 6: Toast notifications
     toasts: Vec<Toast>,
+    // Phase 7: Help dialog
+    show_help_dialog: bool,
 }
 
 impl Default for EditorApp {
@@ -434,6 +436,8 @@ impl Default for EditorApp {
             show_quit_dialog: false,
             // Phase 6: Toast notifications
             toasts: Vec::new(),
+            // Phase 7: Help dialog
+            show_help_dialog: false,
         }
     }
 }
@@ -1795,6 +1799,59 @@ impl eframe::App for EditorApp {
                 });
         }
 
+        // Phase 7: Keyboard shortcuts help dialog
+        if self.show_help_dialog {
+            egui::Window::new("Keyboard Shortcuts")
+                .collapsible(false)
+                .resizable(true)
+                .default_width(400.0)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.heading("File");
+                    ui.label("Ctrl+N          New Scene");
+                    ui.label("Ctrl+S          Save Scene");
+                    ui.label("Ctrl+Shift+S    Save As");
+                    ui.label("Ctrl+O          Open Scene");
+                    ui.add_space(8.0);
+
+                    ui.heading("Edit");
+                    ui.label("Ctrl+Z          Undo");
+                    ui.label("Ctrl+Shift+Z    Redo");
+                    ui.label("Ctrl+A          Select All");
+                    ui.label("Ctrl+D          Duplicate");
+                    ui.label("Delete          Delete Selected");
+                    ui.label("Escape          Deselect All");
+                    ui.add_space(8.0);
+
+                    ui.heading("Camera");
+                    ui.label("F               Focus on Selected");
+                    ui.label("Home            Reset Camera");
+                    ui.label("Alt+1           Front View");
+                    ui.label("Alt+3           Right View");
+                    ui.label("Alt+7           Top View");
+                    ui.label("Alt+0           Perspective View");
+                    ui.add_space(8.0);
+
+                    ui.heading("Gizmo");
+                    ui.label("W               Translate Mode");
+                    ui.label("E               Rotate Mode");
+                    ui.label("R               Scale Mode");
+                    ui.add_space(8.0);
+
+                    ui.heading("View");
+                    ui.label("F1              Show This Help");
+                    ui.add_space(12.0);
+
+                    ui.horizontal(|ui| {
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.button("Close").clicked() {
+                                self.show_help_dialog = false;
+                            }
+                        });
+                    });
+                });
+        }
+
         // Check for close request
         ctx.input(|i| {
             if i.viewport().close_requested() && self.is_dirty && !self.show_quit_dialog {
@@ -2134,6 +2191,11 @@ impl eframe::App for EditorApp {
                     viewport.camera_mut().set_view_perspective();
                     self.status = "Perspective view".to_string();
                 }
+            }
+
+            // F1: Show keyboard shortcuts help
+            if i.key_pressed(egui::Key::F1) {
+                self.show_help_dialog = !self.show_help_dialog;
             }
 
             // Ctrl+D: Duplicate selected entities
