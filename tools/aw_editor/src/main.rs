@@ -2800,6 +2800,7 @@ impl eframe::App for EditorApp {
                     &self.undo_stack,
                     &self.snapping_config,
                     self.current_fps,
+                    self.is_dirty,
                 );
             });
 

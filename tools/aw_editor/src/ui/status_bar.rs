@@ -26,8 +26,18 @@ impl StatusBar {
         undo_stack: &UndoStack,
         snap_config: &SnappingConfig,
         fps: f32,
+        is_dirty: bool,
     ) {
         ui.horizontal(|ui| {
+            if is_dirty {
+                ui.label(
+                    egui::RichText::new("*")
+                        .color(egui::Color32::from_rgb(255, 100, 100))
+                        .strong(),
+                )
+                .on_hover_text("Unsaved changes - Press Ctrl+S to save");
+            }
+
             Self::show_editor_mode(ui, editor_mode);
             ui.separator();
 
