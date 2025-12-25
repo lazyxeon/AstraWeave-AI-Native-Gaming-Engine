@@ -315,6 +315,12 @@ struct EditorApp {
     auto_save_enabled: bool,
     auto_save_interval_secs: f32,
     last_auto_save: std::time::Instant,
+    // Phase 9: Settings dialog
+    show_settings_dialog: bool,
+    // Phase 9: Panel visibility
+    show_hierarchy_panel: bool,
+    show_inspector_panel: bool,
+    show_console_panel: bool,
 }
 
 impl Default for EditorApp {
@@ -450,6 +456,12 @@ impl Default for EditorApp {
             auto_save_enabled: false,
             auto_save_interval_secs: 300.0,
             last_auto_save: std::time::Instant::now(),
+            // Phase 9: Settings dialog
+            show_settings_dialog: false,
+            // Phase 9: Panel visibility
+            show_hierarchy_panel: true,
+            show_inspector_panel: true,
+            show_console_panel: true,
         }
     }
 }
@@ -1869,13 +1881,74 @@ impl eframe::App for EditorApp {
                     ui.heading("View");
                     ui.label("F1              Show This Help");
                     ui.label("G               Toggle Grid");
-                    ui.label("G               Toggle Grid");
                     ui.add_space(12.0);
 
                     ui.horizontal(|ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.button("Close").clicked() {
                                 self.show_help_dialog = false;
+                            }
+                        });
+                    });
+                });
+        }
+
+        // Phase 9: Settings/Preferences dialog
+        if self.show_settings_dialog {
+            egui::Window::new("Settings")
+                .collapsible(false)
+                .resizable(true)
+                .default_width(450.0)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.heading("General");
+                    ui.add_space(8.0);
+
+                    ui.horizontal(|ui| {
+                        ui.label("Grid Visible:");
+                        ui.checkbox(&mut self.show_grid, "");
+                    });
+
+                    ui.add_space(16.0);
+                    ui.heading("Auto-Save");
+                    ui.add_space(8.0);
+
+                    ui.horizontal(|ui| {
+                        ui.label("Enable Auto-Save:");
+                        ui.checkbox(&mut self.auto_save_enabled, "");
+                    });
+
+                    ui.horizontal(|ui| {
+                        ui.label("Interval (seconds):");
+                        ui.add(egui::DragValue::new(&mut self.auto_save_interval_secs)
+                            .range(30.0..=3600.0)
+                            .speed(10.0));
+                    });
+
+                    ui.add_space(16.0);
+                    ui.heading("Panels");
+                    ui.add_space(8.0);
+
+                    ui.horizontal(|ui| {
+                        ui.label("Show Hierarchy:");
+                        ui.checkbox(&mut self.show_hierarchy_panel, "");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Show Inspector:");
+                        ui.checkbox(&mut self.show_inspector_panel, "");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Show Console:");
+                        ui.checkbox(&mut self.show_console_panel, "");
+                    });
+
+                    ui.add_space(12.0);
+                    ui.separator();
+
+                    ui.horizontal(|ui| {
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.button("Close").clicked() {
+                                self.show_settings_dialog = false;
                             }
                         });
                     });
@@ -2455,8 +2528,6 @@ impl eframe::App for EditorApp {
                 }
 
                 ui.menu_button("📚 Recent Files", |ui| {
-                    ui.add_space(6.0);
-                    self.show_play_controls(ui);
                     let recent_files = self.recent_files.get_files().to_vec();
 
                     if recent_files.is_empty() {
@@ -2497,6 +2568,30 @@ impl eframe::App for EditorApp {
                         }
                     }
                 });
+
+                ui.menu_button("👁 View", |ui| {
+                    if ui.checkbox(&mut self.show_hierarchy_panel, "Hierarchy Panel").changed() {
+                        let state = if self.show_hierarchy_panel { "shown" } else { "hidden" };
+                        self.status = format!("Hierarchy panel {}", state);
+                    }
+                    if ui.checkbox(&mut self.show_inspector_panel, "Inspector Panel").changed() {
+                        let state = if self.show_inspector_panel { "shown" } else { "hidden" };
+                        self.status = format!("Inspector panel {}", state);
+                    }
+                    if ui.checkbox(&mut self.show_console_panel, "Console Panel").changed() {
+                        let state = if self.show_console_panel { "shown" } else { "hidden" };
+                        self.status = format!("Console panel {}", state);
+                    }
+                    ui.separator();
+                    if ui.checkbox(&mut self.show_grid, "Grid").changed() {
+                        let state = if self.show_grid { "enabled" } else { "disabled" };
+                        self.status = format!("Grid {}", state);
+                    }
+                });
+
+                if ui.button("⚙ Settings").clicked() {
+                    self.show_settings_dialog = true;
+                }
 
                 ui.separator();
 
@@ -2617,6 +2712,7 @@ impl eframe::App for EditorApp {
 
                         ui.add_space(10.0);
 
+                        if self.show_hierarchy_panel {
                         let mut hierarchy_toasts: Vec<(String, bool)> = Vec::new();
                         let mut hierarchy_updates: Vec<(Option<u32>, Option<u64>, bool)> = Vec::new();
 
@@ -2717,6 +2813,7 @@ impl eframe::App for EditorApp {
                         if let Some(primary) = all_selected.last() {
                             self.selection_set.primary = Some(*primary as u64);
                         }
+                        } // end show_hierarchy_panel
 
                         ui.add_space(10.0);
 
@@ -3121,12 +3218,16 @@ impl eframe::App for EditorApp {
                 let console_open = self.runtime.is_playing() || !self.console_logs.is_empty();
 
                 ui.collapsing("Scene Hierarchy", |ui| self.show_scene_hierarchy(ui));
-                ui.collapsing("Inspector", |ui| self.show_inspector(ui));
+                if self.show_inspector_panel {
+                    ui.collapsing("Inspector", |ui| self.show_inspector(ui));
+                }
 
+                if self.show_console_panel {
                 // Console section with auto-expand when active
                 egui::CollapsingHeader::new("Console")
                     .default_open(console_open)
                     .show(ui, |ui| self.show_console(ui));
+                }
 
                 ui.collapsing("Profiler", |ui| self.show_profiler(ui));
                 ui.collapsing("Behavior Graph Editor", |ui| {

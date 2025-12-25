@@ -1,7 +1,7 @@
 use astraweave_render::{
     camera::Camera,
     clustered_forward::{ClusteredForwardRenderer, ClusterConfig},
-    deferred::{GBuffer, GBufferFormats},
+    deferred::{GBuffer, GBufferFormats, DeferredRenderer},
     gi::vxgi::{VxgiConfig, VxgiRenderer},
     ibl::{IblManager, IblQuality},
     renderer::Renderer,
@@ -15,6 +15,13 @@ use astraweave_render::{
     animation::{Skeleton, AnimationClip, Transform, Joint, ChannelData, AnimationChannel, Interpolation},
     terrain::TerrainRenderer,
     culling::{InstanceAABB, FrustumPlanes},
+    gpu_particles::GpuParticleSystem,
+    clustered_megalights::MegaLightsRenderer,
+    decals::{DecalSystem, Decal},
+    water::WaterRenderer,
+    lod_generator::{LODGenerator, LODConfig, SimplificationMesh},
+    advanced_post::AdvancedPostFx,
+    vertex_compression::OctahedralEncoder,
 };
 use astraweave_terrain::WorldConfig;
 use glam::{vec3, Mat4, Vec3};
@@ -244,6 +251,101 @@ async fn test_renderer_full_pipeline() {
     ];
     renderer.update_instances(&instances);
 
+    // 6. Exercise Clustered Lighting with Point Lights
+    // renderer.point_lights is private, but the renderer adds default lights if empty
+    // which we can trigger by drawing.
+
+    // 7. Exercise GPU Particles
+    {
+        let device = renderer.device().clone();
+        let queue = renderer.queue().clone();
+        
+        let mut particle_sys = GpuParticleSystem::new(&device, 1000).unwrap();
+        let emitter_params = astraweave_render::gpu_particles::EmitterParams {
+            position: [0.0, 0.0, 0.0, 1.0],
+            velocity: [0.0, 1.0, 0.0, 0.0],
+            emission_rate: 100.0,
+            lifetime: 2.0,
+            velocity_randomness: 0.2,
+            delta_time: 0.016,
+            gravity: [0.0, -9.81, 0.0, 0.0],
+            particle_count: 0,
+            max_particles: 1000,
+            random_seed: 42,
+            _padding: 0,
+        };
+        let mut particle_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        particle_sys.update(&queue, &mut particle_encoder, &emitter_params);
+        queue.submit(Some(particle_encoder.finish()));
+
+        // 8. Exercise MegaLights
+        let mut megalights = MegaLightsRenderer::new(&device, (16, 9, 24), 100).unwrap();
+        let mut mega_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let light_data = vec![astraweave_render::clustered_megalights::GpuLight {
+            position: [0.0, 5.0, 0.0, 10.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+        }];
+        let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&light_data),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let cluster_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (16 * 9 * 24 * 32) as u64,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
+        let count_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (16 * 9 * 24 * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
+        let offset_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (16 * 9 * 24 * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
+        let index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (16 * 9 * 24 * 100 * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
+        let params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: 64,
+            usage: wgpu::BufferUsages::UNIFORM,
+            mapped_at_creation: false,
+        });
+        let prefix_params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: 64,
+            usage: wgpu::BufferUsages::UNIFORM,
+            mapped_at_creation: false,
+        });
+        
+        megalights.update_bind_groups(
+            &device, 
+            &light_buffer, 
+            &cluster_buffer, 
+            &count_buffer, 
+            &offset_buffer, 
+            &index_buffer, 
+            &params_buffer, 
+            &prefix_params_buffer
+        );
+        megalights.dispatch(&mut mega_encoder, 1);
+        queue.submit(Some(mega_encoder.finish()));
+
+        // 9. Exercise Texture Streaming more thoroughly
+        let mut streaming = TextureStreamingManager::new(10);
+        streaming.request_texture("nonexistent.png".to_string(), 1, 10.0);
+        streaming.process_next_load(&Arc::new(device.clone()), &Arc::new(queue.clone()));
+    }
+
     // Update other systems
     renderer.set_material_params([1.0, 1.0, 1.0, 1.0], 0.5, 0.1);
     renderer.set_weather(astraweave_render::WeatherKind::Rain);
@@ -251,8 +353,7 @@ async fn test_renderer_full_pipeline() {
     renderer.tick_environment(0.016);
 
     // Create a dummy texture to render into
-    let device = renderer.device();
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
+    let texture = renderer.device().create_texture(&wgpu::TextureDescriptor {
         label: Some("dummy_render_target"),
         size: wgpu::Extent3d {
             width: 800,
@@ -267,7 +368,7 @@ async fn test_renderer_full_pipeline() {
         view_formats: &[],
     });
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+    let mut encoder = renderer.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("booster_encoder"),
     });
 
@@ -276,4 +377,104 @@ async fn test_renderer_full_pipeline() {
 
     // Submit (optional, but good for coverage of queue logic)
     renderer.queue().submit(std::iter::once(encoder.finish()));
+}
+
+#[tokio::test]
+async fn test_render_extra_systems() {
+    use astraweave_render::{
+        decals::{DecalSystem, Decal},
+        water::WaterRenderer,
+        lod_generator::{SimplificationMesh, LODConfig},
+        vertex_compression::OctahedralEncoder,
+        deferred::DeferredRenderer,
+        advanced_post::AdvancedPostFx,
+    };
+
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+    let width = 1024;
+    let height = 768;
+    let format = wgpu::TextureFormat::Bgra8UnormSrgb;
+
+    // 1. Decals
+    let mut decal_sys = DecalSystem::new(&device, 100, 1024, 4);
+    decal_sys.add_decal(Decal {
+        position: glam::Vec3::ZERO,
+        rotation: glam::Quat::IDENTITY,
+        scale: glam::Vec3::ONE,
+        albedo_tint: [1.0, 1.0, 1.0, 1.0],
+        normal_strength: 1.0,
+        roughness: 0.5,
+        metallic: 0.0,
+        blend_mode: astraweave_render::decals::DecalBlendMode::AlphaBlend,
+        atlas_uv: ([0.0, 0.0], [1.0, 1.0]),
+        fade_duration: 1.0,
+        fade_time: 0.0,
+    });
+    decal_sys.update(&queue, 0.016);
+
+    // 2. Water
+    let mut water = WaterRenderer::new(&device, format, wgpu::TextureFormat::Depth32Float);
+    water.update(&queue, glam::Mat4::IDENTITY, glam::Vec3::ZERO, 0.016);
+
+    // 3. LOD Generation
+    let mesh = SimplificationMesh::new(
+        vec![glam::Vec3::ZERO, glam::Vec3::X, glam::Vec3::Y],
+        vec![glam::Vec3::Z, glam::Vec3::Z, glam::Vec3::Z],
+        vec![[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+        vec![0, 1, 2],
+    );
+    let lod_gen = LODGenerator::new(LODConfig::default());
+    let _lods = lod_gen.generate_lods(&mesh);
+
+    // 4. Vertex Compression
+    let normal = glam::Vec3::new(0.0, 1.0, 0.0);
+    let encoded = OctahedralEncoder::encode(normal);
+    let decoded = OctahedralEncoder::decode(encoded);
+    assert!((normal - decoded).length() < 0.01);
+
+    // 5. Deferred Renderer
+    let deferred = DeferredRenderer::new(&device, width, height).unwrap();
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    let color_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: None,
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+    let color_view = color_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    
+    deferred.light_pass(&mut encoder, &color_view);
+
+    // 6. Advanced Post Fx
+    let mut post = AdvancedPostFx::new(&device, width, height, format).unwrap();
+    post.apply_taa(&mut encoder, &color_view, &color_view);
+    post.next_frame();
+    
+    queue.submit(Some(encoder.finish()));
 }
