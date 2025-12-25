@@ -215,6 +215,36 @@ impl OrbitCamera {
         self.pitch = std::f32::consts::PI / 6.0; // 30°
     }
 
+    /// Set camera to front view (looking along -Z axis)
+    pub fn set_view_front(&mut self) {
+        self.yaw = 0.0;
+        self.pitch = 0.0;
+    }
+
+    /// Set camera to right view (looking along -X axis)
+    pub fn set_view_right(&mut self) {
+        self.yaw = std::f32::consts::FRAC_PI_2; // 90°
+        self.pitch = 0.0;
+    }
+
+    /// Set camera to top view (looking along -Y axis)
+    pub fn set_view_top(&mut self) {
+        self.yaw = 0.0;
+        self.pitch = self.max_pitch; // Nearly straight down
+    }
+
+    /// Set camera to back view (looking along +Z axis)
+    pub fn set_view_back(&mut self) {
+        self.yaw = std::f32::consts::PI; // 180°
+        self.pitch = 0.0;
+    }
+
+    /// Set camera to perspective view (isometric-like diagonal)
+    pub fn set_view_perspective(&mut self) {
+        self.yaw = std::f32::consts::PI / 4.0; // 45°
+        self.pitch = std::f32::consts::PI / 6.0; // 30°
+    }
+
     /// Update aspect ratio (call when viewport resizes)
     pub fn set_aspect(&mut self, width: f32, height: f32) {
         self.aspect = width / height;

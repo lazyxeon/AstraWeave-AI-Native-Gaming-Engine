@@ -1910,6 +1910,90 @@ impl eframe::App for EditorApp {
                 self.selected_entity = None;
                 self.status = "Selection cleared".to_string();
             }
+
+            // F: Focus camera on selected entity
+            if i.key_pressed(egui::Key::F) && !i.modifiers.ctrl {
+                if let Some(selected_id) = self.selected_entity {
+                    if let Some(entity) = self.entity_manager.get(selected_id) {
+                        if let Some(viewport) = &mut self.viewport {
+                            let entity_pos = glam::Vec3::new(
+                                entity.position.x,
+                                entity.position.y,
+                                entity.position.z,
+                            );
+                            viewport.camera_mut().frame_entity(entity_pos, 2.0);
+                            self.status = format!("Focused on entity {}", selected_id);
+                        }
+                    }
+                } else {
+                    self.status = "No entity selected to focus".to_string();
+                }
+            }
+
+            // Home: Reset camera to origin
+            if i.key_pressed(egui::Key::Home) {
+                if let Some(viewport) = &mut self.viewport {
+                    viewport.camera_mut().reset_to_origin();
+                    self.status = "Camera reset to origin".to_string();
+                }
+            }
+
+            // Numpad 1: Front view
+            if i.key_pressed(egui::Key::Num1) && i.modifiers.alt {
+                if let Some(viewport) = &mut self.viewport {
+                    viewport.camera_mut().set_view_front();
+                    self.status = "Front view".to_string();
+                }
+            }
+
+            // Numpad 3: Right view
+            if i.key_pressed(egui::Key::Num3) && i.modifiers.alt {
+                if let Some(viewport) = &mut self.viewport {
+                    viewport.camera_mut().set_view_right();
+                    self.status = "Right view".to_string();
+                }
+            }
+
+            // Numpad 7: Top view
+            if i.key_pressed(egui::Key::Num7) && i.modifiers.alt {
+                if let Some(viewport) = &mut self.viewport {
+                    viewport.camera_mut().set_view_top();
+                    self.status = "Top view".to_string();
+                }
+            }
+
+            // Numpad 0 / Alt+0: Perspective view
+            if i.key_pressed(egui::Key::Num0) && i.modifiers.alt {
+                if let Some(viewport) = &mut self.viewport {
+                    viewport.camera_mut().set_view_perspective();
+                    self.status = "Perspective view".to_string();
+                }
+            }
+
+            // Ctrl+D: Duplicate selected entities
+            if i.modifiers.ctrl && i.key_pressed(egui::Key::D) {
+                if let Some(selected_id) = self.selected_entity {
+                    if let Some(entity) = self.entity_manager.get(selected_id) {
+                        let new_name = format!("{}_copy", entity.name.clone());
+                        let new_pos = glam::Vec3::new(
+                            entity.position.x + 1.0,
+                            entity.position.y,
+                            entity.position.z + 1.0,
+                        );
+                        let rotation = entity.rotation;
+                        let scale = entity.scale;
+                        let new_id = self.entity_manager.create(new_name);
+                        if let Some(new_entity) = self.entity_manager.get_mut(new_id) {
+                            new_entity.set_transform(new_pos, rotation, scale);
+                        }
+                        self.selected_entity = Some(new_id);
+                        self.hierarchy_panel.set_selected(Some(new_id as u32));
+                        self.status = format!("Duplicated entity {} -> {}", selected_id, new_id);
+                    }
+                } else {
+                    self.status = "No entity selected to duplicate".to_string();
+                }
+            }
         });
 
         // Phase 2.2: Autosave every 5 minutes
