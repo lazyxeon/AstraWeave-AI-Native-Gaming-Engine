@@ -1855,6 +1855,61 @@ impl eframe::App for EditorApp {
                         }
                     }
                 }
+
+            // Ctrl+N: New Scene
+            if i.modifiers.ctrl && i.key_pressed(egui::Key::N) && !i.modifiers.shift {
+                self.scene_state = Some(EditorSceneState::new(World::new()));
+                self.current_scene_path = None;
+                self.undo_stack.clear();
+                self.hierarchy_panel.set_selected(None);
+                self.selected_entity = None;
+                self.status = "📄 New scene created".to_string();
+                self.console_logs.push("✅ Created new scene".into());
+            }
+
+            // Ctrl+Shift+S: Save As
+            if i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::S) {
+                if let Some(world) = self.edit_world() {
+                    let dir = self.content_root.join("scenes");
+                    let _ = fs::create_dir_all(&dir);
+                    let timestamp = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
+                    let path = dir.join(format!("scene_{}.scene.ron", timestamp));
+
+                    match scene_serialization::save_scene(world, &path) {
+                        Ok(()) => {
+                            self.current_scene_path = Some(path.clone());
+                            self.recent_files.add_file(path.clone());
+                            self.status = format!("💾 Saved scene as {:?}", path);
+                            self.console_logs.push(format!("✅ Scene saved as: {:?}", path));
+                        }
+                        Err(e) => {
+                            self.status = format!("❌ Save As failed: {}", e);
+                            self.console_logs.push(format!("❌ Save As failed: {}", e));
+                        }
+                    }
+                }
+            }
+
+            // Ctrl+A: Select All entities
+            if i.modifiers.ctrl && i.key_pressed(egui::Key::A) && !i.modifiers.shift {
+                if let Some(world) = self.edit_world() {
+                    let all_entities = world.entities();
+                    if !all_entities.is_empty() {
+                        self.hierarchy_panel.set_selected_multiple(&all_entities);
+                        self.status = format!("Selected {} entities", all_entities.len());
+                    }
+                }
+            }
+
+            // Escape: Deselect all (when not in gizmo mode)
+            if i.key_pressed(egui::Key::Escape) && self.editor_mode.can_edit() {
+                self.hierarchy_panel.set_selected(None);
+                self.selected_entity = None;
+                self.status = "Selection cleared".to_string();
+            }
         });
 
         // Phase 2.2: Autosave every 5 minutes

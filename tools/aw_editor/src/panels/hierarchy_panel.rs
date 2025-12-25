@@ -88,6 +88,14 @@ impl HierarchyPanel {
         self.selected_entities.iter().copied().collect()
     }
 
+    pub fn set_selected_multiple(&mut self, entities: &[Entity]) {
+        self.selected_entities.clear();
+        for &e in entities {
+            self.selected_entities.insert(e);
+        }
+        self.last_clicked = entities.first().copied();
+    }
+
     fn add_child_to_parent(&mut self, child: Entity, parent: Entity) {
         if child == parent {
             return;
