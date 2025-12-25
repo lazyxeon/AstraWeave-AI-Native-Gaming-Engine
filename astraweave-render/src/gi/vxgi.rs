@@ -220,7 +220,7 @@ impl VxgiRenderer {
         compute_pass.set_pipeline(&self.voxelization_pipeline);
 
         let workgroup_size = 8;
-        let dispatch_size = (self.config.voxel_resolution + workgroup_size - 1) / workgroup_size;
+        let dispatch_size = self.config.voxel_resolution.div_ceil(workgroup_size);
         compute_pass.dispatch_workgroups(dispatch_size, dispatch_size, dispatch_size);
 
         drop(compute_pass);

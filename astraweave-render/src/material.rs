@@ -143,6 +143,12 @@ pub struct MaterialManager {
     current_stats: Option<MaterialLoadStats>,
 }
 
+impl Default for MaterialManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MaterialManager {
     pub fn new() -> Self {
         Self {

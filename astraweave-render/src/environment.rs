@@ -138,7 +138,7 @@ impl TimeOfDay {
     /// Check if it's currently twilight (sunrise/sunset)
     pub fn is_twilight(&self) -> bool {
         let sun_height = self.get_sun_position().y;
-        sun_height >= -0.1 && sun_height <= 0.1
+        (-0.1..=0.1).contains(&sun_height)
     }
 }
 

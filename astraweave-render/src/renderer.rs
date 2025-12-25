@@ -2430,10 +2430,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             if let Ok(evs) = self.cin_seq.step(dt, tl) {
                 for e in evs.iter() {
                     match e {
-                        &awc::SequencerEvent::CameraKey(ref k) => Self::apply_camera_key(camera, k),
-                        &awc::SequencerEvent::FxTrigger {
-                            ref name,
-                            ref params,
+                        awc::SequencerEvent::CameraKey(k) => Self::apply_camera_key(camera, k),
+                        awc::SequencerEvent::FxTrigger {
+                            name,
+                            params,
                         } => {
                             // Minimal FX: support fade-in by instantly clearing letterbox/fade
                             if name == "fade-in" {

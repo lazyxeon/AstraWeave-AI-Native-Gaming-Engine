@@ -231,7 +231,7 @@ impl AnimationState {
         if self.looping {
             // Wrap around
             if self.time > clip_duration {
-                self.time = self.time % clip_duration;
+                self.time %= clip_duration;
             }
             if self.time < 0.0 {
                 self.time = clip_duration + (self.time % clip_duration);
