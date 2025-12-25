@@ -7,12 +7,16 @@ use astraweave_render::{
     renderer::Renderer,
     shadow_csm::CsmRenderer,
     texture_streaming::TextureStreamingManager,
-    types::{Instance, Mesh, Vertex},
+    types::{Instance, Mesh, Vertex, SkinnedVertex},
     environment::{SkyRenderer, SkyConfig, TimeOfDay, WeatherSystem},
     effects::{WeatherFx, WeatherKind},
     msaa::MsaaMode,
     material::{MaterialLoadStats, MaterialManager},
+    animation::{Skeleton, AnimationClip, Transform, Joint, ChannelData, AnimationChannel, Interpolation},
+    terrain::TerrainRenderer,
+    culling::{InstanceAABB, FrustumPlanes},
 };
+use astraweave_terrain::WorldConfig;
 use glam::{vec3, Mat4, Vec3};
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -127,6 +131,91 @@ async fn test_renderer_full_pipeline() {
     // Initialize headless renderer
     let mut renderer = Renderer::new_headless(800, 600).await
         .expect("Failed to create headless renderer");
+
+    // 1. Add a model and instances to exercise model rendering loop
+    let (v, i) = astraweave_render::primitives::cube();
+    let mesh = renderer.create_mesh_from_arrays(
+        &v.iter().map(|v| v.position).collect::<Vec<_>>(),
+        &v.iter().map(|v| v.normal).collect::<Vec<_>>(),
+        &i,
+    );
+    
+    let model_instances = vec![
+        Instance {
+            transform: glam::Mat4::from_translation(glam::vec3(2.0, 0.0, 0.0)),
+            color: [1.0, 0.0, 0.0, 1.0],
+            material_id: 0,
+        },
+        Instance {
+            transform: glam::Mat4::from_translation(glam::vec3(-2.0, 0.0, 0.0)),
+            color: [0.0, 1.0, 0.0, 1.0],
+            material_id: 0,
+        },
+    ];
+    renderer.add_model("test_cube", mesh, &model_instances);
+
+    // 2. Add a skinned mesh to exercise skinning shader paths
+    let skinned_verts = vec![
+        SkinnedVertex {
+            position: [0.0, 0.0, 0.0],
+            normal: [0.0, 1.0, 0.0],
+            tangent: [1.0, 0.0, 0.0, 1.0],
+            uv: [0.0, 0.0],
+            joints: [0, 0, 0, 0],
+            weights: [1.0, 0.0, 0.0, 0.0],
+        },
+    ];
+    let skinned_indices = vec![0, 0, 0]; // Dummy triangle
+    renderer.set_skinned_mesh(&skinned_verts, &skinned_indices);
+    renderer.update_skin_palette(&[glam::Mat4::IDENTITY]);
+
+    // 3. Exercise terrain rendering
+    let terrain_config = astraweave_terrain::WorldConfig::default();
+    let mut terrain_renderer = TerrainRenderer::new(terrain_config);
+    let chunk_id = astraweave_terrain::ChunkId::new(0, 0);
+    let terrain_mesh = terrain_renderer.get_or_generate_chunk_mesh(chunk_id).unwrap();
+    
+    let terrain_render_mesh = renderer.create_mesh_from_arrays(
+        &terrain_mesh.vertices.iter().map(|v| v.position).collect::<Vec<_>>(),
+        &terrain_mesh.vertices.iter().map(|v| v.normal).collect::<Vec<_>>(),
+        &terrain_mesh.indices,
+    );
+    renderer.add_model("terrain_chunk", terrain_render_mesh, &[Instance {
+        transform: glam::Mat4::IDENTITY,
+        color: [1.0, 1.0, 1.0, 1.0],
+        material_id: 0,
+    }]);
+
+    // 4. Exercise culling logic
+    let _aabb = InstanceAABB::from_transform(
+        &glam::Mat4::IDENTITY,
+        glam::vec3(-1.0, -1.0, -1.0),
+        glam::vec3(1.0, 1.0, 1.0),
+        0,
+    );
+    let _planes = FrustumPlanes::from_view_proj(&glam::Mat4::IDENTITY);
+
+    // 5. Exercise animation sampling
+    let skeleton = Skeleton {
+        joints: vec![Joint {
+            name: "root".to_string(),
+            parent_index: None,
+            inverse_bind_matrix: glam::Mat4::IDENTITY,
+            local_transform: Transform::default(),
+        }],
+        root_indices: vec![0],
+    };
+    let clip = AnimationClip {
+        name: "test".to_string(),
+        duration: 1.0,
+        channels: vec![AnimationChannel {
+            target_joint_index: 0,
+            times: vec![0.0, 1.0],
+            data: ChannelData::Translation(vec![glam::Vec3::ZERO, glam::Vec3::ONE]),
+            interpolation: Interpolation::Linear,
+        }],
+    };
+    let _sampled = clip.sample(0.5, &skeleton);
 
     // Setup camera
     let camera = Camera {

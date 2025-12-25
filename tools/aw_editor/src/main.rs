@@ -309,6 +309,12 @@ struct EditorApp {
     toasts: Vec<Toast>,
     // Phase 7: Help dialog
     show_help_dialog: bool,
+    // Phase 8: Viewport settings
+    show_grid: bool,
+    // Phase 8: Auto-save
+    auto_save_enabled: bool,
+    auto_save_interval_secs: f32,
+    last_auto_save: std::time::Instant,
 }
 
 impl Default for EditorApp {
@@ -438,6 +444,12 @@ impl Default for EditorApp {
             toasts: Vec::new(),
             // Phase 7: Help dialog
             show_help_dialog: false,
+            // Phase 8: Viewport settings
+            show_grid: true,
+            // Phase 8: Auto-save
+            auto_save_enabled: false,
+            auto_save_interval_secs: 300.0,
+            last_auto_save: std::time::Instant::now(),
         }
     }
 }
@@ -1911,7 +1923,7 @@ impl eframe::App for EditorApp {
                             self.status = format!("Saved scene to {:?}", path);
                             self.console_logs
                                 .push(format!("Scene saved: {:?}", path));
-                            self.last_autosave = std::time::Instant::now();
+                            self.last_auto_save = std::time::Instant::now();
                             self.is_dirty = false;
                             self.toasts.push(Toast::new("Scene saved successfully", ToastLevel::Success));
                         }
@@ -2239,12 +2251,12 @@ impl eframe::App for EditorApp {
                     Ok(()) => {
                         self.console_logs
                             .push(format!("💾 Autosaved to {:?}", autosave_path));
-                        self.last_autosave = std::time::Instant::now();
+                        self.last_auto_save = std::time::Instant::now();
                     }
                     Err(e) => {
                         self.console_logs
                             .push(format!("⚠️  Autosave failed: {}", e));
-                        self.last_autosave = std::time::Instant::now();
+                        self.last_auto_save = std::time::Instant::now();
                     }
                 }
             }
@@ -2381,7 +2393,7 @@ impl eframe::App for EditorApp {
                                 self.status = format!("💾 Saved scene to {:?}", path);
                                 self.console_logs
                                     .push(format!("✅ Scene saved: {:?}", path));
-                                self.last_autosave = std::time::Instant::now();
+                                self.last_auto_save = std::time::Instant::now();
                             }
                             Err(e) => {
                                 self.status = format!("❌ Scene save failed: {}", e);
