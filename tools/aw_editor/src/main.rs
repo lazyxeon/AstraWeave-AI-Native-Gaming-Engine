@@ -82,6 +82,7 @@ mod material_inspector;
 mod panels;
 mod prefab; // Phase 4.1 - Prefab System
 mod recent_files; // Phase 3 - Recent files tracking
+mod editor_preferences; // Phase 9 - Editor preferences persistence
 mod runtime; // Week 4 - Deterministic runtime integration
 mod scene_serialization; // Phase 2.2 - Scene Save/Load
 mod scene_state; // Week 1 - Canonical edit-mode world owner
@@ -333,6 +334,9 @@ impl Default for EditorApp {
             // Scan assets directory
             let _ = asset_db.scan_directory(&PathBuf::from("assets"));
         }
+        
+        let prefs = editor_preferences::EditorPreferences::load();
+        
         Self {
             content_root: PathBuf::from("content"),
             level: LevelDoc {
@@ -451,17 +455,17 @@ impl Default for EditorApp {
             // Phase 7: Help dialog
             show_help_dialog: false,
             // Phase 8: Viewport settings
-            show_grid: true,
+            show_grid: prefs.show_grid,
             // Phase 8: Auto-save
-            auto_save_enabled: false,
-            auto_save_interval_secs: 300.0,
+            auto_save_enabled: prefs.auto_save_enabled,
+            auto_save_interval_secs: prefs.auto_save_interval_secs,
             last_auto_save: std::time::Instant::now(),
             // Phase 9: Settings dialog
             show_settings_dialog: false,
             // Phase 9: Panel visibility
-            show_hierarchy_panel: true,
-            show_inspector_panel: true,
-            show_console_panel: true,
+            show_hierarchy_panel: prefs.show_hierarchy_panel,
+            show_inspector_panel: prefs.show_inspector_panel,
+            show_console_panel: prefs.show_console_panel,
         }
     }
 }
@@ -497,6 +501,18 @@ impl EditorApp {
 
     fn toast_info(&mut self, message: impl Into<String>) {
         self.toast(message, ToastLevel::Info);
+    }
+
+    fn save_preferences(&self) {
+        let prefs = editor_preferences::EditorPreferences {
+            show_grid: self.show_grid,
+            auto_save_enabled: self.auto_save_enabled,
+            auto_save_interval_secs: self.auto_save_interval_secs,
+            show_hierarchy_panel: self.show_hierarchy_panel,
+            show_inspector_panel: self.show_inspector_panel,
+            show_console_panel: self.show_console_panel,
+        };
+        prefs.save();
     }
 
     fn render_toasts(&mut self, ctx: &egui::Context) {
@@ -1948,6 +1964,7 @@ impl eframe::App for EditorApp {
                     ui.horizontal(|ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.button("Close").clicked() {
+                                self.save_preferences();
                                 self.show_settings_dialog = false;
                             }
                         });
