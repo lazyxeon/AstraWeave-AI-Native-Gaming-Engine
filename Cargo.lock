@@ -727,6 +727,7 @@ dependencies = [
  "astraweave-llm",
  "astraweave-prompts",
  "astraweave-rag",
+ "criterion 0.5.1",
  "futures",
  "serde",
  "serde_json",
@@ -780,6 +781,7 @@ name = "astraweave-fluids"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "criterion 0.5.1",
  "env_logger",
  "glam 0.30.8",
  "pollster",
@@ -831,6 +833,7 @@ dependencies = [
  "anyhow",
  "astraweave-ai",
  "astraweave-core",
+ "criterion 0.5.1",
  "futures-util",
  "serde",
  "serde_json",
@@ -889,6 +892,7 @@ name = "astraweave-materials"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "criterion 0.5.1",
  "naga",
  "serde",
  "serde_json",
@@ -984,6 +988,7 @@ dependencies = [
  "astraweave-audio",
  "astraweave-gameplay",
  "astraweave-physics",
+ "criterion 0.5.1",
  "glam 0.30.8",
  "rand 0.9.2",
  "serde",
@@ -1000,6 +1005,7 @@ dependencies = [
  "astraweave-ecs",
  "async-trait",
  "chrono",
+ "criterion 0.5.1",
  "dashmap",
  "hdrhistogram",
  "histogram",
@@ -1109,6 +1115,7 @@ name = "astraweave-profiling"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "criterion 0.5.1",
  "tracy-client",
 ]
 
@@ -1280,6 +1287,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "clap",
+ "criterion 0.5.1",
  "keyring",
  "once_cell",
  "rpassword",
@@ -1297,6 +1305,7 @@ dependencies = [
  "astraweave-core",
  "astraweave-ecs",
  "astraweave-llm",
+ "criterion 0.5.1",
  "ed25519-dalek",
  "hex",
  "rand 0.9.2",
@@ -1315,6 +1324,7 @@ name = "astraweave-steam"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "criterion 0.5.1",
  "serde",
  "steamworks",
  "thiserror 2.0.17",

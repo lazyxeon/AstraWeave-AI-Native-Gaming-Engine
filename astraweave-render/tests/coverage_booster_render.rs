@@ -11,10 +11,10 @@ use astraweave_render::{
     environment::{SkyRenderer, SkyConfig, TimeOfDay, WeatherSystem},
     effects::{WeatherFx, WeatherKind},
     msaa::MsaaMode,
-    material::{MaterialLoadStats, MaterialManager},
+    material::{MaterialLoadStats, MaterialManager, MaterialLayerDesc, MaterialPackDesc},
     animation::{Skeleton, AnimationClip, Transform, Joint, ChannelData, AnimationChannel, Interpolation},
     terrain::TerrainRenderer,
-    culling::{InstanceAABB, FrustumPlanes},
+    culling::{InstanceAABB, FrustumPlanes, CullingPipeline, CullingResources},
     gpu_particles::GpuParticleSystem,
     clustered_megalights::MegaLightsRenderer,
     decals::{DecalSystem, Decal},
@@ -22,6 +22,9 @@ use astraweave_render::{
     lod_generator::{LODGenerator, LODConfig, SimplificationMesh},
     advanced_post::AdvancedPostFx,
     vertex_compression::OctahedralEncoder,
+    texture::Texture,
+    instancing::{InstanceBatch, Instance as InstancingInstance},
+    ibl::{IblManager, IblQuality, SkyMode},
 };
 use astraweave_terrain::WorldConfig;
 use glam::{vec3, Mat4, Vec3};
@@ -477,4 +480,118 @@ async fn test_render_extra_systems() {
     post.next_frame();
     
     queue.submit(Some(encoder.finish()));
+}
+
+#[tokio::test]
+async fn test_render_core_systems() {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+
+    // 1. CSM Renderer
+    let mut csm = CsmRenderer::new(&device).unwrap();
+    csm.update_cascades(
+        glam::Vec3::new(0.0, 10.0, 0.0),
+        glam::Vec3::new(0.0, -1.0, 0.0),
+        &Camera {
+            position: glam::Vec3::new(0.0, 0.0, 10.0),
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 45.0,
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        },
+    );
+    csm.prepare_atlas(&queue);
+
+    // 2. Material Manager
+    let mut mat_manager = MaterialManager::new(&device, &queue);
+    let pack = MaterialPackDesc {
+        biome: "test".to_string(),
+        layers: vec![MaterialLayerDesc {
+            key: "grass".to_string(),
+            ..Default::default()
+        }],
+    };
+    let _ = mat_manager.load_pack(pack);
+    let _stats = mat_manager.stats();
+
+    // 3. Texture
+    let _white = Texture::create_default_white(&device, &queue, "test_white").unwrap();
+
+    // 4. Instancing
+    let mut batch = InstanceBatch::new(1, &device);
+    batch.add_instance(InstancingInstance::identity());
+    batch.update_buffer(&queue);
+
+    // 5. Culling
+    let culling = CullingPipeline::new(&device);
+    let mut culling_res = CullingResources::new(&device, 100);
+    let aabb = InstanceAABB::new(glam::Vec3::ZERO, glam::Vec3::ONE, 0);
+    culling_res.update_instances(&queue, &[aabb]);
+    
+    let mut cull_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    let vp = glam::Mat4::perspective_rh(45.0, 1.0, 0.1, 100.0);
+    let frustum = FrustumPlanes::from_view_proj(&vp);
+    culling.dispatch(&mut cull_encoder, &culling_res, frustum, 1);
+    queue.submit(Some(cull_encoder.finish()));
+
+    // 6. Animation
+    let skeleton = Skeleton {
+        joints: vec![Joint {
+            name: "root".to_string(),
+            parent_index: None,
+            inverse_bind_matrix: glam::Mat4::IDENTITY,
+            local_transform: Transform::default(),
+        }],
+        root_indices: vec![0],
+    };
+    let clip = AnimationClip {
+        name: "idle".to_string(),
+        duration: 1.0,
+        channels: vec![AnimationChannel {
+            target_joint_index: 0,
+            times: vec![0.0, 1.0],
+            data: ChannelData::Translation(vec![glam::Vec3::ZERO, glam::Vec3::X]),
+            interpolation: Interpolation::Linear,
+        }],
+    };
+    let _transforms = clip.sample(0.5, &skeleton);
+
+    // 7. IBL Manager
+    let mut ibl = IblManager::new(&device);
+    ibl.sun_elevation = 0.5;
+    ibl.sun_azimuth = 1.0;
+    let mut ibl_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    // ibl.update_procedural(&device, &queue, &mut ibl_encoder, 0.0);
+    queue.submit(Some(ibl_encoder.finish()));
+
+    // 8. Terrain Renderer
+    let mut terrain = TerrainRenderer::new(WorldConfig::default());
+    let _ = terrain.get_or_generate_chunk_mesh(astraweave_terrain::ChunkId::new(0, 0));
+
+    // 9. Vertex Compression
+    let _oct = OctahedralEncoder::encode(glam::Vec3::Y);
+
+    println!("Core systems test completed successfully");
 }

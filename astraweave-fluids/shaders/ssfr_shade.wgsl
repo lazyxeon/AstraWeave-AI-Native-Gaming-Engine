@@ -109,14 +109,20 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Absorption depth (distance from fluid surface to ground)
     let thickness = max(pos.y - ground_pos.y, 0.0);
     
-    let absorb_color = vec3<f32>(0.5, 0.2, 0.05); // Red/Green absorbed more by water
-    let absorption = exp(-absorb_color * thickness);
+    // Beer-Lambert law for absorption
+    // Water absorbs red light quickly, then green, leaving blue/cyan
+    let absorb_coeffs = vec3<f32>(1.5, 0.5, 0.05); 
+    let absorption = exp(-absorb_coeffs * thickness);
+    
+    // Deep water scattering (Tyndall effect/Rayleigh-like)
+    let scatter_color = vec3<f32>(0.0, 0.1, 0.2);
+    let scatter_factor = 1.0 - exp(-thickness * 0.2);
     
     // Light attenuation & Caustics apply to refraction
-    let caustic_fade = exp(-thickness * 0.8);
+    let caustic_fade = exp(-thickness * 1.5);
     let final_caustic = caustic_pattern * caustic_fade * max(camera.light_dir.y, 0.0);
     
-    let total_refracted = (scene_color + final_caustic * vec3<f32>(0.8, 0.9, 1.0)) * absorption;
+    let total_refracted = mix(scene_color * absorption + final_caustic * vec3<f32>(0.8, 0.9, 1.0) * absorption, scatter_color, scatter_factor);
     
     // Reflection (Skybox)
     let reflect_dir = reflect(-view_dir, normal);

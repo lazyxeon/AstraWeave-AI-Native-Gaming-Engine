@@ -96,6 +96,8 @@ pub struct FluidSystem {
     pub default_sampler: wgpu::Sampler,
     secondary_particle_buffer: wgpu::Buffer,
     secondary_counter: wgpu::Buffer,
+    density_error_buffer: wgpu::Buffer,
+    density_error_staging_buffer: wgpu::Buffer,
 }
 
 #[repr(C)]
@@ -311,7 +313,7 @@ impl FluidSystem {
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
-                    binding: 8,
+                    binding: 9,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: false },
@@ -338,6 +340,22 @@ impl FluidSystem {
             label: Some("Secondary Counter"),
             size: 4,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let density_error_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Density Error Buffer"),
+            size: 4,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let density_error_staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Density Error Staging Buffer"),
+            size: 4,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
@@ -383,6 +401,10 @@ impl FluidSystem {
                     wgpu::BindGroupEntry {
                         binding: 8,
                         resource: secondary_counter.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 9,
+                        resource: density_error_buffer.as_entire_binding(),
                     },
                 ],
             });
@@ -478,10 +500,10 @@ impl FluidSystem {
             particle_count,
             frame_index: 0,
             smoothing_radius: 1.0,
-            target_density: 10.0,
-            pressure_multiplier: 250.0,
-            viscosity: 50.0,
-            surface_tension: 0.1,
+            target_density: 12.0,
+            pressure_multiplier: 300.0,
+            viscosity: 10.0,
+            surface_tension: 0.02,
             gravity: -9.8,
             iterations: 4,
             cell_size,
@@ -494,6 +516,8 @@ impl FluidSystem {
             default_sampler,
             secondary_particle_buffer,
             secondary_counter,
+            density_error_buffer,
+            density_error_staging_buffer,
             mix_dye_pipeline,
             emit_whitewater_pipeline,
             update_whitewater_pipeline,
@@ -595,7 +619,11 @@ impl FluidSystem {
             ],
         });
 
-        // 2. Predict and Clear Grid
+        // 0. Reset density error and counters
+        encoder.clear_buffer(&self.density_error_buffer, 0, None);
+        encoder.clear_buffer(&self.secondary_counter, 0, None);
+
+        // 1. Predict and Clear Grid
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("Fluid::Predict"),
@@ -689,8 +717,37 @@ impl FluidSystem {
             cpass.set_pipeline(&self.update_whitewater_pipeline);
             cpass.dispatch_workgroups(1024, 1, 1); // 1024 * 64 = 65536
         }
+        // 6. Copy error to staging for adaptive iterations next frame
+        encoder.copy_buffer_to_buffer(
+            &self.density_error_buffer,
+            0,
+            &self.density_error_staging_buffer,
+            0,
+            4,
+        );
 
         self.frame_index += 1;
+
+        // --- Adaptive Iteration Adjust ---
+        // For production, we'd use a non-blocking read.
+        // For the demo, we'll do a simple poll to avoid stalling too much if possible.
+        // In a real game engine, we'd read this 1-2 frames late.
+        let buffer_slice = self.density_error_staging_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, |_| {});
+        device.poll(wgpu::Maintain::Wait); // Stalls slightly, but okay for demo verification
+
+        if let Ok(data) = buffer_slice.get_mapped_range() {
+            let error_scaled = u32::from_ne_bytes(data[0..4].try_into().unwrap());
+            let avg_error = (error_scaled as f32 / 1000.0) / self.particle_count as f32;
+
+            // Adjust iterations based on error
+            if avg_error > 0.05 {
+                self.iterations = (self.iterations + 1).min(8);
+            } else if avg_error < 0.01 {
+                self.iterations = (self.iterations.saturating_sub(1)).max(2);
+            }
+        }
+        self.density_error_staging_buffer.unmap();
     }
 
     pub fn get_particle_buffer(&self) -> &wgpu::Buffer {

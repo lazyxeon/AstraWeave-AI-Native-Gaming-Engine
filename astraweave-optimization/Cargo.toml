@@ -4,6 +4,10 @@ version = "0.1.0"
 license.workspace = true
 edition = "2021"
 
+[[bench]]
+name = "optimization_adversarial"
+harness = false
+
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }
@@ -18,3 +22,6 @@ dashmap = "6.0"
 async-trait = "0.1"
 lru = "0.12"
 tokio-util = "0.7"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
