@@ -519,6 +519,19 @@ impl EditorApp {
         prefs.save();
     }
 
+    fn log(&mut self, message: impl Into<String>) {
+        use std::time::SystemTime;
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default();
+        let secs = now.as_secs() % 86400;
+        let hours = secs / 3600;
+        let mins = (secs % 3600) / 60;
+        let secs = secs % 60;
+        let timestamp = format!("[{:02}:{:02}:{:02}]", hours, mins, secs);
+        self.console_logs.push(format!("{} {}", timestamp, message.into()));
+    }
+
     fn create_new_scene(&mut self) {
         let viewport = self.viewport.take();
         let prefs = editor_preferences::EditorPreferences {
@@ -1835,7 +1848,15 @@ impl eframe::App for EditorApp {
             .and_then(|n| n.to_str())
             .unwrap_or("Untitled");
         let dirty_marker = if self.is_dirty { "*" } else { "" };
-        let title = format!("AstraWeave Editor - {}{}", file_name, dirty_marker);
+        let entity_count = self
+            .scene_state
+            .as_ref()
+            .map(|s| s.world().entities().len())
+            .unwrap_or(0);
+        let title = format!(
+            "AstraWeave Editor - {}{} ({} entities)",
+            file_name, dirty_marker, entity_count
+        );
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
 
         // Phase 8: Auto-save logic

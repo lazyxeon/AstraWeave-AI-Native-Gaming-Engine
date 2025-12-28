@@ -25,11 +25,100 @@ use astraweave_render::{
     texture::Texture,
     instancing::{InstanceBatch, Instance as InstancingInstance},
 };
+use astraweave_materials::{Graph, Node, MaterialPackage};
+use astraweave_cinematics as awc;
+use astraweave_render::environment::WeatherType;
 use astraweave_terrain::WorldConfig;
 use glam::{vec3, Mat4, Vec3};
 use std::sync::Arc;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
+
+#[tokio::test]
+async fn test_render_advanced_features() {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+    let mut renderer = Renderer::new_from_device(device, queue, 1024, 768, wgpu::TextureFormat::Rgba8UnormSrgb);
+
+    // 1. Material Package & Shader Generation
+    let mut g = Graph {
+        nodes: std::collections::BTreeMap::new(),
+        base_color: "color".to_string(),
+        mr: None,
+        normal: None,
+        clearcoat: None,
+        anisotropy: None,
+        transmission: None,
+    };
+    g.nodes.insert("color".to_string(), Node::Constant3 { value: [1.0, 0.0, 0.0] });
+    let pkg = MaterialPackage::from_graph(&g).expect("compile");
+    let _shader = renderer.shader_from_material_package(&pkg);
+    let _bgl = renderer.bgl_from_material_package(&pkg);
+
+    // 2. Cinematics
+    let timeline_json = r#"{
+        "name": "test",
+        "duration": 10.0,
+        "tracks": []
+    }"#;
+    renderer.load_timeline_json(timeline_json).unwrap();
+    assert!(renderer.save_timeline_json().is_some());
+    renderer.play_timeline();
+    renderer.seek_timeline(5.0);
+    let mut cam = Camera {
+        position: Vec3::ZERO,
+        yaw: 0.0,
+        pitch: 0.0,
+        fovy: 45.0f32.to_radians(),
+        aspect: 1.0,
+        znear: 0.1,
+        zfar: 100.0,
+    };
+    renderer.tick_cinematics(0.1, &mut cam);
+    renderer.stop_timeline();
+
+    // 3. IBL
+    renderer.bake_environment(IblQuality::Low).unwrap();
+    let _ibl = renderer.ibl_mut();
+
+    // 4. Resize
+    renderer.resize(800, 600);
+    renderer.resize(0, 0); // Should return early
+
+    // 5. Material Validation
+    let pack = MaterialPackDesc {
+        biome: "test".to_string(),
+        layers: vec![MaterialLayerDesc {
+            key: "grass".to_string(),
+            ..Default::default()
+        }],
+    };
+    // We can't easily call validate_material_pack if it's not public, 
+    // but we can exercise MaterialGpu
+    let mat_gpu = astraweave_render::material::MaterialGpu::neutral(0);
+    assert_eq!(mat_gpu.texture_indices[0], 0);
+}
 
 #[tokio::test]
 async fn test_render_systems_logic() {
