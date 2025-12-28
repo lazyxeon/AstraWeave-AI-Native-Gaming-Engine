@@ -50,15 +50,20 @@ pub struct SimParams {
 
 pub struct FluidSystem {
     particle_buffers: Vec<wgpu::Buffer>,
-    // We need bind groups that swap Src/Dst
-    // layout: 0: Params, 1: Src, 2: Dst, 3: head_pointers, 4: next_pointers
-    // bg0: Src=Buf0, Dst=Buf1
-    // bg1: Src=Buf1, Dst=Buf0
-    bind_groups: Vec<wgpu::BindGroup>,
 
-    #[allow(dead_code)] // Reserved for SPH neighbor search grid
+    // Optimized Bind Groups
+    global_bind_group: wgpu::BindGroup,
+    particles_bind_groups: [wgpu::BindGroup; 2], // Ping-pong
+    secondary_bind_group: wgpu::BindGroup,
+    // Group 3 (Scene) is handled per-frame since SDF view can change
+
+    // Optimized Bind Group Layouts
+    global_layout: wgpu::BindGroupLayout,
+    particles_layout: wgpu::BindGroupLayout,
+    secondary_layout: wgpu::BindGroupLayout,
+    scene_layout: wgpu::BindGroupLayout,
+
     head_pointers: wgpu::Buffer,
-    #[allow(dead_code)] // Reserved for SPH neighbor search grid
     next_pointers: wgpu::Buffer,
 
     clear_grid_pipeline: wgpu::ComputePipeline,
@@ -92,12 +97,12 @@ pub struct FluidSystem {
 
     pub sdf_system: crate::sdf::SdfSystem,
     pub objects_buffer: wgpu::Buffer,
-    pub objects_bind_group: wgpu::BindGroup,
     pub default_sampler: wgpu::Sampler,
     secondary_particle_buffer: wgpu::Buffer,
     secondary_counter: wgpu::Buffer,
     density_error_buffer: wgpu::Buffer,
-    density_error_staging_buffer: wgpu::Buffer,
+    density_error_staging_buffers: [wgpu::Buffer; 2],
+    staging_mapped: [bool; 2],
 }
 
 #[repr(C)]
@@ -166,35 +171,20 @@ impl FluidSystem {
         let cell_size = 1.2; // Slightly larger than smoothing_radius
         let grid_size = (grid_width * grid_height * grid_depth) as usize;
 
-        // Create grid buffers
-        let head_pointers = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Head Pointers Buffer"),
-            size: (grid_size * std::mem::size_of::<i32>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let next_pointers = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Next Pointers Buffer"),
-            size: (particle_count as usize * std::mem::size_of::<i32>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
         let params = SimParams {
             dt: 0.016,
             smoothing_radius: 1.0,
-            target_density: 10.0,
-            pressure_multiplier: 250.0,
-            viscosity: 50.0,
-            surface_tension: 0.1,
+            target_density: 12.0,
+            pressure_multiplier: 300.0,
+            viscosity: 10.0,
+            surface_tension: 0.02,
             particle_count,
             gravity: -9.8,
             cell_size,
             grid_width,
             grid_height,
             grid_depth,
-            object_count: 0, // Will be updated by update_objects
+            object_count: 0,
             _pad0: 0.0,
             _pad1: 0.0,
             _pad2: 0.0,
@@ -206,41 +196,79 @@ impl FluidSystem {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        // Initialize Default Sampler
-        let default_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            ..Default::default()
-        });
+        // --- Bind Group Layouts ---
 
-        // Create a dummy 1x1x1 SDF texture to avoid empty bindings
-        let dummy_sdf = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Dummy SDF"),
-            size: wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D3,
-            format: wgpu::TextureFormat::R16Float,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-        let dummy_sdf_view = dummy_sdf.create_view(&Default::default());
-
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Fluid Bind Group Layout"),
+        // Group 0: Global Infrastructure (Params, Counters, Pointers)
+        let global_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Fluid Global Layout"),
             entries: &[
+                // 0: SimParams
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // 1: Head Pointers
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // 2: Next Pointers
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // 3: Secondary Counter
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // 4: Density Error
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+        });
+
+        // Group 1: Particles (Ping-Pong)
+        let particles_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Fluid Particles Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
@@ -256,76 +284,75 @@ impl FluidSystem {
                     },
                     count: None,
                 },
+            ],
+        });
+
+        // Group 2: Secondary Particles
+        let secondary_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Fluid Secondary Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        // Group 3: Scene Data (Objects, SDF)
+        let scene_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Fluid Scene Layout"),
+            entries: &[
+                // 0: Objects
                 wgpu::BindGroupLayoutEntry {
-                    binding: 2,
+                    binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
                 },
+                // 1: SDF Texture
                 wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 4,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 5,
+                    binding: 1,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
                         view_dimension: wgpu::TextureViewDimension::D3,
                         multisampled: false,
                     },
                     count: None,
                 },
+                // 2: Sampler
                 wgpu::BindGroupLayoutEntry {
-                    binding: 6,
+                    binding: 2,
                     visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 7,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 9,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
                     count: None,
                 },
             ],
         });
 
-        // Create secondary particle buffer (65536 * 48 bytes)
+        // --- Infrastructure Buffers ---
+        let head_pointers = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Head Pointers"),
+            size: (grid_width * grid_height * grid_depth * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let next_pointers = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Next Pointers"),
+            size: (particle_count * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let secondary_particle_count = 65536;
         let secondary_particle_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Secondary Particle Buffer"),
@@ -352,66 +379,21 @@ impl FluidSystem {
             mapped_at_creation: false,
         });
 
-        let density_error_staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Density Error Staging Buffer"),
-            size: 4,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+        let density_error_staging_buffers = [
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Density Error Staging Buffer 0"),
+                size: 4,
+                usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Density Error Staging Buffer 1"),
+                size: 4,
+                usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+        ];
 
-        // Create 2 Bind Groups (Ping-Pong)
-        let mut bind_groups = Vec::new();
-        for i in 0..2 {
-            let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some(&format!("Fluid BG {}", i)),
-                layout: &bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: params_buffer.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: particle_buffers[i].as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: particle_buffers[1 - i].as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: head_pointers.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 4,
-                        resource: next_pointers.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 5,
-                        resource: wgpu::BindingResource::TextureView(&dummy_sdf_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 6,
-                        resource: wgpu::BindingResource::Sampler(&default_sampler),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 7,
-                        resource: secondary_particle_buffer.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 8,
-                        resource: secondary_counter.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 9,
-                        resource: density_error_buffer.as_entire_binding(),
-                    },
-                ],
-            });
-            bind_groups.push(bg);
-        }
-
-        // Create objects buffer (max 128 dynamic objects)
         let objects_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Dynamic Objects Buffer"),
             size: (128 * std::mem::size_of::<DynamicObject>()) as u64,
@@ -419,33 +401,88 @@ impl FluidSystem {
             mapped_at_creation: false,
         });
 
-        let objects_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Dynamic Objects Layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
+        // --- Pre-allocate Bind Groups ---
+        let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Fluid Global BG"),
+            layout: &global_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
+                    resource: params_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: head_pointers.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: next_pointers.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: secondary_counter.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: density_error_buffer.as_entire_binding(),
+                },
+            ],
+        });
 
-        let objects_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Dynamic Objects Bind Group"),
-            layout: &objects_bind_group_layout,
+        let particles_bind_groups = [
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Particles BG 0"),
+                layout: &particles_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: particle_buffers[0].as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: particle_buffers[1].as_entire_binding(),
+                    },
+                ],
+            }),
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Particles BG 1"),
+                layout: &particles_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: particle_buffers[1].as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: particle_buffers[0].as_entire_binding(),
+                    },
+                ],
+            }),
+        ];
+
+        let secondary_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Secondary BG"),
+            layout: &secondary_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: objects_buffer.as_entire_binding(),
+                resource: secondary_particle_buffer.as_entire_binding(),
             }],
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Fluid Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout, &objects_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Fluid Pipeline Layout"),
+            bind_group_layouts: &[
+                &global_layout,
+                &particles_layout,
+                &secondary_layout,
+                &scene_layout,
+            ],
             push_constant_ranges: &[],
         });
 
@@ -487,7 +524,13 @@ impl FluidSystem {
 
         Self {
             particle_buffers,
-            bind_groups,
+            global_bind_group,
+            particles_bind_groups,
+            secondary_bind_group,
+            global_layout,
+            particles_layout,
+            secondary_layout,
+            scene_layout,
             head_pointers,
             next_pointers,
             clear_grid_pipeline,
@@ -512,12 +555,12 @@ impl FluidSystem {
             grid_depth,
             sdf_system,
             objects_buffer,
-            objects_bind_group,
             default_sampler,
             secondary_particle_buffer,
             secondary_counter,
             density_error_buffer,
-            density_error_staging_buffer,
+            density_error_staging_buffers,
+            staging_mapped: [false; 2],
             mix_dye_pipeline,
             emit_whitewater_pipeline,
             update_whitewater_pipeline,
@@ -570,50 +613,29 @@ impl FluidSystem {
 
         let particle_workgroups = (self.particle_count + 63) / 64;
         let current_src = (self.frame_index % 2) as usize;
-        let bg = &self.bind_groups[current_src];
-        let obj_bg = &self.objects_bind_group;
 
-        // Create a temporary bind group for the SDF texture and sampler
-        // This should really be part of the FluidSystem's bind group layout for performance,
-        // but for now we'll bind it to group 2.
-        let sdf_view = self
-            .sdf_system
-            .texture_a
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        // --- Setup Bind Groups ---
+        let global_bg = &self.global_bind_group;
+        let particles_bg = &self.particles_bind_groups[current_src];
+        let secondary_bg = &self.secondary_bind_group;
 
-        // We need a bind group layout for the SDF
-        let sdf_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Fluid SDF Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        view_dimension: wgpu::TextureViewDimension::D3,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
-                    count: None,
-                },
-            ],
-        });
-
-        let sdf_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Fluid SDF BG"),
-            layout: &sdf_layout,
+        // Group 3: Scene Data (Objects + SDF)
+        // We create this per frame because the SDF texture view might change
+        let sdf_view = self.sdf_system.texture_a.create_view(&Default::default());
+        let scene_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Fluid Scene BG"),
+            layout: &self.scene_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
+                    resource: self.objects_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
                     resource: wgpu::BindingResource::TextureView(&sdf_view),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 1,
+                    binding: 2,
                     resource: wgpu::BindingResource::Sampler(&self.default_sampler),
                 },
             ],
@@ -623,15 +645,20 @@ impl FluidSystem {
         encoder.clear_buffer(&self.density_error_buffer, 0, None);
         encoder.clear_buffer(&self.secondary_counter, 0, None);
 
+        // --- Execute Compute Pipeline ---
+
+        // Common Bindings: 0:Global, 1:Particles, 2:Secondary, 3:Scene
+
         // 1. Predict and Clear Grid
         {
             let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("Fluid::Predict"),
                 ..Default::default()
             });
-            cpass.set_bind_group(0, bg, &[]);
-            cpass.set_bind_group(1, obj_bg, &[]);
             cpass.set_pipeline(&self.predict_pipeline);
+            cpass.set_bind_group(0, global_bg, &[]);
+            cpass.set_bind_group(1, particles_bg, &[]);
+            cpass.set_bind_group(3, &scene_bg, &[]);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
         }
 
@@ -640,8 +667,8 @@ impl FluidSystem {
                 label: Some("Fluid::ClearGrid"),
                 ..Default::default()
             });
-            cpass.set_bind_group(0, bg, &[]);
             cpass.set_pipeline(&self.clear_grid_pipeline);
+            cpass.set_bind_group(0, global_bg, &[]);
             cpass.dispatch_workgroups(
                 (self.grid_width * self.grid_height * self.grid_depth + 63) / 64,
                 1,
@@ -655,8 +682,9 @@ impl FluidSystem {
                 label: Some("Fluid::BuildGrid"),
                 ..Default::default()
             });
-            cpass.set_bind_group(0, bg, &[]);
             cpass.set_pipeline(&self.build_grid_pipeline);
+            cpass.set_bind_group(0, global_bg, &[]);
+            cpass.set_bind_group(1, particles_bg, &[]);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
         }
 
@@ -667,9 +695,10 @@ impl FluidSystem {
                     label: Some("Fluid::Lambda"),
                     ..Default::default()
                 });
-                cpass.set_bind_group(0, bg, &[]);
-                cpass.set_bind_group(2, &sdf_bg, &[]); // Global SDF
                 cpass.set_pipeline(&self.lambda_pipeline);
+                cpass.set_bind_group(0, global_bg, &[]);
+                cpass.set_bind_group(1, particles_bg, &[]);
+                cpass.set_bind_group(3, &scene_bg, &[]);
                 cpass.dispatch_workgroups(particle_workgroups, 1, 1);
             }
             {
@@ -677,10 +706,10 @@ impl FluidSystem {
                     label: Some("Fluid::DeltaPos"),
                     ..Default::default()
                 });
-                cpass.set_bind_group(0, bg, &[]);
-                cpass.set_bind_group(1, obj_bg, &[]);
-                cpass.set_bind_group(2, &sdf_bg, &[]); // Global SDF
                 cpass.set_pipeline(&self.delta_pos_pipeline);
+                cpass.set_bind_group(0, global_bg, &[]);
+                cpass.set_bind_group(1, particles_bg, &[]);
+                cpass.set_bind_group(3, &scene_bg, &[]);
                 cpass.dispatch_workgroups(particle_workgroups, 1, 1);
             }
         }
@@ -691,9 +720,10 @@ impl FluidSystem {
                 label: Some("Fluid::Integrate"),
                 ..Default::default()
             });
-            cpass.set_bind_group(0, bg, &[]);
-            cpass.set_bind_group(2, &sdf_bg, &[]); // Global SDF
             cpass.set_pipeline(&self.integrate_pipeline);
+            cpass.set_bind_group(0, global_bg, &[]);
+            cpass.set_bind_group(1, particles_bg, &[]);
+            cpass.set_bind_group(3, &scene_bg, &[]);
             cpass.dispatch_workgroups(particle_workgroups, 1, 1);
         }
 
@@ -703,7 +733,9 @@ impl FluidSystem {
                 label: Some("Fluid::Dye&Whitewater"),
                 ..Default::default()
             });
-            cpass.set_bind_group(0, bg, &[]);
+            cpass.set_bind_group(0, global_bg, &[]);
+            cpass.set_bind_group(1, particles_bg, &[]);
+            cpass.set_bind_group(2, secondary_bg, &[]);
 
             // Dye mixing
             cpass.set_pipeline(&self.mix_dye_pipeline);
@@ -717,37 +749,53 @@ impl FluidSystem {
             cpass.set_pipeline(&self.update_whitewater_pipeline);
             cpass.dispatch_workgroups(1024, 1, 1); // 1024 * 64 = 65536
         }
-        // 6. Copy error to staging for adaptive iterations next frame
+        // 6. Copy error to staging for adaptive iterations (asynchronously)
+        let staging_idx = (self.frame_index % 2) as usize;
+        let other_idx = (1 - staging_idx) as usize;
+
+        // Ensure the current staging buffer is unmapped before copy
+        if self.staging_mapped[staging_idx] {
+            self.density_error_staging_buffers[staging_idx].unmap();
+            self.staging_mapped[staging_idx] = false;
+        }
+
         encoder.copy_buffer_to_buffer(
             &self.density_error_buffer,
             0,
-            &self.density_error_staging_buffer,
+            &self.density_error_staging_buffers[staging_idx],
             0,
             4,
         );
 
         self.frame_index += 1;
 
-        // --- Adaptive Iteration Adjust ---
-        // For production, we'd use a non-blocking read.
-        // For the demo, we'll do a simple poll to avoid stalling too much if possible.
-        // In a real game engine, we'd read this 1-2 frames late.
-        let buffer_slice = self.density_error_staging_buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, |_| {});
-        device.poll(wgpu::Maintain::Wait); // Stalls slightly, but okay for demo verification
+        // --- Adaptive Iteration Adjust (Non-Blocking) ---
+        // We read from the *other* buffer, which was submitted in the previous frame.
+        if self.staging_mapped[other_idx] {
+            let buffer_slice = self.density_error_staging_buffers[other_idx].slice(..);
+            {
+                let data = buffer_slice.get_mapped_range();
+                let error_scaled = u32::from_ne_bytes(data[0..4].try_into().unwrap());
+                let avg_error = (error_scaled as f32 / 1000.0) / self.particle_count as f32;
 
-        if let Ok(data) = buffer_slice.get_mapped_range() {
-            let error_scaled = u32::from_ne_bytes(data[0..4].try_into().unwrap());
-            let avg_error = (error_scaled as f32 / 1000.0) / self.particle_count as f32;
-
-            // Adjust iterations based on error
-            if avg_error > 0.05 {
-                self.iterations = (self.iterations + 1).min(8);
-            } else if avg_error < 0.01 {
-                self.iterations = (self.iterations.saturating_sub(1)).max(2);
+                // Adjust iterations based on error
+                if avg_error > 0.05 {
+                    self.iterations = (self.iterations + 1).min(8);
+                } else if avg_error < 0.01 {
+                    self.iterations = (self.iterations.saturating_sub(1)).max(2);
+                }
             }
+            self.density_error_staging_buffers[other_idx].unmap();
+            self.staging_mapped[other_idx] = false;
         }
-        self.density_error_staging_buffer.unmap();
+
+        // Map the current buffer for retrieval in the next frame
+        let current_slice = self.density_error_staging_buffers[staging_idx].slice(..);
+        current_slice.map_async(wgpu::MapMode::Read, |_| {});
+        self.staging_mapped[staging_idx] = true;
+
+        // Poll to progress the mapping, but don't wait.
+        device.poll(wgpu::MaintainBase::Poll);
     }
 
     pub fn get_particle_buffer(&self) -> &wgpu::Buffer {

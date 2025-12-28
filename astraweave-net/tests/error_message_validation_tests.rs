@@ -26,7 +26,11 @@ fn tls_missing_cert_error_is_descriptive_and_no_path_leak() {
         .expect("current_dir")
         .join("definitely_missing_cert.pem");
 
-    let err = TlsServerConfig::from_pem_files(&abs, "also_missing_key.pem").unwrap_err();
+    let result = TlsServerConfig::from_pem_files(&abs, "also_missing_key.pem");
+    let err = match result {
+        Ok(_) => panic!("expected error for missing cert file"),
+        Err(e) => e,
+    };
     let msg = err.to_string();
 
     assert!(msg.contains("Failed to open cert file"));

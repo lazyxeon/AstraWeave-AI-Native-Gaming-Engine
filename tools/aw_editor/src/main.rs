@@ -322,6 +322,8 @@ struct EditorApp {
     show_hierarchy_panel: bool,
     show_inspector_panel: bool,
     show_console_panel: bool,
+    // Phase 10: Confirm dialog for new scene
+    show_new_confirm_dialog: bool,
 }
 
 impl Default for EditorApp {
@@ -466,6 +468,8 @@ impl Default for EditorApp {
             show_hierarchy_panel: prefs.show_hierarchy_panel,
             show_inspector_panel: prefs.show_inspector_panel,
             show_console_panel: prefs.show_console_panel,
+            // Phase 10: Confirm dialog for new scene
+            show_new_confirm_dialog: false,
         }
     }
 }
@@ -513,6 +517,15 @@ impl EditorApp {
             show_console_panel: self.show_console_panel,
         };
         prefs.save();
+    }
+
+    fn create_new_scene(&mut self) {
+        let viewport = self.viewport.take();
+        *self = Self::default();
+        self.viewport = viewport;
+        self.console_logs
+            .push("New level created (reset to defaults)".into());
+        self.status = "New level created".into();
     }
 
     fn render_toasts(&mut self, ctx: &egui::Context) {
@@ -1897,6 +1910,7 @@ impl eframe::App for EditorApp {
                     ui.heading("View");
                     ui.label("F1              Show This Help");
                     ui.label("G               Toggle Grid");
+                    ui.label("Escape          Close Dialogs");
                     ui.add_space(12.0);
 
                     ui.horizontal(|ui| {
@@ -1968,6 +1982,48 @@ impl eframe::App for EditorApp {
                                 self.show_settings_dialog = false;
                             }
                         });
+                    });
+                });
+        }
+
+        // Phase 10: Confirm dialog for new scene when dirty
+        if self.show_new_confirm_dialog {
+            egui::Window::new("Unsaved Changes")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.label("You have unsaved changes. Create new scene anyway?");
+                    ui.add_space(10.0);
+                    ui.horizontal(|ui| {
+                        if ui.button("Discard Changes").clicked() {
+                            self.show_new_confirm_dialog = false;
+                            self.create_new_scene();
+                        }
+                        if ui.button("Cancel").clicked() {
+                            self.show_new_confirm_dialog = false;
+                        }
+                    });
+                });
+        }
+
+        // Phase 10: Confirm dialog for new scene when dirty
+        if self.show_new_confirm_dialog {
+            egui::Window::new("Unsaved Changes")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.label("You have unsaved changes. Create new scene anyway?");
+                    ui.add_space(10.0);
+                    ui.horizontal(|ui| {
+                        if ui.button("Discard Changes").clicked() {
+                            self.show_new_confirm_dialog = false;
+                            self.create_new_scene();
+                        }
+                        if ui.button("Cancel").clicked() {
+                            self.show_new_confirm_dialog = false;
+                        }
                     });
                 });
         }
@@ -2328,6 +2384,18 @@ impl eframe::App for EditorApp {
                 };
             }
 
+            // Escape: Close dialogs
+            if i.key_pressed(egui::Key::Escape) {
+                if self.show_new_confirm_dialog {
+                    self.show_new_confirm_dialog = false;
+                } else if self.show_settings_dialog {
+                    self.save_preferences();
+                    self.show_settings_dialog = false;
+                } else if self.show_help_dialog {
+                    self.show_help_dialog = false;
+                }
+            }
+
             // Ctrl+D: Duplicate selected entities
             if i.modifiers.ctrl && i.key_pressed(egui::Key::D) {
                 if let Some(selected_id) = self.selected_entity {
@@ -2406,13 +2474,11 @@ impl eframe::App for EditorApp {
             ui.separator();
             ui.horizontal(|ui| {
                 if ui.button("New").clicked() {
-                    // Preserve viewport when creating new level (viewport requires CreationContext)
-                    let viewport = self.viewport.take();
-                    *self = Self::default();
-                    self.viewport = viewport;
-                    self.console_logs
-                        .push("✅ New level created (reset to defaults)".into());
-                    self.status = "New level created".into();
+                    if self.is_dirty {
+                        self.show_new_confirm_dialog = true;
+                    } else {
+                        self.create_new_scene();
+                    }
                 }
                 if ui.button("Open").clicked() {
                     // simple hardcoded example; integrate rfd/native dialog if desired

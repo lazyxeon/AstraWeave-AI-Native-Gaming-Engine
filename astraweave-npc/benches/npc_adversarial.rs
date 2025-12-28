@@ -1325,6 +1325,7 @@ fn bench_dialogue_systems(c: &mut Criterion) {
             .collect();
         
         let context_tags: Vec<String> = vec!["tag_2".to_string(), "mood_1".to_string()];
+        let empty_string = String::new();
         
         bencher.iter(|| {
             let selected: Vec<&String> = response_pools
@@ -1340,7 +1341,7 @@ fn bench_dialogue_systems(c: &mut Criterion) {
                                 .unwrap_or(std::cmp::Ordering::Equal)
                         })
                         .map(|(text, _, _)| text)
-                        .unwrap_or(&String::new())
+                        .unwrap_or(&empty_string)
                 })
                 .collect();
             

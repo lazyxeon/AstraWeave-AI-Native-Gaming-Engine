@@ -28,3 +28,4 @@ astraweave-llm = { workspace = true }
 [dev-dependencies]
 tempfile = { workspace = true }
 criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.5"

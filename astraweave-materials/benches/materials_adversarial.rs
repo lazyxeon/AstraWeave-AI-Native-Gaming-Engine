@@ -51,7 +51,7 @@ enum Node {
     OutputEmissive(NodeRef),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct NodeRef(usize);
 
 #[derive(Clone, Copy, Debug)]

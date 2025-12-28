@@ -1,0 +1,42 @@
+    Blocking waiting for file lock on build directory
+    Checking astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+warning: unused import: `std::sync::Arc`
+ --> astraweave-fluids\src\renderer.rs:1:5
+  |
+1 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::sync::Arc`
+ --> astraweave-fluids\src\lib.rs:7:5
+  |
+7 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: field `config_buffer` is never read
+  --> astraweave-fluids\src\sdf.rs:24:5
+   |
+19 | pub struct SdfSystem {
+   |            --------- field in this struct
+...
+24 |     config_buffer: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: unused `std::result::Result` that must be used
+   --> astraweave-fluids\src\lib.rs:737:9
+    |
+737 |         device.poll(wgpu::MaintainBase::Wait); // Stalls slightly, but okay for demo verification
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+737 |         let _ = device.poll(wgpu::MaintainBase::Wait); // Stalls slightly, but okay for demo verification
+    |         +++++++
+
+warning: `astraweave-fluids` (lib) generated 4 warnings (run `cargo fix --lib -p astraweave-fluids` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 04s

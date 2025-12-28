@@ -667,7 +667,7 @@ impl FluidRenderer {
             let depth_view = self.depth_texture.create_view(&Default::default());
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("SSFR Secondary Pass"),
-                color_attachments: &[Some(wgpu::ColorTargetAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: target_view,
                     resolve_target: None,
                     ops: wgpu::Operations {

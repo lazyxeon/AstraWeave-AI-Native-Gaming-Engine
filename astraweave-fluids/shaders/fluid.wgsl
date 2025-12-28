@@ -35,15 +35,26 @@ struct SimParams {
     _pad2: f32,
 };
 
-@group(0) @binding(7) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
-@group(0) @binding(8) var<storage, read_write> secondary_counter: atomic<u32>;
-@group(0) @binding(9) var<storage, read_write> density_error: atomic<u32>;
-@group(0) @binding(3) var<storage, read_write> head_pointers: array<atomic<i32>>;
-@group(0) @binding(4) var<storage, read_write> next_pointers: array<i32>;
-@group(2) @binding(0) var sdf_texture: texture_3d<f32>;
-@group(2) @binding(1) var default_sampler: sampler;
+// --- Bindings ---
 
-@group(1) @binding(0) var<storage, read> dynamic_objects: array<DynamicObject>;
+// Group 0: Global Infrastructure
+@group(0) @binding(0) var<uniform> params: SimParams;
+@group(0) @binding(1) var<storage, read_write> head_pointers: array<atomic<i32>>;
+@group(0) @binding(2) var<storage, read_write> next_pointers: array<i32>;
+@group(0) @binding(3) var<storage, read_write> secondary_counter: atomic<u32>;
+@group(0) @binding(4) var<storage, read_write> density_error: atomic<u32>;
+
+// Group 1: Particles (Ping-Pong)
+@group(1) @binding(0) var<storage, read_write> particles: array<Particle>;
+@group(1) @binding(1) var<storage, read_write> particles_dst: array<Particle>; // Reserved for full state copy if needed
+
+// Group 2: Secondary Buffers
+@group(2) @binding(0) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
+
+// Group 3: Scene Data
+@group(3) @binding(0) var<storage, read> dynamic_objects: array<DynamicObject>;
+@group(3) @binding(1) var sdf_texture: texture_3d<f32>;
+@group(3) @binding(2) var default_sampler: sampler;
 
 const PI: f32 = 3.14159265359;
 

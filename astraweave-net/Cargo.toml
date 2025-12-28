@@ -27,3 +27,4 @@ webpki-roots = { version = "0.26", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
+proptest = "1.5"
