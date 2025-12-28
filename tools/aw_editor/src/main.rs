@@ -521,11 +521,26 @@ impl EditorApp {
 
     fn create_new_scene(&mut self) {
         let viewport = self.viewport.take();
+        let prefs = editor_preferences::EditorPreferences {
+            show_grid: self.show_grid,
+            auto_save_enabled: self.auto_save_enabled,
+            auto_save_interval_secs: self.auto_save_interval_secs,
+            show_hierarchy_panel: self.show_hierarchy_panel,
+            show_inspector_panel: self.show_inspector_panel,
+            show_console_panel: self.show_console_panel,
+        };
         *self = Self::default();
         self.viewport = viewport;
+        self.show_grid = prefs.show_grid;
+        self.auto_save_enabled = prefs.auto_save_enabled;
+        self.auto_save_interval_secs = prefs.auto_save_interval_secs;
+        self.show_hierarchy_panel = prefs.show_hierarchy_panel;
+        self.show_inspector_panel = prefs.show_inspector_panel;
+        self.show_console_panel = prefs.show_console_panel;
+        self.scene_state = Some(scene_state::EditorSceneState::new(World::new()));
         self.console_logs
-            .push("New level created (reset to defaults)".into());
-        self.status = "New level created".into();
+            .push("New scene created".into());
+        self.status = "New scene created".into();
     }
 
     fn render_toasts(&mut self, ctx: &egui::Context) {
@@ -2257,13 +2272,11 @@ impl eframe::App for EditorApp {
 
             // Ctrl+N: New Scene
             if i.modifiers.ctrl && i.key_pressed(egui::Key::N) && !i.modifiers.shift {
-                self.scene_state = Some(EditorSceneState::new(World::new()));
-                self.current_scene_path = None;
-                self.undo_stack.clear();
-                self.hierarchy_panel.set_selected(None);
-                self.selected_entity = None;
-                self.status = "📄 New scene created".to_string();
-                self.console_logs.push("✅ Created new scene".into());
+                if self.is_dirty {
+                    self.show_new_confirm_dialog = true;
+                } else {
+                    self.create_new_scene();
+                }
             }
 
             // Ctrl+Shift+S: Save As

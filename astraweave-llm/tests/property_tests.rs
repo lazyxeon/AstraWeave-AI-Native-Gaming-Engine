@@ -87,22 +87,27 @@ proptest! {
         );
     }
 
-    /// Property: Backoff for attempt 0 is approximately initial_backoff_ms
+    /// Property: Backoff for attempt 0 is approximately initial_backoff_ms (but capped)
     #[test]
     fn prop_initial_backoff_correct(config in retry_config_strategy()) {
         if config.max_attempts > 0 {
             let backoff = config.backoff_for_attempt(0);
-            // With jitter, can vary ±25%, so check within 50% margin
-            let min_expected = (config.initial_backoff_ms as f64 * 0.5) as u64;
-            let max_expected = (config.initial_backoff_ms as f64 * 1.5) as u64;
+            // The backoff is capped at max_backoff_ms
+            let expected_base = config.initial_backoff_ms.min(config.max_backoff_ms);
             
             if !config.jitter {
-                // Without jitter, should be exactly initial_backoff_ms
-                prop_assert_eq!(backoff.as_millis() as u64, config.initial_backoff_ms);
+                // Without jitter, should be exactly the capped value
+                prop_assert_eq!(
+                    backoff.as_millis() as u64, 
+                    expected_base,
+                    "Backoff should be min(initial, max) = {}", expected_base
+                );
             } else {
-                // With jitter, should be within margin
+                // With jitter, should be within ±25% of the capped value (or at least non-zero)
+                let min_expected = (expected_base as f64 * 0.5) as u64;
+                let max_expected = (expected_base as f64 * 1.5) as u64;
                 prop_assert!(
-                    backoff.as_millis() as u64 >= min_expected || min_expected == 0,
+                    backoff.as_millis() as u64 >= min_expected || expected_base == 0,
                     "Backoff {} below min {} for initial attempt",
                     backoff.as_millis(),
                     min_expected
@@ -274,8 +279,8 @@ proptest! {
         let open = CircuitState::Open;
         let half_open = CircuitState::HalfOpen;
         
-        prop_assert_ne!(closed, open);
-        prop_assert_ne!(closed, half_open);
+        prop_assert_ne!(closed.clone(), open.clone());
+        prop_assert_ne!(closed, half_open.clone());
         prop_assert_ne!(open, half_open);
     }
 }

@@ -471,12 +471,6 @@ impl FluidSystem {
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Fluid Pipeline Layout"),
-            bind_group_layouts: &[&bind_group_layout, &objects_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Fluid Pipeline Layout"),
             bind_group_layouts: &[
                 &global_layout,
                 &particles_layout,
