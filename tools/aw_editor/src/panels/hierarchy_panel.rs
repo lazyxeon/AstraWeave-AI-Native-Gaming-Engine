@@ -14,6 +14,7 @@ pub enum HierarchyAction {
     CreatePrefab(Entity),
     DeleteEntity(Entity),
     DuplicateEntity(Entity),
+    FocusEntity(Entity),
 }
 
 pub struct HierarchyPanel {
@@ -313,6 +314,10 @@ impl HierarchyPanel {
                     self.last_clicked = Some(entity);
                     selected_changed = Some(entity);
                 }
+            }
+
+            if response.double_clicked() {
+                self.pending_actions.push(HierarchyAction::FocusEntity(entity));
             }
 
             response.context_menu(|ui| {

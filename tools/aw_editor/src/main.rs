@@ -2896,6 +2896,12 @@ impl eframe::App for EditorApp {
                                                 ));
                                             }
                                         }
+                                        HierarchyAction::FocusEntity(entity) => {
+                                            hierarchy_toasts.push((
+                                                format!("Focused on entity {}", entity),
+                                                true,
+                                            ));
+                                        }
                                     }
                                 }
                             }

@@ -57,12 +57,18 @@ pub struct FluidSystem {
     // Group 3 (Scene) is handled per-frame since SDF view can change
 
     // Optimized Bind Group Layouts
+    #[allow(dead_code)]
     global_layout: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     particles_layout: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     secondary_layout: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     scene_layout: wgpu::BindGroupLayout,
 
+    #[allow(dead_code)]
     head_pointers: wgpu::Buffer,
+    #[allow(dead_code)]
     next_pointers: wgpu::Buffer,
 
     clear_grid_pipeline: wgpu::ComputePipeline,
@@ -168,7 +174,7 @@ impl FluidSystem {
         let grid_height = 128u32;
         let grid_depth = 128u32;
         let cell_size = 1.2; // Slightly larger than smoothing_radius
-        let grid_size = (grid_width * grid_height * grid_depth) as usize;
+        let _grid_size = (grid_width * grid_height * grid_depth) as usize;
 
         let params = SimParams {
             dt: 0.016,
@@ -799,7 +805,7 @@ impl FluidSystem {
         self.staging_mapped[staging_idx] = true;
 
         // Poll to progress the mapping, but don't wait.
-        device.poll(wgpu::MaintainBase::Poll);
+        let _ = device.poll(wgpu::MaintainBase::Poll);
     }
 
     pub fn get_particle_buffer(&self) -> &wgpu::Buffer {
@@ -1007,9 +1013,9 @@ mod tests {
         let grid_height = 128u32;
 
         let pos = [1.5, 2.5, 3.5];
-        let gx = (pos[0] / cell_size).floor() as i32;
-        let gy = (pos[1] / cell_size).floor() as i32;
-        let gz = (pos[2] / cell_size).floor() as i32;
+        let gx = (pos[0] as f32 / cell_size).floor() as i32;
+        let gy = (pos[1] as f32 / cell_size).floor() as i32;
+        let gz = (pos[2] as f32 / cell_size).floor() as i32;
 
         assert_eq!(gx, 1);
         assert_eq!(gy, 2);

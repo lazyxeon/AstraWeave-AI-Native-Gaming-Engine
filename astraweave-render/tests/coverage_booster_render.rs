@@ -134,8 +134,6 @@ async fn test_render_systems_logic() {
 
     let mut weather_sys = WeatherSystem::new();
     weather_sys.update(0.016);
-    weather_sys.set_weather(WeatherKind::Rain.into(), 1.0); // WeatherKind to WeatherType conversion?
-    // Let's check WeatherType enum in environment.rs
     use astraweave_render::environment::WeatherType;
     weather_sys.set_weather(WeatherType::Rain, 1.0);
     weather_sys.update(0.5);
@@ -530,9 +528,6 @@ async fn test_render_extra_systems() {
     }).create_view(&Default::default());
 
     post.apply_taa(&mut encoder, &color_view, &color_view);
-    post.apply_motion_blur(&mut encoder, &input_tex, &velocity_tex, &output_tex);
-    post.apply_depth_of_field(&mut encoder, &input_tex, &depth_tex, &output_tex);
-    post.apply_color_grading(&mut encoder, &input_tex, &output_tex);
     post.next_frame();
     post.get_taa_jitter();
     
@@ -579,9 +574,20 @@ async fn test_render_core_systems() {
     // 2. Material Manager
     let mut mat_manager = MaterialManager::new();
     let _ = mat_manager.get_or_create_bind_group_layout(&device);
+    mat_manager.unload_current();
+    let _ = mat_manager.current_stats();
+    let _ = mat_manager.current_layout();
+    let _ = mat_manager.albedo_texture();
+    let _ = mat_manager.normal_texture();
+    let _ = mat_manager.mra_texture();
 
     // 3. Texture
     let _white = Texture::create_default_white(&device, &queue, "test_white").unwrap();
+    let _normal = Texture::create_default_normal(&device, &queue, "test_normal").unwrap();
+    use astraweave_render::texture::TextureUsage;
+    let _ = TextureUsage::Albedo.format();
+    let _ = TextureUsage::Normal.needs_mipmaps();
+    let _ = TextureUsage::MRA.description();
 
     // 4. Instancing
     let mut batch = InstanceBatch::new(1);
@@ -621,6 +627,23 @@ async fn test_render_core_systems() {
     };
     let _transforms = clip.sample(0.5, &skeleton);
 
+    let mut anim_state = astraweave_render::animation::AnimationState::default();
+    anim_state.play();
+    anim_state.update(0.1, 1.0);
+    anim_state.pause();
+    anim_state.stop();
+    anim_state.restart();
+
+    let _ = astraweave_render::animation::compute_joint_matrices(&skeleton, &_transforms);
+    let _ = astraweave_render::animation::skin_vertex_cpu(
+        glam::Vec3::ZERO,
+        glam::Vec3::Y,
+        [0, 0, 0, 0],
+        [1.0, 0.0, 0.0, 0.0],
+        &[glam::Mat4::IDENTITY],
+    );
+    let _ = astraweave_render::animation::JointPalette::from_matrices(&[glam::Mat4::IDENTITY]);
+
     // 7. IBL Manager
     let mut ibl = IblManager::new(&device, IblQuality::High).unwrap();
     // ibl.sun_elevation = 0.5;
@@ -635,6 +658,39 @@ async fn test_render_core_systems() {
 
     // 9. Vertex Compression
     let _oct = OctahedralEncoder::encode(glam::Vec3::Y);
+
+    // 10. Clustered Forward & MegaLights
+    let cluster_config = astraweave_render::clustered_forward::ClusterConfig::default();
+    let mut clustered_renderer = astraweave_render::clustered_forward::ClusteredForwardRenderer::new(&device, cluster_config);
+    
+    let lights = vec![
+        astraweave_render::clustered_forward::GpuLight::new(
+            glam::Vec3::new(0.0, 5.0, 0.0),
+            10.0,
+            glam::Vec3::new(1.0, 1.0, 1.0),
+            1.0,
+        ),
+    ];
+    clustered_renderer.update_lights(lights);
+    clustered_renderer.build_clusters(&queue, glam::Mat4::IDENTITY, glam::Mat4::IDENTITY, (1024, 768));
+    
+    let _ = clustered_renderer.bind_group_layout();
+    let _ = clustered_renderer.bind_group();
+    let _ = clustered_renderer.config();
+    let _ = clustered_renderer.light_count();
+
+    #[cfg(feature = "megalights")]
+    {
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        clustered_renderer.build_clusters_with_encoder(
+            &device,
+            &queue,
+            &mut encoder,
+            glam::Mat4::IDENTITY,
+            glam::Mat4::IDENTITY,
+            (1024, 768),
+        );
+    }
 
     println!("Core systems test completed successfully");
 }

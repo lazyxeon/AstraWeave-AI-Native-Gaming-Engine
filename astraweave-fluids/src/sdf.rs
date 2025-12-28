@@ -21,6 +21,7 @@ pub struct SdfSystem {
     step_pipeline: wgpu::ComputePipeline,
     finalize_pipeline: wgpu::ComputePipeline,
 
+    #[allow(dead_code)]
     config_buffer: wgpu::Buffer,
     jfa_params_buffer: wgpu::Buffer,
 
