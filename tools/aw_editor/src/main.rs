@@ -1893,6 +1893,7 @@ impl eframe::App for EditorApp {
                 .show(ctx, |ui| {
                     ui.heading("File");
                     ui.label("Ctrl+N          New Scene");
+                    ui.label("Ctrl+Shift+N    New Entity");
                     ui.label("Ctrl+S          Save Scene");
                     ui.label("Ctrl+Shift+S    Save As");
                     ui.label("Ctrl+O          Open Scene");
@@ -2276,6 +2277,25 @@ impl eframe::App for EditorApp {
                     self.show_new_confirm_dialog = true;
                 } else {
                     self.create_new_scene();
+                }
+            }
+
+            // Ctrl+Shift+N: New Entity
+            if i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::N) {
+                if let Some(scene_state) = self.scene_state.as_mut() {
+                    let world = scene_state.world_mut();
+                    let entity_id = world.spawn(
+                        "New Entity",
+                        astraweave_core::IVec2 { x: 0, y: 0 },
+                        astraweave_core::Team { id: 0 },
+                        0,
+                        0,
+                    );
+                    self.selected_entity = Some(entity_id as u64);
+                    self.hierarchy_panel.set_selected(Some(entity_id));
+                    self.is_dirty = true;
+                    self.status = format!("Created entity {}", entity_id);
+                    self.toast_success("New entity created");
                 }
             }
 

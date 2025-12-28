@@ -4,7 +4,6 @@ pub mod sdf;
 pub use renderer::FluidRenderer;
 
 use std::borrow::Cow;
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -336,6 +335,17 @@ impl FluidSystem {
                     count: None,
                 },
             ],
+        });
+
+        let default_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Fluid Default Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
         });
 
         // --- Infrastructure Buffers ---
@@ -988,5 +998,26 @@ mod tests {
         assert_eq!(x, -5.0);
         assert_eq!(y, 2.0);
         assert_eq!(z, -5.0);
+    }
+
+    #[test]
+    fn test_grid_indexing_consistency() {
+        let cell_size = 1.2;
+        let grid_width = 128u32;
+        let grid_height = 128u32;
+
+        let pos = [1.5, 2.5, 3.5];
+        let gx = (pos[0] / cell_size).floor() as i32;
+        let gy = (pos[1] / cell_size).floor() as i32;
+        let gz = (pos[2] / cell_size).floor() as i32;
+
+        assert_eq!(gx, 1);
+        assert_eq!(gy, 2);
+        assert_eq!(gz, 2);
+
+        let cell_idx =
+            (gx as u32) + (gy as u32) * grid_width + (gz as u32) * (grid_width * grid_height);
+
+        assert_eq!(cell_idx, 1 + 2 * 128 + 2 * 128 * 128);
     }
 }

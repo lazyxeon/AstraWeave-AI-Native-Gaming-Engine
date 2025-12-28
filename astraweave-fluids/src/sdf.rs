@@ -335,3 +335,21 @@ impl SdfSystem {
         }
     }
 }
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_jfa_convergence_steps() {
+        let resolution = 64u32;
+        let mut steps = Vec::new();
+        let mut step_size = resolution / 2;
+        while step_size > 0 {
+            steps.push(step_size);
+            step_size /= 2;
+        }
+
+        // For 64, we expect 32, 16, 8, 4, 2, 1 (6 steps)
+        assert_eq!(steps.len(), 6);
+        assert_eq!(steps[0], 32);
+        assert_eq!(steps[5], 1);
+    }
+}

@@ -76,6 +76,23 @@ async fn test_render_systems_logic() {
         zfar: 100.0,
     };
     csm.update_cascades(camera.position, Mat4::IDENTITY, Mat4::IDENTITY, -Vec3::Y, 0.1, 100.0);
+    csm.upload_to_gpu(&queue, &device);
+
+    // Exercise render_shadow_maps with dummy buffers
+    let v_data = [0.0f32; 12];
+    let i_data = [0u32; 3];
+    let v_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("v_buf"),
+        contents: bytemuck::cast_slice(&v_data),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+    let i_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("i_buf"),
+        contents: bytemuck::cast_slice(&i_data),
+        usage: wgpu::BufferUsages::INDEX,
+    });
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    csm.render_shadow_maps(&mut encoder, &v_buf, &i_buf, 3);
 
     // 3. Clustered Forward
     let mut forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
@@ -117,6 +134,24 @@ async fn test_render_systems_logic() {
 
     let mut weather_sys = WeatherSystem::new();
     weather_sys.update(0.016);
+    weather_sys.set_weather(WeatherKind::Rain.into(), 1.0); // WeatherKind to WeatherType conversion?
+    // Let's check WeatherType enum in environment.rs
+    use astraweave_render::environment::WeatherType;
+    weather_sys.set_weather(WeatherType::Rain, 1.0);
+    weather_sys.update(0.5);
+    let _ = weather_sys.current_weather();
+    let _ = weather_sys.target_weather();
+    let _ = weather_sys.get_rain_intensity();
+    let _ = weather_sys.get_snow_intensity();
+    let _ = weather_sys.get_fog_density();
+    let _ = weather_sys.get_wind_strength();
+    let _ = weather_sys.get_wind_direction();
+    let _ = weather_sys.is_raining();
+    let _ = weather_sys.is_snowing();
+    let _ = weather_sys.is_foggy();
+    let _ = weather_sys.get_terrain_color_modifier();
+    let _ = weather_sys.get_light_attenuation();
+    let _ = WeatherSystem::get_biome_appropriate_weather(astraweave_terrain::BiomeType::Forest);
 
     // 8. IBL
     let _ibl = IblManager::new(&device, IblQuality::High).unwrap();
@@ -475,8 +510,31 @@ async fn test_render_extra_systems() {
 
     // 6. Advanced Post Fx
     let mut post = AdvancedPostFx::new(&device, width, height, format).unwrap();
+    
+    let tex_desc = wgpu::TextureDescriptor {
+        label: None,
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba16Float,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    };
+    let input_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    let output_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    let velocity_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    let depth_tex = device.create_texture(&wgpu::TextureDescriptor {
+        format: wgpu::TextureFormat::Depth32Float,
+        ..tex_desc
+    }).create_view(&Default::default());
+
     post.apply_taa(&mut encoder, &color_view, &color_view);
+    post.apply_motion_blur(&mut encoder, &input_tex, &velocity_tex, &output_tex);
+    post.apply_depth_of_field(&mut encoder, &input_tex, &depth_tex, &output_tex);
+    post.apply_color_grading(&mut encoder, &input_tex, &output_tex);
     post.next_frame();
+    post.get_taa_jitter();
     
     queue.submit(Some(encoder.finish()));
 }

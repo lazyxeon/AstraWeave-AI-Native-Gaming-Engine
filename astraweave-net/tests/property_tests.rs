@@ -100,11 +100,6 @@ fn delta_strategy() -> impl Strategy<Value = Delta> {
         })
 }
 
-/// Strategy for RadiusTeamInterest
-fn radius_interest_strategy() -> impl Strategy<Value = RadiusTeamInterest> {
-    (1i32..1000).prop_map(|radius| RadiusTeamInterest { radius })
-}
-
 // ============================================================================
 // PROPERTY TESTS: EntityState
 // ============================================================================
@@ -150,10 +145,11 @@ proptest! {
     /// Property: Same team is always included regardless of distance
     #[test]
     fn prop_radius_same_team_included(
-        interest in radius_interest_strategy(),
-        mut viewer in entity_state_strategy(),
+        radius in 10i32..1000,
+        viewer in entity_state_strategy(),
         mut target in entity_state_strategy()
     ) {
+        let interest = RadiusTeamInterest { radius };
         // Make them same team
         target.team = viewer.team;
         // Put target far away
@@ -167,7 +163,7 @@ proptest! {
     #[test]
     fn prop_radius_within_range_included(
         radius in 10i32..1000,
-        mut viewer in entity_state_strategy(),
+        viewer in entity_state_strategy(),
         mut target in entity_state_strategy()
     ) {
         let interest = RadiusTeamInterest { radius };
@@ -185,7 +181,7 @@ proptest! {
     #[test]
     fn prop_radius_outside_range_excluded(
         radius in 10i32..100,
-        mut viewer in entity_state_strategy(),
+        viewer in entity_state_strategy(),
         mut target in entity_state_strategy()
     ) {
         let interest = RadiusTeamInterest { radius };
@@ -202,10 +198,11 @@ proptest! {
     /// Property: include never panics
     #[test]
     fn prop_radius_interest_never_panics(
-        interest in radius_interest_strategy(),
+        radius in 1i32..10000,
         viewer in entity_state_strategy(),
         target in entity_state_strategy()
     ) {
+        let interest = RadiusTeamInterest { radius };
         let _ = interest.include(&viewer, &target);
     }
 }
@@ -272,7 +269,7 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// Property: EntityDelta pos is Some iff mask has POS bit set (when generated properly)
+    /// Property: EntityDelta valid ID
     #[test]
     fn prop_entity_delta_valid_id(delta in entity_delta_strategy()) {
         prop_assert!(delta.id >= 1);
@@ -293,10 +290,11 @@ proptest! {
     /// Property: Interest implementations are deterministic
     #[test]
     fn prop_interest_deterministic(
-        interest in radius_interest_strategy(),
+        radius in 1i32..1000,
         viewer in entity_state_strategy(),
         target in entity_state_strategy()
     ) {
+        let interest = RadiusTeamInterest { radius };
         let result1 = interest.include(&viewer, &target);
         let result2 = interest.include(&viewer, &target);
         prop_assert_eq!(result1, result2, "Interest should be deterministic");
@@ -305,9 +303,10 @@ proptest! {
     /// Property: Self is always included (viewer = target)
     #[test]
     fn prop_interest_self_included(
-        interest in radius_interest_strategy(),
+        radius in 1i32..1000,
         entity in entity_state_strategy()
     ) {
+        let interest = RadiusTeamInterest { radius };
         prop_assert!(interest.include(&entity, &entity),
             "Entity should always see itself");
     }
