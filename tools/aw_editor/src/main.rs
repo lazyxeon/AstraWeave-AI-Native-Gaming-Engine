@@ -3383,7 +3383,9 @@ impl eframe::App for EditorApp {
                 // Auto-expand Console when simulation is running (so users see feedback)
                 let console_open = self.runtime.is_playing() || !self.console_logs.is_empty();
 
-                ui.collapsing("Scene Hierarchy", |ui| self.show_scene_hierarchy(ui));
+                let scene_entity_count = self.active_world().map(|w| w.entities().len()).unwrap_or(0);
+                let scene_hier_header = format!("Scene Hierarchy ({} entities)", scene_entity_count);
+                ui.collapsing(scene_hier_header, |ui| self.show_scene_hierarchy(ui));
                 if self.show_inspector_panel {
                     ui.collapsing("Inspector", |ui| self.show_inspector(ui));
                 }
