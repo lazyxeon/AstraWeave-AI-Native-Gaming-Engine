@@ -7,7 +7,8 @@ struct Particle {
     predicted_position: vec4<f32>,
     lambda: f32,
     density: f32,
-    _pad: vec2<f32>,  // Alignment padding to match Rust struct
+    phase: u32,           // 0=water, 1=oil, 2=custom phase
+    _pad: f32,
     color: vec4<f32>,
 };
 

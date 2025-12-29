@@ -297,6 +297,16 @@ impl UndoStack {
         self.cursor
     }
 
+    /// Get number of available undo operations.
+    pub fn undo_count(&self) -> usize {
+        self.cursor
+    }
+
+    /// Get number of available redo operations.
+    pub fn redo_count(&self) -> usize {
+        self.commands.len().saturating_sub(self.cursor)
+    }
+
     /// Add an already-executed command to the undo stack.
     ///
     /// Use this when you've already applied a transform (e.g., during gizmo drag)

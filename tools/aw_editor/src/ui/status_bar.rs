@@ -113,23 +113,26 @@ impl StatusBar {
     }
 
     fn show_undo_redo(ui: &mut Ui, undo_stack: &UndoStack) {
-        if undo_stack.can_undo() {
+        let undo_count = undo_stack.undo_count();
+        let redo_count = undo_stack.redo_count();
+
+        if undo_count > 0 {
             let desc = undo_stack.undo_description().unwrap_or_default();
-            ui.label(format!("⏮️  Undo: {}", desc))
+            ui.label(format!("⏮️ Undo ({}): {}", undo_count, desc))
                 .on_hover_text("Ctrl+Z to undo");
         } else {
-            ui.label("⏮️  Nothing to undo")
+            ui.label("⏮️ Undo (0)")
                 .on_hover_text("Make some changes to enable undo");
         }
 
         ui.add_space(8.0);
 
-        if undo_stack.can_redo() {
+        if redo_count > 0 {
             let desc = undo_stack.redo_description().unwrap_or_default();
-            ui.label(format!("⏭️  Redo: {}", desc))
+            ui.label(format!("⏭️ Redo ({}): {}", redo_count, desc))
                 .on_hover_text("Ctrl+Y to redo");
         } else {
-            ui.label("⏭️  Nothing to redo")
+            ui.label("⏭️ Redo (0)")
                 .on_hover_text("Undo something to enable redo");
         }
     }

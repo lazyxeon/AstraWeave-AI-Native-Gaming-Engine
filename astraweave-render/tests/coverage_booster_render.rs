@@ -1315,15 +1315,7 @@ async fn test_texture_module() {
         .unwrap();
 
     let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("Test Device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_defaults(),
-                memory_hints: Default::default(),
-            },
-            None,
-        )
+        .request_device(&wgpu::DeviceDescriptor::default())
         .await
         .unwrap();
     
@@ -1363,3 +1355,123 @@ async fn test_texture_module() {
     
     println!("Texture module tested.");
 }
+
+/// Test texture streaming manager's synchronous API
+#[test]
+fn test_texture_streaming_sync() {
+    use astraweave_render::texture_streaming::TextureStreamingManager;
+    use glam::Vec3;
+    
+    // Create manager with 100MB budget
+    let mut manager = TextureStreamingManager::new(100);
+    
+    // Test request_texture on non-existent texture (returns None, queues for load)
+    let result = manager.request_texture("test_texture.png".to_string(), 10, 5.0);
+    assert!(result.is_none()); // Not loaded yet
+    
+    // Request again - still queued but no duplicate
+    let result2 = manager.request_texture("test_texture.png".to_string(), 10, 5.0);
+    assert!(result2.is_none());
+    
+    // Test is_resident
+    assert!(!manager.is_resident(&"test_texture.png".to_string()));
+    assert!(!manager.is_resident(&"nonexistent.png".to_string()));
+    
+    // Test update_residency
+    manager.update_residency(Vec3::new(10.0, 20.0, 30.0));
+    
+    // Test get_stats
+    let stats = manager.get_stats();
+    assert_eq!(stats.loaded_count, 0);
+    assert!(stats.pending_count >= 1); // At least the one we queued
+    assert_eq!(stats.memory_used_bytes, 0);
+    assert_eq!(stats.memory_budget_bytes, 100 * 1024 * 1024);
+    assert!((stats.memory_used_percent - 0.0).abs() < 0.001);
+    
+    // Test evict_lru - nothing to evict
+    let evicted = manager.evict_lru();
+    assert!(!evicted); // No textures loaded to evict
+    
+    // Test clear
+    manager.clear();
+    let stats_after = manager.get_stats();
+    assert_eq!(stats_after.loaded_count, 0);
+    assert_eq!(stats_after.pending_count, 0);
+    
+    // Test LoadRequest ordering (priority-based)
+    // Request multiple textures with different priorities
+    manager.request_texture("low_priority.png".to_string(), 1, 10.0);
+    manager.request_texture("high_priority.png".to_string(), 10, 10.0);
+    manager.request_texture("medium_priority.png".to_string(), 5, 10.0);
+    
+    // Same priority, different distance
+    manager.request_texture("close.png".to_string(), 5, 1.0);  // closer
+    manager.request_texture("far.png".to_string(), 5, 100.0); // farther
+    
+    // Verify stats reflect pending loads
+    let stats_queued = manager.get_stats();
+    assert!(stats_queued.pending_count >= 5);
+    
+    println!("Texture streaming (sync API) tested.");
+}
+
+/// Test terrain renderer module
+#[test]
+fn test_terrain_renderer_module() {
+    use astraweave_render::terrain::{TerrainRenderer, generate_terrain_preview};
+    use astraweave_terrain::WorldConfig;
+    
+    // Create terrain renderer with default world config
+    let config = WorldConfig::default();
+    let mut terrain = TerrainRenderer::new(config.clone());
+    
+    // Test world_generator accessor
+    let _gen = terrain.world_generator();
+    let _gen_mut = terrain.world_generator_mut();
+    
+    // Test get_or_generate_chunk_mesh
+    use astraweave_terrain::ChunkId;
+    let chunk_id = ChunkId::new(0, 0);
+    
+    let mesh_result = terrain.get_or_generate_chunk_mesh(chunk_id);
+    assert!(mesh_result.is_ok());
+    let mesh = mesh_result.unwrap();
+    
+    // Verify the mesh has valid data
+    assert!(!mesh.vertices.is_empty());
+    assert!(!mesh.indices.is_empty());
+    
+    // Test get_loaded_mesh
+    let loaded = terrain.get_loaded_mesh(chunk_id);
+    assert!(loaded.is_some());
+    
+    // Non-existent chunk should return None
+    let not_loaded = terrain.get_loaded_mesh(ChunkId::new(999, 999));
+    assert!(not_loaded.is_none());
+    
+    // Test generate_chunk_complete
+    let complete_result = terrain.generate_chunk_complete(ChunkId::new(1, 1));
+    assert!(complete_result.is_ok());
+    let (complete_mesh, scatter) = complete_result.unwrap();
+    assert!(!complete_mesh.vertices.is_empty());
+    // Scatter result may or may not have items depending on config
+    let _ = scatter; // Just verify we can access it
+    
+    // Test get_chunks_in_radius - returns Result<Vec<ChunkId>>
+    let nearby_result = terrain.get_chunks_in_radius(
+        Vec3::new(16.0, 0.0, 16.0),
+        1  // radius (chunk count)
+    );
+    assert!(nearby_result.is_ok());
+    let nearby_chunks = nearby_result.unwrap();
+    assert!(!nearby_chunks.is_empty());
+    
+    // Test generate_terrain_preview (standalone function) - returns Result<Vec<f32>>
+    let preview_result = generate_terrain_preview(&config, Vec3::ZERO, 64);
+    assert!(preview_result.is_ok());
+    let preview = preview_result.unwrap();
+    assert_eq!(preview.len(), 64 * 64); // Should have one height per pixel
+    
+    println!("Terrain renderer tested.");
+}
+
