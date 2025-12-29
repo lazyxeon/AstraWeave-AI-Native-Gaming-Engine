@@ -435,6 +435,7 @@ impl ViewportWidget {
                 // Update and display toolbar
                 self.toolbar.stats.fps = fps;
                 self.toolbar.stats.frame_time_ms = avg_frame_time * 1000.0;
+                self.toolbar.stats.push_frame_time(avg_frame_time * 1000.0);
                 self.toolbar.stats.memory_usage_mb = estimate_memory_usage_mb();
                 // Entity counts obtained from world via viewport_frame() above
 

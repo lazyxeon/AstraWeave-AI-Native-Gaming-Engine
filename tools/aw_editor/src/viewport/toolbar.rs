@@ -202,7 +202,7 @@ impl ViewportToolbar {
 
         // Performance stats panel (bottom-left)
         if self.show_stats {
-            let stats_pos = viewport_rect.left_bottom() + egui::vec2(10.0, -95.0);
+            let stats_pos = viewport_rect.left_bottom() + egui::vec2(10.0, -140.0);
 
             egui::Area::new(egui::Id::new("viewport_stats"))
                 .fixed_pos(stats_pos)
@@ -220,6 +220,48 @@ impl ViewportToolbar {
                             ui.label(format!("Entities: {}", self.stats.entity_count));
                             ui.label(format!("Triangles: {}K", self.stats.triangle_count / 1000));
                             ui.label(format!("Memory: {:.1} MB", self.stats.memory_usage_mb));
+
+                            if !self.stats.frame_time_history.is_empty() {
+                                ui.separator();
+                                let graph_height = 30.0;
+                                let graph_width = 120.0;
+                                let (rect, _) = ui.allocate_exact_size(
+                                    egui::vec2(graph_width, graph_height),
+                                    egui::Sense::hover(),
+                                );
+                                let max_time = self.stats.frame_time_history
+                                    .iter()
+                                    .copied()
+                                    .fold(16.67f32, f32::max);
+                                let painter = ui.painter();
+                                painter.rect_filled(
+                                    rect,
+                                    2.0,
+                                    egui::Color32::from_rgb(30, 30, 40),
+                                );
+                                let target_line_y = rect.max.y - (16.67 / max_time) * graph_height;
+                                painter.line_segment(
+                                    [egui::pos2(rect.min.x, target_line_y), egui::pos2(rect.max.x, target_line_y)],
+                                    egui::Stroke::new(1.0, egui::Color32::from_rgb(80, 80, 80)),
+                                );
+                                let history = &self.stats.frame_time_history;
+                                let step = graph_width / 60.0;
+                                for (i, &frame_time) in history.iter().enumerate() {
+                                    let x = rect.min.x + (i as f32) * step;
+                                    let h = (frame_time / max_time) * graph_height;
+                                    let color = if frame_time <= 16.67 {
+                                        egui::Color32::GREEN
+                                    } else if frame_time <= 33.33 {
+                                        egui::Color32::YELLOW
+                                    } else {
+                                        egui::Color32::RED
+                                    };
+                                    painter.line_segment(
+                                        [egui::pos2(x, rect.max.y), egui::pos2(x, rect.max.y - h)],
+                                        egui::Stroke::new(2.0, color),
+                                    );
+                                }
+                            }
                         });
                 });
         }
@@ -240,7 +282,7 @@ pub enum ShadingMode {
 }
 
 /// Performance statistics for viewport
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct PerformanceStats {
     /// Frames per second
     pub fps: f32,
@@ -256,4 +298,29 @@ pub struct PerformanceStats {
 
     /// Memory usage in megabytes
     pub memory_usage_mb: f32,
+
+    /// Frame time history for graph (last 60 frames)
+    pub frame_time_history: Vec<f32>,
+}
+
+impl Default for PerformanceStats {
+    fn default() -> Self {
+        Self {
+            fps: 0.0,
+            frame_time_ms: 0.0,
+            entity_count: 0,
+            triangle_count: 0,
+            memory_usage_mb: 0.0,
+            frame_time_history: Vec::with_capacity(60),
+        }
+    }
+}
+
+impl PerformanceStats {
+    pub fn push_frame_time(&mut self, frame_time_ms: f32) {
+        if self.frame_time_history.len() >= 60 {
+            self.frame_time_history.remove(0);
+        }
+        self.frame_time_history.push(frame_time_ms);
+    }
 }

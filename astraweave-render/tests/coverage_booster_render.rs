@@ -118,7 +118,12 @@ async fn test_render_advanced_features() {
     // 3. IBL
     println!("Testing IBL...");
     renderer.bake_environment(IblQuality::Low).unwrap();
-    let _ibl = renderer.ibl_mut();
+    {
+        let ibl = renderer.ibl_mut();
+        ibl.sun_elevation = 0.5;
+        ibl.sun_azimuth = 1.0;
+        assert!(ibl.enabled);
+    }
     println!("IBL tested.");
 
     // 4. Resize
@@ -127,18 +132,18 @@ async fn test_render_advanced_features() {
     renderer.resize(0, 0); // Should return early
     println!("Resize tested.");
 
-    // 5. Material Validation
-    let pack = MaterialPackDesc {
-        biome: "test".to_string(),
-        layers: vec![MaterialLayerDesc {
-            key: "grass".to_string(),
-            ..Default::default()
-        }],
-    };
-    // We can't easily call validate_material_pack if it's not public, 
-    // but we can exercise MaterialGpu
+    // 5. Material Validation & Manager
+    println!("Testing Material Manager...");
+    let mut mat_manager = astraweave_render::material::MaterialManager::new();
+    let _bgl = mat_manager.get_or_create_bind_group_layout(renderer.device());
+    
     let mat_gpu = astraweave_render::material::MaterialGpu::neutral(0);
     assert_eq!(mat_gpu.texture_indices[0], 0);
+    println!("Material Manager tested.");
+
+    // Final poll to ensure all GPU work is done before drop
+    renderer.device().poll(wgpu::Maintain::Wait);
+    println!("Test completed successfully.");
 }
 
 #[tokio::test]
