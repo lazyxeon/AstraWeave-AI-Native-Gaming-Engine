@@ -2853,7 +2853,19 @@ impl eframe::App for EditorApp {
                         let mut hierarchy_toasts: Vec<(String, bool)> = Vec::new();
                         let mut hierarchy_updates: Vec<(Option<u32>, Option<u64>, bool)> = Vec::new();
 
-                        ui.collapsing("🌲 Hierarchy", |ui| {
+                        let entity_count = {
+                            let runtime_state = self.runtime.state();
+                            if runtime_state == RuntimeState::Editing {
+                                self.scene_state
+                                    .as_ref()
+                                    .map(|state| state.world().entities().len())
+                                    .unwrap_or(0)
+                            } else {
+                                self.runtime.sim_world().map(|w| w.entities().len()).unwrap_or(0)
+                            }
+                        };
+                        let hierarchy_header = format!("🌲 Hierarchy ({} entities)", entity_count);
+                        ui.collapsing(hierarchy_header, |ui| {
                             let runtime_state = self.runtime.state();
                             let world_opt = if runtime_state == RuntimeState::Editing {
                                 self.scene_state
