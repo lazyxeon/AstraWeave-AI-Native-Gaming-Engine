@@ -1,37 +1,37 @@
 use astraweave_render::{
-    camera::Camera,
+    camera::{Camera, CameraController, CameraMode},
     clustered_forward::{ClusteredForwardRenderer, ClusterConfig},
-    deferred::{GBuffer, GBufferFormats, DeferredRenderer},
+    deferred::{GBuffer, GBufferFormats},
     gi::vxgi::{VxgiConfig, VxgiRenderer},
-    ibl::{IblManager, IblQuality, SkyMode},
+    ibl::{IblManager, IblQuality},
     renderer::Renderer,
     shadow_csm::CsmRenderer,
     texture_streaming::TextureStreamingManager,
-    types::{Instance, Mesh, Vertex, SkinnedVertex},
-    WeatherType,
-    environment::{SkyRenderer, SkyConfig, TimeOfDay, WeatherSystem},
+    types::{Instance, SkinnedVertex},
+    environment::{SkyRenderer, SkyConfig, WeatherSystem},
     effects::{WeatherFx, WeatherKind},
-    msaa::MsaaMode,
-    material::{MaterialLoadStats, MaterialManager, MaterialLayerDesc, MaterialPackDesc},
+    material::{MaterialLoadStats, MaterialManager},
     animation::{Skeleton, AnimationClip, Transform, Joint, ChannelData, AnimationChannel, Interpolation},
     terrain::TerrainRenderer,
-    culling::{InstanceAABB, FrustumPlanes, CullingPipeline, CullingResources},
+    culling::{InstanceAABB, FrustumPlanes, CullingPipeline},
     gpu_particles::GpuParticleSystem,
     clustered_megalights::MegaLightsRenderer,
     decals::{DecalSystem, Decal},
     water::WaterRenderer,
-    lod_generator::{LODGenerator, LODConfig, SimplificationMesh},
+    lod_generator::{LODGenerator, LODConfig},
     advanced_post::AdvancedPostFx,
     vertex_compression::OctahedralEncoder,
     texture::Texture,
-    instancing::{InstanceBatch, Instance as InstancingInstance},
+    instancing::{InstanceBatch, Instance as InstancingInstance, InstanceManager, InstancePatternBuilder, InstanceRaw},
 };
 use astraweave_materials::{Graph, Node, MaterialPackage};
-use astraweave_cinematics as awc;
 use astraweave_terrain::WorldConfig;
-use glam::{vec3, Mat4, Vec3};
+use aw_asset_cli::{ColorSpace, CompressionFormat, TextureMetadata};
+use image::{RgbaImage, Rgba};
+use glam::{vec3, Mat4, Vec3, Vec2, Quat};
 use std::sync::Arc;
-use std::collections::HashMap;
+use std::fs;
+use tempfile::tempdir;
 use wgpu::util::DeviceExt;
 
 #[tokio::test]
@@ -808,4 +808,335 @@ async fn test_render_core_systems() {
     }
 
     println!("Core systems test completed successfully");
+    let _ = device.poll(wgpu::MaintainBase::Wait);
+}
+
+#[tokio::test]
+async fn test_render_loop_and_materials() {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+    let config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        width: 1024,
+        height: 768,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
+        desired_maximum_frame_latency: 2,
+    };
+
+    let mut renderer = Renderer::new_from_device(device, queue, None, config).await.unwrap();
+
+    // 1. Test Renderer::draw_into
+    println!("Testing Renderer::draw_into...");
+    let target_tex = renderer.device().create_texture(&wgpu::TextureDescriptor {
+        label: Some("test-target"),
+        size: wgpu::Extent3d {
+            width: 1024,
+            height: 768,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+    let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let mut encoder = renderer.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("test-encoder"),
+    });
+    
+    renderer.draw_into(&target_view, &mut encoder).unwrap();
+    renderer.queue().submit(std::iter::once(encoder.finish()));
+    let _ = renderer.device().poll(wgpu::MaintainBase::Wait);
+    println!("Renderer::draw_into tested.");
+
+    // 2. Test MaterialManager::load_biome
+    println!("Testing MaterialManager::load_biome...");
+    let temp_dir = tempdir().unwrap();
+    let biome_dir = temp_dir.path();
+    
+    // Create materials.toml
+    let materials_toml = r#"
+[biome]
+name = "test_biome"
+
+[[layer]]
+key = "grass"
+albedo = "grass_albedo.png"
+normal = "grass_normal.png"
+mra = "grass_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 1.0
+"#;
+    fs::write(biome_dir.join("materials.toml"), materials_toml).unwrap();
+    
+    // Create arrays.toml
+    let arrays_toml = r#"
+[layers]
+grass = 0
+"#;
+    fs::write(biome_dir.join("arrays.toml"), arrays_toml).unwrap();
+    
+    // Create dummy textures and metadata
+    let create_dummy_tex = |name: &str, color: [u8; 4], color_space: ColorSpace| {
+        let img_path = biome_dir.join(name);
+        let img = RgbaImage::from_pixel(1024, 1024, Rgba(color));
+        img.save(&img_path).unwrap();
+        
+        let meta = TextureMetadata {
+            source_path: name.to_string(),
+            output_path: name.to_string(),
+            color_space,
+            normal_y_convention: None,
+            compression: CompressionFormat::None,
+            mip_levels: 11, // 1024x1024 has 11 mips
+            dimensions: (1024, 1024),
+            sha256: "fake-hash".to_string(),
+        };
+        let meta_path = img_path.with_extension("png.meta.json");
+        fs::write(meta_path, serde_json::to_string(&meta).unwrap()).unwrap();
+    };
+    
+    create_dummy_tex("grass_albedo.png", [100, 200, 100, 255], ColorSpace::Srgb);
+    create_dummy_tex("grass_normal.png", [128, 128, 255, 255], ColorSpace::Linear);
+    create_dummy_tex("grass_mra.png", [0, 128, 255, 255], ColorSpace::Linear);
+    
+    let mut mat_manager = MaterialManager::new();
+    mat_manager.load_biome(renderer.device(), renderer.queue(), biome_dir).await.unwrap();
+    
+    let bgl = mat_manager.get_or_create_bind_group_layout(renderer.device()).clone();
+    let _bg = mat_manager.create_bind_group(renderer.device(), &bgl).unwrap();
+    
+    assert!(mat_manager.current_stats().is_some());
+    assert!(mat_manager.current_layout().is_some());
+    
+    // Test reload
+    mat_manager.reload_biome(renderer.device(), renderer.queue(), biome_dir).await.unwrap();
+    println!("MaterialManager::load_biome tested.");
+}
+
+#[test]
+fn test_camera_and_controller() {
+    // Test Camera struct
+    let mut camera = Camera {
+        position: Vec3::new(0.0, 5.0, 10.0),
+        yaw: 0.0,
+        pitch: 0.0,
+        fovy: 60f32.to_radians(),
+        aspect: 16.0 / 9.0,
+        znear: 0.1,
+        zfar: 1000.0,
+    };
+
+    // Test view and projection matrices
+    let view = camera.view_matrix();
+    let proj = camera.proj_matrix();
+    let vp = camera.vp();
+    assert!(!view.is_nan());
+    assert!(!proj.is_nan());
+    assert!(!vp.is_nan());
+
+    // Test direction calculation
+    let dir = Camera::dir(0.0, 0.0);
+    assert!((dir.length() - 1.0).abs() < 0.001);
+
+    // Test CameraController
+    let mut controller = CameraController::new(10.0, 0.002);
+    
+    // Test keyboard input
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyS, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyA, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyD, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::Space, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyQ, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyE, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyC, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::ShiftLeft, true);
+    controller.process_keyboard(winit::keyboard::KeyCode::ControlLeft, true);
+    
+    // Test mouse button
+    controller.process_mouse_button(winit::event::MouseButton::Right, true);
+    assert!(controller.is_dragging());
+    
+    // Test mouse move and delta
+    controller.begin_frame();
+    controller.process_mouse_move(&mut camera, Vec2::new(100.0, 100.0));
+    controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
+    
+    // Test scroll (zoom)
+    let initial_fov = camera.fovy;
+    controller.process_scroll(&mut camera, 1.0);
+    assert!(camera.fovy != initial_fov);
+    
+    // Test update
+    let initial_pos = camera.position;
+    controller.update_camera(&mut camera, 0.016);
+    assert!(camera.position != initial_pos);
+    
+    // Test mode toggle
+    controller.toggle_mode(&mut camera);
+    assert!(matches!(controller.mode, CameraMode::Orbit));
+    
+    // Test orbit target
+    controller.set_orbit_target(Vec3::new(0.0, 0.0, 0.0), &mut camera);
+    
+    // Test scroll in orbit mode
+    controller.process_scroll(&mut camera, 1.0);
+    
+    // Update in orbit mode
+    controller.update_camera(&mut camera, 0.016);
+    
+    // Toggle back
+    controller.toggle_mode(&mut camera);
+    assert!(matches!(controller.mode, CameraMode::FreeFly));
+    
+    // Release keys
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyW, false);
+    controller.process_mouse_button(winit::event::MouseButton::Right, false);
+    assert!(!controller.is_dragging());
+    
+    println!("Camera and CameraController tested.");
+}
+
+#[tokio::test]
+async fn test_instancing_system() {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+    // Test InstanceRaw
+    let raw = InstanceRaw::from_transform(Vec3::ONE, Quat::IDENTITY, Vec3::splat(2.0));
+    assert!(raw.model[0][0] != 0.0);
+    
+    let raw_mat = InstanceRaw::from_matrix(Mat4::IDENTITY);
+    assert_eq!(raw_mat.model[0][0], 1.0);
+    
+    let _desc = InstanceRaw::desc();
+
+    // Test InstancingInstance
+    let inst = InstancingInstance::new(Vec3::new(1.0, 2.0, 3.0), Quat::IDENTITY, Vec3::ONE);
+    assert_eq!(inst.position, Vec3::new(1.0, 2.0, 3.0));
+    
+    let _identity = InstancingInstance::identity();
+    let _raw = inst.to_raw();
+
+    // Test InstanceBatch
+    let mut batch = InstanceBatch::new(42);
+    assert_eq!(batch.instance_count(), 0);
+    
+    batch.add_instance(InstancingInstance::identity());
+    batch.add_instance(InstancingInstance::new(Vec3::X, Quat::IDENTITY, Vec3::ONE));
+    assert_eq!(batch.instance_count(), 2);
+    
+    batch.update_buffer(&device);
+    assert!(batch.buffer.is_some());
+    
+    batch.clear();
+    assert_eq!(batch.instance_count(), 0);
+    
+    batch.update_buffer(&device);
+    assert!(batch.buffer.is_none());
+
+    // Test InstanceManager
+    let mut manager = InstanceManager::new();
+    
+    manager.add_instance(1, InstancingInstance::identity());
+    manager.add_instance(1, InstancingInstance::identity());
+    manager.add_instance(2, InstancingInstance::identity());
+    
+    assert_eq!(manager.total_instances(), 3);
+    assert_eq!(manager.batch_count(), 2);
+    
+    let instances = vec![
+        InstancingInstance::identity(),
+        InstancingInstance::identity(),
+    ];
+    manager.add_instances(3, instances);
+    assert_eq!(manager.total_instances(), 5);
+    
+    manager.update_buffers(&device);
+    
+    let _batch = manager.get_batch(1);
+    let _batch_mut = manager.get_batch_mut(1);
+    
+    for _batch in manager.batches() {
+        // iterate
+    }
+    
+    let saved = manager.draw_calls_saved();
+    let reduction = manager.draw_call_reduction_percent();
+    assert!(saved > 0);
+    assert!(reduction > 0.0);
+    
+    manager.clear();
+    assert_eq!(manager.total_instances(), 0);
+
+    // Test InstancePatternBuilder
+    let grid_instances = InstancePatternBuilder::new()
+        .grid(3, 3, 2.0)
+        .build();
+    assert_eq!(grid_instances.len(), 9);
+    
+    let circle_instances = InstancePatternBuilder::new()
+        .circle(8, 5.0)
+        .build();
+    assert_eq!(circle_instances.len(), 8);
+    
+    let varied_instances = InstancePatternBuilder::new()
+        .grid(2, 2, 1.0)
+        .with_position_jitter(0.1)
+        .with_scale_variation(0.8, 1.2)
+        .with_random_rotation_y()
+        .build();
+    assert_eq!(varied_instances.len(), 4);
+    
+    let _default_builder = InstancePatternBuilder::default();
+    let _default_manager = InstanceManager::default();
+    
+    println!("Instancing system tested.");
 }

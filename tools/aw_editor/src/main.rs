@@ -3245,6 +3245,9 @@ impl eframe::App for EditorApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
             if let Some(viewport) = &mut self.viewport {
+                // Phase 14: Update viewport HUD with selection count
+                viewport.set_selection_count(self.selection_set.count());
+
                 // Phase 4: Visual indicator for play mode
                 let viewport_frame = if !self.editor_mode.is_editing() {
                     let border_color = if self.editor_mode.is_playing() {

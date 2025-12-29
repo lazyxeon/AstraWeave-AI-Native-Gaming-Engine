@@ -176,6 +176,11 @@ impl ViewportWidget {
         })
     }
 
+    /// Set the selection count for display in viewport HUD
+    pub fn set_selection_count(&mut self, count: usize) {
+        self.toolbar.stats.selection_count = count;
+    }
+
     /// Render viewport and handle input
     ///
     /// # Arguments
@@ -437,6 +442,7 @@ impl ViewportWidget {
                 self.toolbar.stats.frame_time_ms = avg_frame_time * 1000.0;
                 self.toolbar.stats.push_frame_time(avg_frame_time * 1000.0);
                 self.toolbar.stats.memory_usage_mb = estimate_memory_usage_mb();
+                self.toolbar.stats.camera_position = self.camera.position().to_array();
                 // Entity counts obtained from world via viewport_frame() above
 
                 // Sync toolbar snap settings to viewport

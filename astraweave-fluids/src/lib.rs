@@ -785,7 +785,10 @@ impl FluidSystem {
             let buffer_slice = self.density_error_staging_buffers[other_idx].slice(..);
             {
                 let data = buffer_slice.get_mapped_range();
-                let error_scaled = u32::from_ne_bytes(data[0..4].try_into().unwrap());
+                // Safe conversion: we know staging buffer is exactly 4 bytes
+                let mut bytes = [0u8; 4];
+                bytes.copy_from_slice(&data[0..4]);
+                let error_scaled = u32::from_ne_bytes(bytes);
                 let avg_error = (error_scaled as f32 / 1000.0) / self.particle_count as f32;
 
                 // Adjust iterations based on error

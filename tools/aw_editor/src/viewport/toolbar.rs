@@ -265,6 +265,37 @@ impl ViewportToolbar {
                         });
                 });
         }
+
+        // Camera & Selection info panel (top-right)
+        if self.show_stats {
+            let info_pos = viewport_rect.right_top() + egui::vec2(-130.0, 10.0);
+
+            egui::Area::new(egui::Id::new("viewport_info"))
+                .fixed_pos(info_pos)
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::new()
+                        .fill(egui::Color32::from_rgba_premultiplied(20, 20, 25, 200))
+                        .corner_radius(4.0)
+                        .inner_margin(6.0)
+                        .show(ui, |ui| {
+                            ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 2.0);
+                            let [x, y, z] = self.stats.camera_position;
+                            ui.label(egui::RichText::new("Camera").strong());
+                            ui.label(format!("X: {:.1}", x));
+                            ui.label(format!("Y: {:.1}", y));
+                            ui.label(format!("Z: {:.1}", z));
+                            ui.separator();
+                            let sel = self.stats.selection_count;
+                            if sel == 0 {
+                                ui.label("No selection");
+                            } else if sel == 1 {
+                                ui.label("1 selected");
+                            } else {
+                                ui.label(format!("{} selected", sel));
+                            }
+                        });
+                });
+        }
     }
 }
 
@@ -301,6 +332,12 @@ pub struct PerformanceStats {
 
     /// Frame time history for graph (last 60 frames)
     pub frame_time_history: Vec<f32>,
+
+    /// Camera position for HUD display
+    pub camera_position: [f32; 3],
+
+    /// Number of selected entities
+    pub selection_count: usize,
 }
 
 impl Default for PerformanceStats {
@@ -312,6 +349,8 @@ impl Default for PerformanceStats {
             triangle_count: 0,
             memory_usage_mb: 0.0,
             frame_time_history: Vec::with_capacity(60),
+            camera_position: [0.0, 0.0, 0.0],
+            selection_count: 0,
         }
     }
 }
