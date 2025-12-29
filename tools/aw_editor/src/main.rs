@@ -3423,7 +3423,9 @@ impl eframe::App for EditorApp {
                     RuntimeState::SteppingOneFrame => format!("Profiler [Step - Tick {}]", tick_count),
                 };
                 ui.collapsing(profiler_header, |ui| self.show_profiler(ui));
-                ui.collapsing("Behavior Graph Editor", |ui| {
+                let graph_node_count = self.graph_panel.total_node_count();
+                let graph_header = format!("Behavior Graph Editor ({} nodes)", graph_node_count);
+                ui.collapsing(graph_header, |ui| {
                     self.show_behavior_graph_editor(ui)
                 });
                 ui.collapsing("Dialogue Graph Editor", |ui| {
