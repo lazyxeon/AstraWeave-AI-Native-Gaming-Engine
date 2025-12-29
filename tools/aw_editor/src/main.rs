@@ -2830,7 +2830,9 @@ impl eframe::App for EditorApp {
 
                         ui.add_space(10.0);
 
-                        ui.collapsing("📦 Assets", |ui| {
+                        let asset_count = self.asset_browser.get_asset_count();
+                        let assets_header = format!("📦 Assets ({} files)", asset_count);
+                        ui.collapsing(assets_header, |ui| {
                             self.asset_browser.show(ui);
                             
                             // Process dragged prefabs after UI rendering

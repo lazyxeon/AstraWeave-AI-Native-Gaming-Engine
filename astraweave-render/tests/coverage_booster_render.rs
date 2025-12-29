@@ -968,17 +968,23 @@ fn test_camera_and_controller() {
     // Test CameraController
     let mut controller = CameraController::new(10.0, 0.002);
     
-    // Test keyboard input
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyS, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyA, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyD, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::Space, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyQ, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyE, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::KeyC, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::ShiftLeft, true);
-    controller.process_keyboard(winit::keyboard::KeyCode::ControlLeft, true);
+    // Test keyboard input - first test coverage by pressing each key
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);  // forward
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyW, false); // release
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyS, true);  // back
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyS, false);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyA, true);  // left
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyA, false);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyD, true);  // right
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyD, false);
+    controller.process_keyboard(winit::keyboard::KeyCode::Space, true);  // up
+    controller.process_keyboard(winit::keyboard::KeyCode::Space, false);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyQ, true);  // down
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyQ, false);
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyE, true);  // roll
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyC, true);  // roll
+    controller.process_keyboard(winit::keyboard::KeyCode::ShiftLeft, true);  // sprint
+    controller.process_keyboard(winit::keyboard::KeyCode::ControlLeft, true);  // precision
     
     // Test mouse button
     controller.process_mouse_button(winit::event::MouseButton::Right, true);
@@ -994,10 +1000,15 @@ fn test_camera_and_controller() {
     controller.process_scroll(&mut camera, 1.0);
     assert!(camera.fovy != initial_fov);
     
-    // Test update
+    // Now test actual movement - press W only (forward)
+    controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
+    
+    // Test update - camera should move forward
     let initial_pos = camera.position;
-    controller.update_camera(&mut camera, 0.016);
-    assert!(camera.position != initial_pos);
+    controller.update_camera(&mut camera, 0.5);  // Use longer dt for visible movement
+    // Position should change since W is pressed
+    let moved = (camera.position - initial_pos).length();
+    assert!(moved > 0.001, "Camera should have moved, but distance was {}", moved);
     
     // Test mode toggle
     controller.toggle_mode(&mut camera);
