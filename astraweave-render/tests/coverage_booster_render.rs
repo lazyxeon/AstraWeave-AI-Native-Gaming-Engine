@@ -142,7 +142,7 @@ async fn test_render_advanced_features() {
     println!("Material Manager tested.");
 
     // Final poll to ensure all GPU work is done before drop
-    renderer.device().poll(wgpu::Maintain::Wait);
+    renderer.device().poll(wgpu::MaintainBase::Wait);
     println!("Test completed successfully.");
 }
 
