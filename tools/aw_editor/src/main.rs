@@ -3414,7 +3414,14 @@ impl eframe::App for EditorApp {
                     .show(ui, |ui| self.show_console(ui));
                 }
 
-                ui.collapsing("Profiler", |ui| self.show_profiler(ui));
+                let runtime_state_str = match self.runtime.state() {
+                    RuntimeState::Editing => "Editing",
+                    RuntimeState::Playing => "Playing",
+                    RuntimeState::Paused => "Paused",
+                    RuntimeState::SteppingOneFrame => "Stepping",
+                };
+                let profiler_header = format!("Profiler [{}]", runtime_state_str);
+                ui.collapsing(profiler_header, |ui| self.show_profiler(ui));
                 ui.collapsing("Behavior Graph Editor", |ui| {
                     self.show_behavior_graph_editor(ui)
                 });
