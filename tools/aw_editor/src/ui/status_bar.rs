@@ -28,6 +28,7 @@ impl StatusBar {
         fps: f32,
         is_dirty: bool,
         entity_count: usize,
+        scene_path: Option<&str>,
     ) {
         ui.horizontal(|ui| {
             if is_dirty {
@@ -53,6 +54,15 @@ impl StatusBar {
 
             ui.label(format!("Entities: {}", entity_count))
                 .on_hover_text("Total number of entities in the scene");
+            ui.separator();
+
+            if let Some(path) = scene_path {
+                ui.label(format!("📁 {}", path))
+                    .on_hover_text(format!("Scene file: {}", path));
+            } else {
+                ui.label("📁 Untitled")
+                    .on_hover_text("Scene not saved - Press Ctrl+S to save");
+            }
 
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 Self::show_fps(ui, fps);

@@ -435,6 +435,7 @@ impl ViewportWidget {
                 // Update and display toolbar
                 self.toolbar.stats.fps = fps;
                 self.toolbar.stats.frame_time_ms = avg_frame_time * 1000.0;
+                self.toolbar.stats.memory_usage_mb = estimate_memory_usage_mb();
                 // Entity counts obtained from world via viewport_frame() above
 
                 // Sync toolbar snap settings to viewport
@@ -1851,6 +1852,55 @@ impl ViewportWidget {
         } else {
             angle
         }
+    }
+}
+
+fn estimate_memory_usage_mb() -> f32 {
+    #[cfg(target_os = "windows")]
+    {
+        use std::mem::MaybeUninit;
+        #[repr(C)]
+        struct ProcessMemoryCounters {
+            cb: u32,
+            page_fault_count: u32,
+            peak_working_set_size: usize,
+            working_set_size: usize,
+            quota_peak_paged_pool_usage: usize,
+            quota_paged_pool_usage: usize,
+            quota_peak_non_paged_pool_usage: usize,
+            quota_non_paged_pool_usage: usize,
+            pagefile_usage: usize,
+            peak_pagefile_usage: usize,
+        }
+        #[link(name = "psapi")]
+        extern "system" {
+            fn GetProcessMemoryInfo(
+                process: *mut std::ffi::c_void,
+                pmc: *mut ProcessMemoryCounters,
+                cb: u32,
+            ) -> i32;
+        }
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn GetCurrentProcess() -> *mut std::ffi::c_void;
+        }
+        unsafe {
+            let mut pmc = MaybeUninit::<ProcessMemoryCounters>::uninit();
+            (*pmc.as_mut_ptr()).cb = std::mem::size_of::<ProcessMemoryCounters>() as u32;
+            if GetProcessMemoryInfo(
+                GetCurrentProcess(),
+                pmc.as_mut_ptr(),
+                std::mem::size_of::<ProcessMemoryCounters>() as u32,
+            ) != 0
+            {
+                return (*pmc.as_ptr()).working_set_size as f32 / (1024.0 * 1024.0);
+            }
+        }
+        0.0
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        0.0
     }
 }
 

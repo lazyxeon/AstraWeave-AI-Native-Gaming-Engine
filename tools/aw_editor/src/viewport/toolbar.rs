@@ -202,7 +202,7 @@ impl ViewportToolbar {
 
         // Performance stats panel (bottom-left)
         if self.show_stats {
-            let stats_pos = viewport_rect.left_bottom() + egui::vec2(10.0, -80.0);
+            let stats_pos = viewport_rect.left_bottom() + egui::vec2(10.0, -95.0);
 
             egui::Area::new(egui::Id::new("viewport_stats"))
                 .fixed_pos(stats_pos)
@@ -219,6 +219,7 @@ impl ViewportToolbar {
                             ui.label(format!("Frame: {:.2}ms", self.stats.frame_time_ms));
                             ui.label(format!("Entities: {}", self.stats.entity_count));
                             ui.label(format!("Triangles: {}K", self.stats.triangle_count / 1000));
+                            ui.label(format!("Memory: {:.1} MB", self.stats.memory_usage_mb));
                         });
                 });
         }
@@ -252,4 +253,7 @@ pub struct PerformanceStats {
 
     /// Number of triangles rendered
     pub triangle_count: u32,
+
+    /// Memory usage in megabytes
+    pub memory_usage_mb: f32,
 }

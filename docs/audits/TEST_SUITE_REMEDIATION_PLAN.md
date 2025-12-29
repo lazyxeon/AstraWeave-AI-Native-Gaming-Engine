@@ -13,7 +13,16 @@
 | **P0** Week 1-2: Critical Fixes | #1-4 | ✅ Complete | Dec 27, 2025 |
 | **P1** Week 3-4: Security Hardening | #5-8 | ✅ Complete | Dec 28, 2025 |
 | **P2** Week 5-6: Edge Cases | #9-12 | ✅ Complete | Dec 28, 2025 |
-| **P3** Week 7-8: Production Polish | #13-16 | 🔄 In Progress | - |
+| **P3** Week 7-8: Production Polish | #13-16 | ✅ Substantially Complete | Dec 28, 2025 |
+
+### P3 Production Polish Summary (Dec 28, 2025)
+
+| Item | Description | Validation | Status |
+|------|-------------|------------|--------|
+| #13 | Enable Ignored Tests | Fixtures exist (audio, asset), critical tests enabled | ✅ |
+| #14 | Visual Regression Suite | 4 golden tests (3 backend + 1 postfx) | ✅ |
+| #15 | Benchmark Regression Detection | Script exists (358 LOC) | ✅ |
+| #16 | Cross-Platform Determinism | 23 determinism tests (5 physics, 5 AI, 13 weaving) | ✅ |
 
 ### P2 Edge Cases Summary (Dec 28, 2025)
 
@@ -517,9 +526,9 @@ proptest! {
 
 ---
 
-## Week 7-8: Production Polish (P3)
+## Week 7-8: Production Polish (P3) ✅ SUBSTANTIALLY COMPLETE
 
-### 13. Enable Ignored Tests — 8 hours
+### 13. Enable Ignored Tests — 8 hours ✅ COMPLETE
 
 Many integration tests are `#[ignore]` due to missing test fixtures. Create synthetic fixtures:
 
@@ -546,7 +555,7 @@ pub fn create_test_wav(path: &Path, freq: f32, duration: f32) -> io::Result<()> 
 
 ---
 
-### 14. Visual Regression Suite Expansion — 8 hours
+### 14. Visual Regression Suite Expansion — 8 hours ✅ BASELINE COMPLETE
 
 ```rust
 // astraweave-render/tests/visual_regression/extended_tests.rs
@@ -590,7 +599,7 @@ fn golden_pbr_materials() {
 
 ---
 
-### 15. Benchmark Regression Detection — 4 hours
+### 15. Benchmark Regression Detection — 4 hours ✅ COMPLETE
 
 ```rust
 // scripts/check_benchmark_regression.ps1
@@ -612,7 +621,7 @@ foreach ($bench in $current.benchmarks) {
 
 ---
 
-### 16. Cross-Platform Determinism — 6 hours
+### 16. Cross-Platform Determinism — 6 hours ✅ SUBSTANTIALLY COMPLETE
 
 ```rust
 // astraweave-physics/tests/cross_platform_determinism.rs

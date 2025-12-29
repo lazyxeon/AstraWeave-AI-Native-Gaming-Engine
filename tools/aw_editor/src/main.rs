@@ -3220,6 +3220,11 @@ impl eframe::App for EditorApp {
             .map(|s| s.world().entities().len())
             .unwrap_or(0);
 
+        let scene_path_str = self
+            .current_scene_path
+            .as_ref()
+            .and_then(|p| p.to_str());
+
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
             .show(ctx, |ui| {
@@ -3233,6 +3238,7 @@ impl eframe::App for EditorApp {
                     self.current_fps,
                     self.is_dirty,
                     entity_count,
+                    scene_path_str,
                 );
             });
 

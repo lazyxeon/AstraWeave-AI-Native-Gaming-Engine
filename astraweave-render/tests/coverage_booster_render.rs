@@ -8,6 +8,7 @@ use astraweave_render::{
     shadow_csm::CsmRenderer,
     texture_streaming::TextureStreamingManager,
     types::{Instance, Mesh, Vertex, SkinnedVertex},
+    WeatherType,
     environment::{SkyRenderer, SkyConfig, TimeOfDay, WeatherSystem},
     effects::{WeatherFx, WeatherKind},
     msaa::MsaaMode,
@@ -27,7 +28,6 @@ use astraweave_render::{
 };
 use astraweave_materials::{Graph, Node, MaterialPackage};
 use astraweave_cinematics as awc;
-use astraweave_render::environment::WeatherType;
 use astraweave_terrain::WorldConfig;
 use glam::{vec3, Mat4, Vec3};
 use std::sync::Arc;
@@ -59,9 +59,23 @@ async fn test_render_advanced_features() {
         .await
         .unwrap();
 
-    let mut renderer = Renderer::new_from_device(device, queue, 1024, 768, wgpu::TextureFormat::Rgba8UnormSrgb);
+    let config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        width: 1024,
+        height: 768,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
+        desired_maximum_frame_latency: 2,
+    };
+
+    println!("Initializing Renderer...");
+    let mut renderer = Renderer::new_from_device(device, queue, None, config).await.unwrap();
+    println!("Renderer initialized.");
 
     // 1. Material Package & Shader Generation
+    println!("Testing Material Package...");
     let mut g = Graph {
         nodes: std::collections::BTreeMap::new(),
         base_color: "color".to_string(),
@@ -75,8 +89,10 @@ async fn test_render_advanced_features() {
     let pkg = MaterialPackage::from_graph(&g).expect("compile");
     let _shader = renderer.shader_from_material_package(&pkg);
     let _bgl = renderer.bgl_from_material_package(&pkg);
+    println!("Material Package tested.");
 
     // 2. Cinematics
+    println!("Testing Cinematics...");
     let timeline_json = r#"{
         "name": "test",
         "duration": 10.0,
@@ -97,14 +113,19 @@ async fn test_render_advanced_features() {
     };
     renderer.tick_cinematics(0.1, &mut cam);
     renderer.stop_timeline();
+    println!("Cinematics tested.");
 
     // 3. IBL
+    println!("Testing IBL...");
     renderer.bake_environment(IblQuality::Low).unwrap();
     let _ibl = renderer.ibl_mut();
+    println!("IBL tested.");
 
     // 4. Resize
+    println!("Testing Resize...");
     renderer.resize(800, 600);
     renderer.resize(0, 0); // Should return early
+    println!("Resize tested.");
 
     // 5. Material Validation
     let pack = MaterialPackDesc {
