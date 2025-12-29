@@ -3390,7 +3390,8 @@ impl eframe::App for EditorApp {
 
                 if self.show_console_panel {
                 // Console section with auto-expand when active
-                egui::CollapsingHeader::new("Console")
+                let console_header = format!("Console ({} messages)", self.console_logs.len());
+                egui::CollapsingHeader::new(console_header)
                     .default_open(console_open)
                     .show(ui, |ui| self.show_console(ui));
                 }
