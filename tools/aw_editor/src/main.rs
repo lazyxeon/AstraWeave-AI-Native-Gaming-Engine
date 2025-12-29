@@ -3387,7 +3387,23 @@ impl eframe::App for EditorApp {
                 let scene_hier_header = format!("Scene Hierarchy ({} entities)", scene_entity_count);
                 ui.collapsing(scene_hier_header, |ui| self.show_scene_hierarchy(ui));
                 if self.show_inspector_panel {
-                    ui.collapsing("Inspector", |ui| self.show_inspector(ui));
+                    let inspector_header = if let Some(entity_id) = self.selection_set.primary {
+                        if let Ok(entity) = u32::try_from(entity_id) {
+                            if let Some(world) = self.active_world() {
+                                let name = world.name(entity)
+                                    .map(|s| s.to_string())
+                                    .unwrap_or_else(|| format!("Entity_{}", entity));
+                                format!("Inspector - {}", name)
+                            } else {
+                                "Inspector".to_string()
+                            }
+                        } else {
+                            "Inspector".to_string()
+                        }
+                    } else {
+                        "Inspector (no selection)".to_string()
+                    };
+                    ui.collapsing(inspector_header, |ui| self.show_inspector(ui));
                 }
 
                 if self.show_console_panel {

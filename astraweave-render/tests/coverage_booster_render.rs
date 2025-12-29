@@ -1151,3 +1151,216 @@ async fn test_instancing_system() {
     
     println!("Instancing system tested.");
 }
+
+/// Test vertex compression module: OctahedralEncoder, HalfFloatEncoder
+#[test]
+fn test_vertex_compression() {
+    use astraweave_render::vertex_compression::{
+        CompressedVertex, OctahedralEncoder, HalfFloatEncoder,
+        compress_vertices, decompress_vertices, compress_mesh_data
+    };
+    
+    // Test OctahedralEncoder encode/decode
+    let normals = [
+        Vec3::new(0.0, 1.0, 0.0),   // Up
+        Vec3::new(0.0, -1.0, 0.0),  // Down
+        Vec3::new(1.0, 0.0, 0.0),   // Right
+        Vec3::new(-1.0, 0.0, 0.0),  // Left
+        Vec3::new(0.0, 0.0, 1.0),   // Forward
+        Vec3::new(0.0, 0.0, -1.0),  // Back
+        Vec3::new(0.577, 0.577, 0.577).normalize(), // Diagonal
+        Vec3::new(-0.707, -0.707, 0.0).normalize(), // Diagonal negative hemisphere
+    ];
+    
+    for normal in &normals {
+        let encoded = OctahedralEncoder::encode(*normal);
+        let decoded = OctahedralEncoder::decode(encoded);
+        
+        // Check that the decoded normal is close to the original
+        let error = (*normal - decoded).length();
+        assert!(error < 0.01, "Normal encoding error too high for {:?}: {}", normal, error);
+        
+        // Test encoding error calculation
+        let err_rad = OctahedralEncoder::encoding_error(*normal);
+        assert!(err_rad < 0.01);
+    }
+    
+    // Test HalfFloatEncoder
+    let test_values = [0.0f32, 0.5, 1.0, 0.25, 0.75, 0.001, 100.0, -0.5, -100.0];
+    
+    for val in test_values {
+        let encoded = HalfFloatEncoder::encode(val);
+        let decoded = HalfFloatEncoder::decode(encoded);
+        
+        // Half float has limited precision, check within reasonable tolerance
+        let error = (val - decoded).abs();
+        let rel_error = if val.abs() > 0.001 { error / val.abs() } else { error };
+        assert!(rel_error < 0.01 || error < 0.001, "Half float encoding error for {}: {}", val, error);
+    }
+    
+    // Test UV encoding
+    let uvs = [
+        Vec2::new(0.0, 0.0),
+        Vec2::new(1.0, 1.0),
+        Vec2::new(0.5, 0.5),
+        Vec2::new(0.25, 0.75),
+    ];
+    
+    for uv in &uvs {
+        let encoded = HalfFloatEncoder::encode_uv(*uv);
+        let decoded = HalfFloatEncoder::decode_uv(encoded);
+        
+        let error = (*uv - decoded).length();
+        assert!(error < 0.01, "UV encoding error too high for {:?}: {}", uv, error);
+    }
+    
+    // Test CompressedVertex constants
+    assert_eq!(CompressedVertex::STANDARD_SIZE, 32);
+    assert_eq!(CompressedVertex::COMPRESSED_SIZE, 20);
+    assert!((CompressedVertex::MEMORY_REDUCTION - 0.375).abs() < 0.001);
+    
+    // Test compress_vertices and decompress_vertices
+    let positions = vec![
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+    ];
+    let normals_arr = vec![
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(0.0, 0.0, 1.0),
+    ];
+    let uvs_arr = vec![
+        Vec2::new(0.0, 0.0),
+        Vec2::new(1.0, 0.0),
+        Vec2::new(0.0, 1.0),
+    ];
+    
+    let compressed = compress_vertices(&positions, &normals_arr, &uvs_arr);
+    assert_eq!(compressed.len(), 3);
+    
+    // Verify compression data
+    for (i, cv) in compressed.iter().enumerate() {
+        assert!((cv.position[0] - positions[i].x).abs() < 0.001);
+        assert!((cv.position[1] - positions[i].y).abs() < 0.001);
+        assert!((cv.position[2] - positions[i].z).abs() < 0.001);
+    }
+    
+    // Test decompress_vertices
+    let (dec_pos, dec_normals, dec_uvs) = decompress_vertices(&compressed);
+    assert_eq!(dec_pos.len(), 3);
+    assert_eq!(dec_normals.len(), 3);
+    assert_eq!(dec_uvs.len(), 3);
+    
+    // Verify decompression is close to original
+    for i in 0..3 {
+        assert!((positions[i] - dec_pos[i]).length() < 0.001);
+        assert!((normals_arr[i] - dec_normals[i]).length() < 0.02);
+        assert!((uvs_arr[i] - dec_uvs[i]).length() < 0.01);
+    }
+    
+    // Test compress_mesh_data
+    let indices = vec![0, 1, 2];
+    let (mesh_compressed, mesh_indices) = compress_mesh_data(&positions, &normals_arr, &uvs_arr, &indices);
+    assert_eq!(mesh_compressed.len(), 3);
+    assert_eq!(mesh_indices.len(), 3);
+    
+    println!("Vertex compression tested.");
+}
+
+/// Test texture module: TextureUsage, Texture default factories
+#[tokio::test]
+async fn test_texture_module() {
+    use astraweave_render::texture::{Texture, TextureUsage};
+    
+    // Test TextureUsage enum
+    let usages = [
+        TextureUsage::Albedo,
+        TextureUsage::Normal,
+        TextureUsage::MRA,
+        TextureUsage::Emissive,
+        TextureUsage::Height,
+    ];
+    
+    for usage in &usages {
+        let _format = usage.format();
+        let _needs_mips = usage.needs_mipmaps();
+        let _desc = usage.description();
+        
+        // Check format is consistent with usage type
+        match usage {
+            TextureUsage::Albedo | TextureUsage::Emissive => {
+                assert_eq!(usage.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
+                assert!(usage.needs_mipmaps());
+            }
+            TextureUsage::Normal | TextureUsage::Height => {
+                assert_eq!(usage.format(), wgpu::TextureFormat::Rgba8Unorm);
+                assert!(!usage.needs_mipmaps());
+            }
+            TextureUsage::MRA => {
+                assert_eq!(usage.format(), wgpu::TextureFormat::Rgba8Unorm);
+                assert!(usage.needs_mipmaps());
+            }
+        }
+    }
+    
+    // Get device and queue for texture creation
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("Test Device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_defaults(),
+                memory_hints: Default::default(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    
+    // Test Texture::create_default_white
+    let white_tex = Texture::create_default_white(&device, &queue, "white_test").unwrap();
+    assert!(white_tex.texture.size().width == 1);
+    assert!(white_tex.texture.size().height == 1);
+    
+    // Test Texture::create_default_normal
+    let normal_tex = Texture::create_default_normal(&device, &queue, "normal_test").unwrap();
+    assert!(normal_tex.texture.size().width == 1);
+    assert!(normal_tex.texture.size().height == 1);
+    
+    // Create test PNG data in memory for from_bytes tests
+    // Create a simple 4x4 RGBA image manually
+    let mut png_data = Vec::new();
+    {
+        use std::io::Cursor;
+        let mut img = image::RgbaImage::new(4, 4);
+        for pixel in img.pixels_mut() {
+            *pixel = image::Rgba([255, 128, 64, 255]);
+        }
+        let mut cursor = Cursor::new(&mut png_data);
+        img.write_to(&mut cursor, image::ImageFormat::Png).unwrap();
+    }
+    
+    // Test Texture::from_bytes
+    let loaded_tex = Texture::from_bytes(&device, &queue, &png_data, "loaded_test").unwrap();
+    assert_eq!(loaded_tex.texture.size().width, 4);
+    assert_eq!(loaded_tex.texture.size().height, 4);
+    
+    // Test Texture::from_bytes_with_usage
+    let normal_loaded = Texture::from_bytes_with_usage(
+        &device, &queue, &png_data, "normal_loaded_test", TextureUsage::Normal
+    ).unwrap();
+    assert_eq!(normal_loaded.texture.size().width, 4);
+    
+    println!("Texture module tested.");
+}
