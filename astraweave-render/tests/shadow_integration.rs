@@ -18,7 +18,7 @@ fn test_shadow_map_initialization() {
     let renderer = pollster::block_on(Renderer::new(window));
 
     match renderer {
-        Ok(r) => {
+        Ok(_r) => {
             // Verify shadow map properties
             // We can't access private fields directly, but we can check public properties if any.
             // Or we can use reflection/debug if available.

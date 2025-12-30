@@ -139,7 +139,7 @@ async fn test_render_advanced_features() {
     println!("Material Manager tested.");
 
     // Final poll to ensure all GPU work is done before drop
-    renderer.device().poll(wgpu::MaintainBase::Wait);
+    let _ = renderer.device().poll(wgpu::MaintainBase::Wait);
     println!("Test completed successfully.");
 }
 
@@ -207,7 +207,7 @@ async fn test_render_systems_logic() {
     csm.render_shadow_maps(&mut encoder, &v_buf, &i_buf, 3);
 
     // 3. Clustered Forward
-    let forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
+    let _forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     
     // 4. VXGI
@@ -216,7 +216,7 @@ async fn test_render_systems_logic() {
     vxgi.update_voxel_field(&mut encoder);
 
     // 5. Texture Streaming
-    let streaming = TextureStreamingManager::new(100); // 100MB
+    let _streaming = TextureStreamingManager::new(100); // 100MB
     let dummy_data = vec![0u8; 64 * 64 * 4];
     let _tex = device.create_texture_with_data(
         &queue,
@@ -484,7 +484,7 @@ async fn test_renderer_full_pipeline() {
             &params_buffer, 
             &prefix_params_buffer
         );
-        megalights.dispatch(&mut mega_encoder, 1);
+        let _ = megalights.dispatch(&mut mega_encoder, 1);
         queue.submit(Some(mega_encoder.finish()));
 
         // 9. Exercise Texture Streaming more thoroughly
@@ -566,7 +566,7 @@ async fn test_render_extra_systems() {
 
     // 1. Decals
     let mut decal_sys = DecalSystem::new(&device, 100, 1024, 4);
-    decal_sys.add_decal(Decal {
+    let _ = decal_sys.add_decal(Decal {
         position: glam::Vec3::ZERO,
         rotation: glam::Quat::IDENTITY,
         scale: glam::Vec3::ONE,
@@ -631,10 +631,10 @@ async fn test_render_extra_systems() {
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     };
-    let input_tex = device.create_texture(&tex_desc).create_view(&Default::default());
-    let output_tex = device.create_texture(&tex_desc).create_view(&Default::default());
-    let velocity_tex = device.create_texture(&tex_desc).create_view(&Default::default());
-    let depth_tex = device.create_texture(&wgpu::TextureDescriptor {
+    let _input_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    let _output_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    let _velocity_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    let _depth_tex = device.create_texture(&wgpu::TextureDescriptor {
         format: wgpu::TextureFormat::Depth32Float,
         ..tex_desc
     }).create_view(&Default::default());
@@ -711,7 +711,7 @@ async fn test_render_core_systems() {
     let aabb = InstanceAABB::new(glam::Vec3::ZERO, glam::Vec3::ONE, 0);
     let vp = glam::Mat4::perspective_rh(45.0, 1.0, 0.1, 100.0);
     let frustum = FrustumPlanes::from_view_proj(&vp);
-    let culling_res = culling.create_culling_resources(&device, &[aabb], &frustum);
+    let _culling_res = culling.create_culling_resources(&device, &[aabb], &frustum);
     
     let cull_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     // culling.dispatch(&mut cull_encoder, &culling_res, frustum, 1);
@@ -757,12 +757,12 @@ async fn test_render_core_systems() {
     let _ = astraweave_render::animation::JointPalette::from_matrices(&[glam::Mat4::IDENTITY]);
 
     // 7. IBL Manager
-    let ibl = IblManager::new(&device, IblQuality::High).unwrap();
+    let _ibl = IblManager::new(&device, IblQuality::High).unwrap();
     // ibl.sun_elevation = 0.5;
     // ibl.sun_azimuth = 1.0;
-    let ibl_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    let _ibl_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     // ibl.update_procedural(&device, &queue, &mut ibl_encoder, 0.0);
-    queue.submit(Some(ibl_encoder.finish()));
+    queue.submit(Some(_ibl_encoder.finish()));
 
     // 8. Terrain Renderer
     let mut terrain = TerrainRenderer::new(WorldConfig::default());
