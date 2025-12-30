@@ -2191,7 +2191,7 @@ mod tests {
             assert_eq!(renderer.config().height, 768);
 
             // Test camera update
-            let mut camera = Camera {
+            let camera = Camera {
                 position: glam::vec3(0.0, 5.0, 10.0),
                 yaw: 0.0,
                 pitch: 0.0,

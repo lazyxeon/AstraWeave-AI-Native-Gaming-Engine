@@ -203,6 +203,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 }
 "#;
 
+#[cfg(not(feature = "postfx"))]
 const POST_SHADER: &str = r#"
 struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex
@@ -726,6 +727,7 @@ impl Renderer {
         let hdr_view = fx_ao.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Postprocess pipeline
+        #[cfg(not(feature = "postfx"))]
         let post_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("post shader"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER)),
@@ -4176,7 +4178,7 @@ mod tests {
 
     #[test]
     fn test_frustum_corners_ws() {
-        let mut cam = crate::camera::Camera {
+        let cam = crate::camera::Camera {
             position: Vec3::ZERO,
             yaw: 0.0,
             pitch: 0.0,

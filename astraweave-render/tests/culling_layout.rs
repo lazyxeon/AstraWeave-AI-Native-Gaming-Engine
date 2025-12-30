@@ -1,7 +1,7 @@
 //! Test to verify InstanceAABB struct layout matches GPU expectations
 
 use astraweave_render::culling::InstanceAABB;
-use bytemuck::{cast_slice, Pod};
+use bytemuck::cast_slice;
 use glam::Vec3;
 
 #[test]

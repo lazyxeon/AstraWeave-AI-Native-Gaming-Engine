@@ -16,10 +16,7 @@ use astraweave_render::{
     culling::{InstanceAABB, FrustumPlanes, CullingPipeline},
     gpu_particles::GpuParticleSystem,
     clustered_megalights::MegaLightsRenderer,
-    decals::{DecalSystem, Decal},
-    water::WaterRenderer,
-    lod_generator::{LODGenerator, LODConfig},
-    advanced_post::AdvancedPostFx,
+    lod_generator::LODGenerator,
     vertex_compression::OctahedralEncoder,
     texture::Texture,
     instancing::{InstanceBatch, Instance as InstancingInstance, InstanceManager, InstancePatternBuilder, InstanceRaw},
@@ -210,7 +207,7 @@ async fn test_render_systems_logic() {
     csm.render_shadow_maps(&mut encoder, &v_buf, &i_buf, 3);
 
     // 3. Clustered Forward
-    let mut forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
+    let forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     
     // 4. VXGI
@@ -219,7 +216,7 @@ async fn test_render_systems_logic() {
     vxgi.update_voxel_field(&mut encoder);
 
     // 5. Texture Streaming
-    let mut streaming = TextureStreamingManager::new(100); // 100MB
+    let streaming = TextureStreamingManager::new(100); // 100MB
     let dummy_data = vec![0u8; 64 * 64 * 4];
     let _tex = device.create_texture_with_data(
         &queue,
@@ -716,7 +713,7 @@ async fn test_render_core_systems() {
     let frustum = FrustumPlanes::from_view_proj(&vp);
     let culling_res = culling.create_culling_resources(&device, &[aabb], &frustum);
     
-    let mut cull_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    let cull_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     // culling.dispatch(&mut cull_encoder, &culling_res, frustum, 1);
     queue.submit(Some(cull_encoder.finish()));
 
@@ -760,10 +757,10 @@ async fn test_render_core_systems() {
     let _ = astraweave_render::animation::JointPalette::from_matrices(&[glam::Mat4::IDENTITY]);
 
     // 7. IBL Manager
-    let mut ibl = IblManager::new(&device, IblQuality::High).unwrap();
+    let ibl = IblManager::new(&device, IblQuality::High).unwrap();
     // ibl.sun_elevation = 0.5;
     // ibl.sun_azimuth = 1.0;
-    let mut ibl_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    let ibl_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     // ibl.update_procedural(&device, &queue, &mut ibl_encoder, 0.0);
     queue.submit(Some(ibl_encoder.finish()));
 
