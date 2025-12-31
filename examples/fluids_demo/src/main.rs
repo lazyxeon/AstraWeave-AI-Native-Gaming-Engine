@@ -324,7 +324,8 @@ impl State {
             });
 
         // Update fluid simulation
-        self.fluid_system.step(&self.device, &mut encoder, &self.queue, dt);
+        self.fluid_system
+            .step(&self.device, &mut encoder, &self.queue, dt);
 
         // Update current scenario
         if let Some(scenario) = self.scenario_manager.current() {
@@ -436,6 +437,81 @@ impl State {
                 camera_uniform,
                 skybox_view,
             );
+        }
+
+        // --- Egui Performance Overlay ---
+        let raw_input = self.egui_state.take_egui_input(&self.window);
+        let full_output = self.egui_ctx.run(raw_input, |ctx| {
+            egui::Window::new("Performance")
+                .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
+                .resizable(false)
+                .collapsible(true)
+                .show(ctx, |ui| {
+                    let elapsed = self.start_time.elapsed().as_secs_f32();
+                    let fps = 1.0 / (self.last_update.elapsed().as_secs_f32() + 0.001);
+
+                    ui.heading("Fluids Demo");
+                    ui.separator();
+
+                    ui.label(format!("FPS: {:.1}", fps));
+                    ui.label(format!("Time: {:.1}s", elapsed));
+                    ui.label(format!("Particles: {}", self.fluid_system.particle_count));
+                    ui.label(format!("Active: {}", self.fluid_system.active_count));
+                    ui.label(format!("LOD: {:?}", self.lod_manager.current_lod()));
+
+                    ui.separator();
+                    ui.label("Temperature Enabled: ✓");
+                    ui.label(format!("PBD Iterations: {}", self.fluid_system.iterations));
+
+                    ui.separator();
+                    ui.small("Press SPACE to switch scenarios");
+                    ui.small("Press ESC to exit");
+                });
+        });
+
+        self.egui_state
+            .handle_platform_output(&self.window, full_output.platform_output);
+
+        let paint_jobs = self
+            .egui_ctx
+            .tessellate(full_output.shapes, full_output.pixels_per_point);
+        let screen_descriptor = egui_wgpu::ScreenDescriptor {
+            size_in_pixels: [self.config.width, self.config.height],
+            pixels_per_point: self.window.scale_factor() as f32,
+        };
+
+        for (id, image_delta) in &full_output.textures_delta.set {
+            self.egui_renderer
+                .update_texture(&self.device, &self.queue, *id, image_delta);
+        }
+        self.egui_renderer.update_buffers(
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            &paint_jobs,
+            &screen_descriptor,
+        );
+
+        {
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Egui Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                ..Default::default()
+            });
+            self.egui_renderer
+                .render(&mut rpass, &paint_jobs, &screen_descriptor);
+        }
+
+        for id in &full_output.textures_delta.free {
+            self.egui_renderer.free_texture(id);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

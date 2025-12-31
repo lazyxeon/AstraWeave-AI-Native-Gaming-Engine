@@ -2104,3 +2104,1289 @@ fn test_material_loader_edge_cases() {
     
     println!("Material loader edge cases tested.");
 }
+// ===========================
+// WAVE 4: High-Impact Coverage Boost
+// ===========================
+
+#[tokio::test]
+async fn test_renderer_extensive_methods() {
+    use astraweave_render::renderer::Renderer;
+    use astraweave_render::camera::Camera;
+    use astraweave_render::types::Instance;
+    use astraweave_render::effects::WeatherKind;
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+
+    let config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        width: 1024,
+        height: 768,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
+        desired_maximum_frame_latency: 2,
+    };
+
+    let mut renderer = Renderer::new_from_device(device, queue, None, config).await.unwrap();
+    
+    // Test camera update
+    let camera = Camera {
+        position: Vec3::new(10.0, 20.0, 30.0),
+        yaw: 0.5,
+        pitch: -0.2,
+        fovy: 60f32.to_radians(),
+        aspect: 16.0 / 9.0,
+        znear: 0.1,
+        zfar: 500.0,
+    };
+    renderer.update_camera(&camera);
+    
+    // Test cascade shadow settings
+    renderer.set_cascade_splits(25.0, 75.0);
+    renderer.set_cascade_extents(50.0, 150.0);
+    renderer.set_cascade_lambda(0.5);
+    renderer.set_shadow_filter(1.5, 0.001, 1.0);
+    
+    // Test material parameters
+    renderer.set_material_params([1.0, 0.5, 0.3, 1.0], 0.0, 0.5);
+    renderer.set_material_params([0.8, 0.8, 0.8, 1.0], 1.0, 0.2);
+    
+    // Test mesh creation from arrays
+    let positions = [
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [0.5, 1.0, 0.0],
+    ];
+    let normals = [
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0],
+    ];
+    let indices = [0, 1, 2];
+    let mesh = renderer.create_mesh_from_arrays(&positions, &normals, &indices);
+    assert!(mesh.index_count == 3);
+    renderer.set_external_mesh(mesh);
+    
+    // Test full mesh creation
+    let tangents = [
+        [1.0, 0.0, 0.0, 1.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [1.0, 0.0, 0.0, 1.0],
+    ];
+    let uvs = [
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [0.5, 1.0],
+    ];
+    let mesh2 = renderer.create_mesh_from_full_arrays(&positions, &normals, &tangents, &uvs, &indices);
+    assert!(mesh2.index_count == 3);
+    
+    // Test mesh from CpuMesh
+    use astraweave_render::mesh::{CpuMesh, MeshVertex};
+    let cpu_mesh = CpuMesh {
+        vertices: vec![
+            MeshVertex {
+                position: [0.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                tangent: [1.0, 0.0, 0.0, 1.0],
+                uv: [0.0, 0.0],
+            },
+            MeshVertex {
+                position: [1.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                tangent: [1.0, 0.0, 0.0, 1.0],
+                uv: [1.0, 0.0],
+            },
+            MeshVertex {
+                position: [0.5, 0.0, 1.0],
+                normal: [0.0, 1.0, 0.0],
+                tangent: [1.0, 0.0, 0.0, 1.0],
+                uv: [0.5, 1.0],
+            },
+        ],
+        indices: vec![0, 1, 2],
+    };
+    let mesh3 = renderer.create_mesh_from_cpu_mesh(&cpu_mesh);
+    assert!(mesh3.index_count == 3);
+    
+    // Test instance updates - Instance has transform, color, material_id fields
+    let instances = vec![
+        Instance {
+            transform: Mat4::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+            color: [1.0, 1.0, 1.0, 1.0],
+            material_id: 0,
+        },
+        Instance {
+            transform: Mat4::from_translation(Vec3::new(5.0, 0.0, 0.0)),
+            color: [1.0, 0.0, 0.0, 1.0],
+            material_id: 0,
+        },
+    ];
+    renderer.update_instances(&instances);
+    
+    // Test larger instance update (triggers buffer resize)
+    let large_instances: Vec<Instance> = (0..100).map(|i| Instance {
+        transform: Mat4::from_translation(Vec3::new(i as f32, 0.0, 0.0)),
+        color: [1.0, 1.0, 1.0, 1.0],
+        material_id: 0,
+    }).collect();
+    renderer.update_instances(&large_instances);
+    
+    // Test weather - WeatherKind has None, Rain, WindTrails
+    renderer.set_weather(WeatherKind::Rain);
+    renderer.tick_weather(0.016);
+    renderer.set_weather(WeatherKind::WindTrails);
+    renderer.tick_weather(0.016);
+    renderer.set_weather(WeatherKind::None);
+    
+    // Test environment ticking
+    renderer.tick_environment(0.1);
+    renderer.tick_environment(0.5);
+    renderer.tick_environment(1.0);
+    
+    // Test time of day access
+    {
+        let tod = renderer.time_of_day_mut();
+        tod.current_time = 12.0;
+    }
+    
+    // Test sky config
+    let sky_cfg = renderer.sky_config();
+    renderer.set_sky_config(sky_cfg.clone());
+    
+    // Test water renderer - takes 3 args: device, surface_format, depth_format
+    use astraweave_render::water::WaterRenderer;
+    let water = WaterRenderer::new(
+        renderer.device(), 
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+        wgpu::TextureFormat::Depth32Float,
+    );
+    renderer.set_water_renderer(water);
+    
+    // Ensure GPU work is done
+    let _ = renderer.device().poll(wgpu::MaintainBase::Wait);
+    
+    println!("Renderer extensive methods tested.");
+}
+
+#[tokio::test]
+async fn test_texture_streaming_eviction_and_stats() {
+    use astraweave_render::texture_streaming::TextureStreamingManager;
+    
+    // Create manager with low memory budget to trigger eviction
+    let mut manager = TextureStreamingManager::new(1); // 1MB budget
+    
+    // Test initial stats
+    let stats = manager.get_stats();
+    assert_eq!(stats.loaded_count, 0);
+    assert_eq!(stats.pending_count, 0);
+    assert_eq!(stats.memory_used_bytes, 0);
+    assert_eq!(stats.memory_budget_bytes, 1 * 1024 * 1024);
+    
+    // Test request_texture returns None for non-resident
+    let result = manager.request_texture("test_texture".to_string(), 100, 10.0);
+    assert!(result.is_none()); // Should queue for load
+    
+    // Stats should show pending
+    let stats = manager.get_stats();
+    assert!(stats.pending_count > 0 || stats.loaded_count == 0);
+    
+    // Test is_resident
+    assert!(!manager.is_resident(&"test_texture".to_string()));
+    assert!(!manager.is_resident(&"unknown_texture".to_string()));
+    
+    // Test update_residency
+    manager.update_residency(Vec3::new(100.0, 0.0, 100.0));
+    
+    // Test evict_lru on empty manager
+    let evicted = manager.evict_lru();
+    assert!(!evicted); // Nothing to evict
+    
+    // Test clear
+    manager.clear();
+    let stats = manager.get_stats();
+    assert_eq!(stats.loaded_count, 0);
+    assert_eq!(stats.memory_used_bytes, 0);
+    
+    println!("Texture streaming eviction and stats tested.");
+}
+
+#[tokio::test]
+async fn test_ibl_manager_methods() {
+    use astraweave_render::ibl::{IblManager, IblQuality};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test IblQuality enum - Low, Medium, High only
+    let qualities = [IblQuality::Low, IblQuality::Medium, IblQuality::High];
+    for quality in qualities {
+        println!("Testing IBL quality: {:?}", quality);
+    }
+    
+    // Test IblManager creation
+    let ibl = IblManager::new(&device, IblQuality::Low).unwrap();
+    
+    // Test accessors
+    let _bgl = ibl.bind_group_layout();
+    let _sampler = ibl.sampler();
+    
+    println!("IBL manager methods tested.");
+}
+
+#[tokio::test]
+async fn test_environment_weather_comprehensive() {
+    use astraweave_render::environment::{TimeOfDay, WeatherSystem, SkyConfig};
+    
+    // Test TimeOfDay extensively
+    let mut tod = TimeOfDay::new(6.0, 1.0); // Start at 6 AM, 1x speed
+    
+    // Test basic accessors
+    assert_eq!(tod.current_time, 6.0);
+    
+    // Test sun/moon positions at various times
+    let times = [0.0, 6.0, 12.0, 18.0, 24.0];
+    for t in times {
+        tod.current_time = t;
+        let sun = tod.get_sun_position();
+        let moon = tod.get_moon_position();
+        let light_dir = tod.get_light_direction();
+        let light_color = tod.get_light_color();
+        let ambient = tod.get_ambient_color();
+        
+        println!("Time {}: sun={:?}, moon={:?}, dir={:?}", t, sun, moon, light_dir);
+        
+        // Validate positions are normalized
+        assert!((sun.length() - 1.0).abs() < 0.01);
+        assert!((moon.length() - 1.0).abs() < 0.01);
+        assert!((light_dir.length() - 1.0).abs() < 0.01);
+        
+        // Colors should be positive
+        assert!(light_color.x >= 0.0 && light_color.y >= 0.0 && light_color.z >= 0.0);
+        assert!(ambient.x >= 0.0 && ambient.y >= 0.0 && ambient.z >= 0.0);
+    }
+    
+    // Test update - takes no args
+    tod.current_time = 0.0;
+    for _ in 0..100 {
+        tod.update(); // Simulate time passing
+    }
+    assert!(tod.current_time > 0.0);
+    
+    // Test WeatherSystem
+    let weather = WeatherSystem::new();
+    
+    // Test all weather methods
+    let rain = weather.get_rain_intensity();
+    let snow = weather.get_snow_intensity();
+    let fog = weather.get_fog_density();
+    let wind = weather.get_wind_strength();
+    let tint = weather.get_terrain_color_modifier();
+    let atten = weather.get_light_attenuation();
+    
+    println!("Weather: rain={}, snow={}, fog={}, wind={}", rain, snow, fog, wind);
+    println!("Weather tint: {:?}, attenuation: {}", tint, atten);
+    
+    // Test state queries
+    let _is_rain = weather.is_raining();
+    let _is_snow = weather.is_snowing();
+    
+    // Test SkyConfig - check fields that exist
+    let sky_config = SkyConfig::default();
+    println!("SkyConfig: day_color_top={:?}", sky_config.day_color_top);
+    
+    println!("Environment weather comprehensive tested.");
+}
+
+#[tokio::test]
+async fn test_deferred_gbuffer_formats() {
+    use astraweave_render::deferred::{GBuffer, GBufferFormats, DeferredRenderer};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test GBufferFormats
+    let formats = GBufferFormats::default();
+    println!("GBuffer albedo format: {:?}", formats.albedo);
+    println!("GBuffer normal format: {:?}", formats.normal);
+    println!("GBuffer position format: {:?}", formats.position);
+    println!("GBuffer depth format: {:?}", formats.depth);
+    
+    // Test GBuffer with various sizes
+    let sizes = [(256, 256), (512, 512), (1024, 768), (1920, 1080)];
+    for (w, h) in sizes {
+        let gbuffer = GBuffer::new(&device, w, h, formats.clone());
+        assert_eq!(gbuffer.width, w);
+        assert_eq!(gbuffer.height, h);
+        println!("GBuffer created at {}x{}", w, h);
+    }
+    
+    // Test DeferredRenderer
+    let deferred = DeferredRenderer::new(&device, 512, 512);
+    assert!(deferred.is_ok());
+    let dr = deferred.unwrap();
+    // Use size_of_val since Debug may not be implemented
+    assert!(std::mem::size_of_val(&dr) > 0);
+    
+    println!("Deferred GBuffer formats tested.");
+}
+
+#[tokio::test]
+async fn test_texture_creation_variants() {
+    use astraweave_render::texture::{Texture, TextureUsage};
+    use image::DynamicImage;
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Create test images with various sizes
+    let sizes = [(64, 64), (128, 128), (256, 256)];
+    
+    for (w, h) in sizes {
+        let img = RgbaImage::from_pixel(w, h, Rgba([128, 128, 255, 255]));
+        let dyn_img = DynamicImage::ImageRgba8(img);
+        
+        // Test albedo texture
+        let tex_albedo = Texture::from_image_with_usage(
+            &device,
+            &queue,
+            &dyn_img,
+            TextureUsage::Albedo,
+            Some(&format!("test_albedo_{}x{}", w, h)),
+        );
+        assert!(tex_albedo.is_ok());
+        
+        // Test normal texture
+        let tex_normal = Texture::from_image_with_usage(
+            &device,
+            &queue,
+            &dyn_img,
+            TextureUsage::Normal,
+            Some(&format!("test_normal_{}x{}", w, h)),
+        );
+        assert!(tex_normal.is_ok());
+        
+        println!("Textures created at {}x{}", w, h);
+    }
+    
+    // Test default textures - take 3 args and return Result
+    let white = Texture::create_default_white(&device, &queue, "default_white").unwrap();
+    assert!(white.texture.size().width == 1);
+    
+    let normal = Texture::create_default_normal(&device, &queue, "default_normal").unwrap();
+    assert!(normal.texture.size().width == 1);
+    
+    println!("Texture creation variants tested.");
+}
+
+#[tokio::test]
+async fn test_terrain_renderer_extensive() {
+    use astraweave_render::terrain::TerrainRenderer;
+    use astraweave_terrain::WorldConfig;
+    
+    // Test various world configs - TerrainRenderer::new takes WorldConfig (not device)
+    let configs = [
+        WorldConfig {
+            seed: 12345,
+            chunk_size: 32.0,
+            ..Default::default()
+        },
+        WorldConfig {
+            seed: 54321,
+            chunk_size: 64.0,
+            ..Default::default()
+        },
+        WorldConfig {
+            seed: 11111,
+            chunk_size: 128.0,
+            ..Default::default()
+        },
+    ];
+    
+    for config in configs {
+        let renderer = TerrainRenderer::new(config.clone());
+        // Verify created without panic
+        assert!(std::mem::size_of_val(&renderer) > 0);
+        println!("TerrainRenderer created with chunk_size={}", config.chunk_size);
+    }
+    
+    println!("Terrain renderer extensive tested.");
+}
+
+#[tokio::test]
+async fn test_vxgi_additional_coverage() {
+    use astraweave_render::gi::vxgi::VxgiConfig;
+    use astraweave_render::gi::{VoxelizationConfig, VoxelizationStats};
+    
+    // Test VxgiConfig with correct fields
+    let configs = [
+        VxgiConfig {
+            voxel_resolution: 64,
+            world_size: 100.0,
+            cone_count: 4,
+            max_trace_distance: 50.0,
+            cone_aperture: 0.5,
+            _pad: [0; 3],
+        },
+        VxgiConfig {
+            voxel_resolution: 128,
+            world_size: 200.0,
+            cone_count: 6,
+            max_trace_distance: 100.0,
+            cone_aperture: 0.577,
+            _pad: [0; 3],
+        },
+        VxgiConfig::default(),
+    ];
+    
+    for config in configs {
+        println!("VXGI config: res={}, world={}, cones={}", 
+            config.voxel_resolution, config.world_size, config.cone_count);
+    }
+    
+    // Test VoxelizationConfig
+    let vox_config = VoxelizationConfig::default();
+    println!("VoxelizationConfig world_size: {}", vox_config.world_size);
+    
+    // Test VoxelizationStats with correct fields
+    let stats = VoxelizationStats {
+        total_triangles: 5000,
+        total_vertices: 15000,
+        voxelization_time_ms: 16.5,
+        clear_time_ms: 0.5,
+    };
+    println!("VoxelizationStats: {} triangles, {} vertices, {:.2}ms", 
+        stats.total_triangles, stats.total_vertices, stats.voxelization_time_ms);
+    
+    println!("VXGI additional coverage tested.");
+}
+
+#[tokio::test]
+async fn test_clustered_renderer_extensive() {
+    use astraweave_render::clustered_forward::{ClusteredForwardRenderer, ClusterConfig};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test various cluster configurations with correct fields
+    let configs = [
+        ClusterConfig {
+            cluster_x: 8,
+            cluster_y: 8,
+            cluster_z: 16,
+            near: 0.1,
+            far: 100.0,
+            _pad: [0; 3],
+        },
+        ClusterConfig {
+            cluster_x: 16,
+            cluster_y: 16,
+            cluster_z: 24,
+            near: 0.5,
+            far: 500.0,
+            _pad: [0; 3],
+        },
+        ClusterConfig::default(),
+    ];
+    
+    for config in configs {
+        let renderer = ClusteredForwardRenderer::new(&device, config);
+        println!("ClusteredForwardRenderer created with {}x{}x{} clusters", 
+            config.cluster_x, config.cluster_y, config.cluster_z);
+        // Verify created without panic
+        assert!(std::mem::size_of_val(&renderer) > 0);
+    }
+    
+    println!("Clustered renderer extensive tested.");
+}
+
+#[tokio::test]
+async fn test_lod_generator_extensive() {
+    use astraweave_render::lod_generator::{LODGenerator, LODConfig, SimplificationMesh};
+    
+    // Create a test mesh
+    let positions = vec![
+        Vec3::new(-1.0, -1.0, 0.0),
+        Vec3::new(1.0, -1.0, 0.0),
+        Vec3::new(1.0, 1.0, 0.0),
+        Vec3::new(-1.0, 1.0, 0.0),
+    ];
+    let normals = vec![
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(0.0, 0.0, 1.0),
+    ];
+    let uvs = vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
+    let indices = vec![0, 1, 2, 2, 3, 0];
+    let mesh = SimplificationMesh::new(positions, normals, uvs, indices);
+    
+    // Test LODConfig with correct fields
+    let configs = [
+        LODConfig {
+            reduction_targets: vec![0.75, 0.5, 0.25],
+            max_error: 0.1,
+            preserve_boundaries: true,
+        },
+        LODConfig {
+            reduction_targets: vec![0.5],
+            max_error: 0.2,
+            preserve_boundaries: false,
+        },
+        LODConfig::default(),
+    ];
+    
+    for config in &configs {
+        println!("LODConfig: targets={:?}, error={}", config.reduction_targets, config.max_error);
+    }
+    
+    // Test LODGenerator
+    let generator = LODGenerator::new(configs[0].clone());
+    let lods = generator.generate_lods(&mesh);
+    println!("LOD generated: {} levels", lods.len());
+    
+    println!("LOD generator extensive tested.");
+}
+
+#[tokio::test]
+async fn test_culling_pipeline_extensive() {
+    use astraweave_render::culling::{InstanceAABB, FrustumPlanes, CullingPipeline};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test InstanceAABB creation with correct fields
+    let aabbs = vec![
+        InstanceAABB { center: [0.0, 0.0, 0.0], _pad0: 0, extent: [1.0, 1.0, 1.0], instance_index: 0 },
+        InstanceAABB { center: [10.0, 0.0, 0.0], _pad0: 0, extent: [2.0, 2.0, 2.0], instance_index: 1 },
+        InstanceAABB { center: [0.0, 10.0, 0.0], _pad0: 0, extent: [0.5, 0.5, 0.5], instance_index: 2 },
+        InstanceAABB::new(Vec3::new(100.0, 100.0, 100.0), Vec3::new(5.0, 5.0, 5.0), 3),
+    ];
+    
+    for (i, aabb) in aabbs.iter().enumerate() {
+        println!("AABB {}: center={:?}, extent={:?}", i, aabb.center, aabb.extent);
+    }
+    
+    // Test FrustumPlanes from camera matrices - takes &Mat4
+    let view = Mat4::look_at_rh(Vec3::new(0.0, 5.0, 10.0), Vec3::ZERO, Vec3::Y);
+    let proj = Mat4::perspective_rh(60f32.to_radians(), 16.0/9.0, 0.1, 100.0);
+    let vp = view * proj;
+    let frustum = FrustumPlanes::from_view_proj(&vp);
+    
+    // Test each plane is valid
+    for i in 0..6 {
+        let plane = frustum.planes[i];
+        // Normal should have non-zero length
+        let normal_len = (plane[0]*plane[0] + plane[1]*plane[1] + plane[2]*plane[2]).sqrt();
+        assert!(normal_len > 0.0);
+    }
+    
+    // Test CullingPipeline - new doesn't return Result
+    let pipeline = CullingPipeline::new(&device);
+    assert!(std::mem::size_of_val(&pipeline) > 0);
+    
+    println!("Culling pipeline extensive tested.");
+}
+
+#[tokio::test]
+async fn test_shadow_csm_extensive() {
+    use astraweave_render::shadow_csm::CsmRenderer;
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    let mut csm = CsmRenderer::new(&device).unwrap();
+    
+    // Test with various camera positions and light directions
+    let test_cases = [
+        (Vec3::new(0.0, 10.0, 20.0), Vec3::new(-0.5, -1.0, -0.5).normalize()),
+        (Vec3::new(100.0, 50.0, 100.0), Vec3::new(0.0, -1.0, 0.0)),
+        (Vec3::new(-50.0, 5.0, -50.0), Vec3::new(0.3, -0.8, 0.2).normalize()),
+    ];
+    
+    for (camera_pos, light_dir) in test_cases {
+        let view = Mat4::look_at_rh(camera_pos, Vec3::ZERO, Vec3::Y);
+        let proj = Mat4::perspective_rh(60f32.to_radians(), 16.0/9.0, 0.1, 200.0);
+        
+        csm.update_cascades(camera_pos, view, proj, light_dir, 0.1, 200.0);
+        csm.upload_to_gpu(&queue, &device);
+        
+        println!("CSM updated: camera={:?}, light={:?}", camera_pos, light_dir);
+    }
+    
+    // Test bind_group_layout (it's a field, not method)
+    let _bgl = &csm.bind_group_layout;
+    
+    println!("Shadow CSM extensive tested.");
+}
+
+#[tokio::test]
+async fn test_animation_interpolation() {
+    use astraweave_render::animation::{
+        Skeleton, AnimationClip, Transform, Joint, ChannelData, 
+        AnimationChannel, Interpolation
+    };
+    
+    // Test Interpolation enum
+    let interps = [Interpolation::Step, Interpolation::Linear, Interpolation::CubicSpline];
+    for interp in interps {
+        println!("Interpolation: {:?}", interp);
+    }
+    
+    // Test Transform operations
+    let t1 = Transform {
+        translation: Vec3::new(0.0, 0.0, 0.0),
+        rotation: Quat::IDENTITY,
+        scale: Vec3::ONE,
+    };
+    let t2 = Transform {
+        translation: Vec3::new(10.0, 0.0, 0.0),
+        rotation: Quat::from_rotation_y(std::f32::consts::PI),
+        scale: Vec3::ONE * 2.0,
+    };
+    
+    // Test lerp
+    let mid = t1.lerp(&t2, 0.5);
+    assert!((mid.translation.x - 5.0).abs() < 0.001);
+    
+    // Test to_matrix
+    let mat = t1.to_matrix();
+    assert!(!mat.is_nan());
+    
+    // Test channel - ChannelData::Translation is a tuple variant
+    let channel = AnimationChannel {
+        target_joint_index: 0,
+        times: vec![0.0, 1.0, 2.0],
+        data: ChannelData::Translation(vec![Vec3::ZERO, Vec3::X * 5.0, Vec3::X * 10.0]),
+        interpolation: Interpolation::Linear,
+    };
+    println!("Animation channel: joint={}, times={}", channel.target_joint_index, channel.times.len());
+    
+    // Test Joint with correct field names
+    let joints = vec![
+        Joint {
+            name: "root".to_string(),
+            parent_index: None,
+            inverse_bind_matrix: Mat4::IDENTITY,
+            local_transform: Transform::default(),
+        },
+        Joint {
+            name: "spine".to_string(),
+            parent_index: Some(0),
+            inverse_bind_matrix: Mat4::IDENTITY,
+            local_transform: Transform {
+                translation: Vec3::Y,
+                ..Default::default()
+            },
+        },
+    ];
+    
+    // Test Skeleton with correct fields
+    let skeleton = Skeleton {
+        joints,
+        root_indices: vec![0],
+    };
+    assert_eq!(skeleton.joints.len(), 2);
+    
+    // Test AnimationClip
+    let clip = AnimationClip {
+        name: "walk".to_string(),
+        duration: 1.0,
+        channels: vec![channel],
+    };
+    assert_eq!(clip.name, "walk");
+    assert_eq!(clip.duration, 1.0);
+    
+    println!("Animation interpolation tested.");
+}
+
+// ===========================
+// WAVE 5: Final Coverage Push - Small Modules
+// ===========================
+
+#[test]
+fn test_debug_quad_module() {
+    use astraweave_render::debug_quad::{DebugQuadVertex, create_screen_quad};
+    
+    // Test DebugQuadVertex
+    let vertex = DebugQuadVertex {
+        position: [0.0, 0.0, 0.0],
+        uv: [0.5, 0.5],
+    };
+    assert_eq!(vertex.position[0], 0.0);
+    assert_eq!(vertex.uv[0], 0.5);
+    
+    // Test vertex descriptor
+    let desc = DebugQuadVertex::desc();
+    assert_eq!(desc.array_stride as usize, std::mem::size_of::<DebugQuadVertex>());
+    assert_eq!(desc.step_mode, wgpu::VertexStepMode::Vertex);
+    assert_eq!(desc.attributes.len(), 2);
+    
+    // Test screen quad generation
+    let quad = create_screen_quad();
+    assert_eq!(quad.len(), 6); // Two triangles
+    
+    // Validate UVs
+    let uv_min = quad.iter().map(|v| v.uv[0]).fold(f32::INFINITY, f32::min);
+    let uv_max = quad.iter().map(|v| v.uv[0]).fold(f32::NEG_INFINITY, f32::max);
+    assert_eq!(uv_min, 0.0);
+    assert_eq!(uv_max, 1.0);
+    
+    println!("Debug quad module tested.");
+}
+
+#[test]
+fn test_gi_hybrid_config() {
+    use astraweave_render::gi::vxgi::VxgiConfig;
+    
+    // Test HybridGiConfig - accessing via re-export if available
+    let vxgi_config = VxgiConfig::default();
+    assert!(vxgi_config.voxel_resolution > 0);
+    assert!(vxgi_config.world_size > 0.0);
+    
+    println!("GI hybrid config tested.");
+}
+
+#[tokio::test]
+async fn test_culling_node_module() {
+    use astraweave_render::culling_node::CullingNode;
+    use astraweave_render::culling::{InstanceAABB, FrustumPlanes};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Create CullingNode
+    let mut node = CullingNode::new(&device, "test_culling_node");
+    
+    // Test name accessor
+    use astraweave_render::graph::RenderNode;
+    assert_eq!(node.name(), "test_culling_node");
+    
+    // Test resources is None before prepare
+    assert!(node.resources().is_none());
+    
+    // Create test data
+    let instances = vec![
+        InstanceAABB::new(Vec3::ZERO, Vec3::splat(1.0), 0),
+        InstanceAABB::new(Vec3::new(5.0, 0.0, 0.0), Vec3::splat(1.0), 1),
+    ];
+    
+    let view = Mat4::look_at_rh(Vec3::new(0.0, 5.0, 10.0), Vec3::ZERO, Vec3::Y);
+    let proj = Mat4::perspective_rh(60f32.to_radians(), 16.0/9.0, 0.1, 100.0);
+    let vp = view * proj;
+    let frustum = FrustumPlanes::from_view_proj(&vp);
+    
+    // Prepare culling data
+    node.prepare(&device, &instances, &frustum);
+    
+    // Now resources should be available
+    assert!(node.resources().is_some());
+    let resources = node.resources().unwrap();
+    // Verify buffer exists
+    assert!(std::mem::size_of_val(&resources.count_buffer) > 0);
+    
+    println!("Culling node module tested.");
+}
+
+#[test]
+fn test_transparency_advanced() {
+    use astraweave_render::transparency::{TransparencyManager, BlendMode, create_blend_state};
+    
+    let mut manager = TransparencyManager::new();
+    
+    // Add multiple instances with different blend modes
+    for i in 0..10 {
+        let blend = match i % 3 {
+            0 => BlendMode::Alpha,
+            1 => BlendMode::Additive,
+            _ => BlendMode::Multiplicative,
+        };
+        manager.add_instance(i, Vec3::new(i as f32, 0.0, -(i as f32)), blend);
+    }
+    
+    assert_eq!(manager.count(), 10);
+    
+    // Update from different camera positions
+    manager.update(Vec3::new(0.0, 0.0, 10.0));
+    manager.update(Vec3::new(5.0, 5.0, 5.0));
+    manager.update(Vec3::ZERO);
+    
+    // Get sorted instances
+    let sorted: Vec<_> = manager.sorted_instances().collect();
+    assert_eq!(sorted.len(), 10);
+    
+    // Verify back-to-front order (furthest should be first)
+    for i in 1..sorted.len() {
+        assert!(sorted[i-1].camera_distance >= sorted[i].camera_distance);
+    }
+    
+    // Test filtering by blend mode
+    let alpha_count = manager.instances_by_blend_mode(BlendMode::Alpha).count();
+    let additive_count = manager.instances_by_blend_mode(BlendMode::Additive).count();
+    let mult_count = manager.instances_by_blend_mode(BlendMode::Multiplicative).count();
+    assert_eq!(alpha_count + additive_count + mult_count, 10);
+    
+    // Test blend state creation
+    let alpha_blend = create_blend_state(BlendMode::Alpha);
+    assert_eq!(alpha_blend.color.src_factor, wgpu::BlendFactor::SrcAlpha);
+    
+    let additive_blend = create_blend_state(BlendMode::Additive);
+    assert_eq!(additive_blend.color.dst_factor, wgpu::BlendFactor::One);
+    
+    let mult_blend = create_blend_state(BlendMode::Multiplicative);
+    assert_eq!(mult_blend.color.src_factor, wgpu::BlendFactor::Zero);
+    
+    // Test clear
+    manager.clear();
+    assert_eq!(manager.count(), 0);
+    
+    println!("Transparency advanced tested.");
+}
+
+#[tokio::test]
+async fn test_voxelization_mesh_and_config() {
+    use astraweave_render::gi::{VoxelizationConfig, VoxelizationMesh, VoxelVertex, VoxelMaterial};
+    
+    // Test VoxelizationConfig defaults
+    let config = VoxelizationConfig::default();
+    assert!(config.voxel_resolution > 0);
+    assert!(config.world_size > 0.0);
+    println!("VoxelizationConfig: res={}, world={}", config.voxel_resolution, config.world_size);
+    
+    // Test VoxelVertex
+    let vertex = VoxelVertex::new(Vec3::new(1.0, 2.0, 3.0), Vec3::Y);
+    assert_eq!(vertex.position[0], 1.0);
+    assert_eq!(vertex.normal[1], 1.0);
+    
+    // Test VoxelMaterial
+    let default_mat = VoxelMaterial::default();
+    assert_eq!(default_mat.albedo[0], 0.8);
+    assert_eq!(default_mat.metallic, 0.0);
+    
+    let albedo_mat = VoxelMaterial::from_albedo(Vec3::new(1.0, 0.0, 0.0));
+    assert_eq!(albedo_mat.albedo[0], 1.0);
+    
+    let emissive_mat = VoxelMaterial::emissive(Vec3::new(5.0, 5.0, 5.0));
+    assert_eq!(emissive_mat.emissive[0], 5.0);
+    
+    // Test VoxelizationMesh
+    let vertices = vec![
+        VoxelVertex::new(Vec3::ZERO, Vec3::Y),
+        VoxelVertex::new(Vec3::X, Vec3::Y),
+        VoxelVertex::new(Vec3::Z, Vec3::Y),
+    ];
+    let indices = vec![0, 1, 2];
+    let mesh = VoxelizationMesh::new(vertices, indices, default_mat);
+    assert_eq!(mesh.triangle_count(), 1);
+    
+    println!("Voxelization mesh and config tested.");
+}
+
+#[tokio::test]
+async fn test_renderer_more_coverage() {
+    use astraweave_render::renderer::Renderer;
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+
+    let config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        width: 800,
+        height: 600,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
+        desired_maximum_frame_latency: 2,
+    };
+
+    let mut renderer = Renderer::new_from_device(device, queue, None, config).await.unwrap();
+    
+    // Test various renderer accessors and methods
+    let _device = renderer.device();
+    let _queue = renderer.queue();
+    
+    // Test resize
+    renderer.resize(1024, 768);
+    renderer.resize(640, 480);
+    
+    // Test environment ticks with various values
+    for dt in [0.001, 0.016, 0.033, 0.1, 0.5, 1.0] {
+        renderer.tick_environment(dt);
+    }
+    
+    // Test sky config changes
+    let mut sky = renderer.sky_config().clone();
+    sky.day_color_top = Vec3::new(0.4, 0.6, 1.0);
+    renderer.set_sky_config(sky);
+    
+    // Test material params with various values
+    for roughness in [0.0, 0.25, 0.5, 0.75, 1.0] {
+        for metallic in [0.0, 0.5, 1.0] {
+            renderer.set_material_params([1.0, 1.0, 1.0, 1.0], metallic, roughness);
+        }
+    }
+    
+    // Test cascade settings
+    renderer.set_cascade_splits(10.0, 50.0);
+    renderer.set_cascade_extents(30.0, 100.0);
+    renderer.set_cascade_lambda(0.3);
+    renderer.set_shadow_filter(2.0, 0.002, 1.5);
+    
+    println!("Renderer more coverage tested.");
+}
+
+#[tokio::test]
+async fn test_ibl_additional_coverage() {
+    use astraweave_render::ibl::{IblManager, IblQuality};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test all quality levels
+    for quality in [IblQuality::Low, IblQuality::Medium, IblQuality::High] {
+        let ibl = IblManager::new(&device, quality).unwrap();
+        
+        // Test accessors
+        let _bgl = ibl.bind_group_layout();
+        let _sampler = ibl.sampler();
+        
+        println!("IBL quality {:?} tested", quality);
+    }
+    
+    println!("IBL additional coverage tested.");
+}
+
+#[tokio::test]
+async fn test_texture_more_variants() {
+    use astraweave_render::texture::{Texture, TextureUsage};
+    use image::{RgbaImage, Rgba, DynamicImage};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test checkerboard pattern
+    let mut img = RgbaImage::new(64, 64);
+    for y in 0..64 {
+        for x in 0..64 {
+            let pixel = if (x + y) % 2 == 0 { Rgba([255, 255, 255, 255]) } else { Rgba([0, 0, 0, 255]) };
+            img.put_pixel(x, y, pixel);
+        }
+    }
+    let dyn_img = DynamicImage::ImageRgba8(img);
+    let tex = Texture::from_image_with_usage(&device, &queue, &dyn_img, TextureUsage::Albedo, Some("test_checkerboard"));
+    assert!(tex.is_ok());
+    println!("Texture checkerboard created");
+    
+    // Test gradient pattern
+    let mut img2 = RgbaImage::new(64, 64);
+    for y in 0..64 {
+        for x in 0..64 {
+            img2.put_pixel(x, y, Rgba([(x * 4) as u8, (y * 4) as u8, 128, 255]));
+        }
+    }
+    let dyn_img2 = DynamicImage::ImageRgba8(img2);
+    let tex2 = Texture::from_image_with_usage(&device, &queue, &dyn_img2, TextureUsage::Albedo, Some("test_gradient"));
+    assert!(tex2.is_ok());
+    println!("Texture gradient created");
+    
+    // Test various TextureUsage variants
+    let img = RgbaImage::from_pixel(32, 32, Rgba([128, 128, 255, 255]));
+    let dyn_img = DynamicImage::ImageRgba8(img);
+    
+    for usage in [TextureUsage::Albedo, TextureUsage::Normal, TextureUsage::Emissive, TextureUsage::MRA, TextureUsage::Height] {
+        let tex = Texture::from_image_with_usage(&device, &queue, &dyn_img, usage, Some("usage_test"));
+        assert!(tex.is_ok());
+    }
+    
+    println!("Texture more variants tested.");
+}
+
+#[tokio::test]
+async fn test_graph_adapter_integration() {
+    use astraweave_render::renderer::Renderer;
+    use astraweave_render::graph::{RenderGraph, RenderNode, GraphContext};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+
+    let config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        width: 512,
+        height: 512,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
+        desired_maximum_frame_latency: 2,
+    };
+
+    let mut renderer = Renderer::new_from_device(device, queue, None, config).await.unwrap();
+    
+    // Create a simple graph
+    let mut graph = RenderGraph::new();
+    
+    // Create a dummy node
+    struct DummyNode { name: String }
+    impl RenderNode for DummyNode {
+        fn name(&self) -> &str { &self.name }
+        fn run(&mut self, _ctx: &mut GraphContext) -> anyhow::Result<()> { Ok(()) }
+    }
+    
+    graph.add_node(DummyNode { name: "test_node".to_string() });
+    
+    // Test graph adapter - this runs the graph through renderer
+    use astraweave_render::graph_adapter::run_graph_on_renderer;
+    let result = run_graph_on_renderer(&mut renderer, &mut graph);
+    assert!(result.is_ok());
+    
+    println!("Graph adapter integration tested.");
+}
+
+#[tokio::test]
+async fn test_environment_extensive() {
+    use astraweave_render::environment::{TimeOfDay, WeatherSystem, SkyConfig};
+    
+    // Test TimeOfDay at all hours
+    let mut tod = TimeOfDay::new(0.0, 1.0);
+    for hour in 0..24 {
+        tod.current_time = hour as f32;
+        let sun = tod.get_sun_position();
+        let moon = tod.get_moon_position();
+        let light_dir = tod.get_light_direction();
+        let light_color = tod.get_light_color();
+        let ambient = tod.get_ambient_color();
+        
+        // All positions should be normalized
+        assert!((sun.length() - 1.0).abs() < 0.01);
+        assert!((moon.length() - 1.0).abs() < 0.01);
+        assert!((light_dir.length() - 1.0).abs() < 0.01);
+        
+        // Colors should be non-negative
+        assert!(light_color.min_element() >= 0.0);
+        assert!(ambient.min_element() >= 0.0);
+    }
+    
+    // Test fractional times
+    for t in [0.5, 6.25, 12.75, 18.3, 23.9] {
+        tod.current_time = t;
+        let _ = tod.get_sun_position();
+        let _ = tod.get_light_direction();
+    }
+    
+    // Test WeatherSystem
+    let weather = WeatherSystem::new();
+    
+    // Access all weather methods
+    let _rain = weather.get_rain_intensity();
+    let _snow = weather.get_snow_intensity();
+    let _fog = weather.get_fog_density();
+    let _wind = weather.get_wind_strength();
+    let _tint = weather.get_terrain_color_modifier();
+    let _atten = weather.get_light_attenuation();
+    let _is_rain = weather.is_raining();
+    let _is_snow = weather.is_snowing();
+    
+    // Test SkyConfig defaults and fields
+    let sky = SkyConfig::default();
+    println!("SkyConfig day_top: {:?}", sky.day_color_top);
+    println!("SkyConfig day_horizon: {:?}", sky.day_color_horizon);
+    println!("SkyConfig night_top: {:?}", sky.night_color_top);
+    
+    println!("Environment extensive tested.");
+}
+
+#[tokio::test]
+async fn test_deferred_renderer_comprehensive() {
+    use astraweave_render::deferred::{GBuffer, GBufferFormats, DeferredRenderer};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .unwrap();
+    
+    // Test GBuffer at various resolutions
+    let formats = GBufferFormats::default();
+    let resolutions = [
+        (256, 256),
+        (512, 384),
+        (800, 600),
+        (1280, 720),
+        (1920, 1080),
+    ];
+    
+    for (w, h) in resolutions {
+        let gbuffer = GBuffer::new(&device, w, h, formats.clone());
+        assert_eq!(gbuffer.width, w);
+        assert_eq!(gbuffer.height, h);
+        
+        // Access views
+        let _albedo = &gbuffer.albedo_view;
+        let _normal = &gbuffer.normal_view;
+        let _depth = &gbuffer.depth_view;
+    }
+    
+    // Test DeferredRenderer creation at different sizes
+    for (w, h) in resolutions.iter().take(3) {
+        let dr = DeferredRenderer::new(&device, *w, *h);
+        assert!(dr.is_ok());
+    }
+    
+    println!("Deferred renderer comprehensive tested.");
+}

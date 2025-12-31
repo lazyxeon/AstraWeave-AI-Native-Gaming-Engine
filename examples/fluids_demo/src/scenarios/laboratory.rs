@@ -2,7 +2,7 @@ use super::FluidScenario;
 use astraweave_fluids::renderer::CameraUniform;
 use astraweave_fluids::{DynamicObject, FluidRenderer, FluidSystem};
 use astraweave_physics::{Layers, PhysicsWorld};
-use glam::{Mat4, Vec3};
+use glam::Vec3;
 
 pub struct LaboratoryScenario {
     name: String,
