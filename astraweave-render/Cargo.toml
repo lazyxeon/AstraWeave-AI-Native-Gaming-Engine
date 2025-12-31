@@ -83,3 +83,23 @@ required-features = ["textures"]
 [[bench]]
 name = "cluster_gpu_vs_cpu"
 harness = false
+
+[[bench]]
+name = "post_processing"
+harness = false
+
+[[bench]]
+name = "phase2_benches"
+harness = false
+
+[[bench]]
+name = "ibl_deferred"
+harness = false
+
+[[bench]]
+name = "gpu_particles_water"
+harness = false
+
+[[bench]]
+name = "ssr_decals_weather"
+harness = false
