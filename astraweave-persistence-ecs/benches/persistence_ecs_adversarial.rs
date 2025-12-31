@@ -9,7 +9,7 @@
 //! - Corruption detection and recovery
 
 use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+    criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;
@@ -314,6 +314,7 @@ impl SerializedEntity {
         bytes
     }
 
+    #[allow(dead_code)]
     fn byte_size(&self) -> usize {
         8 + 4 + self.components.iter().map(|(_, d)| 4 + 4 + d.len()).sum::<usize>()
     }
@@ -436,6 +437,7 @@ impl SnapshotDelta {
         bytes
     }
 
+    #[allow(dead_code)]
     fn byte_size(&self) -> usize {
         self.serialize().len()
     }
@@ -701,7 +703,7 @@ fn bench_incremental_delta(c: &mut Criterion) {
     let mut group = c.benchmark_group("incremental_delta");
 
     // Create base state
-    let base_entities: Vec<SerializedEntity> = (0..1000)
+    let _base_entities: Vec<SerializedEntity> = (0..1000)
         .map(|i| {
             let mut entity = SerializedEntity::new(i);
             entity.add_component(0, Transform::new(i as f32, 0.0, 0.0).serialize());

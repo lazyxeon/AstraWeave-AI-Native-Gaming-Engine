@@ -58,7 +58,8 @@ impl FluidScenario for LaboratoryScenario {
                 color: [0.3, 0.6, 1.0, 1.0], // Azure blue water
                 lambda: 0.0,
                 density: 0.0,
-                _pad: [0.0; 2],
+                phase: 0,           // 0 = water
+                temperature: 293.0, // Room temperature in Kelvin
             });
         }
 

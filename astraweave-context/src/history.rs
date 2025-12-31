@@ -800,7 +800,7 @@ mod tests {
         config.sliding_window_size = 4;
         config.overflow_strategy = OverflowStrategy::TruncateMiddle;
 
-        let window_size = config.sliding_window_size;
+        let _window_size = config.sliding_window_size;
         let history = ConversationHistory::new(config);
 
         // Add enough messages to trigger middle truncation
@@ -832,8 +832,8 @@ mod tests {
         config.overflow_strategy = OverflowStrategy::Hybrid;
         config.enable_summarization = false; // Disable summarization for this test
 
-        let max_tokens = config.max_tokens;
-        let window_size = config.sliding_window_size;
+        let _max_tokens = config.max_tokens;
+        let _window_size = config.sliding_window_size;
         let history = ConversationHistory::new(config);
 
         // Add messages to exceed limits

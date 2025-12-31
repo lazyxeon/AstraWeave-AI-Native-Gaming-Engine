@@ -4,9 +4,10 @@
 use astraweave_render::instancing::{Instance, InstanceManager, InstancePatternBuilder};
 use astraweave_render::lod_generator::{LODConfig, LODGenerator, SimplificationMesh};
 use astraweave_render::vertex_compression::{
-    CompressedVertex, HalfFloatEncoder, OctahedralEncoder, VertexCompressor,
+    HalfFloatEncoder, OctahedralEncoder, VertexCompressor,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::hint::black_box;
 use glam::{Quat, Vec2, Vec3};
 
 // ============================================================================
@@ -342,7 +343,7 @@ fn bench_full_optimization_pipeline(c: &mut Criterion) {
     group.sample_size(10);
 
     let mesh = create_test_sphere(16);
-    let vertex_count = mesh.vertex_count();
+    let _vertex_count = mesh.vertex_count();
 
     group.bench_function("compress_generate_lods_instance", |b| {
         b.iter(|| {

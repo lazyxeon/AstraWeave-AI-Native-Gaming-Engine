@@ -1,9 +1,7 @@
-use anyhow::Result;
 use astraweave_context::{
-    ContextWindow, ContextWindowConfig, WindowType, AttentionConfig, Role, Message,
+    ContextWindow, ContextWindowConfig, WindowType, Role, Message,
     MultiAgentContextManager, RoutingConfig, RoutingRule
 };
-use std::collections::HashMap;
 
 #[test]
 fn test_attention_weights() {
