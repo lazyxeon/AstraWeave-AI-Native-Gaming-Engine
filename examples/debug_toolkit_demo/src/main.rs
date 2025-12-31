@@ -277,6 +277,7 @@ impl ApplicationHandler for DemoApp {
                     let width = config.width;
                     let height = config.height;
 
+                    if let Some(surface) = surface {
                     if let Ok(frame) = surface.get_current_texture() {
                         let view = frame
                             .texture
@@ -370,6 +371,7 @@ impl ApplicationHandler for DemoApp {
 
                         queue.submit(Some(encoder.finish()));
                         frame.present();
+                    }
                     }
 
                     // Update system render time

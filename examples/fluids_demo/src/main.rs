@@ -457,7 +457,6 @@ impl State {
                     ui.label(format!("Time: {:.1}s", elapsed));
                     ui.label(format!("Particles: {}", self.fluid_system.particle_count));
                     ui.label(format!("Active: {}", self.fluid_system.active_count));
-                    ui.label(format!("LOD: {:?}", self.lod_manager.current_lod()));
 
                     ui.separator();
                     ui.label("Temperature Enabled: ✓");
@@ -506,8 +505,10 @@ impl State {
                 depth_stencil_attachment: None,
                 ..Default::default()
             });
+            let rpass_static: &mut wgpu::RenderPass<'static> =
+                unsafe { std::mem::transmute(&mut rpass) };
             self.egui_renderer
-                .render(&mut rpass, &paint_jobs, &screen_descriptor);
+                .render(rpass_static, &paint_jobs, &screen_descriptor);
         }
 
         for id in &full_output.textures_delta.free {
