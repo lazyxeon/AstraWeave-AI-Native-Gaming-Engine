@@ -832,7 +832,7 @@ mod tests {
         config.overflow_strategy = OverflowStrategy::Hybrid;
         config.enable_summarization = false; // Disable summarization for this test
 
-        let _max_tokens = config.max_tokens;
+        let max_tokens = config.max_tokens;
         let _window_size = config.sliding_window_size;
         let history = ConversationHistory::new(config);
 
