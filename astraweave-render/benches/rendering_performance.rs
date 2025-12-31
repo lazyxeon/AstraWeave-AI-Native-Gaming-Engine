@@ -2,7 +2,8 @@
 //!
 //! Frame-time budgets and GPU performance benchmarks to detect regressions.
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use std::time::Duration;
 
 fn bench_frame_time_budget(c: &mut Criterion) {

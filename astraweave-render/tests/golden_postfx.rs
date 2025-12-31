@@ -334,7 +334,7 @@ fn golden_postfx_compose_matches_cpu() {
     });
     enc.copy_texture_to_buffer(
         target.as_image_copy(),
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &buf,
             layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,

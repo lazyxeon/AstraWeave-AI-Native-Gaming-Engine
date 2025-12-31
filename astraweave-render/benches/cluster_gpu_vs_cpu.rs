@@ -13,7 +13,8 @@
 // - CPU benchmarks are deterministic and comparable across runs
 
 use astraweave_render::clustered::{bin_lights_cpu, ClusterDims, CpuLight};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 
 #[cfg(feature = "megalights")]
 use astraweave_render::clustered_megalights::{GpuLight, MegaLightsRenderer};
