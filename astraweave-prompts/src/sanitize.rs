@@ -59,9 +59,10 @@ fn get_injection_patterns() -> &'static Vec<Regex> {
     INJECTION_PATTERNS.get_or_init(|| {
         vec![
             // Direct instruction override attempts
-            Regex::new(r"(?i)ignore\s+(previous|all|above|prior)\s+(instructions|prompts|directions|commands)").unwrap(),
-            Regex::new(r"(?i)disregard\s+(previous|all|above|prior)\s+(instructions|prompts|directions|commands)").unwrap(),
-            Regex::new(r"(?i)forget\s+(previous|all|above|prior)\s+(instructions|prompts|directions|commands)").unwrap(),
+            // Match "ignore (all|previous|above|prior)? ... (instructions|prompts|...)"
+            Regex::new(r"(?i)ignore\s+((all|previous|above|prior)\s+)*(instructions|prompts|directions|commands)").unwrap(),
+            Regex::new(r"(?i)disregard\s+((all|previous|above|prior)\s+)*(instructions|prompts|directions|commands)").unwrap(),
+            Regex::new(r"(?i)forget\s+((all|previous|above|prior)\s+)*(instructions|prompts|directions|commands)").unwrap(),
             
             // Role manipulation
             Regex::new(r"(?i)you\s+are\s+now\s+(a|an)\s+").unwrap(),
@@ -85,25 +86,17 @@ fn get_injection_patterns() -> &'static Vec<Regex> {
             Regex::new(r"(?i)respond\s+only\s+with").unwrap(),
             Regex::new(r"(?i)only\s+output").unwrap(),
             
-            // Template/variable injection attempts
-            Regex::new(r"\{\{\s*[^}]*\}\}").unwrap(), // Handlebars syntax
-            Regex::new(r"\$\{\s*[^}]*\}").unwrap(),   // Template literal syntax
-            Regex::new(r"<%.*?%>").unwrap(),           // ERB/JSP syntax
-            
-            // Code injection attempts
+            // Code injection attempts (XSS)
             Regex::new(r"(?i)<script[^>]*>").unwrap(),
             Regex::new(r"(?i)javascript:").unwrap(),
             Regex::new(r"(?i)on(load|error|click|mouse)=").unwrap(),
             
             // SQL-style injection
-            Regex::new(r"(?i)(union|select|insert|update|delete|drop|create)\s+(all\s+)?from").unwrap(),
+            Regex::new(r"(?i)(union|select|insert|update|delete|drop|create)\s+.{0,30}?\s*from").unwrap(),
             
             // Path traversal
             Regex::new(r"\.\./").unwrap(),
             Regex::new(r"\.\\.").unwrap(),
-            
-            // Null bytes and other control characters
-            Regex::new(r"\x00").unwrap(),
             
             // Excessive repetition (potential DoS) - check for same char repeated 100+ times
             Regex::new(r"a{100,}|b{100,}|c{100,}|d{100,}|e{100,}|f{100,}|g{100,}|h{100,}|i{100,}|j{100,}|k{100,}|l{100,}|m{100,}|n{100,}|o{100,}|p{100,}|q{100,}|r{100,}|s{100,}|t{100,}|u{100,}|v{100,}|w{100,}|x{100,}|y{100,}|z{100,}|A{100,}|B{100,}|C{100,}|D{100,}|E{100,}|F{100,}|G{100,}|H{100,}|I{100,}|J{100,}|K{100,}|L{100,}|M{100,}|N{100,}|O{100,}|P{100,}|Q{100,}|R{100,}|S{100,}|T{100,}|U{100,}|V{100,}|W{100,}|X{100,}|Y{100,}|Z{100,}| {100,}|0{100,}|1{100,}|2{100,}|3{100,}|4{100,}|5{100,}|6{100,}|7{100,}|8{100,}|9{100,}").unwrap(),
@@ -390,9 +383,12 @@ mod tests {
         let config = SanitizationConfig::default();
         let input = "Hello {{user_name}}!";
         
-        // Should block template injection attempts
+        // Template syntax should be escaped, not blocked
         let result = sanitize_input(input, TrustLevel::User, &config);
-        assert!(result.is_err(), "Should block template syntax in user input");
+        assert!(result.is_ok(), "Template syntax should be escaped, not blocked");
+        let sanitized = result.unwrap();
+        assert!(!sanitized.contains("{{"), "Template syntax should be escaped");
+        assert!(sanitized.contains("&#123;&#123;"), "Should contain escaped braces");
     }
 
     #[test]
@@ -453,6 +449,8 @@ mod tests {
 
     #[test]
     fn test_detect_template_injection() {
+        // Template syntax is handled by escaping, not by pattern detection
+        // This test verifies that template syntax does not trigger suspicious pattern detection
         let inputs = vec![
             "{{malicious_code}}",
             "${evil_var}",
@@ -460,7 +458,8 @@ mod tests {
         ];
         
         for input in inputs {
-            assert!(contains_suspicious_patterns(input), "Failed to detect: {}", input);
+            assert!(!contains_suspicious_patterns(input), 
+                "Template syntax should not trigger pattern detection (escaped instead): {}", input);
         }
     }
 

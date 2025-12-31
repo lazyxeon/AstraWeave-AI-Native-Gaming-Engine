@@ -348,6 +348,8 @@ fn test_admin_mode_detection() {
 
 #[test]
 fn test_handlebars_syntax_detection() {
+    // Template syntax is now escaped (not blocked) by the sanitizer
+    // These patterns should NOT trigger pattern detection
     let patterns = vec![
         "{{user_input}}",
         "{{ password }}",
@@ -357,14 +359,16 @@ fn test_handlebars_syntax_detection() {
     
     for pattern in patterns {
         assert!(
-            contains_suspicious_patterns(pattern),
-            "Failed to detect handlebars: {}", pattern
+            !contains_suspicious_patterns(pattern),
+            "Template syntax should not trigger pattern detection (escaped instead): {}", pattern
         );
     }
 }
 
 #[test]
 fn test_template_literal_detection() {
+    // Template literal syntax is now escaped (not blocked) by the sanitizer
+    // These patterns should NOT trigger pattern detection
     let patterns = vec![
         "${variable}",
         "${ password }",
@@ -373,14 +377,16 @@ fn test_template_literal_detection() {
     
     for pattern in patterns {
         assert!(
-            contains_suspicious_patterns(pattern),
-            "Failed to detect template literal: {}", pattern
+            !contains_suspicious_patterns(pattern),
+            "Template literal syntax should not trigger pattern detection (escaped instead): {}", pattern
         );
     }
 }
 
 #[test]
 fn test_erb_jsp_syntax_detection() {
+    // ERB/JSP syntax is now escaped (not blocked) by the sanitizer
+    // These patterns should NOT trigger pattern detection
     let patterns = vec![
         "<% code %>",
         "<%=output%>",
@@ -389,8 +395,8 @@ fn test_erb_jsp_syntax_detection() {
     
     for pattern in patterns {
         assert!(
-            contains_suspicious_patterns(pattern),
-            "Failed to detect ERB/JSP: {}", pattern
+            !contains_suspicious_patterns(pattern),
+            "ERB/JSP syntax should not trigger pattern detection (escaped instead): {}", pattern
         );
     }
 }
@@ -540,10 +546,12 @@ fn test_path_traversal_detection() {
 
 #[test]
 fn test_null_byte_detection() {
+    // Null bytes are now filtered (not blocked) by the sanitizer
+    // They should NOT trigger pattern detection
     let input = "file.txt\x00.jpg";
     assert!(
-        contains_suspicious_patterns(input),
-        "Failed to detect null byte"
+        !contains_suspicious_patterns(input),
+        "Null byte should not trigger pattern detection (filtered instead)"
     );
 }
 
@@ -578,9 +586,11 @@ fn test_sanitize_user_input_blocks_templates() {
     let config = SanitizationConfig::default();
     let injection = "{{password}}";
     
-    // User input with template syntax should be blocked
+    // Template syntax is now escaped (not blocked)
     let result = sanitize_input(injection, TrustLevel::User, &config);
-    assert!(result.is_err());
+    assert!(result.is_ok(), "Template syntax should be escaped, not blocked");
+    let sanitized = result.unwrap();
+    assert!(!sanitized.contains("{{"), "Template syntax should be escaped");
 }
 
 #[test]

@@ -49,11 +49,11 @@ fn test_sanitize_input_one_over_max_length_err() {
 fn test_sanitize_input_null_byte_blocked_by_default() {
     let cfg = SanitizationConfig::default();
     let input = "hello\0world";
-    let err = sanitize_input(input, TrustLevel::User, &cfg).unwrap_err();
-    assert!(
-        format!("{err}").contains("injection") || format!("{err}").contains("pattern"),
-        "null byte should be treated as suspicious by default"
-    );
+    // Null bytes are now filtered out (not blocked) by default
+    // Control characters are stripped when allow_control_chars is false
+    let result = sanitize_input(input, TrustLevel::User, &cfg).expect("null byte should be filtered, not blocked");
+    assert!(!result.contains('\0'), "null byte should be removed");
+    assert!(result.contains("helloworld"), "content should remain: {}", result);
 }
 
 #[test]

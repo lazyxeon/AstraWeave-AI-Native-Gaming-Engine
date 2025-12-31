@@ -271,7 +271,8 @@ fn test_formatter_format_with_indentation() {
 
 #[test]
 fn test_formatter_pretty_print() {
-    let prompt = "Hello {{name}}, your score is {{score}}!";
+    // Note: pretty_print uses extract_variables which expects single braces {name}
+    let prompt = "Hello {name}, your score is {score}!";
     let pretty = PromptFormatter::pretty_print(prompt);
     
     assert!(pretty.contains("**{name}**"));
@@ -293,7 +294,8 @@ fn test_analyzer_estimate_tokens() {
 
 #[test]
 fn test_analyzer_extract_variables() {
-    let prompt = "Hello {{name}}! Your {{item}} is ready at {{location}}.";
+    // Note: extract_variables expects single braces {name}
+    let prompt = "Hello {name}! Your {item} is ready at {location}.";
     let vars = PromptAnalyzer::extract_variables(prompt);
     
     assert_eq!(vars.len(), 3);
