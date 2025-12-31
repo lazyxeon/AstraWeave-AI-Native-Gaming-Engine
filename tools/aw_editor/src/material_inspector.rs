@@ -76,6 +76,11 @@ pub struct MaterialInspector {
     pub show_histogram: bool,
     /// Histogram data (256 bins for current channel)
     histogram_data: Vec<u32>,
+
+    /// Cached texture settings for change detection
+    prev_display_mode: DisplayMode,
+    prev_channel_filter: ChannelFilter,
+    prev_color_space: ColorSpace,
 }
 
 /// Material data parsed from TOML
@@ -214,6 +219,9 @@ impl MaterialInspector {
             uv_grid_density: 8,
             show_histogram: false,
             histogram_data: vec![0; 256],
+            prev_display_mode: DisplayMode::default(),
+            prev_channel_filter: ChannelFilter::default(),
+            prev_color_space: ColorSpace::default(),
         };
 
         // Discover materials in default assets directory
@@ -1035,17 +1043,24 @@ impl MaterialInspector {
                 )
             });
 
-            // Update texture if channel filter or color space changed
-            // Note: This is inefficient but works for MVP
-            // TODO: Only update when filter/colorspace changes
-            *handle = ctx.load_texture(
-                format!(
-                    "{:?}_{:?}_{:?}",
-                    self.display_mode, self.channel_filter, self.color_space
-                ),
-                color_image,
-                Default::default(),
-            );
+            let settings_changed = self.display_mode != self.prev_display_mode
+                || self.channel_filter != self.prev_channel_filter
+                || self.color_space != self.prev_color_space;
+
+            if settings_changed {
+                self.prev_display_mode = self.display_mode;
+                self.prev_channel_filter = self.channel_filter;
+                self.prev_color_space = self.color_space;
+
+                *handle = ctx.load_texture(
+                    format!(
+                        "{:?}_{:?}_{:?}",
+                        self.display_mode, self.channel_filter, self.color_space
+                    ),
+                    color_image,
+                    Default::default(),
+                );
+            }
 
             // Display texture with zoom
             let size = egui::vec2(
