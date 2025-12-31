@@ -48,6 +48,7 @@ fn test_ecs_query_api() {
     let mut world = World::new();
 
     #[derive(Clone, Copy)]
+    #[allow(dead_code)]
     struct Position(f32);
 
     for i in 0..5 {

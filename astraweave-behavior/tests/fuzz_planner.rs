@@ -1,6 +1,5 @@
 use astraweave_behavior::goap::{GoapAction, GoapGoal, GoapPlanner, WorldState};
 use rand::prelude::*;
-use std::collections::HashSet;
 
 #[test]
 fn test_planner_fuzz() {
@@ -21,14 +20,14 @@ fn test_planner_fuzz() {
         ];
         let mut current_state = WorldState::new();
         for fact in facts {
-            if rng.gen_bool(0.5) {
-                current_state.set(fact, rng.gen_bool(0.5));
+            if rng.random_bool(0.5) {
+                current_state.set(fact, rng.random_bool(0.5));
             }
         }
 
         // 2. Generate random goal
         let goal_fact = facts.choose(&mut rng).unwrap();
-        let goal_val = rng.gen_bool(0.5);
+        let goal_val = rng.random_bool(0.5);
         let goal = GoapGoal::new(
             "fuzz_goal",
             WorldState::from_facts(&[(*goal_fact, goal_val)]),
@@ -40,14 +39,14 @@ fn test_planner_fuzz() {
             let mut action = GoapAction::new(format!("action_{}", j));
 
             // Random preconditions
-            if rng.gen_bool(0.7) {
+            if rng.random_bool(0.7) {
                 let pre_fact = facts.choose(&mut rng).unwrap();
-                action = action.with_precondition(pre_fact, rng.gen_bool(0.5));
+                action = action.with_precondition(pre_fact, rng.random_bool(0.5));
             }
 
             // Random effects
             let eff_fact = facts.choose(&mut rng).unwrap();
-            action = action.with_effect(eff_fact, rng.gen_bool(0.5));
+            action = action.with_effect(eff_fact, rng.random_bool(0.5));
 
             actions.push(action);
         }

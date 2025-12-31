@@ -125,7 +125,7 @@ fn test_build_snapshot_cooldowns_transferred() {
     let companion = w.spawn("companion", IVec2 { x: 1, y: 0 }, Team { id: 1 }, 80, 30);
 
     // Add cooldowns manually
-    if let Some(cds) = w.cooldowns(companion) {
+    if let Some(_cds) = w.cooldowns(companion) {
         // Can't modify directly, but the snapshot will capture current state
         // This test verifies the cooldown transfer mechanism works
     }

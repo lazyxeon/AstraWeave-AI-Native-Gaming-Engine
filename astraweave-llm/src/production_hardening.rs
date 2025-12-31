@@ -1986,7 +1986,7 @@ mod tests {
 
         // Fill up some load
         {
-            let mut manager = layer.backpressure_manager.write().await;
+            let manager = layer.backpressure_manager.write().await;
             for _ in 0..50 {
                 let metadata = RequestMetadata {
                     user_id: None,

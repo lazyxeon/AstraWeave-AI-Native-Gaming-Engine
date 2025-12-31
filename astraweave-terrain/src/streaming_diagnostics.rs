@@ -711,7 +711,7 @@ mod tests {
 
     #[test]
     fn test_diagnostic_report_serialization() {
-        let mut diag = StreamingDiagnostics::new(16.67, 100);
+        let diag = StreamingDiagnostics::new(16.67, 100);
         let report = diag.generate_report();
         
         let serialized = serde_json::to_string(&report).unwrap();

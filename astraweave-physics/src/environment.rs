@@ -751,7 +751,7 @@ mod tests {
         };
         let mut zone = WindZone::new(WindZoneId(1), config);
 
-        let initial_offset = zone.gust_offset;
+        let _initial_offset = zone.gust_offset;
         zone.update(0.5);
 
         // Gust offset should change after update
