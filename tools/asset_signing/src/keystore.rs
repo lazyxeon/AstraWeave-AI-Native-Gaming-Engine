@@ -228,6 +228,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "Requires OS keyring access and may be flaky in CI"]
     fn test_key_persistence() {
         let key_name = "test_key_persistence";
 
