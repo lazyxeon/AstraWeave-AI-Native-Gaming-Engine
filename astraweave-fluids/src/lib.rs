@@ -1,9 +1,13 @@
 pub mod emitter;
+pub mod lod;
+pub mod profiling;
 pub mod renderer;
 pub mod sdf;
 pub mod serialization;
 
 pub use emitter::{EmitterShape, FluidDrain, FluidEmitter};
+pub use lod::{FluidLodConfig, FluidLodManager, LodLevel};
+pub use profiling::{FluidProfiler, FluidTimingStats};
 pub use renderer::FluidRenderer;
 pub use serialization::{FluidSnapshot, SnapshotParams};
 
@@ -18,8 +22,8 @@ pub struct Particle {
     pub predicted_position: [f32; 4],
     pub lambda: f32,
     pub density: f32,
-    pub phase: u32, // 0=water, 1=oil, 2=custom phase
-    pub _pad: f32,
+    pub phase: u32,       // 0=water, 1=oil, 2=custom phase
+    pub temperature: f32, // Kelvin (ambient ~293K)
     pub color: [f32; 4],
 }
 
@@ -153,7 +157,7 @@ impl FluidSystem {
                 lambda: 0.0,
                 density: 0.0,
                 phase: 0,
-                _pad: 0.0,
+                temperature: 293.0,
                 color: [0.2, 0.5, 0.8, 1.0],
             });
         }
@@ -643,7 +647,8 @@ impl FluidSystem {
                 predicted_position: [pos[0], pos[1], pos[2], 1.0],
                 lambda: 0.0,
                 density: 0.0,
-                _pad: [0.0; 2],
+                phase: 0,
+                temperature: 293.0,
                 color,
             };
 
@@ -926,7 +931,8 @@ mod tests {
             predicted_position: [0.0, 0.0, 0.0, 1.0],
             lambda: 0.0,
             density: 0.0,
-            _pad: [0.0; 2],
+            phase: 0,
+            temperature: 293.0,
             color: [0.0; 4],
         };
         assert_eq!(particle.position[3], 1.0);
@@ -941,7 +947,8 @@ mod tests {
             predicted_position: [1.0, 1.0, 3.0, 1.0],
             lambda: 1.0,
             density: 1.0,
-            _pad: [0.0; 2],
+            phase: 0,
+            temperature: 293.0,
             color: [1.0, 0.0, 0.0, 1.0],
         };
         assert_eq!(particle.velocity[1], -1.0);
@@ -1017,7 +1024,8 @@ mod tests {
                 predicted_position: [1.0, 2.0, 3.0, 1.0],
                 lambda: 0.0,
                 density: 1.0,
-                _pad: [0.0; 2],
+                phase: 0,
+                temperature: 293.0,
                 color: [0.0; 4],
             },
             Particle {
@@ -1026,7 +1034,8 @@ mod tests {
                 predicted_position: [5.0, 6.0, 7.0, 1.0],
                 lambda: 2.0,
                 density: 2.0,
-                _pad: [0.0; 2],
+                phase: 0,
+                temperature: 293.0,
                 color: [1.0; 4],
             },
         ];

@@ -92,6 +92,9 @@ fn bench_cpu_light_culling(c: &mut Criterion) {
 /// Benchmark GPU light culling (MegaLights compute shaders)
 #[cfg(feature = "megalights")]
 fn bench_gpu_light_culling(c: &mut Criterion) {
+    use bytemuck;
+    use astraweave_render::clustered_megalights::ClusterBounds;
+    
     // Setup wgpu device (once)
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::PRIMARY,
@@ -110,22 +113,145 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
             .expect("Failed to create wgpu device");
 
     // Create MegaLights renderer
-    let cluster_dims = (16, 16, 32); // 8192 clusters
-    let max_lights = 4096;
+    let cluster_dims = (16u32, 16u32, 32u32); // 8192 clusters
+    let total_clusters = cluster_dims.0 * cluster_dims.1 * cluster_dims.2;
+    let max_lights = 4096usize;
 
-    let megalights = MegaLightsRenderer::new(&device, cluster_dims, max_lights)
+    let mut megalights = MegaLightsRenderer::new(&device, cluster_dims, max_lights)
         .expect("Failed to create MegaLightsRenderer");
+
+    // Create GPU buffers for bind groups
+    let light_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Light Buffer"),
+        size: (max_lights * std::mem::size_of::<GpuLight>()) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    // Create cluster bounds (simple grid for benchmark)
+    let cluster_bounds: Vec<ClusterBounds> = (0..total_clusters)
+        .map(|i| {
+            let x = (i % cluster_dims.0) as f32;
+            let y = ((i / cluster_dims.0) % cluster_dims.1) as f32;
+            let z = (i / (cluster_dims.0 * cluster_dims.1)) as f32;
+            ClusterBounds {
+                min_pos: [x * 10.0, y * 10.0, z * 10.0],
+                _pad1: 0.0,
+                max_pos: [(x + 1.0) * 10.0, (y + 1.0) * 10.0, (z + 1.0) * 10.0],
+                _pad2: 0.0,
+            }
+        })
+        .collect();
+
+    let cluster_bounds_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Cluster Bounds Buffer"),
+        size: (total_clusters as usize * std::mem::size_of::<ClusterBounds>()) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&cluster_bounds_buffer, 0, bytemuck::cast_slice(&cluster_bounds));
+
+    let light_counts_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Light Counts Buffer"),
+        size: (total_clusters as usize * std::mem::size_of::<u32>()) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    let light_offsets_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Light Offsets Buffer"),
+        size: (total_clusters as usize * std::mem::size_of::<u32>()) as u64,
+        usage: wgpu::BufferUsages::STORAGE,
+        mapped_at_creation: false,
+    });
+
+    // Worst case: every light in every cluster
+    let light_indices_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Light Indices Buffer"),
+        size: (total_clusters as usize * 64 * std::mem::size_of::<u32>()) as u64, // 64 lights per cluster max
+        usage: wgpu::BufferUsages::STORAGE,
+        mapped_at_creation: false,
+    });
+
+    // Params uniform buffer
+    #[repr(C)]
+    #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+    struct ClusterParams {
+        cluster_dims: [u32; 3],
+        _pad1: u32,
+        total_clusters: u32,
+        light_count: u32,
+        _pad2: u32,
+        _pad3: u32,
+    }
+
+    let params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Params Buffer"),
+        size: std::mem::size_of::<ClusterParams>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    #[repr(C)]
+    #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+    struct PrefixSumParams {
+        element_count: u32,
+        workgroup_size: u32,
+        _pad1: u32,
+        _pad2: u32,
+    }
+
+    let prefix_sum_params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Prefix Sum Params Buffer"),
+        size: std::mem::size_of::<PrefixSumParams>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    // Initialize bind groups
+    megalights.update_bind_groups(
+        &device,
+        &light_buffer,
+        &cluster_bounds_buffer,
+        &light_counts_buffer,
+        &light_offsets_buffer,
+        &light_indices_buffer,
+        &params_buffer,
+        &prefix_sum_params_buffer,
+    );
 
     let mut group = c.benchmark_group("gpu_light_culling");
 
     // Test scaling: 100, 250, 500, 1000, 2000 lights
     for light_count in [100, 250, 500, 1000, 2000] {
+        let lights = create_test_scene_gpu(light_count);
+        
+        // Upload lights to GPU
+        queue.write_buffer(&light_buffer, 0, bytemuck::cast_slice(&lights));
+        
+        // Update params
+        let params = ClusterParams {
+            cluster_dims: [cluster_dims.0, cluster_dims.1, cluster_dims.2],
+            _pad1: 0,
+            total_clusters,
+            light_count: light_count as u32,
+            _pad2: 0,
+            _pad3: 0,
+        };
+        queue.write_buffer(&params_buffer, 0, bytemuck::bytes_of(&params));
+        
+        let prefix_params = PrefixSumParams {
+            element_count: total_clusters,
+            workgroup_size: 256,
+            _pad1: 0,
+            _pad2: 0,
+        };
+        queue.write_buffer(&prefix_sum_params_buffer, 0, bytemuck::bytes_of(&prefix_params));
+
         group.bench_with_input(
             BenchmarkId::new("megalights_dispatch", light_count),
             &light_count,
             |b, &count| {
-                let _lights = create_test_scene_gpu(count);
-
                 b.iter(|| {
                     let mut encoder =
                         device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -138,7 +264,7 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
 
                     // Submit and wait for GPU
                     queue.submit([encoder.finish()]);
-                    device.poll(wgpu::MaintainBase::Wait);
+                    let _ = device.poll(wgpu::MaintainBase::Wait);
                 });
             },
         );

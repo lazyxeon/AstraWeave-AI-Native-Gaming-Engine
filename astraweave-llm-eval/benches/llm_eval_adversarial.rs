@@ -338,9 +338,10 @@ impl MockEvaluator {
 
     fn evaluate_prompt(&self, prompt: &EvalPrompt) -> EvalResponse {
         // Simulate response generation
+        let truncated_prompt: String = prompt.user_prompt.chars().take(50).collect();
         let response_text = format!(
             "Response to: {}... [simulated {} tokens]",
-            &prompt.user_prompt[..prompt.user_prompt.len().min(50)],
+            truncated_prompt,
             prompt.max_tokens / 2
         );
 

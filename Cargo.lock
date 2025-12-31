@@ -681,6 +681,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-coordination"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-context",
+ "astraweave-llm",
+ "astraweave-prompts",
+ "astraweave-rag",
+ "async-trait",
+ "chrono",
+ "criterion 0.5.1",
+ "dashmap",
+ "futures",
+ "petgraph",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "astraweave-core"
 version = "0.1.0"
 dependencies = [

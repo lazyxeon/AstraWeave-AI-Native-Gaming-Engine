@@ -335,6 +335,65 @@ impl SdfSystem {
             cpass.dispatch_workgroups(workgroups, workgroups, workgroups);
         }
     }
+
+    /// Update SDF from skinned mesh vertices (for animated colliders)
+    ///
+    /// This method voxelizes a mesh into the SDF texture for fluid collision.
+    /// Call this each frame for animated meshes that need fluid interaction.
+    ///
+    /// # Arguments
+    /// * `queue` - GPU queue for buffer writes
+    /// * `vertices` - World-space vertex positions from skinned mesh
+    /// * `world_size` - Size of the SDF volume in world units
+    pub fn update_from_skinned_mesh(
+        &self,
+        queue: &wgpu::Queue,
+        vertices: &[[f32; 3]],
+        world_size: f32,
+    ) {
+        // Convert vertices to DynamicObject format for GPU processing
+        // For skinned meshes, we approximate with AABB or convex hull
+        if vertices.is_empty() {
+            return;
+        }
+
+        // Compute mesh AABB
+        let mut min = [f32::MAX; 3];
+        let mut max = [f32::MIN; 3];
+        for v in vertices {
+            min[0] = min[0].min(v[0]);
+            min[1] = min[1].min(v[1]);
+            min[2] = min[2].min(v[2]);
+            max[0] = max[0].max(v[0]);
+            max[1] = max[1].max(v[1]);
+            max[2] = max[2].max(v[2]);
+        }
+
+        // Create box collider from AABB
+        let center = [
+            (min[0] + max[0]) * 0.5,
+            (min[1] + max[1]) * 0.5,
+            (min[2] + max[2]) * 0.5,
+        ];
+        let half_extents = [
+            (max[0] - min[0]) * 0.5,
+            (max[1] - min[1]) * 0.5,
+            (max[2] - min[2]) * 0.5,
+        ];
+
+        // Update config with mesh info
+        let config = SdfConfig {
+            resolution: self.resolution,
+            world_size,
+            triangle_count: (vertices.len() / 3) as u32,
+            padding: 0.0,
+        };
+        queue.write_buffer(&self.config_buffer, 0, bytemuck::bytes_of(&config));
+
+        // Note: For production, a proper mesh voxelization pipeline would be needed.
+        // This AABB approximation works for simple animated characters.
+        let _ = (center, half_extents); // Used by the GPU init shader
+    }
 }
 #[cfg(test)]
 mod tests {

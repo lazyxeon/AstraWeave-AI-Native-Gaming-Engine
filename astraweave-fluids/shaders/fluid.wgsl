@@ -8,7 +8,7 @@ struct Particle {
     lambda: f32,
     density: f32,
     phase: u32,           // 0=water, 1=oil, 2=custom phase
-    _pad: f32,
+    temperature: f32,     // Kelvin (ambient ~293K)
     color: vec4<f32>,
 };
 
@@ -117,9 +117,17 @@ fn predict(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let pos = particles[id].position.xyz;
     var vel = particles[id].velocity.xyz;
+    let temp = particles[id].temperature;
 
     // External forces (Gravity)
     vel += vec3<f32>(0.0, params.gravity, 0.0) * params.dt;
+    
+    // Temperature-driven buoyancy (Boussinesq approximation)
+    // Hot fluid rises, cold fluid sinks
+    let ambient_temp = 293.0; // Room temperature in Kelvin
+    let thermal_expansion = 0.0002; // Thermal expansion coefficient
+    let buoyancy = thermal_expansion * (temp - ambient_temp) * abs(params.gravity);
+    vel.y += buoyancy * params.dt;
     
     particles[id].predicted_position = vec4<f32>(pos + vel * params.dt, 1.0);
     particles[id].velocity = vec4<f32>(vel, 0.0);
@@ -492,4 +500,56 @@ fn update_whitewater(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p.info.z = clamp(p.info.x / 1.0, 0.0, 1.0); // Simple linear fade
     
     secondary_particles[index] = p;
+}
+
+// --- Heat Diffusion Kernel ---
+// Laplacian-based thermal diffusion between neighboring particles
+
+@compute @workgroup_size(64)
+fn heat_diffuse(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let id = global_id.x;
+    if (id >= params.particle_count) { return; }
+
+    let pos = particles[id].predicted_position.xyz;
+    let temp = particles[id].temperature;
+    let h = params.smoothing_radius;
+    
+    // Thermal diffusivity for water (~0.14 mm²/s scaled for simulation)
+    let thermal_diffusivity = 0.1;
+    var temp_laplacian = 0.0;
+
+    let grid_pos = vec3<i32>(
+        i32(floor((pos.x + 30.0) / params.cell_size)),
+        i32(floor(pos.y / params.cell_size)),
+        i32(floor((pos.z + 30.0) / params.cell_size))
+    );
+
+    for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+            for (var dz = -1; dz <= 1; dz++) {
+                let cell_idx = get_cell_index_clamped(grid_pos.x + dx, grid_pos.y + dy, grid_pos.z + dz);
+                if (cell_idx < 0) { continue; }
+                
+                var current = atomicLoad(&head_pointers[cell_idx]);
+                while (current >= 0) {
+                    if (u32(current) != id) {
+                        let neighbor_pos = particles[current].predicted_position.xyz;
+                        let neighbor_temp = particles[current].temperature;
+                        let diff = pos - neighbor_pos;
+                        let r = length(diff);
+                        if (r < h && r > 0.0001) {
+                            // SPH Laplacian approximation for heat diffusion
+                            let w = kernel_w(r, h);
+                            temp_laplacian += (neighbor_temp - temp) * w / max(params.target_density, 0.001);
+                        }
+                    }
+                    current = next_pointers[current];
+                }
+            }
+        }
+    }
+
+    // Update temperature with diffusion
+    let new_temp = temp + thermal_diffusivity * temp_laplacian * params.dt;
+    particles[id].temperature = clamp(new_temp, 200.0, 500.0); // Clamp to reasonable range
 }

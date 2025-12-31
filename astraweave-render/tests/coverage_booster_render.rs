@@ -1472,3 +1472,635 @@ fn test_terrain_renderer_module() {
     println!("Terrain renderer tested.");
 }
 
+/// Test MSAA render target module - comprehensive coverage
+#[tokio::test]
+async fn test_msaa_module() {
+    use astraweave_render::msaa::{MsaaMode, MsaaRenderTarget, create_msaa_depth_texture};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+    
+    // Test MsaaMode basics
+    assert_eq!(MsaaMode::Off.sample_count(), 1);
+    assert_eq!(MsaaMode::X2.sample_count(), 2);
+    assert_eq!(MsaaMode::X4.sample_count(), 4);
+    assert_eq!(MsaaMode::X8.sample_count(), 8);
+    
+    assert!(!MsaaMode::Off.is_enabled());
+    assert!(MsaaMode::X2.is_enabled());
+    assert!(MsaaMode::X4.is_enabled());
+    assert!(MsaaMode::X8.is_enabled());
+    
+    // Test multisample_state
+    let ms_off = MsaaMode::Off.multisample_state();
+    assert_eq!(ms_off.count, 1);
+    let ms_x4 = MsaaMode::X4.multisample_state();
+    assert_eq!(ms_x4.count, 4);
+    
+    // Test MsaaRenderTarget creation and management
+    let mut msaa_target = MsaaRenderTarget::new(wgpu::TextureFormat::Rgba8UnormSrgb);
+    assert_eq!(msaa_target.mode(), MsaaMode::X4); // Default is X4
+    assert!(msaa_target.view().is_none()); // No texture yet (no size set)
+    
+    // Set mode to Off first, then test switching
+    msaa_target.set_mode(&device, MsaaMode::Off).unwrap();
+    assert_eq!(msaa_target.mode(), MsaaMode::Off);
+    assert!(msaa_target.view().is_none()); // Still no texture (MSAA off)
+    
+    // Set mode with zero size - should not create texture
+    msaa_target.set_mode(&device, MsaaMode::X4).unwrap();
+    assert_eq!(msaa_target.mode(), MsaaMode::X4);
+    
+    // Resize to valid dimensions - should now create texture
+    msaa_target.resize(&device, 800, 600).unwrap();
+    assert!(msaa_target.view().is_some());
+    
+    // Create a resolve target for testing color_attachment
+    let resolve_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("resolve target"),
+        size: wgpu::Extent3d { width: 800, height: 600, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+    let resolve_view = resolve_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    
+    // Test color_attachment with MSAA enabled
+    let attachment = msaa_target.color_attachment(&resolve_view, wgpu::LoadOp::Clear(wgpu::Color::BLACK));
+    assert!(attachment.resolve_target.is_some()); // Should have resolve target when MSAA is on
+    
+    // Switch to MSAA off
+    msaa_target.set_mode(&device, MsaaMode::Off).unwrap();
+    assert!(msaa_target.view().is_none());
+    
+    // Test color_attachment with MSAA disabled
+    let attachment_off = msaa_target.color_attachment(&resolve_view, wgpu::LoadOp::Clear(wgpu::Color::BLACK));
+    assert!(attachment_off.resolve_target.is_none()); // No resolve target when MSAA is off
+    
+    // Resize when MSAA is off - should not create texture
+    msaa_target.resize(&device, 1024, 768).unwrap();
+    assert!(msaa_target.view().is_none());
+    
+    // Enable MSAA X4 (not X2, as X2 isn't guaranteed by WebGPU spec on all adapters)
+    msaa_target.set_mode(&device, MsaaMode::X4).unwrap();
+    assert!(msaa_target.view().is_some()); // Should create texture because we already have dimensions
+    
+    // Test create_msaa_depth_texture helper
+    let depth_msaa = create_msaa_depth_texture(&device, 800, 600, MsaaMode::X4, Some("msaa depth"));
+    assert_eq!(depth_msaa.size().width, 800);
+    assert_eq!(depth_msaa.size().height, 600);
+    assert_eq!(depth_msaa.sample_count(), 4);
+    
+    let depth_no_msaa = create_msaa_depth_texture(&device, 800, 600, MsaaMode::Off, None);
+    assert_eq!(depth_no_msaa.sample_count(), 1);
+    
+    let _ = device.poll(wgpu::MaintainBase::Wait);
+    println!("MSAA module tested.");
+}
+
+/// Test render graph module - comprehensive coverage
+#[tokio::test]
+async fn test_render_graph_module() {
+    use astraweave_render::graph::{GraphContext, ResourceTable, RenderGraph, ClearNode, RendererMainNode, RenderNode};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+    
+    // Test ResourceTable operations
+    let mut resources = ResourceTable::default();
+    
+    // Create and insert a texture
+    let tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("test_tex"),
+        size: wgpu::Extent3d { width: 256, height: 256, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+    let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+    
+    resources.insert_view("hdr_target", view);
+    resources.insert_tex("main_tex", tex);
+    
+    // Test view retrieval
+    let retrieved_view = resources.view("hdr_target");
+    assert!(retrieved_view.is_ok());
+    
+    // Test view_mut retrieval
+    let retrieved_view_mut = resources.view_mut("hdr_target");
+    assert!(retrieved_view_mut.is_ok());
+    
+    // Test tex retrieval
+    let retrieved_tex = resources.tex("main_tex");
+    assert!(retrieved_tex.is_ok());
+    
+    // Test missing resource error
+    let missing = resources.view("nonexistent");
+    assert!(missing.is_err());
+    
+    // Test type mismatch error (accessing tex as view)
+    let type_mismatch = resources.view("main_tex");
+    assert!(type_mismatch.is_err());
+    
+    // Test buffer insertion
+    let buf = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("test_buf"),
+        size: 256,
+        usage: wgpu::BufferUsages::UNIFORM,
+        mapped_at_creation: false,
+    });
+    resources.insert_buf("uniform_buf", buf);
+    
+    // Test bind_group insertion
+    let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("test_bgl"),
+        entries: &[],
+    });
+    let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("test_bg"),
+        layout: &bgl,
+        entries: &[],
+    });
+    resources.insert_bind_group("main_bg", bg);
+    
+    let retrieved_bg = resources.bind_group("main_bg");
+    assert!(retrieved_bg.is_ok());
+    
+    // Test create_transient_texture
+    let transient_tex = resources.create_transient_texture(
+        &device,
+        "transient_depth",
+        &wgpu::TextureDescriptor {
+            label: Some("transient"),
+            size: wgpu::Extent3d { width: 512, height: 512, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        },
+    );
+    assert!(transient_tex.is_ok());
+    
+    // Test target_view with "surface" key and primary_view
+    let primary_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("primary"),
+        size: wgpu::Extent3d { width: 800, height: 600, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+    let primary_view = primary_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    
+    let surface_view = resources.target_view("surface", Some(&primary_view));
+    assert!(surface_view.is_ok());
+    
+    let hdr_view = resources.target_view("hdr_target", Some(&primary_view));
+    assert!(hdr_view.is_ok());
+    
+    // Test GraphContext creation
+    let mut user_data: u32 = 42;
+    let ctx = GraphContext::new(&mut user_data);
+    assert!(ctx.device.is_none());
+    assert!(ctx.queue.is_none());
+    assert!(ctx.encoder.is_none());
+    assert!(ctx.primary_view.is_none());
+    
+    // Test GraphContext with_gpu
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("graph_encoder"),
+    });
+    let mut user_data2: u32 = 100;
+    let ctx_gpu = GraphContext::new(&mut user_data2)
+        .with_gpu(&device, &queue, &mut encoder)
+        .with_primary_view(&primary_view);
+    assert!(ctx_gpu.device.is_some());
+    assert!(ctx_gpu.queue.is_some());
+    assert!(ctx_gpu.primary_view.is_some());
+    
+    // Test RenderGraph with nodes
+    let mut graph = RenderGraph::new();
+    
+    // Add ClearNode
+    let clear_node = ClearNode::new("clear_pass", "surface", wgpu::Color::RED);
+    assert_eq!(clear_node.name(), "clear_pass");
+    graph.add_node(clear_node);
+    
+    // Add RendererMainNode
+    let main_node = RendererMainNode::new("main_pass", "surface");
+    assert_eq!(main_node.name(), "main_pass");
+    graph.add_node(main_node);
+    
+    // Execute graph with proper context
+    let mut encoder2 = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("exec_encoder"),
+    });
+    let mut user_data3: u32 = 0;
+    let mut ctx_exec = GraphContext::new(&mut user_data3)
+        .with_gpu(&device, &queue, &mut encoder2)
+        .with_primary_view(&primary_view);
+    
+    let result = graph.execute(&mut ctx_exec);
+    assert!(result.is_ok());
+    
+    // Submit encoder
+    queue.submit(Some(encoder2.finish()));
+    let _ = device.poll(wgpu::MaintainBase::Wait);
+    
+    println!("Render graph module tested.");
+}
+
+/// Test texture streaming with more comprehensive coverage
+#[tokio::test]
+async fn test_texture_streaming_comprehensive() {
+    use astraweave_render::texture_streaming::TextureStreamingManager;
+    
+    let mut manager = TextureStreamingManager::new(50); // 50MB budget
+    
+    // Test initial state
+    let stats = manager.get_stats();
+    assert_eq!(stats.loaded_count, 0);
+    assert_eq!(stats.memory_used_bytes, 0);
+    assert_eq!(stats.memory_budget_bytes, 50 * 1024 * 1024);
+    
+    // Test update_residency
+    manager.update_residency(Vec3::new(10.0, 5.0, 10.0));
+    
+    // Request several textures with varying priorities
+    let result1 = manager.request_texture("tex_a.png".to_string(), 100, 5.0);
+    assert!(result1.is_none()); // Not loaded yet
+    
+    let result2 = manager.request_texture("tex_b.png".to_string(), 50, 10.0);
+    assert!(result2.is_none());
+    
+    let result3 = manager.request_texture("tex_c.png".to_string(), 75, 2.0);
+    assert!(result3.is_none());
+    
+    // Re-request same texture - should still return None (Loading state)
+    let result1_again = manager.request_texture("tex_a.png".to_string(), 100, 5.0);
+    assert!(result1_again.is_none());
+    
+    // Test is_resident
+    assert!(!manager.is_resident(&"tex_a.png".to_string()));
+    assert!(!manager.is_resident(&"nonexistent.png".to_string()));
+    
+    // Test stats with pending loads
+    let stats_pending = manager.get_stats();
+    assert!(stats_pending.pending_count >= 3);
+    
+    // Test evict_lru on empty LRU queue
+    let evicted = manager.evict_lru();
+    assert!(!evicted); // Nothing to evict yet
+    
+    // Test clear
+    manager.clear();
+    let stats_cleared = manager.get_stats();
+    assert_eq!(stats_cleared.loaded_count, 0);
+    assert_eq!(stats_cleared.pending_count, 0);
+    assert_eq!(stats_cleared.memory_used_bytes, 0);
+    
+    println!("Texture streaming comprehensive tested.");
+}
+
+/// Test WeatherSystem comprehensive coverage
+#[tokio::test]
+async fn test_weather_system_comprehensive() {
+    use astraweave_render::environment::{WeatherSystem, WeatherType, WeatherParticles};
+    use astraweave_terrain::BiomeType;
+    
+    // Test WeatherSystem creation and defaults
+    let mut weather = WeatherSystem::new();
+    assert_eq!(weather.current_weather(), WeatherType::Clear);
+    assert_eq!(weather.target_weather(), WeatherType::Clear);
+    
+    // Test weather intensity accessors
+    assert_eq!(weather.get_rain_intensity(), 0.0);
+    assert_eq!(weather.get_snow_intensity(), 0.0);
+    assert!(weather.get_fog_density() >= 0.0);
+    assert!(weather.get_wind_strength() >= 0.0);
+    let _wind_dir = weather.get_wind_direction();
+    
+    // Test weather state queries
+    assert!(!weather.is_raining());
+    assert!(!weather.is_snowing());
+    // fog depends on current weather parameters
+    
+    // Test terrain color modifier
+    let terrain_mod = weather.get_terrain_color_modifier();
+    assert!(terrain_mod.x > 0.0 && terrain_mod.y > 0.0 && terrain_mod.z > 0.0);
+    
+    // Test light attenuation
+    let attenuation = weather.get_light_attenuation();
+    assert!(attenuation >= 0.0 && attenuation <= 1.0);
+    
+    // Test set_weather for various types
+    weather.set_weather(WeatherType::Rain, 2.0);
+    assert_eq!(weather.target_weather(), WeatherType::Rain);
+    
+    // Update to progress transition
+    for _ in 0..100 {
+        weather.update(0.05);
+    }
+    assert!(weather.get_rain_intensity() > 0.0);
+    assert!(weather.is_raining());
+    
+    // Change to storm
+    weather.set_weather(WeatherType::Storm, 1.0);
+    for _ in 0..50 {
+        weather.update(0.05);
+    }
+    
+    // Change to snow
+    weather.set_weather(WeatherType::Snow, 1.0);
+    for _ in 0..100 {
+        weather.update(0.05);
+    }
+    assert!(weather.get_snow_intensity() > 0.0);
+    
+    // Change to fog
+    weather.set_weather(WeatherType::Fog, 0.5);
+    for _ in 0..50 {
+        weather.update(0.05);
+    }
+    
+    // Test biome-appropriate weather
+    let forest_weather = WeatherSystem::get_biome_appropriate_weather(BiomeType::Forest);
+    assert!(!forest_weather.is_empty());
+    
+    let desert_weather = WeatherSystem::get_biome_appropriate_weather(BiomeType::Desert);
+    assert!(!desert_weather.is_empty());
+    
+    let tundra_weather = WeatherSystem::get_biome_appropriate_weather(BiomeType::Tundra);
+    assert!(tundra_weather.contains(&WeatherType::Snow));
+    
+    let swamp_weather = WeatherSystem::get_biome_appropriate_weather(BiomeType::Swamp);
+    assert!(swamp_weather.contains(&WeatherType::Fog));
+    
+    // Test WeatherParticles
+    let mut particles = WeatherParticles::new(1000, 50.0);
+    particles.update(0.016, Vec3::new(0.0, 10.0, 0.0), &weather);
+    
+    let rain_particles = particles.rain_particles();
+    let snow_particles = particles.snow_particles();
+    // Particle counts depend on current weather intensity
+    let _ = rain_particles.len();
+    let _ = snow_particles.len();
+    
+    println!("Weather system comprehensive tested.");
+}
+
+/// Test TimeOfDay and SkyRenderer comprehensive coverage
+#[tokio::test]
+async fn test_sky_and_time_comprehensive() {
+    use astraweave_render::environment::{TimeOfDay, SkyRenderer, SkyConfig};
+    
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: true,
+        })
+        .await
+        .unwrap();
+
+    let (device, _queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+    
+    // Test TimeOfDay creation and updates
+    let mut tod = TimeOfDay::new(6.0, 1.0); // Start at 6am, 1x speed
+    
+    // Test sun position at various times
+    let sun_pos_dawn = tod.get_sun_position();
+    assert!(sun_pos_dawn.y < 0.5); // Low at dawn
+    
+    // Progress time
+    for _ in 0..1000 {
+        tod.update();
+    }
+    
+    // Get positions at different times
+    let sun_pos = tod.get_sun_position();
+    let moon_pos = tod.get_moon_position();
+    let light_dir = tod.get_light_direction();
+    let light_color = tod.get_light_color();
+    let ambient = tod.get_ambient_color();
+    
+    // Light color should have valid values
+    assert!(light_color.x >= 0.0 && light_color.y >= 0.0 && light_color.z >= 0.0);
+    assert!(ambient.x >= 0.0 && ambient.y >= 0.0 && ambient.z >= 0.0);
+    
+    // Test day/night/twilight detection
+    let _is_day = tod.is_day();
+    let _is_night = tod.is_night();
+    let _is_twilight = tod.is_twilight();
+    
+    // Verify sun and moon positions make sense
+    let _ = sun_pos;
+    let _ = moon_pos;
+    let _ = light_dir;
+    
+    // Test SkyConfig
+    let config = SkyConfig::default();
+    assert!(config.cloud_coverage >= 0.0 && config.cloud_coverage <= 1.0);
+    assert!(config.cloud_speed >= 0.0);
+    assert!(config.cloud_altitude > 0.0);
+    
+    // Test SkyRenderer creation
+    let mut sky = SkyRenderer::new(config.clone());
+    
+    // Test config accessors
+    let retrieved_config = sky.config();
+    assert_eq!(retrieved_config.cloud_coverage, config.cloud_coverage);
+    
+    sky.set_config(SkyConfig {
+        cloud_coverage: 0.8,
+        ..Default::default()
+    });
+    assert_eq!(sky.config().cloud_coverage, 0.8);
+    
+    // Test time_of_day accessors
+    let _tod_ref = sky.time_of_day();
+    let tod_mut = sky.time_of_day_mut();
+    tod_mut.update();
+    
+    // Initialize GPU resources
+    let init_result = sky.init_gpu_resources(&device, wgpu::TextureFormat::Rgba16Float);
+    assert!(init_result.is_ok());
+    
+    // Test update
+    sky.update(0.016);
+    
+    let _ = device.poll(wgpu::MaintainBase::Wait);
+    println!("Sky and time comprehensive tested.");
+}
+
+/// Test material loader edge cases
+#[test]
+fn test_material_loader_edge_cases() {
+    use astraweave_render::material::{MaterialManager, validate_material_pack, validate_array_layout, MaterialPackDesc, MaterialLayerDesc, ArrayLayout, MaterialLoadStats};
+    use std::path::PathBuf;
+    
+    // Test validate_material_pack with various configurations
+    let valid_pack = MaterialPackDesc {
+        biome: "test".to_string(),
+        layers: vec![
+            MaterialLayerDesc {
+                key: "grass".to_string(),
+                albedo: Some(PathBuf::from("grass_albedo.png")),
+                normal: Some(PathBuf::from("grass_normal.png")),
+                mra: Some(PathBuf::from("grass_mra.png")),
+                tiling: [1.0, 1.0],
+                triplanar_scale: 16.0,
+                ..Default::default()
+            }
+        ],
+    };
+    
+    let validation = validate_material_pack(&valid_pack);
+    assert!(validation.is_ok());
+    
+    // Test with invalid tiling (negative)
+    let mut invalid_tiling_pack = valid_pack.clone();
+    invalid_tiling_pack.layers[0].tiling = [-1.0, 1.0];
+    let validation_tiling = validate_material_pack(&invalid_tiling_pack);
+    assert!(validation_tiling.is_err());
+    
+    // Test with invalid triplanar_scale (zero/negative)
+    let mut invalid_triplanar_pack = valid_pack.clone();
+    invalid_triplanar_pack.layers[0].triplanar_scale = 0.0;
+    let validation_triplanar = validate_material_pack(&invalid_triplanar_pack);
+    assert!(validation_triplanar.is_err());
+    
+    // Test with empty biome name
+    let empty_biome_pack = MaterialPackDesc {
+        biome: "".to_string(),
+        layers: vec![],
+    };
+    let validation_empty_biome = validate_material_pack(&empty_biome_pack);
+    assert!(validation_empty_biome.is_err());
+    
+    // Test with empty layer key
+    let empty_key_pack = MaterialPackDesc {
+        biome: "test".to_string(),
+        layers: vec![
+            MaterialLayerDesc {
+                key: "".to_string(),
+                ..Default::default()
+            }
+        ],
+    };
+    let validation_empty_key = validate_material_pack(&empty_key_pack);
+    assert!(validation_empty_key.is_err());
+    
+    // Test with duplicate layer keys
+    let dup_keys_pack = MaterialPackDesc {
+        biome: "test".to_string(),
+        layers: vec![
+            MaterialLayerDesc { key: "grass".to_string(), tiling: [1.0, 1.0], triplanar_scale: 16.0, ..Default::default() },
+            MaterialLayerDesc { key: "grass".to_string(), tiling: [1.0, 1.0], triplanar_scale: 16.0, ..Default::default() },
+        ],
+    };
+    let validation_dup_keys = validate_material_pack(&dup_keys_pack);
+    assert!(validation_dup_keys.is_err());
+    
+    // Test validate_array_layout
+    let mut valid_layout = ArrayLayout::default();
+    valid_layout.layer_indices.insert("grass".to_string(), 0);
+    valid_layout.layer_indices.insert("dirt".to_string(), 1);
+    valid_layout.count = 2;
+    let validation_layout = validate_array_layout(&valid_layout);
+    assert!(validation_layout.is_ok());
+    
+    // Test with duplicate indices in ArrayLayout
+    let mut dup_indices_layout = ArrayLayout::default();
+    dup_indices_layout.layer_indices.insert("grass".to_string(), 0);
+    dup_indices_layout.layer_indices.insert("dirt".to_string(), 0); // duplicate index
+    dup_indices_layout.count = 2;
+    let validation_dup_indices = validate_array_layout(&dup_indices_layout);
+    assert!(validation_dup_indices.is_err());
+    
+    // Test MaterialLoadStats concise_summary
+    let stats = MaterialLoadStats {
+        biome: "forest".to_string(),
+        layers_total: 5,
+        albedo_loaded: 4,
+        albedo_substituted: 1,
+        normal_loaded: 3,
+        normal_substituted: 2,
+        mra_loaded: 2,
+        mra_packed: 1,
+        mra_substituted: 2,
+        gpu_memory_bytes: 1024 * 1024 * 10, // 10 MiB
+    };
+    let summary = stats.concise_summary();
+    assert!(summary.contains("forest"));
+    assert!(summary.contains("layers=5"));
+    
+    // Test MaterialManager creation
+    let manager = MaterialManager::new();
+    // Manager starts with no loaded content
+    let _ = manager;
+    
+    println!("Material loader edge cases tested.");
+}

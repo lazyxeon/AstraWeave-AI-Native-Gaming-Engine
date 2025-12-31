@@ -658,6 +658,7 @@ albedo = "dirt_albedo.png"
             name: String,
         }
         #[derive(serde::Deserialize, Default)]
+        #[allow(dead_code)]
         struct MaterialLayerToml {
             key: String,
             albedo: Option<String>,

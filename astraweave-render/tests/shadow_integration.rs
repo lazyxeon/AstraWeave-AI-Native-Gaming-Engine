@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 #[test]
 #[ignore = "Requires main thread event loop (fails on Windows/macOS in test runner)"]
+#[allow(deprecated)]
 fn test_shadow_map_initialization() {
     // This test requires a window, so it might fail in headless CI environments.
     // We'll wrap it in a conditional or try-catch block if possible, 
