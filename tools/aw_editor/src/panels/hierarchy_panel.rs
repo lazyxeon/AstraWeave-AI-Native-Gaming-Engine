@@ -227,10 +227,10 @@ impl HierarchyPanel {
             .show(ui, |ui| {
                 let root_entities = self.root_entities.clone();
                 for entity in root_entities {
-                    if is_filtering {
-                        if !self.entity_matches_filter(world, entity, &search_lower) {
-                            continue;
-                        }
+                    if is_filtering
+                        && !self.entity_matches_filter(world, entity, &search_lower)
+                    {
+                        continue;
                     }
                     if let Some(new_selection) = self.show_entity_tree(ui, world, entity, 0) {
                         selected_changed = Some(new_selection);

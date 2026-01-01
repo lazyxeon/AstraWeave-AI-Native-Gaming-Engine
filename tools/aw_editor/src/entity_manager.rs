@@ -12,6 +12,7 @@ pub type EntityId = u64;
 
 /// Material texture slots for PBR (Physically Based Rendering) workflow
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum MaterialSlot {
     /// Base color / albedo texture
     Albedo,

@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 /// Texture types for PBR (Physically Based Rendering) material workflow
 /// Detected automatically from filename suffixes (e.g., _normal, _albedo, _orm)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum TextureType {
     /// Base color / diffuse map
     Albedo,

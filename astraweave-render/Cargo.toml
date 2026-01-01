@@ -123,3 +123,7 @@ harness = false
 [[bench]]
 name = "clustered_megalights_residency"
 harness = false
+
+[[bench]]
+name = "transparency_environment_msaa"
+harness = false
