@@ -15,8 +15,9 @@
 //!
 //! Run: cargo bench -p astraweave-render --bench clustered_megalights_residency
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::hint::black_box;
 
 // ============================================================================
 // MegaLights Data Structures (CPU simulation)

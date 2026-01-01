@@ -6,8 +6,9 @@
 //!
 //! These benchmarks measure CPU-side performance of streaming and GI systems.
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::{Mat4, Vec3, Vec4};
+use std::hint::black_box;
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::cmp::Ordering;
 
