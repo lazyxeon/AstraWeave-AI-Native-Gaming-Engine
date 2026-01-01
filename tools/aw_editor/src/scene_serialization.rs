@@ -305,6 +305,7 @@ mod tests {
 
     #[test]
     fn test_scene_with_all_components() {
+        use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
         let mut world = World::new();
         let entity = world.spawn(
             "CompleteEntity",
@@ -315,9 +316,9 @@ mod tests {
         );
 
         if let Some(pose) = world.pose_mut(entity) {
-            pose.rotation = 3.14;
-            pose.rotation_x = 1.57;
-            pose.rotation_z = 0.78;
+            pose.rotation = PI;
+            pose.rotation_x = FRAC_PI_2;
+            pose.rotation_z = FRAC_PI_4;
             pose.scale = 1.5;
         }
 
@@ -331,13 +332,13 @@ mod tests {
         assert_eq!(entity_data.team_id, 1);
         assert_eq!(entity_data.hp, 75);
         assert_eq!(entity_data.ammo, 25);
-        assert!((entity_data.rotation - 3.14).abs() < 0.01);
-        assert!((entity_data.rotation_x - 1.57).abs() < 0.01);
-        assert!((entity_data.rotation_z - 0.78).abs() < 0.01);
+        assert!((entity_data.rotation - PI).abs() < 0.01);
+        assert!((entity_data.rotation_x - FRAC_PI_2).abs() < 0.01);
+        assert!((entity_data.rotation_z - FRAC_PI_4).abs() < 0.01);
         assert!((entity_data.scale - 1.5).abs() < 0.01);
 
         let restored_pose = restored.pose(entity).unwrap();
-        assert!((restored_pose.rotation - 3.14).abs() < 0.01);
+        assert!((restored_pose.rotation - PI).abs() < 0.01);
         assert!((restored_pose.scale - 1.5).abs() < 0.01);
     }
 
