@@ -4,7 +4,8 @@ use astraweave_persistence_ecs::{
     CReplayState,
 };
 use aw_save::{SaveBundleV2, SaveManager, WorldState, SAVE_SCHEMA_VERSION};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tempfile::tempdir;

@@ -1,4 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use glam::{Vec2, Vec3, Mat4, Quat};
 use winit::keyboard::KeyCode;
 

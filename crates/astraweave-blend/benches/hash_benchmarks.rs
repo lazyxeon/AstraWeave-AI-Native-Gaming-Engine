@@ -3,7 +3,8 @@
 //! Tests content hashing performance across various data sizes
 //! and usage patterns using SHA-256 (the actual hash algorithm used).
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use std::hint::black_box;
 use sha2::{Digest, Sha256};
 
 /// Compute SHA-256 hash of data (matches ConversionCache::hash_file)

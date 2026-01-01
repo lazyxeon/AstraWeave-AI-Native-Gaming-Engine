@@ -2,7 +2,8 @@
 //!
 //! Tests cache entry creation, lookup, eviction, and persistence.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use std::hint::black_box;
 use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::tempdir;

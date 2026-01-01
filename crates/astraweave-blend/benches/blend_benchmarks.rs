@@ -3,7 +3,8 @@
 //! Tests performance of conversion options, builder pattern,
 //! serialization, and other core operations.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use std::hint::black_box;
 use std::time::Duration;
 
 use astraweave_blend::options::*;
