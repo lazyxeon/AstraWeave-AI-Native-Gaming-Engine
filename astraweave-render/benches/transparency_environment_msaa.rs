@@ -7,10 +7,10 @@
 //!
 //! Part of the AstraWeave AI-Native Game Engine benchmark infrastructure.
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::{vec3, Vec3};
-use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::hint::black_box;
+use std::time::Instant;
 
 // ============================================================================
 // SECTION 1: TRANSPARENCY & DEPTH SORTING BENCHMARKS
