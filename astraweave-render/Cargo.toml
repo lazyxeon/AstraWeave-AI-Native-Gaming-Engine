@@ -111,3 +111,15 @@ harness = false
 [[bench]]
 name = "culling_lod"
 harness = false
+
+[[bench]]
+name = "nanite_shadow_csm"
+harness = false
+
+[[bench]]
+name = "texture_streaming_vxgi"
+harness = false
+
+[[bench]]
+name = "clustered_megalights_residency"
+harness = false

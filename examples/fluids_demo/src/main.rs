@@ -16,7 +16,7 @@ mod scenarios;
 mod skybox_renderer;
 
 use astraweave_fluids::renderer::CameraUniform;
-use astraweave_fluids::{FluidRenderer, FluidSystem};
+use astraweave_fluids::{FluidLodConfig, FluidLodManager, FluidRenderer, FluidSystem};
 
 use scenarios::{LaboratoryScenario, OceanScenario, ScenarioManager};
 use skybox_renderer::SkyboxRenderer;
@@ -68,6 +68,21 @@ struct State {
 
     start_time: Instant,
     last_update: Instant,
+
+    // Camera controls
+    camera_yaw: f32,
+    camera_pitch: f32,
+    camera_distance: f32,
+    keys_pressed: std::collections::HashSet<KeyCode>,
+    mouse_captured: bool,
+
+    // Performance tracking
+    frame_times: Vec<f32>,
+    lod_manager: FluidLodManager,
+
+    // Simulation parameters (egui controlled)
+    sim_speed: f32,
+    show_debug_panel: bool,
 }
 
 impl State {
@@ -271,6 +286,21 @@ impl State {
 
             start_time: Instant::now(),
             last_update: Instant::now(),
+
+            // Camera controls
+            camera_yaw: 0.0,
+            camera_pitch: 0.3,
+            camera_distance: 30.0,
+            keys_pressed: std::collections::HashSet::new(),
+            mouse_captured: false,
+
+            // Performance tracking
+            frame_times: Vec::with_capacity(60),
+            lod_manager: FluidLodManager::new(FluidLodConfig::default()),
+
+            // Simulation parameters
+            sim_speed: 1.0,
+            show_debug_panel: true,
         }
     }
 
@@ -310,11 +340,57 @@ impl State {
 
     fn update(&mut self) {
         let now = Instant::now();
-        let dt = (now - self.last_update).as_secs_f32();
+        let raw_dt = (now - self.last_update).as_secs_f32();
         self.last_update = now;
 
-        // Cap dt to avoid instability
-        let dt = dt.min(0.016);
+        // Frame time averaging
+        if self.frame_times.len() >= 60 {
+            self.frame_times.remove(0);
+        }
+        self.frame_times.push(raw_dt);
+
+        // Cap dt and apply simulation speed
+        let dt = (raw_dt.min(0.016) * self.sim_speed).max(0.0001);
+
+        // Camera orbit controls (WASD + scroll)
+        let move_speed = 2.0 * raw_dt;
+        let orbit_speed = 1.5 * raw_dt;
+
+        if self.keys_pressed.contains(&KeyCode::KeyW) {
+            self.camera_pitch += orbit_speed;
+        }
+        if self.keys_pressed.contains(&KeyCode::KeyS) {
+            self.camera_pitch -= orbit_speed;
+        }
+        if self.keys_pressed.contains(&KeyCode::KeyA) {
+            self.camera_yaw -= orbit_speed;
+        }
+        if self.keys_pressed.contains(&KeyCode::KeyD) {
+            self.camera_yaw += orbit_speed;
+        }
+        if self.keys_pressed.contains(&KeyCode::KeyQ) {
+            self.camera_distance += move_speed * 10.0;
+        }
+        if self.keys_pressed.contains(&KeyCode::KeyE) {
+            self.camera_distance -= move_speed * 10.0;
+        }
+
+        // Clamp camera values
+        self.camera_pitch = self.camera_pitch.clamp(-1.4, 1.4);
+        self.camera_distance = self.camera_distance.clamp(5.0, 100.0);
+
+        // Update camera position from orbit
+        let target = Vec3::new(0.0, 5.0, 0.0);
+        let x = self.camera_distance * self.camera_yaw.cos() * self.camera_pitch.cos();
+        let y = self.camera_distance * self.camera_pitch.sin();
+        let z = self.camera_distance * self.camera_yaw.sin() * self.camera_pitch.cos();
+        self.camera.eye = target + Vec3::new(x, y, z);
+        self.camera.target = target;
+
+        // LOD check
+        let fluid_center = [0.0_f32, 5.0_f32, 0.0_f32];
+        let camera_pos = [self.camera.eye.x, self.camera.eye.y, self.camera.eye.z];
+        let should_simulate = self.lod_manager.update(camera_pos, fluid_center);
 
         // Create encoder for fluid simulation
         let mut encoder = self
@@ -323,9 +399,11 @@ impl State {
                 label: Some("Fluid Update Encoder"),
             });
 
-        // Update fluid simulation
-        self.fluid_system
-            .step(&self.device, &mut encoder, &self.queue, dt);
+        // Update fluid simulation (only if LOD allows and sim_speed > 0)
+        if should_simulate && self.sim_speed > 0.0 {
+            self.fluid_system
+                .step(&self.device, &mut encoder, &self.queue, dt);
+        }
 
         // Update current scenario
         if let Some(scenario) = self.scenario_manager.current() {
@@ -341,12 +419,6 @@ impl State {
 
         // Submit encoder
         self.queue.submit(std::iter::once(encoder.finish()));
-
-        log::debug!(
-            "Frame time: {:.3}ms, Particles: {}",
-            dt * 1000.0,
-            self.fluid_system.particle_count
-        );
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -441,31 +513,103 @@ impl State {
 
         // --- Egui Performance Overlay ---
         let raw_input = self.egui_state.take_egui_input(&self.window);
+
+        // Calculate average FPS from frame times
+        let avg_dt = if !self.frame_times.is_empty() {
+            self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32
+        } else {
+            0.016
+        };
+        let avg_fps = 1.0 / avg_dt;
+        let min_fps = 1.0
+            / self
+                .frame_times
+                .iter()
+                .cloned()
+                .fold(0.0f32, f32::max)
+                .max(0.001);
+        let max_fps = 1.0
+            / self
+                .frame_times
+                .iter()
+                .cloned()
+                .fold(f32::INFINITY, f32::min)
+                .max(0.001);
+
         let full_output = self.egui_ctx.run(raw_input, |ctx| {
-            egui::Window::new("Performance")
-                .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
-                .resizable(false)
-                .collapsible(true)
-                .show(ctx, |ui| {
-                    let elapsed = self.start_time.elapsed().as_secs_f32();
-                    let fps = 1.0 / (self.last_update.elapsed().as_secs_f32() + 0.001);
+            if self.show_debug_panel {
+                egui::Window::new("🎮 Fluids Demo")
+                    .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
+                    .resizable(false)
+                    .collapsible(true)
+                    .show(ctx, |ui| {
+                        // Performance Section
+                        ui.heading("📊 Performance");
+                        ui.separator();
 
-                    ui.heading("Fluids Demo");
-                    ui.separator();
+                        ui.horizontal(|ui| {
+                            ui.label("FPS:");
+                            ui.label(format!("{:.0} avg / {:.0} min", avg_fps, min_fps));
+                        });
+                        ui.label(format!("Frame: {:.2}ms", avg_dt * 1000.0));
+                        ui.label(format!("Particles: {}", self.fluid_system.particle_count));
+                        ui.label(format!("LOD: {:?}", self.lod_manager.current_lod()));
 
-                    ui.label(format!("FPS: {:.1}", fps));
-                    ui.label(format!("Time: {:.1}s", elapsed));
-                    ui.label(format!("Particles: {}", self.fluid_system.particle_count));
-                    ui.label(format!("Active: {}", self.fluid_system.active_count));
+                        ui.add_space(8.0);
 
-                    ui.separator();
-                    ui.label("Temperature Enabled: ✓");
-                    ui.label(format!("PBD Iterations: {}", self.fluid_system.iterations));
+                        // Simulation Controls
+                        ui.heading("⚙️ Simulation");
+                        ui.separator();
 
-                    ui.separator();
-                    ui.small("Press SPACE to switch scenarios");
-                    ui.small("Press ESC to exit");
-                });
+                        ui.horizontal(|ui| {
+                            ui.label("Speed:");
+                            ui.add(egui::Slider::new(&mut self.sim_speed, 0.0..=2.0).suffix("x"));
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Viscosity:");
+                            ui.add(egui::Slider::new(
+                                &mut self.fluid_system.viscosity,
+                                0.0..=100.0,
+                            ));
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Surface Tension:");
+                            ui.add(egui::Slider::new(
+                                &mut self.fluid_system.surface_tension,
+                                0.0..=1.0,
+                            ));
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Gravity:");
+                            ui.add(egui::Slider::new(
+                                &mut self.fluid_system.gravity,
+                                -20.0..=0.0,
+                            ));
+                        });
+
+                        ui.add_space(8.0);
+
+                        // Camera Info
+                        ui.heading("📷 Camera");
+                        ui.separator();
+                        ui.label(format!("Distance: {:.1}", self.camera_distance));
+                        ui.label(format!("Pitch: {:.2}rad", self.camera_pitch));
+
+                        ui.add_space(8.0);
+
+                        // Controls Help
+                        ui.heading("🎮 Controls");
+                        ui.separator();
+                        ui.small("WASD - Orbit camera");
+                        ui.small("Q/E - Zoom in/out");
+                        ui.small("SPACE - Switch scenario");
+                        ui.small("F1 - Toggle this panel");
+                        ui.small("ESC - Exit");
+                    });
+            }
         });
 
         self.egui_state
@@ -573,6 +717,49 @@ impl ApplicationHandler for App {
                     } => {
                         state.toggle_render_mode();
                     }
+                    // F1 - Toggle debug panel
+                    WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: ElementState::Pressed,
+                                physical_key: PhysicalKey::Code(KeyCode::F1),
+                                ..
+                            },
+                        ..
+                    } => {
+                        state.show_debug_panel = !state.show_debug_panel;
+                    }
+                    // R - Reset camera
+                    WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: ElementState::Pressed,
+                                physical_key: PhysicalKey::Code(KeyCode::KeyR),
+                                ..
+                            },
+                        ..
+                    } => {
+                        state.camera_yaw = 0.0;
+                        state.camera_pitch = 0.3;
+                        state.camera_distance = 30.0;
+                    }
+                    // Track key presses for camera movement
+                    WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: key_state,
+                                physical_key: PhysicalKey::Code(code),
+                                ..
+                            },
+                        ..
+                    } => match key_state {
+                        ElementState::Pressed => {
+                            state.keys_pressed.insert(code);
+                        }
+                        ElementState::Released => {
+                            state.keys_pressed.remove(&code);
+                        }
+                    },
                     WindowEvent::Resized(physical_size) => {
                         state.resize(physical_size);
                     }
