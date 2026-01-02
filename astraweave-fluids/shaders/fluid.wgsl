@@ -433,8 +433,8 @@ struct SecondaryParticle {
     info: vec4<f32>, // x: lifetime, y: type (0=foam, 1=spray, 2=bubble), z: alpha, w: scale
 };
 
-@group(0) @binding(7) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
-@group(0) @binding(8) var<storage, read_write> secondary_counter: atomic<u32>;
+@group(2) @binding(7) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
+@group(2) @binding(8) var<storage, read_write> secondary_counter: atomic<u32>;
 
 @compute @workgroup_size(64)
 fn emit_whitewater(@builtin(global_invocation_id) global_id: vec3<u32>) {
