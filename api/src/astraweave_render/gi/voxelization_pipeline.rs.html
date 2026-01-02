@@ -358,7 +358,7 @@
 <a href=#358 id=358 data-nosnippet>358</a>
 <a href=#359 id=359 data-nosnippet>359</a>        <span class="comment">// Dispatch clear shader (8x8x8 workgroups)
 <a href=#360 id=360 data-nosnippet>360</a>        </span><span class="kw">let </span>workgroup_size = <span class="number">8</span>;
-<a href=#361 id=361 data-nosnippet>361</a>        <span class="kw">let </span>dispatch_size = (<span class="self">self</span>.config.voxel_resolution + workgroup_size - <span class="number">1</span>) / workgroup_size;
+<a href=#361 id=361 data-nosnippet>361</a>        <span class="kw">let </span>dispatch_size = <span class="self">self</span>.config.voxel_resolution.div_ceil(workgroup_size);
 <a href=#362 id=362 data-nosnippet>362</a>        compute_pass.dispatch_workgroups(dispatch_size, dispatch_size, dispatch_size);
 <a href=#363 id=363 data-nosnippet>363</a>
 <a href=#364 id=364 data-nosnippet>364</a>        drop(compute_pass);
@@ -393,7 +393,7 @@
 <a href=#393 id=393 data-nosnippet>393</a>        <span class="comment">// Dispatch one thread per triangle (workgroup size 64x1x1)
 <a href=#394 id=394 data-nosnippet>394</a>        </span><span class="kw">let </span>triangle_count = mesh.triangle_count();
 <a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">let </span>workgroup_size = <span class="number">64</span>;
-<a href=#396 id=396 data-nosnippet>396</a>        <span class="kw">let </span>dispatch_size = (triangle_count + workgroup_size - <span class="number">1</span>) / workgroup_size;
+<a href=#396 id=396 data-nosnippet>396</a>        <span class="kw">let </span>dispatch_size = triangle_count.div_ceil(workgroup_size);
 <a href=#397 id=397 data-nosnippet>397</a>        compute_pass.dispatch_workgroups(dispatch_size, <span class="number">1</span>, <span class="number">1</span>);
 <a href=#398 id=398 data-nosnippet>398</a>
 <a href=#399 id=399 data-nosnippet>399</a>        drop(compute_pass);

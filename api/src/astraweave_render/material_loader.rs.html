@@ -299,7 +299,7 @@
 <a href=#299 id=299 data-nosnippet>299</a>    }
 <a href=#300 id=300 data-nosnippet>300</a>
 <a href=#301 id=301 data-nosnippet>301</a>    <span class="doccomment">/// Load a KTX2 file and decompress to RGBA8 using basis_universal transcoder
-<a href=#302 id=302 data-nosnippet>302</a>    </span><span class="kw">fn </span>load_ktx2_to_rgba(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;image::RgbaImage&gt; {
+<a href=#302 id=302 data-nosnippet>302</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>load_ktx2_to_rgba(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;image::RgbaImage&gt; {
 <a href=#303 id=303 data-nosnippet>303</a>        <span class="kw">use </span>basis_universal::<span class="kw-2">*</span>;
 <a href=#304 id=304 data-nosnippet>304</a>
 <a href=#305 id=305 data-nosnippet>305</a>        <span class="kw">let </span>data =
@@ -641,7 +641,7 @@
 <a href=#641 id=641 data-nosnippet>641</a>        };
 <a href=#642 id=642 data-nosnippet>642</a>
 <a href=#643 id=643 data-nosnippet>643</a>        <span class="kw">let </span><span class="kw-2">mut </span>material_records = (<span class="number">0</span>..layer_count)
-<a href=#644 id=644 data-nosnippet>644</a>            .map(|idx| MaterialGpu::neutral(idx))
+<a href=#644 id=644 data-nosnippet>644</a>            .map(MaterialGpu::neutral)
 <a href=#645 id=645 data-nosnippet>645</a>            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 <a href=#646 id=646 data-nosnippet>646</a>
 <a href=#647 id=647 data-nosnippet>647</a>        <span class="comment">// Neutral patterns used for fallbacks

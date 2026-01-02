@@ -133,7 +133,7 @@
 <a href=#133 id=133 data-nosnippet>133</a>
 <a href=#134 id=134 data-nosnippet>134</a>    <span class="doccomment">/// Create with custom total budget
 <a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">pub fn </span>with_total_budget(total_bytes: u64) -&gt; <span class="self">Self </span>{
-<a href=#136 id=136 data-nosnippet>136</a>        <span class="kw">let </span><span class="kw-2">mut </span>mgr = <span class="self">Self</span>::new();
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="kw">let </span>mgr = <span class="self">Self</span>::new();
 <a href=#137 id=137 data-nosnippet>137</a>        mgr.total_budget.store(total_bytes, Ordering::SeqCst);
 <a href=#138 id=138 data-nosnippet>138</a>
 <a href=#139 id=139 data-nosnippet>139</a>        <span class="comment">// Distribute budget proportionally

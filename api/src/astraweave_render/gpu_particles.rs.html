@@ -268,7 +268,7 @@
 <a href=#268 id=268 data-nosnippet>268</a>        pass.set_bind_group(<span class="number">0</span>, bind_group, <span class="kw-2">&amp;</span>[]);
 <a href=#269 id=269 data-nosnippet>269</a>
 <a href=#270 id=270 data-nosnippet>270</a>        <span class="comment">// Dispatch with 64 threads per workgroup
-<a href=#271 id=271 data-nosnippet>271</a>        </span><span class="kw">let </span>workgroups = (<span class="self">self</span>.max_particles + <span class="number">63</span>) / <span class="number">64</span>;
+<a href=#271 id=271 data-nosnippet>271</a>        </span><span class="kw">let </span>workgroups = <span class="self">self</span>.max_particles.div_ceil(<span class="number">64</span>);
 <a href=#272 id=272 data-nosnippet>272</a>        pass.dispatch_workgroups(workgroups, <span class="number">1</span>, <span class="number">1</span>);
 <a href=#273 id=273 data-nosnippet>273</a>
 <a href=#274 id=274 data-nosnippet>274</a>        drop(pass);

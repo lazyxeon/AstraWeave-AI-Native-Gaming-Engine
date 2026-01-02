@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["NavMesh","NavTri","Triangle"]};
+window.SIDEBAR_ITEMS = {"struct":["Aabb","NavMesh","NavTri","Triangle"]};
