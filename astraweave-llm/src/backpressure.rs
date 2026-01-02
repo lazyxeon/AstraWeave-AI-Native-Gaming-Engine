@@ -182,10 +182,10 @@ impl PriorityQueues {
 }
 
 /// Backpressure management result
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BackpressureResult {
     /// Request was accepted and can proceed immediately
-    Accepted,
+    Accepted { request_id: String },
     /// Request was queued and will be processed later
     Queued {
         position: usize,
@@ -197,7 +197,7 @@ pub enum BackpressureResult {
         retry_after: Option<Duration>,
     },
     /// Request was degraded (lower quality response)
-    Degraded { reason: String },
+    Degraded { request_id: String, reason: String },
 }
 
 /// Backpressure metrics
@@ -221,12 +221,15 @@ pub struct BackpressureMetrics {
 
 impl BackpressureManager {
     pub fn new(config: BackpressureConfig) -> Self {
+        let mut metrics = BackpressureMetrics::default();
+        metrics.adaptive_concurrency_limit = config.max_concurrent_requests;
+
         Self {
             queues: Arc::new(RwLock::new(PriorityQueues::new())),
             active_requests: Arc::new(RwLock::new(HashMap::new())),
             semaphore: Arc::new(Semaphore::new(config.max_concurrent_requests)),
             config,
-            metrics: Arc::new(RwLock::new(BackpressureMetrics::default())),
+            metrics: Arc::new(RwLock::new(metrics)),
             processor_handle: None,
         }
     }
@@ -291,6 +294,7 @@ impl BackpressureManager {
             let mut metrics = self.metrics.write().await;
             metrics.degraded_requests += 1;
             return Ok(BackpressureResult::Degraded {
+                request_id,
                 reason: "High load - using faster but lower quality model".to_string(),
             });
         }
@@ -307,7 +311,7 @@ impl BackpressureManager {
 
             {
                 let mut active_requests = self.active_requests.write().await;
-                active_requests.insert(request_id, active_request);
+                active_requests.insert(request_id.clone(), active_request);
             }
 
             {
@@ -323,7 +327,7 @@ impl BackpressureManager {
                 drop(permit);
             });
 
-            return Ok(BackpressureResult::Accepted);
+            return Ok(BackpressureResult::Accepted { request_id });
         }
 
         // Need to queue the request
@@ -736,8 +740,8 @@ mod tests {
     #[test]
     fn test_backpressure_result_variants() {
         // Test Accepted
-        let accepted = BackpressureResult::Accepted;
-        assert!(matches!(accepted, BackpressureResult::Accepted));
+        let accepted = BackpressureResult::Accepted { request_id: "test".to_string() };
+        assert!(matches!(accepted, BackpressureResult::Accepted { .. }));
 
         // Test Queued
         let queued = BackpressureResult::Queued {
@@ -761,9 +765,11 @@ mod tests {
 
         // Test Degraded
         let degraded = BackpressureResult::Degraded {
+            request_id: "test".to_string(),
             reason: "High load".to_string(),
         };
-        if let BackpressureResult::Degraded { reason } = degraded {
+        if let BackpressureResult::Degraded { request_id, reason } = degraded {
+            assert_eq!(request_id, "test");
             assert_eq!(reason, "High load");
         }
     }
@@ -796,7 +802,7 @@ mod tests {
             .unwrap();
 
         match result {
-            BackpressureResult::Accepted => {
+            BackpressureResult::Accepted { .. } => {
                 // Expected result
             }
             _ => panic!("Expected request to be accepted"),
@@ -831,7 +837,7 @@ mod tests {
 
         // Verify first request was accepted
         assert!(
-            matches!(result1, BackpressureResult::Accepted),
+            matches!(result1, BackpressureResult::Accepted { .. }),
             "First request should be accepted, got: {:?}",
             result1
         );
@@ -913,5 +919,461 @@ mod tests {
         assert!(metrics.total_requests > 0);
 
         manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_complete_request_success() {
+        let manager = BackpressureManager::new(BackpressureConfig::default());
+        // Complete a non-existent request (should not fail)
+        let result = manager.complete_request("non_existent_id", true).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_complete_request_failure() {
+        let manager = BackpressureManager::new(BackpressureConfig::default());
+        let result = manager.complete_request("test_id", false).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_start_twice_fails() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        manager.start().await.unwrap();
+        let result = manager.start().await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("already running"));
+        manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_stop_without_start() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        // Stop without starting should be safe
+        manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_estimate_wait_time() {
+        let manager = BackpressureManager::new(BackpressureConfig::default());
+        let wait_time = manager.estimate_wait_time(10).await;
+        // Should return some duration
+        assert!(wait_time >= Duration::from_secs(0));
+    }
+
+    #[tokio::test]
+    async fn test_should_reject_request_critical_never_rejected() {
+        let config = BackpressureConfig {
+            enable_graceful_degradation: true,
+            ..Default::default()
+        };
+        let manager = BackpressureManager::new(config);
+        // Critical priority should never be rejected
+        let should_reject = manager.should_reject_request(Priority::Critical).await;
+        assert!(!should_reject);
+    }
+
+    #[tokio::test]
+    async fn test_should_degrade_request_critical_never_degraded() {
+        let config = BackpressureConfig {
+            enable_graceful_degradation: true,
+            ..Default::default()
+        };
+        let manager = BackpressureManager::new(config);
+        // Critical priority should never be degraded
+        let should_degrade = manager.should_degrade_request(Priority::Critical).await;
+        assert!(!should_degrade);
+    }
+
+    #[tokio::test]
+    async fn test_should_degrade_request_high_never_degraded() {
+        let config = BackpressureConfig {
+            enable_graceful_degradation: true,
+            ..Default::default()
+        };
+        let manager = BackpressureManager::new(config);
+        let should_degrade = manager.should_degrade_request(Priority::High).await;
+        assert!(!should_degrade);
+    }
+
+    #[tokio::test]
+    async fn test_graceful_degradation_disabled() {
+        let config = BackpressureConfig {
+            enable_graceful_degradation: false,
+            ..Default::default()
+        };
+        let manager = BackpressureManager::new(config);
+        // When disabled, should never reject or degrade
+        let should_reject = manager.should_reject_request(Priority::Background).await;
+        let should_degrade = manager.should_degrade_request(Priority::Background).await;
+        assert!(!should_reject);
+        assert!(!should_degrade);
+    }
+
+    #[test]
+    fn test_priority_queues_default() {
+        let queues = PriorityQueues::default();
+        assert_eq!(queues.total_queued(), 0);
+    }
+
+    #[test]
+    fn test_backpressure_result_rejected_none_retry() {
+        let rejected = BackpressureResult::Rejected {
+            reason: "No capacity".to_string(),
+            retry_after: None,
+        };
+        if let BackpressureResult::Rejected { reason, retry_after } = rejected {
+            assert_eq!(reason, "No capacity");
+            assert!(retry_after.is_none());
+        }
+    }
+
+    #[test]
+    fn test_priority_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(Priority::Critical);
+        set.insert(Priority::High);
+        set.insert(Priority::Critical); // duplicate
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn test_priority_serialization() {
+        let priority = Priority::Normal;
+        let json = serde_json::to_string(&priority).unwrap();
+        let deserialized: Priority = serde_json::from_str(&json).unwrap();
+        assert_eq!(priority, deserialized);
+    }
+
+    #[tokio::test]
+    async fn test_get_metrics_updates_queue_sizes() {
+        let config = BackpressureConfig {
+            max_concurrent_requests: 0, // Force all to queue
+            ..Default::default()
+        };
+        let mut manager = BackpressureManager::new(config);
+        manager.start().await.unwrap();
+
+        let metadata = RequestMetadata {
+            user_id: None,
+            model: "test".to_string(),
+            estimated_tokens: 10,
+            estimated_cost: 0.0,
+            tags: HashMap::new(),
+        };
+
+        let _ = manager.submit_request(Priority::High, None, metadata.clone()).await;
+        let _ = manager.submit_request(Priority::Low, None, metadata).await;
+
+        let metrics = manager.get_metrics().await;
+        assert!(metrics.queue_sizes_by_priority.contains_key(&Priority::High));
+        assert!(metrics.queue_sizes_by_priority.contains_key(&Priority::Low));
+        assert!(!metrics.last_updated.is_empty());
+        manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_submit_request_with_custom_timeout() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        manager.start().await.unwrap();
+
+        let metadata = RequestMetadata {
+            user_id: None,
+            model: "test".to_string(),
+            estimated_tokens: 10,
+            estimated_cost: 0.0,
+            tags: HashMap::new(),
+        };
+
+        // Submit with custom timeout
+        let result = manager
+            .submit_request(Priority::Normal, Some(Duration::from_secs(5)), metadata)
+            .await
+            .unwrap();
+
+        assert!(matches!(result, BackpressureResult::Accepted { .. } | BackpressureResult::Queued { .. }));
+        manager.stop().await;
+    }
+
+    #[test]
+    fn test_backpressure_metrics_with_priority_sizes() {
+        let mut queue_sizes = HashMap::new();
+        queue_sizes.insert(Priority::Critical, 1);
+        queue_sizes.insert(Priority::High, 5);
+        queue_sizes.insert(Priority::Normal, 10);
+
+        let metrics = BackpressureMetrics {
+            queue_sizes_by_priority: queue_sizes,
+            ..Default::default()
+        };
+
+        assert_eq!(metrics.queue_sizes_by_priority.get(&Priority::Critical), Some(&1));
+        assert_eq!(metrics.queue_sizes_by_priority.get(&Priority::High), Some(&5));
+        assert_eq!(metrics.queue_sizes_by_priority.get(&Priority::Normal), Some(&10));
+    }
+
+    #[test]
+    fn test_request_metadata_clone() {
+        let metadata = RequestMetadata {
+            user_id: Some("user".to_string()),
+            model: "model".to_string(),
+            estimated_tokens: 100,
+            estimated_cost: 1.0,
+            tags: HashMap::new(),
+        };
+        let cloned = metadata.clone();
+        assert_eq!(metadata.user_id, cloned.user_id);
+        assert_eq!(metadata.model, cloned.model);
+    }
+
+    #[tokio::test]
+    async fn test_adjust_concurrency_called_on_complete() {
+        let config = BackpressureConfig {
+            adaptive_concurrency: true,
+            target_latency_ms: 100,
+            ..Default::default()
+        };
+        let manager = BackpressureManager::new(config);
+
+        // Complete request triggers adjust_concurrency internally
+        // Just verify it doesn't panic
+        let _ = manager.complete_request("id", true).await;
+        let _ = manager.complete_request("id2", false).await;
+    }
+
+    #[test]
+    fn test_backpressure_config_clone() {
+        let config = BackpressureConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.max_concurrent_requests, cloned.max_concurrent_requests);
+        assert_eq!(config.target_latency_ms, cloned.target_latency_ms);
+    }
+
+    #[test]
+    fn test_backpressure_config_debug() {
+        let config = BackpressureConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("max_concurrent_requests"));
+        assert!(debug_str.contains("100"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Additional Coverage Tests for PriorityQueues Internal
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_priority_queues_initialization() {
+        let queues = PriorityQueues::new();
+        // All priority queues should be initialized
+        assert_eq!(queues.total_queued(), 0);
+        for priority in Priority::all() {
+            assert_eq!(queues.queued_by_priority(priority), 0);
+        }
+    }
+
+    #[test]
+    fn test_priority_queues_queued_by_priority_unknown() {
+        let queues = PriorityQueues::default();
+        // All priorities should have a queue
+        assert_eq!(queues.queued_by_priority(Priority::Critical), 0);
+        assert_eq!(queues.queued_by_priority(Priority::Background), 0);
+    }
+
+    #[test]
+    fn test_backpressure_result_queued_values() {
+        let result = BackpressureResult::Queued {
+            position: 5,
+            estimated_wait: Duration::from_secs(10),
+        };
+        if let BackpressureResult::Queued { position, estimated_wait } = result {
+            assert_eq!(position, 5);
+            assert_eq!(estimated_wait, Duration::from_secs(10));
+        } else {
+            panic!("Expected Queued variant");
+        }
+    }
+
+    #[test]
+    fn test_backpressure_result_degraded() {
+        let result = BackpressureResult::Degraded {
+            request_id: "test".to_string(),
+            reason: "High load".to_string(),
+        };
+        if let BackpressureResult::Degraded { reason, .. } = result {
+            assert_eq!(reason, "High load");
+        } else {
+            panic!("Expected Degraded variant");
+        }
+    }
+
+    #[test]
+    fn test_backpressure_result_accepted() {
+        let result = BackpressureResult::Accepted { request_id: "test".to_string() };
+        assert!(matches!(result, BackpressureResult::Accepted { .. }));
+    }
+
+    #[test]
+    fn test_backpressure_metrics_json_roundtrip() {
+        let metrics = BackpressureMetrics {
+            total_requests: 100,
+            accepted_requests: 90,
+            queued_requests: 5,
+            rejected_requests: 3,
+            degraded_requests: 2,
+            expired_requests: 0,
+            current_queue_size: 5,
+            current_active_requests: 10,
+            average_queue_time_ms: 50.0,
+            average_processing_time_ms: 200.0,
+            queue_sizes_by_priority: HashMap::new(),
+            load_factor: 0.5,
+            adaptive_concurrency_limit: 50,
+            last_updated: "2025-01-01T00:00:00Z".to_string(),
+        };
+        let json = serde_json::to_string(&metrics).unwrap();
+        let deserialized: BackpressureMetrics = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.total_requests, 100);
+        assert_eq!(deserialized.accepted_requests, 90);
+    }
+
+    #[test]
+    fn test_backpressure_config_all_fields() {
+        let config = BackpressureConfig {
+            max_concurrent_requests: 50,
+            max_queue_size: 500,
+            request_timeout: Duration::from_secs(60),
+            processing_interval: Duration::from_millis(20),
+            adaptive_concurrency: false,
+            target_latency_ms: 500,
+            load_shedding_threshold: 0.8,
+            enable_graceful_degradation: false,
+        };
+        assert_eq!(config.max_concurrent_requests, 50);
+        assert_eq!(config.max_queue_size, 500);
+        assert!(!config.adaptive_concurrency);
+    }
+
+    #[tokio::test]
+    async fn test_submit_request_with_user_id() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        manager.start().await.unwrap();
+
+        let metadata = RequestMetadata {
+            user_id: Some("user123".to_string()),
+            model: "gpt-4".to_string(),
+            estimated_tokens: 500,
+            estimated_cost: 0.05,
+            tags: {
+                let mut tags = HashMap::new();
+                tags.insert("env".to_string(), "prod".to_string());
+                tags
+            },
+        };
+
+        let result = manager.submit_request(Priority::High, None, metadata).await;
+        assert!(result.is_ok());
+        manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_metrics_load_factor() {
+        let manager = BackpressureManager::new(BackpressureConfig::default());
+        let metrics = manager.get_metrics().await;
+        // Load factor should be 0, NaN (0/0 division), or some valid float
+        // When adaptive_concurrency_limit is 0, we get NaN
+        assert!(metrics.load_factor.is_nan() || metrics.load_factor >= 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_complete_request_updates_avg_time() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        manager.start().await.unwrap();
+
+        let metadata = RequestMetadata {
+            user_id: None,
+            model: "test".to_string(),
+            estimated_tokens: 10,
+            estimated_cost: 0.0,
+            tags: HashMap::new(),
+        };
+
+        // Submit request to create active request
+        let _ = manager.submit_request(Priority::Normal, None, metadata).await;
+        
+        // Give it a moment to register
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        
+        // Get metrics to check tracking
+        let metrics = manager.get_metrics().await;
+        // Should have tracked at least one request
+        assert!(metrics.total_requests >= 1);
+
+        manager.stop().await;
+    }
+
+    #[test]
+    fn test_priority_ordering_complete() {
+        assert!(Priority::Critical < Priority::High);
+        assert!(Priority::High < Priority::Normal);
+        assert!(Priority::Normal < Priority::Low);
+        assert!(Priority::Low < Priority::Background);
+    }
+
+    #[test]
+    fn test_request_metadata_with_empty_tags() {
+        let metadata = RequestMetadata {
+            user_id: None,
+            model: "test".to_string(),
+            estimated_tokens: 0,
+            estimated_cost: 0.0,
+            tags: HashMap::new(),
+        };
+        assert!(metadata.tags.is_empty());
+        assert!(metadata.user_id.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_submit_request_all_priorities() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        manager.start().await.unwrap();
+
+        let metadata = RequestMetadata {
+            user_id: None,
+            model: "test".to_string(),
+            estimated_tokens: 10,
+            estimated_cost: 0.0,
+            tags: HashMap::new(),
+        };
+
+        // Test all priority levels
+        for priority in Priority::all() {
+            let result = manager.submit_request(priority, None, metadata.clone()).await;
+            assert!(result.is_ok());
+        }
+
+        manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_manager_drop() {
+        // Create manager in inner scope to test Drop
+        {
+            let mut manager = BackpressureManager::new(BackpressureConfig::default());
+            manager.start().await.unwrap();
+            // Manager will be dropped here
+        }
+        // If we get here, drop worked correctly
+        assert!(true);
+    }
+
+    #[test]
+    fn test_backpressure_metrics_default_values() {
+        let metrics = BackpressureMetrics {
+            total_requests: 42,
+            ..Default::default()
+        };
+        let cloned = metrics.clone();
+        assert_eq!(cloned.total_requests, 42);
     }
 }

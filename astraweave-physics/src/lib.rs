@@ -996,4 +996,458 @@ mod tests {
         let x = pw.body_transform(char_id).unwrap().w_axis.x;
         assert!(x > 0.5, "character should have moved forward, x={}", x);
     }
+
+    // ===== PhysicsWorld Basic Tests =====
+
+    #[test]
+    fn test_physics_world_new() {
+        let pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        assert_eq!(pw.gravity.x, 0.0);
+        assert_eq!(pw.gravity.y, -9.8);
+        assert_eq!(pw.gravity.z, 0.0);
+        assert!(pw.bodies.is_empty());
+        assert!(pw.colliders.is_empty());
+    }
+
+    #[test]
+    fn test_physics_world_from_config() {
+        let config = PhysicsConfig {
+            gravity: Vec3::new(0.0, -10.0, 0.0),
+            time_step: 1.0 / 120.0,
+            ccd_enabled: false,
+            max_ccd_substeps: 1,
+            water_level: f32::NEG_INFINITY,
+            fluid_density: 1000.0,
+        };
+        let pw = PhysicsWorld::from_config(config);
+        assert_eq!(pw.gravity.y, -10.0);
+        assert_eq!(pw.integration.dt, 1.0 / 120.0);
+    }
+
+    #[test]
+    fn test_create_ground_plane() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let ground = pw.create_ground_plane(Vec3::new(5.0, 0.5, 5.0), 0.8);
+        
+        assert!(pw.body_transform(ground).is_some());
+        assert!(!pw.bodies.is_empty());
+        assert!(!pw.colliders.is_empty());
+    }
+
+    #[test]
+    fn test_add_dynamic_box() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        assert!(pw.body_transform(box_id).is_some());
+        
+        // Step physics - box should fall
+        for _ in 0..60 {
+            pw.step();
+        }
+        
+        let y = pw.body_transform(box_id).unwrap().w_axis.y;
+        assert!(y < 5.0, "Box should have fallen, y={}", y);
+    }
+
+    #[test]
+    fn test_apply_force() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 2.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        pw.apply_force(box_id, Vec3::new(100.0, 0.0, 0.0));
+        pw.step();
+        
+        let vel = pw.get_velocity(box_id).unwrap();
+        assert!(vel.x > 0.0, "Force should have applied positive x velocity");
+    }
+
+    #[test]
+    fn test_apply_impulse() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        pw.apply_impulse(box_id, Vec3::new(0.0, 50.0, 0.0));
+        
+        let vel = pw.get_velocity(box_id).unwrap();
+        assert!(vel.y > 0.0, "Impulse should have given upward velocity");
+    }
+
+    #[test]
+    fn test_get_set_velocity() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        // Get initial velocity
+        let initial_vel = pw.get_velocity(box_id).unwrap();
+        assert_eq!(initial_vel.x, 0.0);
+        
+        // Set velocity
+        pw.set_velocity(box_id, Vec3::new(10.0, 0.0, 5.0));
+        
+        let new_vel = pw.get_velocity(box_id).unwrap();
+        assert_eq!(new_vel.x, 10.0);
+        assert_eq!(new_vel.z, 5.0);
+    }
+
+    #[test]
+    fn test_get_velocity_invalid_id() {
+        let pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let vel = pw.get_velocity(9999);
+        assert!(vel.is_none());
+    }
+
+    #[test]
+    fn test_body_transform_invalid_id() {
+        let pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let transform = pw.body_transform(9999);
+        assert!(transform.is_none());
+    }
+
+    // ===== Static Trimesh Tests =====
+
+    #[test]
+    fn test_add_static_trimesh() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        
+        // Create simple triangle
+        let vertices = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 1.0),
+        ];
+        let indices = vec![[0, 1, 2]];
+        
+        let mesh_id = pw.add_static_trimesh(&vertices, &indices, Layers::DEFAULT);
+        assert!(pw.body_transform(mesh_id).is_some());
+    }
+
+    // ===== Character Controller Tests =====
+
+    #[test]
+    fn test_character_jump() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        // Initial position
+        let y0 = pw.body_transform(char_id).unwrap().w_axis.y;
+        
+        // Jump
+        pw.jump(char_id, 2.0);
+        
+        // Run physics
+        for _ in 0..30 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+        
+        let y1 = pw.body_transform(char_id).unwrap().w_axis.y;
+        // After 30 frames of jump, character should have moved
+        assert!(y1 != y0, "Jump should change position");
+    }
+
+    #[test]
+    fn test_control_character_invalid_id() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        // Should not panic on invalid ID
+        pw.control_character(9999, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
+    }
+
+    #[test]
+    fn test_jump_invalid_id() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        // Should not panic on invalid ID
+        pw.jump(9999, 2.0);
+    }
+
+    // ===== Buoyancy & Environment Tests =====
+
+    #[test]
+    fn test_add_buoyancy() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        pw.add_buoyancy(box_id, 1.0, 0.5);
+        assert!(pw.buoyancy_bodies.contains_key(&box_id));
+    }
+
+    #[test]
+    fn test_set_wind() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        pw.set_wind(Vec3::new(1.0, 0.0, 0.0), 5.0);
+        
+        // set_wind stores dir * strength
+        assert_eq!(pw.wind.x, 5.0); // 1.0 * 5.0
+        assert_eq!(pw.wind.y, 0.0);
+        assert_eq!(pw.wind.z, 0.0);
+    }
+
+    // ===== Handle/ID Mapping Tests =====
+
+    #[test]
+    fn test_handle_of_valid() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        assert!(pw.handle_of(box_id).is_some());
+    }
+
+    #[test]
+    fn test_handle_of_invalid() {
+        let pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        assert!(pw.handle_of(9999).is_none());
+    }
+
+    // ===== ActorKind Tests =====
+
+    #[test]
+    fn test_actor_kind_variants() {
+        let _ = ActorKind::Static;
+        let _ = ActorKind::Dynamic;
+        let _ = ActorKind::Character;
+        let _ = ActorKind::Other;
+    }
+
+    // ===== Layers Tests =====
+
+    #[test]
+    fn test_layers_bits() {
+        assert_eq!(Layers::DEFAULT.bits(), 0b0001);
+        assert_eq!(Layers::CHARACTER.bits(), 0b0010);
+    }
+
+    #[test]
+    fn test_layers_all() {
+        let all = Layers::all();
+        assert!(all.contains(Layers::DEFAULT));
+        assert!(all.contains(Layers::CHARACTER));
+    }
+
+    // ===== PhysicsConfig Tests =====
+
+    #[test]
+    fn test_physics_config_default() {
+        let config = PhysicsConfig::default();
+        assert_eq!(config.time_step, 1.0 / 60.0);
+        assert_eq!(config.gravity.y, -9.81);
+    }
+
+    // ===== Debug Line Tests =====
+
+    #[test]
+    fn test_debug_line_creation() {
+        let line = DebugLine {
+            start: [0.0, 0.0, 0.0],
+            end: [1.0, 1.0, 1.0],
+            color: [1.0, 0.0, 0.0],
+        };
+        
+        assert_eq!(line.start, [0.0, 0.0, 0.0]);
+        assert_eq!(line.color, [1.0, 0.0, 0.0]);
+    }
+
+    // ===== Multiple Bodies Tests =====
+
+    #[test]
+    fn test_multiple_bodies() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
+        
+        let box1 = pw.add_dynamic_box(Vec3::new(-2.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        let box2 = pw.add_dynamic_box(Vec3::new(2.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        let char1 = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        assert!(pw.body_transform(box1).is_some());
+        assert!(pw.body_transform(box2).is_some());
+        assert!(pw.body_transform(char1).is_some());
+        
+        // All should have different IDs
+        assert_ne!(box1, box2);
+        assert_ne!(box2, char1);
+    }
+
+    // ===== Step Integration Test =====
+
+    #[test]
+    fn test_physics_step_integration() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(20.0, 0.5, 20.0), 0.9);
+        
+        // Add falling box
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 10.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        let y_start = pw.body_transform(box_id).unwrap().w_axis.y;
+        
+        // Step 120 frames (2 seconds)
+        for _ in 0..120 {
+            pw.step();
+        }
+        
+        let y_end = pw.body_transform(box_id).unwrap().w_axis.y;
+        
+        // Box should have fallen significantly
+        assert!(y_end < y_start - 1.0, "Box should fall, start={}, end={}", y_start, y_end);
+    }
+
+    #[test]
+    fn test_apply_radial_impulse() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(1.0, 1.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        let count = pw.apply_radial_impulse(
+            Vec3::ZERO,
+            5.0,
+            100.0,
+            FalloffCurve::Linear,
+            0.0,
+        );
+        
+        assert_eq!(count, 1);
+        let vel = pw.get_velocity(box_id).unwrap();
+        assert!(vel.length() > 0.0);
+    }
+
+    #[test]
+    fn test_raycast() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(5.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.step(); // Update query pipeline
+        
+        let hit = pw.raycast(Vec3::ZERO, Vec3::X, 10.0);
+        assert!(hit.is_some());
+        let (_, _, hit_id, _) = hit.unwrap();
+        assert_eq!(hit_id, Some(box_id));
+    }
+
+    #[test]
+    fn test_break_destructible() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        assert!(pw.handle_of(box_id).is_some());
+        pw.break_destructible(box_id);
+        assert!(pw.handle_of(box_id).is_none());
+    }
+
+    #[test]
+    fn test_add_joint() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let b1 = pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        let b2 = pw.add_dynamic_box(Vec3::new(2.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        
+        let j1 = pw.add_joint(b1, b2, JointType::Fixed);
+        assert_ne!(j1.0, 0);
+        
+        let j2 = pw.add_joint(b1, b2, JointType::Revolute { axis: Vec3::Y, limits: None });
+        assert_ne!(j2.0, 0);
+
+        let j3 = pw.add_joint(b1, b2, JointType::Prismatic { axis: Vec3::X, limits: Some((-1.0, 1.0)) });
+        assert_ne!(j3.0, 0);
+
+        let j4 = pw.add_joint(b1, b2, JointType::Spherical);
+        assert_ne!(j4.0, 0);
+    }
+
+    #[test]
+    fn test_set_body_position() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        
+        pw.set_body_position(box_id, Vec3::new(10.0, 10.0, 10.0));
+        let transform = pw.body_transform(box_id).unwrap();
+        assert!((transform.w_axis.x - 10.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_enable_ccd() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        pw.enable_ccd(box_id);
+    }
+
+    #[test]
+    fn test_get_debug_lines() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        let lines = pw.get_debug_lines();
+        assert!(!lines.is_empty());
+    }
+
+    #[test]
+    fn test_character_climb() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        let y0 = pw.body_transform(char_id).unwrap().w_axis.y;
+        pw.control_character(char_id, Vec3::ZERO, 0.1, true);
+        pw.step();
+        
+        let y1 = pw.body_transform(char_id).unwrap().w_axis.y;
+        assert!(y1 > y0);
+    }
+
+    #[test]
+    fn test_buoyancy_application() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        pw.water_level = 10.0;
+        let box_id = pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        pw.add_buoyancy(box_id, 1.0, 0.5);
+        
+        // Step should apply buoyancy force
+        pw.step();
+        let vel = pw.get_velocity(box_id).unwrap();
+        assert!(vel.y > 0.0);
+    }
 }

@@ -223,4 +223,225 @@ mod tests {
         // Check that the resource was inserted
         assert!(app.world.get_resource::<ObservabilityState>().is_some());
     }
+
+    #[test]
+    fn test_observability_config_custom() {
+        let config = ObservabilityConfig {
+            tracing_level: "DEBUG".to_string(),
+            metrics_enabled: false,
+            crash_reporting_enabled: false,
+        };
+        assert_eq!(config.tracing_level, "DEBUG");
+        assert!(!config.metrics_enabled);
+        assert!(!config.crash_reporting_enabled);
+    }
+
+    #[test]
+    fn test_observability_state_new() {
+        let config = ObservabilityConfig::default();
+        let state = ObservabilityState::new(config);
+        assert_eq!(state.config.tracing_level, "INFO");
+    }
+
+    #[test]
+    fn test_observability_plugin_new() {
+        let config = ObservabilityConfig {
+            tracing_level: "WARN".to_string(),
+            metrics_enabled: true,
+            crash_reporting_enabled: false,
+        };
+        let plugin = ObservabilityPlugin::new(config);
+        assert_eq!(plugin.config.tracing_level, "WARN");
+    }
+
+    #[test]
+    fn test_init_observability_success() {
+        let config = ObservabilityConfig::default();
+        let result = init_observability(config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_init_observability_metrics_disabled() {
+        let config = ObservabilityConfig {
+            tracing_level: "ERROR".to_string(),
+            metrics_enabled: false,
+            crash_reporting_enabled: false,
+        };
+        let result = init_observability(config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_observability_config_tracing_levels() {
+        let levels = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"];
+        for level in levels {
+            let config = ObservabilityConfig {
+                tracing_level: level.to_string(),
+                metrics_enabled: false,
+                crash_reporting_enabled: false,
+            };
+            assert_eq!(config.tracing_level, level);
+        }
+    }
+
+    #[test]
+    fn test_observability_config_serialization() {
+        let config = ObservabilityConfig::default();
+        let serialized = serde_json::to_string(&config).unwrap();
+        assert!(serialized.contains("INFO"));
+        assert!(serialized.contains("metrics_enabled"));
+    }
+
+    #[test]
+    fn test_observability_config_deserialization() {
+        let json = r#"{"tracing_level":"DEBUG","metrics_enabled":false,"crash_reporting_enabled":true}"#;
+        let config: ObservabilityConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.tracing_level, "DEBUG");
+        assert!(!config.metrics_enabled);
+        assert!(config.crash_reporting_enabled);
+    }
+
+    #[test]
+    fn test_observability_config_clone() {
+        let config = ObservabilityConfig {
+            tracing_level: "TRACE".to_string(),
+            metrics_enabled: true,
+            crash_reporting_enabled: true,
+        };
+        let cloned = config.clone();
+        assert_eq!(config.tracing_level, cloned.tracing_level);
+        assert_eq!(config.metrics_enabled, cloned.metrics_enabled);
+    }
+
+    #[test]
+    fn test_observability_config_debug() {
+        let config = ObservabilityConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("ObservabilityConfig"));
+        assert!(debug_str.contains("INFO"));
+    }
+
+    #[test]
+    fn test_observability_plugin_default() {
+        let plugin = ObservabilityPlugin::default();
+        assert_eq!(plugin.config.tracing_level, "INFO");
+        assert!(plugin.config.metrics_enabled);
+    }
+
+    #[test]
+    fn test_observability_plugin_build_with_metrics() {
+        let mut app = App::new();
+        let config = ObservabilityConfig {
+            tracing_level: "INFO".to_string(),
+            metrics_enabled: true,
+            crash_reporting_enabled: true,
+        };
+        let plugin = ObservabilityPlugin::new(config);
+        plugin.build(&mut app);
+
+        let state = app.world.get_resource::<ObservabilityState>().unwrap();
+        assert!(state.config.metrics_enabled);
+    }
+
+    #[test]
+    fn test_observability_plugin_build_without_metrics() {
+        let mut app = App::new();
+        let config = ObservabilityConfig {
+            tracing_level: "INFO".to_string(),
+            metrics_enabled: false,
+            crash_reporting_enabled: false,
+        };
+        let plugin = ObservabilityPlugin::new(config);
+        plugin.build(&mut app);
+
+        let state = app.world.get_resource::<ObservabilityState>().unwrap();
+        assert!(!state.config.metrics_enabled);
+    }
+
+    #[test]
+    fn test_observability_system_with_metrics() {
+        let mut world = astraweave_ecs::World::default();
+        let config = ObservabilityConfig {
+            tracing_level: "INFO".to_string(),
+            metrics_enabled: true,
+            crash_reporting_enabled: false,
+        };
+        world.insert_resource(ObservabilityState::new(config));
+
+        // Should not panic
+        observability_system(&mut world);
+    }
+
+    #[test]
+    fn test_observability_system_without_metrics() {
+        let mut world = astraweave_ecs::World::default();
+        let config = ObservabilityConfig {
+            tracing_level: "INFO".to_string(),
+            metrics_enabled: false,
+            crash_reporting_enabled: false,
+        };
+        world.insert_resource(ObservabilityState::new(config));
+
+        // Should not panic
+        observability_system(&mut world);
+    }
+
+    #[test]
+    fn test_observability_system_no_state() {
+        let mut world = astraweave_ecs::World::default();
+        // Should not panic even without state
+        observability_system(&mut world);
+    }
+
+    #[test]
+    fn test_trace_span_macro() {
+        // Just verify macro compiles and runs
+        let _span = trace_span!("test_span");
+    }
+
+    #[test]
+    fn test_debug_span_macro() {
+        let _span = debug_span!("debug_test");
+    }
+
+    #[test]
+    fn test_info_span_macro() {
+        let _span = info_span!("info_test");
+    }
+
+    #[test]
+    fn test_warn_span_macro() {
+        let _span = warn_span!("warn_test");
+    }
+
+    #[test]
+    fn test_error_span_macro() {
+        let _span = error_span!("error_test");
+    }
+
+    #[test]
+    fn test_init_tracing_with_all_levels() {
+        // Test all tracing level paths
+        for level in ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "UNKNOWN"] {
+            let config = ObservabilityConfig {
+                tracing_level: level.to_string(),
+                metrics_enabled: false,
+                crash_reporting_enabled: false,
+            };
+            // Just verify it doesn't panic
+            let _ = init_observability(config);
+        }
+    }
+
+    #[test]
+    fn test_init_observability_full_stack() {
+        let config = ObservabilityConfig {
+            tracing_level: "TRACE".to_string(),
+            metrics_enabled: true,
+            crash_reporting_enabled: true,
+        };
+        let result = init_observability(config);
+        assert!(result.is_ok());
+    }
 }

@@ -47,8 +47,10 @@ pub struct GizmoCancelMetadata {
 }
 
 fn active_or_last_mode(state: &GizmoState) -> GizmoMode {
-    // Always use current mode - if inactive, return Inactive
-    state.mode
+    match state.mode {
+        GizmoMode::Inactive => state.last_mode,
+        mode => mode,
+    }
 }
 
 fn constraint_label(mode: GizmoMode) -> Option<String> {
@@ -70,7 +72,7 @@ fn mode_to_kind(mode: GizmoMode) -> Option<GizmoOperationKind> {
 }
 
 /// Attempt to commit the active gizmo operation, pushing an undo command if needed.
-/// 
+///
 /// **NEW (Nov 17)**: Optionally accepts a `PrefabManager` to auto-track overrides when
 /// transforming prefab instances. If `prefab_manager` is `Some`, any committed transform
 /// will automatically mark the entity as having overrides.
@@ -164,14 +166,14 @@ pub fn commit_active_gizmo_with_prefab_tracking(
     };
 
     state.start_transform = None;
-    
+
     // Auto-track prefab override if entity is part of a prefab instance
     if let (Some(mgr), Some(meta)) = (prefab_manager, &metadata) {
         if let Some(instance) = mgr.find_instance_mut(meta.entity) {
             instance.track_override(meta.entity, world);
         }
     }
-    
+
     metadata
 }
 

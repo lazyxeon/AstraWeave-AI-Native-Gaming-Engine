@@ -149,6 +149,7 @@ impl FrustumPlanes {
 /// Indirect draw command structure matching wgpu::DrawIndirect
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Default)]
 pub struct DrawIndirectCommand {
     pub vertex_count: u32,
     pub instance_count: u32,
@@ -173,16 +174,6 @@ impl DrawIndirectCommand {
     }
 }
 
-impl Default for DrawIndirectCommand {
-    fn default() -> Self {
-        Self {
-            vertex_count: 0,
-            instance_count: 0,
-            first_vertex: 0,
-            first_instance: 0,
-        }
-    }
-}
 
 /// Batch identifier for grouping instances by mesh+material
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -554,7 +545,7 @@ impl CullingPipeline {
         });
         cpass.set_pipeline(&self.pipeline);
         cpass.set_bind_group(0, bind_group, &[]);
-        let workgroup_count = (instance_count + 63) / 64;
+        let workgroup_count = instance_count.div_ceil(64);
         cpass.dispatch_workgroups(workgroup_count, 1, 1);
     }
 

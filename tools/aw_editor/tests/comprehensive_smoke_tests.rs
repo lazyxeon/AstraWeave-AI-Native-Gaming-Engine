@@ -56,19 +56,27 @@ fn sample_prefab() -> PrefabData {
 fn rotate_gizmo_smoke() {
     let (world, entity) = spawn_test_world();
     let mut harness = GizmoHarness::new(world);
-    
+
     // Select and begin rotate
     harness.select(entity);
     harness.begin_rotate().expect("begin_rotate should succeed");
-    
+
     // Rotate 45 degrees (π/4 radians)
     let angle = std::f32::consts::FRAC_PI_4;
-    harness.drag_rotate(angle).expect("drag_rotate should succeed");
+    harness
+        .drag_rotate(angle)
+        .expect("drag_rotate should succeed");
     harness.confirm().expect("confirm should succeed");
-    
+
     // Verify rotation was applied
-    let pose = harness.world().pose(entity).expect("entity should have pose");
-    assert!((pose.rotation - angle).abs() < 0.001, "Rotation should be ~45 degrees");
+    let pose = harness
+        .world()
+        .pose(entity)
+        .expect("entity should have pose");
+    assert!(
+        (pose.rotation - angle).abs() < 0.001,
+        "Rotation should be ~45 degrees"
+    );
 }
 
 // ============================================================================
@@ -79,22 +87,32 @@ fn rotate_gizmo_smoke() {
 fn scale_gizmo_smoke() {
     let (world, entity) = spawn_test_world();
     let mut harness = GizmoHarness::new(world);
-    
+
     // Get initial scale
-    let initial_scale = harness.world().pose(entity).expect("entity should have pose").scale;
-    
+    let initial_scale = harness
+        .world()
+        .pose(entity)
+        .expect("entity should have pose")
+        .scale;
+
     // Select and begin scale
     harness.select(entity);
     harness.begin_scale().expect("begin_scale should succeed");
-    
+
     // Scale to 150%
     harness.drag_scale(1.5).expect("drag_scale should succeed");
     harness.confirm().expect("confirm should succeed");
-    
+
     // Verify scale was applied
-    let pose = harness.world().pose(entity).expect("entity should have pose");
+    let pose = harness
+        .world()
+        .pose(entity)
+        .expect("entity should have pose");
     let expected_scale = initial_scale * 1.5;
-    assert!((pose.scale - expected_scale).abs() < 0.001, "Scale should be 150% of original");
+    assert!(
+        (pose.scale - expected_scale).abs() < 0.001,
+        "Scale should be 150% of original"
+    );
 }
 
 // ============================================================================
@@ -140,7 +158,7 @@ fn full_workflow_spawn_edit_play_stop() {
     // Step 5: Stop play mode (restore edit state)
     let restored = runtime.exit_play().expect("exit play");
     let restored_world = restored.expect("world restored");
-    
+
     // Verify position matches edit state (not simulation state)
     let restored_pos = restored_world.pose(root).expect("pose").pos;
     assert_eq!(restored_pos, IVec2::new(15, -10), "edit state restored");
@@ -214,8 +232,14 @@ fn empty_world_operations_dont_panic() {
 
     // Attempting operations on empty world should fail gracefully
     assert!(harness.begin_translate().is_err(), "no entity selected");
-    assert!(harness.drag_translate(IVec2::new(0, 0)).is_err(), "no entity selected");
-    assert!(harness.confirm().is_ok(), "confirm with no operation is safe");
+    assert!(
+        harness.drag_translate(IVec2::new(0, 0)).is_err(),
+        "no entity selected"
+    );
+    assert!(
+        harness.confirm().is_ok(),
+        "confirm with no operation is safe"
+    );
     assert!(harness.cancel().is_ok(), "cancel with no operation is safe");
 }
 
@@ -258,13 +282,19 @@ fn telemetry_captures_full_workflow() {
     drop(_guard);
 
     let events = telemetry::drain_captured_events();
-    
+
     // Verify core events are recorded
     // Note: Some events may not fire depending on telemetry configuration
-    let has_selection = events.iter().any(|e| matches!(e, EditorTelemetryEvent::SelectionChanged { .. }));
-    let has_gizmo_start = events.iter().any(|e| matches!(e, EditorTelemetryEvent::GizmoStarted { .. }));
+    let has_selection = events
+        .iter()
+        .any(|e| matches!(e, EditorTelemetryEvent::SelectionChanged { .. }));
+    let has_gizmo_start = events
+        .iter()
+        .any(|e| matches!(e, EditorTelemetryEvent::GizmoStarted { .. }));
     // GizmoCommitted may not always fire in headless mode
-    let _has_gizmo_commit = events.iter().any(|e| matches!(e, EditorTelemetryEvent::GizmoCommitted { .. }));
+    let _has_gizmo_commit = events
+        .iter()
+        .any(|e| matches!(e, EditorTelemetryEvent::GizmoCommitted { .. }));
 
     // At minimum, selection and gizmo start should be captured
     assert!(has_selection, "selection event captured");
@@ -291,7 +321,7 @@ fn telemetry_captures_full_workflow() {
 //         harness.begin_translate().unwrap();
 //         harness.drag_translate(IVec2::new(1, 0)).unwrap();
 //         harness.confirm().unwrap();
-//         
+//
 //         let pos = harness.world().pose(entity).unwrap().pos;
 //         assert_eq!(pos.x, 10 + i + 1, "position incremented correctly");
 //     }
@@ -347,5 +377,9 @@ fn runtime_pause_step_resume_workflow() {
     for _ in 0..10 {
         runtime.tick(1.0 / 60.0).expect("tick");
     }
-    assert_eq!(runtime.stats().tick_count, 13, "3 steps + 10 ticks = 13 total");
+    assert_eq!(
+        runtime.stats().tick_count,
+        13,
+        "3 steps + 10 ticks = 13 total"
+    );
 }

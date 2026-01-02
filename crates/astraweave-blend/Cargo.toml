@@ -1,0 +1,93 @@
+[package]
+name = "astraweave-blend"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Production-grade Blender .blend file import system for AstraWeave engine"
+readme = "README.md"
+repository = "https://github.com/astraweave/AstraWeave-AI-Native-Gaming-Engine"
+keywords = ["blender", "gamedev", "asset-pipeline", "3d", "import"]
+categories = ["game-development", "graphics", "filesystem"]
+
+[dependencies]
+# Core dependencies (workspace)
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+# File hashing and caching
+sha2 = "0.10"
+hex = "0.4"
+
+# Cache manifest serialization
+ron = "0.11"
+
+# Temporary file handling
+tempfile = "3"
+
+# Regex for version parsing
+regex = "1"
+
+# Windows registry access (Windows only)
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
+# macOS specific utilities
+[target.'cfg(target_os = "macos")'.dependencies]
+# No additional deps needed - uses std::process::Command for mdfind
+
+[dev-dependencies]
+# Async runtime for tests
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs", "time", "sync"] }
+tempfile = "3"
+
+# Property-based testing
+proptest = "1.5"
+proptest-derive = "0.5"
+
+# Snapshot testing
+insta = { version = "1.41", features = ["ron", "json"] }
+
+# Test assertion utilities
+assert_matches = "1.5"
+pretty_assertions = "1.4"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
+
+# Fake data generation for testing
+fake = { version = "3", features = ["derive"] }
+
+# Additional test utilities
+once_cell = "1.20"
+parking_lot = "0.12"
+
+[features]
+default = []
+# Enable test utilities and mock implementations
+test-utils = ["rand", "rand_chacha"]
+# Enable jemalloc for memory benchmarks
+jemalloc = ["tikv-jemallocator"]
+
+[dependencies.tikv-jemallocator]
+version = "0.6"
+optional = true
+
+[dependencies.rand]
+version = "0.8"
+optional = true
+
+[dependencies.rand_chacha]
+version = "0.3"
+optional = true
+
+[[bench]]
+name = "cache_benchmarks"
+harness = false
+
+[[bench]]
+name = "hash_benchmarks"
+harness = false

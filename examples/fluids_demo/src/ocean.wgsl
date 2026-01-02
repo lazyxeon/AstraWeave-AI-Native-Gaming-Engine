@@ -15,7 +15,8 @@ struct Uniforms {
     roughness: f32,
     near: f32,
     far: f32,
-    _padding: f32,
+    _pad0: f32,
+    _pad1: f32,
 }
 
 struct VertexInput {

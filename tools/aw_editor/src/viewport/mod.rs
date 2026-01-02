@@ -34,6 +34,8 @@
 //! ```
 
 mod camera;
+#[cfg(feature = "astraweave-render")]
+mod engine_adapter;
 mod entity_renderer;
 mod gizmo_renderer;
 mod grid_renderer;
@@ -47,3 +49,4 @@ mod widget;
 #[allow(unused_imports)]
 pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
 pub use widget::ViewportWidget;
+

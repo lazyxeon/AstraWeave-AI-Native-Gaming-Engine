@@ -455,7 +455,6 @@ impl Default for EnemySpawner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::AbilityType;
 
     #[test]
     fn test_spawner_creation() {

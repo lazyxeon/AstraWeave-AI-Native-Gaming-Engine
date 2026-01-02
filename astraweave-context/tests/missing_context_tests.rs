@@ -1,6 +1,5 @@
-use anyhow::Result;
 use astraweave_context::{
-    ContextWindow, ContextWindowConfig, WindowType, Role, Message, AttentionConfig, SerializableContextWindow
+    ContextWindow, ContextWindowConfig, WindowType, Role, Message, SerializableContextWindow
 };
 use serde_json;
 

@@ -27,14 +27,16 @@ fn drag_commit_creates_single_undo_entry() {
     harness.drag_translate(IVec2 { x: 1, y: -1 }).unwrap();
     harness.confirm().unwrap();
 
-    // NOTE: undo_depth() may not correctly track operations in all configurations
-    // Relaxed assertion - just verify operations don't panic
-    let _depth = harness.undo_depth();
-    // assert_eq!(depth, 1, "only one undo entry should be recorded");
+    let depth = harness.undo_depth();
+    assert_eq!(depth, 1, "only one undo entry should be recorded");
 
     // Position should be updated after drag
     let final_pos = harness.world().pose(entity).unwrap().pos;
-    assert_eq!(final_pos, IVec2 { x: 3, y: -1 }, "position should be updated");
+    assert_eq!(
+        final_pos,
+        IVec2 { x: 3, y: -1 },
+        "position should be updated"
+    );
 }
 
 #[test]
@@ -45,13 +47,13 @@ fn cancel_does_not_push_transaction() {
     harness.drag_translate(IVec2 { x: -4, y: 7 }).unwrap();
     harness.cancel().unwrap();
 
-    // NOTE: Cancel behavior may not properly revert position in current implementation
-    // This is a known issue that should be fixed in the GizmoHarness
-    let _depth = harness.undo_depth();
-    // assert_eq!(depth, 0, "cancelled drags should not create undo entries");
-    
+    let depth = harness.undo_depth();
+    assert_eq!(depth, 0, "cancelled drags should not create undo entries");
+
     let final_pos = harness.world().pose(entity).unwrap().pos;
-    // Relaxed assertion - cancel may not properly revert
-    assert!(final_pos == IVec2 { x: 0, y: 0 } || final_pos == IVec2 { x: -4, y: 7 },
-        "Position should either revert or stay at drag position");
+    assert_eq!(
+        final_pos,
+        IVec2 { x: 0, y: 0 },
+        "cancel should fully revert to original pose"
+    );
 }

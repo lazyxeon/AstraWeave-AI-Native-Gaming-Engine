@@ -1,43 +1,70 @@
-// Smoothed Particle Hydrodynamics (SPH) Compute Shader
+// Position-Based Fluids (PBD) Compute Shader
+// Optimized for stability and professional production use
 
 struct Particle {
-    position: vec4<f32>, // xyz = pos, w = padding
-    velocity: vec4<f32>, // xyz = vel, w = padding
-    force: vec4<f32>,    // xyz = force, w = padding
-    density: f32,        // density
-    pressure: f32,       // pressure
-    padding1: f32,
-    padding2: f32,
+    position: vec4<f32>,
+    velocity: vec4<f32>,
+    predicted_position: vec4<f32>,
+    lambda: f32,
+    density: f32,
+    phase: u32,           // 0=water, 1=oil, 2=custom phase
+    temperature: f32,     // Kelvin (ambient ~293K)
+    color: vec4<f32>,
+};
+
+struct DynamicObject {
+    transform: mat4x4<f32>,
+    inv_transform: mat4x4<f32>,
+    half_extents: vec4<f32>, // w = type (0=box, 1=sphere)
 };
 
 struct SimParams {
-    delta_time: f32,
     smoothing_radius: f32,
     target_density: f32,
     pressure_multiplier: f32,
     viscosity: f32,
-    particle_count: u32,
+    surface_tension: f32,
     gravity: f32,
-    padding: u32,
-    cell_size: f32,
+    dt: f32,
+    particle_count: u32,
     grid_width: u32,
     grid_height: u32,
     grid_depth: u32,
+    cell_size: f32,
+    object_count: u32,
+    _pad0: f32,
+    _pad1: f32,
+    _pad2: f32,
 };
 
+// --- Bindings ---
+
+// Group 0: Global Infrastructure
 @group(0) @binding(0) var<uniform> params: SimParams;
-@group(0) @binding(1) var<storage, read_write> particles_src: array<Particle>;
-@group(0) @binding(2) var<storage, read_write> particles_dst: array<Particle>;
-@group(0) @binding(3) var<storage, read_write> head_pointers: array<atomic<i32>>;
-@group(0) @binding(4) var<storage, read_write> next_pointers: array<i32>;
+@group(0) @binding(1) var<storage, read_write> head_pointers: array<atomic<i32>>;
+@group(0) @binding(2) var<storage, read_write> next_pointers: array<i32>;
+@group(0) @binding(3) var<storage, read_write> secondary_counter: atomic<u32>;
+@group(0) @binding(4) var<storage, read_write> density_error: atomic<u32>;
+
+// Group 1: Particles (Ping-Pong)
+@group(1) @binding(0) var<storage, read_write> particles: array<Particle>;
+@group(1) @binding(1) var<storage, read_write> particles_dst: array<Particle>; // Reserved for full state copy if needed
+
+// Group 2: Secondary Buffers
+@group(2) @binding(0) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
+
+// Group 3: Scene Data
+@group(3) @binding(0) var<storage, read> dynamic_objects: array<DynamicObject>;
+@group(3) @binding(1) var sdf_texture: texture_3d<f32>;
+@group(3) @binding(2) var default_sampler: sampler;
 
 const PI: f32 = 3.14159265359;
 
 fn get_cell_index(pos: vec3<f32>) -> i32 {
     let grid_pos = vec3<i32>(
-        i32(floor((pos.x + 20.0) / params.cell_size)),
+        i32(floor((pos.x + 30.0) / params.cell_size)),
         i32(floor(pos.y / params.cell_size)),
-        i32(floor((pos.z + 20.0) / params.cell_size))
+        i32(floor((pos.z + 30.0) / params.cell_size))
     );
     
     if (grid_pos.x < 0 || grid_pos.x >= i32(params.grid_width) ||
@@ -58,24 +85,52 @@ fn get_cell_index_clamped(x: i32, y: i32, z: i32) -> i32 {
     return x + y * i32(params.grid_width) + z * i32(params.grid_width * params.grid_height);
 }
 
-fn poly6_kernel(r2: f32, h: f32) -> f32 {
-    let h2 = h * h;
-    if (r2 < 0.0 || r2 > h2) { return 0.0; }
-    let term = h2 - r2;
-    return (315.0 / (64.0 * PI * pow(h, 9.0))) * term * term * term;
+// Cubic spline kernel for better stability in PBD
+fn kernel_w(r: f32, h: f32) -> f32 {
+    let q = r / h;
+    if (q >= 1.0) { return 0.0; }
+    let alpha = 3.0 / (2.0 * PI * h * h * h);
+    if (q < 0.5) {
+        return alpha * (2.0 * (1.0 - q) * (1.0 - q) * (1.0 - q) - (1.0 - 2.0 * q) * (1.0 - 2.0 * q) * (1.0 - 2.0 * q));
+    } else {
+        return alpha * (1.0 - q) * (1.0 - q) * (1.0 - q);
+    }
 }
 
-fn spiky_kernel_grad(r: f32, dist_vec: vec3<f32>, h: f32) -> vec3<f32> {
-    if (r <= 0.0001 || r > h) { return vec3<f32>(0.0); }
-    let term = h - r;
-    let scalar = -45.0 / (PI * pow(h, 6.0)) * term * term / r;
-    return scalar * dist_vec;
+fn kernel_grad_w(r: f32, diff: vec3<f32>, h: f32) -> vec3<f32> {
+    let q = r / h;
+    if (q >= 1.0 || r <= 0.0001) { return vec3<f32>(0.0); }
+    let alpha = 3.0 / (2.0 * PI * h * h * h);
+    var grad_q = 0.0;
+    if (q < 0.5) {
+        grad_q = alpha * (-6.0 * (1.0 - q) * (1.0 - q) + 6.0 * (1.0 - 2.0 * q) * (1.0 - 2.0 * q)) / h;
+    } else {
+        grad_q = alpha * (-3.0 * (1.0 - q) * (1.0 - q)) / h;
+    }
+    return (grad_q / r) * diff;
 }
 
-fn viscosity_kernel_lap(r: f32, h: f32) -> f32 {
-    if (r > h) { return 0.0; }
-    let term = h - r;
-    return (45.0 / (PI * pow(h, 6.0))) * term;
+@compute @workgroup_size(64)
+fn predict(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let id = global_id.x;
+    if (id >= params.particle_count) { return; }
+
+    let pos = particles[id].position.xyz;
+    var vel = particles[id].velocity.xyz;
+    let temp = particles[id].temperature;
+
+    // External forces (Gravity)
+    vel += vec3<f32>(0.0, params.gravity, 0.0) * params.dt;
+    
+    // Temperature-driven buoyancy (Boussinesq approximation)
+    // Hot fluid rises, cold fluid sinks
+    let ambient_temp = 293.0; // Room temperature in Kelvin
+    let thermal_expansion = 0.0002; // Thermal expansion coefficient
+    let buoyancy = thermal_expansion * (temp - ambient_temp) * abs(params.gravity);
+    vel.y += buoyancy * params.dt;
+    
+    particles[id].predicted_position = vec4<f32>(pos + vel * params.dt, 1.0);
+    particles[id].velocity = vec4<f32>(vel, 0.0);
 }
 
 @compute @workgroup_size(64)
@@ -91,7 +146,7 @@ fn build_grid(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= params.particle_count) { return; }
     
-    let pos = particles_src[id].position.xyz;
+    let pos = particles[id].predicted_position.xyz;
     let cell_idx = get_cell_index(pos);
     
     if (cell_idx >= 0) {
@@ -103,115 +158,151 @@ fn build_grid(@builtin(global_invocation_id) global_id: vec3<u32>) {
 }
 
 @compute @workgroup_size(64)
-fn compute_density_pressure(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn compute_lambda(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= params.particle_count) { return; }
 
-    let pos = particles_src[id].position.xyz;
-    var density = 0.0;
+    let pos = particles[id].predicted_position.xyz;
     let h = params.smoothing_radius;
-    let h2 = h * h;
+    
+    var density = 0.0;
+    var sum_grad_c2 = 0.0;
+    var grad_ci = vec3<f32>(0.0);
 
     let grid_pos = vec3<i32>(
-        i32(floor((pos.x + 20.0) / params.cell_size)),
+        i32(floor((pos.x + 30.0) / params.cell_size)),
         i32(floor(pos.y / params.cell_size)),
-        i32(floor((pos.z + 20.0) / params.cell_size))
+        i32(floor((pos.z + 30.0) / params.cell_size))
     );
 
     for (var dx = -1; dx <= 1; dx++) {
         for (var dy = -1; dy <= 1; dy++) {
             for (var dz = -1; dz <= 1; dz++) {
-                let nx = grid_pos.x + dx;
-                let ny = grid_pos.y + dy;
-                let nz = grid_pos.z + dz;
-                let cell_idx = get_cell_index_clamped(nx, ny, nz);
+                let cell_idx = get_cell_index_clamped(grid_pos.x + dx, grid_pos.y + dy, grid_pos.z + dz);
+                if (cell_idx < 0) { continue; }
                 
-                if (cell_idx >= 0) {
-                    var current = atomicLoad(&head_pointers[cell_idx]);
-                    while (current >= 0) {
-                        let neighbor_pos = particles_src[current].position.xyz;
-                        let diff = pos - neighbor_pos;
-                        let r2 = dot(diff, diff);
-                        if (r2 < h2) {
-                            density += poly6_kernel(r2, h);
+                var current = atomicLoad(&head_pointers[cell_idx]);
+                while (current >= 0) {
+                    let neighbor_pos = particles[current].predicted_position.xyz;
+                    let diff = pos - neighbor_pos;
+                    let r = length(diff);
+                    if (r < h) {
+                        let w = kernel_w(r, h);
+                        density += w;
+                        
+                        if (u32(current) != id) {
+                            let grad_wj = kernel_grad_w(r, diff, h) / params.target_density;
+                            sum_grad_c2 += dot(grad_wj, grad_wj);
+                            grad_ci += grad_wj;
                         }
-                        current = next_pointers[current];
                     }
+                    current = next_pointers[current];
                 }
             }
         }
     }
 
-    particles_dst[id].density = max(density, params.target_density);
-    particles_dst[id].pressure = params.pressure_multiplier * (particles_dst[id].density - params.target_density);
-    particles_dst[id].position = particles_src[id].position;
-    particles_dst[id].velocity = particles_src[id].velocity;
-    particles_dst[id].force = vec4<f32>(0.0);
+    sum_grad_c2 += dot(grad_ci, grad_ci);
+    let constraint = (density / params.target_density) - 1.0;
+    
+    // epsilon for constraint softening
+    let epsilon = 100.0; 
+    let lambda = -constraint / (sum_grad_c2 + epsilon);
+    particles[id].lambda = lambda;
+    particles[id].density = density;
+
+    // Track smoothed density error for adaptive iterations
+    // Use atomicAdd with fixed-point scaling (1000.0)
+    if (abs(constraint) > 0.001) {
+        atomicAdd(&density_error, u32(abs(constraint) * 1000.0));
+    }
+}
+
+fn sd_box(p: vec3<f32>, b: vec3<f32>) -> f32 {
+    let q = abs(p) - b;
+    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
 @compute @workgroup_size(64)
-fn compute_forces(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn compute_delta_pos(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= params.particle_count) { return; }
 
-    let pos = particles_src[id].position.xyz;
-    let vel = particles_src[id].velocity.xyz;
-    let pressure = particles_src[id].pressure;
-    let density = particles_src[id].density;
-    
-    var pressure_force = vec3<f32>(0.0);
-    var viscosity_force = vec3<f32>(0.0);
+    let pos = particles[id].predicted_position.xyz;
+    let lambda_i = particles[id].lambda;
     let h = params.smoothing_radius;
-    let h2 = h * h;
+    
+    var delta_p = vec3<f32>(0.0);
+
+    // Dynamic Object Collisions
+    for (var i: u32 = 0; i < params.object_count; i++) {
+        let obj = dynamic_objects[i];
+        let p_local = (obj.inv_transform * vec4<f32>(pos, 1.0)).xyz;
+        
+        var dist = 0.0;
+        var local_normal = vec3<f32>(0.0);
+        
+        if (obj.half_extents.w < 0.5) { // Box
+            dist = sd_box(p_local, obj.half_extents.xyz);
+            // Gradient approximation for box
+            local_normal = normalize(sign(p_local) * max(abs(p_local) - obj.half_extents.xyz, vec3<f32>(0.001)));
+        } else { // Sphere
+            dist = length(p_local) - obj.half_extents.x;
+            local_normal = normalize(p_local);
+        }
+        
+        if (dist < 0.1) {
+             let world_normal = normalize((obj.transform * vec4<f32>(local_normal, 0.0)).xyz);
+             delta_p += world_normal * (0.1 - dist) * 0.5; // Soft collision resolve
+        }
+    }
 
     let grid_pos = vec3<i32>(
-        i32(floor((pos.x + 20.0) / params.cell_size)),
+        i32(floor((pos.x + 30.0) / params.cell_size)),
         i32(floor(pos.y / params.cell_size)),
-        i32(floor((pos.z + 20.0) / params.cell_size))
+        i32(floor((pos.z + 30.0) / params.cell_size))
     );
 
     for (var dx = -1; dx <= 1; dx++) {
         for (var dy = -1; dy <= 1; dy++) {
             for (var dz = -1; dz <= 1; dz++) {
-                let nx = grid_pos.x + dx;
-                let ny = grid_pos.y + dy;
-                let nz = grid_pos.z + dz;
-                let cell_idx = get_cell_index_clamped(nx, ny, nz);
+                let cell_idx = get_cell_index_clamped(grid_pos.x + dx, grid_pos.y + dy, grid_pos.z + dz);
+                if (cell_idx < 0) { continue; }
                 
-                if (cell_idx >= 0) {
-                    var current = atomicLoad(&head_pointers[cell_idx]);
-                    while (current >= 0) {
-                        if (u32(current) != id) {
-                            let neighbor_pos = particles_src[current].position.xyz;
-                            let diff = pos - neighbor_pos;
-                            let r2 = dot(diff, diff);
-
-                            if (r2 < h2) {
-                                let r = sqrt(r2);
-                                let neighbor_pressure = particles_src[current].pressure;
-                                let neighbor_density = particles_src[current].density;
-                                let neighbor_vel = particles_src[current].velocity.xyz;
-
-                                let p_term = (pressure + neighbor_pressure) / (2.0 * neighbor_density);
-                                pressure_force -= p_term * spiky_kernel_grad(r, diff, h);
-                                viscosity_force += (neighbor_vel - vel) * viscosity_kernel_lap(r, h) / neighbor_density;
-                            }
+                var current = atomicLoad(&head_pointers[cell_idx]);
+                while (current >= 0) {
+                    if (u32(current) != id) {
+                        let neighbor_pos = particles[current].predicted_position.xyz;
+                        let diff = pos - neighbor_pos;
+                        let r = length(diff);
+                        if (r < h) {
+                            let lambda_j = particles[current].lambda;
+                            
+                            // Tensile instability correction (scorr)
+                            let scorr = -0.001 * pow(kernel_w(r, h) / kernel_w(0.1 * h, h), 4.0);
+                            
+                            // --- Akinci et al. 2013 Surface Tension ---
+                            // Cohesion force: f_cohesion = -gamma * m^2 * C(r) * (x_i - x_j)/|x_i - x_j|
+                            let cohesion_weight = kernel_w(r, h); // Simplified C(r)
+                            let cohesion = -params.surface_tension * cohesion_weight * normalize(diff);
+                            
+                            // Curvature force: f_curvature = -gamma * m * (n_i - n_j)
+                            // (n is surface normal, simplified here as gradient of color field)
+                            // For simplicity in this kernel, we'll combine them into a versatile term
+                            
+                            delta_p += (lambda_i + lambda_j + scorr) * kernel_grad_w(r, diff, h) + cohesion;
                         }
-                        current = next_pointers[current];
                     }
+                    current = next_pointers[current];
                 }
             }
         }
     }
 
-    pressure_force *= params.target_density; 
-    viscosity_force *= params.viscosity * params.target_density; 
-    let gravity = vec3<f32>(0.0, params.gravity, 0.0) * density;
-    particles_dst[id].force = vec4<f32>(pressure_force + viscosity_force + gravity, 0.0);
-    particles_dst[id].position = particles_src[id].position;
-    particles_dst[id].velocity = particles_src[id].velocity;
-    particles_dst[id].density = particles_src[id].density;
-    particles_dst[id].pressure = particles_src[id].pressure;
+    particles[id].predicted_position += vec4<f32>(delta_p / params.target_density, 0.0);
+}
+
+    particles[id].predicted_position += vec4<f32>(delta_p / params.target_density, 0.0);
 }
 
 @compute @workgroup_size(64)
@@ -219,29 +310,246 @@ fn integrate(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= params.particle_count) { return; }
 
-    var pos = particles_src[id].position.xyz;
-    var vel = particles_src[id].velocity.xyz;
-    let force = particles_src[id].force.xyz;
-    let density = particles_src[id].density;
+    let old_pos = particles[id].position.xyz;
+    var pred_pos = particles[id].predicted_position.xyz;
 
-    let accel = force / density;
-    vel += accel * params.delta_time;
-    pos += vel * params.delta_time;
+    // --- Global SDF Collision ---
+    // World is [-30, 30], so map to [0, 1]
+    let world_extent = 60.0;
+    let voxel_pos = (pred_pos / world_extent) + 0.5; 
+    
+    // Smooth sample SDF
+    let sdf_dist = textureSampleLevel(sdf_texture, default_sampler, voxel_pos, 0.0).r;
+    
+    let particle_radius = 0.15;
+    if (sdf_dist < particle_radius) {
+        // Compute normal from SDF gradient
+        let eps = 0.01;
+        let nx = textureSampleLevel(sdf_texture, default_sampler, voxel_pos + vec3<f32>(eps, 0.0, 0.0), 0.0).r - 
+                 textureSampleLevel(sdf_texture, default_sampler, voxel_pos - vec3<f32>(eps, 0.0, 0.0), 0.0).r;
+        let ny = textureSampleLevel(sdf_texture, default_sampler, voxel_pos + vec3<f32>(0.0, eps, 0.0), 0.0).r - 
+                 textureSampleLevel(sdf_texture, default_sampler, voxel_pos - vec3<f32>(0.0, eps, 0.0), 0.0).r;
+        let nz = textureSampleLevel(sdf_texture, default_sampler, voxel_pos + vec3<f32>(0.0, 0.0, eps), 0.0).r - 
+                 textureSampleLevel(sdf_texture, default_sampler, voxel_pos - vec3<f32>(0.0, 0.0, eps), 0.0).r;
+        
+        let normal = normalize(vec3<f32>(nx, ny, nz));
+        
+        // Push out of surface
+        pred_pos += normal * (particle_radius - sdf_dist);
+        
+        // Friction / Damping
+        // let vel = (pred_pos - old_pos) / params.dt;
+        // let normal_vel = dot(vel, normal);
+        // if (normal_vel < 0.0) { pred_pos -= normal * normal_vel * params.dt * 0.5; }
+    }
 
-    let bounds_x = 60.0;
-    let bounds_z = 30.0;
-    let bounds_y = 60.0;
-    let damping = 0.1;
-    if (pos.y < 0.0) { pos.y = 0.0; vel.y *= -damping; }
-    if (pos.y > bounds_y) { pos.y = bounds_y; vel.y *= -damping; }
-    if (pos.x < -bounds_x) { pos.x = -bounds_x; vel.x *= -damping; }
-    if (pos.x > bounds_x) { pos.x = bounds_x; vel.x *= -damping; }
-    if (pos.z < -bounds_z) { pos.z = -bounds_z; vel.z *= -damping; }
-    if (pos.z > bounds_z) { pos.z = bounds_z; vel.z *= -damping; }
+    // Boundary Handling (Secondary fallback)
+    let bounds_x = 29.5;
+    let bounds_z = 29.5;
+    let bounds_y = 59.5;
+    if (pred_pos.y < 0.0) { pred_pos.y = 0.0; }
+    if (pred_pos.y > bounds_y) { pred_pos.y = bounds_y; }
+    if (pred_pos.x < -bounds_x) { pred_pos.x = -bounds_x; }
+    if (pred_pos.x > bounds_x) { pred_pos.x = bounds_x; }
+    if (pred_pos.z < -bounds_z) { pred_pos.z = -bounds_z; }
+    if (pred_pos.z > bounds_z) { pred_pos.z = bounds_z; }
 
-    particles_dst[id].position = vec4<f32>(pos, 1.0);
-    particles_dst[id].velocity = vec4<f32>(vel, 0.0);
-    particles_dst[id].density = density;
-    particles_dst[id].pressure = particles_src[id].pressure;
-    particles_dst[id].force = vec4<f32>(0.0);
+    var vel = (pred_pos - old_pos) / params.dt;
+    
+    // --- Vorticity Confinement ---
+    // Calculate local curl and apply force to preserve energy
+    var curl = vec3<f32>(0.0);
+    let h = params.smoothing_radius;
+    let grid_pos = vec3<i32>(
+        i32(floor((pred_pos.x + 30.0) / params.cell_size)),
+        i32(floor(pred_pos.y / params.cell_size)),
+        i32(floor((pred_pos.z + 30.0) / params.cell_size))
+    );
+
+    for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+            for (var dz = -1; dz <= 1; dz++) {
+                let cell_idx = get_cell_index_clamped(grid_pos.x + dx, grid_pos.y + dy, grid_pos.z + dz);
+                if (cell_idx < 0) { continue; }
+                
+                var current = atomicLoad(&head_pointers[cell_idx]);
+                while (current >= 0) {
+                    if (u32(current) != id) {
+                        let neighbor_pos = particles[current].predicted_position.xyz;
+                        let neighbor_vel = (particles[current].predicted_position.xyz - particles[current].position.xyz) / params.dt;
+                        let diff = pred_pos - neighbor_pos;
+                        let r = length(diff);
+                        if (r < h) {
+                            let rel_vel = neighbor_vel - vel;
+                            curl += cross(rel_vel, kernel_grad_w(r, diff, h));
+                        }
+                    }
+                    current = next_pointers[current];
+                }
+            }
+        }
+    }
+
+    let vorticity = length(curl);
+    if (vorticity > 0.001) {
+        let confinement_force = params.viscosity * 0.1 * curl * vorticity;
+        vel += confinement_force * params.dt;
+    }
+
+    // XSPH Viscosity
+    var xsph_vel = vel;
+    for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+            for (var dz = -1; dz <= 1; dz++) {
+                let cell_idx = get_cell_index_clamped(grid_pos.x + dx, grid_pos.y + dy, grid_pos.z + dz);
+                if (cell_idx < 0) { continue; }
+                
+                var current = atomicLoad(&head_pointers[cell_idx]);
+                while (current >= 0) {
+                    if (u32(current) != id) {
+                        let neighbor_pos = particles[current].predicted_position.xyz;
+                        let neighbor_vel = (particles[current].predicted_position.xyz - particles[current].position.xyz) / params.dt;
+                        let diff = pred_pos - neighbor_pos;
+                        let r = length(diff);
+                        if (r < h) {
+                            xsph_vel += 0.01 * (neighbor_vel - vel) * kernel_w(r, h);
+                        }
+                    }
+                    current = next_pointers[current];
+                }
+            }
+        }
+    }
+
+    particles[id].position = vec4<f32>(pred_pos, 1.0);
+    particles[id].velocity = vec4<f32>(xsph_vel, 0.0);
+}
+
+// --- Dye Mixing & Secondary Physics ---
+
+struct SecondaryParticle {
+    position: vec4<f32>,
+    velocity: vec4<f32>,
+    info: vec4<f32>, // x: lifetime, y: type (0=foam, 1=spray, 2=bubble), z: alpha, w: scale
+};
+
+@group(2) @binding(7) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
+@group(2) @binding(8) var<storage, read_write> secondary_counter: atomic<u32>;
+
+@compute @workgroup_size(64)
+fn emit_whitewater(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let index = global_id.x;
+    if (index >= params.particle_count) { return; }
+
+    let p = particles[index];
+    let vel = p.velocity.xyz;
+    let pos = p.position.xyz;
+    
+    // Calculate 3D vorticity magnitude (estimate from neighbors)
+    // For simplicity in this demo, let's use velocity magnitude and curvature
+    let v_mag = length(vel);
+    if (v_mag < 2.0) { return; }
+
+    // Rough check for "surface" or "turbulence"
+    // In a real SPH, we'd check air entrainment formula
+    // For now: high velocity + density below target = whitewater
+    if (p.density < params.target_density * 0.8 && v_mag > 5.0) {
+        // Decide how many particles to emit based on intensity
+        let count = min(u32(v_mag * 0.2), 4u);
+        
+        for (var i = 0u; i < count; i++) {
+            let slot = atomicAdd(&secondary_counter, 1u) % 65536u;
+            
+            // Random offset for spray effect
+            let rand = vec3<f32>(
+                fract(sin(f32(index + i) * 12.9898) * 43758.5453),
+                fract(sin(f32(index + i) * 78.233) * 43758.5453),
+                fract(sin(f32(index + i) * 37.719) * 43758.5453)
+            ) - 0.5;
+            
+            secondary_particles[slot].position = vec4<f32>(pos + rand * 0.1, 1.0);
+            secondary_particles[slot].velocity = vec4<f32>(vel + rand * 2.0, 0.0);
+            secondary_particles[slot].info = vec4<f32>(
+                1.0 + rand.x * 0.5, // lifetime (1.0 - 1.5s)
+                0.0, // type (0=foam/spray)
+                1.0, // alpha
+                0.05 + rand.y * 0.02 // scale
+            );
+        }
+    }
+}
+
+@compute @workgroup_size(64)
+fn update_whitewater(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let index = global_id.x;
+    if (index >= 65536u) { return; }
+
+    var p = secondary_particles[index];
+    if (p.info.x <= 0.0) { return; }
+
+    let dt = params.dt;
+    
+    // Physics: ballistic + gravity
+    p.velocity.y += params.gravity * dt;
+    // Air resistance
+    p.velocity = vec4<f32>(p.velocity.xyz * 0.98, 0.0);
+    p.position += p.velocity * dt;
+    
+    // Lifecycle
+    p.info.x -= dt;
+    p.info.z = clamp(p.info.x / 1.0, 0.0, 1.0); // Simple linear fade
+    
+    secondary_particles[index] = p;
+}
+
+// --- Heat Diffusion Kernel ---
+// Laplacian-based thermal diffusion between neighboring particles
+
+@compute @workgroup_size(64)
+fn heat_diffuse(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let id = global_id.x;
+    if (id >= params.particle_count) { return; }
+
+    let pos = particles[id].predicted_position.xyz;
+    let temp = particles[id].temperature;
+    let h = params.smoothing_radius;
+    
+    // Thermal diffusivity for water (~0.14 mm²/s scaled for simulation)
+    let thermal_diffusivity = 0.1;
+    var temp_laplacian = 0.0;
+
+    let grid_pos = vec3<i32>(
+        i32(floor((pos.x + 30.0) / params.cell_size)),
+        i32(floor(pos.y / params.cell_size)),
+        i32(floor((pos.z + 30.0) / params.cell_size))
+    );
+
+    for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+            for (var dz = -1; dz <= 1; dz++) {
+                let cell_idx = get_cell_index_clamped(grid_pos.x + dx, grid_pos.y + dy, grid_pos.z + dz);
+                if (cell_idx < 0) { continue; }
+                
+                var current = atomicLoad(&head_pointers[cell_idx]);
+                while (current >= 0) {
+                    if (u32(current) != id) {
+                        let neighbor_pos = particles[current].predicted_position.xyz;
+                        let neighbor_temp = particles[current].temperature;
+                        let diff = pos - neighbor_pos;
+                        let r = length(diff);
+                        if (r < h && r > 0.0001) {
+                            // SPH Laplacian approximation for heat diffusion
+                            let w = kernel_w(r, h);
+                            temp_laplacian += (neighbor_temp - temp) * w / max(params.target_density, 0.001);
+                        }
+                    }
+                    current = next_pointers[current];
+                }
+            }
+        }
+    }
+
+    // Update temperature with diffusion
+    let new_temp = temp + thermal_diffusivity * temp_laplacian * params.dt;
+    particles[id].temperature = clamp(new_temp, 200.0, 500.0); // Clamp to reasonable range
 }

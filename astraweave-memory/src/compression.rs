@@ -539,7 +539,7 @@ mod tests {
         
         assert_eq!(result.memories_processed, 3);
         assert!(result.memories_compressed > 0);
-        assert!(result.processing_time_ms >= 0);
+        let _ = result.processing_time_ms; // Verify it exists
     }
 
     #[test]

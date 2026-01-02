@@ -431,14 +431,13 @@ impl ClusteredForwardRenderer {
                             light,
                             &self.clusters[cluster_idx],
                             view_matrix,
-                        ) {
-                            if self.clusters[cluster_idx].light_count
+                        )
+                            && self.clusters[cluster_idx].light_count
                                 < self.max_lights_per_cluster as u32
                             {
                                 self.light_indices.push(light_idx as u32);
                                 self.clusters[cluster_idx].light_count += 1;
                             }
-                        }
                     }
                 }
             }

@@ -135,7 +135,7 @@ impl DualContouring {
         // Calculate cell configuration (which corners are solid)
         let mut config = 0u8;
         for (i, corner) in corners.iter().enumerate() {
-            if corner.map_or(false, |v| v.is_solid()) {
+            if corner.is_some_and(|v| v.is_solid()) {
                 config |= 1 << i;
             }
         }

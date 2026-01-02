@@ -128,7 +128,7 @@ struct DemoApp {
     egui_platform: Option<egui_winit::State>,
     egui_renderer: Option<egui_wgpu::Renderer>,
     app: Option<App>,
-    
+
     // Keep guards alive
     _trace_guard: ChromeTraceGuard,
     _script_watcher: Option<aw_debug::notify::RecommendedWatcher>,
@@ -153,7 +153,7 @@ impl DemoApp {
             println!("Reload signal detected, reloading level...");
         })
         .ok();
-        
+
         Self {
             window: None,
             renderer: None,
@@ -174,17 +174,19 @@ impl ApplicationHandler for DemoApp {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
             let win = std::sync::Arc::new(
-                event_loop.create_window(
-                    Window::default_attributes()
-                        .with_title("AstraWeave Debug Toolkit Demo")
-                        .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0))
-                ).unwrap()
+                event_loop
+                    .create_window(
+                        Window::default_attributes()
+                            .with_title("AstraWeave Debug Toolkit Demo")
+                            .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0)),
+                    )
+                    .unwrap(),
             );
             self.window = Some(win.clone());
 
             // Initialize renderer
             let r = pollster::block_on(Renderer::new(win.clone())).unwrap();
-            
+
             // Set up camera
             let c = Camera {
                 position: glam::Vec3::new(0.0, 5.0, 10.0),
@@ -209,7 +211,7 @@ impl ApplicationHandler for DemoApp {
                 None, // Added argument
             );
             let er = egui_wgpu::Renderer::new(r.device(), r.surface_format(), None, 1, false); // Added argument
-            
+
             self.egui_ctx = Some(ctx);
             self.egui_platform = Some(platform);
             self.egui_renderer = Some(er);
@@ -218,9 +220,14 @@ impl ApplicationHandler for DemoApp {
         }
     }
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
         if let (Some(egui_platform), Some(window)) = (&mut self.egui_platform, &self.window) {
-             let _ = egui_platform.on_window_event(&*window, &event);
+            let _ = egui_platform.on_window_event(&*window, &event);
         }
 
         match event {
@@ -236,9 +243,25 @@ impl ApplicationHandler for DemoApp {
                 }
             }
             WindowEvent::RedrawRequested => {
-                if let (Some(app), Some(renderer), Some(camera), Some(camera_controller), Some(window), Some(egui_ctx), Some(egui_platform), Some(egui_renderer)) = 
-                    (&mut self.app, &mut self.renderer, &mut self.camera, &mut self.camera_controller, &self.window, &self.egui_ctx, &mut self.egui_platform, &mut self.egui_renderer) 
-                {
+                if let (
+                    Some(app),
+                    Some(renderer),
+                    Some(camera),
+                    Some(camera_controller),
+                    Some(window),
+                    Some(egui_ctx),
+                    Some(egui_platform),
+                    Some(egui_renderer),
+                ) = (
+                    &mut self.app,
+                    &mut self.renderer,
+                    &mut self.camera,
+                    &mut self.camera_controller,
+                    &self.window,
+                    &self.egui_ctx,
+                    &mut self.egui_platform,
+                    &mut self.egui_renderer,
+                ) {
                     // Update app state
                     app.update();
 
@@ -254,13 +277,14 @@ impl ApplicationHandler for DemoApp {
                     let width = config.width;
                     let height = config.height;
 
+                    if let Some(surface) = surface {
                     if let Ok(frame) = surface.get_current_texture() {
                         let view = frame
                             .texture
                             .create_view(&wgpu::TextureViewDescriptor::default());
 
-                        let mut encoder = device
-                            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        let mut encoder =
+                            device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                 label: Some("Render Encoder"),
                             });
 
@@ -289,7 +313,7 @@ impl ApplicationHandler for DemoApp {
                         }
 
                         // Render egui
-                        let _screen_descriptor = egui_wgpu::ScreenDescriptor {
+                        let screen_descriptor = egui_wgpu::ScreenDescriptor {
                             size_in_pixels: [width, height],
                             pixels_per_point: window.scale_factor() as f32,
                         };
@@ -305,7 +329,7 @@ impl ApplicationHandler for DemoApp {
                             });
 
                         let egui_output = egui_ctx.end_pass();
-                        let _clipped_primitives =
+                        let clipped_primitives =
                             egui_ctx.tessellate(egui_output.shapes, egui_output.pixels_per_point);
 
                         for (id, image_delta) in &egui_output.textures_delta.set {
@@ -313,7 +337,7 @@ impl ApplicationHandler for DemoApp {
                         }
 
                         {
-                            let mut _render_pass =
+                            let mut render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Egui Render Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -329,14 +353,16 @@ impl ApplicationHandler for DemoApp {
                                     occlusion_query_set: None,
                                 });
 
-                            // TODO: Fix lifetime issue with egui-wgpu 0.32 render method
-                            /*
+                            // SAFETY: The render pass doesn't outlive the encoder scope,
+                            // so extending the lifetime to 'static is safe here.
+                            // This is required due to egui-wgpu's API in version 0.32.
+                            let render_pass_static: &mut wgpu::RenderPass<'static> =
+                                unsafe { std::mem::transmute(&mut render_pass) };
                             egui_renderer.render(
-                                &mut render_pass,
+                                render_pass_static,
                                 &clipped_primitives,
                                 &screen_descriptor,
                             );
-                            */
                         }
 
                         for id in &egui_output.textures_delta.free {
@@ -345,6 +371,7 @@ impl ApplicationHandler for DemoApp {
 
                         queue.submit(Some(encoder.finish()));
                         frame.present();
+                    }
                     }
 
                     // Update system render time
@@ -368,14 +395,14 @@ impl ApplicationHandler for DemoApp {
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 if let Some(camera_controller) = &mut self.camera_controller {
-                    camera_controller.process_mouse_button(
-                        button,
-                        state == winit::event::ElementState::Pressed,
-                    );
+                    camera_controller
+                        .process_mouse_button(button, state == winit::event::ElementState::Pressed);
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
-                if let (Some(camera_controller), Some(camera)) = (&mut self.camera_controller, &mut self.camera) {
+                if let (Some(camera_controller), Some(camera)) =
+                    (&mut self.camera_controller, &mut self.camera)
+                {
                     camera_controller.process_mouse_move(
                         camera,
                         glam::Vec2::new(position.x as f32, position.y as f32),
@@ -385,7 +412,7 @@ impl ApplicationHandler for DemoApp {
             _ => {}
         }
     }
-    
+
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         if let Some(window) = &self.window {
             window.request_redraw();

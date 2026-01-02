@@ -322,12 +322,11 @@ impl Destructible {
         }
 
         // Apply force-based damage for Health trigger
-        if matches!(self.config.trigger, DestructionTrigger::Health) {
-            if force >= self.config.damage_threshold {
+        if matches!(self.config.trigger, DestructionTrigger::Health)
+            && force >= self.config.damage_threshold {
                 let damage = (force - self.config.damage_threshold) * self.config.force_to_damage;
                 self.apply_damage(damage);
             }
-        }
     }
 
     /// Handle collision

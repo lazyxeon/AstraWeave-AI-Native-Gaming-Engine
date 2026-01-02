@@ -714,13 +714,26 @@ pub struct ValidationIssue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_llm::MockLlmClient;
-    use astraweave_rag::MockRagPipeline;
+    use astraweave_embeddings::{MockEmbeddingClient, VectorStore};
+    use astraweave_llm::MockLlm;
+    use astraweave_rag::{RagConfig, RagPipeline, VectorStoreWrapper};
+
+    fn create_test_rag_pipeline() -> Arc<RagPipeline> {
+        let embedding_client = Arc::new(MockEmbeddingClient::new());
+        let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+        let llm_client: Option<Arc<dyn astraweave_llm::LlmClient>> = Some(Arc::new(MockLlm));
+        Arc::new(RagPipeline::new(
+            embedding_client,
+            vector_store,
+            llm_client,
+            RagConfig::default(),
+        ))
+    }
 
     #[tokio::test]
     async fn test_quest_generator_creation() {
-        let llm_client = Arc::new(MockLlmClient::new());
-        let rag_pipeline = Arc::new(MockRagPipeline::new());
+        let llm_client: Arc<dyn astraweave_llm::LlmClient> = Arc::new(MockLlm);
+        let rag_pipeline = create_test_rag_pipeline();
         let config = QuestGenerationConfig::default();
 
         let generator = LlmQuestGenerator::new(llm_client, rag_pipeline, config);
@@ -746,8 +759,8 @@ mod tests {
 
     #[test]
     fn test_play_style_inference() {
-        let llm_client = Arc::new(MockLlmClient::new());
-        let rag_pipeline = Arc::new(MockRagPipeline::new());
+        let llm_client: Arc<dyn astraweave_llm::LlmClient> = Arc::new(MockLlm);
+        let rag_pipeline = create_test_rag_pipeline();
         let generator =
             LlmQuestGenerator::new(llm_client, rag_pipeline, QuestGenerationConfig::default())
                 .unwrap();

@@ -16,3 +16,6 @@ env_logger = "0.11"
 log = "0.4"
 noise = "0.9"
 image = "0.25"
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+egui-winit = { workspace = true }

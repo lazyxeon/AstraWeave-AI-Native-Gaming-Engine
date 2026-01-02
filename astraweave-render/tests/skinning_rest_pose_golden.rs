@@ -6,7 +6,7 @@
 mod test_utils;
 
 use astraweave_render::{compute_joint_matrices, skin_vertex_cpu, Joint, Skeleton, Transform};
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat4, Vec3};
 
 /// Create test skeleton for golden tests
 fn create_test_skeleton() -> Skeleton {

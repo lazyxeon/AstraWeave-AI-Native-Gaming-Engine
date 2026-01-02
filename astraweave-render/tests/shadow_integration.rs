@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 #[test]
 #[ignore = "Requires main thread event loop (fails on Windows/macOS in test runner)"]
+#[allow(deprecated)]
 fn test_shadow_map_initialization() {
     // This test requires a window, so it might fail in headless CI environments.
     // We'll wrap it in a conditional or try-catch block if possible, 
@@ -18,7 +19,7 @@ fn test_shadow_map_initialization() {
     let renderer = pollster::block_on(Renderer::new(window));
 
     match renderer {
-        Ok(r) => {
+        Ok(_r) => {
             // Verify shadow map properties
             // We can't access private fields directly, but we can check public properties if any.
             // Or we can use reflection/debug if available.

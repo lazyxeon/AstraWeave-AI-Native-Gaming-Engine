@@ -50,7 +50,9 @@ pub mod helpers;
 pub mod library;
 pub mod loader;
 pub mod optimization;
+pub mod sanitize;
 pub mod template;
+pub mod terrain_prompts; // Phase 10: AI-orchestrated terrain generation
 
 pub use context::*;
 pub use engine::*;
@@ -58,7 +60,9 @@ pub use helpers::*;
 pub use library::*;
 pub use loader::*;
 pub use optimization::*;
+pub use sanitize::*;
 pub use template::*;
+pub use terrain_prompts::*;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -233,6 +237,9 @@ pub enum TemplateCategory {
 
     /// World building and descriptions
     WorldBuilding,
+
+    /// Terrain generation and modification (Phase 10)
+    TerrainGeneration,
 
     /// Custom category
     #[default]

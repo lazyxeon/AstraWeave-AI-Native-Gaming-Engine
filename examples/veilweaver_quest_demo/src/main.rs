@@ -8,7 +8,7 @@
 //! This example validates end-to-end quest flow, reward distribution,
 //! and integration with anchor repair, combat, and exploration systems.
 
-use astraweave_weaving::{LevelStats, VeilweaverLevel};
+use astraweave_weaving::VeilweaverLevel;
 use glam::Vec3;
 
 fn main() {

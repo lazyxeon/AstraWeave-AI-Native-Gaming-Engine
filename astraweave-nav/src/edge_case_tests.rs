@@ -21,7 +21,7 @@ fn test_degenerate_triangle_zero_area() {
     // Either way, pathfinding should not crash
     let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(1.5, 0.0, 1.5));
     // Should return empty path or valid path (no crash)
-    assert!(path.len() >= 0, "Should not crash on degenerate triangle");
+    let _ = path.len(); // Verify it doesn't crash
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn test_degenerate_triangle_colinear_vertices() {
 
     // Colinear vertices = zero normal, may be filtered or cause issues
     let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(1.5, 0.0, 0.5));
-    assert!(path.len() >= 0, "Should not crash on colinear vertices");
+    let _ = path.len(); // Verify it doesn't crash
 }
 
 #[test]

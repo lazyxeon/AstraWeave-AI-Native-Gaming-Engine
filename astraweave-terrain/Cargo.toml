@@ -10,10 +10,14 @@ anyhow.workspace = true
 glam.workspace = true
 rand.workspace = true
 serde.workspace = true
+astraweave-core = { path = "../astraweave-core" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }
 noise = "0.9"
 rayon = "1.11"
 tokio = { version = "1", features = ["sync", "rt"] }
+thiserror = "1"
+bincode = "1.3"           # Phase 10: Terrain persistence serialization
+miniz_oxide = "0.8"       # Phase 10: Compression for terrain saves
 
 [features]
 default = ["hybrid-voxel", "simd-noise"]
@@ -24,6 +28,7 @@ simd-noise = [] # Week 3 Action 8: SIMD-optimized noise generation (20-30% speed
 criterion.workspace = true
 serde_json.workspace = true
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "macros"] }
+tempfile = "3"            # Phase 10: Terrain persistence tests
 
 [[bench]]
 name = "terrain_generation"

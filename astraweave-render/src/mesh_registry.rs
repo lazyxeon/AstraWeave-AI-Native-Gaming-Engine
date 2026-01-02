@@ -167,6 +167,12 @@ pub struct GpuMesh {
     pub aabb: Option<(Vec3, Vec3)>,
 }
 
+impl Default for MeshRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MeshRegistry {
     pub fn new() -> Self {
         Self {

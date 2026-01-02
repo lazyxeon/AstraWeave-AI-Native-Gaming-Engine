@@ -27,6 +27,12 @@ pub struct PromptLibrary {
     templates: HashMap<String, crate::template::PromptTemplate>,
 }
 
+impl Default for PromptLibrary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PromptLibrary {
     /// Create a new prompt library
     pub fn new() -> Self {

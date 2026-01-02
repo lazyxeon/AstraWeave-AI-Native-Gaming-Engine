@@ -1123,4 +1123,749 @@ mod tests {
         assert_eq!(dashboard.current_metrics.total_requests, 0);
         assert!(dashboard.active_alerts.is_empty());
     }
+
+    #[test]
+    fn test_telemetry_config_default() {
+        let config = TelemetryConfig::default();
+        assert_eq!(config.max_traces, 10000);
+        assert!(!config.log_content);
+        assert!(config.enable_cost_tracking);
+        assert!(!config.enable_prometheus);
+        assert!(!config.enable_opentelemetry);
+        assert!((config.sampling_rate - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_alert_thresholds_default() {
+        let thresholds = AlertThresholds::default();
+        assert_eq!(thresholds.latency_p95_ms, 5000);
+        assert!((thresholds.error_rate - 0.1).abs() < 0.01);
+        assert!((thresholds.cost_per_hour_usd - 10.0).abs() < 0.01);
+        assert_eq!(thresholds.queue_depth, 100);
+        assert_eq!(thresholds.token_rate, 10000);
+    }
+
+    #[test]
+    fn test_llm_trace_creation() {
+        let trace = LlmTrace {
+            request_id: "req-123".to_string(),
+            session_id: Some("sess-456".to_string()),
+            user_id: Some("user-789".to_string()),
+            prompt: Some("Hello".to_string()),
+            response: Some("Hi there!".to_string()),
+            prompt_hash: Some(12345),
+            model: "gpt-4".to_string(),
+            start_time: Utc::now(),
+            end_time: Utc::now(),
+            latency_ms: 500,
+            tokens_prompt: 10,
+            tokens_response: 20,
+            total_tokens: 30,
+            cost_usd: 0.05,
+            success: true,
+            error_message: None,
+            error_type: None,
+            request_source: "test".to_string(),
+            tags: HashMap::new(),
+        };
+        assert_eq!(trace.request_id, "req-123");
+        assert_eq!(trace.model, "gpt-4");
+        assert!(trace.success);
+    }
+
+    #[test]
+    fn test_llm_metrics_default() {
+        let metrics = LlmMetrics::default();
+        assert_eq!(metrics.total_requests, 0);
+        assert_eq!(metrics.successful_requests, 0);
+        assert_eq!(metrics.failed_requests, 0);
+        assert_eq!(metrics.total_tokens, 0);
+    }
+
+    #[test]
+    fn test_model_metrics_default() {
+        let metrics = ModelMetrics::default();
+        assert_eq!(metrics.requests, 0);
+        assert_eq!(metrics.total_tokens, 0);
+    }
+
+    #[test]
+    fn test_source_metrics_default() {
+        let metrics = SourceMetrics::default();
+        assert_eq!(metrics.requests, 0);
+        assert_eq!(metrics.total_tokens, 0);
+    }
+
+    #[test]
+    fn test_cost_tracker_default() {
+        let tracker = CostTracker::default();
+        assert!(tracker.hourly_costs.is_empty());
+        assert_eq!(tracker.current_day_spend, 0.0);
+        assert_eq!(tracker.current_month_spend, 0.0);
+    }
+
+    #[test]
+    fn test_hourly_cost_creation() {
+        let cost = HourlyCost {
+            hour: Utc::now(),
+            cost_usd: 1.50,
+            requests: 100,
+            tokens: 5000,
+        };
+        assert!((cost.cost_usd - 1.5).abs() < 0.01);
+        assert_eq!(cost.requests, 100);
+    }
+
+    #[test]
+    fn test_budget_alert_types() {
+        let daily = BudgetAlertType::DailyBudget;
+        let monthly = BudgetAlertType::MonthlyBudget;
+        let hourly = BudgetAlertType::HourlyRate;
+        
+        let json_daily = serde_json::to_string(&daily).unwrap();
+        let json_monthly = serde_json::to_string(&monthly).unwrap();
+        let json_hourly = serde_json::to_string(&hourly).unwrap();
+        
+        assert!(json_daily.contains("DailyBudget"));
+        assert!(json_monthly.contains("MonthlyBudget"));
+        assert!(json_hourly.contains("HourlyRate"));
+    }
+
+    #[test]
+    fn test_alert_types() {
+        let types = vec![
+            AlertType::HighLatency,
+            AlertType::HighErrorRate,
+            AlertType::HighCost,
+            AlertType::QueueBacklog,
+            AlertType::ModelFailure,
+        ];
+        for alert_type in types {
+            let json = serde_json::to_string(&alert_type).unwrap();
+            assert!(!json.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_alert_severity() {
+        let severities = vec![
+            AlertSeverity::Info,
+            AlertSeverity::Warning,
+            AlertSeverity::Critical,
+        ];
+        for severity in severities {
+            let json = serde_json::to_string(&severity).unwrap();
+            assert!(!json.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_alert_creation() {
+        let alert = Alert {
+            id: "alert-123".to_string(),
+            alert_type: AlertType::HighLatency,
+            severity: AlertSeverity::Warning,
+            message: "High latency detected".to_string(),
+            value: 6000.0,
+            threshold: 5000.0,
+            first_triggered: Utc::now(),
+            last_triggered: Utc::now(),
+            acknowledged: false,
+            resolved: false,
+        };
+        assert_eq!(alert.id, "alert-123");
+        assert!(!alert.acknowledged);
+        assert!(!alert.resolved);
+    }
+
+    #[test]
+    fn test_error_pattern_creation() {
+        let pattern = ErrorPattern {
+            error_type: "RateLimitExceeded".to_string(),
+            frequency: 5,
+            first_seen: Utc::now(),
+            last_seen: Utc::now(),
+            sample_messages: vec!["Rate limit exceeded".to_string()],
+        };
+        assert_eq!(pattern.frequency, 5);
+        assert_eq!(pattern.sample_messages.len(), 1);
+    }
+
+    #[test]
+    fn test_error_event_creation() {
+        let event = ErrorEvent {
+            timestamp: Utc::now(),
+            error_type: "ConnectionTimeout".to_string(),
+            error_message: "Connection timed out".to_string(),
+            request_id: "req-456".to_string(),
+            model: "gpt-4".to_string(),
+        };
+        assert_eq!(event.error_type, "ConnectionTimeout");
+        assert_eq!(event.model, "gpt-4");
+    }
+
+    #[test]
+    fn test_dashboard_data_structure() {
+        let dashboard = DashboardData {
+            current_metrics: LlmMetrics::default(),
+            cost_summary: CostSummary {
+                current_hour_cost: 0.5,
+                today_cost: 5.0,
+                month_cost: 50.0,
+                daily_budget_remaining: 95.0,
+                monthly_budget_remaining: 950.0,
+                projected_monthly_cost: 150.0,
+            },
+            active_alerts: vec![],
+            top_errors: vec![],
+            model_breakdown: vec![],
+            hourly_stats: vec![],
+            performance_percentiles: PerformancePercentiles {
+                latency_p50: 100,
+                latency_p75: 200,
+                latency_p90: 500,
+                latency_p95: 1000,
+                latency_p99: 2000,
+                token_p50: 50,
+                token_p95: 200,
+                cost_p50: 0.01,
+                cost_p95: 0.10,
+            },
+        };
+        assert!((dashboard.cost_summary.current_hour_cost - 0.5).abs() < 0.01);
+        assert_eq!(dashboard.performance_percentiles.latency_p95, 1000);
+    }
+
+    #[test]
+    fn test_model_breakdown_creation() {
+        let breakdown = ModelBreakdown {
+            model: "gpt-4-turbo".to_string(),
+            requests: 1000,
+            cost: 50.0,
+            avg_latency: 250.0,
+            error_rate: 0.02,
+        };
+        assert_eq!(breakdown.model, "gpt-4-turbo");
+        assert_eq!(breakdown.requests, 1000);
+    }
+
+    #[test]
+    fn test_trace_filter_creation() {
+        let filter = TraceFilter {
+            model: Some("gpt-4".to_string()),
+            success: Some(true),
+            start_time: Some(Utc::now()),
+            end_time: None,
+            min_latency_ms: Some(100),
+            max_latency_ms: Some(5000),
+        };
+        assert_eq!(filter.model, Some("gpt-4".to_string()));
+        assert!(filter.success.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_clear_data() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        // Add some data first
+        let tracker = telemetry.start_request(
+            "req-1".to_string(),
+            "model".to_string(),
+            "source".to_string(),
+            10,
+        );
+        tracker
+            .complete(
+                "model".to_string(),
+                true,
+                20,
+                0.01,
+                None,
+                None,
+                "source".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        let metrics = telemetry.get_metrics().await;
+        assert_eq!(metrics.total_requests, 1);
+        
+        // Clear data
+        telemetry.clear_data().await.unwrap();
+        
+        let metrics = telemetry.get_metrics().await;
+        assert_eq!(metrics.total_requests, 0);
+    }
+
+    #[tokio::test]
+    async fn test_failed_request_tracking() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        let tracker = telemetry.start_request(
+            "failed-req".to_string(),
+            "gpt-4".to_string(),
+            "test".to_string(),
+            50,
+        );
+        
+        tracker
+            .complete(
+                "gpt-4".to_string(),
+                false,
+                0,
+                0.0,
+                Some("Rate limit exceeded".to_string()),
+                Some("RateLimit".to_string()),
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        let metrics = telemetry.get_metrics().await;
+        assert_eq!(metrics.total_requests, 1);
+        assert_eq!(metrics.failed_requests, 1);
+        assert_eq!(metrics.successful_requests, 0);
+    }
+
+    #[tokio::test]
+    async fn test_export_traces_json() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        let tracker = telemetry.start_request(
+            "export-req".to_string(),
+            "gpt-4".to_string(),
+            "test".to_string(),
+            100,
+        );
+        
+        tracker
+            .complete(
+                "gpt-4".to_string(),
+                true,
+                200,
+                0.05,
+                None,
+                None,
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        let json = telemetry.export_traces(ExportFormat::Json, None).await.unwrap();
+        assert!(json.contains("export-req"));
+    }
+
+    #[tokio::test]
+    async fn test_export_traces_csv() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        let tracker = telemetry.start_request(
+            "csv-req".to_string(),
+            "gpt-4".to_string(),
+            "test".to_string(),
+            100,
+        );
+        
+        tracker
+            .complete(
+                "gpt-4".to_string(),
+                true,
+                200,
+                0.05,
+                None,
+                None,
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        let csv = telemetry.export_traces(ExportFormat::Csv, None).await.unwrap();
+        assert!(csv.contains("request_id"));
+        assert!(csv.contains("csv-req"));
+    }
+
+    #[test]
+    fn test_active_request_creation() {
+        let active_request = ActiveRequest {
+            request_id: "active-123".to_string(),
+            start_time: Instant::now(),
+            model: "gpt-4".to_string(),
+            source: "api".to_string(),
+            prompt_tokens: 150,
+        };
+        assert_eq!(active_request.request_id, "active-123");
+        assert_eq!(active_request.prompt_tokens, 150);
+    }
+
+    #[test]
+    fn test_telemetry_config_custom() {
+        let config = TelemetryConfig {
+            max_traces: 5000,
+            log_content: true,
+            enable_cost_tracking: false,
+            enable_prometheus: true,
+            enable_opentelemetry: true,
+            alert_thresholds: AlertThresholds {
+                latency_p95_ms: 3000,
+                error_rate: 0.05,
+                cost_per_hour_usd: 5.0,
+                queue_depth: 50,
+                token_rate: 5000,
+            },
+            sampling_rate: 0.5,
+        };
+        assert_eq!(config.max_traces, 5000);
+        assert!(config.log_content);
+        assert!(!config.enable_cost_tracking);
+        assert!((config.sampling_rate - 0.5).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_model_specific_metrics() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        // Add request for gpt-4
+        let tracker1 = telemetry.start_request(
+            "req-gpt4".to_string(),
+            "gpt-4".to_string(),
+            "test".to_string(),
+            100,
+        );
+        tracker1
+            .complete(
+                "gpt-4".to_string(),
+                true,
+                200,
+                0.10,
+                None,
+                None,
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        // Add request for gpt-3.5
+        let tracker2 = telemetry.start_request(
+            "req-gpt35".to_string(),
+            "gpt-3.5-turbo".to_string(),
+            "test".to_string(),
+            50,
+        );
+        tracker2
+            .complete(
+                "gpt-3.5-turbo".to_string(),
+                true,
+                100,
+                0.01,
+                None,
+                None,
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        let metrics = telemetry.get_metrics().await;
+        assert_eq!(metrics.total_requests, 2);
+        assert_eq!(metrics.model_usage.len(), 2);
+    }
+
+    #[test]
+    fn test_performance_percentiles_structure() {
+        let percentiles = PerformancePercentiles {
+            latency_p50: 50,
+            latency_p75: 100,
+            latency_p90: 200,
+            latency_p95: 500,
+            latency_p99: 1000,
+            token_p50: 100,
+            token_p95: 500,
+            cost_p50: 0.01,
+            cost_p95: 0.05,
+        };
+        assert_eq!(percentiles.latency_p50, 50);
+        assert_eq!(percentiles.latency_p99, 1000);
+    }
+
+    #[test]
+    fn test_budget_alert_creation() {
+        let alert = BudgetAlert {
+            alert_type: BudgetAlertType::DailyBudget,
+            threshold: 100.0,
+            actual: 120.0,
+            timestamp: Utc::now(),
+        };
+        assert!((alert.threshold - 100.0).abs() < 0.01);
+        assert!((alert.actual - 120.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_llm_trace_serialization() {
+        let trace = LlmTrace {
+            request_id: "ser-test".to_string(),
+            session_id: None,
+            user_id: None,
+            prompt: None,
+            response: None,
+            prompt_hash: None,
+            model: "test-model".to_string(),
+            start_time: Utc::now(),
+            end_time: Utc::now(),
+            latency_ms: 100,
+            tokens_prompt: 10,
+            tokens_response: 20,
+            total_tokens: 30,
+            cost_usd: 0.01,
+            success: true,
+            error_message: None,
+            error_type: None,
+            request_source: "test".to_string(),
+            tags: HashMap::new(),
+        };
+        let json = serde_json::to_string(&trace).unwrap();
+        assert!(json.contains("ser-test"));
+        assert!(json.contains("test-model"));
+    }
+
+    #[tokio::test]
+    async fn test_export_with_filter() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        // Add successful request
+        let tracker1 = telemetry.start_request(
+            "success-req".to_string(),
+            "gpt-4".to_string(),
+            "test".to_string(),
+            100,
+        );
+        tracker1
+            .complete(
+                "gpt-4".to_string(),
+                true,
+                200,
+                0.05,
+                None,
+                None,
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        // Add failed request
+        let tracker2 = telemetry.start_request(
+            "failed-req".to_string(),
+            "gpt-4".to_string(),
+            "test".to_string(),
+            50,
+        );
+        tracker2
+            .complete(
+                "gpt-4".to_string(),
+                false,
+                0,
+                0.0,
+                Some("Error".to_string()),
+                Some("TestError".to_string()),
+                "test".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        // Filter for successful only
+        let filter = TraceFilter {
+            model: None,
+            success: Some(true),
+            start_time: None,
+            end_time: None,
+            min_latency_ms: None,
+            max_latency_ms: None,
+        };
+        
+        let json = telemetry.export_traces(ExportFormat::Json, Some(filter)).await.unwrap();
+        assert!(json.contains("success-req"));
+        // Failed request should be filtered out
+    }
+
+    #[test]
+    fn test_notification_channels() {
+        let _log_channel = NotificationChannel::Log;
+        let _webhook_channel = NotificationChannel::Webhook("http://example.com".to_string());
+        let _email_channel = NotificationChannel::Email("test@example.com".to_string());
+        // Just ensure enum variants can be created
+    }
+
+    #[test]
+    fn test_export_format_variants() {
+        let _json = ExportFormat::Json;
+        let _csv = ExportFormat::Csv;
+        let _otel = ExportFormat::OpenTelemetry;
+        // Just ensure enum variants can be created
+    }
+
+    #[tokio::test]
+    async fn test_opentelemetry_export_placeholder() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        let result = telemetry.export_traces(ExportFormat::OpenTelemetry, None).await.unwrap();
+        assert!(result.contains("not yet implemented"));
+    }
+
+    #[tokio::test]
+    async fn test_telemetry_clone() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        let cloned = telemetry.clone();
+        
+        // Add request to original
+        let tracker = telemetry.start_request(
+            "clone-test".to_string(),
+            "model".to_string(),
+            "source".to_string(),
+            10,
+        );
+        
+        tracker
+            .complete(
+                "model".to_string(),
+                true,
+                20,
+                0.01,
+                None,
+                None,
+                "source".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        // Both should see the request (shared Arc)
+        let orig_metrics = telemetry.get_metrics().await;
+        let cloned_metrics = cloned.get_metrics().await;
+        assert_eq!(orig_metrics.total_requests, cloned_metrics.total_requests);
+    }
+
+    #[test]
+    fn test_alert_manager_default() {
+        let manager = AlertManager::default();
+        assert!(manager.active_alerts.is_empty());
+        assert!(manager.alert_history.is_empty());
+    }
+
+    #[test]
+    fn test_error_tracker_default() {
+        let tracker = ErrorTracker::default();
+        assert!(tracker.error_counts.is_empty());
+        assert!(tracker.error_patterns.is_empty());
+        assert!(tracker.recent_errors.is_empty());
+    }
+
+    #[test]
+    fn test_performance_histograms_default() {
+        let histograms = PerformanceHistograms::default();
+        // Just verify we can create them
+        assert_eq!(histograms.latency_histogram.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_multiple_sources_metrics() {
+        let telemetry = LlmTelemetry::new(TelemetryConfig::default());
+        
+        // Source 1
+        let tracker1 = telemetry.start_request(
+            "src1-req".to_string(),
+            "gpt-4".to_string(),
+            "api".to_string(),
+            100,
+        );
+        tracker1
+            .complete(
+                "gpt-4".to_string(),
+                true,
+                200,
+                0.05,
+                None,
+                None,
+                "api".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        // Source 2
+        let tracker2 = telemetry.start_request(
+            "src2-req".to_string(),
+            "gpt-4".to_string(),
+            "batch".to_string(),
+            100,
+        );
+        tracker2
+            .complete(
+                "gpt-4".to_string(),
+                true,
+                200,
+                0.05,
+                None,
+                None,
+                "batch".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+        
+        let metrics = telemetry.get_metrics().await;
+        assert_eq!(metrics.source_metrics.len(), 2);
+    }
+
+    #[test]
+    fn test_hourly_stats_creation() {
+        let stats = HourlyStats {
+            hour: Utc::now(),
+            requests: 500,
+            cost: 2.5,
+            avg_latency: 150.0,
+            error_rate: 0.01,
+        };
+        assert_eq!(stats.requests, 500);
+    }
+
+    #[test]
+    fn test_cost_summary_fields() {
+        let summary = CostSummary {
+            current_hour_cost: 1.0,
+            today_cost: 10.0,
+            month_cost: 100.0,
+            daily_budget_remaining: 90.0,
+            monthly_budget_remaining: 900.0,
+            projected_monthly_cost: 300.0,
+        };
+        assert!((summary.month_cost - 100.0).abs() < 0.01);
+        assert!((summary.projected_monthly_cost - 300.0).abs() < 0.01);
+    }
 }

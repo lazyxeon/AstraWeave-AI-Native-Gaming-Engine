@@ -18,7 +18,6 @@
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use wgpu;
 
 use super::camera::OrbitCamera;
 
@@ -185,14 +184,14 @@ impl GridRenderer {
                 camera.position().z,
             ],
             _padding1: 0.0,
-            grid_size: 1.0,                         // 1 meter grid
-            major_grid_every: 10.0,                 // Major grid every 10 lines
-            fade_distance: 200.0,                   // Start fading at 200m (increased from 50m)
-            max_distance: 500.0,                    // Completely fade by 500m (increased from 100m)
+            grid_size: 1.0,         // 1 meter grid
+            major_grid_every: 10.0, // Major grid every 10 lines
+            fade_distance: 200.0,   // Start fading at 200m (increased from 50m)
+            max_distance: 500.0,    // Completely fade by 500m (increased from 100m)
             grid_color,
             major_grid_color,
-            x_axis_color: [1.0, 0.0, 0.0, 0.8],     // Red X axis
-            z_axis_color: [0.0, 0.0, 1.0, 0.8],     // Blue Z axis
+            x_axis_color: [1.0, 0.0, 0.0, 0.8], // Red X axis
+            z_axis_color: [0.0, 0.0, 1.0, 0.8], // Blue Z axis
         };
 
         // Write uniforms to buffer

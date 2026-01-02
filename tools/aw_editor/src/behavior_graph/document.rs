@@ -265,9 +265,9 @@ impl BehaviorGraphDocument {
             return Err(BehaviorGraphDocumentError::NodeCannotHaveChildren(parent));
         }
         let child_id = self.add_node(label, kind);
-        let parent_node = self
-            .node_mut(parent)
-            .expect("parent must exist after snapshot");
+        let Some(parent_node) = self.node_mut(parent) else {
+            return Err(BehaviorGraphDocumentError::MissingNode(parent));
+        };
         match parent_node.kind.children_mut() {
             Some(children) => {
                 children.push(child_id);
@@ -398,7 +398,7 @@ impl BehaviorGraphDocument {
             BehaviorGraphNodeKind::Decorator(data) => {
                 let child_id = data
                     .child
-                    .ok_or_else(|| BehaviorGraphDocumentError::DecoratorMissingChild(node.id))?;
+                    .ok_or(BehaviorGraphDocumentError::DecoratorMissingChild(node.id))?;
                 let child_node = self.build_runtime_node(child_id, visited)?;
                 BehaviorNode::Decorator(data.decorator.to_runtime(), Box::new(child_node))
             }
@@ -482,7 +482,7 @@ impl BehaviorGraphDocument {
                 let child_id = self.import_runtime_node(child);
                 self.nodes.push(BehaviorGraphNode::new(
                     id,
-                    format!("Decorator"),
+                    "Decorator".to_string(),
                     BehaviorGraphNodeKind::Decorator(DecoratorNode {
                         decorator: DecoratorKind::from_runtime(decorator),
                         child: Some(child_id),

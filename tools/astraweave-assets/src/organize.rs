@@ -129,6 +129,11 @@ impl AssetOrganizer {
 
     /// Update attribution file
     async fn update_attribution(&self, entry: &LockEntry, asset: &ResolvedAsset) -> Result<()> {
+        // Ensure output directory exists
+        if let Some(parent) = self.attribution_path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+
         // Load existing attribution
         let mut content = if self.attribution_path.exists() {
             fs::read_to_string(&self.attribution_path).await?
@@ -370,5 +375,168 @@ mod tests {
         // Verify lockfile exists and contains entry
         let lockfile = organizer.load_lockfile().await.unwrap();
         assert!(lockfile.assets.contains_key("test"));
+    }
+
+    #[tokio::test]
+    async fn test_organize_normalizes_names_and_updates_attribution() {
+        let temp = TempDir::new().unwrap();
+        let output_dir = temp.path().join("output");
+        let cache_dir = temp.path().join("cache");
+
+        let organizer = AssetOrganizer::new(output_dir.clone(), cache_dir.clone());
+
+        let mut urls = HashMap::new();
+        urls.insert(
+            "albedo".to_string(),
+            "https://example.com/tex_albedo.png?token=1".to_string(),
+        );
+
+        let asset = ResolvedAsset {
+            id: "test_asset".to_string(),
+            kind: "texture".to_string(),
+            resolution: "2k".to_string(),
+            urls,
+            info: crate::polyhaven::InfoResponse {
+                name: "Test Asset".to_string(),
+                categories: vec![],
+                tags: vec!["tag1".to_string()],
+                download_count: 123,
+            },
+        };
+
+        // Create a fake downloaded temp file
+        let dl_dir = temp.path().join("downloads");
+        tokio::fs::create_dir_all(&dl_dir).await.unwrap();
+        let src_path = dl_dir.join("random.tmp");
+        tokio::fs::write(&src_path, b"content").await.unwrap();
+
+        let mut downloads = HashMap::new();
+        downloads.insert(
+            "albedo".to_string(),
+            DownloadResult {
+                path: src_path.clone(),
+                sha256: "deadbeef".to_string(),
+                size: 7,
+            },
+        );
+
+        let entry = organizer
+            .organize("my_handle", &asset, &downloads)
+            .await
+            .unwrap();
+
+        let dest_path = output_dir.join("my_handle").join("my_handle_albedo.png");
+        assert!(dest_path.exists());
+        assert!(entry.paths.get("albedo").unwrap().ends_with("my_handle_albedo.png"));
+
+        // Lockfile exists
+        let lockfile = Lockfile::load(&cache_dir.join("polyhaven.lock")).unwrap();
+        assert!(lockfile.assets.contains_key("my_handle"));
+
+        // Attribution written
+        let attribution_path = output_dir.join("ATTRIBUTION.txt");
+        let content = tokio::fs::read_to_string(&attribution_path).await.unwrap();
+        assert!(content.contains("## my_handle"));
+        assert!(content.contains("https://polyhaven.com/a/test_asset"));
+        assert!(content.contains("**Files**"));
+    }
+
+    #[tokio::test]
+    async fn test_update_attribution_updates_existing_entry() {
+        let temp = TempDir::new().unwrap();
+        let output_dir = temp.path().join("output");
+        let cache_dir = temp.path().join("cache");
+        let organizer = AssetOrganizer::new(output_dir.clone(), cache_dir);
+
+        tokio::fs::create_dir_all(&output_dir).await.unwrap();
+
+        let asset = ResolvedAsset {
+            id: "id".to_string(),
+            kind: "texture".to_string(),
+            resolution: "2k".to_string(),
+            urls: HashMap::new(),
+            info: crate::polyhaven::InfoResponse {
+                name: "Name".to_string(),
+                categories: vec![],
+                tags: vec![],
+                download_count: 0,
+            },
+        };
+
+        let entry = LockEntry {
+            handle: "h".to_string(),
+            id: "id".to_string(),
+            kind: "texture".to_string(),
+            urls: HashMap::new(),
+            paths: HashMap::new(),
+            hashes: HashMap::new(),
+            timestamp: "2025-10-17T00:00:00Z".to_string(),
+            resolved_res: "2k".to_string(),
+        };
+
+        organizer.update_attribution(&entry, &asset).await.unwrap();
+        organizer.update_attribution(&entry, &asset).await.unwrap();
+
+        let content = tokio::fs::read_to_string(output_dir.join("ATTRIBUTION.txt"))
+            .await
+            .unwrap();
+        assert!(content.contains("## h"));
+        assert!(content.contains("Updated:"));
+    }
+
+    #[tokio::test]
+    async fn test_is_cached_false_when_missing_files() {
+        let temp = TempDir::new().unwrap();
+        let output_dir = temp.path().join("output");
+        let cache_dir = temp.path().join("cache");
+        let organizer = AssetOrganizer::new(output_dir.clone(), cache_dir.clone());
+
+        // Write lockfile that references a missing path
+        let mut entry = LockEntry {
+            handle: "h".to_string(),
+            id: "id".to_string(),
+            kind: "texture".to_string(),
+            urls: HashMap::new(),
+            paths: HashMap::new(),
+            hashes: HashMap::new(),
+            timestamp: "t".to_string(),
+            resolved_res: "2k".to_string(),
+        };
+        entry
+            .paths
+            .insert("albedo".to_string(), output_dir.join("h").join("missing.png"));
+
+        let mut lockfile = Lockfile {
+            version: 1,
+            assets: HashMap::new(),
+        };
+        lockfile.assets.insert("h".to_string(), entry);
+        tokio::fs::create_dir_all(&cache_dir).await.unwrap();
+        lockfile.save(&cache_dir.join("polyhaven.lock")).unwrap();
+
+        assert!(!organizer.is_cached("h").await);
+    }
+
+    #[tokio::test]
+    async fn test_prune_removes_orphaned_paths() {
+        let temp = TempDir::new().unwrap();
+        let output_dir = temp.path().join("output");
+        let cache_dir = temp.path().join("cache");
+        let organizer = AssetOrganizer::new(output_dir.clone(), cache_dir);
+
+        tokio::fs::create_dir_all(output_dir.join("keep")).await.unwrap();
+        tokio::fs::create_dir_all(output_dir.join("junk")).await.unwrap();
+        tokio::fs::write(output_dir.join("junk").join("x.txt"), b"x")
+            .await
+            .unwrap();
+
+        let pruned = organizer
+            .prune(&["keep".to_string()])
+            .await
+            .unwrap();
+
+        assert!(output_dir.join("keep").exists());
+        assert!(!output_dir.join("junk").exists());
+        assert!(!pruned.is_empty());
     }
 }

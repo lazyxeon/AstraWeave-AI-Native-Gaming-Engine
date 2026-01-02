@@ -128,3 +128,222 @@ impl LlmAdapter for MockLlm {
         Ok(NpcPlan { actions })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::profile::{Memory, Persona};
+
+    fn make_profile(role: Role) -> NpcProfile {
+        NpcProfile {
+            id: "test_npc".to_string(),
+            role,
+            persona: Persona {
+                display_name: "Test NPC".to_string(),
+                traits: vec![],
+                backstory: String::new(),
+                voice_speaker: None,
+            },
+            memory: Memory {
+                facts: vec![],
+                episodes: vec![],
+            },
+            home: [0.0, 0.0, 0.0],
+            schedule: vec![],
+        }
+    }
+
+    fn make_view() -> NpcWorldView {
+        NpcWorldView {
+            time_of_day: 12.0,
+            self_pos: Vec3::ZERO,
+            player_pos: Some(Vec3::new(5.0, 0.0, 5.0)),
+            player_dist: Some(7.07),
+            nearby_threat: false,
+            location_tag: Some("market".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_mock_llm_merchant_buy() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Merchant);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("I want to buy something")).unwrap();
+        
+        // Should say something and open shop
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::OpenShop)));
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_merchant_shop() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Merchant);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("show me your shop")).unwrap();
+        
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::OpenShop)));
+    }
+
+    #[test]
+    fn test_mock_llm_merchant_greeting() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Merchant);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("hello there")).unwrap();
+        
+        // Should greet and maybe emote
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Emote { kind: EmoteKind::Nod })));
+    }
+
+    #[test]
+    fn test_mock_llm_merchant_idle() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Merchant);
+        let view = make_view();
+        
+        // No utterance - idle behavior (may or may not wave randomly)
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
+        
+        // Plan should be valid (may be empty or have a wave)
+        assert!(plan.actions.len() <= 1);
+    }
+
+    #[test]
+    fn test_mock_llm_guard_threat() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Guard);
+        let mut view = make_view();
+        view.nearby_threat = true;
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
+        
+        // Should call guards due to threat
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })));
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_guard_player_reports_danger() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Guard);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("there's danger ahead!")).unwrap();
+        
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_guard_player_asks_help() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Guard);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("help me please")).unwrap();
+        
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_guard_normal_interaction() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Guard);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("nice weather")).unwrap();
+        
+        // Should tell player to move along
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_civilian_hello() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Civilian);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("hello")).unwrap();
+        
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Emote { kind: EmoteKind::Wave })));
+    }
+
+    #[test]
+    fn test_mock_llm_civilian_other() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Civilian);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("what's the news?")).unwrap();
+        
+        // Should say they're busy
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_civilian_no_utterance() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::Civilian);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
+        
+        // No response when not spoken to
+        assert!(plan.actions.is_empty());
+    }
+
+    #[test]
+    fn test_mock_llm_quest_giver_quest() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::QuestGiver);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("do you have a quest for me?")).unwrap();
+        
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })));
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_quest_giver_work() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::QuestGiver);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("I'm looking for work")).unwrap();
+        
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_quest_giver_other() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::QuestGiver);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("tell me about the world")).unwrap();
+        
+        // Should give cryptic response about threads
+        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(!plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })));
+    }
+
+    #[test]
+    fn test_mock_llm_quest_giver_no_utterance() {
+        let llm = MockLlm;
+        let profile = make_profile(Role::QuestGiver);
+        let view = make_view();
+        
+        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
+        
+        // No response when not spoken to
+        assert!(plan.actions.is_empty());
+    }
+}
+

@@ -1,0 +1,81 @@
+warning: unused variable: `grid_size`
+   --> astraweave-fluids\src\lib.rs:171:13
+    |
+171 | ...   let grid_size = (grid_...
+    |           ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_grid_size`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: fields `global_layout`, `particles_layout`, `secondary_layout`, `head_pointers`, and `next_pointers` are never read
+  --> astraweave-fluids\src\lib.rs:60:5
+   |
+50 | pub struct FluidSystem {
+   |            ----------- fields in this struct
+...
+60 |     global_layout: wgpu::Bind...
+   |     ^^^^^^^^^^^^^
+61 |     particles_layout: wgpu::B...
+   |     ^^^^^^^^^^^^^^^^
+62 |     secondary_layout: wgpu::B...
+   |     ^^^^^^^^^^^^^^^^
+...
+65 |     head_pointers: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^
+66 |     next_pointers: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `config_buffer` is never read
+  --> astraweave-fluids\src\sdf.rs:24:5
+   |
+19 | pub struct SdfSystem {
+   |            --------- field in this struct
+...
+24 |     config_buffer: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^
+
+warning: unused `std::result::Result` that must be used
+   --> astraweave-fluids\src\lib.rs:802:9
+    |
+802 | ...   device.poll(wgpu::MaintainBase::Poll);
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+802 |         let _ = device.poll(wgpu::MaintainBase::Poll);
+    |         +++++++
+
+warning: `astraweave-fluids` (lib) generated 4 warnings
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+error[E0689]: can't call method `floor` on ambiguous numeric type `{float}`
+    --> astraweave-fluids\src\lib.rs:1010:39
+     |
+1010 |         let gx = (pos[0] / cell_size).floor() as i32;
+     |                                       ^^^^^
+
+error[E0689]: can't call method `floor` on ambiguous numeric type `{float}`
+    --> astraweave-fluids\src\lib.rs:1011:39
+     |
+1011 |         let gy = (pos[1] / cell_size).floor() as i32;
+     |                                       ^^^^^
+
+error[E0689]: can't call method `floor` on ambiguous numeric type `{float}`
+    --> astraweave-fluids\src\lib.rs:1012:39
+     |
+1012 |         let gz = (pos[2] / cell_size).floor() as i32;
+     |                                       ^^^^^
+
+warning: unused variable: `grid_size`
+   --> astraweave-fluids\src\lib.rs:171:13
+    |
+171 |         let grid_size = (grid_width * grid_height * grid_depth) as usize;
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_grid_size`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+For more information about this error, try `rustc --explain E0689`.
+warning: `astraweave-fluids` (lib test) generated 1 warning
+error: could not compile `astraweave-fluids` (lib test) due to 3 previous errors; 1 warning emitted

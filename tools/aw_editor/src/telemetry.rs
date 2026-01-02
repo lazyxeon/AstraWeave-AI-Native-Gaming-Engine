@@ -100,10 +100,9 @@ pub fn record(event: EditorTelemetryEvent) {
     log_event(&event);
 
     if CAPTURE_ENABLED.load(Ordering::Relaxed) {
-        storage()
-            .lock()
-            .expect("capture mutex poisoned")
-            .push(event);
+        if let Ok(mut guard) = storage().lock() {
+            guard.push(event);
+        }
     }
 }
 
@@ -123,21 +122,20 @@ pub fn enable_capture() -> TelemetryCaptureGuard {
     let lock = CAPTURE_LOCK
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .expect("capture lock poisoned");
+        .unwrap_or_else(|e| e.into_inner());
     CAPTURE_ENABLED.store(true, Ordering::SeqCst);
-    storage().lock().expect("capture mutex poisoned").clear();
+    if let Ok(mut guard) = storage().lock() {
+        guard.clear();
+    }
     TelemetryCaptureGuard { _lock: lock }
 }
 
 /// Drain captured telemetry events (used by headless harness tests).
 pub fn drain_captured_events() -> Vec<EditorTelemetryEvent> {
     if let Some(storage) = CAPTURED_EVENTS.get() {
-        storage
-            .lock()
-            .expect("capture mutex poisoned")
-            .drain(..)
-            .collect()
-    } else {
-        Vec::new()
+        if let Ok(mut guard) = storage.lock() {
+            return guard.drain(..).collect();
+        }
     }
+    Vec::new()
 }

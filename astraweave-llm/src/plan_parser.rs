@@ -226,15 +226,15 @@ fn extract_code_fence(text: &str) -> Result<&str> {
 /// Clean common JSON issues (trailing commas, extra fields)
 fn clean_json(text: &str) -> String {
     // Remove trailing commas before closing brackets/braces
-    let cleaned = text
+    
+
+    text
         .replace(",\n  ]", "\n  ]")
         .replace(", ]", "]")
         .replace(",]", "]")
         .replace(",\n}", "\n}")
         .replace(", }", "}")
-        .replace(",}", "}");
-
-    cleaned
+        .replace(",}", "}")
 }
 
 // ============================================================================
@@ -493,9 +493,9 @@ fn action_step_to_tool_name(step: &ActionStep) -> &str {
         ActionStep::ThrowExplosive { .. } => "ThrowExplosive",
         ActionStep::CoverFire { .. } => "CoverFire",
         ActionStep::Charge { .. } => "Charge",
-        ActionStep::Block { .. } => "Block",
+        ActionStep::Block => "Block",
         ActionStep::Dodge { .. } => "Dodge",
-        ActionStep::Parry { .. } => "Parry",
+        ActionStep::Parry => "Parry",
         ActionStep::ThrowSmoke { .. } => "ThrowSmoke",
         ActionStep::Heal { .. } => "Heal",
         ActionStep::UseDefensiveAbility { .. } => "UseDefensiveAbility",
@@ -518,6 +518,7 @@ fn action_step_to_tool_name(step: &ActionStep) -> &str {
         ActionStep::Taunt { .. } => "Taunt",
         ActionStep::Throw { .. } => "Throw",   // Legacy
         ActionStep::Revive { .. } => "Revive", // Legacy
+        ActionStep::ModifyTerrain { .. } => "ModifyTerrain", // Director action
     }
 }
 
@@ -679,5 +680,233 @@ Some text after
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("Failed to parse"));
+    }
+
+    #[test]
+    fn test_extraction_method_as_str() {
+        assert_eq!(ExtractionMethod::Direct.as_str(), "direct");
+        assert_eq!(ExtractionMethod::CodeFence.as_str(), "code_fence");
+        assert_eq!(ExtractionMethod::Envelope.as_str(), "envelope");
+        assert_eq!(ExtractionMethod::ObjectExtraction.as_str(), "object_extraction");
+        assert_eq!(ExtractionMethod::Tolerant.as_str(), "tolerant");
+    }
+
+    #[test]
+    fn test_extraction_method_equality() {
+        assert_eq!(ExtractionMethod::Direct, ExtractionMethod::Direct);
+        assert_ne!(ExtractionMethod::Direct, ExtractionMethod::CodeFence);
+    }
+
+    #[test]
+    fn test_extraction_method_clone() {
+        let method = ExtractionMethod::Envelope;
+        let cloned = method;  // Copy
+        assert_eq!(method, cloned);
+    }
+
+    #[test]
+    fn test_extraction_method_debug() {
+        let method = ExtractionMethod::Tolerant;
+        let debug = format!("{:?}", method);
+        assert!(debug.contains("Tolerant"));
+    }
+
+    #[test]
+    fn test_parse_result_clone() {
+        let result = ParseResult {
+            plan: PlanIntent {
+                plan_id: "test".to_string(),
+                steps: vec![],
+            },
+            extraction_method: ExtractionMethod::Direct,
+            validation_warnings: vec!["warning1".to_string()],
+        };
+        let cloned = result.clone();
+        assert_eq!(cloned.extraction_method, ExtractionMethod::Direct);
+        assert_eq!(cloned.plan.plan_id, "test");
+        assert_eq!(cloned.validation_warnings.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_result_debug() {
+        let result = ParseResult {
+            plan: PlanIntent {
+                plan_id: "debug-test".to_string(),
+                steps: vec![],
+            },
+            extraction_method: ExtractionMethod::CodeFence,
+            validation_warnings: vec![],
+        };
+        let debug = format!("{:?}", result);
+        assert!(debug.contains("ParseResult"));
+        assert!(debug.contains("CodeFence"));
+    }
+
+    #[test]
+    fn test_truncate_short_string() {
+        let s = "short";
+        let truncated = truncate(s, 10);
+        assert_eq!(truncated, "short");
+    }
+
+    #[test]
+    fn test_truncate_long_string() {
+        let s = "this is a very long string";
+        let truncated = truncate(s, 10);
+        assert_eq!(truncated, "this is a ...");
+    }
+
+    #[test]
+    fn test_action_step_to_tool_name_common_variants() {
+        // Test common ActionStep variants map to correct tool names
+        use astraweave_core::IVec2;
+        
+        let test_cases: Vec<(ActionStep, &str)> = vec![
+            (ActionStep::MoveTo { x: 0, y: 0, speed: None }, "MoveTo"),
+            (ActionStep::Approach { target_id: 0, distance: 1.0 }, "Approach"),
+            (ActionStep::Retreat { target_id: 0, distance: 1.0 }, "Retreat"),
+            (ActionStep::TakeCover { position: None }, "TakeCover"),
+            (ActionStep::Attack { target_id: 0 }, "Attack"),
+            (ActionStep::Reload, "Reload"),
+            (ActionStep::Scan { radius: 10.0 }, "Scan"),
+            (ActionStep::Wait { duration: 1.0 }, "Wait"),
+            (ActionStep::Heal { target_id: None }, "Heal"),
+            (ActionStep::ThrowSmoke { x: 0, y: 0 }, "ThrowSmoke"),
+            (ActionStep::ThrowExplosive { x: 0, y: 0 }, "ThrowExplosive"),
+            (ActionStep::Block, "Block"),
+            (ActionStep::Dodge { direction: None }, "Dodge"),
+            (ActionStep::Parry, "Parry"),
+            (ActionStep::AimedShot { target_id: 0 }, "AimedShot"),
+            (ActionStep::QuickAttack { target_id: 0 }, "QuickAttack"),
+            (ActionStep::HeavyAttack { target_id: 0 }, "HeavyAttack"),
+            (ActionStep::CoverFire { target_id: 0, duration: 1.0 }, "CoverFire"),
+            (ActionStep::Charge { target_id: 0 }, "Charge"),
+            (ActionStep::EquipWeapon { weapon_name: "sword".to_string() }, "EquipWeapon"),
+            (ActionStep::SwitchWeapon { slot: 0 }, "SwitchWeapon"),
+            (ActionStep::CallReinforcements { count: 1 }, "CallReinforcements"),
+            (ActionStep::MarkTarget { target_id: 0 }, "MarkTarget"),
+            (ActionStep::RequestCover { duration: 1.0 }, "RequestCover"),
+            (ActionStep::CoordinateAttack { target_id: 0 }, "CoordinateAttack"),
+            (ActionStep::SetAmbush { position: IVec2 { x: 0, y: 0 } }, "SetAmbush"),
+            (ActionStep::Distract { target_id: 0 }, "Distract"),
+            (ActionStep::Regroup { rally_point: IVec2 { x: 0, y: 0 } }, "Regroup"),
+            (ActionStep::Interact { target_id: 0 }, "Interact"),
+            (ActionStep::Taunt { target_id: 0 }, "Taunt"),
+        ];
+
+        for (step, expected_name) in test_cases {
+            let name = action_step_to_tool_name(&step);
+            assert_eq!(name, expected_name, "ActionStep {:?} should map to {}", step, expected_name);
+        }
+    }
+
+    #[test]
+    fn test_code_fence_with_language_tag() {
+        let reg = create_test_registry();
+        let text = r#"
+```json
+{"plan_id": "json-fence", "steps": [{"act": "Heal"}]}
+```
+"#;
+        let result = parse_llm_response(text, &reg).unwrap();
+        assert_eq!(result.extraction_method, ExtractionMethod::CodeFence);
+    }
+
+    #[test]
+    fn test_code_fence_without_language_tag() {
+        let reg = create_test_registry();
+        let text = r#"
+```
+{"plan_id": "no-lang", "steps": [{"act": "Heal"}]}
+```
+"#;
+        let result = parse_llm_response(text, &reg).unwrap();
+        // Should work with either CodeFence or ObjectExtraction
+        assert!(matches!(
+            result.extraction_method,
+            ExtractionMethod::CodeFence | ExtractionMethod::ObjectExtraction
+        ));
+    }
+
+    #[test]
+    fn test_multiple_steps_parsed() {
+        let reg = create_test_registry();
+        let json = r#"{"plan_id": "multi", "steps": [
+            {"act": "MoveTo", "x": 5, "y": 10},
+            {"act": "Attack", "target_id": 1},
+            {"act": "Heal"}
+        ]}"#;
+
+        let result = parse_llm_response(json, &reg).unwrap();
+        assert_eq!(result.plan.steps.len(), 3);
+    }
+
+    #[test]
+    fn test_registry_with_all_tools() {
+        // Create registry with all the common tools
+        let mut tools = vec![];
+        for name in ["MoveTo", "Attack", "Heal", "Reload", "Scan", "Wait", "ThrowSmoke", "TakeCover"] {
+            tools.push(ToolSpec {
+                name: name.to_string(),
+                args: BTreeMap::new(),
+            });
+        }
+        let reg = ToolRegistry {
+            tools,
+            constraints: Constraints {
+                enforce_cooldowns: false,
+                enforce_los: false,
+                enforce_stamina: false,
+            },
+        };
+
+        let json = r#"{"plan_id": "all-tools", "steps": [
+            {"act": "Scan", "radius": 10.0},
+            {"act": "MoveTo", "x": 5, "y": 10},
+            {"act": "Reload"},
+            {"act": "Wait", "duration": 1.0}
+        ]}"#;
+
+        let result = parse_llm_response(json, &reg).unwrap();
+        assert_eq!(result.plan.steps.len(), 4);
+    }
+
+    #[test]
+    fn test_nested_envelope() {
+        let reg = create_test_registry();
+        let json = r#"{"response": "{\"plan_id\": \"nested\", \"steps\": [{\"act\": \"Heal\"}]}"}"#;
+
+        let result = parse_llm_response(json, &reg).unwrap();
+        assert_eq!(result.extraction_method, ExtractionMethod::Envelope);
+    }
+
+    #[test]
+    fn test_whitespace_handling() {
+        let reg = create_test_registry();
+        let json = r#"
+        
+        {"plan_id": "whitespace", "steps": [{"act": "Heal"}]}
+        
+        "#;
+
+        let result = parse_llm_response(json, &reg).unwrap();
+        assert!(result.plan.plan_id.contains("whitespace"));
+    }
+
+    #[test]
+    fn test_empty_registry_rejects_all_tools() {
+        let empty_reg = ToolRegistry {
+            tools: vec![],
+            constraints: Constraints {
+                enforce_cooldowns: false,
+                enforce_los: false,
+                enforce_stamina: false,
+            },
+        };
+        let json = r#"{"plan_id": "test", "steps": [{"act": "Heal"}]}"#;
+
+        let result = parse_llm_response(json, &empty_reg);
+        // Either fails during parse or hallucination check
+        assert!(result.is_err());
     }
 }

@@ -1,6 +1,7 @@
 use astraweave_weaving::*;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use glam::Vec3;
+use std::hint::black_box;
 
 /// Benchmark Player ability cooldown updates (Week 5 Day 1 integration)
 fn bench_player_ability_updates(c: &mut Criterion) {
@@ -43,7 +44,7 @@ fn bench_player_ability_activation(c: &mut Criterion) {
 
         b.iter(|| {
             let result = player.use_dash();
-            black_box(result);
+            let _ = black_box(result);
             player.echo_currency += 10; // Refund for continuous testing
             player.update(1.0); // Reset cooldown
         });
@@ -56,7 +57,7 @@ fn bench_player_ability_activation(c: &mut Criterion) {
 
         b.iter(|| {
             let result = player.use_shield();
-            black_box(result);
+            let _ = black_box(result);
             player.echo_currency += 15; // Refund
             player.update(5.0); // Reset cooldown
         });

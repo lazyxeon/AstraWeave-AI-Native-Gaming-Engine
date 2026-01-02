@@ -792,4 +792,500 @@ mod tests {
         assert_eq!(hash1, hash2);
         assert_ne!(hash1, 0); // Should not be placeholder value
     }
+
+    // ==================== NEW TESTS ====================
+
+    #[test]
+    fn save_metadata_creation() {
+        let now = OffsetDateTime::now_utc();
+        let save_id = Uuid::new_v4();
+        let meta = SaveMetadata {
+            player_id: "player_123".to_string(),
+            slot: 2,
+            save_id,
+            created_at: now,
+            world_tick: 1000,
+            world_hash: 0xDEADBEEF,
+        };
+
+        assert_eq!(meta.player_id, "player_123");
+        assert_eq!(meta.slot, 2);
+        assert_eq!(meta.save_id, save_id);
+        assert_eq!(meta.world_tick, 1000);
+        assert_eq!(meta.world_hash, 0xDEADBEEF);
+    }
+
+    #[test]
+    fn save_metadata_serialization() {
+        let meta = SaveMetadata {
+            player_id: "serializable_player".to_string(),
+            slot: 5,
+            save_id: Uuid::new_v4(),
+            created_at: OffsetDateTime::now_utc(),
+            world_tick: 5000,
+            world_hash: 0x12345678,
+        };
+
+        // Should serialize and deserialize correctly
+        let json = serde_json::to_string(&meta).unwrap();
+        let restored: SaveMetadata = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.player_id, meta.player_id);
+        assert_eq!(restored.slot, meta.slot);
+        assert_eq!(restored.world_tick, meta.world_tick);
+        assert_eq!(restored.world_hash, meta.world_hash);
+    }
+
+    #[test]
+    fn replay_event_creation() {
+        let event = ReplayEvent {
+            tick: 42,
+            event_type: "player_move".to_string(),
+            data: vec![1, 2, 3, 4],
+        };
+
+        assert_eq!(event.tick, 42);
+        assert_eq!(event.event_type, "player_move");
+        assert_eq!(event.data, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn replay_event_serialization() {
+        let event = ReplayEvent {
+            tick: 100,
+            event_type: "spawn_entity".to_string(),
+            data: vec![0xDE, 0xAD, 0xBE, 0xEF],
+        };
+
+        let json = serde_json::to_string(&event).unwrap();
+        let restored: ReplayEvent = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.tick, event.tick);
+        assert_eq!(restored.event_type, event.event_type);
+        assert_eq!(restored.data, event.data);
+    }
+
+    #[test]
+    fn replay_state_with_events() {
+        let events = vec![
+            ReplayEvent {
+                tick: 0,
+                event_type: "init".to_string(),
+                data: vec![],
+            },
+            ReplayEvent {
+                tick: 10,
+                event_type: "move".to_string(),
+                data: vec![1, 2],
+            },
+            ReplayEvent {
+                tick: 20,
+                event_type: "attack".to_string(),
+                data: vec![3, 4, 5],
+            },
+        ];
+
+        let replay = CReplayState {
+            is_replaying: true,
+            current_tick: 5,
+            total_ticks: 100,
+            events,
+        };
+
+        assert!(replay.is_replaying);
+        assert_eq!(replay.current_tick, 5);
+        assert_eq!(replay.events.len(), 3);
+        assert_eq!(replay.events[0].event_type, "init");
+        assert_eq!(replay.events[1].tick, 10);
+    }
+
+    #[test]
+    fn replay_state_serialization() {
+        let replay = CReplayState {
+            is_replaying: true,
+            current_tick: 50,
+            total_ticks: 200,
+            events: vec![ReplayEvent {
+                tick: 25,
+                event_type: "test_event".to_string(),
+                data: vec![9, 8, 7],
+            }],
+        };
+
+        // Serialize with postcard (binary)
+        let bytes = postcard::to_allocvec(&replay).unwrap();
+        let restored: CReplayState = postcard::from_bytes(&bytes).unwrap();
+
+        assert_eq!(restored.is_replaying, replay.is_replaying);
+        assert_eq!(restored.current_tick, replay.current_tick);
+        assert_eq!(restored.total_ticks, replay.total_ticks);
+        assert_eq!(restored.events.len(), 1);
+    }
+
+    #[test]
+    fn persistence_plugin_creation() {
+        let plugin = PersistencePlugin::new(PathBuf::from("/tmp/saves"));
+        // Plugin should be createable (we can't easily test Plugin::build without a full App)
+        assert!(std::mem::size_of_val(&plugin) > 0);
+    }
+
+    #[test]
+    fn persistence_manager_set_player() {
+        let temp_dir = tempdir().unwrap();
+        let save_manager = SaveManager::new(temp_dir.path());
+        let mut persistence = CPersistenceManager {
+            save_manager,
+            current_player: "initial_player".to_string(),
+        };
+
+        assert_eq!(persistence.current_player, "initial_player");
+
+        persistence.set_player("new_player");
+        assert_eq!(persistence.current_player, "new_player");
+
+        persistence.set_player("player_with_unicode_名前");
+        assert_eq!(persistence.current_player, "player_with_unicode_名前");
+    }
+
+    #[test]
+    fn serialized_entity_creation() {
+        let entity = SerializedEntity {
+            entity_raw: 12345,
+            pos: Some(CPos {
+                pos: astraweave_core::IVec2 { x: 100, y: 200 },
+            }),
+            health: Some(CHealth { hp: 75 }),
+            team: Some(CTeam { id: 2 }),
+            ammo: Some(CAmmo { rounds: 30 }),
+            cooldowns: None,
+            desired_pos: None,
+            ai_agent: None,
+            legacy_id: None,
+            persona: None,
+            memory: None,
+        };
+
+        assert_eq!(entity.entity_raw, 12345);
+        assert_eq!(entity.pos.unwrap().pos.x, 100);
+        assert_eq!(entity.health.unwrap().hp, 75);
+        assert_eq!(entity.team.unwrap().id, 2);
+        assert_eq!(entity.ammo.unwrap().rounds, 30);
+    }
+
+    #[test]
+    fn serialized_entity_with_all_none() {
+        let entity = SerializedEntity {
+            entity_raw: 999,
+            pos: None,
+            health: None,
+            team: None,
+            ammo: None,
+            cooldowns: None,
+            desired_pos: None,
+            ai_agent: None,
+            legacy_id: None,
+            persona: None,
+            memory: None,
+        };
+
+        assert_eq!(entity.entity_raw, 999);
+        assert!(entity.pos.is_none());
+        assert!(entity.health.is_none());
+    }
+
+    #[test]
+    fn serialized_world_creation() {
+        let entities = vec![
+            SerializedEntity {
+                entity_raw: 1,
+                pos: Some(CPos {
+                    pos: astraweave_core::IVec2 { x: 0, y: 0 },
+                }),
+                health: None,
+                team: None,
+                ammo: None,
+                cooldowns: None,
+                desired_pos: None,
+                ai_agent: None,
+                legacy_id: None,
+                persona: None,
+                memory: None,
+            },
+            SerializedEntity {
+                entity_raw: 2,
+                pos: None,
+                health: Some(CHealth { hp: 50 }),
+                team: None,
+                ammo: None,
+                cooldowns: None,
+                desired_pos: None,
+                ai_agent: None,
+                legacy_id: None,
+                persona: None,
+                memory: None,
+            },
+        ];
+
+        let world = SerializedWorld {
+            entities,
+            world_tick: 12345,
+        };
+
+        assert_eq!(world.entities.len(), 2);
+        assert_eq!(world.world_tick, 12345);
+    }
+
+    #[test]
+    fn deserialize_empty_blob() {
+        // Empty blob should be handled gracefully
+        let mut world = World::new();
+        let result = deserialize_ecs_world(&[], &mut world);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn roundtrip_with_ammo() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(e1, CAmmo { rounds: 42 });
+
+        let blob = serialize_ecs_world(&world).unwrap();
+        let mut new_world = World::new();
+        deserialize_ecs_world(&blob, &mut new_world).unwrap();
+
+        let mut found = false;
+        let mut q = Query::<CAmmo>::new(&new_world);
+        while let Some((_, ammo)) = q.next() {
+            assert_eq!(ammo.rounds, 42);
+            found = true;
+        }
+        assert!(found);
+    }
+
+    #[test]
+    fn roundtrip_with_cooldowns() {
+        use astraweave_core::cooldowns::CooldownKey;
+        
+        let mut world = World::new();
+        let e1 = world.spawn();
+        let mut cooldowns = std::collections::BTreeMap::new();
+        cooldowns.insert(CooldownKey::ThrowSmoke, 1.5_f32);
+        cooldowns.insert(CooldownKey::Custom("special".to_string()), 5.0_f32);
+        world.insert(e1, CCooldowns { map: cooldowns });
+
+        let blob = serialize_ecs_world(&world).unwrap();
+        let mut new_world = World::new();
+        deserialize_ecs_world(&blob, &mut new_world).unwrap();
+
+        let mut found = false;
+        let mut q = Query::<CCooldowns>::new(&new_world);
+        while let Some((_, cd)) = q.next() {
+            assert_eq!(cd.map.len(), 2);
+            assert!((cd.map[&CooldownKey::ThrowSmoke] - 1.5).abs() < 0.001);
+            found = true;
+        }
+        assert!(found);
+    }
+
+    #[test]
+    fn roundtrip_with_desired_pos() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(
+            e1,
+            CDesiredPos {
+                pos: astraweave_core::IVec2 { x: 500, y: 600 },
+            },
+        );
+
+        let blob = serialize_ecs_world(&world).unwrap();
+        let mut new_world = World::new();
+        deserialize_ecs_world(&blob, &mut new_world).unwrap();
+
+        let mut found = false;
+        let mut q = Query::<CDesiredPos>::new(&new_world);
+        while let Some((_, dp)) = q.next() {
+            assert_eq!(dp.pos.x, 500);
+            assert_eq!(dp.pos.y, 600);
+            found = true;
+        }
+        assert!(found);
+    }
+
+    #[test]
+    fn world_hash_changes_with_modification() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(
+            e1,
+            CPos {
+                pos: astraweave_core::IVec2 { x: 10, y: 20 },
+            },
+        );
+
+        let hash_before = calculate_world_hash(&world);
+
+        // Modify the world
+        if let Some(pos) = world.get_mut::<CPos>(e1) {
+            pos.pos.x = 100;
+        }
+
+        let hash_after = calculate_world_hash(&world);
+
+        // Hash should change after modification
+        assert_ne!(hash_before, hash_after);
+    }
+
+    #[test]
+    fn world_hash_empty_world() {
+        let world = World::new();
+        let hash = calculate_world_hash(&world);
+        // Empty world should still produce a consistent hash
+        let hash2 = calculate_world_hash(&world);
+        assert_eq!(hash, hash2);
+    }
+
+    #[test]
+    fn world_hash_health_only() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(e1, CHealth { hp: 100 });
+
+        let hash1 = calculate_world_hash(&world);
+
+        // Different health value should produce different hash
+        if let Some(health) = world.get_mut::<CHealth>(e1) {
+            health.hp = 50;
+        }
+
+        let hash2 = calculate_world_hash(&world);
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn world_hash_team_component() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(
+            e1,
+            CPos {
+                pos: astraweave_core::IVec2 { x: 0, y: 0 },
+            },
+        );
+        world.insert(e1, CTeam { id: 1 });
+
+        let hash1 = calculate_world_hash(&world);
+
+        // Same world with different team should have different hash
+        if let Some(team) = world.get_mut::<CTeam>(e1) {
+            team.id = 2;
+        }
+
+        let hash2 = calculate_world_hash(&world);
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn world_hash_ammo_component() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(
+            e1,
+            CPos {
+                pos: astraweave_core::IVec2 { x: 0, y: 0 },
+            },
+        );
+        world.insert(e1, CAmmo { rounds: 10 });
+
+        let hash1 = calculate_world_hash(&world);
+
+        if let Some(ammo) = world.get_mut::<CAmmo>(e1) {
+            ammo.rounds = 20;
+        }
+
+        let hash2 = calculate_world_hash(&world);
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn multiple_entities_roundtrip() {
+        let mut world = World::new();
+
+        // Create 10 entities with various components
+        for i in 0..10 {
+            let e = world.spawn();
+            world.insert(
+                e,
+                CPos {
+                    pos: astraweave_core::IVec2 {
+                        x: i * 10,
+                        y: i * 20,
+                    },
+                },
+            );
+            if i % 2 == 0 {
+                world.insert(e, CHealth { hp: 100 - i });
+            }
+            if i % 3 == 0 {
+                world.insert(e, CTeam { id: (i % 4) as u8 });
+            }
+        }
+
+        let blob = serialize_ecs_world(&world).unwrap();
+        let mut new_world = World::new();
+        deserialize_ecs_world(&blob, &mut new_world).unwrap();
+
+        // Count entities
+        let mut pos_count = 0;
+        let mut health_count = 0;
+        let mut team_count = 0;
+
+        {
+            let mut q = Query::<CPos>::new(&new_world);
+            while q.next().is_some() {
+                pos_count += 1;
+            }
+        }
+        {
+            let mut q = Query::<CHealth>::new(&new_world);
+            while q.next().is_some() {
+                health_count += 1;
+            }
+        }
+        {
+            let mut q = Query::<CTeam>::new(&new_world);
+            while q.next().is_some() {
+                team_count += 1;
+            }
+        }
+
+        assert_eq!(pos_count, 10);
+        assert_eq!(health_count, 5); // 0, 2, 4, 6, 8
+        assert_eq!(team_count, 4); // 0, 3, 6, 9
+    }
+
+    #[test]
+    fn blob_size_is_compact() {
+        let mut world = World::new();
+        for i in 0..100 {
+            let e = world.spawn();
+            world.insert(
+                e,
+                CPos {
+                    pos: astraweave_core::IVec2 { x: i, y: i * 2 },
+                },
+            );
+            world.insert(e, CHealth { hp: 100 });
+        }
+
+        let blob = serialize_ecs_world(&world).unwrap();
+
+        // ~15.5 bytes per entity with pos + health (from docs)
+        // 100 entities → ~1550 bytes expected, allow 2x margin
+        assert!(
+            blob.len() < 5000,
+            "Blob too large: {} bytes for 100 entities",
+            blob.len()
+        );
+    }
 }

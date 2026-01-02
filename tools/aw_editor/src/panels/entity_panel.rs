@@ -6,13 +6,14 @@ use crate::scene_state::{EditorSceneState, TransformableScene};
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
 use egui::Ui;
+use tracing::debug;
 
 /// Actions that require prefab manager access
 #[derive(Debug, Clone, Copy)]
 pub enum PrefabAction {
     RevertToOriginal(Entity),
     ApplyChangesToFile(Entity),
-    RevertAllToOriginal(Entity),  // Revert all entities in prefab instance (entity is any member)
+    RevertAllToOriginal(Entity), // Revert all entities in prefab instance (entity is any member)
     ApplyAllChangesToFile(Entity), // Apply all entities in prefab instance (entity is any member)
 }
 
@@ -99,7 +100,7 @@ impl EntityPanel {
                 )
             };
             scene_state.sync_entity(entity);
-            println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
+            debug!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
         }
 
         if spawn_enemy {
@@ -119,7 +120,7 @@ impl EntityPanel {
                 )
             };
             scene_state.sync_entity(entity);
-            println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
+            debug!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
         }
 
         if clear_all {
@@ -128,7 +129,7 @@ impl EntityPanel {
                 *world = World::new();
             }
             scene_state.sync_all();
-            println!("🗑️ Cleared all entities");
+            debug!("🗑️ Cleared all entities");
         }
 
         let mut component_edit = None;
@@ -156,7 +157,7 @@ impl EntityPanel {
                             egui::Color32::from_rgb(100, 150, 255),
                             "⚠️ Modified components (blue text indicates overrides)",
                         );
-                        
+
                         // Single entity operations
                         ui.horizontal(|ui| {
                             if ui.button("💾 Apply to Prefab").clicked() {
@@ -168,11 +169,11 @@ impl EntityPanel {
                         });
                         ui.label("💾 Apply: save changes back to prefab file");
                         ui.label("🔄 Revert: discard changes and restore original");
-                        
+
                         ui.add_space(8.0);
                         ui.separator();
                         ui.add_space(4.0);
-                        
+
                         // Bulk operations for entire prefab instance
                         ui.colored_label(
                             egui::Color32::from_rgb(255, 180, 100),
@@ -202,12 +203,18 @@ impl EntityPanel {
                     ui.label("No components");
                 } else {
                     // Get override information for this entity
-                    let entity_overrides = prefab_instance.and_then(|inst| inst.overrides.get(&entity));
-                    
+                    let entity_overrides =
+                        prefab_instance.and_then(|inst| inst.overrides.get(&entity));
+
                     for component_type in components {
                         let edit = {
                             let world = scene_state.world_mut();
-                            component_type.show_ui_with_overrides(world, entity, ui, entity_overrides)
+                            component_type.show_ui_with_overrides(
+                                world,
+                                entity,
+                                ui,
+                                entity_overrides,
+                            )
                         };
                         if let Some(edit) = edit {
                             component_edit = Some(edit);
@@ -300,13 +307,11 @@ impl Panel for EntityPanel {
         let (filter, set_filter) = use_state(ui, "entity_filter", String::new());
 
         // Mock entity list (in real app, this would come from ECS world)
-        let entities = vec![
-            ("Player", "Companion", 100, 10),
+        let entities = [("Player", "Companion", 100, 10),
             ("Enemy_1", "Grunt", 50, 5),
             ("Enemy_2", "Elite", 150, 15),
             ("NPC_Merchant", "Civilian", 80, 0),
-            ("Boss_Dragon", "Boss", 500, 50),
-        ];
+            ("Boss_Dragon", "Boss", 500, 50)];
 
         // Memoized filtered list
         let filtered_entities = use_memo(ui, "filtered_entities", filter.clone(), |f| {
@@ -406,13 +411,13 @@ impl Panel for EntityPanel {
 
                 ui.horizontal(|ui| {
                     if ui.button("🔫 Damage").clicked() {
-                        println!("💥 Damaged {}", name);
+                        debug!("💥 Damaged {}", name);
                     }
                     if ui.button("❤️‍🩹 Heal").clicked() {
-                        println!("💚 Healed {}", name);
+                        debug!("💚 Healed {}", name);
                     }
                     if ui.button("🗑️ Delete").clicked() {
-                        println!("🗑️ Deleted {}", name);
+                        debug!("🗑️ Deleted {}", name);
                     }
                 });
             });
@@ -423,7 +428,7 @@ impl Panel for EntityPanel {
         // Effect: log when selection changes
         use_effect(ui, "entity_selection_log", selected_entity, |&idx| {
             if idx < entities.len() {
-                println!("🎯 Selected entity: {}", entities[idx].0);
+                debug!("🎯 Selected entity: {}", entities[idx].0);
             }
         });
     }

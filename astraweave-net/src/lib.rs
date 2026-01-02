@@ -477,6 +477,7 @@ pub enum Msg {
 #[derive(Clone, Debug)]
 pub enum ServerEvent {
     Snapshot(Snapshot),
+    ForceSnapshot(Snapshot),
     ApplyResult { ok: bool, err: Option<String> },
     Ack { seq: u32, tick_applied: u64 },
 }
@@ -507,7 +508,7 @@ impl GameServer {
         let player = w.spawn("P", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
         let comp = w.spawn("C", IVec2 { x: 2, y: 3 }, Team { id: 1 }, 80, 30);
         let enemy = w.spawn("E", IVec2 { x: 12, y: 2 }, Team { id: 2 }, 60, 0);
-        let (tx, _) = broadcast::channel(64);
+        let (tx, _) = broadcast::channel(1024);
         Self {
             world: Mutex::new(w),
             player_id: player,
@@ -523,6 +524,11 @@ impl GameServer {
     pub async fn run_ws(self: &std::sync::Arc<Self>, addr: &str) -> Result<()> {
         use tokio::net::TcpListener;
         let listener = TcpListener::bind(addr).await?;
+        self.run_ws_on_listener(listener).await
+    }
+
+    pub async fn run_ws_on_listener(self: &std::sync::Arc<Self>, listener: tokio::net::TcpListener) -> Result<()> {
+        let addr = listener.local_addr()?;
         println!("Server on {addr}");
         // Fixed-tick loop at ~60 Hz; broadcast snapshots at ~20 Hz and full once per second
         let me = self.clone();
@@ -539,6 +545,9 @@ impl GameServer {
                 }
                 next += Duration::from_micros(16_666);
                 let tick = me.tick.fetch_add(1, Ordering::Relaxed) + 1;
+                if tick % 60 == 0 {
+                    println!("Server tick {tick}");
+                }
                 {
                     let mut w = me.world.lock().await;
                     w.tick(dt);
@@ -589,9 +598,63 @@ impl GameServer {
         let writer_policy = policy.clone();
         let obstacles_ref = self.obstacles.clone();
         tokio::spawn(async move {
+            println!("Snapshot pusher started for viewer");
             let mut last_sent: Option<Snapshot> = None;
-            while let Ok(evt) = rx_bcast.recv().await {
+            loop {
+                let evt = match rx_bcast.recv().await {
+                    Ok(e) => e,
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(_) => break,
+                };
                 match evt {
+                    ServerEvent::ForceSnapshot(snap) => {
+                        let vid = { *writer_viewer.lock().await };
+                        if let Some(viewer) = snap.entities.iter().find(|e| e.id == vid).cloned() {
+                            let interest_obj: Box<dyn Interest> = {
+                                let pol = writer_policy.lock().await.clone();
+                                match pol {
+                                    InterestPolicy::Radius { radius } => {
+                                        Box::new(RadiusTeamInterest { radius }) as Box<dyn Interest>
+                                    }
+                                    InterestPolicy::Fov {
+                                        radius,
+                                        half_angle_deg,
+                                        facing,
+                                    } => Box::new(FovInterest {
+                                        radius,
+                                        half_angle_deg,
+                                        facing,
+                                    })
+                                        as Box<dyn Interest>,
+                                    InterestPolicy::FovLos {
+                                        radius,
+                                        half_angle_deg,
+                                        facing,
+                                    } => {
+                                        let obs = obstacles_ref.lock().await.clone();
+                                        Box::new(FovLosInterest {
+                                            radius,
+                                            half_angle_deg,
+                                            facing,
+                                            obstacles: obs,
+                                        })
+                                            as Box<dyn Interest>
+                                    }
+                                }
+                            };
+                            let filtered = filter_snapshot_for_viewer(&snap, &*interest_obj, &viewer);
+                            let msg = Msg::ServerSnapshot {
+                                snap: filtered.clone(),
+                            };
+                            println!("Forcing full snapshot to viewer {}", vid);
+                            let _ = tx
+                                .send(Message::Text(
+                                    serde_json::to_string(&msg).unwrap().into(),
+                                ))
+                                .await;
+                            last_sent = Some(filtered);
+                        }
+                    }
                     ServerEvent::Snapshot(snap) => {
                         // Choose viewer state
                         let vid = { *writer_viewer.lock().await };
@@ -629,7 +692,7 @@ impl GameServer {
                                     }
                                 }
                             };
-                            // Filter the snapshot to the viewer's interest
+                            // Filter the snapshot to the viewer interest
                             let filtered =
                                 filter_snapshot_for_viewer(&snap, &*interest_obj, &viewer);
                             if let Some(base) = &last_sent {
@@ -638,20 +701,24 @@ impl GameServer {
                                     continue;
                                 }
                                 let msg = Msg::ServerDelta { delta };
-                                let _ = tx
+                                println!("Sending delta to viewer {}", vid);
+                                let res = tx
                                     .send(Message::Text(
                                         serde_json::to_string(&msg).unwrap().into(),
                                     ))
                                     .await;
+                                println!("Send result: {:?}", res);
                             } else {
                                 let msg = Msg::ServerSnapshot {
                                     snap: filtered.clone(),
                                 };
-                                let _ = tx
+                                println!("Sending initial snapshot to viewer {}", vid);
+                                let res = tx
                                     .send(Message::Text(
                                         serde_json::to_string(&msg).unwrap().into(),
                                     ))
                                     .await;
+                                println!("Send result: {:?}", res);
                             }
                             last_sent = Some(filtered);
                         } else {
@@ -733,7 +800,7 @@ impl GameServer {
                         // send immediate full snapshot via broadcast
                         let w = self.world.lock().await;
                         let snap = build_snapshot(&w, self.tick.load(Ordering::Relaxed), 0);
-                        let _ = self.tx.send(ServerEvent::Snapshot(snap));
+                        let _ = self.tx.send(ServerEvent::ForceSnapshot(snap));
                     }
                     Msg::ClientProposePlan { actor_id, intent } => {
                         let mut w = self.world.lock().await;

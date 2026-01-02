@@ -20,6 +20,7 @@ fn distribution_ggx(n: Vec3, h: Vec3, roughness: f32) -> f32 {
     alpha2 / (std::f32::consts::PI * denom * denom)
 }
 
+#[allow(dead_code)]
 fn fresnel_schlick(cos_theta: f32, f0: Vec3) -> Vec3 {
     let m = (1.0 - cos_theta).clamp(0.0, 1.0);
     let factor = m.powi(5);
@@ -239,7 +240,7 @@ fn test_wrap_diffuse_profile() {
 #[test]
 fn test_burley_diffusion_non_negative() {
     // SSS profile should never produce negative values
-    let subsurface_color = Vec3::new(0.9, 0.3, 0.3);
+    let _subsurface_color = Vec3::new(0.9, 0.3, 0.3);
 
     for angle in 0..360 {
         let theta = (angle as f32).to_radians();
@@ -421,10 +422,10 @@ fn test_glass_material() {
 fn test_beer_lambert_attenuation() {
     // Beer-Lambert: I(d) = I0 * color^(d / distance)
     let attenuation_color = Vec3::new(0.9, 1.0, 0.9); // Slight green tint
-    let attenuation_distance = 10.0;
+    let _attenuation_distance = 10.0;
 
     // At distance = attenuation_distance, should be color^1
-    let attenuation_1x = attenuation_color;
+    let _attenuation_1x = attenuation_color;
 
     // At distance = 2 * attenuation_distance, should be color^2
     let attenuation_2x = Vec3::new(

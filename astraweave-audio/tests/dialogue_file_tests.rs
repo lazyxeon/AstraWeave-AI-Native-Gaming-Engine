@@ -20,6 +20,7 @@ use astraweave_audio::{
     voice::{TtsAdapter, VoiceBank, VoiceSpec},
 };
 use astraweave_gameplay::dialogue::{Dialogue, Line, Node};
+use serial_test::serial;
 use std::{collections::HashMap, fs, path::Path, thread, time::Duration};
 
 /// Helper: Create test DialogueAudioMap TOML and load it
@@ -141,6 +142,7 @@ impl TtsAdapter for MockTtsAdapter {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_dialogue_audio_map_override_path() -> Result<()> {
     // Setup
     test_asset_generator::setup_all_test_assets()?;
@@ -187,6 +189,7 @@ fn test_dialogue_audio_map_override_path() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_dialogue_audio_map_multiple_nodes() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
     let audio_map = create_test_audio_map()?;
@@ -243,6 +246,7 @@ fn test_dialogue_audio_map_multiple_nodes() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_dialogue_audio_map_missing_override() -> Result<()> {
     // Test fallback when override doesn't exist
     test_asset_generator::setup_all_test_assets()?;
@@ -289,6 +293,7 @@ fn test_dialogue_audio_map_missing_override() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_voice_bank_explicit_file_selection() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
     let bank = create_test_voice_bank_explicit()?;
@@ -329,6 +334,7 @@ fn test_voice_bank_explicit_file_selection() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_voice_bank_multiple_speakers() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
     let bank = create_test_voice_bank_explicit()?;
@@ -385,6 +391,7 @@ fn test_voice_bank_multiple_speakers() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_voice_bank_folder_scanning() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
     let bank = create_test_voice_bank_folder_scan()?;
@@ -425,6 +432,7 @@ fn test_voice_bank_folder_scanning() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_folder_scan_filters_non_audio() -> Result<()> {
     // Verify that .txt files are filtered out during folder scan
     test_asset_generator::setup_all_test_assets()?;
@@ -477,6 +485,7 @@ fn test_folder_scan_filters_non_audio() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_tts_fallback_when_no_files() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
 
@@ -533,6 +542,7 @@ fn test_tts_fallback_when_no_files() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_tts_generates_temporary_file() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
     fs::create_dir_all("tests/assets/speakers/tts_speaker2")?;
@@ -593,6 +603,7 @@ fn test_tts_generates_temporary_file() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_subtitle_output_callback() -> Result<()> {
     test_asset_generator::setup_all_test_assets()?;
     let bank = create_test_voice_bank_explicit()?;
@@ -643,6 +654,7 @@ fn test_subtitle_output_callback() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_priority_override_then_voicebank_then_tts() -> Result<()> {
     // Test priority order: override > voicebank > TTS > beep
     test_asset_generator::setup_all_test_assets()?;
@@ -684,6 +696,7 @@ fn test_priority_override_then_voicebank_then_tts() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_comprehensive_dialogue_pipeline() -> Result<()> {
     // Full integration test: multiple speakers, paths, and fallbacks
     test_asset_generator::setup_all_test_assets()?;

@@ -1,10 +1,11 @@
-use astraweave_ecs::{Entity, World};
+use astraweave_ecs::World;
 use astraweave_persistence_ecs::{
-    calculate_world_hash, deserialize_ecs_world, serialize_ecs_world, CPersistenceManager,
-    CReplayState, SaveMetadata,
+    CPersistenceManager,
+    CReplayState,
 };
 use aw_save::{SaveBundleV2, SaveManager, WorldState, SAVE_SCHEMA_VERSION};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tempfile::tempdir;

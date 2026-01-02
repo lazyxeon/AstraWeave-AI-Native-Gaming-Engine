@@ -1,6 +1,6 @@
 use anyhow::Result;
 use astraweave_context::{
-    ConversationHistory, ContextConfig, Role, Message, OverflowStrategy, ContextMetrics
+    ConversationHistory, ContextConfig, Role, OverflowStrategy
 };
 use astraweave_llm::LlmClient;
 use std::collections::HashMap;

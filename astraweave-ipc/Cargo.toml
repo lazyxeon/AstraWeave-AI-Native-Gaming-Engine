@@ -4,6 +4,10 @@ version = "0.1.0"
 license.workspace = true
 edition = "2021"
 
+[[bench]]
+name = "ipc_adversarial"
+harness = false
+
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }
@@ -14,3 +18,6 @@ tungstenite = { workspace = true }
 tokio-tungstenite = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
 astraweave-ai = { path = "../astraweave-ai" }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }

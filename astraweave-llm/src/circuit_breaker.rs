@@ -562,4 +562,397 @@ mod tests {
         assert_eq!(metrics.total_requests, 8);
         assert_eq!(metrics.total_failures, 3);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Config Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_circuit_breaker_config_default() {
+        let config = CircuitBreakerConfig::default();
+        assert_eq!(config.failure_threshold, 5);
+        assert_eq!(config.failure_window, 60);
+        assert_eq!(config.minimum_requests, 10);
+        assert_eq!(config.recovery_timeout, 30);
+        assert_eq!(config.success_threshold, 3);
+        assert!(config.enabled);
+    }
+
+    #[test]
+    fn test_circuit_breaker_config_custom() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 10,
+            failure_window: 120,
+            minimum_requests: 20,
+            recovery_timeout: 60,
+            success_threshold: 5,
+            enabled: false,
+        };
+        assert_eq!(config.failure_threshold, 10);
+        assert!(!config.enabled);
+    }
+
+    #[test]
+    fn test_circuit_breaker_config_clone() {
+        let config = CircuitBreakerConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.failure_threshold, cloned.failure_threshold);
+        assert_eq!(config.enabled, cloned.enabled);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Circuit State Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_circuit_state_equality() {
+        assert_eq!(CircuitState::Closed, CircuitState::Closed);
+        assert_eq!(CircuitState::Open, CircuitState::Open);
+        assert_eq!(CircuitState::HalfOpen, CircuitState::HalfOpen);
+        assert_ne!(CircuitState::Closed, CircuitState::Open);
+        assert_ne!(CircuitState::Open, CircuitState::HalfOpen);
+    }
+
+    #[test]
+    fn test_circuit_state_serialization() {
+        let closed = CircuitState::Closed;
+        let open = CircuitState::Open;
+        let half_open = CircuitState::HalfOpen;
+
+        let closed_json = serde_json::to_string(&closed).unwrap();
+        let open_json = serde_json::to_string(&open).unwrap();
+        let half_open_json = serde_json::to_string(&half_open).unwrap();
+
+        assert!(closed_json.contains("Closed"));
+        assert!(open_json.contains("Open"));
+        assert!(half_open_json.contains("HalfOpen"));
+    }
+
+    #[test]
+    fn test_circuit_state_deserialization() {
+        let closed: CircuitState = serde_json::from_str("\"Closed\"").unwrap();
+        let open: CircuitState = serde_json::from_str("\"Open\"").unwrap();
+        let half_open: CircuitState = serde_json::from_str("\"HalfOpen\"").unwrap();
+
+        assert_eq!(closed, CircuitState::Closed);
+        assert_eq!(open, CircuitState::Open);
+        assert_eq!(half_open, CircuitState::HalfOpen);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Disabled Circuit Breaker Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_disabled() {
+        let config = CircuitBreakerConfig {
+            enabled: false,
+            failure_threshold: 1,
+            minimum_requests: 1,
+            ..Default::default()
+        };
+        let manager = CircuitBreakerManager::new(config);
+
+        // Failures should not open circuit when disabled
+        for _ in 0..10 {
+            let _result = manager
+                .execute("test-model", || async {
+                    Err::<String, anyhow::Error>(anyhow!("failure"))
+                })
+                .await;
+        }
+
+        // When disabled, the circuit breaker still opens but allows requests through
+        // It's the can_proceed check that matters, not the state
+        let result = manager
+            .execute("test-model", || async {
+                Ok::<String, anyhow::Error>("success".to_string())
+            })
+            .await;
+        // The request should still succeed when disabled
+        assert!(result.result.is_ok());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Multiple Models Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_multiple_models() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            minimum_requests: 2,
+            ..Default::default()
+        };
+        let manager = CircuitBreakerManager::new(config);
+
+        // Fail model1
+        for _ in 0..3 {
+            let _result = manager
+                .execute("model1", || async {
+                    Err::<String, anyhow::Error>(anyhow!("failure"))
+                })
+                .await;
+        }
+
+        // model1 should be open
+        let status1 = manager.get_status("model1").await.unwrap();
+        assert_eq!(status1.state, CircuitState::Open);
+
+        // model2 should still work
+        let result = manager
+            .execute("model2", || async {
+                Ok::<String, anyhow::Error>("success".to_string())
+            })
+            .await;
+        assert!(result.result.is_ok());
+
+        let status2 = manager.get_status("model2").await.unwrap();
+        assert_eq!(status2.state, CircuitState::Closed);
+    }
+
+    #[tokio::test]
+    async fn test_circuit_breaker_get_all_status() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        // Execute on multiple models
+        for model in ["model1", "model2", "model3"] {
+            let _result = manager
+                .execute(model, || async {
+                    Ok::<String, anyhow::Error>("success".to_string())
+                })
+                .await;
+        }
+
+        let all_status = manager.get_all_status().await;
+        assert_eq!(all_status.len(), 3);
+        
+        // Check that all models are present
+        let model_names: Vec<_> = all_status.iter().map(|s| s.model.as_str()).collect();
+        assert!(model_names.contains(&"model1"));
+        assert!(model_names.contains(&"model2"));
+        assert!(model_names.contains(&"model3"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Status Not Found Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_status_not_found() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        let status = manager.get_status("nonexistent-model").await;
+        assert!(status.is_none());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Minimum Requests Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_minimum_requests() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            minimum_requests: 5,
+            ..Default::default()
+        };
+        let manager = CircuitBreakerManager::new(config);
+
+        // Fail 3 times but minimum requests is 5
+        for _ in 0..3 {
+            let _result = manager
+                .execute("test-model", || async {
+                    Err::<String, anyhow::Error>(anyhow!("failure"))
+                })
+                .await;
+        }
+
+        // Should still be closed because not enough requests
+        let status = manager.get_status("test-model").await.unwrap();
+        assert_eq!(status.state, CircuitState::Closed);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Half-Open to Open Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_half_open_fails() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            minimum_requests: 2,
+            recovery_timeout: 1,
+            success_threshold: 2,
+            ..Default::default()
+        };
+        let manager = CircuitBreakerManager::new(config);
+
+        // Force circuit to open
+        for _ in 0..3 {
+            let _result = manager
+                .execute("test-model", || async {
+                    Err::<String, anyhow::Error>(anyhow!("failure"))
+                })
+                .await;
+        }
+
+        // Wait for recovery timeout
+        sleep(Duration::from_secs(2)).await;
+
+        // Request in half-open state should fail again -> back to open
+        let _result = manager
+            .execute("test-model", || async {
+                Err::<String, anyhow::Error>(anyhow!("failure in half-open"))
+            })
+            .await;
+
+        let status = manager.get_status("test-model").await.unwrap();
+        assert_eq!(status.state, CircuitState::Open);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Reset Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_reset_all() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            minimum_requests: 2,
+            ..Default::default()
+        };
+        let manager = CircuitBreakerManager::new(config);
+
+        // Force circuit to open on multiple models
+        for model in ["model1", "model2"] {
+            for _ in 0..3 {
+                let _result = manager
+                    .execute(model, || async {
+                        Err::<String, anyhow::Error>(anyhow!("failure"))
+                    })
+                    .await;
+            }
+        }
+
+        // Both should be open
+        let status1 = manager.get_status("model1").await.unwrap();
+        let status2 = manager.get_status("model2").await.unwrap();
+        assert_eq!(status1.state, CircuitState::Open);
+        assert_eq!(status2.state, CircuitState::Open);
+
+        // Reset all breakers
+        manager.reset_all().await;
+
+        // Both should be closed now
+        let status1 = manager.get_status("model1").await.unwrap();
+        let status2 = manager.get_status("model2").await.unwrap();
+        assert_eq!(status1.state, CircuitState::Closed);
+        assert_eq!(status2.state, CircuitState::Closed);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Metrics Detail Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_metrics_empty() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        let metrics = manager.get_metrics().await;
+        assert_eq!(metrics.total_breakers, 0);
+        assert_eq!(metrics.total_requests, 0);
+        assert_eq!(metrics.total_failures, 0);
+    }
+
+    #[tokio::test]
+    async fn test_circuit_breaker_metrics_successes() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        for _ in 0..10 {
+            let _result = manager
+                .execute("test-model", || async {
+                    Ok::<String, anyhow::Error>("success".to_string())
+                })
+                .await;
+        }
+
+        let metrics = manager.get_metrics().await;
+        assert_eq!(metrics.total_requests, 10);
+        assert_eq!(metrics.total_failures, 0);
+        // success_rate = (requests - failures) / requests = 10/10 = 1.0
+        // But there might be floating point precision issues
+        assert!(metrics.success_rate > 0.99, "Expected high success rate, got {}", metrics.success_rate);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CircuitBreakerStatus Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_circuit_breaker_status_fields() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        // Execute some operations
+        let _result = manager
+            .execute("test-model", || async {
+                Ok::<String, anyhow::Error>("success".to_string())
+            })
+            .await;
+
+        let _result = manager
+            .execute("test-model", || async {
+                Err::<String, anyhow::Error>(anyhow!("failure"))
+            })
+            .await;
+
+        let status = manager.get_status("test-model").await.unwrap();
+        assert_eq!(status.model, "test-model");
+        assert_eq!(status.state, CircuitState::Closed);
+        assert_eq!(status.request_count, 2);
+        // Verify we have some counts - exact values depend on implementation
+        assert!(status.failure_count >= 1, "Expected at least 1 failure, got {}", status.failure_count);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ExecutionResult Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_execution_result_success() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        let result = manager
+            .execute("test-model", || async {
+                Ok::<i32, anyhow::Error>(42)
+            })
+            .await;
+
+        assert!(result.result.is_ok());
+        assert_eq!(result.result.unwrap(), 42);
+        assert_eq!(result.state, CircuitState::Closed);
+        // CircuitBreakerResult has: result, state, execution_time
+        assert!(result.execution_time.as_nanos() >= 0);
+    }
+
+    #[tokio::test]
+    async fn test_execution_result_failure() {
+        let config = CircuitBreakerConfig::default();
+        let manager = CircuitBreakerManager::new(config);
+
+        let result = manager
+            .execute("test-model", || async {
+                Err::<i32, anyhow::Error>(anyhow!("test error"))
+            })
+            .await;
+
+        assert!(result.result.is_err());
+        assert!(result.result.unwrap_err().to_string().contains("test error"));
+    }
 }

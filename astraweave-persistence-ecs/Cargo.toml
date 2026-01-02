@@ -30,3 +30,7 @@ harness = false
 [[bench]]
 name = "world_serialization_benchmarks"
 harness = false
+
+[[bench]]
+name = "persistence_ecs_adversarial"
+harness = false

@@ -11,8 +11,9 @@
 // 5. Collision layer filtering
 // 6. Character controller state transitions
 
-use astraweave_physics::{ActorKind, CharState, Layers, PhysicsWorld};
-use glam::{Mat4, Vec3};
+#![allow(unused_imports)]
+use astraweave_physics::{Layers, PhysicsWorld};
+use glam::Vec3;
 
 // ===== Category 1: World Initialization =====
 

@@ -1,5 +1,4 @@
-use anyhow::Result;
-use astraweave_prompts::engine::{TemplateEngine, EngineConfig};
+use astraweave_prompts::engine::TemplateEngine;
 use astraweave_prompts::template::PromptTemplate;
 use astraweave_prompts::context::{PromptContext, ContextValue};
 use std::collections::HashMap;

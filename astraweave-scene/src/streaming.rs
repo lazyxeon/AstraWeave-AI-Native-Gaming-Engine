@@ -383,3 +383,97 @@ impl WorldPartitionManager {
 pub fn create_streaming_manager(partition: Arc<RwLock<WorldPartition>>) -> WorldPartitionManager {
     WorldPartitionManager::new(partition, StreamingConfig::default())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::world_partition::{CellState, GridConfig, GridCoord, WorldPartition};
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn test_streaming_config_default_sane() {
+        let cfg = StreamingConfig::default();
+        assert!(cfg.max_active_cells > 0);
+        assert!(cfg.lru_cache_size > 0);
+        assert!(cfg.streaming_radius > 0.0);
+        assert!(cfg.max_concurrent_loads > 0);
+    }
+
+    #[tokio::test]
+    async fn test_force_load_cell_uses_lru_fast_path() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut cfg = StreamingConfig::default();
+        cfg.streaming_radius = 0.1;
+        cfg.max_concurrent_loads = 1;
+
+        let mut mgr = WorldPartitionManager::new(Arc::clone(&partition), cfg);
+        let coord = GridCoord::new(0, 0, 0);
+
+        // Seed LRU to force the fast path (avoids spawning async file loads).
+        mgr.lru_cache.touch(coord);
+
+        {
+            let mut p = partition.write().await;
+            let cell = p.get_or_create_cell(coord);
+            cell.state = CellState::Unloaded;
+        }
+
+        mgr.force_load_cell(coord).await.unwrap();
+        assert!(mgr.is_cell_active(coord));
+        assert!(!mgr.is_cell_loading(coord));
+        assert_eq!(mgr.metrics.total_loads, 1);
+
+        let p = partition.read().await;
+        assert_eq!(p.get_cell(coord).unwrap().state, CellState::Loaded);
+    }
+
+    #[tokio::test]
+    async fn test_update_unloads_active_cells_out_of_range_and_emits_events() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut cfg = StreamingConfig::default();
+        cfg.streaming_radius = 0.1;
+        cfg.max_concurrent_loads = 1;
+
+        let mut mgr = WorldPartitionManager::new(Arc::clone(&partition), cfg);
+
+        // Capture events.
+        let events: Arc<Mutex<Vec<StreamingEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let events_clone = Arc::clone(&events);
+        mgr.add_event_listener(move |e| {
+            events_clone.lock().unwrap().push(e);
+        });
+
+        let coord = GridCoord::new(0, 0, 0);
+        // Make the cell active via LRU fast-path.
+        mgr.lru_cache.touch(coord);
+        mgr.force_load_cell(coord).await.unwrap();
+        assert!(mgr.is_cell_active(coord));
+
+        // Update with a camera position that yields no desired cells (radius too small vs cell center distance).
+        // This should unload the active cell.
+        mgr.update(glam::Vec3::ZERO).await.unwrap();
+        assert!(!mgr.is_cell_active(coord));
+        assert_eq!(mgr.metrics.total_unloads, 1);
+
+        let captured = events.lock().unwrap().clone();
+        assert!(captured.iter().any(|e| matches!(e, StreamingEvent::CellUnloadStarted(c) if *c == coord)));
+        assert!(captured.iter().any(|e| matches!(e, StreamingEvent::CellUnloaded(c) if *c == coord)));
+    }
+
+    #[tokio::test]
+    async fn test_update_metrics_tracks_counts() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr = create_streaming_manager(Arc::clone(&partition));
+
+        let coord = GridCoord::new(0, 0, 0);
+        {
+            let mut p = partition.write().await;
+            p.get_or_create_cell(coord).state = CellState::Loaded;
+        }
+
+        mgr.update_metrics().await;
+        assert_eq!(mgr.metrics.loaded_cells, 1);
+        assert_eq!(mgr.metrics.active_cells, 0);
+        assert_eq!(mgr.metrics.cached_cells, 0);
+    }
+}

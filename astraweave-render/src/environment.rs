@@ -3,7 +3,7 @@
 //! This module provides rendering for atmospheric and environmental effects
 //! that enhance the biome experience in AstraWeave.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use glam::{vec3, Mat4, Vec3};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
@@ -138,7 +138,7 @@ impl TimeOfDay {
     /// Check if it's currently twilight (sunrise/sunset)
     pub fn is_twilight(&self) -> bool {
         let sun_height = self.get_sun_position().y;
-        sun_height >= -0.1 && sun_height <= 0.1
+        (-0.1..=0.1).contains(&sun_height)
     }
 }
 
@@ -184,6 +184,12 @@ pub struct SkyRenderer {
     skybox_indices: Option<wgpu::Buffer>,
     uniform_buffer: Option<wgpu::Buffer>,
     bind_group: Option<wgpu::BindGroup>,
+    // Textured skybox support
+    texture_pipeline: Option<wgpu::RenderPipeline>,
+    texture_bgl: Option<wgpu::BindGroupLayout>,
+    equirect_pipeline: Option<wgpu::RenderPipeline>,
+    equirect_bgl: Option<wgpu::BindGroupLayout>,
+    index_count: u32,
 }
 
 impl SkyRenderer {
@@ -197,6 +203,11 @@ impl SkyRenderer {
             skybox_indices: None,
             uniform_buffer: None,
             bind_group: None,
+            texture_pipeline: None,
+            texture_bgl: None,
+            equirect_pipeline: None,
+            equirect_bgl: None,
+            index_count: 0,
         }
     }
 
@@ -209,6 +220,7 @@ impl SkyRenderer {
         // Create skybox geometry (inverted cube)
         let vertices = self.create_skybox_vertices();
         let indices = self.create_skybox_indices();
+        self.index_count = indices.len() as u32;
 
         self.skybox_vertices = Some(
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -318,6 +330,183 @@ impl SkyRenderer {
             },
         ));
 
+        // Create textured skybox pipeline
+        let texture_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Textured Sky BGL"),
+            entries: &[
+                // Uniforms (ViewProj)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // Texture Cube
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::Cube,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                // Sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+
+        let texture_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Textured Sky Shader"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(TEXTURED_SKY_SHADER_SOURCE)),
+        });
+
+        let texture_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Textured Sky Pipeline Layout"),
+            bind_group_layouts: &[&texture_bgl],
+            push_constant_ranges: &[],
+        });
+
+        self.texture_pipeline = Some(device.create_render_pipeline(
+            &wgpu::RenderPipelineDescriptor {
+                label: Some("Textured Sky Pipeline"),
+                layout: Some(&texture_pl),
+                vertex: wgpu::VertexState {
+                    module: &texture_shader,
+                    entry_point: Some("vs_main"),
+                    buffers: &[SkyVertex::desc()],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &texture_shader,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: wgpu::TextureFormat::Depth32Float,
+                    depth_write_enabled: false,
+                    depth_compare: wgpu::CompareFunction::LessEqual,
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
+                cache: None,
+            },
+        ));
+        self.texture_bgl = Some(texture_bgl);
+
+        // Initialize Equirect pipeline
+        let equirect_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Equirect Sky BGL"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+
+        let equirect_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Equirect Sky Shader"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(EQUIRECT_SKY_SHADER_SOURCE)),
+        });
+
+        let equirect_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Equirect Sky Layout"),
+            bind_group_layouts: &[&equirect_bgl],
+            push_constant_ranges: &[],
+        });
+
+        self.equirect_pipeline = Some(device.create_render_pipeline(
+            &wgpu::RenderPipelineDescriptor {
+                label: Some("Equirect Sky Pipeline"),
+                layout: Some(&equirect_pl),
+                vertex: wgpu::VertexState {
+                    module: &equirect_shader,
+                    entry_point: Some("vs_main"),
+                    buffers: &[SkyVertex::desc()],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &equirect_shader,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: wgpu::TextureFormat::Depth32Float,
+                    depth_write_enabled: false,
+                    depth_compare: wgpu::CompareFunction::LessEqual,
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
+                cache: None,
+            },
+        ));
+        self.equirect_bgl = Some(equirect_bgl);
+
         Ok(())
     }
 
@@ -326,60 +515,166 @@ impl SkyRenderer {
         self.time_of_day.update();
     }
 
-    /// Render the sky
     pub fn render(
         &self,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        view: &wgpu::TextureView,
+        target_view: &wgpu::TextureView,
         depth_view: &wgpu::TextureView,
-        camera_view_proj: Mat4,
+        view_proj: Mat4,
         queue: &wgpu::Queue,
+        sky_texture: Option<&wgpu::TextureView>,
+        equirect_texture: Option<&wgpu::TextureView>,
     ) -> Result<()> {
-        if let (
-            Some(pipeline),
-            Some(vertices),
-            Some(indices),
-            Some(uniform_buffer),
-            Some(bind_group),
-        ) = (
-            &self.skybox_pipeline,
-            &self.skybox_vertices,
-            &self.skybox_indices,
-            &self.uniform_buffer,
-            &self.bind_group,
-        ) {
-            // Update uniform buffer
-            let uniforms = self.create_sky_uniforms(camera_view_proj);
-            queue.write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        let pipeline = self
+            .skybox_pipeline
+            .as_ref()
+            .context("Sky pipeline not initialized")?;
 
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Sky Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load, // Don't clear, sky renders first
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth_view,
-                    depth_ops: Some(wgpu::Operations {
-                        // Clear depth so sky renders deterministically first each frame
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
+        // Update uniforms
+        let uniforms = self.create_sky_uniforms(view_proj);
+        let uniform_buffer = self
+            .uniform_buffer
+            .as_ref()
+            .context("Uniform buffer not initialized")?;
+
+        let data = bytemuck::bytes_of(&uniforms);
+        queue.write_buffer(uniform_buffer, 0, data);
+
+        let vertices = self
+            .skybox_vertices
+            .as_ref()
+            .context("Vertices not initialized")?;
+        let indices = self
+            .skybox_indices
+            .as_ref()
+            .context("Indices not initialized")?;
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Sky Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: target_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 1.0,
+                        g: 0.0,
+                        b: 1.0,
+                        a: 1.0,
+                    }), // Debug color to see if skybox fails
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: depth_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: wgpu::StoreOp::Store,
                 }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
 
+        // Render procedural, textured (cube), or equirect skybox
+        let mut drawn = false;
+
+        // 1. Try Equirectangular (Preferred if available)
+        if let Some(eqr_tex) = equirect_texture {
+            if let (Some(eqr_pipeline), Some(eqr_bgl)) =
+                (&self.equirect_pipeline, &self.equirect_bgl)
+            {
+                let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                    label: Some("Skybox Eqr Sampler"),
+                    mag_filter: wgpu::FilterMode::Linear,
+                    min_filter: wgpu::FilterMode::Linear,
+                    mipmap_filter: wgpu::FilterMode::Linear,
+                    address_mode_u: wgpu::AddressMode::Repeat, // Wrap horizontally
+                    address_mode_v: wgpu::AddressMode::ClampToEdge, // Clamp poles
+                    ..Default::default()
+                });
+
+                let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("Sky Eqr BG"),
+                    layout: eqr_bgl,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: uniform_buffer.as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(eqr_tex),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::Sampler(&sampler),
+                        },
+                    ],
+                });
+
+                render_pass.set_pipeline(eqr_pipeline);
+                render_pass.set_bind_group(0, &bg, &[]);
+                render_pass.set_vertex_buffer(0, vertices.slice(..));
+                render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+                drawn = true;
+            }
+        }
+
+        // 2. Try Textured Cube (Fallback)
+        if !drawn {
+            if let Some(tex) = sky_texture {
+                if let (Some(tex_pipeline), Some(tex_bgl)) =
+                    (&self.texture_pipeline, &self.texture_bgl)
+                {
+                    // Create sampler
+                    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                        label: Some("Skybox Sampler"),
+                        mag_filter: wgpu::FilterMode::Linear,
+                        min_filter: wgpu::FilterMode::Linear,
+                        mipmap_filter: wgpu::FilterMode::Linear,
+                        ..Default::default()
+                    });
+
+                    let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: Some("Sky Texture BG"),
+                        layout: tex_bgl,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: uniform_buffer.as_entire_binding(),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::TextureView(tex),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 2,
+                                resource: wgpu::BindingResource::Sampler(&sampler),
+                            },
+                        ],
+                    });
+
+                    render_pass.set_pipeline(tex_pipeline);
+                    render_pass.set_bind_group(0, &bg, &[]);
+                    render_pass.set_vertex_buffer(0, vertices.slice(..));
+                    render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);
+                    render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+                    drawn = true;
+                }
+            }
+        }
+
+        // 3. Procedural (Fallback)
+        if !drawn {
             render_pass.set_pipeline(pipeline);
+            let bind_group = self.bind_group.as_ref().unwrap();
             render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.set_vertex_buffer(0, vertices.slice(..));
             render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..36, 0, 0..1);
+            render_pass.draw_indexed(0..self.index_count, 0, 0..1);
         }
 
         Ok(())
@@ -408,48 +703,50 @@ impl SkyRenderer {
     // Private helper methods
 
     fn create_skybox_vertices(&self) -> Vec<SkyVertex> {
-        // Create a large cube that encompasses the entire view
-        let size = 1.0f32;
-        vec![
-            // Front face
-            SkyVertex {
-                position: [-size, -size, size],
-            },
-            SkyVertex {
-                position: [size, -size, size],
-            },
-            SkyVertex {
-                position: [size, size, size],
-            },
-            SkyVertex {
-                position: [-size, size, size],
-            },
-            // Back face
-            SkyVertex {
-                position: [-size, -size, -size],
-            },
-            SkyVertex {
-                position: [-size, size, -size],
-            },
-            SkyVertex {
-                position: [size, size, -size],
-            },
-            SkyVertex {
-                position: [size, -size, -size],
-            },
-        ]
+        // Create a sphere for skybox to avoid corner artifacts
+        let rings = 16;
+        let segments = 32;
+        let mut vertices = Vec::new();
+        for r in 0..=rings {
+            let phi = std::f32::consts::PI * (r as f32 / rings as f32);
+            for s in 0..=segments {
+                let theta = std::f32::consts::PI * 2.0 * (s as f32 / segments as f32);
+                // Y-up spherical coordinates, Radius 500.0 to avoid near-plane clipping
+                let r = 500.0;
+                let x = r * phi.sin() * theta.cos();
+                let y = r * phi.cos();
+                let z = r * phi.sin() * theta.sin();
+                vertices.push(SkyVertex {
+                    position: [x, y, z],
+                });
+            }
+        }
+        vertices
     }
 
     fn create_skybox_indices(&self) -> Vec<u16> {
-        vec![
-            // Front
-            0, 1, 2, 2, 3, 0, // Back
-            4, 5, 6, 6, 7, 4, // Left
-            4, 0, 3, 3, 5, 4, // Right
-            1, 7, 6, 6, 2, 1, // Top
-            3, 2, 6, 6, 5, 3, // Bottom
-            4, 7, 1, 1, 0, 4,
-        ]
+        let rings = 16;
+        let segments = 32;
+        let mut indices = Vec::new();
+        for r in 0..rings {
+            for s in 0..segments {
+                let current = r * (segments + 1) + s;
+                let next = r * (segments + 1) + (s + 1);
+                let bottom = (r + 1) * (segments + 1) + s;
+                let bottom_next = (r + 1) * (segments + 1) + (s + 1);
+
+                // Triangle 1
+                indices.push(current as u16);
+                indices.push(bottom as u16);
+                indices.push(next as u16);
+
+                // Triangle 2
+                indices.push(bottom as u16);
+                indices.push(bottom_next as u16);
+                indices.push(next as u16);
+            }
+        }
+        indices
     }
 
     fn create_sky_uniforms(&self, view_proj: Mat4) -> SkyUniforms {
@@ -564,6 +861,9 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     view_no_translation[3][2] = 0.0;
     
     out.clip_position = view_no_translation * vec4<f32>(input.position, 1.0);
+    // Force z = w to place skybox at maximum depth (far plane)
+    // This ensures skybox always passes depth test with LessEqual compare
+    out.clip_position.z = out.clip_position.w;
     out.world_position = input.position;
     return out;
 }
@@ -602,6 +902,60 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     }
     
     return vec4<f32>(final_color, 1.0);
+}
+"#;
+
+const TEXTURED_SKY_SHADER_SOURCE: &str = r#"
+struct SkyUniforms {
+    view_proj: mat4x4<f32>,
+    sun_position: vec4<f32>,
+    moon_position: vec4<f32>,
+    top_color: vec4<f32>,
+    horizon_color: vec4<f32>,
+    time_of_day: f32,
+    cloud_coverage: f32,
+    cloud_speed: f32,
+    _padding: f32,
+}
+
+@group(0) @binding(0) var<uniform> uniforms: SkyUniforms;
+@group(0) @binding(1) var sky_tex: texture_cube<f32>;
+@group(0) @binding(2) var sky_samp: sampler;
+
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+}
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) world_position: vec3<f32>,
+}
+
+@vertex
+fn vs_main(input: VertexInput) -> VertexOutput {
+    var out: VertexOutput;
+    // Remove translation from view matrix to make skybox always centered on camera
+    var view_no_translation = uniforms.view_proj;
+    view_no_translation[3][0] = 0.0;
+    view_no_translation[3][1] = 0.0;
+    view_no_translation[3][2] = 0.0;
+    
+    out.clip_position = view_no_translation * vec4<f32>(input.position, 1.0);
+    out.clip_position.z = out.clip_position.w; // Force max depth
+    out.world_position = input.position;
+    return out;
+}
+
+@fragment
+fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
+    // Correct for world space vs texture space if needed.
+    // Usually cubemaps Y-up match world Y-up.
+    // Ensure we normalize
+    let dir = normalize(input.world_position);
+    let color = textureSample(sky_tex, sky_samp, dir);
+    // Apply tonemapping?? Renderer main pass does tonemapping.
+    // Skybox should be HDR values.
+    return color;
 }
 "#;
 
@@ -1043,3 +1397,62 @@ impl WeatherParticles {
         });
     }
 }
+
+const EQUIRECT_SKY_SHADER_SOURCE: &str = r#"
+struct SkyUniforms {
+    view_proj: mat4x4<f32>,
+    sun_position: vec4<f32>,
+    moon_position: vec4<f32>,
+    top_color: vec4<f32>,
+    horizon_color: vec4<f32>,
+    time_of_day: f32,
+    cloud_coverage: f32,
+    cloud_speed: f32,
+    _padding: f32,
+}
+
+@group(0) @binding(0) var<uniform> uniforms: SkyUniforms;
+@group(0) @binding(1) var sky_tex: texture_2d<f32>;
+@group(0) @binding(2) var sky_samp: sampler;
+
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+}
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) world_position: vec3<f32>,
+}
+
+@vertex
+fn vs_main(input: VertexInput) -> VertexOutput {
+    var out: VertexOutput;
+    // Remove translation from view matrix to make skybox always centered on camera
+    var view_no_translation = uniforms.view_proj;
+    view_no_translation[3][0] = 0.0;
+    view_no_translation[3][1] = 0.0;
+    view_no_translation[3][2] = 0.0;
+    
+    out.clip_position = view_no_translation * vec4<f32>(input.position, 1.0);
+    out.clip_position.z = out.clip_position.w; // Force max depth
+    out.world_position = input.position;
+    return out;
+}
+
+fn dir_to_equirect_uv(dir: vec3<f32>) -> vec2<f32> {
+    let n = normalize(dir);
+    let phi = atan2(n.z, n.x);
+    let theta = acos(clamp(n.y, -1.0, 1.0));
+    let u = (phi / 6.2831853 + 0.5);
+    let v = theta / 3.14159265;
+    return vec2<f32>(u, v);
+}
+
+@fragment
+fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
+    // Standard logic
+    let dir = normalize(input.world_position);
+    let uv = dir_to_equirect_uv(dir);
+    return textureSample(sky_tex, sky_samp, uv);
+}
+"#;

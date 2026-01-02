@@ -315,6 +315,7 @@ pub fn cell_path_from_coord(coord: [i32; 3], cells_root: &Path) -> std::path::Pa
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use tempfile::TempDir;
 
     #[test]
     fn test_cell_data_creation() {
@@ -322,6 +323,404 @@ mod tests {
         assert_eq!(cell.coord, [0, 0, 0]);
         assert_eq!(cell.entities.len(), 0);
         assert_eq!(cell.assets.len(), 0);
+    }
+
+    // ===== AssetKind Tests =====
+
+    #[test]
+    fn test_asset_kind_variants() {
+        assert_eq!(AssetKind::Mesh, AssetKind::Mesh);
+        assert_eq!(AssetKind::Texture, AssetKind::Texture);
+        assert_eq!(AssetKind::Material, AssetKind::Material);
+        assert_eq!(AssetKind::Audio, AssetKind::Audio);
+        assert_eq!(AssetKind::Animation, AssetKind::Animation);
+        assert_eq!(AssetKind::Other, AssetKind::Other);
+    }
+
+    #[test]
+    fn test_asset_kind_not_equal() {
+        assert_ne!(AssetKind::Mesh, AssetKind::Texture);
+        assert_ne!(AssetKind::Audio, AssetKind::Animation);
+        assert_ne!(AssetKind::Material, AssetKind::Other);
+    }
+
+    #[test]
+    fn test_asset_kind_serialization() {
+        let kinds = vec![
+            AssetKind::Mesh,
+            AssetKind::Texture,
+            AssetKind::Material,
+            AssetKind::Audio,
+            AssetKind::Animation,
+            AssetKind::Other,
+        ];
+        for kind in kinds {
+            let json = serde_json::to_string(&kind).unwrap();
+            let deserialized: AssetKind = serde_json::from_str(&json).unwrap();
+            assert_eq!(kind, deserialized);
+        }
+    }
+
+    // ===== AssetRef Tests =====
+
+    #[test]
+    fn test_asset_ref_new() {
+        let asset = AssetRef::new("textures/grass.png", AssetKind::Texture);
+        assert_eq!(asset.path, "textures/grass.png");
+        assert_eq!(asset.kind, AssetKind::Texture);
+        assert!(asset.guid.is_none());
+    }
+
+    #[test]
+    fn test_asset_ref_clone() {
+        let asset = AssetRef::new("model.glb", AssetKind::Mesh).with_guid("guid123");
+        let cloned = asset.clone();
+        assert_eq!(cloned.path, "model.glb");
+        assert_eq!(cloned.guid, Some("guid123".to_string()));
+    }
+
+    #[test]
+    fn test_asset_ref_debug() {
+        let asset = AssetRef::new("test.png", AssetKind::Texture);
+        let debug = format!("{:?}", asset);
+        assert!(debug.contains("test.png"));
+        assert!(debug.contains("Texture"));
+    }
+
+    // ===== EntityData Tests =====
+
+    #[test]
+    fn test_entity_data_defaults() {
+        let entity = EntityData::new([0.0, 0.0, 0.0]);
+        assert!(entity.name.is_none());
+        assert_eq!(entity.position, [0.0, 0.0, 0.0]);
+        assert_eq!(entity.rotation, [0.0, 0.0, 0.0, 1.0]); // Identity quaternion
+        assert_eq!(entity.scale, [1.0, 1.0, 1.0]);
+        assert!(entity.mesh.is_none());
+        assert!(entity.material.is_none());
+        assert!(entity.components.is_empty());
+    }
+
+    #[test]
+    fn test_entity_data_builder_chain() {
+        let entity = EntityData::new([5.0, 10.0, 15.0])
+            .with_name("hero")
+            .with_mesh("models/hero.glb")
+            .with_material(5);
+
+        assert_eq!(entity.name, Some("hero".to_string()));
+        assert_eq!(entity.position, [5.0, 10.0, 15.0]);
+        assert_eq!(entity.mesh, Some("models/hero.glb".to_string()));
+        assert_eq!(entity.material, Some(5));
+    }
+
+    #[test]
+    fn test_entity_data_clone() {
+        let entity = EntityData::new([1.0, 2.0, 3.0]).with_name("test");
+        let cloned = entity.clone();
+        assert_eq!(cloned.position, [1.0, 2.0, 3.0]);
+        assert_eq!(cloned.name, Some("test".to_string()));
+    }
+
+    #[test]
+    fn test_entity_data_serialization() {
+        let entity = EntityData::new([1.0, 2.0, 3.0])
+            .with_name("serialized")
+            .with_mesh("mesh.glb")
+            .with_material(2);
+
+        let json = serde_json::to_string(&entity).unwrap();
+        let deserialized: EntityData = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.name, Some("serialized".to_string()));
+        assert_eq!(deserialized.position, [1.0, 2.0, 3.0]);
+        assert_eq!(deserialized.mesh, Some("mesh.glb".to_string()));
+        assert_eq!(deserialized.material, Some(2));
+    }
+
+    // ===== ComponentData Tests =====
+
+    #[test]
+    fn test_component_data_creation() {
+        let component = ComponentData {
+            component_type: "Collider".to_string(),
+            data: r#"{"radius": 1.0}"#.to_string(),
+        };
+        assert_eq!(component.component_type, "Collider");
+        assert!(component.data.contains("radius"));
+    }
+
+    #[test]
+    fn test_component_data_clone() {
+        let component = ComponentData {
+            component_type: "Health".to_string(),
+            data: r#"{"max": 100}"#.to_string(),
+        };
+        let cloned = component.clone();
+        assert_eq!(cloned.component_type, "Health");
+        assert_eq!(cloned.data, r#"{"max": 100}"#);
+    }
+
+    #[test]
+    fn test_component_data_serialization() {
+        let component = ComponentData {
+            component_type: "Script".to_string(),
+            data: "script_path.rhai".to_string(),
+        };
+
+        let json = serde_json::to_string(&component).unwrap();
+        let deserialized: ComponentData = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.component_type, "Script");
+        assert_eq!(deserialized.data, "script_path.rhai");
+    }
+
+    // ===== CellMetadata Tests =====
+
+    #[test]
+    fn test_cell_metadata_creation() {
+        let metadata = CellMetadata {
+            description: Some("Forest region".to_string()),
+            tags: vec!["forest".to_string(), "outdoor".to_string()],
+            version: 1,
+        };
+
+        assert_eq!(metadata.description, Some("Forest region".to_string()));
+        assert_eq!(metadata.tags.len(), 2);
+        assert_eq!(metadata.version, 1);
+    }
+
+    #[test]
+    fn test_cell_metadata_empty() {
+        let metadata = CellMetadata {
+            description: None,
+            tags: vec![],
+            version: 0,
+        };
+
+        assert!(metadata.description.is_none());
+        assert!(metadata.tags.is_empty());
+    }
+
+    #[test]
+    fn test_cell_metadata_serialization() {
+        let metadata = CellMetadata {
+            description: Some("Dungeon".to_string()),
+            tags: vec!["underground".to_string()],
+            version: 2,
+        };
+
+        let json = serde_json::to_string(&metadata).unwrap();
+        let deserialized: CellMetadata = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.description, Some("Dungeon".to_string()));
+        assert_eq!(deserialized.version, 2);
+    }
+
+    // ===== CellData Extended Tests =====
+
+    #[test]
+    fn test_cell_data_with_metadata() {
+        let mut cell = CellData::new([0, 0, 0]);
+        cell.metadata = Some(CellMetadata {
+            description: Some("Test cell".to_string()),
+            tags: vec!["test".to_string()],
+            version: 1,
+        });
+
+        assert!(cell.metadata.is_some());
+        assert_eq!(cell.metadata.as_ref().unwrap().version, 1);
+    }
+
+    #[test]
+    fn test_cell_data_add_multiple_entities() {
+        let mut cell = CellData::new([1, 1, 1]);
+        for i in 0..10 {
+            cell.add_entity(EntityData::new([i as f32, 0.0, 0.0]));
+        }
+        assert_eq!(cell.entities.len(), 10);
+    }
+
+    #[test]
+    fn test_cell_data_add_different_assets() {
+        let mut cell = CellData::new([0, 0, 0]);
+        cell.add_asset(AssetRef::new("mesh.glb", AssetKind::Mesh));
+        cell.add_asset(AssetRef::new("tex.png", AssetKind::Texture));
+        cell.add_asset(AssetRef::new("sound.wav", AssetKind::Audio));
+
+        assert_eq!(cell.assets.len(), 3);
+    }
+
+    // ===== Validation Function Tests =====
+
+    #[test]
+    fn test_texture_validation_jpeg() {
+        let valid_jpeg = vec![0xFF, 0xD8, 0xFF, 0xE0];
+        assert!(validate_texture_format(&valid_jpeg, "test.jpg").is_ok());
+
+        let valid_jpeg2 = vec![0xFF, 0xD8, 0xFF, 0xE1];
+        assert!(validate_texture_format(&valid_jpeg2, "test.jpeg").is_ok());
+
+        let invalid_jpeg = b"INVALID";
+        assert!(validate_texture_format(invalid_jpeg, "test.jpg").is_err());
+    }
+
+    #[test]
+    fn test_texture_validation_other_formats() {
+        // Other formats should pass validation (assume valid)
+        let unknown_data = b"some random data";
+        assert!(validate_texture_format(unknown_data, "test.ktx2").is_ok());
+        assert!(validate_texture_format(unknown_data, "test.dds").is_ok());
+    }
+
+    #[test]
+    fn test_mesh_validation_gltf() {
+        let valid_gltf = br#"{"meshes": [], "accessors": []}"#;
+        assert!(validate_mesh_format(valid_gltf, "test.gltf").is_ok());
+
+        let invalid_gltf = br#"{"some": "json"}"#;
+        assert!(validate_mesh_format(invalid_gltf, "test.gltf").is_err());
+    }
+
+    #[test]
+    fn test_mesh_validation_other_formats() {
+        // Other formats should pass validation
+        let unknown_data = b"some obj data";
+        assert!(validate_mesh_format(unknown_data, "test.obj").is_ok());
+    }
+
+    #[test]
+    fn test_mesh_validation_glb_short_data() {
+        // GLB with insufficient bytes
+        let short_glb = b"gl";
+        assert!(validate_mesh_format(short_glb, "test.glb").is_err());
+    }
+
+    #[test]
+    fn test_texture_validation_png_short_data() {
+        // PNG with insufficient bytes
+        let short_png = b"\x89PNG";
+        assert!(validate_texture_format(short_png, "test.png").is_err());
+    }
+
+    // ===== cell_path_from_coord Tests =====
+
+    #[test]
+    fn test_cell_path_positive_coords() {
+        let path = cell_path_from_coord([5, 10, 15], Path::new("cells"));
+        assert_eq!(path, PathBuf::from("cells/5_10_15.ron"));
+    }
+
+    #[test]
+    fn test_cell_path_negative_coords() {
+        let path = cell_path_from_coord([-5, -10, -15], Path::new("world/cells"));
+        assert_eq!(path, PathBuf::from("world/cells/-5_-10_-15.ron"));
+    }
+
+    #[test]
+    fn test_cell_path_zero_coord() {
+        let path = cell_path_from_coord([0, 0, 0], Path::new("data"));
+        assert_eq!(path, PathBuf::from("data/0_0_0.ron"));
+    }
+
+    // ===== Sync Load/Save Tests =====
+
+    #[test]
+    fn test_sync_load_nonexistent() {
+        let result = load_cell_from_ron_sync(Path::new("nonexistent_file.ron"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_sync_save_and_load() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("test_cell.ron");
+
+        let mut cell = CellData::new([1, 2, 3]);
+        cell.add_entity(EntityData::new([10.0, 20.0, 30.0]).with_name("test_entity"));
+        cell.add_asset(AssetRef::new("mesh.glb", AssetKind::Mesh));
+
+        // Save
+        save_cell_to_ron_sync(&file_path, &cell).expect("Failed to save");
+
+        // Load
+        let loaded = load_cell_from_ron_sync(&file_path).expect("Failed to load");
+
+        assert_eq!(loaded.coord, [1, 2, 3]);
+        assert_eq!(loaded.entities.len(), 1);
+        assert_eq!(loaded.entities[0].name, Some("test_entity".to_string()));
+        assert_eq!(loaded.assets.len(), 1);
+    }
+
+    #[test]
+    fn test_sync_save_creates_directory() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("subdir").join("nested").join("cell.ron");
+
+        let cell = CellData::new([0, 0, 0]);
+        save_cell_to_ron_sync(&file_path, &cell).expect("Failed to save");
+
+        assert!(file_path.exists());
+    }
+
+    // ===== Async Load/Save Tests =====
+
+    #[tokio::test]
+    async fn test_async_save_and_load() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("async_cell.ron");
+
+        let mut cell = CellData::new([5, 6, 7]);
+        cell.add_entity(EntityData::new([1.0, 2.0, 3.0]).with_name("async_entity"));
+        cell.metadata = Some(CellMetadata {
+            description: Some("Async test".to_string()),
+            tags: vec!["async".to_string()],
+            version: 1,
+        });
+
+        // Save async
+        save_cell_to_ron(&file_path, &cell).await.expect("Failed to async save");
+
+        // Load async
+        let loaded = load_cell_from_ron(&file_path).await.expect("Failed to async load");
+
+        assert_eq!(loaded.coord, [5, 6, 7]);
+        assert!(loaded.metadata.is_some());
+        assert_eq!(loaded.metadata.as_ref().unwrap().description, Some("Async test".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_async_save_creates_directory() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("async_subdir").join("cell.ron");
+
+        let cell = CellData::new([0, 0, 0]);
+        save_cell_to_ron(&file_path, &cell).await.expect("Failed to async save");
+
+        assert!(file_path.exists());
+    }
+
+    // ===== memory_estimate Tests =====
+
+    #[test]
+    fn test_memory_estimate_empty_cell() {
+        let cell = CellData::new([0, 0, 0]);
+        let estimate = cell.memory_estimate();
+        // Should at least be the size of the struct itself
+        assert!(estimate >= std::mem::size_of::<CellData>());
+    }
+
+    #[test]
+    fn test_memory_estimate_scales_with_content() {
+        let cell_empty = CellData::new([0, 0, 0]);
+        let mut cell_full = CellData::new([0, 0, 0]);
+
+        for i in 0..100 {
+            cell_full.add_entity(EntityData::new([i as f32, 0.0, 0.0]));
+            cell_full.add_asset(AssetRef::new(format!("asset_{}.glb", i), AssetKind::Mesh));
+        }
+
+        assert!(cell_full.memory_estimate() > cell_empty.memory_estimate());
     }
 
     #[test]

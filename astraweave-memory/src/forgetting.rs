@@ -569,7 +569,7 @@ mod tests {
         let result = engine.apply_forgetting(&mut memories).unwrap();
         
         // Should have recorded some processing time (may be 0 for fast operations)
-        assert!(result.processing_time_ms >= 0);
+        let _ = result.processing_time_ms; // Just verify it exists
     }
 
     // --- update_memory_strength Tests ---

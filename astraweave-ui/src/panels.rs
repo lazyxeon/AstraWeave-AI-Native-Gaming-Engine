@@ -15,6 +15,61 @@ pub struct UiResult {
     pub menu_action: Option<MenuAction>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TopBarAction {
+    Menu,
+    Inventory,
+    Crafting,
+    Map,
+    Quests,
+    Settings,
+}
+
+fn apply_menu_action(menu_manager: &mut MenuManager, action: MenuAction, out: &mut UiResult) {
+    if action != MenuAction::None {
+        menu_manager.handle_action(action);
+        out.menu_action = Some(action);
+    }
+}
+
+fn apply_top_bar_action(action: TopBarAction, flags: &mut UiFlags, menu_manager: &mut MenuManager) {
+    match action {
+        TopBarAction::Menu => menu_manager.toggle_pause(),
+        TopBarAction::Inventory => flags.show_inventory = !flags.show_inventory,
+        TopBarAction::Crafting => flags.show_crafting = !flags.show_crafting,
+        TopBarAction::Map => flags.show_map = !flags.show_map,
+        TopBarAction::Quests => flags.show_quests = !flags.show_quests,
+        TopBarAction::Settings => flags.show_settings = !flags.show_settings,
+    }
+}
+
+fn colorblind_mode_to_index(mode: Option<&str>) -> usize {
+    match mode {
+        Some("protanopia") => 1,
+        Some("deuteranopia") => 2,
+        Some("tritanopia") => 3,
+        _ => 0,
+    }
+}
+
+fn colorblind_mode_from_index(idx: usize) -> Option<String> {
+    match idx {
+        1 => Some("protanopia".into()),
+        2 => Some("deuteranopia".into()),
+        3 => Some("tritanopia".into()),
+        _ => None,
+    }
+}
+
+fn craft_and_push(book: &RecipeBook, recipe_name: &str, inventory: &mut Inventory) -> bool {
+    if let Some(it) = book.craft(recipe_name, inventory) {
+        inventory.items.push(it.clone());
+        true
+    } else {
+        false
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn draw_ui(
     ctx: &egui::Context,
@@ -31,31 +86,28 @@ pub fn draw_ui(
 
     // Menu System Integration
     let action = menu_manager.show(ctx);
-    if action != MenuAction::None {
-        menu_manager.handle_action(action);
-        out.menu_action = Some(action);
-    }
+    apply_menu_action(menu_manager, action, &mut out);
 
     // Top bar – Menu toggles
     egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
         ui.horizontal_wrapped(|ui| {
             if ui.button("Menu").clicked() {
-                menu_manager.toggle_pause();
+                apply_top_bar_action(TopBarAction::Menu, flags, menu_manager);
             }
             if ui.button("Inventory (I)").clicked() {
-                flags.show_inventory = !flags.show_inventory;
+                apply_top_bar_action(TopBarAction::Inventory, flags, menu_manager);
             }
             if ui.button("Crafting (C)").clicked() {
-                flags.show_crafting = !flags.show_crafting;
+                apply_top_bar_action(TopBarAction::Crafting, flags, menu_manager);
             }
             if ui.button("Map (M)").clicked() {
-                flags.show_map = !flags.show_map;
+                apply_top_bar_action(TopBarAction::Map, flags, menu_manager);
             }
             if ui.button("Quests (J)").clicked() {
-                flags.show_quests = !flags.show_quests;
+                apply_top_bar_action(TopBarAction::Quests, flags, menu_manager);
             }
             if ui.button("Settings").clicked() {
-                flags.show_settings = !flags.show_settings;
+                apply_top_bar_action(TopBarAction::Settings, flags, menu_manager);
             }
             ui.separator();
             ui.label(
@@ -111,10 +163,7 @@ pub fn draw_ui(
                         ui.horizontal(|ui| {
                             ui.label(format!("{} -> {:?}", r.name, r.output_item));
                             if ui.button("Craft").clicked() {
-                                if let Some(it) = book.craft(&r.name, inventory) {
-                                    // push crafted to inventory
-                                    let new_it = it.clone();
-                                    inventory.items.push(new_it);
+                                if craft_and_push(book, &r.name, inventory) {
                                     out.crafted = Some(r.name.clone());
                                 }
                             }
@@ -164,12 +213,7 @@ pub fn draw_ui(
             ui.checkbox(&mut acc.reduce_motion, "Reduce motion");
             ui.checkbox(&mut acc.subtitles, "Subtitles");
             ui.add(egui::Slider::new(&mut acc.subtitle_scale, 0.6..=1.8).text("Subtitle scale"));
-            let mut cb_idx: usize = match acc.colorblind_mode.as_deref() {
-                Some("protanopia") => 1,
-                Some("deuteranopia") => 2,
-                Some("tritanopia") => 3,
-                _ => 0,
-            };
+            let mut cb_idx: usize = colorblind_mode_to_index(acc.colorblind_mode.as_deref());
             egui::ComboBox::from_label("Colorblind mode").selected_text(match cb_idx {
                 1 => "Protanopia",
                 2 => "Deuteranopia",
@@ -181,7 +225,7 @@ pub fn draw_ui(
                 ui.selectable_value(&mut cb_idx, 2, "Deuteranopia");
                 ui.selectable_value(&mut cb_idx, 3, "Tritanopia");
             });
-            acc.colorblind_mode = match cb_idx {1=>Some("protanopia".into()),2=>Some("deuteranopia".into()),3=>Some("tritanopia".into()), _=>None};
+            acc.colorblind_mode = colorblind_mode_from_index(cb_idx);
 
             ui.separator();
             ui.label("Input Remapping (press the desired key/gamepad button after selecting an action):");
@@ -318,4 +362,221 @@ pub fn draw_ui(
         });
 
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use astraweave_gameplay::crafting::{CraftCost, CraftRecipe};
+    use astraweave_gameplay::items::{Item, ItemKind};
+    use astraweave_gameplay::quests::{Quest, Task, TaskKind};
+    use astraweave_gameplay::DamageType;
+    use astraweave_gameplay::ResourceKind;
+
+    fn run_frame<T>(f: impl FnOnce(&egui::Context) -> T) -> T {
+        let ctx = egui::Context::default();
+        let mut input = egui::RawInput::default();
+        input.screen_rect = Some(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            egui::vec2(1280.0, 720.0),
+        ));
+
+        ctx.begin_pass(input);
+        let out = f(&ctx);
+        let _ = ctx.end_pass();
+        out
+    }
+
+    #[test]
+    fn test_apply_menu_action_records_and_handles_non_none() {
+        let mut menu_manager = MenuManager::new();
+        // Move to in-game so Quit path is deterministic (PauseMenu quit goes to MainMenu)
+        menu_manager.handle_action(MenuAction::NewGame);
+        menu_manager.toggle_pause();
+        assert_eq!(menu_manager.current_state(), crate::menu::MenuState::PauseMenu);
+
+        let mut out = UiResult::default();
+        apply_menu_action(&mut menu_manager, MenuAction::Quit, &mut out);
+        assert_eq!(out.menu_action, Some(MenuAction::Quit));
+        assert_eq!(menu_manager.current_state(), crate::menu::MenuState::MainMenu);
+    }
+
+    #[test]
+    fn test_apply_top_bar_action_toggles_flags() {
+        let mut flags = UiFlags::default();
+        let mut menu_manager = MenuManager::new();
+        apply_top_bar_action(TopBarAction::Inventory, &mut flags, &mut menu_manager);
+        assert!(flags.show_inventory);
+        apply_top_bar_action(TopBarAction::Inventory, &mut flags, &mut menu_manager);
+        assert!(!flags.show_inventory);
+    }
+
+    #[test]
+    fn test_colorblind_mode_index_roundtrip() {
+        assert_eq!(colorblind_mode_to_index(None), 0);
+        assert_eq!(colorblind_mode_to_index(Some("protanopia")), 1);
+        assert_eq!(colorblind_mode_to_index(Some("deuteranopia")), 2);
+        assert_eq!(colorblind_mode_to_index(Some("tritanopia")), 3);
+        assert_eq!(colorblind_mode_to_index(Some("unknown")), 0);
+
+        assert_eq!(colorblind_mode_from_index(0), None);
+        assert_eq!(colorblind_mode_from_index(1), Some("protanopia".to_string()));
+        assert_eq!(colorblind_mode_from_index(2), Some("deuteranopia".to_string()));
+        assert_eq!(colorblind_mode_from_index(3), Some("tritanopia".to_string()));
+        assert_eq!(colorblind_mode_from_index(99), None);
+    }
+
+    #[test]
+    fn test_craft_and_push_success_and_failure() {
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Basic Armor".to_string(),
+                output_item: ItemKind::Armor { defense: 5 },
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Ore,
+                    count: 2,
+                }],
+            }],
+        };
+
+        let mut inventory = Inventory::default();
+        inventory.add_resource(ResourceKind::Ore, 2);
+        let before = inventory.items.len();
+        assert!(craft_and_push(&book, "Basic Armor", &mut inventory));
+        assert_eq!(inventory.items.len(), before + 1);
+
+        // Now we should be out of Ore -> crafting should fail
+        let before = inventory.items.len();
+        assert!(!craft_and_push(&book, "Basic Armor", &mut inventory));
+        assert_eq!(inventory.items.len(), before);
+    }
+
+    #[test]
+    fn test_draw_ui_runs_with_all_panels_visible_without_input() {
+        run_frame(|ctx| {
+            let mut flags = UiFlags {
+                show_menu: false,
+                show_inventory: true,
+                show_map: true,
+                show_quests: true,
+                show_crafting: true,
+                show_settings: true,
+            };
+
+            let mut menu_manager = MenuManager::new();
+            let mut acc = Accessibility::default();
+            acc.high_contrast_ui = true;
+            acc.colorblind_mode = Some("deuteranopia".to_string());
+
+            let player_stats = Stats::new(100);
+            let player_pos = Vec3::new(1.0, 2.0, 3.0);
+
+            let mut inventory = Inventory::default();
+            inventory.add_resource(ResourceKind::Ore, 10);
+            inventory.items.push(Item {
+                id: 1,
+                name: "Test Sword".to_string(),
+                kind: ItemKind::Weapon {
+                    base_damage: 10,
+                    dtype: DamageType::Physical,
+                },
+                echo: None,
+            });
+
+            let recipes = RecipeBook {
+                recipes: vec![CraftRecipe {
+                    name: "Basic Armor".to_string(),
+                    output_item: ItemKind::Armor { defense: 5 },
+                    costs: vec![CraftCost {
+                        kind: ResourceKind::Ore,
+                        count: 2,
+                    }],
+                }],
+            };
+
+            let mut quest_log = QuestLog::default();
+            quest_log.add(Quest {
+                id: "q1".to_string(),
+                title: "Test Quest".to_string(),
+                tasks: vec![Task {
+                    id: "t1".to_string(),
+                    kind: TaskKind::Visit {
+                        marker: "marker_a".to_string(),
+                    },
+                    done: false,
+                }],
+                reward_text: "Reward".to_string(),
+                completed: false,
+            });
+
+            let out = draw_ui(
+                ctx,
+                &mut flags,
+                &mut menu_manager,
+                &mut acc,
+                &player_stats,
+                player_pos,
+                &mut inventory,
+                Some(&recipes),
+                Some(&mut quest_log),
+            );
+
+            assert!(out.crafted.is_none());
+            assert!(out.menu_action.is_none());
+        });
+    }
+
+    #[test]
+    fn test_draw_ui_covers_no_recipes_and_done_task_paths() {
+        run_frame(|ctx| {
+            let mut flags = UiFlags {
+                show_menu: false,
+                show_inventory: false,
+                show_map: false,
+                show_quests: true,
+                show_crafting: true,
+                show_settings: true,
+            };
+
+            let mut menu_manager = MenuManager::new();
+            let mut acc = Accessibility::default();
+            acc.high_contrast_ui = true;
+            acc.colorblind_mode = Some("protanopia".to_string());
+
+            let player_stats = Stats::new(100);
+            let player_pos = Vec3::new(0.0, 0.0, 0.0);
+            let mut inventory = Inventory::default();
+
+            let mut quest_log = QuestLog::default();
+            quest_log.add(Quest {
+                id: "q_done".to_string(),
+                title: "Done Quest".to_string(),
+                tasks: vec![Task {
+                    id: "t_done".to_string(),
+                    kind: TaskKind::Defeat {
+                        enemy: "slime".to_string(),
+                        count: 1,
+                    },
+                    done: true,
+                }],
+                reward_text: "Reward".to_string(),
+                completed: false,
+            });
+
+            let out = draw_ui(
+                ctx,
+                &mut flags,
+                &mut menu_manager,
+                &mut acc,
+                &player_stats,
+                player_pos,
+                &mut inventory,
+                None,
+                Some(&mut quest_log),
+            );
+
+            assert!(out.crafted.is_none());
+            assert!(out.menu_action.is_none());
+        });
+    }
 }

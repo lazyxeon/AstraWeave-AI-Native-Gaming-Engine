@@ -299,7 +299,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
     }
 
     /// Load a KTX2 file and decompress to RGBA8 using basis_universal transcoder
-    fn load_ktx2_to_rgba(path: &Path) -> Result<image::RgbaImage> {
+    pub(crate) fn load_ktx2_to_rgba(path: &Path) -> Result<image::RgbaImage> {
         use basis_universal::*;
 
         let data =
@@ -641,7 +641,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         };
 
         let mut material_records = (0..layer_count)
-            .map(|idx| MaterialGpu::neutral(idx))
+            .map(MaterialGpu::neutral)
             .collect::<Vec<_>>();
 
         // Neutral patterns used for fallbacks

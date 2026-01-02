@@ -1,0 +1,23 @@
+# AstraWeave editor coverage defaults for cargo-llvm-cov.
+# See https://github.com/taiki-e/cargo-llvm-cov for option reference.
+
+# Always exercise every available feature when measuring the editor so the
+# coverage numbers reflect the world-class targets from
+# docs/current/WORLD_CLASS_EDITOR_DELIVERY_PLAN.md.
+all-features = true
+
+# Continue gathering data even if tests fail so CI can still emit artifacts and
+# Phase 0 fact-finding has real numbers to compare against.
+no-fail-fast = true
+
+# Filter out generated assets, test-only harness code, and build artifacts so
+# we only report on production editor sources.
+ignore-filename-regex = [
+  "(.*/)?tests?/.*",
+  "(.*/)?examples?/.*",
+  "(.*/)?benches?/.*",
+  "(.*/)?fixtures?/.*",
+  "(.*/)?target/.*",
+  "(.*/)?generated/.*",
+  "temp_outputs/.*",
+]

@@ -59,3 +59,197 @@ impl Stats {
         d
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_stats_new_creates_default_values() {
+        let stats = Stats::new(100);
+        assert_eq!(stats.hp, 100);
+        assert_eq!(stats.stamina, 100);
+        assert_eq!(stats.power, 10);
+        assert_eq!(stats.defense, 5);
+        assert!((stats.echo_amp - 1.0).abs() < f32::EPSILON);
+        assert!(stats.effects.is_empty());
+    }
+
+    #[test]
+    fn test_stats_new_with_different_hp() {
+        let stats = Stats::new(50);
+        assert_eq!(stats.hp, 50);
+        assert_eq!(stats.stamina, 100);
+    }
+
+    #[test]
+    fn test_stats_apply_damage_with_defense_mitigation() {
+        let mut stats = Stats::new(100);
+        stats.defense = 10;
+        // damage mitigated = max(amount - defense * 0.5, 1) = max(20 - 5, 1) = 15
+        let mitigated = stats.apply_damage(20, DamageType::Physical);
+        assert_eq!(mitigated, 15);
+        assert_eq!(stats.hp, 85);
+    }
+
+    #[test]
+    fn test_stats_apply_damage_minimum_damage_is_one() {
+        let mut stats = Stats::new(100);
+        stats.defense = 100; // Very high defense
+        // damage mitigated = max(5 - 50, 1) = 1
+        let mitigated = stats.apply_damage(5, DamageType::Physical);
+        assert_eq!(mitigated, 1);
+        assert_eq!(stats.hp, 99);
+    }
+
+    #[test]
+    fn test_stats_apply_damage_zero_defense() {
+        let mut stats = Stats::new(100);
+        stats.defense = 0;
+        let mitigated = stats.apply_damage(30, DamageType::Fire);
+        assert_eq!(mitigated, 30);
+        assert_eq!(stats.hp, 70);
+    }
+
+    #[test]
+    fn test_stats_tick_no_effects() {
+        let mut stats = Stats::new(100);
+        let dot = stats.tick(0.5);
+        assert_eq!(dot, 0);
+        assert_eq!(stats.hp, 100);
+    }
+
+    #[test]
+    fn test_stats_tick_bleed_effect_deals_damage() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 2.0 });
+        // dot = 10 * 1.0 = 10
+        let dot = stats.tick(1.0);
+        assert_eq!(dot, 10);
+        assert_eq!(stats.hp, 90);
+    }
+
+    #[test]
+    fn test_stats_tick_bleed_effect_expires() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 0.5 });
+        stats.tick(1.0); // Effect should expire
+        assert!(stats.effects.is_empty());
+    }
+
+    #[test]
+    fn test_stats_tick_stagger_effect() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Stagger { time: 2.0 });
+        let dot = stats.tick(0.5);
+        assert_eq!(dot, 0); // Stagger doesn't deal damage
+        assert_eq!(stats.hp, 100);
+        assert_eq!(stats.effects.len(), 1);
+    }
+
+    #[test]
+    fn test_stats_tick_stagger_effect_expires() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Stagger { time: 1.0 });
+        stats.tick(2.0); // Effect should expire
+        assert!(stats.effects.is_empty());
+    }
+
+    #[test]
+    fn test_stats_tick_chill_effect() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Chill { slow: 0.5, time: 3.0 });
+        let dot = stats.tick(1.0);
+        assert_eq!(dot, 0); // Chill doesn't deal damage
+        assert_eq!(stats.hp, 100);
+        assert_eq!(stats.effects.len(), 1);
+    }
+
+    #[test]
+    fn test_stats_tick_multiple_effects() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed { dps: 3.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Stagger { time: 1.0 });
+        // dot = 5 * 1.0 + 3 * 1.0 = 8
+        let dot = stats.tick(1.0);
+        assert_eq!(dot, 8);
+        assert_eq!(stats.hp, 92);
+        // After tick with dt=1.0, stagger has time=0.0 and is removed
+        // Only the 2 bleeds remain (time=1.0 each)
+        assert_eq!(stats.effects.len(), 2);
+    }
+
+    #[test]
+    fn test_stats_tick_partial_effect_expiry() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 0.5 }); // Will expire
+        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 2.0 }); // Will remain
+        stats.tick(1.0);
+        assert_eq!(stats.effects.len(), 1);
+    }
+
+    #[test]
+    fn test_stats_serialization() {
+        let stats = Stats::new(75);
+        let json = serde_json::to_string(&stats).expect("serialize");
+        let deserialized: Stats = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(deserialized.hp, 75);
+        assert_eq!(deserialized.stamina, 100);
+    }
+
+    #[test]
+    fn test_status_effect_serialization() {
+        let effect = StatusEffect::Bleed { dps: 5.0, time: 3.0 };
+        let json = serde_json::to_string(&effect).expect("serialize");
+        assert!(json.contains("Bleed"));
+    }
+
+    #[test]
+    fn test_stats_clone() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Stagger { time: 1.0 });
+        let cloned = stats.clone();
+        assert_eq!(cloned.hp, 100);
+        assert_eq!(cloned.effects.len(), 1);
+    }
+
+    #[test]
+    fn test_stats_apply_damage_different_types() {
+        let mut stats = Stats::new(100);
+        stats.defense = 4;
+        stats.apply_damage(10, DamageType::Echo);
+        assert_eq!(stats.hp, 92); // 10 - 2 = 8
+        stats.apply_damage(10, DamageType::Frost);
+        assert_eq!(stats.hp, 84);
+        stats.apply_damage(10, DamageType::Shock);
+        assert_eq!(stats.hp, 76);
+    }
+
+    #[test]
+    fn test_stats_hp_can_go_negative() {
+        let mut stats = Stats::new(10);
+        stats.defense = 0;
+        stats.apply_damage(100, DamageType::Physical);
+        assert_eq!(stats.hp, -90);
+    }
+
+    #[test]
+    fn test_stats_tick_accumulates_bleed_fractional() {
+        let mut stats = Stats::new(100);
+        stats.effects.push(StatusEffect::Bleed { dps: 3.0, time: 10.0 });
+        // dt=0.1, dot = 3.0 * 0.1 = 0.3, truncated to 0
+        let dot = stats.tick(0.1);
+        assert_eq!(dot, 0);
+        assert_eq!(stats.hp, 100);
+    }
+
+    #[test]
+    fn test_stats_tick_high_dps_bleed() {
+        let mut stats = Stats::new(1000);
+        stats.effects.push(StatusEffect::Bleed { dps: 100.0, time: 5.0 });
+        let dot = stats.tick(1.0);
+        assert_eq!(dot, 100);
+        assert_eq!(stats.hp, 900);
+    }
+}

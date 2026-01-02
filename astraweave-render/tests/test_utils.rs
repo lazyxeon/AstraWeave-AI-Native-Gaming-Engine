@@ -6,6 +6,7 @@ use wgpu::{Device, Queue};
 
 /// Initialize headless wgpu device for testing
 /// Uses software adapter for CI compatibility
+#[allow(dead_code)]
 pub async fn create_headless_device() -> (Device, Queue) {
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
@@ -105,6 +106,7 @@ pub fn compute_test_joint_matrices(
 }
 
 /// Compare two sets of joint matrices with tolerance
+#[allow(dead_code)]
 pub fn assert_matrices_close(a: &[glam::Mat4], b: &[glam::Mat4], tolerance: f32) {
     assert_eq!(a.len(), b.len(), "Matrix array lengths differ");
 

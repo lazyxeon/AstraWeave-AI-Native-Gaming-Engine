@@ -114,7 +114,7 @@ function Get-FriendlyName {
         'ecs_performance' = 'ECS Stress Test (High Load)'
         
         # === AI SYSTEMS ===
-        'ai_core_loop' = 'AI Core Loop (Perception→Reasoning→Planning→Action)'
+        'ai_core_loop' = 'AI Core Loop (Perception->Reasoning->Planning->Action)'
         'goap_planning' = 'GOAP Planning (Goal-Oriented)'
         'behavior_tree' = 'Behavior Tree Execution'
         'utility_ai' = 'Utility AI Decision Making'

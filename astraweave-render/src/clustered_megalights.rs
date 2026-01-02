@@ -444,7 +444,7 @@ impl MegaLightsRenderer {
             .as_ref()
             .context("Write indices bind group not initialized")?;
 
-        let total_clusters = self.cluster_dims.0 * self.cluster_dims.1 * self.cluster_dims.2;
+        let _total_clusters = self.cluster_dims.0 * self.cluster_dims.1 * self.cluster_dims.2;
 
         // Stage 1: Count lights per cluster
         {
@@ -457,7 +457,7 @@ impl MegaLightsRenderer {
             pass.set_bind_group(0, count_bg, &[]);
 
             // Workgroup size = 64 (from shader @workgroup_size(64, 1, 1))
-            let workgroups_x = (self.cluster_dims.0 + 63) / 64;
+            let workgroups_x = self.cluster_dims.0.div_ceil(64);
             let workgroups_y = self.cluster_dims.1;
             let workgroups_z = self.cluster_dims.2;
 
@@ -474,10 +474,9 @@ impl MegaLightsRenderer {
             pass.set_pipeline(&self.prefix_sum_pipeline);
             pass.set_bind_group(0, prefix_sum_bg, &[]);
 
-            // Workgroup size = 256, each thread processes 2 elements
-            // For 8192 clusters: (8192 + 511) / 512 = 16 workgroups
-            let workgroups = (total_clusters + 511) / 512;
-            pass.dispatch_workgroups(workgroups, 1, 1);
+            // Serial scan on single thread (see prefix_sum.wgsl)
+            // For ~10k-50k clusters, a single thread is faster than multi-dispatch synchronization overhead
+            pass.dispatch_workgroups(1, 1, 1);
         }
 
         // Stage 3: Write light indices
@@ -491,7 +490,7 @@ impl MegaLightsRenderer {
             pass.set_bind_group(0, write_indices_bg, &[]);
 
             // Same workgroup layout as count pass
-            let workgroups_x = (self.cluster_dims.0 + 63) / 64;
+            let workgroups_x = self.cluster_dims.0.div_ceil(64);
             let workgroups_y = self.cluster_dims.1;
             let workgroups_z = self.cluster_dims.2;
 

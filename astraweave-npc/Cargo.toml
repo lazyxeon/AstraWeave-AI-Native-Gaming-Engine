@@ -4,6 +4,10 @@ version = "0.1.0"
 license.workspace = true
 edition = "2021"
 
+[[bench]]
+name = "npc_adversarial"
+harness = false
+
 [dependencies]
 anyhow = { workspace = true }
 thiserror = { workspace = true }
@@ -16,3 +20,6 @@ glam = { workspace = true }
 astraweave-physics = { path = "../astraweave-physics" }
 astraweave-audio   = { path = "../astraweave-audio" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }   # for dialogue/quests types if needed
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }

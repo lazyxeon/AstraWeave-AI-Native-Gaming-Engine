@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 /// Texture types for PBR (Physically Based Rendering) material workflow
 /// Detected automatically from filename suffixes (e.g., _normal, _albedo, _orm)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum TextureType {
     /// Base color / diffuse map
     Albedo,
@@ -56,10 +57,7 @@ impl TextureType {
             TextureType::ORM
         } else if stem.ends_with("_mra") {
             TextureType::MRA
-        } else if stem.ends_with("_r")
-            || stem.ends_with("_rough")
-            || stem.ends_with("_roughness")
-        {
+        } else if stem.ends_with("_r") || stem.ends_with("_rough") || stem.ends_with("_roughness") {
             TextureType::Roughness
         } else if stem.ends_with("_m")
             || stem.ends_with("_metal")
@@ -217,7 +215,10 @@ pub enum AssetAction {
     /// Import a 3D model into the scene as a new entity
     ImportModel { path: PathBuf },
     /// Apply a texture to the selected entity's material
-    ApplyTexture { path: PathBuf, texture_type: TextureType },
+    ApplyTexture {
+        path: PathBuf,
+        texture_type: TextureType,
+    },
     /// Apply a material file to the selected entity
     ApplyMaterial { path: PathBuf },
     /// Load a scene file
@@ -435,11 +436,10 @@ impl AssetBrowser {
 
                 // Texture type filter (only applies to textures)
                 if let Some(tex_filter) = &self.texture_type_filter {
-                    if entry.asset_type == AssetType::Texture {
-                        if entry.texture_type.as_ref() != Some(tex_filter) {
+                    if entry.asset_type == AssetType::Texture
+                        && entry.texture_type.as_ref() != Some(tex_filter) {
                             return false;
                         }
-                    }
                 }
 
                 // Legacy filter_type support
@@ -450,15 +450,14 @@ impl AssetBrowser {
                 }
 
                 // Search query filter
-                if !self.search_query.is_empty() {
-                    if !entry
+                if !self.search_query.is_empty()
+                    && !entry
                         .name
                         .to_lowercase()
                         .contains(&self.search_query.to_lowercase())
                     {
                         return false;
                     }
-                }
 
                 true
             })
@@ -560,7 +559,11 @@ impl AssetBrowser {
             ui.separator();
 
             ui.checkbox(&mut self.show_texture_badges, "🏷️");
-            if ui.small_button("⚙️").on_hover_text("Thumbnail size").clicked() {
+            if ui
+                .small_button("⚙️")
+                .on_hover_text("Thumbnail size")
+                .clicked()
+            {
                 // Toggle between size presets
                 self.thumbnail_size = match self.thumbnail_size as i32 {
                     64 => 80.0,
@@ -588,7 +591,10 @@ impl AssetBrowser {
 
             for cat in categories {
                 let label = format!("{} {}", cat.icon(), cat.label());
-                if ui.selectable_label(self.category_filter == cat, label).clicked() {
+                if ui
+                    .selectable_label(self.category_filter == cat, label)
+                    .clicked()
+                {
                     self.category_filter = cat;
                     // Clear texture type filter when changing category
                     if cat != AssetCategory::Textures {
@@ -604,7 +610,10 @@ impl AssetBrowser {
             ui.horizontal(|ui| {
                 ui.label("Type:");
 
-                if ui.selectable_label(self.texture_type_filter.is_none(), "All").clicked() {
+                if ui
+                    .selectable_label(self.texture_type_filter.is_none(), "All")
+                    .clicked()
+                {
                     self.texture_type_filter = None;
                     self.scan_current_directory();
                 }
@@ -673,11 +682,10 @@ impl AssetBrowser {
                                 }
                             }
 
-                            if response.double_clicked() {
-                                if entry.asset_type == AssetType::Directory {
+                            if response.double_clicked()
+                                && entry.asset_type == AssetType::Directory {
                                     path_to_navigate = Some(entry.path.clone());
                                 }
-                            }
 
                             if response.hovered() {
                                 response
@@ -685,11 +693,10 @@ impl AssetBrowser {
                                     .on_hover_text(entry.path.display().to_string());
                             }
 
-                            if entry.asset_type == AssetType::Prefab {
-                                if response.drag_started() {
+                            if entry.asset_type == AssetType::Prefab
+                                && response.drag_started() {
                                     self.dragged_prefab = Some(entry.path.clone());
                                 }
-                            }
                         }
 
                         if self.entries.is_empty() {
@@ -785,7 +792,10 @@ impl AssetBrowser {
                                                 if let Some(tex_type) = entry_texture_type {
                                                     let badge_size = 18.0;
                                                     let badge_rect = egui::Rect::from_min_size(
-                                                        egui::pos2(rect.max.x - badge_size - 4.0, rect.max.y - badge_size - 4.0),
+                                                        egui::pos2(
+                                                            rect.max.x - badge_size - 4.0,
+                                                            rect.max.y - badge_size - 4.0,
+                                                        ),
                                                         egui::vec2(badge_size, badge_size),
                                                     );
                                                     ui.painter().rect_filled(
@@ -812,11 +822,10 @@ impl AssetBrowser {
                                             }
                                         }
 
-                                        if response.double_clicked() {
-                                            if entry_asset_type == AssetType::Directory {
+                                        if response.double_clicked()
+                                            && entry_asset_type == AssetType::Directory {
                                                 path_to_navigate = Some(entry_path.clone());
                                             }
-                                        }
 
                                         if response.hovered() {
                                             response
@@ -824,11 +833,10 @@ impl AssetBrowser {
                                                 .on_hover_text(entry_path.display().to_string());
                                         }
 
-                                        if entry_asset_type == AssetType::Prefab {
-                                            if response.drag_started() {
+                                        if entry_asset_type == AssetType::Prefab
+                                            && response.drag_started() {
                                                 self.dragged_prefab = Some(entry_path.clone());
                                             }
-                                        }
 
                                         ui.add(
                                             egui::Label::new(&entry_name)
@@ -863,7 +871,13 @@ impl AssetBrowser {
 
             let asset_type = AssetType::from_path(selected);
             let texture_type = if asset_type == AssetType::Texture {
-                Some(TextureType::from_filename(selected.file_name().unwrap_or_default().to_str().unwrap_or("")))
+                Some(TextureType::from_filename(
+                    selected
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or(""),
+                ))
             } else {
                 None
             };
@@ -871,7 +885,13 @@ impl AssetBrowser {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
                     ui.label(asset_type.icon());
-                    ui.strong(selected.file_name().unwrap_or_default().to_string_lossy().to_string());
+                    ui.strong(
+                        selected
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string(),
+                    );
                     if let Some(tex_type) = texture_type {
                         ui.colored_label(tex_type.color(), format!("[{}]", tex_type.label()));
                     }
@@ -899,7 +919,10 @@ impl AssetBrowser {
                         }
                         AssetType::Texture => {
                             let tex_type = texture_type.unwrap_or(TextureType::Albedo);
-                            if ui.button(format!("🎨 Apply as {}", tex_type.label())).clicked() {
+                            if ui
+                                .button(format!("🎨 Apply as {}", tex_type.label()))
+                                .clicked()
+                            {
                                 self.pending_actions.push(AssetAction::ApplyTexture {
                                     path: selected.clone(),
                                     texture_type: tex_type,

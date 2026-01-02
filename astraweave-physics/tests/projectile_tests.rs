@@ -227,7 +227,7 @@ fn test_projectile_bouncing() {
         restitution: 0.9,
         ..Default::default()
     };
-    let id = manager.spawn(config);
+    let _id = manager.spawn(config);
 
     // Simulate bouncing off walls at X=5 and X=-5
     let raycast = |origin: Vec3, dir: Vec3, max: f32| {

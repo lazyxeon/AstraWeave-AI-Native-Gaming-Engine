@@ -815,7 +815,7 @@ mod tests {
     fn test_accessed_updates_metadata() {
         let mut memory = Memory::working("Task".to_string());
         let initial_count = memory.metadata.access_count;
-        let initial_strength = memory.metadata.strength;
+        let _initial_strength = memory.metadata.strength;
         
         // Set strength below 1.0 so we can observe the boost
         memory.metadata.strength = 0.5;

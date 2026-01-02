@@ -140,7 +140,7 @@ pub struct ExperimentResults {
 }
 
 /// Status of experiment results
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ResultStatus {
     InProgress,
     SignificantResult,
@@ -832,5 +832,674 @@ mod tests {
         let hash2 = framework.hash_user_id("user123");
 
         assert_eq!(hash1, hash2);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Config Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_ab_test_config_default() {
+        let config = ABTestConfig::default();
+        assert_eq!(config.default_duration_hours, 168);
+        assert_eq!(config.min_sample_size, 100);
+        assert!((config.significance_threshold - 0.05).abs() < f64::EPSILON);
+        assert!(!config.auto_winner_selection);
+        assert_eq!(config.max_concurrent_experiments, 10);
+    }
+
+    #[test]
+    fn test_ab_test_config_custom() {
+        let config = ABTestConfig {
+            default_duration_hours: 48,
+            min_sample_size: 50,
+            significance_threshold: 0.01,
+            auto_winner_selection: true,
+            max_concurrent_experiments: 5,
+        };
+        assert_eq!(config.default_duration_hours, 48);
+        assert!(config.auto_winner_selection);
+    }
+
+    #[test]
+    fn test_ab_test_config_clone() {
+        let config = ABTestConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.default_duration_hours, cloned.default_duration_hours);
+        assert_eq!(config.significance_threshold, cloned.significance_threshold);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Experiment Status Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_experiment_status_equality() {
+        assert_eq!(ExperimentStatus::Draft, ExperimentStatus::Draft);
+        assert_eq!(ExperimentStatus::Running, ExperimentStatus::Running);
+        assert_ne!(ExperimentStatus::Draft, ExperimentStatus::Running);
+        assert_eq!(ExperimentStatus::Paused, ExperimentStatus::Paused);
+        assert_eq!(ExperimentStatus::Completed, ExperimentStatus::Completed);
+        assert_eq!(ExperimentStatus::Stopped, ExperimentStatus::Stopped);
+    }
+
+    #[test]
+    fn test_experiment_status_serialization() {
+        let status = ExperimentStatus::Running;
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(json.contains("Running"));
+
+        let deserialized: ExperimentStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, ExperimentStatus::Running);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Validation Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_validate_empty_name() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.name = "".to_string();
+
+        let result = framework.create_experiment(experiment).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("name cannot be empty"));
+    }
+
+    #[tokio::test]
+    async fn test_validate_empty_control_variant_id() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.control_variant.id = "".to_string();
+
+        let result = framework.create_experiment(experiment).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Control variant must have an ID"));
+    }
+
+    #[tokio::test]
+    async fn test_validate_no_test_variants() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.test_variants = vec![];
+
+        let result = framework.create_experiment(experiment).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("At least one test variant"));
+    }
+
+    #[tokio::test]
+    async fn test_validate_traffic_allocation_sum() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.control_variant.traffic_allocation = 0.3;
+        // test variant is 0.5, total = 0.8 != 1.0
+
+        let result = framework.create_experiment(experiment).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Traffic allocation must sum to 1.0"));
+    }
+
+    #[tokio::test]
+    async fn test_validate_duplicate_variant_ids() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.test_variants[0].id = "control".to_string(); // Same as control variant
+
+        let result = framework.create_experiment(experiment).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Variant IDs must be unique"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Assignment Strategy Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_weighted_random_assignment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.assignment_strategy = AssignmentStrategy::WeightedRandom;
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        // Run multiple assignments - should get both variants due to random
+        let mut control_count = 0;
+        let mut test_count = 0;
+        for i in 0..50 {
+            let assignment = framework
+                .assign_variant(&experiment_id, &format!("user{}", i))
+                .await
+                .unwrap();
+            if let Some(a) = assignment {
+                if a.variant_id == "control" {
+                    control_count += 1;
+                } else {
+                    test_count += 1;
+                }
+            }
+        }
+        // We can't guarantee exact counts due to randomness + traffic percentage
+        // Just verify we got some assignments
+        assert!(control_count > 0 || test_count > 0);
+    }
+
+    #[tokio::test]
+    async fn test_round_robin_assignment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.assignment_strategy = AssignmentStrategy::RoundRobin;
+        experiment.traffic_percentage = 1.0; // Ensure all users get assigned
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        let assignment = framework
+            .assign_variant(&experiment_id, "user123")
+            .await
+            .unwrap();
+        assert!(assignment.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_custom_assignment_strategy() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.assignment_strategy = AssignmentStrategy::Custom("custom_strategy".to_string());
+        experiment.traffic_percentage = 1.0;
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        // Custom falls back to hash
+        let assignment = framework
+            .assign_variant(&experiment_id, "user123")
+            .await
+            .unwrap();
+        assert!(assignment.is_some());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Traffic Percentage Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_traffic_percentage_zero() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.traffic_percentage = 0.0;
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        let assignment = framework
+            .assign_variant(&experiment_id, "user123")
+            .await
+            .unwrap();
+        assert!(assignment.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_traffic_percentage_full() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let mut experiment = create_test_experiment();
+        experiment.traffic_percentage = 1.0;
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        let assignment = framework
+            .assign_variant(&experiment_id, "user123")
+            .await
+            .unwrap();
+        assert!(assignment.is_some());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Experiment Lifecycle Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_start_non_draft_experiment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        // Try to start again
+        let result = framework.start_experiment(&experiment_id).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not in draft status"));
+    }
+
+    #[tokio::test]
+    async fn test_stop_non_running_experiment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        // Don't start it
+
+        let result = framework.stop_experiment(&experiment_id).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not running"));
+    }
+
+    #[tokio::test]
+    async fn test_experiment_not_found() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+
+        let result = framework.start_experiment("nonexistent").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[tokio::test]
+    async fn test_assign_variant_to_stopped_experiment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        // Don't start it
+
+        let assignment = framework
+            .assign_variant(&experiment_id, "user123")
+            .await
+            .unwrap();
+        assert!(assignment.is_none()); // Not running
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Results and Analysis Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_results_not_found() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+
+        let result = framework.get_results("nonexistent").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_experiments() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        framework.create_experiment(experiment).await.unwrap();
+
+        let experiments = framework.list_experiments().await;
+        assert_eq!(experiments.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_delete_experiment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.delete_experiment(&experiment_id).await.unwrap();
+
+        let experiments = framework.list_experiments().await;
+        assert!(experiments.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_delete_nonexistent_experiment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+
+        let result = framework.delete_experiment("nonexistent").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_record_outcome_not_running() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        // Don't start it
+
+        let outcome = Outcome {
+            user_id: "user123".to_string(),
+            experiment_id: experiment_id.clone(),
+            variant_id: "control".to_string(),
+            timestamp: Utc::now(),
+            metrics: HashMap::new(),
+            success: true,
+            metadata: HashMap::new(),
+        };
+
+        let result = framework.record_outcome(outcome).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not running"));
+    }
+
+    #[tokio::test]
+    async fn test_record_outcome_nonexistent_experiment() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+
+        let outcome = Outcome {
+            user_id: "user123".to_string(),
+            experiment_id: "nonexistent".to_string(),
+            variant_id: "control".to_string(),
+            timestamp: Utc::now(),
+            metrics: HashMap::new(),
+            success: true,
+            metadata: HashMap::new(),
+        };
+
+        let result = framework.record_outcome(outcome).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Data Structure Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_variant_serialization() {
+        let variant = Variant {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            description: "Test desc".to_string(),
+            prompt_template: Some("Template".to_string()),
+            model_config: None,
+            parameters: HashMap::new(),
+            traffic_allocation: 0.5,
+        };
+
+        let json = serde_json::to_string(&variant).unwrap();
+        assert!(json.contains("test"));
+
+        let deserialized: Variant = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.id, "test");
+    }
+
+    #[test]
+    fn test_model_config_serialization() {
+        let config = ModelConfig {
+            model_name: "gpt-4".to_string(),
+            temperature: Some(0.7),
+            max_tokens: Some(1024),
+            top_p: Some(0.9),
+            top_k: Some(50),
+            repetition_penalty: Some(1.1),
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("gpt-4"));
+
+        let deserialized: ModelConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.model_name, "gpt-4");
+        assert_eq!(deserialized.temperature, Some(0.7));
+    }
+
+    #[test]
+    fn test_success_criteria_serialization() {
+        let criteria = SuccessCriteria {
+            primary_metric: "conversion".to_string(),
+            improvement_threshold: 0.1,
+            direction: OptimizationDirection::Maximize,
+            secondary_metrics: vec!["latency".to_string()],
+        };
+
+        let json = serde_json::to_string(&criteria).unwrap();
+        let deserialized: SuccessCriteria = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.primary_metric, "conversion");
+    }
+
+    #[test]
+    fn test_optimization_direction() {
+        let max = OptimizationDirection::Maximize;
+        let min = OptimizationDirection::Minimize;
+
+        let max_json = serde_json::to_string(&max).unwrap();
+        let min_json = serde_json::to_string(&min).unwrap();
+
+        assert!(max_json.contains("Maximize"));
+        assert!(min_json.contains("Minimize"));
+    }
+
+    #[test]
+    fn test_assignment_strategy_variants() {
+        let hash = AssignmentStrategy::Hash;
+        let weighted = AssignmentStrategy::WeightedRandom;
+        let round_robin = AssignmentStrategy::RoundRobin;
+        let custom = AssignmentStrategy::Custom("my_strategy".to_string());
+
+        let hash_json = serde_json::to_string(&hash).unwrap();
+        let custom_json = serde_json::to_string(&custom).unwrap();
+
+        assert!(hash_json.contains("Hash"));
+        assert!(custom_json.contains("my_strategy"));
+
+        // Test deserialization
+        let _: AssignmentStrategy = serde_json::from_str(&hash_json).unwrap();
+        let _: AssignmentStrategy = serde_json::from_str(&serde_json::to_string(&weighted).unwrap()).unwrap();
+        let _: AssignmentStrategy = serde_json::from_str(&serde_json::to_string(&round_robin).unwrap()).unwrap();
+    }
+
+    #[test]
+    fn test_result_status_variants() {
+        let statuses = [
+            ResultStatus::InProgress,
+            ResultStatus::SignificantResult,
+            ResultStatus::NoSignificantDifference,
+            ResultStatus::InsufficientData,
+        ];
+
+        for status in statuses {
+            let json = serde_json::to_string(&status).unwrap();
+            let deserialized: ResultStatus = serde_json::from_str(&json).unwrap();
+            // Just verify serialization round-trips
+            assert_eq!(serde_json::to_string(&deserialized).unwrap(), json);
+        }
+    }
+
+    #[test]
+    fn test_metric_result_creation() {
+        let metric = MetricResult {
+            metric_name: "latency".to_string(),
+            value: 150.0,
+            count: 100,
+            sum: 15000.0,
+            mean: 150.0,
+            std_dev: 25.0,
+            percentiles: {
+                let mut p = HashMap::new();
+                p.insert("p50".to_string(), 140.0);
+                p.insert("p95".to_string(), 200.0);
+                p
+            },
+        };
+
+        assert_eq!(metric.metric_name, "latency");
+        assert_eq!(metric.mean, 150.0);
+        assert_eq!(metric.percentiles.get("p50"), Some(&140.0));
+    }
+
+    #[test]
+    fn test_confidence_interval() {
+        let ci = ConfidenceInterval {
+            lower_bound: 0.10,
+            upper_bound: 0.20,
+            confidence_level: 0.95,
+        };
+
+        let json = serde_json::to_string(&ci).unwrap();
+        let deserialized: ConfidenceInterval = serde_json::from_str(&json).unwrap();
+        assert!((deserialized.confidence_level - 0.95).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_statistical_analysis() {
+        let analysis = StatisticalAnalysis {
+            test_type: "chi-square".to_string(),
+            p_value: 0.023,
+            effect_size: 0.3,
+            power: 0.85,
+            recommendations: vec!["Increase sample size".to_string()],
+        };
+
+        let json = serde_json::to_string(&analysis).unwrap();
+        let deserialized: StatisticalAnalysis = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.test_type, "chi-square");
+    }
+
+    #[test]
+    fn test_variant_results() {
+        let results = VariantResults {
+            variant_id: "test-variant".to_string(),
+            sample_size: 500,
+            metrics: HashMap::new(),
+            conversion_rate: 0.15,
+            confidence_interval: ConfidenceInterval {
+                lower_bound: 0.12,
+                upper_bound: 0.18,
+                confidence_level: 0.95,
+            },
+        };
+
+        assert_eq!(results.sample_size, 500);
+        assert!((results.conversion_rate - 0.15).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_experiment_results() {
+        let results = ExperimentResults {
+            experiment_id: "exp-1".to_string(),
+            status: ResultStatus::InProgress,
+            variant_results: HashMap::new(),
+            statistical_analysis: None,
+            winner: None,
+            confidence_level: 0.0,
+            last_updated: Utc::now(),
+        };
+
+        assert_eq!(results.experiment_id, "exp-1");
+        assert_eq!(results.status, ResultStatus::InProgress);
+        assert!(results.winner.is_none());
+    }
+
+    #[test]
+    fn test_outcome_creation() {
+        let outcome = Outcome {
+            user_id: "user456".to_string(),
+            experiment_id: "exp-1".to_string(),
+            variant_id: "control".to_string(),
+            timestamp: Utc::now(),
+            metrics: {
+                let mut m = HashMap::new();
+                m.insert("success_rate".to_string(), 0.8);
+                m
+            },
+            success: true,
+            metadata: HashMap::new(),
+        };
+
+        assert!(outcome.success);
+        assert_eq!(outcome.metrics.get("success_rate"), Some(&0.8));
+    }
+
+    #[test]
+    fn test_variant_assignment_creation() {
+        let variant = Variant {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            description: "".to_string(),
+            prompt_template: None,
+            model_config: None,
+            parameters: HashMap::new(),
+            traffic_allocation: 0.5,
+        };
+
+        let assignment = VariantAssignment {
+            experiment_id: "exp-1".to_string(),
+            variant_id: "test".to_string(),
+            variant,
+            assigned_at: Utc::now(),
+        };
+
+        assert_eq!(assignment.experiment_id, "exp-1");
+        assert_eq!(assignment.variant_id, "test");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Max Concurrent Experiments Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_max_concurrent_experiments() {
+        let config = ABTestConfig {
+            max_concurrent_experiments: 2,
+            ..ABTestConfig::default()
+        };
+        let framework = ABTestFramework::new(config);
+
+        // Create and start 2 experiments
+        let mut exp_ids = Vec::new();
+        for i in 0..2 {
+            let mut exp = create_test_experiment();
+            exp.id = String::new(); // Let framework generate ID
+            exp.name = format!("Experiment {}", i);
+            exp.control_variant.id = format!("control-{}", i);
+            exp.test_variants[0].id = format!("test-{}", i);
+            let id = framework.create_experiment(exp).await.unwrap();
+            framework.start_experiment(&id).await.unwrap();
+            exp_ids.push(id);
+        }
+
+        // Third experiment creation should succeed (limit is checked at creation time against running experiments)
+        // The check is for RUNNING experiments, not total experiments
+        let mut exp = create_test_experiment();
+        exp.id = String::new();
+        exp.name = "Experiment 3".to_string();
+        exp.control_variant.id = "control-3".to_string();
+        exp.test_variants[0].id = "test-3".to_string();
+        
+        // Creation should work, but starting might fail
+        let result = framework.create_experiment(exp).await;
+        // With 2 running experiments and max_concurrent=2, creating a 3rd should fail
+        assert!(result.is_err(), "Expected error when exceeding max concurrent experiments");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Multiple Outcomes Test
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[tokio::test]
+    async fn test_multiple_outcomes_same_variant() {
+        let framework = ABTestFramework::new(ABTestConfig::default());
+        let experiment = create_test_experiment();
+
+        let experiment_id = framework.create_experiment(experiment).await.unwrap();
+        framework.start_experiment(&experiment_id).await.unwrap();
+
+        // Record multiple outcomes
+        for i in 0..5 {
+            let mut metrics = HashMap::new();
+            metrics.insert("conversion_rate".to_string(), 0.1 + (i as f32) * 0.02);
+
+            let outcome = Outcome {
+                user_id: format!("user{}", i),
+                experiment_id: experiment_id.clone(),
+                variant_id: "control".to_string(),
+                timestamp: Utc::now(),
+                metrics,
+                success: i % 2 == 0,
+                metadata: HashMap::new(),
+            };
+
+            framework.record_outcome(outcome).await.unwrap();
+        }
+
+        let results = framework.get_results(&experiment_id).await.unwrap();
+        assert_eq!(results.variant_results["control"].sample_size, 5);
     }
 }

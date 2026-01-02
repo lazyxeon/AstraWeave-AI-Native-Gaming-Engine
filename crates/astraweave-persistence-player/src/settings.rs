@@ -49,3 +49,94 @@ impl ControlSettings {
         println!("   Key Bindings: {} actions", self.key_bindings.len());
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::QualityPreset;
+
+    #[test]
+    fn test_graphics_apply() {
+        let settings = GraphicsSettings {
+            resolution: (1920, 1080),
+            quality: QualityPreset::High,
+            vsync: true,
+            fullscreen: false,
+        };
+        // Just verify no panic
+        settings.apply();
+    }
+
+    #[test]
+    fn test_audio_apply() {
+        let settings = AudioSettings {
+            master_volume: 0.8,
+            music_volume: 0.6,
+            sfx_volume: 0.7,
+            voice_volume: 1.0,
+            muted: false,
+        };
+        // Just verify no panic
+        settings.apply();
+    }
+
+    #[test]
+    fn test_audio_muted_apply() {
+        let settings = AudioSettings {
+            master_volume: 0.0,
+            music_volume: 0.0,
+            sfx_volume: 0.0,
+            voice_volume: 0.0,
+            muted: true,
+        };
+        settings.apply();
+    }
+
+    #[test]
+    fn test_control_apply() {
+        let settings = ControlSettings {
+            mouse_sensitivity: 1.5,
+            invert_y: true,
+            key_bindings: std::collections::HashMap::new(),
+        };
+        settings.apply();
+    }
+
+    #[test]
+    fn test_control_with_bindings() {
+        let mut bindings = std::collections::HashMap::new();
+        bindings.insert("Jump".to_string(), "Space".to_string());
+        bindings.insert("Attack".to_string(), "MouseLeft".to_string());
+        let settings = ControlSettings {
+            mouse_sensitivity: 1.0,
+            invert_y: false,
+            key_bindings: bindings,
+        };
+        settings.apply();
+    }
+
+    #[test]
+    fn test_game_settings_apply() {
+        let settings = GameSettings {
+            graphics: GraphicsSettings {
+                resolution: (1920, 1080),
+                quality: QualityPreset::Medium,
+                vsync: true,
+                fullscreen: false,
+            },
+            audio: AudioSettings {
+                master_volume: 0.5,
+                music_volume: 0.5,
+                sfx_volume: 0.5,
+                voice_volume: 0.5,
+                muted: false,
+            },
+            controls: ControlSettings {
+                mouse_sensitivity: 1.0,
+                invert_y: false,
+                key_bindings: std::collections::HashMap::new(),
+            },
+        };
+        settings.apply();
+    }
+}

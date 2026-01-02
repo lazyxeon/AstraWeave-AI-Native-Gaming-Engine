@@ -25,20 +25,36 @@
 //!   cargo run -p hello_companion --release --features llm,ollama -- --hybrid     # LLM + fallback
 //!   cargo run -p hello_companion --release --features llm,ollama -- --ensemble   # All modes voting
 //!   cargo run -p hello_companion --release --features llm_orchestrator -- --arbiter  # GOAP + Hermes Arbiter
+//!   cargo run -p hello_companion --release --features visual                     # Visual demo with 3 AI modes
 //!   cargo run -p hello_companion --release --features llm,ollama,metrics -- --demo-all --metrics --export-metrics --phase7
+
+// Suppress dead code warnings for CLI-mode code when visual feature is active
+#![cfg_attr(feature = "visual", allow(dead_code))]
+
+// Visual demo modules (enabled with --features visual)
+#[cfg(feature = "visual")]
+mod chat_ui;
+#[cfg(feature = "visual")]
+mod dialogue_bank;
+#[cfg(feature = "visual")]
+mod llm_worker;
+#[cfg(feature = "visual")]
+mod scene;
+#[cfg(feature = "visual")]
+mod visual_demo;
 
 use astraweave_ai::{Orchestrator, RuleOrchestrator};
 
 #[cfg(feature = "llm_orchestrator")]
 use astraweave_ai::GoapOrchestrator;
 
-use astraweave_core::{
-    build_snapshot, validate_and_execute, IVec2, PerceptionConfig, PlanIntent,
-    Team, ValidateCfg, World, WorldSnapshot,
-};
 use astraweave_core::ecs_adapter::build_app;
 use astraweave_core::ecs_bridge::EntityBridge;
-use astraweave_core::{CCooldowns, CAmmo, CHealth, CPos};
+use astraweave_core::{
+    build_snapshot, validate_and_execute, IVec2, PerceptionConfig, PlanIntent, Team, ValidateCfg,
+    World, WorldSnapshot,
+};
+use astraweave_core::{CAmmo, CCooldowns, CHealth, CPos};
 use astraweave_ecs as ecs;
 
 #[cfg(feature = "llm")]
@@ -164,7 +180,14 @@ impl AIMetrics {
 // MAIN ENTRY POINT
 // ============================================================================
 
+#[cfg(feature = "visual")]
 fn main() -> Result<()> {
+    visual_demo::run_visual_demo()
+}
+
+#[cfg(not(feature = "visual"))]
+fn main() -> Result<()> {
+    // Console-based demo (original behavior)
     println!("╔════════════════════════════════════════════════════════════╗");
     println!("║   AstraWeave AI Companion Demo - Advanced Showcase        ║");
     println!("╚════════════════════════════════════════════════════════════╝\n");
@@ -292,7 +315,12 @@ fn update_ecs_from_legacy(world: &mut ecs::World, legacy_id: u32) {
         if let Some(cds) = cooldowns {
             let map: astraweave_core::cooldowns::Map = cds
                 .iter()
-                .map(|(k, v)| (astraweave_core::cooldowns::CooldownKey::from(k.as_str()), *v))
+                .map(|(k, v)| {
+                    (
+                        astraweave_core::cooldowns::CooldownKey::from(k.as_str()),
+                        *v,
+                    )
+                })
                 .collect();
             world.insert(e, CCooldowns { map });
         }
@@ -858,6 +886,7 @@ fn calculate_coverfire_score(snap: &WorldSnapshot) -> f32 {
 
 #[cfg(feature = "ollama")]
 fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    use anyhow::Context;
     println!("🧠 LLM AI (Hermes 2 Pro via Ollama)");
 
     // Check Ollama availability first
@@ -900,6 +929,7 @@ fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
 
 #[cfg(feature = "ollama")]
 fn check_ollama_available() -> Result<()> {
+    use anyhow::Context;
     println!("   Checking Ollama availability...");
 
     // Use tokio runtime for async reqwest
@@ -1178,6 +1208,9 @@ fn action_type_string(step: &ActionStep) -> String {
         // Legacy (2)
         ActionStep::Throw { .. } => "throw".to_string(),
         ActionStep::Revive { .. } => "revive".to_string(),
+
+        // Terrain (1)
+        ActionStep::ModifyTerrain { .. } => "modify_terrain".to_string(),
     }
 }
 

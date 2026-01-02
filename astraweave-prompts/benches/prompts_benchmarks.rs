@@ -1,4 +1,4 @@
-use astraweave_prompts::{PromptContext, PromptEngine, PromptTemplate, TemplateEngine};
+use astraweave_prompts::{PromptContext, PromptTemplate, TemplateEngine};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
 use std::hint::black_box;
@@ -47,39 +47,30 @@ fn create_simple_context() -> PromptContext {
 /// Create a complex context
 fn create_complex_context() -> PromptContext {
     let mut ctx = PromptContext::new();
-    ctx.set("character.name".to_string(), "Aria".into());
-    ctx.set("character.class".to_string(), "Mage".into());
-    ctx.set("location.name".to_string(), "Ancient Library".into());
-    ctx.set(
-        "location.description".to_string(),
+    ctx.set_path("character.name", "Aria".into());
+    ctx.set_path("character.class", "Mage".into());
+    ctx.set_path("location.name", "Ancient Library".into());
+    ctx.set_path(
+        "location.description",
         "A vast repository of magical knowledge".into(),
     );
-    ctx.set("objective".to_string(), "Find the Crystal of Wisdom".into());
-    ctx.set("inventory.count".to_string(), "12".into());
-    ctx.set("status.health".to_string(), "85".into());
-    ctx.set("status.max_health".to_string(), "100".into());
-    ctx.set("status.mana".to_string(), "45".into());
-    ctx.set("status.max_mana".to_string(), "80".into());
+    ctx.set_path("objective", "Find the Crystal of Wisdom".into());
+    ctx.set_path("inventory.count", "12".into());
+    ctx.set_path("status.health", "85".into());
+    ctx.set_path("status.max_health", "100".into());
+    ctx.set_path("status.mana", "45".into());
+    ctx.set_path("status.max_mana", "80".into());
     ctx
 }
 
 /// Create a dialogue context
 fn create_dialogue_context() -> PromptContext {
     let mut ctx = PromptContext::new();
-    ctx.set("npc.name".to_string(), "Elena".into());
-    ctx.set("npc.role".to_string(), "Wise Mage".into());
-    ctx.set(
-        "npc.personality".to_string(),
-        "mysterious and helpful".into(),
-    );
-    ctx.set(
-        "player.message".to_string(),
-        "What magic can you teach me?".into(),
-    );
-    ctx.set(
-        "context".to_string(),
-        "The player has proven their worth".into(),
-    );
+    ctx.set_path("npc.name", "Elena".into());
+    ctx.set_path("npc.role", "Wise Mage".into());
+    ctx.set_path("npc.personality", "mysterious and helpful".into());
+    ctx.set_path("player.message", "What magic can you teach me?".into());
+    ctx.set_path("context", "The player has proven their worth".into());
     ctx
 }
 

@@ -96,23 +96,34 @@ impl Default for CustomColors {
 impl CustomColors {
     pub fn to_visuals(&self) -> Visuals {
         let mut visuals = Visuals::dark();
-        visuals.extreme_bg_color = Color32::from_rgb(self.background[0], self.background[1], self.background[2]);
-        visuals.panel_fill = Color32::from_rgb(self.panel_fill[0], self.panel_fill[1], self.panel_fill[2]);
-        visuals.override_text_color = Some(Color32::from_rgb(self.text[0], self.text[1], self.text[2]));
-        visuals.selection.bg_fill = Color32::from_rgb(self.selection[0], self.selection[1], self.selection[2]);
+        visuals.extreme_bg_color =
+            Color32::from_rgb(self.background[0], self.background[1], self.background[2]);
+        visuals.panel_fill =
+            Color32::from_rgb(self.panel_fill[0], self.panel_fill[1], self.panel_fill[2]);
+        visuals.override_text_color =
+            Some(Color32::from_rgb(self.text[0], self.text[1], self.text[2]));
+        visuals.selection.bg_fill =
+            Color32::from_rgb(self.selection[0], self.selection[1], self.selection[2]);
         visuals.hyperlink_color = Color32::from_rgb(self.accent[0], self.accent[1], self.accent[2]);
-        visuals.warn_fg_color = Color32::from_rgb(self.warning[0], self.warning[1], self.warning[2]);
+        visuals.warn_fg_color =
+            Color32::from_rgb(self.warning[0], self.warning[1], self.warning[2]);
         visuals.error_fg_color = Color32::from_rgb(self.error[0], self.error[1], self.error[2]);
         visuals
     }
 
     pub fn color32(&self, field: &str) -> Color32 {
         match field {
-            "background" => Color32::from_rgb(self.background[0], self.background[1], self.background[2]),
-            "panel_fill" => Color32::from_rgb(self.panel_fill[0], self.panel_fill[1], self.panel_fill[2]),
+            "background" => {
+                Color32::from_rgb(self.background[0], self.background[1], self.background[2])
+            }
+            "panel_fill" => {
+                Color32::from_rgb(self.panel_fill[0], self.panel_fill[1], self.panel_fill[2])
+            }
             "text" => Color32::from_rgb(self.text[0], self.text[1], self.text[2]),
             "accent" => Color32::from_rgb(self.accent[0], self.accent[1], self.accent[2]),
-            "selection" => Color32::from_rgb(self.selection[0], self.selection[1], self.selection[2]),
+            "selection" => {
+                Color32::from_rgb(self.selection[0], self.selection[1], self.selection[2])
+            }
             "warning" => Color32::from_rgb(self.warning[0], self.warning[1], self.warning[2]),
             "error" => Color32::from_rgb(self.error[0], self.error[1], self.error[2]),
             "success" => Color32::from_rgb(self.success[0], self.success[1], self.success[2]),
@@ -212,9 +223,12 @@ impl LayoutState {
                 left_panel_visible: true,
                 right_panel_visible: true,
                 bottom_panel_visible: true,
-                expanded_sections: [("Animation".to_string(), true), ("Timeline".to_string(), true)]
-                    .into_iter()
-                    .collect(),
+                expanded_sections: [
+                    ("Animation".to_string(), true),
+                    ("Timeline".to_string(), true),
+                ]
+                .into_iter()
+                .collect(),
             },
             LayoutPreset::Scripting => Self {
                 left_panel_width: 350.0,
@@ -383,7 +397,7 @@ impl ThemeManagerPanel {
             ui.add_space(4.0);
             ui.collapsing("🎨 Custom Colors", |ui| {
                 let colors = &mut self.preferences.custom_colors;
-                
+
                 Self::color_picker(ui, "Background", &mut colors.background);
                 Self::color_picker(ui, "Panel Fill", &mut colors.panel_fill);
                 Self::color_picker(ui, "Text", &mut colors.text);
@@ -392,7 +406,7 @@ impl ThemeManagerPanel {
                 Self::color_picker(ui, "Warning", &mut colors.warning);
                 Self::color_picker(ui, "Error", &mut colors.error);
                 Self::color_picker(ui, "Success", &mut colors.success);
-                
+
                 self.unsaved_changes = true;
             });
         }
@@ -402,7 +416,7 @@ impl ThemeManagerPanel {
         // Layout presets
         ui.group(|ui| {
             ui.label(egui::RichText::new("Layout Preset").strong());
-            
+
             for preset in LayoutPreset::ALL {
                 ui.horizontal(|ui| {
                     if ui
@@ -411,7 +425,11 @@ impl ThemeManagerPanel {
                     {
                         self.set_layout_preset(preset);
                     }
-                    ui.label(egui::RichText::new(preset.description()).small().color(Color32::GRAY));
+                    ui.label(
+                        egui::RichText::new(preset.description())
+                            .small()
+                            .color(Color32::GRAY),
+                    );
                 });
             }
         });
@@ -421,19 +439,25 @@ impl ThemeManagerPanel {
         // UI Settings
         ui.group(|ui| {
             ui.label(egui::RichText::new("UI Settings").strong());
-            
+
             ui.horizontal(|ui| {
                 ui.label("Font Size:");
                 if ui
-                    .add(egui::Slider::new(&mut self.preferences.font_size, 10.0..=24.0).suffix("px"))
+                    .add(
+                        egui::Slider::new(&mut self.preferences.font_size, 10.0..=24.0)
+                            .suffix("px"),
+                    )
                     .changed()
                 {
                     self.unsaved_changes = true;
                 }
             });
-            
+
             if ui
-                .checkbox(&mut self.preferences.animations_enabled, "Enable animations")
+                .checkbox(
+                    &mut self.preferences.animations_enabled,
+                    "Enable animations",
+                )
                 .changed()
             {
                 self.unsaved_changes = true;
@@ -445,14 +469,23 @@ impl ThemeManagerPanel {
         // Panel visibility toggles
         ui.collapsing("📐 Panel Visibility", |ui| {
             let layout = &mut self.preferences.layout_state;
-            
-            if ui.checkbox(&mut layout.left_panel_visible, "Left Panel").changed() {
+
+            if ui
+                .checkbox(&mut layout.left_panel_visible, "Left Panel")
+                .changed()
+            {
                 self.unsaved_changes = true;
             }
-            if ui.checkbox(&mut layout.right_panel_visible, "Right Panel").changed() {
+            if ui
+                .checkbox(&mut layout.right_panel_visible, "Right Panel")
+                .changed()
+            {
                 self.unsaved_changes = true;
             }
-            if ui.checkbox(&mut layout.bottom_panel_visible, "Bottom Panel").changed() {
+            if ui
+                .checkbox(&mut layout.bottom_panel_visible, "Bottom Panel")
+                .changed()
+            {
                 self.unsaved_changes = true;
             }
 
@@ -460,13 +493,27 @@ impl ThemeManagerPanel {
 
             ui.horizontal(|ui| {
                 ui.label("Left Width:");
-                if ui.add(egui::DragValue::new(&mut layout.left_panel_width).speed(1.0).range(100.0..=500.0)).changed() {
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut layout.left_panel_width)
+                            .speed(1.0)
+                            .range(100.0..=500.0),
+                    )
+                    .changed()
+                {
                     self.unsaved_changes = true;
                 }
             });
             ui.horizontal(|ui| {
                 ui.label("Right Width:");
-                if ui.add(egui::DragValue::new(&mut layout.right_panel_width).speed(1.0).range(100.0..=500.0)).changed() {
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut layout.right_panel_width)
+                            .speed(1.0)
+                            .range(100.0..=500.0),
+                    )
+                    .changed()
+                {
                     self.unsaved_changes = true;
                 }
             });
@@ -477,7 +524,10 @@ impl ThemeManagerPanel {
         // Save/Reset buttons
         ui.horizontal(|ui| {
             if ui
-                .add_enabled(self.unsaved_changes, egui::Button::new("💾 Save Preferences"))
+                .add_enabled(
+                    self.unsaved_changes,
+                    egui::Button::new("💾 Save Preferences"),
+                )
                 .clicked()
             {
                 if let Err(e) = self.preferences.save() {
@@ -495,7 +545,11 @@ impl ThemeManagerPanel {
 
         if self.unsaved_changes {
             ui.add_space(4.0);
-            ui.label(egui::RichText::new("⚠️ Unsaved changes").color(Color32::YELLOW).small());
+            ui.label(
+                egui::RichText::new("⚠️ Unsaved changes")
+                    .color(Color32::YELLOW)
+                    .small(),
+            );
         }
     }
 
@@ -538,7 +592,7 @@ mod tests {
     fn test_layout_state_for_preset() {
         let default_state = LayoutState::for_preset(LayoutPreset::Default);
         assert!(default_state.left_panel_visible);
-        
+
         let compact_state = LayoutState::for_preset(LayoutPreset::Compact);
         assert!(!compact_state.left_panel_visible);
     }

@@ -11,6 +11,7 @@ use anyhow::Result;
 use astraweave_audio::{AudioEngine, DialoguePlayer, MusicTrack};
 use astraweave_gameplay::dialogue::{Dialogue, DialogueState, Line, Node};
 use glam::Vec3;
+use serial_test::serial;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
@@ -25,6 +26,7 @@ mod test_asset_generator;
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_dialogue_file_path_with_spaces() -> Result<()> {
     // Setup
     fs::create_dir_all("tests/assets/advanced/speakers/space name")?;
@@ -93,6 +95,7 @@ files = ["test voice.wav"]
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_voice_ducking_edge_cases() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
@@ -126,6 +129,7 @@ fn test_voice_ducking_edge_cases() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_music_crossfade_negative_duration() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
@@ -153,6 +157,7 @@ fn test_music_crossfade_negative_duration() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_music_tick_without_crossfade() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
@@ -183,6 +188,7 @@ fn test_music_tick_without_crossfade() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_spatial_volume_zero_master() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
@@ -208,6 +214,7 @@ fn test_spatial_volume_zero_master() -> Result<()> {
 }
 
 #[test]
+#[serial]
 fn test_spatial_volume_maximum_master() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
@@ -237,6 +244,7 @@ fn test_spatial_volume_maximum_master() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_voice_bank_load_nonexistent_file() -> Result<()> {
     let result = astraweave_audio::load_voice_bank("nonexistent_voice_bank.toml");
 
@@ -253,6 +261,7 @@ fn test_voice_bank_load_nonexistent_file() -> Result<()> {
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_dialogue_override_file_not_found() -> Result<()> {
     fs::create_dir_all("tests/assets/override_test")?;
 
@@ -323,6 +332,7 @@ n0 = "tests/assets/override_test/NONEXISTENT.wav"
 // ============================================================================
 
 #[test]
+#[serial]
 fn test_rapid_master_volume_changes() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 

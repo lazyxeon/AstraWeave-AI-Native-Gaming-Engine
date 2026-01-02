@@ -264,7 +264,7 @@ fn test_echo_shard_collection_determinism() {
 #[test]
 fn test_determinism_with_cooldowns() {
     // Verify determinism when cooldowns are involved
-    assert_deterministic_behavior(111111, |rng| {
+    assert_deterministic_behavior(111111, |_rng| {
         let mut adjudicator = create_test_adjudicator();
         let mut approved_count = 0;
 

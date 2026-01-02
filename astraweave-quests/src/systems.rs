@@ -501,19 +501,32 @@ pub mod integration {
 mod tests {
     use super::*;
     use crate::llm_quests::{LlmQuestGenerator, QuestGenerationConfig};
-    use astraweave_llm::MockLlmClient;
-    use astraweave_rag::MockRagPipeline;
+    use astraweave_embeddings::{MockEmbeddingClient, VectorStore};
+    use astraweave_llm::MockLlm;
+    use astraweave_rag::{RagConfig, RagPipeline, VectorStoreWrapper};
+
+    fn create_test_rag_pipeline() -> Arc<RagPipeline> {
+        let embedding_client = Arc::new(MockEmbeddingClient::new());
+        let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+        let llm_client: Option<Arc<dyn astraweave_llm::LlmClient>> = Some(Arc::new(MockLlm));
+        Arc::new(RagPipeline::new(
+            embedding_client,
+            vector_store,
+            llm_client,
+            RagConfig::default(),
+        ))
+    }
 
     #[tokio::test]
     async fn test_quest_system_creation() {
-        let llm_client = Arc::new(MockLlmClient::new());
-        let rag_pipeline = Arc::new(MockRagPipeline::new());
+        let llm_client: Arc<dyn astraweave_llm::LlmClient> = Arc::new(MockLlm);
+        let rag_pipeline = create_test_rag_pipeline();
         let quest_generator = Arc::new(
             LlmQuestGenerator::new(llm_client, rag_pipeline, QuestGenerationConfig::default())
                 .unwrap(),
         );
 
-        let system = QuestLlmSystem::new(quest_generator, 300000, 3);
+        let _system = QuestLlmSystem::new(quest_generator, 300000, 3);
         // Test basic system creation
     }
 

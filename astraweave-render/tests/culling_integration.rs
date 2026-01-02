@@ -97,7 +97,7 @@ fn test_cpu_vs_gpu_culling_parity() {
     );
 
     queue.submit(Some(encoder.finish()));
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 
     // Readback count
     let count_slice = staging_count.slice(..);
@@ -105,7 +105,7 @@ fn test_cpu_vs_gpu_culling_parity() {
     count_slice.map_async(wgpu::MapMode::Read, move |res| {
         tx.send(res).ok();
     });
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     rx.recv().unwrap().unwrap();
 
     let count_data = count_slice.get_mapped_range();
@@ -120,7 +120,7 @@ fn test_cpu_vs_gpu_culling_parity() {
     visible_slice.map_async(wgpu::MapMode::Read, move |res| {
         tx.send(res).ok();
     });
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     rx.recv().unwrap().unwrap();
 
     let visible_data = visible_slice.get_mapped_range();
@@ -222,14 +222,14 @@ fn test_culling_reduces_draw_count() {
         std::mem::size_of::<u32>() as u64,
     );
     queue.submit(Some(encoder.finish()));
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 
     let count_slice = staging_count.slice(..);
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     count_slice.map_async(wgpu::MapMode::Read, move |res| {
         tx.send(res).ok();
     });
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     rx.recv().unwrap().unwrap();
 
     let count_data = count_slice.get_mapped_range();
@@ -297,14 +297,14 @@ fn test_all_instances_visible_when_inside_frustum() {
         std::mem::size_of::<u32>() as u64,
     );
     queue.submit(Some(encoder.finish()));
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 
     let count_slice = staging_count.slice(..);
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     count_slice.map_async(wgpu::MapMode::Read, move |res| {
         tx.send(res).ok();
     });
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     rx.recv().unwrap().unwrap();
 
     let count_data = count_slice.get_mapped_range();
@@ -338,5 +338,5 @@ fn test_empty_instance_list() {
 
     pipeline.execute(&mut encoder, &resources.bind_group, 0);
     queue.submit(Some(encoder.finish()));
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 }

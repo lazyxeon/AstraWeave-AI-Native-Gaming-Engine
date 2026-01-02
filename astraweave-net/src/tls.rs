@@ -32,6 +32,13 @@ use tokio_rustls::rustls::{ClientConfig, RootCertStore, ServerConfig};
 use tokio_rustls::{TlsAcceptor, TlsConnector};
 use webpki_roots::TLS_SERVER_ROOTS;
 
+fn redact_path_for_error(path: &Path) -> String {
+    path.file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "<unknown>".to_string())
+}
+
 /// TLS configuration for WebSocket server
 pub struct TlsServerConfig {
     server_config: Arc<ServerConfig>,
@@ -49,24 +56,40 @@ impl TlsServerConfig {
     pub fn from_pem_files(cert_path: impl AsRef<Path>, key_path: impl AsRef<Path>) -> Result<Self> {
         // Load certificate chain
         let cert_file = File::open(cert_path.as_ref())
-            .with_context(|| format!("Failed to open cert file: {:?}", cert_path.as_ref()))?;
+            .with_context(|| {
+                format!(
+                    "Failed to open cert file: {}",
+                    redact_path_for_error(cert_path.as_ref())
+                )
+            })?;
         let mut cert_reader = BufReader::new(cert_file);
         let cert_chain: Vec<CertificateDer<'static>> = certs(&mut cert_reader)
             .collect::<Result<Vec<_>, _>>()
             .context("Failed to parse certificate chain")?;
 
         if cert_chain.is_empty() {
-            anyhow::bail!("No certificates found in {}", cert_path.as_ref().display());
+            anyhow::bail!(
+                "No certificates found in {}",
+                redact_path_for_error(cert_path.as_ref())
+            );
         }
 
         // Load private key
         let key_file = File::open(key_path.as_ref())
-            .with_context(|| format!("Failed to open key file: {:?}", key_path.as_ref()))?;
+            .with_context(|| {
+                format!(
+                    "Failed to open key file: {}",
+                    redact_path_for_error(key_path.as_ref())
+                )
+            })?;
         let mut key_reader = BufReader::new(key_file);
         let private_key = private_key(&mut key_reader)
             .context("Failed to parse private key")?
             .ok_or_else(|| {
-                anyhow::anyhow!("No private key found in {}", key_path.as_ref().display())
+                anyhow::anyhow!(
+                    "No private key found in {}",
+                    redact_path_for_error(key_path.as_ref())
+                )
             })?;
 
         // Build config immediately since PrivateKeyDer doesn't implement Clone
@@ -110,7 +133,12 @@ impl TlsClientConfig {
     /// * `ca_cert_path` - Path to PEM-encoded CA certificate file
     pub fn with_custom_ca(ca_cert_path: impl AsRef<Path>) -> Result<TlsConnector> {
         let ca_file = File::open(ca_cert_path.as_ref())
-            .with_context(|| format!("Failed to open CA cert: {:?}", ca_cert_path.as_ref()))?;
+            .with_context(|| {
+                format!(
+                    "Failed to open CA cert: {}",
+                    redact_path_for_error(ca_cert_path.as_ref())
+                )
+            })?;
         let mut ca_reader = BufReader::new(ca_file);
 
         let mut root_store = RootCertStore::empty();

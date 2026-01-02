@@ -575,4 +575,177 @@ mod tests {
         // Adaptive multiplier should be reduced due to failures
         assert!(model_status.adaptive_multiplier < 1.0);
     }
+
+    #[test]
+    fn test_rate_limiter_config_default() {
+        let config = RateLimiterConfig::default();
+        assert_eq!(config.default_rpm, 1000);
+        assert_eq!(config.default_tpm, 50000);
+        assert_eq!(config.user_rpm, 100);
+        assert_eq!(config.global_rpm, 10000);
+        assert!(config.allow_burst);
+        assert_eq!(config.burst_multiplier, 1.5);
+        assert_eq!(config.window_duration, Duration::from_secs(60));
+        assert!(config.adaptive_limiting);
+    }
+
+    #[test]
+    fn test_rate_limiter_config_custom() {
+        let config = RateLimiterConfig {
+            default_rpm: 500,
+            default_tpm: 25000,
+            user_rpm: 50,
+            global_rpm: 5000,
+            allow_burst: false,
+            burst_multiplier: 2.0,
+            window_duration: Duration::from_secs(120),
+            adaptive_limiting: false,
+        };
+        assert_eq!(config.default_rpm, 500);
+        assert!(!config.allow_burst);
+        assert!(!config.adaptive_limiting);
+    }
+
+    #[test]
+    fn test_rate_limiter_config_clone() {
+        let config = RateLimiterConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.default_rpm, cloned.default_rpm);
+        assert_eq!(config.burst_multiplier, cloned.burst_multiplier);
+    }
+
+    #[test]
+    fn test_rate_limiter_config_debug() {
+        let config = RateLimiterConfig::default();
+        let debug = format!("{:?}", config);
+        assert!(debug.contains("RateLimiterConfig"));
+        assert!(debug.contains("1000"));
+    }
+
+    #[tokio::test]
+    async fn test_check_rate_limit_without_user() {
+        let config = RateLimiterConfig::default();
+        let rate_limiter = RateLimiter::new(config);
+
+        let context = RateLimitContext {
+            user_id: None,  // No user ID
+            model: "test-model".to_string(),
+            estimated_tokens: 50,
+            priority: RequestPriority::Normal,
+        };
+
+        let result = rate_limiter.check_rate_limit(&context).await;
+        assert!(result.allowed);
+    }
+
+    #[tokio::test]
+    async fn test_priority_variants() {
+        let config = RateLimiterConfig::default();
+        let rate_limiter = RateLimiter::new(config);
+
+        let priorities = [
+            RequestPriority::Low,
+            RequestPriority::Normal,
+            RequestPriority::High,
+            RequestPriority::Critical,
+        ];
+
+        for priority in priorities {
+            let context = RateLimitContext {
+                user_id: Some(format!("user-{:?}", priority)),
+                model: "test".to_string(),
+                estimated_tokens: 10,
+                priority,
+            };
+            let result = rate_limiter.check_rate_limit(&context).await;
+            assert!(result.allowed);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_clear_rate_limits() {
+        let config = RateLimiterConfig::default();
+        let rate_limiter = RateLimiter::new(config);
+
+        let context = RateLimitContext {
+            user_id: Some("user".to_string()),
+            model: "model".to_string(),
+            estimated_tokens: 100,
+            priority: RequestPriority::Normal,
+        };
+
+        // Make some requests
+        let _ = rate_limiter.check_rate_limit(&context).await;
+        
+        // Clear all limits
+        rate_limiter.clear().await;
+        
+        // Status should be empty
+        let status = rate_limiter.get_status().await;
+        assert!(status.model_status.is_empty());
+        assert!(status.user_status.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_report_result_success() {
+        let config = RateLimiterConfig::default();
+        let rate_limiter = RateLimiter::new(config);
+
+        let context = RateLimitContext {
+            user_id: None,
+            model: "test".to_string(),
+            estimated_tokens: 100,
+            priority: RequestPriority::Normal,
+        };
+
+        // Report successes
+        for _ in 0..5 {
+            rate_limiter.report_result(&context, true).await;
+        }
+
+        let status = rate_limiter.get_status().await;
+        let model_status = status.model_status.get("test").unwrap();
+        // Success rate should be high
+        assert!(model_status.success_rate > 0.9);
+    }
+
+    #[test]
+    fn test_rate_limit_status_serialization() {
+        let status = RateLimitStatus {
+            global_current: 100,
+            global_max: 1000,
+            model_status: HashMap::new(),
+            user_status: HashMap::new(),
+        };
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(json.contains("100"));
+        assert!(json.contains("1000"));
+    }
+
+    #[test]
+    fn test_model_limit_status_serialization() {
+        let status = ModelLimitStatus {
+            current_requests: 10,
+            max_requests: 100,
+            current_tokens: 1000,
+            max_tokens: 10000,
+            success_rate: 0.95,
+            adaptive_multiplier: 1.0,
+        };
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(json.contains("10"));
+        assert!(json.contains("0.95"));
+    }
+
+    #[test]
+    fn test_user_limit_status_serialization() {
+        let status = UserLimitStatus {
+            current_requests: 5,
+            max_requests: 50,
+        };
+        let json = serde_json::to_string(&status).unwrap();
+        let deserialized: UserLimitStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.current_requests, 5);
+        assert_eq!(deserialized.max_requests, 50);
+    }
 }

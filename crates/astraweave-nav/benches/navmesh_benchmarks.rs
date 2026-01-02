@@ -10,7 +10,8 @@
 //! Duration: 0.5 hours
 
 use astraweave_nav::{NavMesh, Triangle};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::hint::black_box;
 use glam::Vec3;
 
 // ============================================================================

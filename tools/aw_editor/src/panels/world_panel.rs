@@ -3,6 +3,7 @@
 use super::Panel;
 use astract::prelude::*;
 use egui::Ui;
+use tracing::debug;
 
 /// World panel - displays and edits world state
 ///
@@ -108,11 +109,11 @@ impl Panel for WorldPanel {
 
         // Memoized derived state (sky color based on time)
         let sky_color = use_memo(ui, "sky_color", time_of_day, |&time| {
-            if time >= 6.0 && time < 12.0 {
+            if (6.0..12.0).contains(&time) {
                 "🌅 Orange (Dawn)"
-            } else if time >= 12.0 && time < 18.0 {
+            } else if (12.0..18.0).contains(&time) {
                 "☀️ Blue (Day)"
-            } else if time >= 18.0 && time < 21.0 {
+            } else if (18.0..21.0).contains(&time) {
                 "🌆 Purple (Dusk)"
             } else {
                 "🌙 Dark Blue (Night)"
@@ -126,7 +127,7 @@ impl Panel for WorldPanel {
 
         // Effect example: log when seed changes
         use_effect(ui, "seed_change_log", seed, |&s| {
-            println!("🌍 World seed changed to: {}", s);
+            debug!("🌍 World seed changed to: {}", s);
         });
     }
 }

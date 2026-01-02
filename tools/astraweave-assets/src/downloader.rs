@@ -428,6 +428,10 @@ impl Default for Downloader {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 
     #[test]
     fn test_filename_extraction() {
@@ -460,5 +464,144 @@ mod tests {
         // Verify
         let result = Downloader::verify_hash(path, expected).await.unwrap();
         assert!(result, "Hash verification failed");
+    }
+
+    fn make_test_downloader(client: reqwest::Client, max_retries: u32, retry_delay_ms: u64) -> Downloader {
+        Downloader {
+            client,
+            max_retries,
+            retry_delay_ms,
+            max_concurrent: 8,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_download_success_writes_file_and_hashes() {
+        let server = MockServer::start().await;
+
+        let body = b"hello".to_vec();
+        Mock::given(method("GET"))
+            .and(path("/file.bin"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("Content-Length", body.len().to_string())
+                    .set_body_bytes(body.clone()),
+            )
+            .mount(&server)
+            .await;
+
+        let temp = tempfile::TempDir::new().unwrap();
+        let dest_path = temp.path().join("out").join("file.bin");
+
+        let downloader = Downloader::new().unwrap();
+        let result = downloader
+            .download(&format!("{}/file.bin", server.uri()), &dest_path, false)
+            .await
+            .unwrap();
+
+        assert_eq!(result.size, 5);
+        assert!(result.path.exists());
+        assert_eq!(tokio::fs::read(&dest_path).await.unwrap(), body);
+
+        let mut hasher = Sha256::new();
+        hasher.update(b"hello");
+        let expected = hex::encode(hasher.finalize());
+        assert_eq!(result.sha256, expected);
+    }
+
+    struct FlakyResponder {
+        calls: Arc<AtomicUsize>,
+        ok_body: Vec<u8>,
+    }
+
+    impl Respond for FlakyResponder {
+        fn respond(&self, _request: &Request) -> ResponseTemplate {
+            let n = self.calls.fetch_add(1, Ordering::SeqCst);
+            if n == 0 {
+                ResponseTemplate::new(500).set_body_string("temporary error")
+            } else {
+                ResponseTemplate::new(200)
+                    .insert_header("Content-Length", self.ok_body.len().to_string())
+                    .set_body_bytes(self.ok_body.clone())
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_download_retries_then_succeeds_without_sleeping_long() {
+        let server = MockServer::start().await;
+
+        let calls = Arc::new(AtomicUsize::new(0));
+        let responder = FlakyResponder {
+            calls: calls.clone(),
+            ok_body: b"ok".to_vec(),
+        };
+
+        Mock::given(method("GET"))
+            .and(path("/flaky"))
+            .respond_with(responder)
+            .mount(&server)
+            .await;
+
+        let temp = tempfile::TempDir::new().unwrap();
+        let dest_path = temp.path().join("flaky.bin");
+
+        let client = reqwest::Client::builder().build().unwrap();
+        let downloader = make_test_downloader(client, 1, 1);
+
+        let result = downloader
+            .download(&format!("{}/flaky", server.uri()), &dest_path, false)
+            .await
+            .unwrap();
+
+        assert_eq!(tokio::fs::read(&dest_path).await.unwrap(), b"ok".to_vec());
+        assert!(calls.load(Ordering::SeqCst) >= 2);
+        assert_eq!(result.size, 2);
+    }
+
+    #[tokio::test]
+    async fn test_download_parallel_downloads_all_tasks() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/a"))
+            .respond_with(ResponseTemplate::new(200).set_body_bytes(b"a".to_vec()))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/b"))
+            .respond_with(ResponseTemplate::new(200).set_body_bytes(b"bb".to_vec()))
+            .mount(&server)
+            .await;
+
+        let temp = tempfile::TempDir::new().unwrap();
+        let dest_a = temp.path().join("a.bin");
+        let dest_b = temp.path().join("b.bin");
+
+        let tasks = vec![
+            DownloadTask {
+                url: format!("{}/a", server.uri()),
+                dest_path: dest_a.clone(),
+                key: "a".to_string(),
+            },
+            DownloadTask {
+                url: format!("{}/b", server.uri()),
+                dest_path: dest_b.clone(),
+                key: "b".to_string(),
+            },
+        ];
+
+        let downloader = Downloader::new().unwrap().with_max_concurrent(2);
+        let mut results = downloader.download_parallel(tasks, false).await.unwrap();
+        results.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].0, "a");
+        assert!(results[0].1.is_ok());
+        assert_eq!(tokio::fs::read(&dest_a).await.unwrap(), b"a".to_vec());
+
+        assert_eq!(results[1].0, "b");
+        assert!(results[1].1.is_ok());
+        assert_eq!(tokio::fs::read(&dest_b).await.unwrap(), b"bb".to_vec());
     }
 }

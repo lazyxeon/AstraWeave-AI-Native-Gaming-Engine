@@ -29,3 +29,7 @@ criterion.workspace = true
 [[bench]]
 name = "script_performance"
 harness = false
+
+[[bench]]
+name = "scripting_adversarial"
+harness = false

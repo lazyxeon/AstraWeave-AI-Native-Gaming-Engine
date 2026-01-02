@@ -355,6 +355,7 @@ impl RagdollBuilder {
     }
 
     /// Add a hinge joint bone (elbow, knee)
+    #[allow(clippy::too_many_arguments)]
     pub fn add_hinge_bone(
         &mut self,
         name: &str,

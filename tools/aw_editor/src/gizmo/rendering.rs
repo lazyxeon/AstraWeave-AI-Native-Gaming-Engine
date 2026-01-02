@@ -10,6 +10,7 @@
 
 use super::{AxisConstraint, GizmoMode};
 use glam::{Mat4, Quat, Vec3};
+use tracing::debug;
 
 /// RGB color constants for axis visualization
 pub const COLOR_X: [f32; 3] = [1.0, 0.0, 0.0]; // Red
@@ -200,13 +201,13 @@ impl GizmoRenderer {
         let x_highlighted = matches!(params.constraint, AxisConstraint::X)
             || matches!(params.hovered_axis, Some(AxisConstraint::X));
         let x_color = if x_highlighted {
-            println!(
+            debug!(
                 "🟡 X-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
                 params.constraint, COLOR_HIGHLIGHT
             );
             COLOR_HIGHLIGHT
         } else {
-            println!(
+            debug!(
                 "🔴 X-axis NORMAL: constraint={:?}, color=RED {:?}",
                 params.constraint, COLOR_X
             );
@@ -223,13 +224,13 @@ impl GizmoRenderer {
         let y_highlighted = matches!(params.constraint, AxisConstraint::Y)
             || matches!(params.hovered_axis, Some(AxisConstraint::Y));
         let y_color = if y_highlighted {
-            println!(
+            debug!(
                 "🟡 Y-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
                 params.constraint, COLOR_HIGHLIGHT
             );
             COLOR_HIGHLIGHT
         } else {
-            println!(
+            debug!(
                 "🟢 Y-axis NORMAL: constraint={:?}, color=GREEN {:?}",
                 params.constraint, COLOR_Y
             );
@@ -245,13 +246,13 @@ impl GizmoRenderer {
         let z_highlighted = matches!(params.constraint, AxisConstraint::Z)
             || matches!(params.hovered_axis, Some(AxisConstraint::Z));
         let z_color = if z_highlighted {
-            println!(
+            debug!(
                 "🟡 Z-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
                 params.constraint, COLOR_HIGHLIGHT
             );
             COLOR_HIGHLIGHT
         } else {
-            println!(
+            debug!(
                 "🔵 Z-axis NORMAL: constraint={:?}, color=BLUE {:?}",
                 params.constraint, COLOR_Z
             );

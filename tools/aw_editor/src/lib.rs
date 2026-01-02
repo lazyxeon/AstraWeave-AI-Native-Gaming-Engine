@@ -19,8 +19,13 @@ pub use command::{
 };
 pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
-pub use plugin::{EditorPlugin, PluginContext, PluginError, PluginEvent, PluginManager, PluginMetadata};
-pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
+pub use plugin::{
+    EditorPlugin, PluginContext, PluginError, PluginEvent, PluginManager, PluginMetadata,
+};
+pub use prefab::{
+    PrefabData, PrefabEntitySnapshot, PrefabHierarchySnapshot, PrefabInstance,
+    PrefabInstanceSnapshot, PrefabManager,
+};
 pub use runtime::{EditorRuntime, RuntimeState, RuntimeStats};
 pub use scene_serialization::{EntityData, SceneData};
 pub use scene_state::{EditorSceneState, TransformableScene};

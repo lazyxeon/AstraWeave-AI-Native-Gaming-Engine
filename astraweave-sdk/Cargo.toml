@@ -22,6 +22,10 @@ criterion = { workspace = true }
 name = "sdk_benchmarks"
 harness = false
 
+[[bench]]
+name = "sdk_adversarial"
+harness = false
+
 [package.metadata.cbindgen]
 language = "C"
 header = "// AstraWeave SDK — generated header\n// Do not edit manually\n"

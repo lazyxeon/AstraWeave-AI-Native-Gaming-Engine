@@ -1,5 +1,5 @@
+use glam::{Mat4, Vec3};
 use wgpu::util::DeviceExt;
-use glam::{Vec3, Mat4};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -20,13 +20,11 @@ impl Vertex {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
+            attributes: &[wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32x3,
+            }],
         }
     }
 }
@@ -42,23 +40,28 @@ pub struct SkyboxRenderer {
 }
 
 impl SkyboxRenderer {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, surface_format: wgpu::TextureFormat, path: &str) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        surface_format: wgpu::TextureFormat,
+        path: &str,
+    ) -> Self {
         // Load HDR texture
         let hdr_bytes = std::fs::read(path).expect("Failed to load HDR file");
-        
+
         let img = image::load_from_memory(&hdr_bytes)
             .expect("Failed to decode HDR")
             .to_rgba32f();
-        
+
         let (width, height) = img.dimensions();
-        
+
         // Create texture
         let texture_size = wgpu::Extent3d {
             width,
             height,
             depth_or_array_layers: 1,
         };
-        
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Skybox HDR Texture"),
             size: texture_size,
@@ -69,7 +72,7 @@ impl SkyboxRenderer {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        
+
         let data = img.into_raw();
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
@@ -86,20 +89,20 @@ impl SkyboxRenderer {
             },
             texture_size,
         );
-        
+
         let skybox_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
+
         // Create sampler
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
-        
+
         // Create bind group layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Skybox Bind Group Layout"),
@@ -120,32 +123,32 @@ impl SkyboxRenderer {
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
                     },
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
                     count: None,
                 },
             ],
         });
-        
+
         // Create uniform buffer
         let uniforms = Uniforms {
             view_proj: Mat4::IDENTITY.to_cols_array_2d(),
             camera_pos: [0.0, 0.0, 0.0],
             _pad: 0.0,
         };
-        
+
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Skybox Uniform Buffer"),
             contents: bytemuck::cast_slice(&[uniforms]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        
+
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Skybox Bind Group"),
@@ -165,35 +168,35 @@ impl SkyboxRenderer {
                 },
             ],
         });
-        
+
         // Create sphere mesh (large radius)
         let (vertices, indices) = Self::create_sphere(1500.0, 32, 16);
-        
+
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Skybox Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        
+
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Skybox Index Buffer"),
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
-        
+
         // Load shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Skybox Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("skybox.wgsl").into()),
         });
-        
+
         // Create pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Skybox Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
-        
+
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Skybox Pipeline"),
@@ -238,7 +241,7 @@ impl SkyboxRenderer {
             multiview: None,
             cache: None,
         });
-        
+
         Self {
             pipeline,
             vertex_buffer,
@@ -249,55 +252,55 @@ impl SkyboxRenderer {
             skybox_view,
         }
     }
-    
+
     fn create_sphere(radius: f32, stacks: u32, slices: u32) -> (Vec<Vertex>, Vec<u32>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
-        
+
         // Generate vertices
         for i in 0..=stacks {
             let phi = std::f32::consts::PI * i as f32 / stacks as f32;
             let sin_phi = phi.sin();
             let cos_phi = phi.cos();
-            
+
             for j in 0..=slices {
                 let theta = 2.0 * std::f32::consts::PI * j as f32 / slices as f32;
                 let sin_theta = theta.sin();
                 let cos_theta = theta.cos();
-                
+
                 let x = radius * sin_phi * cos_theta;
                 let y = radius * cos_phi;
                 let z = radius * sin_phi * sin_theta;
-                
+
                 vertices.push(Vertex {
                     position: [x, y, z],
                 });
             }
         }
-        
+
         // Generate indices
         for i in 0..stacks {
             for j in 0..slices {
                 let first = i * (slices + 1) + j;
                 let second = first + slices + 1;
-                
+
                 indices.push(first);
                 indices.push(second);
                 indices.push(first + 1);
-                
+
                 indices.push(second);
                 indices.push(second + 1);
                 indices.push(first + 1);
             }
         }
-        
+
         (vertices, indices)
     }
-    
+
     pub fn get_skybox_view(&self) -> &wgpu::TextureView {
         &self.skybox_view
     }
-    
+
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
@@ -313,9 +316,9 @@ impl SkyboxRenderer {
             camera_pos: camera_pos.to_array(),
             _pad: 0.0,
         };
-        
+
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
-        
+
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Skybox Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -337,7 +340,7 @@ impl SkyboxRenderer {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        
+
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));

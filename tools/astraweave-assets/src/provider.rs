@@ -456,3 +456,415 @@ pub fn generate_attribution_file(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_asset_type_variants() {
+        let texture = AssetType::Texture;
+        let hdri = AssetType::Hdri;
+        let model = AssetType::Model;
+        let audio = AssetType::Audio;
+        let sprite = AssetType::Sprite;
+        let tileset = AssetType::Tileset;
+        
+        assert!(matches!(texture, AssetType::Texture));
+        assert!(matches!(hdri, AssetType::Hdri));
+        assert!(matches!(model, AssetType::Model));
+        assert!(matches!(audio, AssetType::Audio));
+        assert!(matches!(sprite, AssetType::Sprite));
+        assert!(matches!(tileset, AssetType::Tileset));
+    }
+
+    #[test]
+    fn test_asset_type_serialization() {
+        let texture = AssetType::Texture;
+        let json = serde_json::to_string(&texture).unwrap();
+        assert!(json.contains("texture"));
+    }
+
+    #[test]
+    fn test_license_info_cc0() {
+        let license = LicenseInfo::cc0(None, Some("https://source.com".to_string()));
+        assert_eq!(license.spdx_id, "CC0-1.0");
+        assert!(!license.requires_attribution);
+    }
+
+    #[test]
+    fn test_license_info_cc_by() {
+        let license = LicenseInfo::cc_by("4.0", "Artist Name".to_string(), Some("https://source.com".to_string()));
+        assert_eq!(license.spdx_id, "CC-BY-4.0");
+        assert!(license.requires_attribution);
+        assert_eq!(license.author, Some("Artist Name".to_string()));
+    }
+
+    #[test]
+    fn test_license_info_cc_by_sa() {
+        let license = LicenseInfo::cc_by_sa("4.0", "Artist Name".to_string(), Some("https://source.com".to_string()));
+        assert_eq!(license.spdx_id, "CC-BY-SA-4.0");
+        assert!(license.requires_attribution);
+        assert!(license.requires_sharealike);
+    }
+
+    #[test]
+    fn test_license_attribution_text_cc0() {
+        let license = LicenseInfo::cc0(None, Some("https://source.com".to_string()));
+        // CC0 doesn't require attribution
+        assert!(license.attribution_text("test_asset").is_none());
+    }
+
+    #[test]
+    fn test_license_attribution_text_cc_by() {
+        let license = LicenseInfo::cc_by("4.0", "Artist Name".to_string(), Some("https://source.com".to_string()));
+        let text = license.attribution_text("test_asset").unwrap();
+        assert!(text.contains("test_asset"));
+        assert!(text.contains("Artist Name"));
+        // Check for the license name rather than spdx_id
+        assert!(text.contains("Creative Commons Attribution"));
+    }
+
+    #[test]
+    fn test_resolved_asset_creation() {
+        let mut urls = HashMap::new();
+        urls.insert("albedo".to_string(), "https://example.com/albedo.png".to_string());
+        
+        let asset = ResolvedAsset {
+            handle: "brick_wall".to_string(),
+            provider: "polyhaven".to_string(),
+            asset_type: AssetType::Texture,
+            urls,
+            license: LicenseInfo::cc0(None, Some("https://polyhaven.com".to_string())),
+            metadata: HashMap::new(),
+        };
+        
+        assert_eq!(asset.handle, "brick_wall");
+        assert_eq!(asset.provider, "polyhaven");
+        assert!(matches!(asset.asset_type, AssetType::Texture));
+    }
+
+    #[test]
+    fn test_provider_config_creation() {
+        let config = ProviderConfig {
+            provider: "polyhaven".to_string(),
+            asset_type: AssetType::Texture,
+            handle: "test_texture".to_string(),
+            id: Some("brick_wall_001".to_string()),
+            resolution: Some("2k".to_string()),
+            format: None,
+            url: None,
+            license: None,
+            author: None,
+            source_url: None,
+        };
+        
+        assert_eq!(config.provider, "polyhaven");
+        assert_eq!(config.id, Some("brick_wall_001".to_string()));
+        assert_eq!(config.resolution, Some("2k".to_string()));
+    }
+
+    #[test]
+    fn test_provider_registry_new() {
+        let registry = ProviderRegistry::new();
+        assert!(registry.providers.is_empty());
+    }
+
+    #[test]
+    fn test_provider_registry_list_providers() {
+        let registry = ProviderRegistry::new();
+        let names = registry.list_providers();
+        assert!(names.is_empty());
+    }
+
+    #[test]
+    fn test_license_info_clone() {
+        let license = LicenseInfo::cc_by("4.0", "Author".to_string(), Some("https://source.com".to_string()));
+        let cloned = license.clone();
+        assert_eq!(license.spdx_id, cloned.spdx_id);
+        assert_eq!(license.author, cloned.author);
+    }
+
+    #[test]
+    fn test_resolved_asset_clone() {
+        let asset = ResolvedAsset {
+            handle: "test".to_string(),
+            provider: "test_provider".to_string(),
+            asset_type: AssetType::Hdri,
+            urls: HashMap::new(),
+            license: LicenseInfo::cc0(None, Some("https://source.com".to_string())),
+            metadata: HashMap::new(),
+        };
+        let cloned = asset.clone();
+        assert_eq!(asset.handle, cloned.handle);
+    }
+
+    #[test]
+    fn test_provider_config_serialization() {
+        let config = ProviderConfig {
+            provider: "polyhaven".to_string(),
+            asset_type: AssetType::Texture,
+            handle: "test".to_string(),
+            id: Some("test_id".to_string()),
+            resolution: Some("1k".to_string()),
+            format: None,
+            url: None,
+            license: None,
+            author: None,
+            source_url: None,
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("polyhaven"));
+        assert!(json.contains("test_id"));
+    }
+
+    #[test]
+    fn test_asset_type_debug() {
+        let texture = AssetType::Texture;
+        let debug_str = format!("{:?}", texture);
+        assert!(debug_str.contains("Texture"));
+    }
+
+    #[test]
+    fn test_license_info_debug() {
+        let license = LicenseInfo::cc0(None, None);
+        let debug_str = format!("{:?}", license);
+        assert!(debug_str.contains("CC0-1.0"));
+    }
+
+    #[test]
+    fn test_license_info_cc0_with_author() {
+        let license = LicenseInfo::cc0(Some("Author".to_string()), Some("https://source.com".to_string()));
+        assert_eq!(license.spdx_id, "CC0-1.0");
+        assert_eq!(license.author, Some("Author".to_string()));
+    }
+
+    #[test]
+    fn test_resolved_asset_with_metadata() {
+        let mut metadata = HashMap::new();
+        metadata.insert("resolution".to_string(), "2k".to_string());
+        metadata.insert("format".to_string(), "png".to_string());
+        
+        let asset = ResolvedAsset {
+            handle: "test".to_string(),
+            provider: "polyhaven".to_string(),
+            asset_type: AssetType::Texture,
+            urls: HashMap::new(),
+            license: LicenseInfo::cc0(None, None),
+            metadata,
+        };
+        
+        assert_eq!(asset.metadata.len(), 2);
+        assert_eq!(asset.metadata.get("resolution"), Some(&"2k".to_string()));
+    }
+
+    #[test]
+    fn test_provider_config_with_format() {
+        let config = ProviderConfig {
+            provider: "polypizza".to_string(),
+            asset_type: AssetType::Model,
+            handle: "character".to_string(),
+            id: Some("knight_001".to_string()),
+            resolution: None,
+            format: Some("glb".to_string()),
+            url: None,
+            license: None,
+            author: None,
+            source_url: None,
+        };
+        
+        assert_eq!(config.format, Some("glb".to_string()));
+        assert!(config.resolution.is_none());
+    }
+
+    #[test]
+    fn test_resolved_asset_multiple_urls() {
+        let mut urls = HashMap::new();
+        urls.insert("albedo".to_string(), "https://example.com/albedo.png".to_string());
+        urls.insert("normal".to_string(), "https://example.com/normal.png".to_string());
+        urls.insert("roughness".to_string(), "https://example.com/roughness.png".to_string());
+
+        let asset = ResolvedAsset {
+            handle: "pbr_material".to_string(),
+            provider: "polyhaven".to_string(),
+            asset_type: AssetType::Texture,
+            urls,
+            license: LicenseInfo::cc0(None, None),
+            metadata: HashMap::new(),
+        };
+
+        assert_eq!(asset.urls.len(), 3);
+        assert!(asset.urls.contains_key("albedo"));
+        assert!(asset.urls.contains_key("normal"));
+        assert!(asset.urls.contains_key("roughness"));
+    }
+
+    #[test]
+    fn test_license_from_spdx_supported_variants() {
+        let cc0 = LicenseInfo::from_spdx("CC0-1.0", None, None).unwrap();
+        assert_eq!(cc0.spdx_id, "CC0-1.0");
+        assert!(!cc0.requires_attribution);
+
+        let by = LicenseInfo::from_spdx(
+            "CC-BY-4.0",
+            Some("Alice".to_string()),
+            Some("https://example.com".to_string()),
+        )
+        .unwrap();
+        assert_eq!(by.spdx_id, "CC-BY-4.0");
+        assert!(by.requires_attribution);
+        assert_eq!(by.author.as_deref(), Some("Alice"));
+
+        let by_sa = LicenseInfo::from_spdx("CC-BY-SA-3.0", Some("Bob".to_string()), None).unwrap();
+        assert_eq!(by_sa.spdx_id, "CC-BY-SA-3.0");
+        assert!(by_sa.requires_sharealike);
+        assert_eq!(by_sa.author.as_deref(), Some("Bob"));
+    }
+
+    #[test]
+    fn test_license_from_spdx_requires_author_for_attribution_licenses() {
+        let err = LicenseInfo::from_spdx("CC-BY-4.0", None, None).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(msg.contains("requires author"));
+
+        let err = LicenseInfo::from_spdx("CC-BY-SA-4.0", None, None).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(msg.contains("requires author"));
+    }
+
+    #[test]
+    fn test_license_from_spdx_rejects_unsupported() {
+        let err = LicenseInfo::from_spdx("MIT", None, None).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(msg.contains("Unsupported license"));
+    }
+
+    #[test]
+    fn test_validate_permissive_rejects_gpl_nc_nd() {
+        let mut lic = LicenseInfo::cc0(None, None);
+
+        lic.spdx_id = "GPL-3.0".to_string();
+        assert!(lic.validate_permissive().is_err());
+
+        lic.spdx_id = "CC-BY-NC-4.0".to_string();
+        assert!(lic.validate_permissive().is_err());
+
+        lic.spdx_id = "CC-BY-ND-4.0".to_string();
+        assert!(lic.validate_permissive().is_err());
+    }
+
+    #[test]
+    fn test_attribution_text_requires_author_field() {
+        let lic = LicenseInfo {
+            spdx_id: "CC-BY-4.0".to_string(),
+            name: "Creative Commons Attribution 4.0 International".to_string(),
+            requires_attribution: true,
+            requires_sharealike: false,
+            author: None,
+            source_url: Some("https://source.example".to_string()),
+            license_url: "https://creativecommons.org/licenses/by/40/".to_string(),
+        };
+        assert!(lic.attribution_text("asset").is_none());
+    }
+
+    struct DummyProvider;
+
+    #[async_trait]
+    impl AssetProvider for DummyProvider {
+        fn name(&self) -> &str {
+            "dummy"
+        }
+
+        async fn resolve(&self, _handle: &str, _config: &ProviderConfig) -> Result<ResolvedAsset> {
+            anyhow::bail!("not implemented")
+        }
+
+        fn validate_config(&self, _config: &ProviderConfig) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_asset_provider_generate_attribution_includes_only_required_entries() {
+        let provider = DummyProvider;
+
+        let mut urls = HashMap::new();
+        urls.insert("model".to_string(), "https://example.com/m.glb".to_string());
+
+        let cc0_asset = ResolvedAsset {
+            handle: "cc0_asset".to_string(),
+            provider: "dummy".to_string(),
+            asset_type: AssetType::Model,
+            urls: urls.clone(),
+            license: LicenseInfo::cc0(None, Some("https://src".to_string())),
+            metadata: HashMap::new(),
+        };
+
+        let by_asset = ResolvedAsset {
+            handle: "by_asset".to_string(),
+            provider: "dummy".to_string(),
+            asset_type: AssetType::Model,
+            urls,
+            license: LicenseInfo::cc_by("4.0", "Author".to_string(), Some("https://src".to_string())),
+            metadata: HashMap::new(),
+        };
+
+        let content = provider.generate_attribution(&[cc0_asset, by_asset]);
+        assert!(content.contains("# Attribution - dummy"));
+        assert!(content.contains("\"by_asset\""));
+        assert!(!content.contains("cc0_asset\""));
+        assert!(content.contains("For full license texts"));
+    }
+
+    #[test]
+    fn test_provider_registry_register_and_get() {
+        let mut registry = ProviderRegistry::new();
+        registry.register(Box::new(DummyProvider));
+
+        let providers = registry.list_providers();
+        assert_eq!(providers.len(), 1);
+        assert!(providers.contains(&"dummy".to_string()));
+
+        let got = registry.get("dummy").unwrap();
+        assert_eq!(got.name(), "dummy");
+
+        assert!(registry.get("missing").is_err());
+    }
+
+    #[test]
+    fn test_generate_attribution_file_writes_content() {
+        let temp = TempDir::new().unwrap();
+        let out_path = temp.path().join("ATTRIBUTION.txt");
+
+        let asset_a = ResolvedAsset {
+            handle: "a".to_string(),
+            provider: "dummy".to_string(),
+            asset_type: AssetType::Texture,
+            urls: HashMap::new(),
+            license: LicenseInfo::cc0(None, Some("https://src".to_string())),
+            metadata: HashMap::new(),
+        };
+
+        let asset_b = ResolvedAsset {
+            handle: "b".to_string(),
+            provider: "dummy".to_string(),
+            asset_type: AssetType::Texture,
+            urls: HashMap::new(),
+            license: LicenseInfo::cc_by("4.0", "Author".to_string(), Some("https://src".to_string())),
+            metadata: HashMap::new(),
+        };
+
+        generate_attribution_file("dummy", &[asset_a, asset_b], &out_path).unwrap();
+
+        let content = std::fs::read_to_string(&out_path).unwrap();
+        assert!(content.contains("# Attribution - DUMMY"));
+        assert!(content.contains("## License Summary"));
+        assert!(content.contains("CC0-1.0"));
+        assert!(content.contains("CC-BY-4.0"));
+        assert!(content.contains("## Detailed Attributions"));
+        assert!(content.contains("### a"));
+        assert!(content.contains("### b"));
+        assert!(content.contains("Generated:"));
+    }
+}

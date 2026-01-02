@@ -89,6 +89,7 @@ impl TestClient {
         match tokio::time::timeout(timeout, self.ws.next()).await {
             Ok(Some(Ok(Message::Text(text)))) => {
                 let msg: Msg = serde_json::from_str(&text)?;
+                println!("Client {} received {:?}", self.name, msg);
                 Ok(msg)
             }
             Ok(Some(Ok(_))) => anyhow::bail!("unexpected message type"),
@@ -106,26 +107,28 @@ impl TestClient {
     /// Wait for a specific message type
     pub async fn wait_for_snapshot(&mut self, timeout_ms: u64) -> Result<Snapshot> {
         let start = tokio::time::Instant::now();
+        let total_timeout = Duration::from_millis(timeout_ms);
         loop {
-            if start.elapsed() > Duration::from_millis(timeout_ms) {
+            if start.elapsed() > total_timeout {
                 anyhow::bail!("timeout waiting for snapshot");
             }
 
-            let msg = self.recv_timeout(timeout_ms).await?;
-            match msg {
-                Msg::ServerSnapshot { snap } => {
+            // Use a shorter timeout for individual recv calls to allow checking total timeout
+            match self.recv_timeout(100).await {
+                Ok(Msg::ServerSnapshot { snap }) => {
                     let mut last = self.last_snapshot.lock().await;
                     *last = Some(snap.clone());
                     return Ok(snap);
                 }
-                Msg::ServerDelta { delta } => {
+                Ok(Msg::ServerDelta { delta }) => {
                     let mut last = self.last_snapshot.lock().await;
                     if let Some(ref mut base) = *last {
                         astraweave_net::apply_delta(base, &delta);
                         return Ok(base.clone());
                     }
                 }
-                _ => continue,
+                Ok(_) => continue,
+                Err(_) => continue,
             }
         }
     }
@@ -163,12 +166,12 @@ async fn spawn_test_server_with_config(
     _loss_rate: f32,
 ) -> Result<TestServer> {
     let server = Arc::new(GameServer::new());
-    let addr = "127.0.0.1:0".to_string();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let addr = listener.local_addr()?.to_string();
 
     let server_clone = server.clone();
     let handle = tokio::spawn(async move {
-        // Bind to a random port
-        if let Err(e) = server_clone.run_ws("127.0.0.1:0").await {
+        if let Err(e) = server_clone.run_ws_on_listener(listener).await {
             eprintln!("Server error: {e}");
         }
     });
@@ -185,8 +188,10 @@ async fn spawn_test_server_with_config(
 
 /// Connect a test client to a server
 pub async fn connect_test_client(name: &str, addr: &str) -> Result<TestClient> {
+    println!("Connecting client {} to {}", name, addr);
     let url = format!("ws://{addr}");
     let (ws, _) = tokio_tungstenite::connect_async(&url).await?;
+    println!("Connected client {} to {}", name, addr);
 
     let mut client = TestClient {
         ws,
@@ -205,8 +210,10 @@ pub async fn connect_test_client(name: &str, addr: &str) -> Result<TestClient> {
         .await?;
 
     // Wait for welcome
+    println!("Client {} waiting for welcome", name);
     match client.recv_timeout(1000).await? {
         Msg::ServerWelcome { id } => {
+            println!("Client {} got welcome id {}", name, id);
             client.player_id = Some(id);
         }
         _ => anyhow::bail!("expected ServerWelcome"),

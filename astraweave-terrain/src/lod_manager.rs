@@ -148,6 +148,12 @@ pub struct ChunkLodCache {
     pub l3_mesh: Option<Arc<ChunkMesh>>,
 }
 
+impl Default for ChunkLodCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChunkLodCache {
     /// Create an empty cache
     pub fn new() -> Self {

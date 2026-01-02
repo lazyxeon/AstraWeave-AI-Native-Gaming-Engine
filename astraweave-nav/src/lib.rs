@@ -16,11 +16,80 @@ pub struct NavTri {
     pub neighbors: Vec<usize>,
 }
 
+/// Axis-aligned bounding box for region invalidation
+#[derive(Clone, Debug, PartialEq)]
+pub struct Aabb {
+    pub min: Vec3,
+    pub max: Vec3,
+}
+
+impl Aabb {
+    /// Create a new AABB
+    pub fn new(min: Vec3, max: Vec3) -> Self {
+        Self { min, max }
+    }
+
+    /// Check if this AABB contains a point
+    pub fn contains(&self, point: Vec3) -> bool {
+        point.x >= self.min.x
+            && point.x <= self.max.x
+            && point.y >= self.min.y
+            && point.y <= self.max.y
+            && point.z >= self.min.z
+            && point.z <= self.max.z
+    }
+
+    /// Check if this AABB intersects with another
+    pub fn intersects(&self, other: &Aabb) -> bool {
+        self.min.x <= other.max.x
+            && self.max.x >= other.min.x
+            && self.min.y <= other.max.y
+            && self.max.y >= other.min.y
+            && self.min.z <= other.max.z
+            && self.max.z >= other.min.z
+    }
+
+    /// Merge with another AABB (returns bounding box of both)
+    pub fn merge(&self, other: &Aabb) -> Aabb {
+        Aabb {
+            min: Vec3::new(
+                self.min.x.min(other.min.x),
+                self.min.y.min(other.min.y),
+                self.min.z.min(other.min.z),
+            ),
+            max: Vec3::new(
+                self.max.x.max(other.max.x),
+                self.max.y.max(other.max.y),
+                self.max.z.max(other.max.z),
+            ),
+        }
+    }
+
+    /// Create an AABB from a triangle
+    pub fn from_triangle(tri: &Triangle) -> Self {
+        let min = Vec3::new(
+            tri.a.x.min(tri.b.x).min(tri.c.x),
+            tri.a.y.min(tri.b.y).min(tri.c.y),
+            tri.a.z.min(tri.b.z).min(tri.c.z),
+        );
+        let max = Vec3::new(
+            tri.a.x.max(tri.b.x).max(tri.c.x),
+            tri.a.y.max(tri.b.y).max(tri.c.y),
+            tri.a.z.max(tri.b.z).max(tri.c.z),
+        );
+        Aabb { min, max }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct NavMesh {
     pub tris: Vec<NavTri>,
     pub max_step: f32,
     pub max_slope_deg: f32,
+    /// Dirty regions that need rebaking (Phase 10: terrain invalidation)
+    dirty_regions: Vec<Aabb>,
+    /// Total rebakes performed
+    rebake_count: u32,
 }
 
 impl NavMesh {
@@ -79,6 +148,8 @@ impl NavMesh {
             tris: ntris,
             max_step,
             max_slope_deg,
+            dirty_regions: Vec::new(),
+            rebake_count: 0,
         }
     }
 
@@ -112,6 +183,117 @@ impl NavMesh {
         smooth(&mut pts, &self.tris);
 
         pts
+    }
+
+    // ========================================================================
+    // REGION INVALIDATION - Phase 10: AI-Orchestrated Dynamic Terrain
+    // ========================================================================
+
+    /// Mark a region as dirty (needs rebaking)
+    ///
+    /// Triangles that intersect with this AABB will be marked for rebake.
+    pub fn invalidate_region(&mut self, region: Aabb) {
+        // Merge overlapping regions to reduce rebake calls
+        let mut merged = false;
+        for existing in self.dirty_regions.iter_mut() {
+            if existing.intersects(&region) {
+                *existing = existing.merge(&region);
+                merged = true;
+                break;
+            }
+        }
+        if !merged {
+            self.dirty_regions.push(region);
+        }
+    }
+
+    /// Check if the NavMesh needs rebaking
+    pub fn needs_rebake(&self) -> bool {
+        !self.dirty_regions.is_empty()
+    }
+
+    /// Get the number of dirty regions
+    pub fn dirty_region_count(&self) -> usize {
+        self.dirty_regions.len()
+    }
+
+    /// Get dirty regions (for debugging/visualization)
+    pub fn dirty_regions(&self) -> &[Aabb] {
+        &self.dirty_regions
+    }
+
+    /// Clear all dirty regions without rebaking
+    pub fn clear_dirty_regions(&mut self) {
+        self.dirty_regions.clear();
+    }
+
+    /// Rebake dirty regions with new triangle data
+    ///
+    /// This performs a full rebake of the entire mesh using the provided triangles.
+    /// For large meshes, consider using partial_rebake for better performance.
+    pub fn rebake_dirty_regions(&mut self, tris: &[Triangle]) {
+        if self.dirty_regions.is_empty() {
+            return;
+        }
+
+        // Full rebake (simplest implementation)
+        let rebaked = NavMesh::bake(tris, self.max_step, self.max_slope_deg);
+        self.tris = rebaked.tris;
+        self.dirty_regions.clear();
+        self.rebake_count += 1;
+    }
+
+    /// Partial rebake - only processes triangles within dirty regions
+    ///
+    /// More efficient for large meshes with small changes.
+    /// Returns the number of triangles that were updated.
+    pub fn partial_rebake(&mut self, all_tris: &[Triangle]) -> usize {
+        if self.dirty_regions.is_empty() {
+            return 0;
+        }
+
+        // Find triangles that intersect with dirty regions
+        let mut affected_count = 0;
+        for tri in all_tris {
+            let tri_aabb = Aabb::from_triangle(tri);
+            for region in &self.dirty_regions {
+                if tri_aabb.intersects(region) {
+                    affected_count += 1;
+                    break;
+                }
+            }
+        }
+
+        // For now, do a full rebake if any triangles are affected
+        // In a production system, you would only rebuild the affected portions
+        if affected_count > 0 {
+            self.rebake_dirty_regions(all_tris);
+        }
+
+        affected_count
+    }
+
+    /// Get the total number of rebakes performed
+    pub fn rebake_count(&self) -> u32 {
+        self.rebake_count
+    }
+
+    /// Check if a path crosses any dirty regions
+    ///
+    /// Useful to determine if a path might be invalid due to terrain changes.
+    pub fn path_crosses_dirty_region(&self, path: &[Vec3]) -> bool {
+        if self.dirty_regions.is_empty() || path.is_empty() {
+            return false;
+        }
+
+        for point in path {
+            for region in &self.dirty_regions {
+                if region.contains(*point) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 
@@ -730,6 +912,154 @@ mod tests {
         }];
         let nav = NavMesh::bake(&tris, 0.4, 30.0);
         assert_eq!(nav.max_slope_deg, 30.0);
+    }
+
+    // ===== AABB Tests =====
+
+    #[test]
+    fn test_aabb_new() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::ONE);
+        assert_eq!(aabb.min, Vec3::ZERO);
+        assert_eq!(aabb.max, Vec3::ONE);
+    }
+
+    #[test]
+    fn test_aabb_contains() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::splat(10.0));
+        assert!(aabb.contains(Vec3::splat(5.0)));
+        assert!(!aabb.contains(Vec3::splat(15.0)));
+        assert!(aabb.contains(Vec3::ZERO)); // Edge case: boundary
+    }
+
+    #[test]
+    fn test_aabb_intersects() {
+        let aabb1 = Aabb::new(Vec3::ZERO, Vec3::splat(10.0));
+        let aabb2 = Aabb::new(Vec3::splat(5.0), Vec3::splat(15.0));
+        let aabb3 = Aabb::new(Vec3::splat(20.0), Vec3::splat(30.0));
+
+        assert!(aabb1.intersects(&aabb2));
+        assert!(!aabb1.intersects(&aabb3));
+    }
+
+    #[test]
+    fn test_aabb_merge() {
+        let aabb1 = Aabb::new(Vec3::ZERO, Vec3::splat(5.0));
+        let aabb2 = Aabb::new(Vec3::splat(3.0), Vec3::splat(10.0));
+        let merged = aabb1.merge(&aabb2);
+
+        assert_eq!(merged.min, Vec3::ZERO);
+        assert_eq!(merged.max, Vec3::splat(10.0));
+    }
+
+    #[test]
+    fn test_aabb_from_triangle() {
+        let tri = Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(5.0, 2.0, 1.0),
+            c: Vec3::new(3.0, 4.0, 6.0),
+        };
+        let aabb = Aabb::from_triangle(&tri);
+
+        assert_eq!(aabb.min, Vec3::new(0.0, 0.0, 0.0));
+        assert_eq!(aabb.max, Vec3::new(5.0, 4.0, 6.0));
+    }
+
+    // ===== Region Invalidation Tests =====
+
+    #[test]
+    fn test_navmesh_invalidate_region() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 1.0),
+            c: Vec3::new(1.0, 0.0, 0.0),
+        }];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+
+        assert!(!nav.needs_rebake());
+        assert_eq!(nav.dirty_region_count(), 0);
+
+        nav.invalidate_region(Aabb::new(Vec3::ZERO, Vec3::splat(5.0)));
+
+        assert!(nav.needs_rebake());
+        assert_eq!(nav.dirty_region_count(), 1);
+    }
+
+    #[test]
+    fn test_navmesh_invalidate_region_merge() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 1.0),
+            c: Vec3::new(1.0, 0.0, 0.0),
+        }];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+
+        // Add overlapping regions - should merge
+        nav.invalidate_region(Aabb::new(Vec3::ZERO, Vec3::splat(5.0)));
+        nav.invalidate_region(Aabb::new(Vec3::splat(3.0), Vec3::splat(8.0)));
+
+        // Should have merged into 1 region
+        assert_eq!(nav.dirty_region_count(), 1);
+
+        // Add non-overlapping region
+        nav.invalidate_region(Aabb::new(Vec3::splat(20.0), Vec3::splat(25.0)));
+        assert_eq!(nav.dirty_region_count(), 2);
+    }
+
+    #[test]
+    fn test_navmesh_rebake_dirty_regions() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 1.0),
+            c: Vec3::new(1.0, 0.0, 0.0),
+        }];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+
+        nav.invalidate_region(Aabb::new(Vec3::ZERO, Vec3::splat(5.0)));
+        assert!(nav.needs_rebake());
+
+        nav.rebake_dirty_regions(&tris);
+
+        assert!(!nav.needs_rebake());
+        assert_eq!(nav.rebake_count(), 1);
+    }
+
+    #[test]
+    fn test_navmesh_path_crosses_dirty_region() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 1.0),
+            c: Vec3::new(1.0, 0.0, 0.0),
+        }];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+
+        let path = vec![Vec3::ZERO, Vec3::new(0.5, 0.0, 0.5), Vec3::ONE];
+
+        // No dirty regions
+        assert!(!nav.path_crosses_dirty_region(&path));
+
+        // Add dirty region that path crosses
+        nav.invalidate_region(Aabb::new(
+            Vec3::new(0.4, -1.0, 0.4),
+            Vec3::new(0.6, 1.0, 0.6),
+        ));
+        assert!(nav.path_crosses_dirty_region(&path));
+    }
+
+    #[test]
+    fn test_navmesh_clear_dirty_regions() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 1.0),
+            c: Vec3::new(1.0, 0.0, 0.0),
+        }];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+
+        nav.invalidate_region(Aabb::new(Vec3::ZERO, Vec3::splat(5.0)));
+        assert!(nav.needs_rebake());
+
+        nav.clear_dirty_regions();
+        assert!(!nav.needs_rebake());
+        assert_eq!(nav.rebake_count(), 0); // Not rebaked, just cleared
     }
 }
 

@@ -14,6 +14,7 @@ pub struct Parry {
     pub active: bool,
 }
 
+#[derive(Clone, Debug)]
 pub struct Combatant {
     pub body: u64, // PhysicsWorld BodyId
     pub stats: Stats,

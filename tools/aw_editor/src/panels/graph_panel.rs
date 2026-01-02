@@ -133,6 +133,12 @@ impl GraphPanel {
         self.initialized = true;
     }
 
+    pub fn total_node_count(&self) -> usize {
+        self.behavior_tree_graph.nodes().len()
+            + self.shader_graph.nodes().len()
+            + self.dialogue_graph.nodes().len()
+    }
+
     pub fn show(&mut self, ui: &mut Ui) {
         self.init(); // Lazy init
 

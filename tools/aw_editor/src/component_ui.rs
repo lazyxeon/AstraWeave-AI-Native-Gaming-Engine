@@ -266,16 +266,17 @@ impl ComponentType {
         match self {
             ComponentType::Pose => {
                 if let Some(pose) = world.pose_mut(entity) {
-                    let is_overridden = overrides.map_or(false, |o| o.has_pose_override());
+                    let is_overridden = overrides.is_some_and(|o| o.has_pose_override());
                     let label = if is_overridden {
                         "⚠️ 📍 Pose *"
                     } else {
                         "📍 Pose"
                     };
-                    
+
                     if is_overridden {
                         ui.push_id("pose_override", |ui| {
-                            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(100, 150, 255));
+                            ui.visuals_mut().override_text_color =
+                                Some(egui::Color32::from_rgb(100, 150, 255));
                             pose.ui(ui, label);
                         });
                     } else {
@@ -287,22 +288,24 @@ impl ComponentType {
             ComponentType::Health => {
                 if let Some(health) = world.health_mut(entity) {
                     let old_hp = health.hp;
-                    let is_overridden = overrides.map_or(false, |o| o.has_health_override());
+                    let is_overridden = overrides.is_some_and(|o| o.has_health_override());
                     let label = if is_overridden {
                         "⚠️ ❤️ Health *"
                     } else {
                         "❤️ Health"
                     };
-                    
+
                     let changed = if is_overridden {
                         ui.push_id("health_override", |ui| {
-                            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(100, 150, 255));
+                            ui.visuals_mut().override_text_color =
+                                Some(egui::Color32::from_rgb(100, 150, 255));
                             health.ui(ui, label)
-                        }).inner
+                        })
+                        .inner
                     } else {
                         health.ui(ui, label)
                     };
-                    
+
                     if changed {
                         return Some(ComponentEdit::Health {
                             entity,

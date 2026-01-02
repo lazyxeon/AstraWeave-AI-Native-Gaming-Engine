@@ -1,0 +1,24 @@
+    Finished `test` profile [optimized + debuginfo] target(s) in 32.03s
+     Running unittests src\lib.rs (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\debug\deps\astraweave_fluids-5be26e708767211f.exe)
+
+running 11 tests
+test tests::test_grid_indexing_consistency ... ok
+test tests::test_particle_bytemuck_cast ... ok
+test tests::test_particle_size ... ok
+test tests::test_particle_with_velocity ... ok
+test sdf::tests::test_jfa_convergence_steps ... ok
+test tests::test_particle_default_values ... ok
+test tests::test_particle_initial_spacing ... ok
+test tests::test_sim_params_bytemuck_cast ... ok
+test tests::test_sim_params_grid_configuration ... ok
+test tests::test_sim_params_size ... ok
+test tests::test_sim_params_default ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.07s
+
+   Doc-tests astraweave_fluids
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

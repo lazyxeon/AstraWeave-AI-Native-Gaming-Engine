@@ -1,5 +1,8 @@
 # AstraWeave Visual Editor: Roadmap to World-Class Status
 
+> **UNDER REVISION (Phase 0 Fact-Finding)**  
+> Baseline capture is underway in `docs/current/EDITOR_BASELINE.md`; treat the targets below as historical until the baseline closes.
+
 **Current Date**: November 24, 2025  
 **Analysis Basis**: ChatGPT reference + existing codebase assessment  
 **Goal**: Transform aw_editor from functional prototype to production-grade visual editor

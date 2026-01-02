@@ -2,58 +2,37 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.4.x   | :white_check_mark: |
-| < 0.4.0 | :x:                |
+Only the latest `main` branch is actively supported with security updates. Published releases inherit fixes when tagged.
 
 ## Reporting a Vulnerability
 
-We take the security of Veilweaver: Threads of Eternity seriously. If you believe you've found a security vulnerability, please follow these steps:
+- Email: **security@astraweave.dev**
+- PGP: Available upon request via the email above
 
-1. **Do not disclose the vulnerability publicly**
-2. **Email us at [security@example.com]** with:
-   - A description of the vulnerability
-   - Steps to reproduce the issue
-   - Potential impact of the vulnerability
-   - Any suggestions for remediation if you have them
+Please include:
+- A detailed description of the issue
+- Steps to reproduce
+- Potential impact assessment
+- Any suggested mitigations
 
-## What to expect
+We request a 72-hour window before public disclosure to coordinate fixes and releases.
 
-- We will acknowledge receipt of your vulnerability report within 48 hours
-- We will provide an initial assessment of the report within 5 business days
-- We aim to release a fix for verified vulnerabilities within 30 days
-- We will keep you informed about our progress throughout the process
-- After the vulnerability has been addressed, we will publicly acknowledge your responsible disclosure (unless you prefer to remain anonymous)
+## Responsible Disclosure
 
-## Security Measures
+- Do not create GitHub issues for security reports.
+- Avoid sharing proof-of-concept code publicly before we address the vulnerability.
+- We will acknowledge receipt within 48 hours and provide status updates until resolution.
 
-Veilweaver: Threads of Eternity implements several security measures:
+## Security Update Process
 
-1. **Dependency Scanning**: We use Dependabot to scan for vulnerable dependencies
-2. **Static Analysis**: We use CodeQL and Clippy to identify potential security issues
-3. **Security Audits**: We regularly audit our codebase with cargo-audit and cargo-deny
-4. **License Compliance**: We use cargo-deny to ensure all dependencies comply with our licensing requirements
-5. **OpenSSF Scorecard**: We monitor our project's security posture using the OpenSSF Scorecard
+1. Confirm and reproduce the report in a secure environment.
+2. Prioritize remediation based on severity using CVSS.
+3. Develop patches and add regression tests when applicable.
+4. Coordinate release notes and advisories in `CHANGELOG.md`.
+5. Notify the reporter once the fix is released.
 
-**Security Audit Tools:**
-- **cargo-deny**: Comprehensive dependency auditing for bans, licenses, advisories, and sources
-- **cargo-audit**: RustSec vulnerability scanning for known security issues
-- **Automated Workflows**: Daily security audits and dependency monitoring
-- **License Management**: Workspace-wide license inheritance and compliance checking
+## Scope
 
-For detailed information on our security audit setup, see [docs/SECURITY_AUDIT_GUIDE.md](docs/SECURITY_AUDIT_GUIDE.md).
+This policy covers all crates under the AstraWeave workspace, tooling in `tools/`, and official Docker/installer artifacts.
 
-## Security Best Practices
-
-When contributing to Veilweaver: Threads of Eternity, please follow these security best practices:
-
-1. **Keep dependencies updated** to their latest secure versions
-2. **Validate all user inputs** before processing
-3. **Follow the principle of least privilege** when implementing new features
-4. **Use safe Rust practices** and avoid unsafe code blocks when possible
-5. **Run security checks locally** before submitting pull requests
-
-Thank you for helping keep Veilweaver: Threads of Eternity and its users safe!
+Thank you for helping keep the AstraWeave community secure.

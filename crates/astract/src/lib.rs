@@ -27,6 +27,7 @@ pub mod prelude {
 }
 
 #[cfg(test)]
+#[allow(unused_must_use)]
 mod tests {
     use crate::prelude::*;
 

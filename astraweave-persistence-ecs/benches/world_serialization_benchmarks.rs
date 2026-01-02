@@ -4,7 +4,8 @@ use astraweave_ecs::World;
 use astraweave_persistence_ecs::{
     calculate_world_hash, deserialize_ecs_world, serialize_ecs_world,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::hint::black_box;
 
 /// Helper to create a world with N entities and various components
 fn create_test_world(entity_count: usize) -> World {

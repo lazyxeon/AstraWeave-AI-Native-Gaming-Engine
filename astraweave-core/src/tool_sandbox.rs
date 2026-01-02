@@ -71,6 +71,9 @@ pub fn map_engine_error(step: &ActionStep, err: &EngineError) -> ToolBlock {
         // Legacy
         ActionStep::Throw { .. } => "Throw",
         ActionStep::Revive { .. } => "Revive",
+
+        // Terrain (AI-Orchestrated Dynamic Terrain)
+        ActionStep::ModifyTerrain { .. } => "ModifyTerrain",
     };
 
     match err {

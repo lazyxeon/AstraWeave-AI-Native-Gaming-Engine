@@ -263,3 +263,726 @@ fn fov_los_interest_blocks_through_wall() {
         "enemy behind wall should be excluded by LOS"
     );
 }
+
+// ============================================================================
+// Additional Coverage Tests
+// ============================================================================
+
+#[test]
+fn test_entity_state_equality() {
+    use crate::EntityState;
+    let e1 = EntityState {
+        id: 1,
+        pos: IVec2 { x: 5, y: 10 },
+        hp: 100,
+        team: 0,
+        ammo: 30,
+    };
+    let e2 = EntityState {
+        id: 1,
+        pos: IVec2 { x: 5, y: 10 },
+        hp: 100,
+        team: 0,
+        ammo: 30,
+    };
+    let e3 = EntityState {
+        id: 1,
+        pos: IVec2 { x: 6, y: 10 },
+        hp: 100,
+        team: 0,
+        ammo: 30,
+    };
+    assert_eq!(e1, e2);
+    assert_ne!(e1, e3);
+}
+
+#[test]
+fn test_entity_state_clone() {
+    use crate::EntityState;
+    let e1 = EntityState {
+        id: 1,
+        pos: IVec2 { x: 5, y: 10 },
+        hp: 100,
+        team: 0,
+        ammo: 30,
+    };
+    let e2 = e1.clone();
+    assert_eq!(e1.id, e2.id);
+    assert_eq!(e1.pos, e2.pos);
+}
+
+#[test]
+fn test_entity_delta_mask_flags() {
+    use crate::EntityDeltaMask;
+    assert_eq!(EntityDeltaMask::POS, 1);
+    assert_eq!(EntityDeltaMask::HP, 2);
+    assert_eq!(EntityDeltaMask::TEAM, 4);
+    assert_eq!(EntityDeltaMask::AMMO, 8);
+}
+
+#[test]
+fn test_entity_delta_equality() {
+    use crate::EntityDelta;
+    let d1 = EntityDelta {
+        id: 1,
+        mask: 3, // POS | HP
+        pos: Some(IVec2 { x: 5, y: 5 }),
+        hp: Some(80),
+        team: None,
+        ammo: None,
+    };
+    let d2 = d1.clone();
+    assert_eq!(d1, d2);
+}
+
+#[test]
+fn test_delta_equality() {
+    use crate::Delta;
+    let d1 = Delta {
+        base_tick: 0,
+        tick: 1,
+        changed: vec![],
+        removed: vec![],
+        head_hash: 12345,
+    };
+    let d2 = d1.clone();
+    assert_eq!(d1.base_tick, d2.base_tick);
+    assert_eq!(d1.tick, d2.tick);
+    assert_eq!(d1.head_hash, d2.head_hash);
+}
+
+#[test]
+fn test_snapshot_clone() {
+    let w = make_world();
+    let s1 = build_snapshot(&w, 1, 0);
+    let s2 = s1.clone();
+    assert_eq!(s1.tick, s2.tick);
+    assert_eq!(s1.world_hash, s2.world_hash);
+    assert_eq!(s1.entities.len(), s2.entities.len());
+}
+
+#[test]
+fn test_full_interest_includes_all() {
+    use crate::{EntityState, FullInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let far_entity = EntityState {
+        id: 2,
+        pos: IVec2 { x: 1000, y: 1000 },
+        hp: 100,
+        team: 2,
+        ammo: 0,
+    };
+    let policy = FullInterest;
+    assert!(policy.include(&viewer, &far_entity));
+}
+
+#[test]
+fn test_radius_interest_same_team_always_included() {
+    use crate::{EntityState, RadiusTeamInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let far_ally = EntityState {
+        id: 2,
+        pos: IVec2 { x: 1000, y: 1000 },
+        hp: 100,
+        team: 0, // Same team
+        ammo: 0,
+    };
+    let policy = RadiusTeamInterest { radius: 5 };
+    assert!(policy.include(&viewer, &far_ally)); // Same team always included
+}
+
+#[test]
+fn test_fov_interest_basic() {
+    use crate::{EntityState, FovInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    // Enemy directly in front
+    let enemy_ahead = EntityState {
+        id: 2,
+        pos: IVec2 { x: 5, y: 0 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    // Enemy behind
+    let enemy_behind = EntityState {
+        id: 3,
+        pos: IVec2 { x: -5, y: 0 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+    };
+    assert!(policy.include(&viewer, &enemy_ahead));
+    assert!(!policy.include(&viewer, &enemy_behind));
+}
+
+#[test]
+fn test_fov_interest_same_position() {
+    use crate::{EntityState, FovInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 5, y: 5 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    // Entity at same position
+    let same_pos = EntityState {
+        id: 2,
+        pos: IVec2 { x: 5, y: 5 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+    };
+    assert!(policy.include(&viewer, &same_pos)); // Same position should be included
+}
+
+#[test]
+fn test_fov_interest_zero_facing() {
+    use crate::{EntityState, FovInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let enemy = EntityState {
+        id: 2,
+        pos: IVec2 { x: 5, y: 5 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 0, y: 0 }, // Zero facing
+    };
+    assert!(policy.include(&viewer, &enemy)); // Should include when facing is zero
+}
+
+#[test]
+fn test_fov_interest_out_of_range() {
+    use crate::{EntityState, FovInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let far_enemy = EntityState {
+        id: 2,
+        pos: IVec2 { x: 100, y: 0 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovInterest {
+        radius: 10,
+        half_angle_deg: 90.0,
+        facing: IVec2 { x: 1, y: 0 },
+    };
+    assert!(!policy.include(&viewer, &far_enemy)); // Out of range
+}
+
+#[test]
+fn test_fov_los_interest_same_team() {
+    use crate::{EntityState, FovLosInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let ally = EntityState {
+        id: 2,
+        pos: IVec2 { x: 50, y: 50 },
+        hp: 100,
+        team: 0, // Same team
+        ammo: 0,
+    };
+    let policy = FovLosInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+        obstacles: std::collections::BTreeSet::new(),
+    };
+    assert!(policy.include(&viewer, &ally)); // Same team always included
+}
+
+#[test]
+fn test_fov_los_interest_zero_facing() {
+    use crate::{EntityState, FovLosInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let enemy = EntityState {
+        id: 2,
+        pos: IVec2 { x: 3, y: 3 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovLosInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 0, y: 0 }, // Zero facing
+        obstacles: std::collections::BTreeSet::new(),
+    };
+    assert!(policy.include(&viewer, &enemy)); // Should use LOS only when facing is zero
+}
+
+#[test]
+fn test_interest_policy_variants() {
+    use crate::InterestPolicy;
+    let policy1 = InterestPolicy::Radius { radius: 10 };
+    let policy2 = InterestPolicy::Fov {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+    };
+    let policy3 = InterestPolicy::FovLos {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+    };
+    // Just test they can be created and cloned
+    let _p1 = policy1.clone();
+    let _p2 = policy2.clone();
+    let _p3 = policy3.clone();
+}
+
+#[test]
+fn test_apply_delta_mismatched_tick() {
+    use crate::{Delta, Snapshot};
+    let mut snap = Snapshot {
+        version: 1,
+        tick: 5,
+        t: 0.5,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![],
+    };
+    let delta = Delta {
+        base_tick: 10, // Mismatched
+        tick: 11,
+        changed: vec![],
+        removed: vec![],
+        head_hash: 0,
+    };
+    apply_delta(&mut snap, &delta);
+    // Delta should not be applied due to tick mismatch
+    assert_eq!(snap.tick, 5);
+}
+
+#[test]
+fn test_apply_delta_creates_new_entity() {
+    use crate::{Delta, EntityDelta, EntityDeltaMask, Snapshot};
+    let mut snap = Snapshot {
+        version: 1,
+        tick: 1,
+        t: 0.0,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![],
+    };
+    let delta = Delta {
+        base_tick: 1,
+        tick: 2,
+        changed: vec![EntityDelta {
+            id: 100,
+            mask: EntityDeltaMask::POS | EntityDeltaMask::HP | EntityDeltaMask::TEAM | EntityDeltaMask::AMMO,
+            pos: Some(IVec2 { x: 10, y: 20 }),
+            hp: Some(75),
+            team: Some(1),
+            ammo: Some(25),
+        }],
+        removed: vec![],
+        head_hash: 12345,
+    };
+    apply_delta(&mut snap, &delta);
+    assert_eq!(snap.tick, 2);
+    assert_eq!(snap.entities.len(), 1);
+    let entity = &snap.entities[0];
+    assert_eq!(entity.id, 100);
+    assert_eq!(entity.pos.x, 10);
+    assert_eq!(entity.hp, 75);
+}
+
+#[test]
+fn test_diff_snapshots_new_entity() {
+    use crate::{EntityState, Snapshot};
+    let base = Snapshot {
+        version: 1,
+        tick: 1,
+        t: 0.0,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![],
+    };
+    let head = Snapshot {
+        version: 1,
+        tick: 2,
+        t: 0.0,
+        seq: 1,
+        world_hash: 0,
+        entities: vec![EntityState {
+            id: 1,
+            pos: IVec2 { x: 5, y: 5 },
+            hp: 100,
+            team: 0,
+            ammo: 10,
+        }],
+    };
+    let viewer = EntityState {
+        id: 0,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let delta = diff_snapshots(&base, &head, &FullInterest, &viewer);
+    assert_eq!(delta.changed.len(), 1);
+    assert!(delta.removed.is_empty());
+    let change = &delta.changed[0];
+    assert_eq!(change.id, 1);
+    // All fields should be set for a new entity
+    assert!(change.pos.is_some());
+    assert!(change.hp.is_some());
+    assert!(change.team.is_some());
+    assert!(change.ammo.is_some());
+}
+
+#[test]
+fn test_diff_snapshots_no_change() {
+    use crate::EntityState;
+    let state = EntityState {
+        id: 1,
+        pos: IVec2 { x: 5, y: 5 },
+        hp: 100,
+        team: 0,
+        ammo: 10,
+    };
+    let snap = crate::Snapshot {
+        version: 1,
+        tick: 1,
+        t: 0.0,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![state.clone()],
+    };
+    let viewer = state.clone();
+    let delta = diff_snapshots(&snap, &snap, &FullInterest, &viewer);
+    assert!(delta.changed.is_empty());
+    assert!(delta.removed.is_empty());
+}
+
+#[test]
+fn test_msg_serialization() {
+    use crate::Msg;
+    let msg = Msg::ClientHello {
+        name: "test".to_string(),
+        token: Some("dev".to_string()),
+        policy: Some("radius".to_string()),
+    };
+    let json = serde_json::to_string(&msg).unwrap();
+    let decoded: Msg = serde_json::from_str(&json).unwrap();
+    match decoded {
+        Msg::ClientHello { name, token, policy } => {
+            assert_eq!(name, "test");
+            assert_eq!(token, Some("dev".to_string()));
+            assert_eq!(policy, Some("radius".to_string()));
+        }
+        _ => panic!("Wrong variant"),
+    }
+}
+
+#[test]
+fn test_msg_welcome_serialization() {
+    use crate::Msg;
+    let msg = Msg::ServerWelcome { id: 42 };
+    let json = serde_json::to_string(&msg).unwrap();
+    let decoded: Msg = serde_json::from_str(&json).unwrap();
+    match decoded {
+        Msg::ServerWelcome { id } => assert_eq!(id, 42),
+        _ => panic!("Wrong variant"),
+    }
+}
+
+#[test]
+fn test_msg_apply_result_serialization() {
+    use crate::Msg;
+    let msg = Msg::ServerApplyResult {
+        ok: false,
+        err: Some("Out of bounds".to_string()),
+    };
+    let json = serde_json::to_string(&msg).unwrap();
+    let decoded: Msg = serde_json::from_str(&json).unwrap();
+    match decoded {
+        Msg::ServerApplyResult { ok, err } => {
+            assert!(!ok);
+            assert_eq!(err, Some("Out of bounds".to_string()));
+        }
+        _ => panic!("Wrong variant"),
+    }
+}
+
+#[test]
+fn test_msg_ack_serialization() {
+    use crate::Msg;
+    let msg = Msg::ServerAck {
+        seq: 5,
+        tick_applied: 100,
+    };
+    let json = serde_json::to_string(&msg).unwrap();
+    let decoded: Msg = serde_json::from_str(&json).unwrap();
+    match decoded {
+        Msg::ServerAck { seq, tick_applied } => {
+            assert_eq!(seq, 5);
+            assert_eq!(tick_applied, 100);
+        }
+        _ => panic!("Wrong variant"),
+    }
+}
+
+#[test]
+fn test_replay_event_serialization() {
+    use crate::ReplayEvent;
+    use astraweave_core::{ActionStep, PlanIntent};
+    let event = ReplayEvent {
+        tick: 50,
+        seq: 1,
+        actor_id: 5,
+        intent: PlanIntent {
+            plan_id: "test".to_string(),
+            steps: vec![ActionStep::Scan { radius: 10.0 }],
+        },
+        world_hash: 12345,
+    };
+    let json = serde_json::to_string(&event).unwrap();
+    let decoded: ReplayEvent = serde_json::from_str(&json).unwrap();
+    assert_eq!(decoded.tick, 50);
+    assert_eq!(decoded.seq, 1);
+    assert_eq!(decoded.actor_id, 5);
+    assert_eq!(decoded.world_hash, 12345);
+}
+
+#[test]
+fn test_game_server_default() {
+    use crate::GameServer;
+    let server = GameServer::default();
+    assert!(server.player_id > 0);
+    assert!(server.companion_id > 0);
+    assert!(server.enemy_id > 0);
+}
+
+#[test]
+fn test_server_event_clone() {
+    use crate::{ServerEvent, Snapshot};
+    let event = ServerEvent::Snapshot(Snapshot {
+        version: 1,
+        tick: 1,
+        t: 0.0,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![],
+    });
+    let _cloned = event.clone();
+
+    let result = ServerEvent::ApplyResult {
+        ok: true,
+        err: None,
+    };
+    let _cloned_result = result.clone();
+
+    let ack = ServerEvent::Ack {
+        seq: 1,
+        tick_applied: 10,
+    };
+    let _cloned_ack = ack.clone();
+}
+
+#[test]
+fn test_has_los_negative_sx() {
+    use crate::has_los;
+    let mut obstacles = std::collections::BTreeSet::new();
+    let a = IVec2 { x: 5, y: 0 };
+    let b = IVec2 { x: 0, y: 0 };
+    // x0 > x1, so sx should be -1
+    assert!(has_los(a, b, &obstacles));
+    
+    obstacles.insert((2, 0));
+    assert!(!has_los(a, b, &obstacles));
+}
+
+#[test]
+fn test_fov_los_interest_out_of_range() {
+    use crate::{EntityState, FovLosInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let far_enemy = EntityState {
+        id: 2,
+        pos: IVec2 { x: 20, y: 0 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovLosInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+        obstacles: std::collections::BTreeSet::new(),
+    };
+    assert!(!policy.include(&viewer, &far_enemy));
+}
+
+#[test]
+fn test_fov_los_interest_same_position_enemy() {
+    use crate::{EntityState, FovLosInterest};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 5, y: 5 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let enemy = EntityState {
+        id: 2,
+        pos: IVec2 { x: 5, y: 5 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let policy = FovLosInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+        obstacles: std::collections::BTreeSet::new(),
+    };
+    assert!(policy.include(&viewer, &enemy));
+}
+
+#[test]
+fn test_diff_snapshots_team_change() {
+    use crate::{EntityState, Snapshot, FullInterest, diff_snapshots, EntityDeltaMask};
+    let base_state = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 10,
+    };
+    let head_state = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 1, // Team changed
+        ammo: 10,
+    };
+    let base = Snapshot {
+        version: 1,
+        tick: 1,
+        t: 0.0,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![base_state.clone()],
+    };
+    let head = Snapshot {
+        version: 1,
+        tick: 2,
+        t: 0.0,
+        seq: 1,
+        world_hash: 0,
+        entities: vec![head_state],
+    };
+    let viewer = base_state;
+    let delta = diff_snapshots(&base, &head, &FullInterest, &viewer);
+    assert_eq!(delta.changed.len(), 1);
+    assert_eq!(delta.changed[0].mask & EntityDeltaMask::TEAM, EntityDeltaMask::TEAM);
+    assert_eq!(delta.changed[0].team, Some(1));
+}
+
+#[test]
+fn test_diff_snapshots_with_exclusion() {
+    use crate::{EntityState, Snapshot, RadiusTeamInterest, diff_snapshots};
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let near_enemy = EntityState {
+        id: 2,
+        pos: IVec2 { x: 1, y: 1 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let far_enemy = EntityState {
+        id: 3,
+        pos: IVec2 { x: 100, y: 100 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let base = Snapshot {
+        version: 1,
+        tick: 1,
+        t: 0.0,
+        seq: 0,
+        world_hash: 0,
+        entities: vec![viewer.clone(), near_enemy.clone()],
+    };
+    let head = Snapshot {
+        version: 1,
+        tick: 2,
+        t: 0.0,
+        seq: 1,
+        world_hash: 0,
+        entities: vec![viewer.clone(), near_enemy, far_enemy],
+    };
+    let policy = RadiusTeamInterest { radius: 10 };
+    let delta = diff_snapshots(&base, &head, &policy, &viewer);
+    // far_enemy should be excluded by policy, so it shouldn't appear in changed
+    assert!(delta.changed.is_empty());
+}

@@ -111,4 +111,78 @@ mod tests {
         assert_eq!(profile.stats.deaths, 1);
         assert_eq!(profile.stats.playtime_seconds, 3600);
     }
+
+    #[test]
+    fn test_unlock_item() {
+        let mut profile = PlayerProfile::default();
+
+        profile.unlock_item("Sword");
+        assert_eq!(profile.unlocks.items.len(), 1);
+        assert!(profile.unlocks.items.contains(&"Sword".to_string()));
+
+        // Duplicate should not add twice
+        profile.unlock_item("Sword");
+        assert_eq!(profile.unlocks.items.len(), 1);
+
+        // Different item should add
+        profile.unlock_item("Shield");
+        assert_eq!(profile.unlocks.items.len(), 2);
+    }
+
+    #[test]
+    fn test_unlock_level() {
+        let mut profile = PlayerProfile::default();
+
+        profile.unlock_level("level_01");
+        assert_eq!(profile.unlocks.levels.len(), 1);
+        assert!(profile.unlocks.levels.contains(&"level_01".to_string()));
+
+        // Duplicate should not add twice
+        profile.unlock_level("level_01");
+        assert_eq!(profile.unlocks.levels.len(), 1);
+
+        // Different level should add
+        profile.unlock_level("level_02");
+        assert_eq!(profile.unlocks.levels.len(), 2);
+    }
+
+    #[test]
+    fn test_multiple_achievements() {
+        let mut profile = PlayerProfile::default();
+
+        profile.grant_achievement("First Blood");
+        profile.grant_achievement("Level 10");
+        profile.grant_achievement("Speed Runner");
+
+        assert_eq!(profile.stats.achievements.len(), 3);
+    }
+
+    #[test]
+    fn test_combined_progression() {
+        let mut profile = PlayerProfile::default();
+
+        // Unlock some content
+        profile.unlock_ability("Dash");
+        profile.unlock_ability("Double Jump");
+        profile.unlock_item("Sword");
+        profile.unlock_level("level_01");
+
+        // Track some stats
+        for _ in 0..10 {
+            profile.record_kill();
+        }
+        profile.record_death();
+        profile.add_playtime(7200); // 2 hours
+
+        // Grant achievement
+        profile.grant_achievement("First Blood");
+
+        assert_eq!(profile.unlocks.abilities.len(), 2);
+        assert_eq!(profile.unlocks.items.len(), 1);
+        assert_eq!(profile.unlocks.levels.len(), 1);
+        assert_eq!(profile.stats.enemies_defeated, 10);
+        assert_eq!(profile.stats.deaths, 1);
+        assert_eq!(profile.stats.playtime_seconds, 7200);
+        assert_eq!(profile.stats.achievements.len(), 1);
+    }
 }

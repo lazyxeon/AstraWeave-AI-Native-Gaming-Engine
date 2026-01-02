@@ -60,7 +60,7 @@ fn bench_memory_storage(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
             b.iter_with_setup(
                 || {
-                    let mut manager = MemoryManager::new();
+                    let manager = MemoryManager::new();
                     let memories: Vec<Memory> = (0..count)
                         .map(|i| create_test_memory(&format!("memory_{}", i)))
                         .collect();

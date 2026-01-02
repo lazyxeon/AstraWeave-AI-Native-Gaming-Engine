@@ -6,7 +6,7 @@
 //! Integration tests should test public APIs only.
 
 use astraweave_scene::gpu_resource_manager::{CellGpuResources, GpuResourceBudget};
-use astraweave_scene::partitioned_scene::{CellEntities, PartitionedScene, SceneEvent};
+use astraweave_scene::partitioned_scene::{CellEntities, PartitionedScene};
 use astraweave_scene::streaming::create_streaming_manager;
 use astraweave_scene::world_partition::{GridConfig, GridCoord, LRUCache, WorldPartition};
 use astraweave_scene::{Scene, Transform};

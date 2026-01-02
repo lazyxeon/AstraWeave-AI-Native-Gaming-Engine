@@ -207,8 +207,8 @@ impl WindZone {
             WindZoneShape::Global => 0.0,
             WindZoneShape::Box { half_extents } => {
                 let local = (point - self.config.position).abs();
-                let max_dist = (local / half_extents).max_element();
-                max_dist
+                
+                (local / half_extents).max_element()
             }
             WindZoneShape::Sphere { radius } => {
                 (point - self.config.position).length() / radius
@@ -751,7 +751,7 @@ mod tests {
         };
         let mut zone = WindZone::new(WindZoneId(1), config);
 
-        let initial_offset = zone.gust_offset;
+        let _initial_offset = zone.gust_offset;
         zone.update(0.5);
 
         // Gust offset should change after update
@@ -977,5 +977,69 @@ mod tests {
             (height1 - height2).abs() > 0.01 || true, // Wave may be at same phase
             "Wave should cause surface height variation"
         );
+    }
+
+    #[test]
+    fn test_wind_zone_turbulent_force() {
+        let config = WindZoneConfig {
+            wind_type: WindType::Turbulent {
+                intensity: 1.0,
+                frequency: 1.0,
+            },
+            ..Default::default()
+        };
+        let mut zone = WindZone::new(WindZoneId(1), config);
+        zone.gust_offset = Vec3::new(1.0, 1.0, 1.0);
+
+        let force = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        assert!(force.length() > 0.0);
+    }
+
+    #[test]
+    fn test_wind_zone_falloff_shapes() {
+        // Box falloff
+        let config_box = WindZoneConfig {
+            shape: WindZoneShape::Box { half_extents: Vec3::ONE * 10.0 },
+            falloff: 1.0,
+            ..Default::default()
+        };
+        let zone_box = WindZone::new(WindZoneId(1), config_box);
+        assert!(zone_box.calculate_falloff(Vec3::ZERO) == 1.0);
+        assert!(zone_box.calculate_falloff(Vec3::ONE * 5.0) < 1.0);
+
+        // Cylinder falloff
+        let config_cyl = WindZoneConfig {
+            shape: WindZoneShape::Cylinder { radius: 10.0, height: 10.0 },
+            falloff: 1.0,
+            ..Default::default()
+        };
+        let zone_cyl = WindZone::new(WindZoneId(2), config_cyl);
+        assert!(zone_cyl.calculate_falloff(Vec3::ZERO) == 1.0);
+        assert!(zone_cyl.calculate_falloff(Vec3::new(5.0, 0.0, 0.0)) < 1.0);
+    }
+
+    #[test]
+    fn test_environment_manager_buoyancy_at() {
+        let mut manager = EnvironmentManager::new();
+        manager.add_water_volume(Vec3::new(0.0, -5.0, 0.0), Vec3::new(10.0, 5.0, 10.0));
+
+        let force = manager.buoyancy_force_at(Vec3::new(0.0, -1.0, 0.0), 1.0, 1.0);
+        assert!(force.y > 0.0);
+    }
+
+    #[test]
+    fn test_environment_manager_mut_access() {
+        let mut manager = EnvironmentManager::new();
+        let w_id = manager.add_wind_zone(WindZoneConfig::default());
+        let v_id = manager.add_water_volume(Vec3::ZERO, Vec3::ONE);
+
+        assert!(manager.get_wind_zone_mut(w_id).is_some());
+        assert!(manager.get_water_volume_mut(v_id).is_some());
+    }
+
+    #[test]
+    fn test_wind_defaults() {
+        let _ = WindZoneShape::default();
+        let _ = WindType::default();
     }
 }

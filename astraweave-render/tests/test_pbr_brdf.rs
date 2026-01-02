@@ -327,7 +327,7 @@ fn test_brdf_specular_increases_with_smoothness() {
 #[test]
 fn test_brdf_zero_at_backface() {
     // When N·L or N·V is zero (backface), BRDF should be zero
-    let n_dot_h = 0.8;
+    let _n_dot_h = 0.8;
     let roughness = 0.5;
 
     let g_backface = geometry_smith(0.0, 0.8, roughness);

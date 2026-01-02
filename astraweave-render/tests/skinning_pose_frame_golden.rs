@@ -11,7 +11,6 @@ use astraweave_render::{
 };
 use glam::{Mat4, Quat, Vec3};
 use std::f32::consts::PI;
-use test_utils::*;
 
 /// Create test skeleton for animation
 fn create_animation_test_skeleton() -> Skeleton {

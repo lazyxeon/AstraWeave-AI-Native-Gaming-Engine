@@ -19,6 +19,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 #[cfg(feature = "textures")]
 use std::path::Path;
+use wgpu::util::DeviceExt;
 
 /// Quality presets for IBL resource sizes
 #[derive(Clone, Copy, Debug)]
@@ -70,6 +71,7 @@ pub struct IblResources {
     pub specular_cube: wgpu::TextureView, // mip chain encodes roughness
     pub brdf_lut: wgpu::TextureView,      // 2D LUT
     pub mips_specular: u32,
+    pub hdr_equirect: Option<wgpu::TextureView>, // Source HDR image for skybox
 }
 
 /// Internal textures owned by the manager (kept to control lifetime)
@@ -79,6 +81,7 @@ struct IblTextures {
     _specular: wgpu::Texture,
     _brdf_lut: wgpu::Texture,
     _spec_mips: u32,
+    _hdr_equirect: Option<wgpu::Texture>,
 }
 
 pub struct IblManager {
@@ -650,7 +653,8 @@ impl IblManager {
         }
 
         // Sky capture into env cube (procedural or HDR-equirect conversion)
-        match &self.mode {
+        // returns (Option<Texture>, Option<TextureView>) describing source equirect
+        let (eqr_tex_opt, eqr_view_opt) = match &self.mode {
             SkyMode::Procedural { .. } => {
                 let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("ibl-sky-enc"),
@@ -691,6 +695,7 @@ impl IblManager {
                     drop(rp);
                 }
                 queue.submit(Some(enc.finish()));
+                (None, None)
             }
             #[cfg(feature = "textures")]
             SkyMode::HdrPath { biome: _, path } => {
@@ -702,7 +707,7 @@ impl IblManager {
                     self.hdr_cache.insert(path.clone(), img.clone());
                     img
                 };
-                let (_hdr_tex, hdr_view, hdr_samp) = create_hdr2d(device, queue, &img)?;
+                let (hdr_tex, hdr_view, hdr_samp) = create_hdr2d(device, queue, &img)?;
                 let eqr_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("ibl-eqr-bg"),
                     layout: &self.eqr_bgl,
@@ -718,24 +723,29 @@ impl IblManager {
                     ],
                 });
                 // Uniform buffer for face index (aligned to 16 bytes)
-                let face_buf = device.create_buffer(&wgpu::BufferDescriptor {
-                    label: Some("ibl-eqr-face-ub"),
-                    size: 16,
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                    mapped_at_creation: false,
-                });
-                let eqr_face_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("ibl-eqr-face-bg"),
-                    layout: &self.eqr_face_bgl,
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: face_buf.as_entire_binding(),
-                    }],
-                });
-                let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("ibl-eqr-enc"),
-                });
+                // Uniform buffer and bind group will be created per-face to prevent race conditions
                 for face in 0..6u32 {
+                    let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("ibl-eqr-enc"),
+                    });
+
+                    // Create per-face uniform buffer
+                    let data: [u32; 4] = [face, 0, 0, 0];
+                    let face_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("ibl-eqr-face-ub"),
+                        contents: bytemuck::bytes_of(&data),
+                        usage: wgpu::BufferUsages::UNIFORM,
+                    });
+
+                    let eqr_face_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: Some("ibl-eqr-face-bg"),
+                        layout: &self.eqr_face_bgl,
+                        entries: &[wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: face_buf.as_entire_binding(),
+                        }],
+                    });
+
                     let face_view = env_tex.create_view(&wgpu::TextureViewDescriptor {
                         usage: None,
                         label: Some("ibl-env-face"),
@@ -747,9 +757,7 @@ impl IblManager {
                         array_layer_count: Some(1),
                         aspect: wgpu::TextureAspect::All,
                     });
-                    // Update face index uniform
-                    let data: [u32; 4] = [face, 0, 0, 0];
-                    queue.write_buffer(&face_buf, 0, bytemuck::bytes_of(&data));
+
                     let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("ibl-eqr-face"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -769,14 +777,17 @@ impl IblManager {
                     rp.set_bind_group(1, &eqr_face_bg, &[]);
                     rp.draw(0..3, 0..1);
                     drop(rp);
+                    queue.submit(Some(enc.finish()));
                 }
-                queue.submit(Some(enc.finish()));
+                (Some(hdr_tex), Some(hdr_view))
             }
             #[cfg(not(feature = "textures"))]
             SkyMode::HdrPath { .. } => {
                 anyhow::bail!("HdrPath sky mode requires 'textures' feature");
+                #[allow(unreachable_code)]
+                (None, None)
             }
-        }
+        };
 
         // Irradiance convolution
         {
@@ -849,17 +860,7 @@ impl IblManager {
                 ],
             });
 
-            // Create uniform buffer for prefilter params (16 bytes aligned)
-            let params_buf = device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("ibl-prefilter-params-ub"),
-                size: 16, // 4 f32/u32 values aligned to 16 bytes
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
-
-            let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("ibl-spec-enc"),
-            });
+            // Buffers created per face/mip
 
             for mip in 0..spec_mips {
                 // Calculate roughness from mip level (linear mapping)
@@ -890,6 +891,10 @@ impl IblManager {
                 };
 
                 for face in 0..6u32 {
+                    let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("ibl-spec-enc"),
+                    });
+
                     // Update params uniform for this mip/face combination
                     let params_data: [u32; 4] = [
                         f32::to_bits(roughness),
@@ -897,7 +902,11 @@ impl IblManager {
                         sample_count,
                         0, // padding
                     ];
-                    queue.write_buffer(&params_buf, 0, bytemuck::cast_slice(&params_data));
+                    let params_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("ibl-prefilter-params-ub"),
+                        contents: bytemuck::cast_slice(&params_data),
+                        usage: wgpu::BufferUsages::UNIFORM,
+                    });
 
                     let params_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
                         label: Some("ibl-prefilter-params-bg"),
@@ -938,9 +947,9 @@ impl IblManager {
                     rp.set_bind_group(1, &params_bg, &[]);
                     rp.draw(0..3, 0..1);
                     drop(rp);
+                    queue.submit(Some(enc.finish()));
                 }
             }
-            queue.submit(Some(enc.finish()));
         }
 
         // Hold textures so views remain valid for the lifetime of the manager
@@ -950,13 +959,16 @@ impl IblManager {
             _specular: spec_tex,
             _brdf_lut: brdf_tex,
             _spec_mips: spec_mips,
+            _hdr_equirect: eqr_tex_opt,
         });
+
         let resources = IblResources {
             env_cube: env_view,
             irradiance_cube: irr_view,
             specular_cube: spec_view,
             brdf_lut: brdf_view,
             mips_specular: spec_mips,
+            hdr_equirect: eqr_view_opt,
         };
         Ok(resources)
     }
@@ -1190,7 +1202,7 @@ fn importanceSampleGGX(Xi: vec2<f32>, N: vec3<f32>, roughness: f32) -> vec3<f32>
 // Equirectangular to cubemap conversion shader (minimal placeholder)
 const EQUIRECT_TO_CUBE_WGSL: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
-struct FaceIndex { idx: u32, _pad: vec3<u32> };
+struct FaceIndex { idx: u32 };
 @group(1) @binding(0) var<uniform> u_face: FaceIndex;
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
@@ -1306,7 +1318,7 @@ fn create_hdr2d(
     let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
     let samp = device.create_sampler(&wgpu::SamplerDescriptor {
         label: Some("ibl-hdr2d-sampler"),
-        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_u: wgpu::AddressMode::Repeat,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
         mag_filter: wgpu::FilterMode::Linear,

@@ -1,6 +1,6 @@
-use wgpu::util::DeviceExt;
-use glam::{Vec3, Mat4};
+use glam::{Mat4, Vec3};
 use noise::{NoiseFn, Perlin};
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -20,7 +20,8 @@ struct Uniforms {
     roughness: f32,
     near: f32,
     far: f32,
-    _padding: f32,
+    _pad0: f32,
+    _pad1: f32,
 }
 
 #[repr(C)]
@@ -55,6 +56,7 @@ struct OceanTile {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+    #[allow(dead_code)] // Reserved for future tile world-space positioning
     transform: Mat4,
 }
 
@@ -68,13 +70,18 @@ pub struct OceanRenderer {
 }
 
 impl OceanRenderer {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, surface_format: wgpu::TextureFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        surface_format: wgpu::TextureFormat,
+    ) -> Self {
         // Generate noise textures
-        let (wave_texture, wave_view) = Self::generate_wave_texture(device, queue, 512);
-        let (wave_bump_texture, wave_bump_view) = Self::generate_wave_bump_texture(device, queue, 512);
-        let (normal_texture, normal_view) = Self::generate_normal_texture(device, queue, 512);
-        let (normal2_texture, normal2_view) = Self::generate_normal_texture(device, queue, 512);
-        
+        let (_wave_texture, wave_view) = Self::generate_wave_texture(device, queue, 512);
+        let (_wave_bump_texture, wave_bump_view) =
+            Self::generate_wave_bump_texture(device, queue, 512);
+        let (_normal_texture, normal_view) = Self::generate_normal_texture(device, queue, 512);
+        let (_normal2_texture, normal2_view) = Self::generate_normal_texture(device, queue, 512);
+
         // Create sampler
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::Repeat,
@@ -85,7 +92,7 @@ impl OceanRenderer {
             mipmap_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        
+
         // Create uniform buffer
         let uniforms = Uniforms {
             view_proj: Mat4::IDENTITY.to_cols_array_2d(),
@@ -103,15 +110,16 @@ impl OceanRenderer {
             roughness: 0.02,
             near: 1.0,
             far: 100.0,
-            _padding: 0.0,
+            _pad0: 0.0,
+            _pad1: 0.0,
         };
-        
+
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Ocean Uniform Buffer"),
             contents: bytemuck::cast_slice(&[uniforms]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        
+
         // Create bind group layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Ocean Bind Group Layout"),
@@ -192,7 +200,7 @@ impl OceanRenderer {
                 },
             ],
         });
-        
+
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Ocean Bind Group"),
@@ -236,20 +244,20 @@ impl OceanRenderer {
                 },
             ],
         });
-        
+
         // Load shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Ocean Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("ocean.wgsl").into()),
         });
-        
+
         // Create pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Ocean Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
-        
+
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Ocean Pipeline"),
@@ -294,17 +302,17 @@ impl OceanRenderer {
             multiview: None,
             cache: None,
         });
-        
+
         // Generate ocean tiles (17 tiles in a grid pattern)
         let mut tiles = Vec::new();
         let tile_size = 50.0;
         let subdivisions = 100;
-        
+
         for x in -2..=2 {
             for z in -2..=2 {
                 let offset_x = x as f32 * tile_size;
                 let offset_z = z as f32 * tile_size;
-                
+
                 // Adjust subdivision based on distance from center
                 let dist = ((x * x + z * z) as f32).sqrt();
                 let tile_subdivisions = if dist <= 1.0 {
@@ -314,13 +322,13 @@ impl OceanRenderer {
                 } else {
                     subdivisions / 4
                 };
-                
+
                 let transform = Mat4::from_translation(Vec3::new(offset_x, 0.0, offset_z));
                 let tile = Self::create_tile(device, tile_size, tile_subdivisions, transform);
                 tiles.push(tile);
             }
         }
-        
+
         Self {
             pipeline,
             uniform_buffer,
@@ -330,29 +338,37 @@ impl OceanRenderer {
             camera_pos: Vec3::ZERO,
         }
     }
-    
-    fn create_tile(device: &wgpu::Device, size: f32, subdivisions: u32, transform: Mat4) -> OceanTile {
+
+    fn create_tile(
+        device: &wgpu::Device,
+        size: f32,
+        subdivisions: u32,
+        transform: Mat4,
+    ) -> OceanTile {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
-        
+
         let half_size = size / 2.0;
         let step = size / subdivisions as f32;
-        
+
         // Generate vertices
         for z in 0..=subdivisions {
             for x in 0..=subdivisions {
                 let pos_x = -half_size + x as f32 * step;
                 let pos_z = -half_size + z as f32 * step;
-                
+
                 let world_pos = transform.transform_point3(Vec3::new(pos_x, 0.0, pos_z));
-                
+
                 vertices.push(Vertex {
                     position: world_pos.to_array(),
-                    uv: [x as f32 / subdivisions as f32, z as f32 / subdivisions as f32],
+                    uv: [
+                        x as f32 / subdivisions as f32,
+                        z as f32 / subdivisions as f32,
+                    ],
                 });
             }
         }
-        
+
         // Generate indices
         for z in 0..subdivisions {
             for x in 0..subdivisions {
@@ -360,29 +376,29 @@ impl OceanRenderer {
                 let top_right = top_left + 1;
                 let bottom_left = (z + 1) * (subdivisions + 1) + x;
                 let bottom_right = bottom_left + 1;
-                
+
                 indices.push(top_left);
                 indices.push(bottom_left);
                 indices.push(top_right);
-                
+
                 indices.push(top_right);
                 indices.push(bottom_left);
                 indices.push(bottom_right);
             }
         }
-        
+
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Ocean Tile Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        
+
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Ocean Tile Index Buffer"),
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
-        
+
         OceanTile {
             vertex_buffer,
             index_buffer,
@@ -390,19 +406,23 @@ impl OceanRenderer {
             transform,
         }
     }
-    
-    fn generate_wave_texture(device: &wgpu::Device, queue: &wgpu::Queue, size: u32) -> (wgpu::Texture, wgpu::TextureView) {
+
+    fn generate_wave_texture(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        size: u32,
+    ) -> (wgpu::Texture, wgpu::TextureView) {
         let perlin = Perlin::new(42);
         let mut data = vec![0u8; (size * size * 4) as usize];
-        
+
         for y in 0..size {
             for x in 0..size {
                 let nx = x as f64 / size as f64 * 4.0;
                 let ny = y as f64 / size as f64 * 4.0;
-                
+
                 let value = perlin.get([nx, ny]);
                 let normalized = ((value + 1.0) / 2.0 * 255.0) as u8;
-                
+
                 let idx = ((y * size + x) * 4) as usize;
                 data[idx] = normalized;
                 data[idx + 1] = normalized;
@@ -410,7 +430,7 @@ impl OceanRenderer {
                 data[idx + 3] = 255;
             }
         }
-        
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Wave Texture"),
             size: wgpu::Extent3d {
@@ -425,7 +445,7 @@ impl OceanRenderer {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -445,28 +465,36 @@ impl OceanRenderer {
                 depth_or_array_layers: 1,
             },
         );
-        
+
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         (texture, view)
     }
-    
-    fn generate_wave_bump_texture(device: &wgpu::Device, queue: &wgpu::Queue, size: u32) -> (wgpu::Texture, wgpu::TextureView) {
+
+    fn generate_wave_bump_texture(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        size: u32,
+    ) -> (wgpu::Texture, wgpu::TextureView) {
         // Similar to wave texture but with different noise settings
         Self::generate_wave_texture(device, queue, size)
     }
-    
-    fn generate_normal_texture(device: &wgpu::Device, queue: &wgpu::Queue, size: u32) -> (wgpu::Texture, wgpu::TextureView) {
+
+    fn generate_normal_texture(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        size: u32,
+    ) -> (wgpu::Texture, wgpu::TextureView) {
         let perlin = Perlin::new(123);
         let mut data = vec![0u8; (size * size * 4) as usize];
-        
+
         for y in 0..size {
             for x in 0..size {
                 let nx = x as f64 / size as f64 * 8.0;
                 let ny = y as f64 / size as f64 * 8.0;
-                
+
                 let value = perlin.get([nx, ny]);
                 let normalized = ((value + 1.0) / 2.0 * 255.0) as u8;
-                
+
                 let idx = ((y * size + x) * 4) as usize;
                 data[idx] = 128;
                 data[idx + 1] = 128;
@@ -474,7 +502,7 @@ impl OceanRenderer {
                 data[idx + 3] = 255;
             }
         }
-        
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Normal Texture"),
             size: wgpu::Extent3d {
@@ -489,7 +517,7 @@ impl OceanRenderer {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -509,16 +537,16 @@ impl OceanRenderer {
                 depth_or_array_layers: 1,
             },
         );
-        
+
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         (texture, view)
     }
-    
+
     pub fn update(&mut self, dt: f32, camera_pos: Vec3) {
         self.time += dt;
         self.camera_pos = camera_pos;
     }
-    
+
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
@@ -544,11 +572,12 @@ impl OceanRenderer {
             roughness: 0.02,
             near: 1.0,
             far: 100.0,
-            _padding: 0.0,
+            _pad0: 0.0,
+            _pad1: 0.0,
         };
-        
+
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
-        
+
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Ocean Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -570,10 +599,10 @@ impl OceanRenderer {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        
+
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
-        
+
         // Render all tiles
         for tile in &self.tiles {
             render_pass.set_vertex_buffer(0, tile.vertex_buffer.slice(..));

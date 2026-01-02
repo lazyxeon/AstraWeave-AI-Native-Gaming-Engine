@@ -14,6 +14,7 @@ pub enum HierarchyAction {
     CreatePrefab(Entity),
     DeleteEntity(Entity),
     DuplicateEntity(Entity),
+    FocusEntity(Entity),
 }
 
 pub struct HierarchyPanel {
@@ -31,6 +32,7 @@ pub struct HierarchyPanel {
     empty_node_counter: u32,
 
     pending_actions: Vec<HierarchyAction>,
+    search_filter: String,
 }
 
 impl HierarchyPanel {
@@ -46,6 +48,7 @@ impl HierarchyPanel {
             context_menu_entity: None,
             empty_node_counter: 0,
             pending_actions: Vec::new(),
+            search_filter: String::new(),
         }
     }
 
@@ -62,14 +65,11 @@ impl HierarchyPanel {
             .retain(|e| world_entities.contains(e));
 
         for entity in world.entities() {
-            if !self.hierarchy.contains_key(&entity) {
-                self.hierarchy.insert(
-                    entity,
-                    HierarchyNode {
+            if let std::collections::hash_map::Entry::Vacant(e) = self.hierarchy.entry(entity) {
+                e.insert(HierarchyNode {
                         entity,
                         children: Vec::new(),
-                    },
-                );
+                    });
                 self.root_entities.push(entity);
             }
         }
@@ -89,6 +89,14 @@ impl HierarchyPanel {
 
     pub fn get_all_selected(&self) -> Vec<Entity> {
         self.selected_entities.iter().copied().collect()
+    }
+
+    pub fn set_selected_multiple(&mut self, entities: &[Entity]) {
+        self.selected_entities.clear();
+        for &e in entities {
+            self.selected_entities.insert(e);
+        }
+        self.last_clicked = entities.first().copied();
     }
 
     fn add_child_to_parent(&mut self, child: Entity, parent: Entity) {
@@ -141,6 +149,22 @@ impl HierarchyPanel {
         None
     }
 
+    fn entity_matches_filter(&self, world: &World, entity: Entity, filter_lower: &str) -> bool {
+        if let Some(name) = world.name(entity) {
+            if name.to_lowercase().contains(filter_lower) {
+                return true;
+            }
+        }
+        if let Some(node) = self.hierarchy.get(&entity) {
+            for &child in &node.children {
+                if self.entity_matches_filter(world, child, filter_lower) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut World) -> Option<Entity> {
         let mut selected_changed = None;
 
@@ -181,11 +205,33 @@ impl HierarchyPanel {
 
         ui.separator();
 
+        ui.horizontal(|ui| {
+            ui.label("Search:");
+            ui.add(
+                egui::TextEdit::singleline(&mut self.search_filter)
+                    .hint_text("Filter entities...")
+                    .desired_width(ui.available_width() - 30.0),
+            );
+            if ui.button("X").clicked() {
+                self.search_filter.clear();
+            }
+        });
+
+        ui.add_space(5.0);
+
+        let search_lower = self.search_filter.to_lowercase();
+        let is_filtering = !self.search_filter.is_empty();
+
         egui::ScrollArea::vertical()
             .auto_shrink([false, false])
             .show(ui, |ui| {
                 let root_entities = self.root_entities.clone();
                 for entity in root_entities {
+                    if is_filtering
+                        && !self.entity_matches_filter(world, entity, &search_lower)
+                    {
+                        continue;
+                    }
                     if let Some(new_selection) = self.show_entity_tree(ui, world, entity, 0) {
                         selected_changed = Some(new_selection);
                     }
@@ -268,6 +314,10 @@ impl HierarchyPanel {
                     self.last_clicked = Some(entity);
                     selected_changed = Some(entity);
                 }
+            }
+
+            if response.double_clicked() {
+                self.pending_actions.push(HierarchyAction::FocusEntity(entity));
             }
 
             response.context_menu(|ui| {

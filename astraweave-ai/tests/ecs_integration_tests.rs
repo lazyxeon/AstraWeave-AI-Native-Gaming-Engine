@@ -859,6 +859,7 @@ fn test_multi_agent_sparse_distribution() -> Result<()> {
 // =============================================================================
 
 #[test]
+#[allow(non_snake_case)]
 fn test_event_AiPlannedEvent_published() -> Result<()> {
     // Verify AiPlannedEvent is published when plan succeeds
     let w = World::new();
@@ -906,6 +907,7 @@ fn test_event_AiPlannedEvent_published() -> Result<()> {
 }
 
 #[test]
+#[allow(non_snake_case)]
 fn test_event_AiPlanningFailedEvent_published() -> Result<()> {
     // Verify AiPlanningFailedEvent is published when plan fails
     let w = World::new();

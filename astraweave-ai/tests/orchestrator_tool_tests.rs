@@ -482,11 +482,7 @@ fn test_validation_context_default() {
 
 #[test]
 fn test_validation_context_with_nav() {
-    let nav = NavMesh {
-        tris: vec![],
-        max_step: 0.4,
-        max_slope_deg: 60.0,
-    };
+    let nav = NavMesh::bake(&[], 0.4, 60.0);
     let ctx = ValidationContext::new().with_nav(&nav);
 
     assert!(ctx.nav_mesh.is_some());
@@ -509,11 +505,7 @@ fn test_validation_context_with_physics() {
 
 #[test]
 fn test_validation_context_chained_builders() {
-    let nav = NavMesh {
-        tris: vec![],
-        max_step: 0.4,
-        max_slope_deg: 60.0,
-    };
+    let nav = NavMesh::bake(&[], 0.4, 60.0);
     let pipeline = PhysicsPipeline::new();
     let bodies = RigidBodySet::new();
     let colliders = ColliderSet::new();
@@ -530,16 +522,8 @@ fn test_validation_context_chained_builders() {
 
 #[test]
 fn test_validation_context_multiple_with_nav_calls() {
-    let nav1 = NavMesh {
-        tris: vec![],
-        max_step: 0.4,
-        max_slope_deg: 60.0,
-    };
-    let nav2 = NavMesh {
-        tris: vec![],
-        max_step: 0.5,
-        max_slope_deg: 45.0,
-    };
+    let nav1 = NavMesh::bake(&[], 0.4, 60.0);
+    let nav2 = NavMesh::bake(&[], 0.5, 45.0);
 
     let ctx = ValidationContext::new().with_nav(&nav1).with_nav(&nav2);
 
