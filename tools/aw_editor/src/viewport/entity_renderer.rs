@@ -22,10 +22,9 @@
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
-use wgpu;
 use wgpu::util::DeviceExt;
 
-use super::camera::OrbitCamera;
+use super::camera::{Frustum, OrbitCamera};
 use astraweave_core::{Entity, World};
 
 /// Entity renderer for viewport
@@ -290,8 +289,8 @@ impl EntityRenderer {
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
-        // Collect instances from World
-        let instances = self.collect_instances(world, selected_entities);
+        let frustum = camera.extract_frustum();
+        let instances = self.collect_instances(world, selected_entities, &frustum);
 
         if instances.is_empty() {
             return Ok(()); // Nothing to render
@@ -339,20 +338,21 @@ impl EntityRenderer {
     ///
     /// Creates Instance data for each entity with a Position component.
     /// Selected entity is highlighted with orange color.
-    fn collect_instances(&self, world: &World, selected_entities: &[Entity]) -> Vec<Instance> {
+    fn collect_instances(&self, world: &World, selected_entities: &[Entity], frustum: &Frustum) -> Vec<Instance> {
         let mut instances = Vec::new();
+        const ENTITY_RADIUS: f32 = 0.866;
 
-        // Iterate over all actual entities in the world
         for entity in world.entities() {
-            // Try to get position from World
             if let Some(pose) = world.pose(entity) {
                 let x = pose.pos.x as f32;
-                let z = pose.pos.y as f32; // Note: IVec2.y maps to Z in 3D
-                let position = Vec3::new(x, 1.0, z); // Raised to Y=1.0 (1m above grid, was 0.5m)
+                let z = pose.pos.y as f32;
+                let position = Vec3::new(x, 1.0, z);
 
-                // Create model matrix with translation, rotation (XYZ Euler), and scale
+                if !frustum.contains_sphere(position, ENTITY_RADIUS * pose.scale) {
+                    continue;
+                }
+
                 let translation = Mat4::from_translation(position);
-                // Combine all three rotation axes (X = pitch, Y = yaw, Z = roll)
                 let rotation = Mat4::from_euler(
                     glam::EulerRot::XYZ,
                     pose.rotation_x,
@@ -360,21 +360,20 @@ impl EntityRenderer {
                     pose.rotation_z,
                 );
                 let scale = Mat4::from_scale(Vec3::splat(pose.scale));
-                let model = translation * rotation * scale; // TRS order
+                let model = translation * rotation * scale;
 
-                // Color: orange if selected, team-based otherwise
                 let is_selected = selected_entities.contains(&entity);
                 let color = if is_selected {
-                    [1.0, 0.6, 0.2, 1.0] // Orange
+                    [1.0, 0.6, 0.2, 1.0]
                 } else if let Some(team) = world.team(entity) {
                     match team.id {
-                        0 => [0.2, 0.8, 0.3, 1.0], // Player (green)
-                        1 => [0.3, 0.6, 1.0, 1.0], // Companion (blue)
-                        2 => [1.0, 0.3, 0.2, 1.0], // Enemy (red)
-                        _ => [0.6, 0.6, 0.7, 1.0], // Unknown (gray)
+                        0 => [0.2, 0.8, 0.3, 1.0],
+                        1 => [0.3, 0.6, 1.0, 1.0],
+                        2 => [1.0, 0.3, 0.2, 1.0],
+                        _ => [0.6, 0.6, 0.7, 1.0],
                     }
                 } else {
-                    [0.6, 0.6, 0.7, 1.0] // Gray
+                    [0.6, 0.6, 0.7, 1.0]
                 };
 
                 instances.push(Instance {

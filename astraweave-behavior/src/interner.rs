@@ -53,3 +53,54 @@ pub fn resolve(id: u32) -> String {
         .unwrap_or("<unknown>")
         .to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_interner_new() {
+        let interner = StringInterner::new();
+        assert!(interner.map.is_empty());
+        assert!(interner.vec.is_empty());
+    }
+
+    #[test]
+    fn test_string_interner_default() {
+        let interner = StringInterner::default();
+        assert!(interner.map.is_empty());
+        assert!(interner.vec.is_empty());
+    }
+
+    #[test]
+    fn test_intern_and_resolve() {
+        let mut interner = StringInterner::new();
+        let id1 = interner.intern("hello");
+        let id2 = interner.intern("world");
+        let id3 = interner.intern("hello"); // duplicate
+
+        assert_eq!(id1, 0);
+        assert_eq!(id2, 1);
+        assert_eq!(id3, 0); // Should return same ID as first "hello"
+
+        assert_eq!(interner.resolve(id1), Some("hello"));
+        assert_eq!(interner.resolve(id2), Some("world"));
+        assert_eq!(interner.resolve(99), None); // Invalid ID
+    }
+
+    #[test]
+    fn test_global_interner() {
+        let id1 = intern("global_test");
+        let id2 = intern("global_test");
+        assert_eq!(id1, id2);
+
+        let resolved = resolve(id1);
+        assert_eq!(resolved, "global_test");
+    }
+
+    #[test]
+    fn test_resolve_unknown() {
+        let resolved = resolve(u32::MAX);
+        assert_eq!(resolved, "<unknown>");
+    }
+}

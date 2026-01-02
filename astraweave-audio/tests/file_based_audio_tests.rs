@@ -9,6 +9,7 @@ mod test_asset_generator;
 use anyhow::Result;
 use astraweave_audio::{AudioEngine, ListenerPose, MusicTrack, PanMode};
 use glam::vec3;
+use serial_test::serial;
 use std::thread;
 use std::time::Duration;
 
@@ -19,6 +20,7 @@ fn setup_test_assets() -> Result<()> {
 
 /// Test 1: Play SFX from file (basic file loading)
 #[test]
+#[serial]
 fn test_play_sfx_file_basic() -> Result<()> {
     setup_test_assets()?;
 
@@ -37,6 +39,7 @@ fn test_play_sfx_file_basic() -> Result<()> {
 
 /// Test 2: Play multiple SFX files in sequence
 #[test]
+#[serial]
 fn test_play_multiple_sfx_files() -> Result<()> {
     setup_test_assets()?;
 
@@ -59,6 +62,7 @@ fn test_play_multiple_sfx_files() -> Result<()> {
 
 /// Test 3: Play voice file with automatic ducking
 #[test]
+#[serial]
 fn test_play_voice_file_with_ducking() -> Result<()> {
     setup_test_assets()?;
 
@@ -80,6 +84,7 @@ fn test_play_voice_file_with_ducking() -> Result<()> {
 
 /// Test 4: Play voice file with explicit duration
 #[test]
+#[serial]
 fn test_play_voice_file_explicit_duration() -> Result<()> {
     setup_test_assets()?;
 
@@ -99,6 +104,7 @@ fn test_play_voice_file_explicit_duration() -> Result<()> {
 
 /// Test 5: Play 3D spatial SFX from file
 #[test]
+#[serial]
 fn test_play_sfx_3d_file() -> Result<()> {
     setup_test_assets()?;
 
@@ -117,6 +123,7 @@ fn test_play_sfx_3d_file() -> Result<()> {
 
 /// Test 6: Multiple 3D sounds from files at different positions
 #[test]
+#[serial]
 fn test_multiple_3d_files() -> Result<()> {
     setup_test_assets()?;
 
@@ -149,6 +156,7 @@ fn test_multiple_3d_files() -> Result<()> {
 
 /// Test 7: Music playback from file (basic)
 #[test]
+#[serial]
 fn test_play_music_file_basic() -> Result<()> {
     setup_test_assets()?;
 
@@ -170,6 +178,7 @@ fn test_play_music_file_basic() -> Result<()> {
 
 /// Test 8: Music playback with looping enabled
 #[test]
+#[serial]
 fn test_play_music_looped() -> Result<()> {
     setup_test_assets()?;
 
@@ -193,6 +202,7 @@ fn test_play_music_looped() -> Result<()> {
 
 /// Test 9: Music crossfade between two tracks
 #[test]
+#[serial]
 fn test_music_crossfade() -> Result<()> {
     setup_test_assets()?;
 
@@ -227,6 +237,7 @@ fn test_music_crossfade() -> Result<()> {
 
 /// Test 10: Fast crossfade (0.1 second)
 #[test]
+#[serial]
 fn test_music_fast_crossfade() -> Result<()> {
     setup_test_assets()?;
 
@@ -257,6 +268,7 @@ fn test_music_fast_crossfade() -> Result<()> {
 
 /// Test 11: Stop music while playing
 #[test]
+#[serial]
 fn test_stop_music_while_playing() -> Result<()> {
     setup_test_assets()?;
 
@@ -279,6 +291,7 @@ fn test_stop_music_while_playing() -> Result<()> {
 
 /// Test 12: Voice file playback during music (ducking test)
 #[test]
+#[serial]
 fn test_voice_ducking_with_music() -> Result<()> {
     setup_test_assets()?;
 
@@ -306,6 +319,7 @@ fn test_voice_ducking_with_music() -> Result<()> {
 
 /// Test 13: Multiple voice files in sequence (ducking restoration)
 #[test]
+#[serial]
 fn test_multiple_voice_files_ducking() -> Result<()> {
     setup_test_assets()?;
 
@@ -342,6 +356,7 @@ fn test_multiple_voice_files_ducking() -> Result<()> {
 
 /// Test 14: 3D sound with listener movement (file-based)
 #[test]
+#[serial]
 fn test_3d_file_with_listener_movement() -> Result<()> {
     setup_test_assets()?;
 
@@ -373,6 +388,7 @@ fn test_3d_file_with_listener_movement() -> Result<()> {
 
 /// Test 15: Stress test - 20 file-based 3D sounds simultaneously
 #[test]
+#[serial]
 fn test_stress_20_file_based_3d_sounds() -> Result<()> {
     setup_test_assets()?;
 
@@ -406,6 +422,7 @@ fn test_stress_20_file_based_3d_sounds() -> Result<()> {
 
 /// Test 16: Interleaved file and beep SFX
 #[test]
+#[serial]
 fn test_interleaved_file_and_beep_sfx() -> Result<()> {
     setup_test_assets()?;
 
@@ -429,6 +446,7 @@ fn test_interleaved_file_and_beep_sfx() -> Result<()> {
 
 /// Test 17: Volume control with file-based audio
 #[test]
+#[serial]
 fn test_volume_control_with_files() -> Result<()> {
     setup_test_assets()?;
 
@@ -454,6 +472,7 @@ fn test_volume_control_with_files() -> Result<()> {
 
 /// Test 18: Pan mode with file-based 3D audio
 #[test]
+#[serial]
 fn test_pan_modes_with_files() -> Result<()> {
     setup_test_assets()?;
 
@@ -476,6 +495,7 @@ fn test_pan_modes_with_files() -> Result<()> {
 
 /// Test 19: Long-running music with periodic ticks
 #[test]
+#[serial]
 fn test_long_music_playback() -> Result<()> {
     setup_test_assets()?;
 
@@ -497,6 +517,7 @@ fn test_long_music_playback() -> Result<()> {
 
 /// Test 20: Rapid music track changes (stress test crossfading)
 #[test]
+#[serial]
 fn test_rapid_music_changes() -> Result<()> {
     setup_test_assets()?;
 
@@ -527,6 +548,7 @@ fn test_rapid_music_changes() -> Result<()> {
 
 /// Test 21: Missing file error handling
 #[test]
+#[serial]
 fn test_missing_file_error() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
@@ -539,6 +561,7 @@ fn test_missing_file_error() -> Result<()> {
 
 /// Test 22: Invalid file format error handling
 #[test]
+#[serial]
 fn test_invalid_file_format() -> Result<()> {
     // Create a text file pretending to be WAV
     std::fs::create_dir_all("tests/assets")?;
@@ -561,6 +584,7 @@ fn test_invalid_file_format() -> Result<()> {
 
 /// Test 23: Emitter reuse with file-based 3D audio
 #[test]
+#[serial]
 fn test_emitter_reuse_with_files() -> Result<()> {
     setup_test_assets()?;
 
@@ -599,6 +623,7 @@ fn test_emitter_reuse_with_files() -> Result<()> {
 
 /// Test 24: Distance attenuation with file-based audio
 #[test]
+#[serial]
 fn test_distance_attenuation_files() -> Result<()> {
     setup_test_assets()?;
 
@@ -620,6 +645,7 @@ fn test_distance_attenuation_files() -> Result<()> {
 
 /// Test 25: Comprehensive audio pipeline (music + voice + 3D SFX from files)
 #[test]
+#[serial]
 fn test_comprehensive_file_based_pipeline() -> Result<()> {
     setup_test_assets()?;
 

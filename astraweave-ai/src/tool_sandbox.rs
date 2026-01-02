@@ -306,11 +306,7 @@ mod tests {
             objective: None,
             obstacles: vec![IVec2 { x: 1, y: 0 }], // obstacle at (1,0)
         };
-        let nav = NavMesh {
-            tris: vec![],
-            max_step: 0.4,
-            max_slope_deg: 60.0,
-        }; // empty nav, no path
+        let nav = NavMesh::bake(&[], 0.4, 60.0); // empty nav, no path
         let context = ValidationContext::new().with_nav(&nav);
         let result = validate_tool_action(
             0,
@@ -609,11 +605,7 @@ mod tests {
     #[test]
     fn test_validation_context_builders() {
         // Test ValidationContext builder pattern
-        let nav = NavMesh {
-            tris: vec![],
-            max_step: 0.4,
-            max_slope_deg: 60.0,
-        };
+        let nav = NavMesh::bake(&[], 0.4, 60.0);
 
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();

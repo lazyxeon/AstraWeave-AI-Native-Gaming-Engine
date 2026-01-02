@@ -154,7 +154,7 @@ impl TerrainChunk {
 
         let x = u.round() as usize;
         let z = v.round() as usize;
-        let index = z as usize * self.heightmap.resolution() as usize + x as usize;
+        let index = z * self.heightmap.resolution() as usize + x;
 
         self.biome_map.get(index).copied()
     }

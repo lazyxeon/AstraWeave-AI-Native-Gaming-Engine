@@ -442,4 +442,58 @@ mod tests {
         assert!(prompt.contains("Do not use grenades"));
         assert!(prompt.contains("Stay within 10 units"));
     }
+
+    #[test]
+    fn test_prompt_builder_custom_role() {
+        let prompt = PromptBuilder::new()
+            .system_role("You are a helpful assistant")
+            .build();
+        assert!(prompt.contains("You are a helpful assistant"));
+    }
+
+    #[test]
+    fn test_prompt_builder_all_roles() {
+        let roles = ["tactical", "stealth", "support", "exploration"];
+        for role in roles {
+            let prompt = PromptBuilder::new().system_role(role).build();
+            assert!(!prompt.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_action_to_json_all_variants() {
+        let steps = vec![
+            ActionStep::MoveTo { x: 1, y: 2, speed: None },
+            ActionStep::Throw { item: "smoke".into(), x: 3, y: 4 },
+            ActionStep::CoverFire { target_id: 1, duration: 5.0 },
+            ActionStep::Revive { ally_id: 2 },
+            ActionStep::Wait { duration: 1.0 }, // Should hit the _ branch
+        ];
+
+        for step in steps {
+            let json = PromptBuilder::action_to_json(&step);
+            assert!(json.contains("act"));
+        }
+    }
+
+    #[test]
+    fn test_quick_prompts_all() {
+        let snap = create_test_snapshot();
+        
+        assert!(quick::support_prompt(&snap, 1).contains("Revive ally 1"));
+        assert!(quick::exploration_prompt(&snap).contains("Map the area"));
+    }
+
+    #[test]
+    fn test_snapshot_json_with_pois_and_obstacles() {
+        use astraweave_core::{Poi, IVec2};
+        let mut snap = create_test_snapshot();
+        snap.pois.push(Poi { k: "ammo".into(), pos: IVec2 { x: 1, y: 1 } });
+        snap.obstacles.push(IVec2 { x: 2, y: 2 });
+        
+        let json_str = PromptBuilder::snapshot_to_json(&snap);
+        assert!(json_str.contains("points_of_interest"));
+        assert!(json_str.contains("obstacles"));
+        assert!(json_str.contains("ammo"));
+    }
 }

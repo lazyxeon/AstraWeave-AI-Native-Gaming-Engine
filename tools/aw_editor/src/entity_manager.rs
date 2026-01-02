@@ -12,6 +12,7 @@ pub type EntityId = u64;
 
 /// Material texture slots for PBR (Physically Based Rendering) workflow
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum MaterialSlot {
     /// Base color / albedo texture
     Albedo,
@@ -55,11 +56,11 @@ impl Default for EntityMaterial {
         Self {
             name: "Default".to_string(),
             texture_slots: HashMap::new(),
-            base_color: Vec4::ONE,  // White
-            metallic: 0.0,          // Dielectric by default
-            roughness: 0.5,         // Medium roughness
-            emissive: Vec3::ZERO,   // No emission
-            normal_strength: 1.0,   // Full normal strength
+            base_color: Vec4::ONE, // White
+            metallic: 0.0,         // Dielectric by default
+            roughness: 0.5,        // Medium roughness
+            emissive: Vec3::ZERO,  // No emission
+            normal_strength: 1.0,  // Full normal strength
         }
     }
 }

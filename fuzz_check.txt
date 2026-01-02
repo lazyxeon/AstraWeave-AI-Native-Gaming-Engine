@@ -1,0 +1,19 @@
+warning: unused import: `std::time::Duration`
+ --> fuzz_targets\fuzz_cache_entry.rs:9:5
+  |
+9 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-blend-fuzz` (bin "fuzz_cache_entry") generated 1 warning (run `cargo fix --bin "fuzz_cache_entry"` to apply 1 suggestion)
+warning: unused import: `Path`
+ --> fuzz_targets\fuzz_path.rs:6:17
+  |
+6 | use std::path::{Path, PathBuf};
+  |                 ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-blend-fuzz` (bin "fuzz_path") generated 1 warning (run `cargo fix --bin "fuzz_path"` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.37s

@@ -11,7 +11,7 @@
 
 use astraweave_ai::orchestrator::Orchestrator;
 #[cfg(feature = "llm_orchestrator")]
-use astraweave_ai::{AIArbiter, AIControlMode, LlmExecutor};
+use astraweave_ai::{AIArbiter, AIControlMode, LlmExecutor, OrchestratorAsync};
 use astraweave_core::{
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
 };
@@ -86,6 +86,19 @@ impl Orchestrator for MockLlmOrch {
     fn propose_plan(&self, _snap: &WorldSnapshot) -> PlanIntent {
         // Synchronous version - not used by LlmExecutor
         self.plan.clone()
+    }
+}
+
+#[async_trait::async_trait]
+impl OrchestratorAsync for MockLlmOrch {
+    async fn plan(&self, _snap: WorldSnapshot, _budget_ms: u32) -> anyhow::Result<PlanIntent> {
+        // Simulate async delay
+        tokio::time::sleep(std::time::Duration::from_millis(self.delay_ms)).await;
+        Ok(self.plan.clone())
+    }
+    
+    fn name(&self) -> &'static str {
+        "MockLlmOrch"
     }
 }
 

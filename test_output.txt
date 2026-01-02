@@ -1,0 +1,207 @@
+warning: unused variable: `post_shader`
+   --> astraweave-render\src\renderer.rs:729:13
+    |
+729 |         let post_shader = device.create_shader_module(wgpu::ShaderMod...
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_post_shader`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-render` (lib) generated 1 warning
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: unused imports: `CullingResources`, `DecalSystem`, `Decal`, `DeferredRenderer`, `LODConfig`, `Mesh`, `SimplificationMesh`, `SkyMode`, `TimeOfDay`, `Vertex`, `WeatherType`, `advanced_post::AdvancedPostFx`, `msaa::MsaaMode`, and `water::WaterRenderer`
+  --> astraweave-render\tests\coverage_booster_render.rs:4:41
+   |
+4  |     deferred::{GBuffer, GBufferFormats, DeferredRenderer},
+   |                                         ^^^^^^^^^^^^^^^^
+5  |     gi::vxgi::{VxgiConfig, VxgiRenderer},
+6  |     ibl::{IblManager, IblQuality, SkyMode},
+   |                                   ^^^^^^^
+...
+10 |     types::{Instance, Mesh, Vertex, SkinnedVertex},
+   |                       ^^^^  ^^^^^^
+11 |     WeatherType,
+   |     ^^^^^^^^^^^
+12 |     environment::{SkyRenderer, SkyConfig, TimeOfDay, WeatherSystem},
+   |                                           ^^^^^^^^^
+13 |     effects::{WeatherFx, WeatherKind},
+14 |     msaa::MsaaMode,
+   |     ^^^^^^^^^^^^^^
+...
+18 |     culling::{InstanceAABB, FrustumPlanes, CullingPipeline, CullingResources},
+   |                                                             ^^^^^^^^^^^^^^^^
+...
+21 |     decals::{DecalSystem, Decal},
+   |              ^^^^^^^^^^^  ^^^^^
+22 |     water::WaterRenderer,
+   |     ^^^^^^^^^^^^^^^^^^^^
+23 |     lod_generator::{LODGenerator, LODConfig, SimplificationMesh},
+   |                                   ^^^^^^^^^  ^^^^^^^^^^^^^^^^^^
+24 |     advanced_post::AdvancedPostFx,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `astraweave_cinematics as awc`
+  --> astraweave-render\tests\coverage_booster_render.rs:30:5
+   |
+30 | use astraweave_cinematics as awc;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> astraweave-render\tests\coverage_booster_render.rs:34:5
+   |
+34 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `pack`
+   --> astraweave-render\tests\coverage_booster_render.rs:131:9
+    |
+131 |     let pack = MaterialPackDesc {
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_pack`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `forward`
+   --> astraweave-render\tests\coverage_booster_render.rs:208:13
+    |
+208 |     let mut forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_forward`
+
+warning: unused variable: `streaming`
+   --> astraweave-render\tests\coverage_booster_render.rs:217:13
+    |
+217 |     let mut streaming = TextureStreamingManager::new(100); // 100MB
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_streaming`
+
+warning: variable does not need to be mutable
+   --> astraweave-render\tests\coverage_booster_render.rs:208:9
+    |
+208 |     let mut forward = ClusteredForwardRenderer::new(&device, ClusterConfig::default());
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-render\tests\coverage_booster_render.rs:217:9
+    |
+217 |     let mut streaming = TextureStreamingManager::new(100); // 100MB
+    |         ----^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `input_tex`
+   --> astraweave-render\tests\coverage_booster_render.rs:632:9
+    |
+632 |     let input_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_input_tex`
+
+warning: unused variable: `output_tex`
+   --> astraweave-render\tests\coverage_booster_render.rs:633:9
+    |
+633 |     let output_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_output_tex`
+
+warning: unused variable: `velocity_tex`
+   --> astraweave-render\tests\coverage_booster_render.rs:634:9
+    |
+634 |     let velocity_tex = device.create_texture(&tex_desc).create_view(&Default::default());
+    |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_velocity_tex`
+
+warning: unused variable: `depth_tex`
+   --> astraweave-render\tests\coverage_booster_render.rs:635:9
+    |
+635 |     let depth_tex = device.create_texture(&wgpu::TextureDescriptor {
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_depth_tex`
+
+warning: unused variable: `culling_res`
+   --> astraweave-render\tests\coverage_booster_render.rs:712:9
+    |
+712 |     let culling_res = culling.create_culling_resources(&device, &[aabb], &frustum);
+    |         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_culling_res`
+
+warning: unused variable: `ibl`
+   --> astraweave-render\tests\coverage_booster_render.rs:758:13
+    |
+758 |     let mut ibl = IblManager::new(&device, IblQuality::High).unwrap();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_ibl`
+
+warning: variable does not need to be mutable
+   --> astraweave-render\tests\coverage_booster_render.rs:714:9
+    |
+714 |     let mut cull_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    |         ----^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> astraweave-render\tests\coverage_booster_render.rs:758:9
+    |
+758 |     let mut ibl = IblManager::new(&device, IblQuality::High).unwrap();
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> astraweave-render\tests\coverage_booster_render.rs:761:9
+    |
+761 |     let mut ibl_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    |         ----^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused `std::result::Result` that must be used
+   --> astraweave-render\tests\coverage_booster_render.rs:485:9
+    |
+485 |         megalights.dispatch(&mut mega_encoder, 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+485 |         let _ = megalights.dispatch(&mut mega_encoder, 1);
+    |         +++++++
+
+warning: unused `std::result::Result` that must be used
+   --> astraweave-render\tests\coverage_booster_render.rs:567:5
+    |
+567 | /     decal_sys.add_decal(Decal {
+568 | |         position: glam::Vec3::ZERO,
+569 | |         rotation: glam::Quat::IDENTITY,
+570 | |         scale: glam::Vec3::ONE,
+...   |
+578 | |         fade_time: 0.0,
+579 | |     });
+    | |______^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+567 |     let _ = decal_sys.add_decal(Decal {
+    |     +++++++
+
+warning: `astraweave-render` (test "coverage_booster_render") generated 19 warnings (run `cargo fix --test "coverage_booster_render"` to apply 8 suggestions)
+    Finished `test` profile [optimized + debuginfo] target(s) in 18.86s
+     Running tests\coverage_booster_render.rs (target\debug\deps\coverage_booster_render-a5ed745485e26406.exe)
+
+running 1 test
+Initializing Renderer...
+Renderer initialized.
+Testing Material Package...
+Material Package tested.
+Testing Cinematics...
+Cinematics tested.
+Testing IBL...
+IBL tested.
+Testing Resize...
+Resize tested.
+
+thread 'test_render_advanced_features' panicked at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-core-25.0.2\src\device\queue.rs:193:29:
+We timed out while waiting on the last successful submission to complete!
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p astraweave-render --test coverage_booster_render`
+
+Caused by:
+  process didn't exit successfully: `C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\debug\deps\coverage_booster_render-a5ed745485e26406.exe test_render_advanced_features --nocapture` (exit code: 0xc0000005, STATUS_ACCESS_VIOLATION)

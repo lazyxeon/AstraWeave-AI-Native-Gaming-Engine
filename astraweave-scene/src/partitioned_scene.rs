@@ -261,3 +261,86 @@ impl ScenePartitionExt for Scene {
         PartitionedScene::new(grid_config, streaming_config)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use astraweave_asset::cell_loader::{CellData, EntityData};
+
+    #[test]
+    fn test_cell_entities_add_remove_dedup() {
+        let cell = GridCoord::new(0, 0, 0);
+        let mut ce = CellEntities::new(cell);
+        assert_eq!(ce.cell, cell);
+        assert!(ce.entities.is_empty());
+
+        ce.add_entity(42);
+        ce.add_entity(42);
+        assert_eq!(ce.entities, vec![42]);
+
+        ce.add_entity(7);
+        assert_eq!(ce.entities.len(), 2);
+
+        ce.remove_entity(42);
+        assert_eq!(ce.entities, vec![7]);
+    }
+
+    #[test]
+    fn test_on_cell_loaded_and_unloaded_emits_events_and_tracks_entities() {
+        let mut ps = PartitionedScene::new_default();
+        let coord = GridCoord::new(1, 0, 2);
+
+        let mut cell_data = CellData::new([coord.x, coord.y, coord.z]);
+        cell_data.add_entity(EntityData::new([1.0, 2.0, 3.0]).with_name("a"));
+        cell_data.add_entity(EntityData::new([4.0, 5.0, 6.0]).with_name("b"));
+
+        ps.on_cell_loaded(coord, cell_data);
+
+        // 2 entity spawned events + 1 cell loaded event.
+        assert_eq!(ps.events.len(), 3);
+        assert!(ps.cell_entities.contains_key(&coord));
+        assert_eq!(ps.query_entities_in_cell(coord).unwrap().len(), 2);
+
+        let spawned_entities = ps.query_entities_in_cell(coord).unwrap().clone();
+        for e in &spawned_entities {
+            assert_eq!(ps.get_entity_cell(*e), Some(coord));
+        }
+
+        ps.on_cell_unloaded(coord);
+
+        // 2 despawned events + 1 cell unloaded event.
+        assert_eq!(ps.events.len(), 6);
+        assert!(ps.cell_entities.get(&coord).is_none());
+        for e in &spawned_entities {
+            assert!(ps.get_entity_cell(*e).is_none());
+        }
+    }
+
+    #[test]
+    fn test_move_entity_to_cell_tracks_spawn_move_and_noop_same_cell() {
+        let mut ps = PartitionedScene::new_default();
+        let a = GridCoord::new(0, 0, 0);
+        let b = GridCoord::new(2, 0, 3);
+
+        // Untracked entity -> treated as spawn.
+        ps.move_entity_to_cell(100, a);
+        assert_eq!(ps.get_entity_cell(100), Some(a));
+        assert!(matches!(ps.events.last(), Some(SceneEvent::EntitySpawned(100, _))));
+
+        let events_before = ps.events.len();
+        // Same cell -> no-op.
+        ps.move_entity_to_cell(100, a);
+        assert_eq!(ps.events.len(), events_before);
+
+        // Move to a new cell.
+        ps.move_entity_to_cell(100, b);
+        assert_eq!(ps.get_entity_cell(100), Some(b));
+        assert!(matches!(ps.events.last(), Some(SceneEvent::EntityMoved(100, _, _))));
+    }
+
+    #[test]
+    fn test_scene_partition_ext_load_partitioned_constructs() {
+        let ps = Scene::load_partitioned(GridConfig::default(), StreamingConfig::default());
+        assert!(ps.events.is_empty());
+    }
+}

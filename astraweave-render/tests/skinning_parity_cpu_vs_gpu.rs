@@ -10,7 +10,6 @@ use astraweave_render::animation::*;
 #[cfg(feature = "skinning-gpu")]
 use astraweave_render::skinning_gpu::{JointPaletteManager, SKINNING_GPU_SHADER};
 use glam::{Mat4, Quat, Vec3};
-use wgpu::util::DeviceExt;
 
 /// Create a test skeleton for parity validation
 fn create_parity_test_skeleton() -> Skeleton {
@@ -111,6 +110,7 @@ fn skin_vertices_cpu(
 }
 
 /// Compare two vertex arrays with tolerance
+#[allow(dead_code)]
 fn assert_vertices_close(
     cpu_verts: &[(Vec3, Vec3)],
     gpu_verts: &[(Vec3, Vec3)],

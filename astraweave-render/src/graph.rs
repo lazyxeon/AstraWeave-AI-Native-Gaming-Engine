@@ -162,6 +162,7 @@ pub trait RenderNode {
 }
 
 /// A very small, linear render graph. Edges are expressed as node ordering for now.
+#[derive(Default)]
 pub struct RenderGraph {
     nodes: Vec<Box<dyn RenderNode + Send + Sync>>, // keep Send+Sync for future parallelization
 }
@@ -250,11 +251,6 @@ impl RenderNode for RendererMainNode {
     }
 }
 
-impl Default for RenderGraph {
-    fn default() -> Self {
-        Self { nodes: Vec::new() }
-    }
-}
 
 impl RenderGraph {
     pub fn new() -> Self {

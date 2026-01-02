@@ -259,7 +259,7 @@ mod tests {
             );
 
             queue.submit(Some(encoder.finish()));
-            device.poll(wgpu::MaintainBase::Wait);
+            let _ = device.poll(wgpu::MaintainBase::Wait);
 
             // Map and read
             let slice = read_buffer.slice(..);
@@ -267,7 +267,7 @@ mod tests {
             slice.map_async(wgpu::MapMode::Read, move |result| {
                 let _ = tx.send(result);
             });
-            device.poll(wgpu::MaintainBase::Wait);
+            let _ = device.poll(wgpu::MaintainBase::Wait);
             rx.recv().unwrap().unwrap();
 
             let data = slice.get_mapped_range();
@@ -368,14 +368,14 @@ mod tests {
                 );
 
                 queue.submit(Some(encoder.finish()));
-                device.poll(wgpu::MaintainBase::Wait);
+                let _ = device.poll(wgpu::MaintainBase::Wait);
 
                 let slice = read_buffer.slice(..);
                 let (tx, rx) = std::sync::mpsc::sync_channel(1);
                 slice.map_async(wgpu::MapMode::Read, move |r| {
                     let _ = tx.send(r);
                 });
-                device.poll(wgpu::MaintainBase::Wait);
+                let _ = device.poll(wgpu::MaintainBase::Wait);
                 rx.recv().unwrap().unwrap();
 
                 let data = slice.get_mapped_range();

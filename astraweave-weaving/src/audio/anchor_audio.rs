@@ -438,8 +438,8 @@ mod tests {
         let commands = system.update(0.016);
 
         // Should generate some commands (hum playback, etc.)
-        // Exact count depends on state transitions, so just check it's non-zero
-        assert!(commands.len() >= 0); // May be 0 if no transitions
+        // Exact count depends on state transitions, so just verify it doesn't crash
+        let _ = commands.len(); // May be 0 if no transitions
     }
 
     #[test]

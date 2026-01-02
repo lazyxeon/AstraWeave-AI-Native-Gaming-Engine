@@ -268,7 +268,7 @@ impl GpuParticleSystem {
         pass.set_bind_group(0, bind_group, &[]);
 
         // Dispatch with 64 threads per workgroup
-        let workgroups = (self.max_particles + 63) / 64;
+        let workgroups = self.max_particles.div_ceil(64);
         pass.dispatch_workgroups(workgroups, 1, 1);
 
         drop(pass);

@@ -1,0 +1,469 @@
+    Blocking waiting for file lock on build directory
+    Checking cfg-if v1.0.3
+    Checking windows-link v0.2.1
+    Checking smallvec v1.15.1
+    Checking log v0.4.28
+    Checking serde_core v1.0.228
+    Checking libm v0.2.15
+    Checking windows_x86_64_msvc v0.52.6
+    Checking zerocopy v0.8.27
+    Checking once_cell v1.21.3
+    Checking bytemuck v1.24.0
+    Checking windows-sys v0.61.2
+    Checking windows-targets v0.52.6
+    Checking crossbeam-utils v0.8.21
+    Checking itoa v1.0.15
+    Checking num-traits v0.2.19
+    Checking scopeguard v1.2.0
+    Checking memchr v2.7.6
+    Checking parking_lot_core v0.9.12
+    Checking lock_api v0.4.14
+    Checking stable_deref_trait v1.2.1
+    Checking thiserror v1.0.69
+    Checking pin-project-lite v0.2.16
+    Checking anyhow v1.0.100
+    Checking arrayvec v0.7.6
+    Checking parking_lot v0.12.5
+    Checking libc v0.2.177
+    Checking serde v1.0.228
+    Checking getrandom v0.3.3
+    Checking crossbeam-epoch v0.9.18
+    Checking ryu v1.0.20
+    Checking thiserror v2.0.17
+    Checking num-integer v0.1.46
+    Checking simd-adler32 v0.3.7
+    Checking crossbeam-deque v0.8.6
+    Checking equivalent v1.0.2
+    Checking bytes v1.10.1
+    Checking serde_json v1.0.145
+    Checking num-bigint v0.4.6
+    Checking bitflags v2.9.4
+    Checking profiling v1.0.17
+    Checking typenum v1.19.0
+    Checking windows-sys v0.59.0
+    Checking either v1.15.0
+    Checking zerofrom v0.1.6
+    Checking half v2.7.1
+    Checking ppv-lite86 v0.2.21
+    Checking adler2 v2.0.1
+    Checking windows_x86_64_msvc v0.53.1
+    Checking yoke v0.8.0
+    Checking miniz_oxide v0.8.9
+    Checking foldhash v0.1.5
+    Checking allocator-api2 v0.2.21
+    Checking minimal-lexical v0.2.1
+    Checking byteorder v1.5.0
+    Checking windows-targets v0.53.5
+    Checking num-rational v0.4.2
+    Checking nom v7.1.3
+    Checking hashbrown v0.15.5
+    Checking crc32fast v1.5.0
+    Checking windows-result v0.2.0
+    Checking tracing-core v0.1.34
+    Checking equator v0.4.2
+    Checking mio v1.0.4
+    Checking socket2 v0.6.0
+    Checking windows-strings v0.1.0
+    Checking zerovec v0.11.4
+    Checking winapi-util v0.1.11
+    Checking flate2 v1.1.4
+    Checking windows-sys v0.60.2
+    Checking rayon-core v1.13.0
+    Checking fnv v1.0.7
+    Checking windows-core v0.58.0
+    Checking aligned-vec v0.6.4
+    Checking tokio v1.48.0
+    Checking hashbrown v0.16.0
+    Checking slab v0.4.11
+    Checking v_frame v0.3.9
+    Checking rayon v1.11.0
+    Checking windows v0.58.0
+    Checking tracing v0.1.41
+    Checking generic-array v0.14.7
+    Checking rand_core v0.9.3
+    Checking indexmap v2.11.4
+    Checking uuid v1.18.1
+    Checking ordered-float v4.6.0
+    Checking quick-error v2.0.1
+    Checking lazy_static v1.5.0
+    Checking unicode-ident v1.0.19
+    Checking rand_chacha v0.9.0
+    Checking tinystr v0.8.1
+    Checking av1-grain v0.2.4
+    Checking itertools v0.12.1
+    Checking glam v0.30.8
+    Checking litemap v0.8.0
+    Checking bitstream-io v2.6.0
+    Checking new_debug_unreachable v1.0.6
+    Checking imgref v1.12.0
+    Checking writeable v0.6.1
+    Checking zune-core v0.4.12
+    Checking raw-window-handle v0.6.2
+    Checking weezl v0.1.10
+    Checking base64 v0.22.1
+    Checking maybe-rayon v0.1.1
+    Checking zune-jpeg v0.4.21
+    Checking loop9 v0.1.5
+    Checking icu_locale_core v2.0.0
+    Checking fax v0.2.6
+    Checking rav1e v0.7.1
+    Checking rand v0.9.2
+    Checking crypto-common v0.1.6
+    Checking block-buffer v0.10.4
+    Checking potential_utf v0.1.3
+    Checking termcolor v1.4.1
+    Checking zerotrie v0.2.2
+    Checking fdeflate v0.3.7
+    Checking zune-inflate v0.2.54
+    Checking avif-serialize v0.8.6
+    Checking pxfm v0.1.25
+    Checking libloading v0.8.9
+    Checking color_quant v1.1.0
+    Checking lebe v0.5.3
+    Checking bit_field v0.10.3
+    Checking rgb v0.8.52
+    Checking winnow v0.7.13
+    Checking bit-vec v0.8.0
+    Checking byteorder-lite v0.1.0
+    Checking futures-core v0.3.31
+    Checking unicode-width v0.2.2
+    Checking image-webp v0.2.4
+    Checking bit-set v0.8.0
+    Checking exr v1.73.0
+    Checking ravif v0.11.20
+    Checking codespan-reporting v0.12.0
+    Checking gif v0.13.3
+    Checking png v0.18.0
+    Checking icu_provider v2.0.0
+    Checking tiff v0.10.3
+    Checking icu_collections v2.0.0
+    Checking digest v0.10.7
+    Checking moxcms v0.7.7
+    Checking strum v0.26.3
+    Checking spirv v0.3.0+sdk-1.3.268.0
+    Checking gpu-descriptor-types v0.2.0
+    Checking gpu-alloc-types v0.3.0
+    Checking crossbeam-channel v0.5.15
+    Checking safe_arch v0.7.4
+    Checking qoi v0.4.1
+    Checking presser v0.3.1
+    Checking percent-encoding v2.3.2
+    Checking hexf-parse v0.2.1
+    Checking windows-link v0.1.3
+    Checking cpufeatures v0.2.17
+    Checking rustc-hash v1.1.0
+    Checking wide v0.7.33
+    Checking gpu-alloc v0.6.0
+    Checking gpu-descriptor v0.3.2
+    Checking glutin_wgl_sys v0.6.1
+    Checking ash v0.38.0+1.3.281
+    Checking naga v25.0.1
+    Checking icu_properties_data v2.0.1
+    Checking khronos-egl v6.0.0
+    Checking image v0.25.8
+    Checking icu_normalizer_data v2.0.0
+    Checking astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+    Checking hash32 v0.3.1
+    Checking wgpu-types v25.0.0
+    Checking approx v0.5.1
+    Checking num-complex v0.4.6
+    Checking getrandom v0.2.16
+    Checking rawpointer v0.2.1
+    Checking renderdoc-sys v1.1.0
+    Checking glow v0.16.0
+    Checking rustc-hash v2.1.1
+    Checking range-alloc v0.1.4
+    Checking matrixmultiply v0.3.10
+    Checking simba v0.9.1
+    Checking rand_core v0.6.4
+    Checking heapless v0.8.0
+    Checking icu_normalizer v2.0.0
+    Checking sha2 v0.10.9
+    Checking same-file v1.0.6
+    Checking unicode-segmentation v1.12.0
+    Checking zeroize v1.8.2
+    Checking robust v1.2.0
+    Checking walkdir v2.5.0
+    Checking rstar v0.12.2
+    Checking spade v2.15.0
+    Checking gltf-json v1.4.1
+    Checking windows-strings v0.4.2
+    Checking windows-result v0.3.4
+    Checking nalgebra v0.33.2
+    Checking form_urlencoded v1.2.2
+    Checking toml_parser v1.0.4
+    Checking gpu-allocator v0.27.0
+    Checking http v1.3.1
+    Checking toml_datetime v0.7.3
+    Checking serde_spanned v1.0.3
+    Checking crossbeam-queue v0.3.12
+    Checking wgpu-hal v25.0.2
+    Checking ena v0.14.3
+    Checking ttf-parser v0.25.1
+    Checking downcast-rs v1.2.1
+    Checking base64 v0.13.1
+    Checking utf8_iter v1.0.4
+    Checking urlencoding v2.1.3
+    Checking notify-types v2.0.0
+    Checking pin-utils v0.1.0
+    Checking toml_writer v1.0.4
+    Checking gltf v1.4.1
+    Checking notify v8.2.0
+    Checking crossbeam v0.8.4
+    Checking toml v0.9.8
+    Checking http-body v1.0.1
+    Checking windows-core v0.61.2
+    Checking astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+    Checking ron v0.11.0
+    Checking cursor-icon v1.2.0
+    Checking dpi v0.1.2
+    Checking smol_str v0.2.2
+    Checking parry3d v0.17.6
+    Checking owned_ttf_parser v0.25.1
+    Checking icu_properties v2.0.1
+    Checking emath v0.32.3
+    Checking windows-sys v0.52.0
+    Checking hex v0.4.3
+    Checking once_cell_polyfill v1.70.1
+    Checking futures-task v0.3.31
+    Checking wgpu-core-deps-windows-linux-android v25.0.0
+    Checking ab_glyph_rasterizer v0.1.10
+    Checking vec_map v0.8.2
+    Checking anstyle v1.0.13
+    Checking wgpu-core v25.0.2
+    Checking bit-vec v0.7.0
+    Checking static_assertions v1.1.0
+    Checking utf8parse v0.2.2
+    Checking anstyle-wincon v3.0.10
+    Checking ab_glyph v0.2.32
+    Checking anstyle-parse v0.2.7
+    Checking futures-util v0.3.31
+    Checking idna_adapter v1.2.1
+    Checking ecolor v0.32.3
+    Checking astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+    Checking idna v1.1.0
+    Checking astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+    Checking ahash v0.8.12
+    Checking url v2.5.7
+    Checking gilrs-core v0.5.15
+    Checking rand_chacha v0.3.1
+    Checking anstyle-query v1.1.4
+    Checking try-lock v0.2.5
+    Checking colorchoice v1.0.4
+    Checking regex-syntax v0.8.7
+    Checking tower-service v0.3.3
+    Checking is_terminal_polyfill v1.70.1
+    Checking nohash-hasher v0.2.0
+    Checking epaint_default_fonts v0.32.3
+    Checking rapier3d v0.22.0
+    Checking winit v0.30.12
+    Checking want v0.3.1
+    Checking rand v0.8.5
+    Checking anstream v0.6.21
+    Checking epaint v0.32.3
+    Checking gilrs v0.10.10
+    Checking httparse v1.10.1
+    Checking regex-automata v0.4.12
+    Checking windows-threading v0.1.0
+    Checking futures-channel v0.3.31
+    Checking astraweave-nav v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+    Checking schannel v0.1.28
+    Checking error-code v3.3.2
+    Checking subtle v2.6.1
+    Checking signature v2.2.0
+    Checking clap_lex v0.7.5
+    Checking atomic-waker v1.1.2
+    Checking strsim v0.11.1
+    Checking clipboard-win v5.4.1
+    Checking ed25519 v2.2.3
+    Checking hyper v1.7.0
+    Checking native-tls v0.2.14
+    Checking astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+    Checking clap_builder v4.5.49
+    Checking matchers v0.2.0
+    Checking curve25519-dalek v4.1.3
+    Checking egui v0.32.3
+    Checking astraweave-input v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+    Checking windows-future v0.2.1
+    Checking wgpu v25.0.2
+    Checking windows-numerics v0.2.0
+    Checking windows-collections v0.2.0
+    Checking sync_wrapper v1.0.2
+    Checking sharded-slab v0.1.7
+    Checking tracing-serde v0.2.0
+    Checking tracing-log v0.2.0
+    Checking nu-ansi-term v0.50.3
+    Checking chrono v0.4.42
+    Checking thread_local v1.1.9
+    Checking tower-layer v0.3.3
+    Checking ipnet v2.11.0
+    Checking web-time v1.1.0
+    Checking clap v4.5.49
+    Checking tracing-subscriber v0.3.20
+    Checking tower v0.5.2
+    Checking windows v0.61.3
+    Checking hyper-util v0.1.17
+    Checking ed25519-dalek v2.2.0
+    Checking astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+    Checking tokio-native-tls v0.3.1
+    Checking arboard v3.6.1
+    Checking webbrowser v1.0.5
+    Checking http-body-util v0.1.3
+    Checking keyring v3.6.3
+    Checking rand_xorshift v0.3.0
+    Checking type-map v0.5.1
+    Checking astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+    Checking serde_spanned v0.6.9
+    Checking bincode v1.3.3
+    Checking toml_datetime v0.6.11
+    Checking base64 v0.21.7
+    Checking toml_write v0.1.2
+    Checking futures-sink v0.3.31
+    Checking winsafe v0.0.19
+    Checking env_home v0.1.0
+    Checking hashbrown v0.14.5
+    Checking option-ext v0.2.0
+    Checking iri-string v0.7.8
+    Checking toml_edit v0.22.27
+    Checking hdrhistogram v7.5.4
+    Checking tokio-util v0.7.16
+    Checking gilrs-core v0.6.6
+    Checking dirs-sys v0.5.0
+    Checking dashmap v6.1.0
+    Checking egui-wgpu v0.32.3
+    Checking hyper-tls v0.6.0
+    Checking asset_signing v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\asset_signing)
+    Checking noise v0.9.0
+    Checking egui-winit v0.32.3
+    Checking basis-universal-sys v0.3.1
+    Checking serde_urlencoded v0.7.1
+    Checking rustls-pki-types v1.12.0
+    Checking astraweave-cinematics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-cinematics)
+    Checking ktx2 v0.4.0
+    Checking histogram v0.11.3
+    Checking bitflags v1.3.2
+    Checking glob v0.3.3
+    Checking basis-universal v0.3.1
+    Checking astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+    Checking astraweave-observability v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+    Checking toml v0.8.23
+    Checking gilrs v0.11.0
+    Checking dirs v6.0.0
+    Checking tower-http v0.6.6
+warning: unused import: `CHUNK_SIZE`
+  --> astraweave-terrain\src\meshing.rs:12:69
+   |
+12 | use crate::voxel_data::{ChunkCoord, Voxel, VoxelChunk, VoxelSource, CHUNK_SIZE};
+   |                                                                     ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+    Checking astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+    Checking texture2ddecoder v0.1.2
+    Checking pollster v0.4.0
+    Checking astraweave-ai v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+    Checking reqwest v0.12.24
+    Checking which v8.0.0
+    Checking astraweave-ui v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui)
+    Checking aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+warning: `astraweave-terrain` (lib) generated 1 warning (run `cargo fix --lib -p astraweave-terrain` to apply 1 suggestion)
+    Checking astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+    Checking astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+warning: unused imports: `ChunkCoord`, `ChunkMesh`, and `VoxelChunk`
+  --> examples\hello_companion\src\visual_demo.rs:42:15
+   |
+42 |     meshing::{ChunkMesh, DualContouring},
+   |               ^^^^^^^^^
+43 |     voxel_data::{ChunkCoord, Voxel, VoxelChunk, VoxelSource},
+   |                  ^^^^^^^^^^         ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.
+   --> examples\hello_companion\src\visual_demo.rs:448:23
+    |
+448 |                 wgpu::ImageCopyTexture {
+    |                       ^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.
+   --> examples\hello_companion\src\visual_demo.rs:459:23
+    |
+459 |                 wgpu::ImageDataLayout {
+    |                       ^^^^^^^^^^^^^^^
+
+warning: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.
+   --> examples\hello_companion\src\visual_demo.rs:468:23
+    |
+468 |                 wgpu::ImageCopyTexture {
+    |                       ^^^^^^^^^^^^^^^^
+
+warning: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.
+   --> examples\hello_companion\src\visual_demo.rs:479:23
+    |
+479 |                 wgpu::ImageDataLayout {
+    |                       ^^^^^^^^^^^^^^^
+
+warning: value assigned to `terrain_system_opt` is never read
+    --> examples\hello_companion\src\visual_demo.rs:1538:17
+     |
+1538 |         let mut terrain_system_opt = None;
+     |                 ^^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` on by default
+
+warning: unused variable: `offset_x`
+    --> examples\hello_companion\src\visual_demo.rs:1543:17
+     |
+1543 |             let offset_x = -(grid_size as f32) * spacing * 0.5;
+     |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_offset_x`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `offset_z`
+    --> examples\hello_companion\src\visual_demo.rs:1544:17
+     |
+1544 |             let offset_z = -(grid_size as f32) * spacing * 0.5 + 5.0;
+     |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_offset_z`
+
+warning: variable does not need to be mutable
+    --> examples\hello_companion\src\visual_demo.rs:1515:13
+     |
+1515 |         let mut water_system = WaterSystem::new(&renderer, 64, 4.0);
+     |             ----^^^^^^^^^^^^
+     |             |
+     |             help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `base_positions`
+   --> examples\hello_companion\src\visual_demo.rs:629:13
+    |
+629 |         let base_positions: Vec<Vec3> = self
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_base_positions`
+
+warning: unused variable: `normal_sum`
+   --> examples\hello_companion\src\visual_demo.rs:664:25
+    |
+664 |                 let mut normal_sum = Vec3::ZERO; // Should start with base normal? No, summing gradients.
+    |                         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_normal_sum`
+
+warning: unused variable: `v`
+   --> examples\hello_companion\src\visual_demo.rs:632:19
+    |
+632 |             .map(|v| {
+    |                   ^ help: if this is intentional, prefix it with an underscore: `_v`
+
+warning: variable does not need to be mutable
+   --> examples\hello_companion\src\visual_demo.rs:664:21
+    |
+664 |                 let mut normal_sum = Vec3::ZERO; // Should start with base normal? No, summing gradients.
+    |                     ----^^^^^^^^^^
+    |                     |
+    |                     help: remove this `mut`
+
+warning: `hello_companion` (bin "hello_companion") generated 13 warnings (run `cargo fix --bin "hello_companion"` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 3m 13s

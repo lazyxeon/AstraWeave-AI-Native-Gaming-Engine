@@ -708,7 +708,7 @@ mod tests {
         // The split should ideally be at a whitespace boundary
         if split_point > 0 && split_point < text.len() {
             // Check that we're either at start, end, or near a whitespace
-            let nearby = &text[..split_point.min(text.len())];
+            let _nearby = &text[..split_point.min(text.len())];
             // Just verify it doesn't panic and returns a valid point
             assert!(split_point <= text.len());
         }

@@ -1,0 +1,6 @@
+// Test loader default extensions 
+#[test] 
+fn test_loader_new_default_extensions() { 
+    let loader = PromptLoader::new(); 
+    drop(loader); 
+}

@@ -66,20 +66,20 @@ impl RotateGizmo {
             AxisConstraint::Y => Vec3::Y,
             AxisConstraint::Z => Vec3::Z,
             AxisConstraint::None => return Quat::IDENTITY, // None constraint not supported for rotation
-            _ => return Quat::IDENTITY,                    // Planar constraints not supported for rotation
+            _ => return Quat::IDENTITY, // Planar constraints not supported for rotation
         };
 
         // Create rotation quaternion
-        let rotation = if local_space {
+        
+
+        if local_space {
             // Rotate axis to local space
             let local_axis = object_rotation * axis;
             Quat::from_axis_angle(local_axis, angle)
         } else {
             // Direct world-space rotation
             Quat::from_axis_angle(axis, angle)
-        };
-
-        rotation
+        }
     }
 
     /// Calculate rotation from numeric input value (in degrees).

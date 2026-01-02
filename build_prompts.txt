@@ -1,0 +1,71 @@
+   Compiling astraweave-prompts v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+error[E0599]: no function or associated item named `new_with_metadata` found for struct `template::PromptTemplate` in the current scope
+  --> astraweave-prompts\src\terrain_prompts.rs:90:21
+   |
+90 |     PromptTemplate::new_with_metadata(
+   |                     ^^^^^^^^^^^^^^^^^ function or associated item not found in `template::PromptTemplate`
+   |
+  ::: astraweave-prompts\src\template.rs:12:1
+   |
+12 | pub struct PromptTemplate {
+   | ------------------------- function or associated item `new_with_metadata` not found for this struct
+   |
+note: if you're trying to build a new `template::PromptTemplate`, consider using `template::PromptTemplate::new` which returns `template::PromptTemplate`
+  --> astraweave-prompts\src\template.rs:22:5
+   |
+22 |     pub fn new<S1: Into<String>, S2: Into<String>>(id: S1, template: S2) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `new_with_metadata` found for struct `template::PromptTemplate` in the current scope
+   --> astraweave-prompts\src\terrain_prompts.rs:116:21
+    |
+116 |     PromptTemplate::new_with_metadata("terrain_feature", TERRAIN_FEATURE_TEMPLATE, metadata)
+    |                     ^^^^^^^^^^^^^^^^^ function or associated item not found in `template::PromptTemplate`
+    |
+   ::: astraweave-prompts\src\template.rs:12:1
+    |
+12  | pub struct PromptTemplate {
+    | ------------------------- function or associated item `new_with_metadata` not found for this struct
+    |
+note: if you're trying to build a new `template::PromptTemplate`, consider using `template::PromptTemplate::new` which returns `template::PromptTemplate`
+   --> astraweave-prompts\src\template.rs:22:5
+    |
+22  |     pub fn new<S1: Into<String>, S2: Into<String>>(id: S1, template: S2) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `new_with_metadata` found for struct `template::PromptTemplate` in the current scope
+   --> astraweave-prompts\src\terrain_prompts.rs:142:21
+    |
+142 |     PromptTemplate::new_with_metadata("terrain_modify", TERRAIN_MODIFY_TEMPLATE, metadata)
+    |                     ^^^^^^^^^^^^^^^^^ function or associated item not found in `template::PromptTemplate`
+    |
+   ::: astraweave-prompts\src\template.rs:12:1
+    |
+12  | pub struct PromptTemplate {
+    | ------------------------- function or associated item `new_with_metadata` not found for this struct
+    |
+note: if you're trying to build a new `template::PromptTemplate`, consider using `template::PromptTemplate::new` which returns `template::PromptTemplate`
+   --> astraweave-prompts\src\template.rs:22:5
+    |
+22  |     pub fn new<S1: Into<String>, S2: Into<String>>(id: S1, template: S2) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `new_with_metadata` found for struct `template::PromptTemplate` in the current scope
+   --> astraweave-prompts\src\terrain_prompts.rs:164:21
+    |
+164 |     PromptTemplate::new_with_metadata("terrain_batch", TERRAIN_BATCH_TEMPLATE, metadata)
+    |                     ^^^^^^^^^^^^^^^^^ function or associated item not found in `template::PromptTemplate`
+    |
+   ::: astraweave-prompts\src\template.rs:12:1
+    |
+12  | pub struct PromptTemplate {
+    | ------------------------- function or associated item `new_with_metadata` not found for this struct
+    |
+note: if you're trying to build a new `template::PromptTemplate`, consider using `template::PromptTemplate::new` which returns `template::PromptTemplate`
+   --> astraweave-prompts\src\template.rs:22:5
+    |
+22  |     pub fn new<S1: Into<String>, S2: Into<String>>(id: S1, template: S2) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `astraweave-prompts` (lib) due to 4 previous errors

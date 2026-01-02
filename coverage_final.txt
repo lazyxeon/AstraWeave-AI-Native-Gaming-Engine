@@ -1,0 +1,137 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+warning: process didn't exit successfully: `C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\bin\cargo.exe clean --package astraweave-ecs --package astraweave-profiling --package astraweave-ai --package astraweave-behavior --package astraweave-core --package astraweave-llm --package astraweave-observability --package astraweave-nav --package astraweave-sdk --package astraweave-director --package astraweave-context --package astraweave-prompts --package astraweave-rag --package astraweave-embeddings --package astraweave-memory --package astraweave-ipc --package astraweave-llm-eval --package astraweave-persona --package astraweave-author --package astraweave-net --package hello_companion --package astraweave-asset --package astraweave-blend --package astraweave-dialogue --package astraweave-render --package astraweave-cinematics --package astraweave-materials --package astraweave-terrain --package astraweave-gameplay --package astraweave-input --package astraweave-physics --package astraweave-scene --package aw_asset_cli --package asset_signing --package astraweave-ui --package adaptive_boss --package companion_profile --package ipc_loopback --package debug_overlay --package llm_toolcall --package llm_integration --package llm_comprehensive_demo --package llm_streaming_demo --package ollama_probe_example --package phase_director --package persona_loader --package rhai_authoring --package coop_server --package coop_client --package astraweave-asset-pipeline --package visual_3d --package astraweave-math --package physics_demo3d --package navmesh_demo --package weaving_playground --package crafting_combat_demo --package quest_dialogue_demo --package combat_physics_demo --package cutscene_render_demo --package astraweave-audio --package audio_spatial_demo --package dialogue_voice_demo --package dialogue_audio_cli --package nav_physics_bridge --package astraweave-npc --package npc_town_demo --package skinning_demo --package ui_controls_demo --package debug_toolkit_demo --package aw_debug --package veilweaver_quest_demo --package astraweave-weaving --package astraweave-pcg --package save_integration --package aw-save --package unified_showcase --package cinematics_timeline_demo --package terrain_demo --package biome_showcase --package orchestrator_async_tick --package advanced_content_demo --package aw_editor --package astract --package astract-macro --package astraweave-quests --package astraweave-security --package astraweave-assets --package aw_build --package aw_texture_gen --package aw_headless --package ollama_probe --package aw_release --package aw_demo_builder --package aw_save_cli --package aw-net-proto --package aw-net-server --package aw-net-client --package astraweave-net-ecs --package astraweave-persistence-ecs --package astraweave-persistence-player --package astraweave-stress-test --package astraweave-secrets --package astraweave-scripting --package astraweave-steam --package ecs_ai_demo --package ecs_ai_showcase --package scripting_advanced_demo --package core_loop_bt_demo --package core_loop_goap_demo --package weaving_pcg_demo --package phi3_demo --package veilweaver_demo --package veilweaver_slice_runtime --package veilweaver_slice_loader --package world_partition_demo --package profiling_demo --package ui_menu_demo --package astract_gallery --package shadow_csm_demo --package renderer_integration_test --package greybox_generator --package astraweave-fluids --package fluids_demo --color never --manifest-path C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\Cargo.toml --target-dir C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target` (exit code: 101)
+--- stderr
+    Blocking waiting for file lock on build directory
+error: failed to remove file `C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target\debug\deps\boundary_condition_tests-965392665b6253a7.exe`
+
+Caused by:
+  Access is denied. (os error 5)
+
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling astraweave-net v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net)
+warning: function `assert_message_sane` is never used
+ --> astraweave-net\tests\error_message_validation_tests.rs:1:4
+  |
+1 | fn assert_message_sane(msg: &str) {
+  |    ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-net` (test "error_message_validation_tests") generated 1 warning
+warning: methods `client_count` and `get_entity_pos` are never used
+  --> astraweave-net\tests\common\mod.rs:24:18
+   |
+22 | impl TestServer {
+   | --------------- methods in this implementation
+23 |     /// Get the number of connected clients
+24 |     pub async fn client_count(&self) -> usize {
+   |                  ^^^^^^^^^^^^
+...
+48 |     pub async fn get_entity_pos(&self, id: u32) -> Option<IVec2> {
+   |                  ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: method `is_connected` is never used
+   --> astraweave-net\tests\common\mod.rs:103:12
+    |
+78  | impl TestClient {
+    | --------------- method in this implementation
+...
+103 |     pub fn is_connected(&self) -> bool {
+    |            ^^^^^^^^^^^^
+
+warning: function `create_test_world` is never used
+   --> astraweave-net\tests\common\mod.rs:226:8
+    |
+226 | pub fn create_test_world() -> World {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `wait_for_condition` is never used
+   --> astraweave-net\tests\common\mod.rs:246:14
+    |
+246 | pub async fn wait_for_condition<F>(mut check: F, timeout_ms: u64) -> Result<()>
+    |              ^^^^^^^^^^^^^^^^^^
+
+warning: `astraweave-net` (test "integration_tests") generated 4 warnings
+    Finished `test` profile [optimized + debuginfo] target(s) in 1m 18s
+     Running unittests src\lib.rs (target\llvm-cov-target\debug\deps\astraweave_net-3e22d8d7a747f98d.exe)
+
+running 38 tests
+test tests::delta_removal_on_interest_change ... ok
+test tests::delta_roundtrip ... ok
+test tests::fov_los_interest_blocks_through_wall ... ok
+test tests::interest_filter_basic ... ok
+test tests::multi_client_consistency_filtered_hash ... ok
+test tests::replay_determinism ... ok
+test tests::snapshot_hash_stable ... ok
+test tests::test_apply_delta_creates_new_entity ... ok
+test tests::test_apply_delta_mismatched_tick ... ok
+test tests::test_delta_equality ... ok
+test tests::test_diff_snapshots_new_entity ... ok
+test tests::test_diff_snapshots_no_change ... ok
+test tests::test_diff_snapshots_team_change ... ok
+test tests::test_diff_snapshots_with_exclusion ... ok
+test tests::test_entity_delta_equality ... ok
+test tests::test_entity_delta_mask_flags ... ok
+test tests::test_entity_state_clone ... ok
+test tests::test_entity_state_equality ... ok
+test tests::test_fov_interest_basic ... ok
+test tests::test_fov_interest_out_of_range ... ok
+test tests::test_fov_interest_same_position ... ok
+test tests::test_fov_interest_zero_facing ... ok
+test tests::test_fov_los_interest_out_of_range ... ok
+test tests::test_fov_los_interest_same_position_enemy ... ok
+test tests::test_fov_los_interest_same_team ... ok
+test tests::test_fov_los_interest_zero_facing ... ok
+test tests::test_full_interest_includes_all ... ok
+test tests::test_game_server_default ... ok
+test tests::test_has_los_negative_sx ... ok
+test tests::test_interest_policy_variants ... ok
+test tests::test_msg_ack_serialization ... ok
+test tests::test_msg_apply_result_serialization ... ok
+test tests::test_msg_serialization ... ok
+test tests::test_msg_welcome_serialization ... ok
+test tests::test_radius_interest_same_team_always_included ... ok
+test tests::test_replay_event_serialization ... ok
+test tests::test_server_event_clone ... ok
+test tests::test_snapshot_clone ... ok
+
+test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+
+     Running tests\boundary_condition_tests.rs (target\llvm-cov-target\debug\deps\boundary_condition_tests-965392665b6253a7.exe)
+
+running 6 tests
+test test_apply_delta_tick_mismatch_no_change ... ok
+test test_diff_and_apply_delta_large_collection_does_not_panic ... ok
+test test_diff_snapshots_empty_collections_no_changes ... ok
+test test_filter_snapshot_for_viewer_empty_entities_stays_empty ... ok
+test test_msg_clienthello_empty_name_roundtrip ... ok
+test test_msg_clienthello_very_long_name_roundtrip ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+
+     Running tests\concurrent_stress_tests.rs (target\llvm-cov-target\debug\deps\concurrent_stress_tests-d581c44f8517c62c.exe)
+
+running 1 test
+test test_concurrent_diff_apply_and_serialize_no_panic ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.39s
+
+     Running tests\error_message_validation_tests.rs (target\llvm-cov-target\debug\deps\error_message_validation_tests-3b02ed871afd88d9.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\integration_tests.rs (target\llvm-cov-target\debug\deps\integration_tests-c62da88f253e0dea.exe)
+error: test failed, to rerun pass `-p astraweave-net --test integration_tests`
+
+Caused by:
+  could not execute process `C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target\debug\deps\integration_tests-c62da88f253e0dea.exe --test-threads=1` (never executed)
+
+Caused by:
+  The system cannot find the file specified. (os error 2)
+error: process didn't exit successfully: `C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\bin\cargo.exe test --tests --manifest-path C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\Cargo.toml --target-dir C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target -p astraweave-net -- --test-threads=1` (exit code: 101)

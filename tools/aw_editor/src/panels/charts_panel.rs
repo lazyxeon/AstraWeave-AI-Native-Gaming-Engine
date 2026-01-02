@@ -230,14 +230,15 @@ impl Panel for ChartsPanel {
                 Color32::from_rgb(100, 180, 255),
             );
 
-            // Add 60 FPS target line
-            let min_time = self.frame_history.first().unwrap().0;
-            let max_time = self.frame_history.last().unwrap().0;
-            line_chart.add_series(
-                "60 FPS Target",
-                vec![(min_time, 16.67), (max_time, 16.67)],
-                Color32::from_rgb(80, 220, 80),
-            );
+            if let (Some(first), Some(last)) = (self.frame_history.first(), self.frame_history.last()) {
+                let min_time = first.0;
+                let max_time = last.0;
+                line_chart.add_series(
+                    "60 FPS Target",
+                    vec![(min_time, 16.67), (max_time, 16.67)],
+                    Color32::from_rgb(80, 220, 80),
+                );
+            }
         }
 
         line_chart.show(ui);
@@ -308,10 +309,7 @@ impl Panel for ChartsPanel {
     }
 
     fn update(&mut self) {
-        // Update at ~60 FPS
-        if self.frame_count % 1 == 0 {
-            self.simulate_frame_timing();
-        }
+        self.simulate_frame_timing();
     }
 }
 

@@ -1,0 +1,26 @@
+[package]
+name = "astraweave-steam"
+version = "0.1.0"
+license.workspace = true
+edition = "2021"
+description = "Steamworks SDK integration for AstraWeave"
+
+[[bench]]
+name = "steam_adversarial"
+harness = false
+
+[dependencies]
+steamworks = "0.12"
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[features]
+default = []
+# Enable mock implementation for testing without Steam
+mock = []

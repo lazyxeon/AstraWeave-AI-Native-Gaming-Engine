@@ -371,4 +371,20 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(call_count, 1); // No retries for permanent errors
     }
+
+    #[test]
+    fn test_retry_config_aggressive() {
+        let config = RetryConfig::aggressive();
+        assert_eq!(config.max_attempts, 5);
+        assert_eq!(config.initial_backoff_ms, 25);
+    }
+
+    #[test]
+    fn test_retryable_error_display() {
+        assert_eq!(format!("{}", RetryableError::Timeout), "Request timeout");
+        assert_eq!(format!("{}", RetryableError::NetworkError), "Network error");
+        assert_eq!(format!("{}", RetryableError::RateLimited), "Rate limited");
+        assert_eq!(format!("{}", RetryableError::ServerError(500)), "Server error 500");
+        assert_eq!(format!("{}", RetryableError::Permanent("fail".into())), "Permanent error: fail");
+    }
 }

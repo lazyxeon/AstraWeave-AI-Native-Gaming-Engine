@@ -1,8 +1,8 @@
-use astraweave_ecs::{App, World, Entity};
+use astraweave_ecs::App;
 use astraweave_core::{CPos, IVec2, CHealth};
-use astraweave_physics::{PhysicsWorld, Layers};
+use astraweave_physics::PhysicsWorld;
 use astraweave_nav::{NavMesh, Triangle};
-use astraweave_scripting::{ScriptingPlugin, CScript, loader};
+use astraweave_scripting::{ScriptingPlugin, CScript};
 use glam::Vec3;
 use std::path::PathBuf;
 

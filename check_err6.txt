@@ -1,0 +1,59 @@
+warning: unused import: `VoxelChunk`
+  --> astraweave-terrain\src\terrain_modifier.rs:20:32
+   |
+20 | use crate::{ChunkCoord, Voxel, VoxelChunk, VoxelGrid};
+   |                                ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashMap`
+  --> astraweave-terrain\src\terrain_modifier.rs:22:24
+   |
+22 | use std::collections::{HashMap, HashSet, VecDeque};
+   |                        ^^^^^^^
+
+warning: unused import: `std::f32::consts::PI`
+   --> astraweave-materials\src\lib.rs:619:13
+    |
+619 |         use std::f32::consts::PI;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-materials\src\lib.rs:468:13
+    |
+468 |         let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+    |             ----^^^^^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-terrain` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-terrain` to apply 2 suggestions)
+warning: `astraweave-materials` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-materials` to apply 2 suggestions)
+warning: variable does not need to be mutable
+   --> astraweave-render\src\gpu_memory.rs:136:13
+    |
+136 |         let mut mgr = Self::new();
+    |             ----^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-render` (lib) generated 1 warning (run `cargo fix --lib -p astraweave-render` to apply 1 suggestion)
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+error: unexpected closing delimiter: `}`
+   --> examples\hello_companion\src\visual_demo.rs:591:1
+    |
+568 | pub fn run_visual_demo() -> Result<()> {
+    |                                        - this opening brace...
+...
+586 | }
+    | - ...matches this closing brace
+...
+591 | }
+    | ^ unexpected closing delimiter
+
+error: could not compile `hello_companion` (bin "hello_companion") due to 1 previous error

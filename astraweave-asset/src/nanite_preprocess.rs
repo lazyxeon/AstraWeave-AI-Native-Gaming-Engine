@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
+type SimplifiedMesh = (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>);
+
 /// Maximum vertices per meshlet (typical range: 64-128)
 pub const MAX_MESHLET_VERTICES: usize = 64;
 
@@ -411,7 +413,7 @@ pub fn generate_lod_hierarchy(
     let lod0_meshlets = generate_meshlets(positions, normals, tangents, uvs, indices)?;
 
     let mut all_meshlets = lod0_meshlets;
-    let mut lod_ranges = vec![0..all_meshlets.len()];
+    let mut lod_ranges: Vec<std::ops::Range<usize>> = vec![0..all_meshlets.len()];
 
     // Generate simplified LODs
     let mut current_positions = positions.to_vec();
@@ -521,7 +523,7 @@ fn simplify_mesh(
     uvs: &[[f32; 2]],
     indices: &[u32],
     target_triangle_count: usize,
-) -> Result<(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>)> {
+) -> Result<SimplifiedMesh> {
     use std::collections::{BinaryHeap, HashMap, HashSet};
 
     let current_triangle_count = indices.len() / 3;

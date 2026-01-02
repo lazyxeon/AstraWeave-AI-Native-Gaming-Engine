@@ -185,7 +185,7 @@ fn golden_postfx_compose_matches_cpu() {
     queue.write_texture(gi_tex.as_image_copy(), &gi_bytes, layout, extent);
     // Ensure writes are flushed before using these textures in a render pass
     queue.submit(std::iter::empty());
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 
     // Target texture (sRGB) for readback
     let target = device.create_texture(&wgpu::TextureDescriptor {
@@ -334,7 +334,7 @@ fn golden_postfx_compose_matches_cpu() {
     });
     enc.copy_texture_to_buffer(
         target.as_image_copy(),
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &buf,
             layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
@@ -349,13 +349,13 @@ fn golden_postfx_compose_matches_cpu() {
         },
     );
     queue.submit(Some(enc.finish()));
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     let slice = buf.slice(..);
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     slice.map_async(wgpu::MapMode::Read, move |res| {
         let _ = tx.send(res);
     });
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     rx.recv().unwrap().unwrap();
     let data = slice.get_mapped_range();
     let mut img = vec![0u8; (w * h * 4) as usize];

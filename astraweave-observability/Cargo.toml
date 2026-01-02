@@ -6,6 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[[bench]]
+name = "observability_adversarial"
+harness = false
+
 [dependencies]
 anyhow.workspace = true
 thiserror.workspace = true
@@ -33,3 +37,4 @@ opentelemetry = ["dep:opentelemetry", "dep:opentelemetry-jaeger"]
 
 [dev-dependencies]
 tempfile.workspace = true
+criterion = { version = "0.5", features = ["html_reports"] }

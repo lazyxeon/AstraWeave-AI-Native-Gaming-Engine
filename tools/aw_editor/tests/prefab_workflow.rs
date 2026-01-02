@@ -6,7 +6,8 @@
 //! command infrastructure is complete.
 
 use astraweave_core::{IVec2, World};
-use aw_editor_lib::prefab::{PrefabData, PrefabEntityData, PrefabManager};
+use aw_editor_lib::command::{PrefabRevertOverridesCommand, PrefabSpawnCommand};
+use aw_editor_lib::prefab::{PrefabData, PrefabEntityData, PrefabHierarchySnapshot, PrefabManager};
 use tempfile::tempdir;
 
 fn sample_prefab() -> PrefabData {
@@ -27,9 +28,38 @@ fn sample_prefab() -> PrefabData {
     }
 }
 
-// TODO: Re-enable when PrefabSpawnCommand is implemented
-// #[test]
-// fn prefab_spawn_command_instantiates_and_undoes() { ... }
+#[test]
+fn prefab_spawn_command_instantiates_and_undoes() {
+    let temp = tempdir().expect("temp dir");
+    let prefab_path = temp.path().join("crate.prefab.ron");
+    sample_prefab()
+        .save_to_file(&prefab_path)
+        .expect("write prefab");
+
+    let manager = PrefabManager::shared(temp.path());
+    let mut world = World::new();
+
+    let mut cmd = PrefabSpawnCommand::new(prefab_path.clone(), manager.clone(), (2, 3));
+    cmd.execute(&mut world)
+        .expect("prefab spawn command executes");
+
+    assert_eq!(world.entities().len(), 1);
+    let entity = world.entities()[0];
+    let pose = world.pose(entity).expect("spawned entity pose");
+    assert_eq!(pose.pos, IVec2::new(2, 3));
+
+    cmd.undo(&mut world).expect("undo removes prefab");
+    let undone_pose = world.pose(entity).expect("entity still exists after undo");
+    assert_eq!(
+        undone_pose.pos,
+        IVec2::new(-10000, -10000),
+        "undo should soft-delete by moving entity far away"
+    );
+    assert!(
+        undone_pose.scale < 0.01,
+        "undo should set scale to 0 (invisible)"
+    );
+}
 
 // TODO: Re-enable when PrefabApplyOverridesCommand is implemented
 // #[test]
@@ -40,10 +70,10 @@ fn sample_prefab() -> PrefabData {
 fn prefab_data_roundtrip() {
     let temp = tempdir().expect("temp dir");
     let prefab_path = temp.path().join("test.prefab.ron");
-    
+
     let original = sample_prefab();
     original.save_to_file(&prefab_path).expect("save prefab");
-    
+
     let loaded = PrefabData::load_from_file(&prefab_path).expect("load prefab");
     assert_eq!(loaded.name, "TestPrefab");
     assert_eq!(loaded.entities.len(), 1);
@@ -82,44 +112,91 @@ fn prefab_manager_instantiates_prefab() {
     }
 }
 
-// TODO: Re-enable when capture_snapshot is implemented in PrefabManager
-// #[test]
-// fn prefab_revert_overrides_restores_world_pose_and_supports_undo() {
-//     let temp = tempdir().expect("temp dir");
-//     let prefab_path = temp.path().join("crate.prefab.ron");
-//     sample_prefab()
-//         .save_to_file(&prefab_path)
-//         .expect("write prefab");
-//
-//     let manager = PrefabManager::shared(temp.path());
-//     let mut world = World::new();
-//
-//     let root = {
-//         let mut mgr = manager.lock().expect("manager lock");
-//         mgr.instantiate_prefab(&prefab_path, &mut world, (0, 0))
-//             .expect("instantiate prefab")
-//     };
-//
-//     if let Some(pose) = world.pose_mut(root) {
-//         pose.pos = IVec2::new(5, 3);
-//     }
-//
-//     let mutated_pose = world.pose(root).expect("mutated pose").pos;
-//     let snapshot = {
-//         let mgr = manager.lock().expect("manager lock");
-//         mgr.capture_snapshot(&world, root)
-//             .expect("snapshot available")
-//     };
-//
-//     let mut cmd = PrefabRevertOverridesCommand::new(manager.clone(), root, snapshot);
-//     cmd.execute(&mut world).expect("revert overrides");
-//     let reverted = world.pose(root).expect("reverted pose");
-//     assert_eq!(reverted.pos, IVec2::new(0, 0));
-//
-//     cmd.undo(&mut world).expect("undo revert");
-//     let restored = world.pose(root).expect("restored pose");
-//     assert_eq!(restored.pos, mutated_pose);
-// }
+#[test]
+fn prefab_creation_with_hierarchy_snapshot_persists_children() {
+    let temp = tempdir().expect("temp dir");
+    let manager = PrefabManager::shared(temp.path());
+    let mut world = World::new();
+
+    let root = world.spawn(
+        "Root",
+        IVec2::new(0, 0),
+        astraweave_core::Team { id: 0 },
+        100,
+        0,
+    );
+    let child = world.spawn(
+        "Child",
+        IVec2::new(1, 0),
+        astraweave_core::Team { id: 0 },
+        100,
+        0,
+    );
+    let grandchild = world.spawn(
+        "Grandchild",
+        IVec2::new(2, 0),
+        astraweave_core::Team { id: 0 },
+        100,
+        0,
+    );
+
+    let hierarchy =
+        PrefabHierarchySnapshot::from_iter([(root, vec![child]), (child, vec![grandchild])]);
+
+    {
+        let mgr = manager.lock().expect("manager lock");
+        mgr.create_prefab_with_hierarchy(&world, root, "hierarchy", Some(&hierarchy))
+            .expect("prefab creation succeeds");
+    }
+
+    let prefab_path = temp.path().join("hierarchy.prefab.ron");
+    let saved = PrefabData::load_from_file(&prefab_path).expect("load saved prefab");
+
+    assert_eq!(saved.entities.len(), 3);
+    let root_data = &saved.entities[saved.root_entity_index];
+    assert_eq!(root_data.children_indices, vec![1]);
+
+    let child_data = &saved.entities[root_data.children_indices[0]];
+    assert_eq!(child_data.children_indices, vec![2]);
+}
+
+#[test]
+fn prefab_revert_overrides_restores_world_pose_and_supports_undo() {
+    let temp = tempdir().expect("temp dir");
+    let prefab_path = temp.path().join("crate.prefab.ron");
+    sample_prefab()
+        .save_to_file(&prefab_path)
+        .expect("write prefab");
+
+    let manager = PrefabManager::shared(temp.path());
+    let mut world = World::new();
+
+    let root = {
+        let mut mgr = manager.lock().expect("manager lock");
+        mgr.instantiate_prefab(&prefab_path, &mut world, (0, 0))
+            .expect("instantiate prefab")
+    };
+
+    if let Some(pose) = world.pose_mut(root) {
+        pose.pos = IVec2::new(5, 3);
+    }
+
+    let mutated_pose = world.pose(root).expect("mutated pose").pos;
+    let snapshot = {
+        let mgr = manager.lock().expect("manager lock");
+        mgr.capture_snapshot(&world, root)
+            .expect("snapshot available")
+    };
+
+    let mut cmd = PrefabRevertOverridesCommand::new(manager.clone(), root, snapshot);
+    cmd.execute(&mut world).expect("revert overrides");
+    let reverted = world.pose(root).expect("reverted pose");
+    assert_eq!(reverted.pos, IVec2::new(0, 0));
+
+    cmd.undo(&mut world).expect("undo revert");
+    let restored = world.pose(root).expect("restored pose");
+    assert_eq!(restored.pos, mutated_pose);
+}
 
 // TODO: Re-enable when spawn_prefab_with_undo is implemented
 // #[test]
@@ -152,35 +229,34 @@ fn prefab_manager_instantiates_prefab() {
 //     assert_eq!(reverted.pos, IVec2::new(-10000, -10000));
 // }
 
-// TODO: Re-enable when track_override_snapshot is implemented in PrefabManager
-// #[test]
-// fn prefab_manager_tracks_override_from_snapshot() {
-//     let temp = tempdir().expect("temp dir");
-//     let prefab_path = temp.path().join("crate.prefab.ron");
-//     sample_prefab()
-//         .save_to_file(&prefab_path)
-//         .expect("write prefab");
-//
-//     let manager = PrefabManager::shared(temp.path());
-//     let mut world = World::new();
-//
-//     let root = {
-//         let mut mgr = manager.lock().expect("manager lock");
-//         mgr.instantiate_prefab(&prefab_path, &mut world, (0, 0))
-//             .expect("instantiate prefab")
-//     };
-//
-//     if let Some(pose) = world.pose_mut(root) {
-//         pose.pos = IVec2::new(-4, 8);
-//     }
-//
-//     let pose = world.pose(root);
-//     let health = world.health(root);
-//
-//     {
-//         let mut mgr = manager.lock().expect("manager lock");
-//         mgr.track_override_snapshot(root, pose, health);
-//         let instance = mgr.find_instance(root).expect("prefab instance");
-//         assert!(instance.has_overrides(root));
-//     }
-// }
+#[test]
+fn prefab_manager_tracks_override_from_snapshot() {
+    let temp = tempdir().expect("temp dir");
+    let prefab_path = temp.path().join("crate.prefab.ron");
+    sample_prefab()
+        .save_to_file(&prefab_path)
+        .expect("write prefab");
+
+    let manager = PrefabManager::shared(temp.path());
+    let mut world = World::new();
+
+    let root = {
+        let mut mgr = manager.lock().expect("manager lock");
+        mgr.instantiate_prefab(&prefab_path, &mut world, (0, 0))
+            .expect("instantiate prefab")
+    };
+
+    if let Some(pose) = world.pose_mut(root) {
+        pose.pos = IVec2::new(-4, 8);
+    }
+
+    let pose = world.pose(root);
+    let health = world.health(root);
+
+    {
+        let mut mgr = manager.lock().expect("manager lock");
+        mgr.track_override_snapshot(root, pose, health);
+        let instance = mgr.find_instance(root).expect("prefab instance");
+        assert!(instance.has_overrides(root));
+    }
+}

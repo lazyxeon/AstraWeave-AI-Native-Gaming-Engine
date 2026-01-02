@@ -1,8 +1,0 @@
-
-[map.test_dialogue]
-n0 = "tests/assets/test_voice_short.wav"
-n1 = "tests/assets/test_voice_medium.wav"
-
-[map.multi_speaker]
-alice_node = "tests/assets/test_voice_short.wav"
-bob_node = "tests/assets/test_voice_medium.wav"

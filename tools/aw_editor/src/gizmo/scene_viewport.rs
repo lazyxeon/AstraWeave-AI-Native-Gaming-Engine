@@ -133,6 +133,43 @@ impl CameraController {
     pub fn distance(&self) -> f32 {
         (self.position - self.target).length()
     }
+
+    /// Focus camera on a specific position while maintaining distance.
+    pub fn focus_on(&mut self, position: Vec3) {
+        let distance = self.distance();
+        let direction = (self.position - self.target).normalize();
+        self.target = position;
+        self.position = position + direction * distance;
+    }
+
+    /// Set camera to front view (looking along -Z axis).
+    pub fn set_view_front(&mut self) {
+        let distance = self.distance();
+        self.position = self.target + Vec3::new(0.0, 0.0, distance);
+        self.up = Vec3::Y;
+    }
+
+    /// Set camera to right view (looking along -X axis).
+    pub fn set_view_right(&mut self) {
+        let distance = self.distance();
+        self.position = self.target + Vec3::new(distance, 0.0, 0.0);
+        self.up = Vec3::Y;
+    }
+
+    /// Set camera to top view (looking along -Y axis).
+    pub fn set_view_top(&mut self) {
+        let distance = self.distance();
+        self.position = self.target + Vec3::new(0.0, distance, 0.0);
+        self.up = Vec3::NEG_Z;
+    }
+
+    /// Set camera to perspective view (isometric-like).
+    pub fn set_view_perspective(&mut self) {
+        let distance = self.distance();
+        let offset = Vec3::new(1.0, 1.0, 1.0).normalize() * distance;
+        self.position = self.target + offset;
+        self.up = Vec3::Y;
+    }
 }
 
 /// Transform state for ECS entity.

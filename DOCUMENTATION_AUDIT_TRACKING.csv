@@ -1,0 +1,48 @@
+Crate,Priority,README,Crate_Docs,API_Docs_Est,Examples,Overall_Score,Status,Effort_Hours,Owner,Notes
+astraweave-math,P0,Missing,Missing,10%,Missing,15%,POOR,3-5,,Critical - core engine
+astraweave-physics,P0,Missing,Missing,30%,Missing,25%,POOR,6-10,,Has rapier re-exports
+astraweave-behavior,P0,Missing,Present,40%,Missing,35%,FAIR,4-6,,GOAP planner documented
+astraweave-nav,P0,Missing,Missing,30%,Missing,25%,POOR,4-6,,Pathfinding core
+astraweave-audio,P0,Missing,Missing,20%,Missing,20%,POOR,4-6,,Dialogue + spatial audio
+astraweave-ecs,P1-A,Present,Present,70%,Partial,75%,GOOD,2-4,,Best documented crate
+astraweave-core,P1-A,Missing,Missing,50%,Missing,40%,FAIR,5-8,,Critical infrastructure
+astraweave-ai,P1-A,Missing,Missing,40%,Missing,35%,FAIR,5-8,,Orchestrator + arbiter
+astraweave-asset,P1-B,Missing,Missing,15%,Missing,15%,POOR,4-6,,Asset loading pipeline
+astraweave-render,P1-B,Missing,Partial,25%,Missing,23%,POOR,8-12,,Large crate - many modules
+astraweave-scene,P1-B,Missing,Missing,20%,Missing,18%,POOR,4-6,,World partition
+astraweave-gameplay,P1-B,Missing,Missing,10%,Missing,13%,POOR,6-10,,Combat + crafting + quests
+astraweave-quests,P1-B,Missing,Present,30%,Missing,30%,FAIR,3-5,,LLM quest generation
+astraweave-terrain,P1-B,Missing,Present,35%,Missing,33%,FAIR,4-6,,Voxel terrain
+astraweave-ui,P1-B,Missing,Missing,15%,Missing,15%,POOR,5-8,,UI system
+astraweave-llm,P1-B,Present,Partial,65%,Present,70%,GOOD,2-4,,Well documented
+astraweave-net,P1-B,Missing,Present,30%,Missing,30%,FAIR,4-6,,Networking
+astraweave-persistence-ecs,P1-B,Missing,Present,40%,Missing,38%,FAIR,3-5,,Save/load system
+astraweave-author,P2,Missing,Missing,10%,Missing,10%,POOR,2-4,,Authoring tools
+astraweave-cinematics,P2,Missing,Missing,15%,Missing,13%,POOR,2-4,,Cutscene system
+astraweave-context,P2,Missing,Missing,20%,Missing,18%,POOR,2-4,,LLM context window
+astraweave-coordination,P2,Missing,Missing,15%,Missing,13%,POOR,2-4,,Multi-agent coordination
+astraweave-dialogue,P2,Missing,Present,20%,Missing,23%,POOR,3-5,,Dialogue system
+astraweave-director,P2,Missing,Missing,15%,Missing,13%,POOR,2-4,,Narrative director
+astraweave-embeddings,P2,Missing,Missing,25%,Missing,23%,FAIR,2-4,,Vector embeddings
+astraweave-fluids,P2,Missing,Missing,5%,Missing,8%,POOR,3-5,,Fluid simulation
+astraweave-input,P2,Missing,Missing,30%,Missing,28%,FAIR,2-4,,Input management
+astraweave-ipc,P2,Missing,Missing,10%,Missing,10%,POOR,2-3,,Inter-process comm
+astraweave-materials,P2,Missing,Missing,15%,Missing,13%,POOR,2-4,,Material system
+astraweave-memory,P2,Missing,Missing,35%,Missing,30%,FAIR,3-5,,NPC memory
+astraweave-npc,P2,Missing,Missing,15%,Missing,13%,POOR,3-5,,NPC behavior
+astraweave-observability,P2,Missing,Missing,20%,Missing,18%,POOR,2-4,,Telemetry
+astraweave-pcg,P2,Present,Missing,25%,Missing,28%,FAIR,2-4,,Procedural generation
+astraweave-persona,P2,Missing,Present,20%,Missing,23%,POOR,2-4,,NPC personas
+astraweave-profiling,P2,Missing,Missing,25%,Missing,23%,FAIR,2-3,,Tracy integration
+astraweave-prompts,P2,Missing,Missing,35%,Missing,30%,FAIR,3-5,,Prompt templates
+astraweave-rag,P2,Missing,Missing,20%,Missing,18%,POOR,3-5,,RAG pipeline
+astraweave-scene,P2,Missing,Missing,20%,Missing,18%,POOR,3-5,,Scene graph
+astraweave-scripting,P2,Missing,Missing,15%,Missing,13%,POOR,3-5,,Lua scripting
+astraweave-sdk,P2,Missing,Missing,10%,Missing,10%,POOR,2-4,,SDK exports
+astraweave-secrets,P2,Present,Missing,20%,Missing,25%,FAIR,2-3,,Secret management
+astraweave-security,P2,Missing,Present,25%,Missing,28%,FAIR,2-4,,Security validation
+astraweave-stress-test,P2,Missing,Missing,15%,Missing,13%,POOR,2-3,,Stress testing
+astraweave-persistence-player,P2,Missing,Missing,30%,Missing,28%,FAIR,2-4,,Player save data
+aw_editor,Tools,Partial,Missing,30%,Present,35%,FAIR,6-10,,Large tool - many panels
+astraweave-assets,Tools,Missing,Missing,10%,Missing,10%,POOR,3-5,,Asset downloader
+TOTAL,,"19/47 (40%)","12/47 (26%)","~20-30%","2/47 (4%)","24/100",,"100-180",,"Estimated total effort"

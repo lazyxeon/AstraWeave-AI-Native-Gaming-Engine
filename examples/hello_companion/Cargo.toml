@@ -19,9 +19,46 @@ serde_json = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 chrono = { version = "0.4", features = ["serde"], optional = true }
 
+# Visual demo dependencies (enable with --features visual)
+astraweave-render = { path = "../../astraweave-render", features = ["gltf-assets", "assets", "bloom", "textures"], optional = true }
+astraweave-asset = { path = "../../astraweave-asset", features = ["gltf"], optional = true }
+astraweave-terrain = { path = "../../astraweave-terrain", optional = true }
+astraweave-ui = { path = "../../astraweave-ui", optional = true }
+astraweave-dialogue = { path = "../../astraweave-dialogue", optional = true }
+winit = { workspace = true, optional = true }
+wgpu = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+glam = { workspace = true, optional = true }
+pollster = { workspace = true, optional = true }
+egui = { workspace = true, optional = true }
+egui-winit = { workspace = true, optional = true }
+egui-wgpu = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+
 [features]
 default = []
 llm = ["astraweave-llm", "astraweave-llm/llm_cache", "tokio"]
 ollama = ["llm", "astraweave-llm/ollama", "reqwest", "serde_json"]
 metrics = ["serde", "serde_json", "chrono"]
 llm_orchestrator = ["astraweave-ai/llm_orchestrator", "ollama"]
+# Visual demo with full rendering + LLM support
+visual = [
+    "astraweave-render",
+    "astraweave-asset",
+    "astraweave-terrain",
+    "astraweave-ui",
+    "winit",
+    "wgpu",
+    "bytemuck",
+    "glam",
+    "pollster",
+    "egui",
+    "egui-winit",
+    "egui-wgpu",
+    "rand",
+    "ollama",
+    "tokio"
+]
+
+
+

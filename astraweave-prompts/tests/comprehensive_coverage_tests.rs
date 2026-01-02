@@ -447,12 +447,10 @@ fn test_prompt_engine_register_template() {
 
 #[test]
 fn test_prompt_engine_template_too_large() {
-    let config = EngineConfig {
-        max_template_size: 10,
-        enable_caching: true,
-    };
+    let mut config = EngineConfig::default();
+    config.max_template_size = 10;
     let mut engine = PromptEngine::new(config);
-    
+
     let large_template = "x".repeat(100);
     let result = engine.register_template("large".to_string(), large_template);
     assert!(result.is_err());
@@ -655,3 +653,4 @@ fn test_multiple_templates_in_engine() {
     assert_eq!(greeting, "Hello Alice!");
     assert_eq!(farewell, "Goodbye Alice!");
 }
+

@@ -1,0 +1,473 @@
+warning: unused import: `AnalysisResult`
+ --> astraweave-prompts\tests\helpers_and_analysis_tests.rs:8:45
+  |
+8 |         ValidationRules, FormattingOptions, AnalysisResult,
+  |                                             ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-prompts` (test "helpers_and_analysis_tests") generated 1 warning (run `cargo fix --test "helpers_and_analysis_tests"` to apply 1 suggestion)
+warning: unused import: `anyhow::Result`
+ --> astraweave-prompts\tests\sprint2_prompts_tests.rs:1:5
+  |
+1 | use anyhow::Result;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `EngineConfig`
+ --> astraweave-prompts\tests\sprint2_prompts_tests.rs:2:50
+  |
+2 | use astraweave_prompts::engine::{TemplateEngine, EngineConfig};
+  |                                                  ^^^^^^^^^^^^
+
+warning: `astraweave-prompts` (test "sprint2_prompts_tests") generated 2 warnings (run `cargo fix --test "sprint2_prompts_tests"` to apply 2 suggestions)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.80s
+     Running unittests src\lib.rs (target\debug\deps\astraweave_prompts-2074aeac9acf8a36.exe)
+
+running 173 tests
+test context::tests::test_context_get_nonexistent ... ok
+test context::tests::test_context_merge ... ok
+test context::tests::test_context_pop_empty ... ok
+test context::tests::test_context_new ... ok
+test context::tests::test_context_set_path_empty ... ok
+test context::tests::test_context_set_get ... ok
+test context::tests::test_context_scope_shadowing ... ok
+test context::tests::test_context_push_pop_scope ... ok
+test context::tests::test_context_set_path_nested ... ok
+test context::tests::test_context_set_path_simple ... ok
+test context::tests::test_context_to_json ... ok
+test context::tests::test_context_value_boolean ... ok
+test context::tests::test_context_to_string_map ... ok
+test context::tests::test_context_value_array ... ok
+test context::tests::test_context_value_complex_serialization ... ok
+test context::tests::test_context_value_insert_path_empty ... ok
+test context::tests::test_context_value_insert_path_overwrite_non_object ... ok
+test context::tests::test_context_value_insert_path_nested ... ok
+test context::tests::test_context_value_insert_path_single ... ok
+test context::tests::test_context_value_number ... ok
+test context::tests::test_context_value_string ... ok
+test context::tests::test_context_value_to_json_boolean ... ok
+test context::tests::test_context_value_to_json_number ... ok
+test context::tests::test_context_value_serialization ... ok
+test context::tests::test_context_value_object ... ok
+test context::tests::test_context_value_to_json_array ... ok
+test context::tests::test_context_value_to_json_object ... ok
+test context::tests::test_context_value_to_json_string ... ok
+test context::tests::test_from_bool ... ok
+test context::tests::test_from_f64 ... ok
+test context::tests::test_from_str ... ok
+test context::tests::test_from_vec_str ... ok
+test context::tests::test_from_vec_context_value ... ok
+test context::tests::test_from_string ... ok
+test context::tests::test_from_vec_string ... ok
+test engine::tests::test_engine_config_default ... ok
+test engine::tests::test_prompt_engine_clear_templates ... ok
+test engine::tests::test_prompt_engine_list_templates ... ok
+test engine::tests::test_engine_config_serialization ... ok
+test engine::tests::test_prompt_engine_new ... ok
+test engine::tests::test_prompt_engine_register_partial ... ok
+test engine::tests::test_prompt_engine_render ... ok
+test engine::tests::test_prompt_engine_register_template ... ok
+test engine::tests::test_prompt_engine_render_nonexistent ... ok
+test engine::tests::test_prompt_engine_register_template_too_large ... ok
+test engine::tests::test_template_engine_clear_templates ... ok
+test engine::tests::test_template_engine_register_partial ... ok
+test engine::tests::test_template_engine_list_templates ... ok
+test engine::tests::test_template_engine_register_template ... ok
+test engine::tests::test_template_engine_multiple_variables ... ok
+test engine::tests::test_template_engine_new ... ok
+test helpers::tests::test_analysis_result_serialization ... ok
+test engine::tests::test_template_engine_render ... ok
+test helpers::tests::test_calculate_complexity_short ... ok
+test helpers::tests::test_analyze ... ok
+test helpers::tests::test_calculate_readability ... ok
+test helpers::tests::test_calculate_complexity_long ... ok
+test helpers::tests::test_empty_prompt_analyze ... ok
+test engine::tests::test_template_engine_with_partial ... ok
+test helpers::tests::test_extract_variables_empty ... ok
+test helpers::tests::test_extract_variables_no_duplicates ... ok
+test helpers::tests::test_format_with_tabs ... ok
+test helpers::tests::test_formatting_options_default ... ok
+test helpers::tests::test_is_well_formed_balanced ... ok
+test helpers::tests::test_is_well_formed_unbalanced ... ok
+test helpers::tests::test_estimate_tokens ... ok
+test helpers::tests::test_extract_variables ... ok
+test helpers::tests::test_format_empty_lines_preserved ... ok
+test helpers::tests::test_format_with_spaces ... ok
+test helpers::tests::test_formatting_options_serialization ... ok
+test helpers::tests::test_generate_stats ... ok
+test helpers::tests::test_minify ... ok
+test helpers::tests::test_minify_empty_lines ... ok
+test helpers::tests::test_nested_braces ... ok
+test helpers::tests::test_pretty_print ... ok
+test helpers::tests::test_validate_forbidden_pattern ... ok
+test helpers::tests::test_validate_prompt_too_long ... ok
+test helpers::tests::test_validate_missing_required_variable ... ok
+test helpers::tests::test_validate_prompt_too_short ... ok
+test helpers::tests::test_validate_valid_prompt ... ok
+test helpers::tests::test_validation_rules_default ... ok
+test library::tests::test_collection_metadata_serialization ... ok
+test library::tests::test_library_metadata_serialization ... ok
+test library::tests::test_prompt_library_delete_nonexistent ... ok
+test library::tests::test_prompt_library_add_and_get ... ok
+test library::tests::test_prompt_library_new ... ok
+test library::tests::test_prompt_library_delete_template ... ok
+test library::tests::test_template_collection_add_and_get ... ok
+test helpers::tests::test_validation_rules_serialization ... ok
+test library::tests::test_template_collection_get_nonexistent ... ok
+test library::tests::test_template_collection_list ... ok
+test library::tests::test_prompt_library_get_nonexistent ... ok
+test library::tests::test_prompt_library_list_templates ... ok
+test library::tests::test_template_library_add_and_get_collection ... ok
+test library::tests::test_template_library_get_nonexistent_collection ... ok
+test library::tests::test_template_library_new ... ok
+test library::tests::test_template_library_save_stub ... ok
+test library::tests::test_template_collection_new ... ok
+test library::tests::test_template_collection_remove ... ok
+test library::tests::test_template_library_list_collections ... ok
+test library::tests::test_template_library_load_from_nonexistent_directory ... ok
+test loader::tests::test_load_file_nonexistent ... ok
+test loader::tests::test_load_from_nonexistent_dir ... ok
+test loader::tests::test_load_from_empty_dir ... ok
+test loader::tests::test_load_file_simple ... ok
+test loader::tests::test_custom_extensions ... ok
+test loader::tests::test_parse_frontmatter_incomplete ... ok
+test loader::tests::test_load_from_dir_with_files ... ok
+test loader::tests::test_parse_frontmatter_no_frontmatter ... ok
+test loader::tests::test_prompt_loader_default ... ok
+test loader::tests::test_prompt_loader_new ... ok
+test optimization::tests::test_ab_testing_get_metrics_none ... ok
+test optimization::tests::test_ab_testing_record_success ... ok
+test loader::tests::test_load_from_dir_recursive ... ok
+test loader::tests::test_parse_frontmatter_with_frontmatter ... ok
+test loader::tests::test_prompt_loader_with_extensions ... ok
+test optimization::tests::test_ab_testing_engine_new ... ok
+test optimization::tests::test_ab_testing_register_variant ... ok
+test optimization::tests::test_ab_testing_record_success_no_test ... ok
+test optimization::tests::test_ab_testing_select_variant ... ok
+test optimization::tests::test_ab_testing_select_variant_empty ... ok
+test optimization::tests::test_cache_stats_serialization ... ok
+test loader::tests::test_load_prompt_extension ... ok
+test loader::tests::test_load_file_with_frontmatter ... ok
+test optimization::tests::test_compress_prompt_empty_lines ... ok
+test optimization::tests::test_optimization_engine_new ... ok
+test optimization::tests::test_ab_testing_select_variant_nonexistent ... ok
+test optimization::tests::test_optimize_prompt_long_with_compression ... ok
+test optimization::tests::test_cache_config_default ... ok
+test optimization::tests::test_performance_metrics_default ... ok
+test optimization::tests::test_metrics_update ... ok
+test optimization::tests::test_reset_metrics ... ok
+test optimization::tests::test_optimization_config_default ... ok
+test optimization::tests::test_optimize_prompt_no_compression_when_disabled ... ok
+test optimization::tests::test_template_cache_clear ... ok
+test optimization::tests::test_template_cache_miss ... ok
+test optimization::tests::test_optimize_prompt_short ... ok
+test optimization::tests::test_template_cache_new ... ok
+test optimization::tests::test_template_cache_eviction ... ok
+test optimization::tests::test_template_cache_put_get ... ok
+test template::tests::test_processor_config_serialization ... ok
+test template::tests::test_processor_config_default ... ok
+test template::tests::test_processor_extract_variables_empty ... ok
+test template::tests::test_processor_extract_variables ... ok
+test template::tests::test_processor_extract_variables_dotted ... ok
+test template::tests::test_processor_new ... ok
+test template::tests::test_processor_extract_variables_no_duplicates ... ok
+test template::tests::test_processor_strict_mode_off ... ok
+test template::tests::test_processor_process ... ok
+test template::tests::test_processor_process_json ... ok
+test template::tests::test_processor_strict_mode_on ... ok
+test template::tests::test_processor_validate_template_invalid ... ok
+test template::tests::test_processor_validate_template_valid ... ok
+test template::tests::test_prompt_template_render_multiple_variables ... ok
+test template::tests::test_prompt_template_new ... ok
+test template::tests::test_prompt_template_render ... ok
+test template::tests::test_prompt_template_render_with_object ... ok
+test template::tests::test_prompt_template_serialization ... ok
+test template::tests::test_template_no_variables ... ok
+test template::tests::test_template_with_whitespace_in_variables ... ok
+test template::tests::test_prompt_template_render_map ... ok
+test terrain_prompts::tests::test_terrain_feature_template ... ok
+test terrain_prompts::tests::test_terrain_modify_template ... ok
+test terrain_prompts::tests::test_system_prompt_contains_feature_types ... ok
+test tests::test_prompts_config ... ok
+test terrain_prompts::tests::test_terrain_batch_template ... ok
+test template::tests::test_template_clone ... ok
+test terrain_prompts::tests::test_terrain_system_template ... ok
+test template::tests::test_template_empty ... ok
+test tests::test_render_metrics ... ok
+test terrain_prompts::tests::test_terrain_template_collection ... ok
+test tests::test_template_categories ... ok
+test tests::test_template_metadata ... ok
+
+test result: ok. 173 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\advanced_prompts_test.rs (target\debug\deps\advanced_prompts_test-1a16f8478935a9ec.exe)
+
+running 18 tests
+test test_helper_debug_output ... ok
+test test_ab_testing_metrics ... ok
+test test_helper_with_arguments ... ok
+test test_ab_testing_variants ... ok
+test test_helper_error_handling ... ok
+test test_builtin_helpers ... ok
+test test_invoke_helper ... ok
+test test_library_delete_template ... ok
+test test_helper_override ... ok
+test test_library_get_template ... ok
+test test_library_list_templates ... ok
+test test_helper_thread_safety ... ok
+test test_library_template_metadata ... ok
+test test_register_helper ... ok
+test test_template_precompilation ... ok
+test test_optimization_benchmarks ... ok
+test test_optimize_template_compilation ... ok
+test test_load_library_from_directory ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\advanced_templating_tests.rs (target\debug\deps\advanced_templating_tests-3ee78ce6b76b1540.exe)
+
+running 4 tests
+test test_built_in_helpers ... ok
+test test_custom_helper ... ok
+test test_partials ... ok
+test test_default_helpers ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\comprehensive_coverage_tests.rs (target\debug\deps\comprehensive_coverage_tests-4965a51718794207.exe)
+
+running 57 tests
+test test_context_nested_scopes ... ok
+test test_context_get_nonexistent ... ok
+test test_context_merge ... ok
+test test_context_set_and_get ... ok
+test test_context_set_path_nested ... ok
+test test_boolean_variable_substitution ... ok
+test test_context_to_string_map ... ok
+test test_context_value_array_to_json ... ok
+test test_context_scope_push_pop ... ok
+test test_context_value_object_to_json ... ok
+test test_context_value_string_conversion ... ok
+test test_array_variable_substitution ... ok
+test test_end_to_end_quest_template ... ok
+test test_engine_clear_templates ... ok
+test test_context_set_path_simple ... ok
+test test_context_to_json ... ok
+test test_context_value_boolean_conversion ... ok
+test test_context_value_number_conversion ... ok
+test test_end_to_end_dialogue_template ... ok
+test test_empty_template ... ok
+test test_engine_config_default ... ok
+test test_engine_creation ... ok
+test test_engine_register_and_list ... ok
+test test_missing_variable_strict_mode ... ok
+test test_engine_register_multiple_templates ... ok
+test test_engine_register_partial ... ok
+test test_multiple_templates_in_engine ... ok
+test test_number_variable_substitution ... ok
+test test_engine_render_registered_template ... ok
+test test_processor_config_custom ... ok
+test test_multiple_variable_substitution ... ok
+test test_nested_object_variable_substitution ... ok
+test test_processor_config_default ... ok
+test test_processor_extract_variables_duplicates ... ok
+test test_processor_extract_variables_multiple ... ok
+test test_processor_creation ... ok
+test test_processor_extract_variables_none ... ok
+test test_processor_extract_variables_with_dots ... ok
+test test_processor_process_json ... ok
+test test_processor_validate_valid_template ... ok
+test test_prompt_engine_creation ... ok
+test test_prompt_engine_template_too_large ... ok
+test test_render_map_basic ... ok
+test test_processor_extract_variables_single ... ok
+test test_processor_process_simple ... ok
+test test_processor_validate_invalid_template ... ok
+test test_prompt_engine_render ... ok
+test test_prompt_engine_register_template ... ok
+test test_render_map_empty ... ok
+test test_simple_variable_substitution ... ok
+test test_template_with_multiple_variables ... ok
+test test_template_with_special_characters ... ok
+test test_template_with_newlines ... ok
+test test_template_with_repeated_variables ... ok
+test test_template_with_no_variables ... ok
+test test_template_with_only_text ... ok
+test test_template_with_whitespace_in_placeholders ... ok
+
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\context_tests.rs (target\debug\deps\context_tests-e9871ee78ecc796a.exe)
+
+running 4 tests
+test test_context_scopes ... ok
+test test_to_string_map ... ok
+test test_context_basic_ops ... ok
+test test_context_complex_types ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\contextvalue_and_helpers_tests.rs (target\debug\deps\contextvalue_and_helpers_tests-7489dd10ea918db2.exe)
+
+running 34 tests
+test test_context_overwrite_in_scope ... ok
+test test_context_pop_empty_scope ... ok
+test test_context_merge_empty ... ok
+test test_context_merge_overwrites ... ok
+test test_context_set_path_deep_nesting ... ok
+test test_context_value_array_to_string ... ok
+test test_context_value_empty_array_to_string ... ok
+test test_combat_log_with_arrays ... ok
+test test_context_value_empty_object_to_string ... ok
+test test_context_value_from_bool_false ... ok
+test test_context_value_from_bool_true ... ok
+test test_context_value_from_string ... ok
+test test_context_value_from_vec_contextvalue ... ok
+test test_context_value_from_f64 ... ok
+test test_context_value_from_owned_string ... ok
+test test_context_value_insert_path_empty_path ... ok
+test test_context_value_insert_path_into_object ... ok
+test test_context_value_from_vec_str_slice ... ok
+test test_context_value_from_vec_string ... ok
+test test_context_value_insert_path_nested ... ok
+test test_context_value_insert_path_overwrites_non_object ... ok
+test test_context_value_object_to_string ... ok
+test test_deeply_nested_objects ... ok
+test test_render_nonexistent_template ... ok
+test test_npc_dialogue_generation ... ok
+test test_processor_invalid_handlebars_syntax ... ok
+test test_large_number_of_variables ... ok
+test test_quest_description_with_conditions ... ok
+test test_large_array_rendering ... ok
+test test_render_with_conditionals ... ok
+test test_render_with_iteration ... ok
+test test_template_with_metadata ... ok
+test test_render_with_partial ... ok
+test test_render_with_nested_iteration ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\core_tests.rs (target\debug\deps\core_tests-b7dd5aad167d85c8.exe)
+
+running 10 tests
+test test_context_scopes ... ok
+test test_context_new ... ok
+test test_context_set_get ... ok
+test test_processor_validate ... ok
+test test_template_new ... ok
+test test_template_map_render ... ok
+test test_template_render ... ok
+test test_engine_register ... ok
+test test_processor_extract_vars ... ok
+test test_engine_render ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\engine_tests.rs (target\debug\deps\engine_tests-ddcd2098a78d0bff.exe)
+
+running 5 tests
+test test_prompt_engine_limits ... ok
+test test_engine_missing_template ... ok
+test test_engine_registration ... ok
+test test_engine_render ... ok
+test test_load_templates_from_dir ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\helpers_and_analysis_tests.rs (target\debug\deps\helpers_and_analysis_tests-033fd374a2fc9dd4.exe)
+
+running 39 tests
+test test_analyzer_calculate_readability_easy ... ok
+test test_analyzer_estimate_tokens_empty ... ok
+test test_analyzer_extract_variables ... ok
+test test_analyzer_calculate_complexity_simple ... ok
+test test_analyzer_generate_stats_empty ... ok
+test test_analyzer_generate_stats ... ok
+test test_analyzer_analyze ... ok
+test test_analyzer_calculate_complexity_complex ... ok
+test test_analyzer_estimate_tokens ... ok
+test test_analyzer_extract_variables_none ... ok
+test test_analyzer_extract_variables_duplicates ... ok
+test test_formatter_minify_empty_lines ... ok
+test test_formatter_minify ... ok
+test test_formatter_format_with_spaces ... ok
+test test_analyzer_calculate_readability_hard ... ok
+test test_formatter_pretty_print ... ok
+test test_formatting_options_default ... ok
+test test_formatter_format_with_tabs ... ok
+test test_helper_indent_custom_spaces ... ok
+test test_helper_indent_default ... ok
+test test_helper_length_string ... ok
+test test_helper_length_array ... ok
+test test_helper_json ... ok
+test test_helper_lowercase ... ok
+test test_helper_trim ... ok
+test test_helper_uppercase ... ok
+test test_validation_and_analysis_workflow ... ok
+test test_validator_missing_required_variable ... ok
+test test_validator_prompt_too_long ... ok
+test test_helpers_combined_in_template ... ok
+test test_validator_valid_prompt ... ok
+test test_validator_well_formed_balanced ... ok
+test test_validator_well_formed_unbalanced_open ... ok
+test test_validator_forbidden_pattern ... ok
+test test_validator_prompt_too_short ... ok
+test test_validation_rules_default ... ok
+test test_validator_well_formed_no_braces ... ok
+test test_validator_required_variables ... ok
+test test_validator_well_formed_unbalanced_close ... ok
+
+test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\loader_tests.rs (target\debug\deps\loader_tests-abaf136139b2baaf.exe)
+
+running 3 tests
+test test_load_with_frontmatter ... ok
+test test_load_simple_file ... ok
+test test_load_from_dir ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\sprint2_prompts_tests.rs (target\debug\deps\sprint2_prompts_tests-ab6f96056c0aa714.exe)
+
+running 16 tests
+test test_context_merge ... ok
+test test_escape_braces ... ok
+test test_conditional_rendering ... ok
+test test_engine_clear_cache ... ok
+test test_engine_list_templates ... ok
+test test_loop_rendering ... ok
+test test_render_with_multiple_variables ... ok
+test test_set_variable_types ... ok
+test test_render_undefined_template ... ok
+test test_nested_variable_support ... ok
+test test_engine_thread_safety ... ok
+test test_whitespace_handling ... ok
+test test_template_clone ... ok
+test test_comment_stripping ... ok
+test test_template_debug_output ... ok
+test test_register_duplicate_template ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\template_tests.rs (target\debug\deps\template_tests-429fc58b0bd3da96.exe)
+
+running 6 tests
+test test_processor_validation ... ok
+test test_variable_extraction ... ok
+test test_render_map ... ok
+test test_render_simple ... ok
+test test_handlebars_syntax ... ok
+test test_template_creation ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests astraweave_prompts
+
+running 1 test
+test astraweave-prompts\src\lib.rs - (line 13) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+

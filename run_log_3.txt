@@ -1,0 +1,98 @@
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+warning: unused import: `std::sync::Arc`
+ --> astraweave-fluids\src\renderer.rs:1:5
+  |
+1 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `shader`
+  --> astraweave-fluids\src\sdf.rs:22:13
+   |
+22 |         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+   |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_shader`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `config_buffer`
+  --> astraweave-fluids\src\sdf.rs:27:13
+   |
+27 |         let config_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+   |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_config_buffer`
+
+warning: unused variable: `jfa_params_buffer`
+  --> astraweave-fluids\src\sdf.rs:33:13
+   |
+33 |         let jfa_params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+   |             ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_jfa_params_buffer`
+
+warning: unused variable: `texture_a`
+  --> astraweave-fluids\src\sdf.rs:55:13
+   |
+55 |         let texture_a = device.create_texture(&texture_desc);
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_texture_a`
+
+warning: unused variable: `texture_b`
+  --> astraweave-fluids\src\sdf.rs:56:13
+   |
+56 |         let texture_b = device.create_texture(&texture_desc);
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_texture_b`
+
+warning: struct `FluidRenderer` is never constructed
+  --> astraweave-fluids\src\renderer.rs:21:12
+   |
+21 | pub struct FluidRenderer {
+   |            ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: associated items `new` and `render` are never used
+   --> astraweave-fluids\src\renderer.rs:41:12
+    |
+40  | impl FluidRenderer {
+    | ------------------ associated items in this implementation
+41  |     pub fn new(
+    |            ^^^
+...
+376 |     pub fn render(
+    |            ^^^^^^
+
+warning: struct `SdfSystem` is never constructed
+ --> astraweave-fluids\src\sdf.rs:3:12
+  |
+3 | pub struct SdfSystem {
+  |            ^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> astraweave-fluids\src\sdf.rs:21:12
+   |
+20 | impl SdfSystem {
+   | -------------- associated function in this implementation
+21 |     pub fn new(device: &wgpu::Device, resolution: u32, world_size: f32) -> Self {
+   |            ^^^
+
+warning: `astraweave-fluids` (lib) generated 10 warnings (run `cargo fix --lib -p astraweave-fluids` to apply 1 suggestion)
+   Compiling astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+   Compiling aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+   Compiling fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
+warning: fields `egui_ctx` and `egui_renderer` are never read
+  --> examples\fluids_demo\src\main.rs:64:5
+   |
+45 | struct State {
+   |        ----- fields in this struct
+...
+64 |     egui_ctx: egui::Context,
+   |     ^^^^^^^^
+65 |     egui_state: EguiState,
+66 |     egui_renderer: EguiRenderer,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+

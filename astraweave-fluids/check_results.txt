@@ -1,0 +1,27 @@
+    Checking astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+error[E0425]: cannot find value `default_sampler` in this scope
+   --> astraweave-fluids\src\lib.rs:552:13
+    |
+100 |     pub default_sampler: wgpu::Sampler,
+    |         --------------- a field by that name exists in `Self`
+...
+552 |             default_sampler,
+    |             ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> astraweave-fluids\src\renderer.rs:1:5
+  |
+1 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::sync::Arc`
+ --> astraweave-fluids\src\lib.rs:7:5
+  |
+7 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `astraweave-fluids` (lib) generated 2 warnings
+error: could not compile `astraweave-fluids` (lib) due to 1 previous error; 2 warnings emitted

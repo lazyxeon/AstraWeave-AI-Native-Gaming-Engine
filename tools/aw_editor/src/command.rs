@@ -4,6 +4,12 @@
 //! Every action (transform, create, delete, edit) is wrapped in a command
 //! that can be undone and redone.
 //!
+//! Commands return `Box<dyn EditorCommand>` from `new()` to enable polymorphic
+//! storage in the undo stack. This is an intentional deviation from the typical
+//! `new() -> Self` convention.
+
+#![allow(clippy::new_ret_no_self)]
+
 //! # Architecture
 //!
 //! ```text
@@ -42,6 +48,7 @@ use crate::clipboard::ClipboardData;
 use anyhow::Result;
 use astraweave_core::{Entity, IVec2, Team, World};
 use std::fmt;
+use tracing::debug;
 
 // ============================================================================
 // Command Trait
@@ -172,7 +179,7 @@ impl UndoStack {
             if let Some(last_cmd) = self.commands.last_mut() {
                 if last_cmd.try_merge(command.as_ref()) {
                     // Merge successful, don't add new command
-                    println!("🔄 Merged command: {}", command.describe());
+                    debug!("🔄 Merged command: {}", command.describe());
                     return Ok(());
                 }
             }
@@ -205,7 +212,7 @@ impl UndoStack {
         self.cursor -= 1;
         let cmd = &mut self.commands[self.cursor];
 
-        println!("⏮️  Undo: {}", cmd.describe());
+        debug!("⏮️  Undo: {}", cmd.describe());
         cmd.undo(world)?;
 
         Ok(())
@@ -223,7 +230,7 @@ impl UndoStack {
 
         let cmd = &mut self.commands[self.cursor];
 
-        println!("⏭️  Redo: {}", cmd.describe());
+        debug!("⏭️  Redo: {}", cmd.describe());
         cmd.execute(world)?;
 
         self.cursor += 1;
@@ -290,6 +297,16 @@ impl UndoStack {
         self.cursor
     }
 
+    /// Get number of available undo operations.
+    pub fn undo_count(&self) -> usize {
+        self.cursor
+    }
+
+    /// Get number of available redo operations.
+    pub fn redo_count(&self) -> usize {
+        self.commands.len().saturating_sub(self.cursor)
+    }
+
     /// Add an already-executed command to the undo stack.
     ///
     /// Use this when you've already applied a transform (e.g., during gizmo drag)
@@ -300,7 +317,7 @@ impl UndoStack {
         if self.auto_merge && self.cursor > 0 {
             if let Some(last_cmd) = self.commands.last_mut() {
                 if last_cmd.try_merge(command.as_ref()) {
-                    println!("🔄 Merged command: {}", command.describe());
+                    debug!("🔄 Merged command: {}", command.describe());
                     return;
                 }
             }
@@ -781,7 +798,7 @@ impl EditorCommand for DeleteEntitiesCommand {
 // Prefab Commands
 // ============================================================================
 
-use crate::prefab::{PrefabData, PrefabManager};
+use crate::prefab::{PrefabData, PrefabInstanceSnapshot, PrefabManager};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -796,7 +813,7 @@ pub struct PrefabSpawnCommand {
 
 impl PrefabSpawnCommand {
     pub fn new(
-        prefab_path: PathBuf, 
+        prefab_path: PathBuf,
         prefab_manager: Arc<Mutex<PrefabManager>>,
         spawn_pos: (i32, i32),
     ) -> Box<dyn EditorCommand> {
@@ -811,9 +828,11 @@ impl PrefabSpawnCommand {
 
 impl EditorCommand for PrefabSpawnCommand {
     fn execute(&mut self, world: &mut World) -> Result<()> {
-        let mut manager = self.prefab_manager.lock()
+        let mut manager = self
+            .prefab_manager
+            .lock()
             .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
-        
+
         let entity = manager.instantiate_prefab(&self.prefab_path, world, self.spawn_pos)?;
         self.spawned_entity = Some(entity);
         Ok(())
@@ -824,16 +843,21 @@ impl EditorCommand for PrefabSpawnCommand {
             // Move entity out of view (soft delete) - same pattern as other commands
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 { x: -10000, y: -10000 },
+                    pos: IVec2 {
+                        x: -10000,
+                        y: -10000,
+                    },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
                     scale: 0.0,
                 };
             }
-            
+
             // Remove instance tracking
-            let mut manager = self.prefab_manager.lock()
+            let mut manager = self
+                .prefab_manager
+                .lock()
                 .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
             manager.remove_instance(entity);
         }
@@ -841,7 +865,9 @@ impl EditorCommand for PrefabSpawnCommand {
     }
 
     fn describe(&self) -> String {
-        let name = self.prefab_path.file_stem()
+        let name = self
+            .prefab_path
+            .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("Unknown");
         format!("Spawn prefab '{}'", name)
@@ -871,37 +897,44 @@ impl PrefabApplyOverridesCommand {
 
 impl EditorCommand for PrefabApplyOverridesCommand {
     fn execute(&mut self, world: &mut World) -> Result<()> {
-        let mut manager = self.prefab_manager.lock()
+        let mut manager = self
+            .prefab_manager
+            .lock()
             .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
-        
+
         // Find the prefab instance for this entity
-        let instance = manager.find_instance(self.entity)
+        let instance = manager
+            .find_instance(self.entity)
             .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", self.entity))?;
-        
+
         let prefab_path = instance.source.clone();
-        
+
         // Load and store original data for undo
         self.original_prefab_data = Some(PrefabData::load_from_file(&prefab_path)?);
-        
+
         // Apply overrides to prefab file
         manager.apply_overrides_to_prefab(self.entity, world)?;
-        
+
         Ok(())
     }
 
     fn undo(&mut self, world: &mut World) -> Result<()> {
         if let Some(original_data) = &self.original_prefab_data {
-            let manager = self.prefab_manager.lock()
+            let manager = self
+                .prefab_manager
+                .lock()
                 .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
-            
+
             // Find the prefab path
             if let Some(instance) = manager.find_instance(self.entity) {
                 // Restore original prefab file
                 original_data.save_to_file(&instance.source)?;
-                
+
                 // Revert instance to prefab values
                 drop(manager); // Release lock before mutable world access
-                let mut manager = self.prefab_manager.lock()
+                let mut manager = self
+                    .prefab_manager
+                    .lock()
                     .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
                 manager.revert_instance_to_prefab(self.entity, world)?;
             }
@@ -911,6 +944,53 @@ impl EditorCommand for PrefabApplyOverridesCommand {
 
     fn describe(&self) -> String {
         format!("Apply overrides to prefab (entity #{})", self.entity)
+    }
+}
+
+#[derive(Debug)]
+pub struct PrefabRevertOverridesCommand {
+    entity: Entity,
+    prefab_manager: Arc<Mutex<PrefabManager>>,
+    snapshot: PrefabInstanceSnapshot,
+}
+
+impl PrefabRevertOverridesCommand {
+    pub fn new(
+        prefab_manager: Arc<Mutex<PrefabManager>>,
+        entity: Entity,
+        snapshot: PrefabInstanceSnapshot,
+    ) -> Box<dyn EditorCommand> {
+        Box::new(Self {
+            entity,
+            prefab_manager,
+            snapshot,
+        })
+    }
+}
+
+impl EditorCommand for PrefabRevertOverridesCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        let mut manager = self
+            .prefab_manager
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+
+        manager.revert_instance_to_prefab(self.entity, world)?;
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        let mut manager = self
+            .prefab_manager
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+
+        manager.restore_snapshot(&self.snapshot, world)?;
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        format!("Revert prefab overrides (entity #{})", self.entity)
     }
 }
 

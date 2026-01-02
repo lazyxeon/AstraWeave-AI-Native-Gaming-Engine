@@ -1,4 +1,5 @@
 //! Common test utilities for astraweave-weaving tests
+#![allow(dead_code)]
 
 use astraweave_weaving::patterns::*;
 use astraweave_weaving::*;

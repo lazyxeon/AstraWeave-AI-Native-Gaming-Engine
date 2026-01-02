@@ -143,6 +143,12 @@ pub struct MaterialManager {
     current_stats: Option<MaterialLoadStats>,
 }
 
+impl Default for MaterialManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MaterialManager {
     pub fn new() -> Self {
         Self {
@@ -652,6 +658,7 @@ albedo = "dirt_albedo.png"
             name: String,
         }
         #[derive(serde::Deserialize, Default)]
+        #[allow(dead_code)]
         struct MaterialLayerToml {
             key: String,
             albedo: Option<String>,

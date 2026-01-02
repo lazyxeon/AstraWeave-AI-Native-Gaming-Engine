@@ -244,8 +244,10 @@ pub fn cleanup_test_assets() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn test_generate_beep() -> Result<()> {
         let path = "tests/assets/test_generator_beep.wav";
         generate_test_beep(path, 440.0, 0.5, 22050)?;
@@ -271,6 +273,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_generate_music() -> Result<()> {
         let path = "tests/assets/test_generator_music.wav";
         generate_test_music(path, 2.0, 22050)?;
@@ -287,6 +290,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_generate_voice() -> Result<()> {
         let path = "tests/assets/test_generator_voice.wav";
         generate_test_voice(path, 1.0, 22050)?;
@@ -303,6 +307,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_setup_all_assets() -> Result<()> {
         setup_all_test_assets()?;
 
@@ -328,6 +333,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_cleanup_assets() -> Result<()> {
         setup_all_test_assets()?;
         cleanup_test_assets()?;

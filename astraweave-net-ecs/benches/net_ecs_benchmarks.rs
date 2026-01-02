@@ -2,7 +2,8 @@ use astraweave_ecs::World;
 use astraweave_net_ecs::{
     CClientPrediction, CNetworkAuthority, CNetworkClient, EntityState, NetworkSnapshot,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
 

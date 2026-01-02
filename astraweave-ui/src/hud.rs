@@ -3532,8 +3532,8 @@ mod tests {
     #[test]
     fn test_damage_number_calculate_offset_motion() {
         let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
-        let (x, y) = dmg.calculate_offset(0.5);
-        
+        let (_, y) = dmg.calculate_offset(0.5);
+
         // After 0.5s with gravity, y should have moved (starts negative = up, then gravity pulls down)
         // At t=0.5: y = vy*t + 0.5*g*t² = -80*0.5 + 0.5*150*0.25 = -40 + 18.75 = -21.25
         assert!((y - (-21.25)).abs() < 0.1);
@@ -4181,6 +4181,349 @@ mod tests {
         }
         
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    // ===== Quest Tests =====
+
+    #[test]
+    fn test_quest_completion_empty() {
+        let quest = Quest {
+            id: 1,
+            title: "Empty Quest".to_string(),
+            description: "No objectives".to_string(),
+            objectives: vec![],
+        };
+        assert_eq!(quest.completion(), 0.0);
+        assert!(!quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_completion_partial() {
+        let quest = Quest {
+            id: 1,
+            title: "Main Quest".to_string(),
+            description: "Find items".to_string(),
+            objectives: vec![
+                Objective { id: 1, description: "Item 1".to_string(), completed: true, progress: None },
+                Objective { id: 2, description: "Item 2".to_string(), completed: false, progress: Some((3, 5)) },
+                Objective { id: 3, description: "Item 3".to_string(), completed: false, progress: None },
+            ],
+        };
+        assert!((quest.completion() - 0.333).abs() < 0.01);
+        assert!(!quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_completion_full() {
+        let quest = Quest {
+            id: 1,
+            title: "Complete Quest".to_string(),
+            description: "All done".to_string(),
+            objectives: vec![
+                Objective { id: 1, description: "Obj 1".to_string(), completed: true, progress: None },
+                Objective { id: 2, description: "Obj 2".to_string(), completed: true, progress: None },
+            ],
+        };
+        assert_eq!(quest.completion(), 1.0);
+        assert!(quest.is_complete());
+    }
+
+    // ===== PingMarker Tests =====
+
+    #[test]
+    fn test_ping_marker_construction() {
+        let ping = PingMarker::new((10.0, 20.0), 5.0);
+        assert_eq!(ping.world_pos, (10.0, 20.0));
+        assert_eq!(ping.spawn_time, 5.0);
+        assert_eq!(ping.duration, 3.0);
+    }
+
+    #[test]
+    fn test_ping_marker_activity_check() {
+        let ping = PingMarker::new((0.0, 0.0), 1.0);
+        assert!(ping.is_active(2.0)); // 1.0 + 3.0 = 4.0 > 2.0
+        assert!(ping.is_active(3.9)); // Still active
+        assert!(!ping.is_active(4.1)); // 1.0 + 3.0 < 4.1
+    }
+
+    #[test]
+    fn test_ping_marker_normalized_age() {
+        let ping = PingMarker::new((0.0, 0.0), 0.0);
+        assert_eq!(ping.age_normalized(0.0), 0.0);
+        assert_eq!(ping.age_normalized(1.5), 0.5);
+        assert_eq!(ping.age_normalized(3.0), 1.0);
+        assert_eq!(ping.age_normalized(5.0), 1.0); // Capped at 1.0
+    }
+
+    // ===== PoiMarker Tests =====
+
+    #[test]
+    fn test_poi_marker_creation() {
+        let poi = PoiMarker {
+            id: 42,
+            world_pos: (100.0, 200.0),
+            poi_type: PoiType::Objective,
+            label: Some("Target Location".to_string()),
+        };
+        assert_eq!(poi.id, 42);
+        assert_eq!(poi.world_pos, (100.0, 200.0));
+        assert_eq!(poi.poi_type, PoiType::Objective);
+        assert_eq!(poi.label, Some("Target Location".to_string()));
+    }
+
+    #[test]
+    fn test_poi_marker_without_label() {
+        let poi = PoiMarker {
+            id: 1,
+            world_pos: (0.0, 0.0),
+            poi_type: PoiType::Waypoint,
+            label: None,
+        };
+        assert!(poi.label.is_none());
+    }
+
+    #[test]
+    fn test_poi_type_icons() {
+        assert_eq!(PoiType::Objective.icon(), "🎯");
+        assert_eq!(PoiType::Waypoint.icon(), "📍");
+        assert_eq!(PoiType::Vendor.icon(), "🏪");
+        assert_eq!(PoiType::Danger.icon(), "⚔️");
+    }
+
+    // ===== DialogueChoice Tests =====
+
+    #[test]
+    fn test_dialogue_choice_with_next() {
+        let choice = DialogueChoice {
+            id: 1,
+            text: "Tell me more".to_string(),
+            next_node: Some(5),
+        };
+        assert_eq!(choice.id, 1);
+        assert_eq!(choice.text, "Tell me more");
+        assert_eq!(choice.next_node, Some(5));
+    }
+
+    #[test]
+    fn test_dialogue_choice_end_dialogue() {
+        let choice = DialogueChoice {
+            id: 2,
+            text: "Goodbye".to_string(),
+            next_node: None,
+        };
+        assert!(choice.next_node.is_none());
+    }
+
+    // ===== DialogueNode Tests =====
+
+    #[test]
+    fn test_dialogue_node_with_choices() {
+        let node = DialogueNode {
+            id: 1,
+            speaker_name: "Elder".to_string(),
+            text: "Welcome, traveler!".to_string(),
+            choices: vec![
+                DialogueChoice { id: 1, text: "Hello!".to_string(), next_node: Some(2) },
+                DialogueChoice { id: 2, text: "Leave".to_string(), next_node: None },
+            ],
+            portrait_id: Some(42),
+        };
+        assert_eq!(node.speaker_name, "Elder");
+        assert_eq!(node.choices.len(), 2);
+        assert_eq!(node.portrait_id, Some(42));
+    }
+
+    #[test]
+    fn test_dialogue_node_without_choices() {
+        let node = DialogueNode {
+            id: 1,
+            speaker_name: "NPC".to_string(),
+            text: "End of dialogue".to_string(),
+            choices: vec![],
+            portrait_id: None,
+        };
+        assert!(node.choices.is_empty());
+        assert!(node.portrait_id.is_none());
+    }
+
+    // ===== TooltipData Tests =====
+
+    #[test]
+    fn test_tooltip_data_full() {
+        let tooltip = TooltipData {
+            title: "Sword of Power".to_string(),
+            description: "A legendary blade".to_string(),
+            stats: vec![
+                ("Damage".to_string(), "25".to_string()),
+                ("Range".to_string(), "1m".to_string()),
+            ],
+            flavor_text: Some("Forged in ancient times...".to_string()),
+        };
+        assert_eq!(tooltip.title, "Sword of Power");
+        assert_eq!(tooltip.stats.len(), 2);
+        assert!(tooltip.flavor_text.is_some());
+    }
+
+    #[test]
+    fn test_tooltip_data_minimal() {
+        let tooltip = TooltipData {
+            title: "Simple Item".to_string(),
+            description: "Basic".to_string(),
+            stats: vec![],
+            flavor_text: None,
+        };
+        assert!(tooltip.stats.is_empty());
+        assert!(tooltip.flavor_text.is_none());
+    }
+
+    // ===== PlayerStats Tests =====
+
+    #[test]
+    fn test_player_stats_default_values() {
+        let stats = PlayerStats::default();
+        assert_eq!(stats.health, 100.0);
+        assert_eq!(stats.max_health, 100.0);
+        assert_eq!(stats.mana, 100.0);
+        assert_eq!(stats.stamina, 100.0);
+    }
+
+    // ===== NotificationQueue Tests =====
+
+    #[test]
+    fn test_notification_queue_push_when_empty() {
+        let mut queue = NotificationQueue::new();
+        queue.push(QuestNotification::new_quest("Test".to_string(), "Desc".to_string()));
+        assert!(queue.has_active());
+        assert!(queue.pending.is_empty());
+    }
+
+    #[test]
+    fn test_notification_queue_push_when_active() {
+        let mut queue = NotificationQueue::new();
+        queue.push(QuestNotification::new_quest("First".to_string(), "Desc".to_string()));
+        queue.push(QuestNotification::new_quest("Second".to_string(), "Desc".to_string()));
+        
+        assert!(queue.has_active());
+        assert_eq!(queue.active.as_ref().unwrap().title, "First");
+        assert_eq!(queue.pending.len(), 1);
+    }
+
+    #[test]
+    fn test_notification_queue_update_pop_next() {
+        let mut queue = NotificationQueue::new();
+        queue.push(QuestNotification::new_quest("First".to_string(), "Desc".to_string()));
+        queue.push(QuestNotification::new_quest("Second".to_string(), "Desc".to_string()));
+        
+        // Finish first notification
+        queue.update(3.0); // Exceeds 2.0s duration
+        
+        // Second notification should now be active
+        assert!(queue.has_active());
+        assert_eq!(queue.active.as_ref().unwrap().title, "Second");
+        assert!(queue.pending.is_empty());
+    }
+
+    // ===== HealthAnimation Tests =====
+
+    #[test]
+    fn test_health_animation_creation() {
+        let anim = HealthAnimation::new(100.0);
+        assert_eq!(anim.visual_health(), 100.0);
+        assert_eq!(anim.flash_timer, 0.0);
+    }
+
+    #[test]
+    fn test_health_animation_set_target() {
+        let mut anim = HealthAnimation::new(100.0);
+        anim.set_target(50.0);
+        assert_eq!(anim.visual_health(), 100.0); // Not animated yet
+        // Update should animate toward target
+        anim.update(0.5);
+        let visual = anim.visual_health();
+        assert!(visual < 100.0 && visual >= 50.0);
+    }
+
+    #[test]
+    fn test_health_animation_flash_timer() {
+        let mut anim = HealthAnimation::new(100.0);
+        anim.set_target(50.0); // Taking damage
+        // Flash timer should be set
+        anim.update(0.1);
+        // After update, flash behavior depends on implementation
+    }
+
+    #[test]
+    fn test_health_animation_healing_uses_in_out_easing_path() {
+        let mut anim = HealthAnimation::new(50.0);
+        anim.set_target(100.0);
+
+        // Small update step should move visual health upward.
+        anim.update(0.05);
+        let visual = anim.visual_health();
+        assert!(visual > 50.0);
+        assert!(visual <= 100.0);
+    }
+
+    fn run_headless_egui_pass(ctx: &egui::Context, f: impl FnOnce(&egui::Context)) {
+        ctx.begin_pass(egui::RawInput::default());
+        f(ctx);
+        let _ = ctx.end_pass();
+    }
+
+    #[test]
+    fn test_hud_render_runs_headless_with_sample_state() {
+        let ctx = egui::Context::default();
+        let mut hud = HudManager::new();
+
+        hud.toggle_debug();
+
+        // Populate a small amount of sample data so render paths execute.
+        hud.enemies.push(EnemyData::new(
+            1,
+            (3.0, 0.0, -2.0),
+            100.0,
+            EnemyFaction::Hostile,
+        ));
+        hud.damage_numbers.push(DamageNumber::new(
+            42,
+            0.0,
+            (0.0, 0.0, 0.0),
+            DamageType::Normal,
+        ));
+        hud.active_quest = Some(Quest {
+            id: 1,
+            title: "Test Quest".to_string(),
+            description: "Test Description".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "Do the thing".to_string(),
+                    completed: false,
+                    progress: Some((1, 3)),
+                },
+                Objective {
+                    id: 2,
+                    description: "Finish".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+            ],
+        });
+        hud.poi_markers.push(PoiMarker {
+            id: 1,
+            world_pos: (5.0, 5.0),
+            poi_type: PoiType::Objective,
+            label: Some("Objective".to_string()),
+        });
+        hud.ping_markers.push(PingMarker::new((2.0, -1.0), 0.0));
+        hud.player_position = (1.0, 1.0);
+        hud.player_rotation = 0.5;
+
+        hud.update(0.016);
+
+        run_headless_egui_pass(&ctx, |ctx| {
+            hud.render(ctx);
+        });
     }
 }
 

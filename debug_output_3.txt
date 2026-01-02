@@ -1,0 +1,57 @@
+warning: unused import: `std::f32::consts::PI`
+   --> astraweave-materials\src\lib.rs:619:13
+    |
+619 |         use std::f32::consts::PI;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-materials\src\lib.rs:468:13
+    |
+468 |         let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+    |             ----^^^^^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-materials` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-materials` to apply 2 suggestions)
+warning: unused import: `image::GenericImageView`
+    --> astraweave-render\src\renderer.rs:3703:17
+     |
+3703 | ...se image::GenericImageView;
+     |       ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-render` (lib) generated 1 warning
+   Compiling hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+warning: unused variable: `color`
+   --> examples\hello_companion\src\visual_demo.rs:169:21
+    |
+169 |                 let color = [1.0, 1.0, 1.0, 1.0];
+    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_color`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `hello_companion` (bin "hello_companion") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.18s
+     Running `target\debug\hello_companion.exe`
+╔════════════════════════════════════════════════════════════╗
+║   Hello Companion - Visual AI Demo                         ║
+║   Press 1/2/3 to switch AI modes                           ║
+╚════════════════════════════════════════════════════════════╝
+
+--- DEBUG BUILD: DISABLE PLANE + BLUE WATER + ALWAYS DEPTH ---
+Initializing HDRI environment...
+✓ HDRI environment baked successfully
+Generating procedural terrain...
+TerrainSystem: Generated 4096 vertices, 7938 triangles
+✓ Terrain generated and uploaded
+Loading terrain texture...
+✓ Forest floor texture loaded
+Initializing ocean...
+✓ Ocean initialized with Gerstner waves
+✓ Loaded tree_default.glb: 342 indices
+  External mesh set: true - 9 tree instances snapped to terrain

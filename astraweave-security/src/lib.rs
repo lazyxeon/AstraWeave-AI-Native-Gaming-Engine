@@ -521,4 +521,135 @@ mod tests {
 
         assert_eq!(result.as_int().unwrap(), 42);
     }
+
+    #[test]
+    fn test_security_config_default() {
+        let plugin = SecurityPlugin::default();
+        assert!(plugin.config.enable_sandboxing);
+        assert!(plugin.config.enable_llm_validation);
+        assert!(plugin.config.enable_script_sandbox);
+        assert_eq!(plugin.config.max_script_execution_time_ms, 1000);
+        assert_eq!(plugin.config.max_memory_usage_mb, 50);
+    }
+
+    #[test]
+    fn test_security_config_custom() {
+        let config = SecurityConfig {
+            enable_sandboxing: false,
+            enable_llm_validation: false,
+            enable_script_sandbox: false,
+            max_script_execution_time_ms: 500,
+            max_memory_usage_mb: 100,
+        };
+        let plugin = SecurityPlugin::new(config.clone());
+        assert!(!plugin.config.enable_sandboxing);
+        assert_eq!(plugin.config.max_script_execution_time_ms, 500);
+    }
+
+    #[test]
+    fn test_telemetry_event_creation() {
+        let event = TelemetryEvent {
+            timestamp: 12345,
+            event_type: "test".to_string(),
+            severity: TelemetrySeverity::Info,
+            data: serde_json::json!({"key": "value"}),
+        };
+        assert_eq!(event.timestamp, 12345);
+        assert_eq!(event.event_type, "test");
+        assert_eq!(event.severity, TelemetrySeverity::Info);
+    }
+
+    #[test]
+    fn test_telemetry_severity_variants() {
+        assert_eq!(TelemetrySeverity::Info, TelemetrySeverity::Info);
+        assert_eq!(TelemetrySeverity::Warning, TelemetrySeverity::Warning);
+        assert_eq!(TelemetrySeverity::Error, TelemetrySeverity::Error);
+        assert_eq!(TelemetrySeverity::Critical, TelemetrySeverity::Critical);
+        assert_ne!(TelemetrySeverity::Info, TelemetrySeverity::Warning);
+    }
+
+    #[test]
+    fn test_execution_limits() {
+        let limits = ExecutionLimits {
+            max_operations: 5000,
+            max_memory_bytes: 2048 * 1024,
+            timeout_ms: 200,
+        };
+        assert_eq!(limits.max_operations, 5000);
+        assert_eq!(limits.max_memory_bytes, 2048 * 1024);
+        assert_eq!(limits.timeout_ms, 200);
+    }
+
+    #[test]
+    fn test_validation_result_clean() {
+        let result = ValidationResult {
+            is_valid: true,
+            trust_score: 1.0,
+            warnings: vec![],
+            anomalies: vec![],
+        };
+        assert!(result.is_valid);
+        assert_eq!(result.trust_score, 1.0);
+    }
+
+    #[test]
+    fn test_validation_result_with_issues() {
+        let result = ValidationResult {
+            is_valid: false,
+            trust_score: 0.3,
+            warnings: vec!["suspicious_pattern".to_string()],
+            anomalies: vec!["teleport_detected".to_string()],
+        };
+        assert!(!result.is_valid);
+        assert!(result.trust_score < 1.0);
+        assert!(!result.warnings.is_empty());
+        assert!(!result.anomalies.is_empty());
+    }
+
+    #[test]
+    fn test_input_validation_clean_player() {
+        let anti_cheat = CAntiCheat {
+            player_id: "clean_player".to_string(),
+            trust_score: 1.0,
+            last_validation: 0,
+            anomaly_flags: vec![],
+        };
+
+        let result = validate_player_input(&anti_cheat);
+        assert!(result.is_valid);
+        assert_eq!(result.trust_score, 1.0);
+        assert!(result.anomalies.is_empty());
+    }
+
+    #[test]
+    fn test_input_validation_multiple_anomalies() {
+        let anti_cheat = CAntiCheat {
+            player_id: "suspicious_player".to_string(),
+            trust_score: 0.5,
+            last_validation: 0,
+            anomaly_flags: vec![
+                "rapid_input".to_string(),
+                "teleport".to_string(),
+                "impossible_stats".to_string(),
+            ],
+        };
+
+        let result = validate_player_input(&anti_cheat);
+        // Multiple anomalies should reduce trust score
+        assert!(result.trust_score < 1.0);
+    }
+
+    #[test]
+    fn test_anticheat_component() {
+        let ac = CAntiCheat {
+            player_id: "player_123".to_string(),
+            trust_score: 0.95,
+            last_validation: 1234567890,
+            anomaly_flags: vec!["minor_issue".to_string()],
+        };
+        assert_eq!(ac.player_id, "player_123");
+        assert_eq!(ac.trust_score, 0.95);
+        assert_eq!(ac.last_validation, 1234567890);
+        assert_eq!(ac.anomaly_flags.len(), 1);
+    }
 }

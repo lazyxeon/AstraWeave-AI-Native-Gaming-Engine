@@ -255,7 +255,7 @@ mod tests {
     fn test_cbehavior_graph_status_types() {
         // Verify CBehaviorGraph can hold all status types
         let graph = BehaviorGraph::new(BehaviorNode::Action("test".to_string()));
-        let context = create_test_context();
+        let _context = create_test_context();
 
         // Test all status types
         let mut component = CBehaviorGraph {

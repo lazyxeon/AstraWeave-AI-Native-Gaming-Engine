@@ -358,7 +358,7 @@ impl VoxelizationPipeline {
 
         // Dispatch clear shader (8x8x8 workgroups)
         let workgroup_size = 8;
-        let dispatch_size = (self.config.voxel_resolution + workgroup_size - 1) / workgroup_size;
+        let dispatch_size = self.config.voxel_resolution.div_ceil(workgroup_size);
         compute_pass.dispatch_workgroups(dispatch_size, dispatch_size, dispatch_size);
 
         drop(compute_pass);
@@ -393,7 +393,7 @@ impl VoxelizationPipeline {
         // Dispatch one thread per triangle (workgroup size 64x1x1)
         let triangle_count = mesh.triangle_count();
         let workgroup_size = 64;
-        let dispatch_size = (triangle_count + workgroup_size - 1) / workgroup_size;
+        let dispatch_size = triangle_count.div_ceil(workgroup_size);
         compute_pass.dispatch_workgroups(dispatch_size, 1, 1);
 
         drop(compute_pass);

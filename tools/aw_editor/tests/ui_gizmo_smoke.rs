@@ -38,7 +38,7 @@ fn translate_drag_records_commit_event() {
     let events = telemetry::drain_captured_events();
     let has_gizmo_start = events.iter().any(|event| matches!(event, EditorTelemetryEvent::GizmoStarted { entity: id, .. } if *id == entity as u32));
     assert!(has_gizmo_start, "GizmoStarted should be captured");
-    
+
     // GizmoCommitted may not fire in headless mode - relaxed assertion
     // assert!(events.iter().any(|event| matches!(event,
     //     EditorTelemetryEvent::GizmoCommitted {
@@ -64,8 +64,10 @@ fn cancel_reverts_world_and_emits_event() {
     let final_pos = world.pose(entity).unwrap().pos;
     // Relaxed assertion - just verify cancel doesn't panic
     // assert_eq!(final_pos, IVec2 { x: 0, y: 0 });
-    assert!(final_pos == IVec2 { x: 0, y: 0 } || final_pos == IVec2 { x: -3, y: 4 },
-        "Position should either revert or stay at drag position");
+    assert!(
+        final_pos == IVec2 { x: 0, y: 0 } || final_pos == IVec2 { x: -3, y: 4 },
+        "Position should either revert or stay at drag position"
+    );
 
     // Event capture may vary
     let events = telemetry::drain_captured_events();

@@ -148,32 +148,36 @@ impl FileWatcher {
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
             if file_name.ends_with(".prefab.ron") {
-                let mut state = debounce_state.lock().unwrap();
-                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path));
+                let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path.clone()));
+                state.last_event_time.insert(path, Instant::now());
             } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy().to_lowercase();
 
                 // Material TOML files
                 if ext_str == "toml" {
-                    let mut state = debounce_state.lock().unwrap();
+                    let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                     state
                         .buffer
-                        .insert(path.clone(), ReloadEvent::Material(path));
+                        .insert(path.clone(), ReloadEvent::Material(path.clone()));
+                    state.last_event_time.insert(path, Instant::now());
                 }
                 // Texture files
                 else if matches!(
                     ext_str.as_str(),
                     "png" | "jpg" | "jpeg" | "ktx2" | "dds" | "basis"
                 ) {
-                    let mut state = debounce_state.lock().unwrap();
+                    let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                     state
                         .buffer
-                        .insert(path.clone(), ReloadEvent::Texture(path));
+                        .insert(path.clone(), ReloadEvent::Texture(path.clone()));
+                    state.last_event_time.insert(path, Instant::now());
                 }
                 // Model files
                 else if matches!(ext_str.as_str(), "glb" | "gltf") {
-                    let mut state = debounce_state.lock().unwrap();
-                    state.buffer.insert(path.clone(), ReloadEvent::Model(path));
+                    let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                    state.buffer.insert(path.clone(), ReloadEvent::Model(path.clone()));
+                    state.last_event_time.insert(path, Instant::now());
                 }
             }
         }
@@ -186,7 +190,7 @@ impl FileWatcher {
         loop {
             std::thread::sleep(Duration::from_millis(100));
 
-            let mut state = debounce_state.lock().unwrap();
+            let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 
             // Check if any buffered events are ready to send
             let now = Instant::now();
@@ -210,13 +214,6 @@ impl FileWatcher {
                     let _ = tx.send(event);
                     state.last_event_time.remove(&path);
                 }
-            }
-
-            // Update last event times for remaining buffered events
-            let now = Instant::now();
-            let remaining_paths: Vec<PathBuf> = state.buffer.keys().cloned().collect();
-            for path in remaining_paths {
-                state.last_event_time.entry(path).or_insert(now);
             }
         }
     }
@@ -343,9 +340,17 @@ mod tests {
 
         // Assert we got at least 1 event (file was changed)
         // Note: Debouncing may vary by OS/timing, so we just verify events are received
-        assert!(event_count >= 1, "Expected at least 1 file change event, got {}", event_count);
+        assert!(
+            event_count >= 1,
+            "Expected at least 1 file change event, got {}",
+            event_count
+        );
         // Ideally would be 1 (perfectly debounced) but OS file watchers vary
-        assert!(event_count <= 5, "Expected at most 5 events (one per write), got {}", event_count);
+        assert!(
+            event_count <= 5,
+            "Expected at most 5 events (one per write), got {}",
+            event_count
+        );
 
         // Cleanup
         fs::remove_dir_all(&temp_dir).ok();

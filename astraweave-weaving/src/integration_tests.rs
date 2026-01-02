@@ -223,7 +223,7 @@ fn test_spawner_prioritizes_broken_anchor_spawn_points() {
     let mut perfect = Anchor::new(1.0, 50, None);
     let mut broken = Anchor::new(0.05, 50, None);
 
-    let anchors = vec![(0, &mut perfect), (1, &mut broken)];
+    let _anchors = vec![(0, &mut perfect), (1, &mut broken)];
 
     let mut spawner = EnemySpawner::new();
 
@@ -344,7 +344,7 @@ fn test_multiple_enemies_overwhelm_anchor() {
 fn test_spawner_respects_max_concurrent_enemies() {
     // Setup: Max 20 enemies, 19 already spawned
     let mut anchor = Anchor::new(0.5, 50, None);
-    let anchors = vec![(0, &mut anchor)];
+    let _anchors = vec![(0, &mut anchor)];
 
     let mut spawner = EnemySpawner::with_settings(
         30.0, // wave_interval
@@ -369,7 +369,7 @@ fn test_spawner_respects_max_concurrent_enemies() {
 fn test_spawner_stops_spawning_at_max_capacity() {
     // Setup: Max 20 enemies, 20 already spawned
     let mut anchor = Anchor::new(0.5, 50, None);
-    let anchors = vec![(0, &mut anchor)];
+    let _anchors = vec![(0, &mut anchor)];
 
     let mut spawner = EnemySpawner::with_settings(
         30.0, // wave_interval

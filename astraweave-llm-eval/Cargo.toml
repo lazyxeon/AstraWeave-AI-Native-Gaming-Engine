@@ -17,6 +17,7 @@ rand = "0.9"
 
 [dev-dependencies]
 tokio = { workspace = true }
+criterion = { workspace = true }
 
 [[bin]]
 name = "evaluate"
@@ -26,3 +27,8 @@ path = "src/bin/evaluate.rs"
 name = "evaluate_mock_llm"
 harness = false
 path = "benches/evaluate_mock_llm.rs"
+
+[[bench]]
+name = "llm_eval_adversarial"
+harness = false
+path = "benches/llm_eval_adversarial.rs"

@@ -1,0 +1,294 @@
+warning: unused import: `VoxelChunk`
+  --> astraweave-terrain\src\terrain_modifier.rs:20:32
+   |
+20 | use crate::{ChunkCoord, Voxel, VoxelChunk, VoxelGrid};
+   |                                ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `HashMap`
+  --> astraweave-terrain\src\terrain_modifier.rs:22:24
+   |
+22 | use std::collections::{HashMap, HashSet, VecDeque};
+   |                        ^^^^^^^
+
+warning: unused import: `std::f32::consts::PI`
+   --> astraweave-materials\src\lib.rs:619:13
+    |
+619 |         use std::f32::consts::PI;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-materials\src\lib.rs:468:13
+    |
+468 |         let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+    |             ----^^^^^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-terrain` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-terrain` to apply 2 suggestions)
+warning: `astraweave-materials` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-materials` to apply 2 suggestions)
+warning: variable does not need to be mutable
+   --> astraweave-render\src\gpu_memory.rs:136:13
+    |
+136 |         let mut mgr = Self::new();
+    |             ----^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: `astraweave-render` (lib) generated 1 warning (run `cargo fix --lib -p astraweave-render` to apply 1 suggestion)
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+warning: unused import: `NpcDialogueState`
+ --> examples\hello_companion\src\chat_ui.rs:5:30
+  |
+5 | use crate::scene::{DemoMode, NpcDialogueState};
+  |                              ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `Mat4` and `Quat`
+ --> examples\hello_companion\src\scene.rs:9:12
+  |
+9 | use glam::{Mat4, Quat, Vec3};
+  |            ^^^^  ^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> examples\hello_companion\src\scene.rs:10:5
+   |
+10 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `wgpu::util::DeviceExt`
+  --> examples\hello_companion\src\scene.rs:11:5
+   |
+11 | use wgpu::util::DeviceExt;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> examples\hello_companion\src\dialogue_bank.rs:155:29
+    |
+155 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> examples\hello_companion\src\dialogue_bank.rs:161:29
+    |
+161 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> examples\hello_companion\src\dialogue_bank.rs:167:29
+    |
+167 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> examples\hello_companion\src\dialogue_bank.rs:173:29
+    |
+173 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> examples\hello_companion\src\dialogue_bank.rs:197:29
+    |
+197 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> examples\hello_companion\src\dialogue_bank.rs:204:29
+    |
+204 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> examples\hello_companion\src\visual_demo.rs:74:44
+    |
+74  |           let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    |  ________________________-------------------_^
+    | |                        |
+    | |                        arguments to this function are incorrect
+75  | |             backends: wgpu::Backends::all(),
+76  | |             ..Default::default()
+77  | |         });
+    | |_________^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+74  |         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+    |                                            +
+
+error[E0063]: missing field `trace` in initializer of `DeviceDescriptor<Option<&str>>`
+  --> examples\hello_companion\src\visual_demo.rs:97:18
+   |
+97 |                 &wgpu::DeviceDescriptor {
+   |                  ^^^^^^^^^^^^^^^^^^^^^^ missing `trace`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+   --> examples\hello_companion\src\visual_demo.rs:96:14
+    |
+96  |             .request_device(
+    |              ^^^^^^^^^^^^^^
+...
+103 |                 None,
+    |                 ---- unexpected argument #2 of type `Option<_>`
+    |
+note: method defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+    |
+60  |     pub fn request_device(
+    |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+102 -                 },
+103 -                 None,
+102 +                 },
+    |
+
+warning: unreachable statement
+   --> examples\hello_companion\src\main.rs:187:5
+    |
+183 |         return visual_demo::run_visual_demo();
+    |         ------------------------------------- any code following this expression is unreachable
+...
+187 |     println!("ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù");
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+    |
+    = note: `#[warn(unreachable_code)]` on by default
+    = note: this warning originates in the macro `println` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `context` found for enum `std::result::Result` in the current scope
+   --> examples\hello_companion\src\main.rs:908:45
+    |
+908 |     let rt = tokio::runtime::Runtime::new().context("Failed to create tokio runtime")?;
+    |                                             ^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `context` are implemented but not in scope; perhaps you want to import one of them
+    |
+32  + use anyhow::Context;
+    |
+32  + use quick_error::ResultExt;
+    |
+help: there is a method `with_context` with a similar name
+    |
+908 |     let rt = tokio::runtime::Runtime::new().with_context("Failed to create tokio runtime")?;
+    |                                             +++++
+
+error[E0599]: no method named `context` found for enum `std::result::Result` in the current scope
+   --> examples\hello_companion\src\main.rs:930:45
+    |
+930 |     let rt = tokio::runtime::Runtime::new().context("Failed to create tokio runtime")?;
+    |                                             ^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `context` are implemented but not in scope; perhaps you want to import one of them
+    |
+32  + use anyhow::Context;
+    |
+32  + use quick_error::ResultExt;
+    |
+help: there is a method `with_context` with a similar name
+    |
+930 |     let rt = tokio::runtime::Runtime::new().with_context("Failed to create tokio runtime")?;
+    |                                             +++++
+
+error[E0599]: no method named `context` found for enum `std::result::Result` in the current scope
+   --> examples\hello_companion\src\main.rs:936:14
+    |
+933 |           let client = reqwest::Client::builder()
+    |  ______________________-
+934 | |             .timeout(std::time::Duration::from_secs(2))
+935 | |             .build()
+936 | |             .context("Failed to create HTTP client")?;
+    | |_____________-^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following traits which provide `context` are implemented but not in scope; perhaps you want to import one of them
+    |
+32  + use anyhow::Context;
+    |
+32  + use quick_error::ResultExt;
+    |
+help: there is a method `with_context` with a similar name
+    |
+936 |             .with_context("Failed to create HTTP client")?;
+    |              +++++
+
+warning: unused variable: `text`
+   --> examples\hello_companion\src\visual_demo.rs:430:25
+    |
+430 |             if let Some(text) = self.chat_ui.draw(ctx) {
+    |                         ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+error[E0597]: `encoder` does not live long enough
+   --> examples\hello_companion\src\visual_demo.rs:463:35
+    |
+382 |           let mut encoder = self
+    |               ----------- binding `encoder` declared here
+...
+463 |               let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    |                                     ^^^^^^^ borrowed value does not live long enough
+...
+477 | /             self.egui_renderer
+478 | |                 .render(&mut render_pass, &paint_jobs, &screen_descriptor);
+    | |__________________________________________________________________________- argument requires that `encoder` is borrowed for `'static`
+...
+490 |       }
+    |       - `encoder` dropped here while still borrowed
+
+error[E0505]: cannot move out of `encoder` because it is borrowed
+   --> examples\hello_companion\src\visual_demo.rs:485:43
+    |
+382 |           let mut encoder = self
+    |               ----------- binding `encoder` declared here
+...
+463 |               let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    |                                     ------- borrow of `encoder` occurs here
+...
+477 | /             self.egui_renderer
+478 | |                 .render(&mut render_pass, &paint_jobs, &screen_descriptor);
+    | |__________________________________________________________________________- argument requires that `encoder` is borrowed for `'static`
+...
+485 |           self.queue.submit(std::iter::once(encoder.finish()));
+    |                                             ^^^^^^^ move out of `encoder` occurs here
+
+error[E0004]: non-exhaustive patterns: `&ActionStep::ModifyTerrain { .. }` not covered
+    --> examples\hello_companion\src\main.rs:1152:11
+     |
+1152 |     match step {
+     |           ^^^^ pattern `&ActionStep::ModifyTerrain { .. }` not covered
+     |
+note: `ActionStep` defined here
+    --> C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core\src\schema.rs:370:1
+     |
+370  | pub enum ActionStep {
+     | ^^^^^^^^^^^^^^^^^^^
+...
+532  |     ModifyTerrain {
+     |     ------------- not covered
+     = note: the matched value is of type `&ActionStep`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+     |
+1204 ~         ActionStep::Revive { .. } => "revive".to_string(),
+1205 ~         &ActionStep::ModifyTerrain { .. } => todo!(),
+     |
+
+Some errors have detailed explanations: E0004, E0061, E0063, E0308, E0505, E0597, E0599.
+For more information about an error, try `rustc --explain E0004`.
+warning: `hello_companion` (bin "hello_companion") generated 12 warnings
+error: could not compile `hello_companion` (bin "hello_companion") due to 9 previous errors; 12 warnings emitted

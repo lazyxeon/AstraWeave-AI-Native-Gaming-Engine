@@ -67,6 +67,9 @@ resulting in **zero runtime overhead**.
 
 #![cfg_attr(not(feature = "profiling"), no_std)]
 
+#[cfg(feature = "profiling")]
+pub use tracy_client;
+
 /// Profiling span macro - measures execution time of a code block
 ///
 /// # Examples
@@ -83,7 +86,7 @@ resulting in **zero runtime overhead**.
 macro_rules! span {
     ($name:expr) => {
         #[cfg(feature = "profiling")]
-        let _tracy_span = tracy_client::span!($name);
+        let _tracy_span = $crate::tracy_client::span!($name);
     };
 }
 
@@ -106,7 +109,7 @@ macro_rules! span {
 macro_rules! frame_mark {
     () => {
         #[cfg(feature = "profiling")]
-        tracy_client::Client::running()
+        $crate::tracy_client::Client::running()
             .expect("Tracy client should be running")
             .frame_mark();
     };
@@ -126,10 +129,10 @@ macro_rules! frame_mark {
 macro_rules! plot {
     ($name:expr, $value:expr) => {
         #[cfg(feature = "profiling")]
-        tracy_client::Client::running()
+        $crate::tracy_client::Client::running()
             .expect("Tracy client should be running")
             .plot(
-                tracy_client::PlotName::new_leak($name.to_string()),
+                $crate::tracy_client::PlotName::new_leak($name.to_string()),
                 $value as f64,
             );
     };
@@ -151,7 +154,7 @@ macro_rules! message {
         #[cfg(feature = "profiling")]
         {
             let msg = format!($($arg)*);
-            tracy_client::Client::running()
+            $crate::tracy_client::Client::running()
                 .expect("Tracy client should be running")
                 .message(&msg, 0);
         }
@@ -172,7 +175,7 @@ macro_rules! message {
 macro_rules! alloc {
     ($ptr:expr, $size:expr) => {
         #[cfg(feature = "profiling")]
-        tracy_client::Client::running()
+        $crate::tracy_client::Client::running()
             .expect("Tracy client should be running")
             .alloc($ptr as *const u8, $size);
     };
@@ -194,7 +197,7 @@ macro_rules! alloc {
 macro_rules! free {
     ($ptr:expr) => {
         #[cfg(feature = "profiling")]
-        tracy_client::Client::running()
+        $crate::tracy_client::Client::running()
             .expect("Tracy client should be running")
             .free($ptr as *const u8);
     };
@@ -219,7 +222,7 @@ macro_rules! free {
 macro_rules! span_color {
     ($name:expr, $_color:expr) => {
         #[cfg(feature = "profiling")]
-        let _tracy_span = tracy_client::span!($name);
+        let _tracy_span = $crate::tracy_client::span!($name);
     };
 }
 

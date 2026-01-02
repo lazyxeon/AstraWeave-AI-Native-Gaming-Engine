@@ -1,0 +1,120 @@
+name: Editor CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/aw_editor/**'
+      - '.github/workflows/editor-ci.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'llvm-cov.toml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tools/aw_editor/**'
+      - '.github/workflows/editor-ci.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'llvm-cov.toml'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  editor-ci:
+    name: editor-ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libegl1-mesa-dev \
+            libwayland-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: aw-editor
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Format check
+        run: cargo fmt -p aw_editor -- --check
+
+      - name: Clippy (aw_editor)
+        run: cargo clippy -p aw_editor --all-features -- -D warnings
+
+      - name: Cargo check (aw_editor)
+        run: cargo check -p aw_editor --all-features
+
+      - name: Unit tests
+        run: cargo test -p aw_editor --all-features --lib -- --nocapture
+
+      - name: Headless smoke tests
+        run: >
+          cargo test -p aw_editor --all-features
+          --test ui_gizmo_smoke
+          --test play_mode
+          --test prefab_workflow
+
+      - name: Generate coverage (llvm-cov)
+        run: |
+          rm -rf coverage
+          mkdir -p coverage
+          cargo llvm-cov --package aw_editor --all-features \
+            --lcov --output-path coverage/aw-editor.lcov
+          cargo llvm-cov report --html --output-dir coverage/html
+          cargo llvm-cov report --json --summary-only --output-path coverage/summary.json
+
+      - name: Append coverage summary
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          summary_path = pathlib.Path("coverage/summary.json")
+          if not summary_path.exists():
+            sys.exit("coverage/summary.json not found")
+          data = json.loads(summary_path.read_text())
+          files = [
+              entry for entry in data["data"][0]["files"]
+              if "tools\\aw_editor" in entry["filename"]
+              or "tools/aw_editor" in entry["filename"]
+          ]
+          if not files:
+            sys.exit("coverage summary missing aw_editor entries")
+          def collect(metric):
+            covered = sum(f["summary"][metric]["covered"] for f in files)
+            total = sum(f["summary"][metric]["count"] for f in files)
+            percent = (covered / total * 100) if total else 0.0
+            return covered, total, percent
+          line_cov, line_total, line_pct = collect("lines")
+          fn_cov, fn_total, fn_pct = collect("functions")
+          region_cov, region_total, region_pct = collect("regions")
+          with open("${{ github.step_summary }}", "a", encoding="utf-8") as fh:
+            fh.write("## aw_editor Coverage\n\n")
+            fh.write(f"- Lines: {line_pct:.2f}% ({line_cov}/{line_total})\n")
+            fh.write(f"- Functions: {fn_pct:.2f}% ({fn_cov}/{fn_total})\n")
+            fh.write(f"- Regions: {region_pct:.2f}% ({region_cov}/{region_total})\n")
+          PY
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aw-editor-coverage
+          path: coverage

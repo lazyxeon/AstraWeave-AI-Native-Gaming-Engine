@@ -26,8 +26,20 @@ impl StatusBar {
         undo_stack: &UndoStack,
         snap_config: &SnappingConfig,
         fps: f32,
+        is_dirty: bool,
+        entity_count: usize,
+        scene_path: Option<&str>,
     ) {
         ui.horizontal(|ui| {
+            if is_dirty {
+                ui.label(
+                    egui::RichText::new("*")
+                        .color(egui::Color32::from_rgb(255, 100, 100))
+                        .strong(),
+                )
+                .on_hover_text("Unsaved changes - Press Ctrl+S to save");
+            }
+
             Self::show_editor_mode(ui, editor_mode);
             ui.separator();
 
@@ -38,6 +50,19 @@ impl StatusBar {
             ui.separator();
 
             Self::show_undo_redo(ui, undo_stack);
+            ui.separator();
+
+            ui.label(format!("Entities: {}", entity_count))
+                .on_hover_text("Total number of entities in the scene");
+            ui.separator();
+
+            if let Some(path) = scene_path {
+                ui.label(format!("📁 {}", path))
+                    .on_hover_text(format!("Scene file: {}", path));
+            } else {
+                ui.label("📁 Untitled")
+                    .on_hover_text("Scene not saved - Press Ctrl+S to save");
+            }
 
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 Self::show_fps(ui, fps);
@@ -88,23 +113,26 @@ impl StatusBar {
     }
 
     fn show_undo_redo(ui: &mut Ui, undo_stack: &UndoStack) {
-        if undo_stack.can_undo() {
+        let undo_count = undo_stack.undo_count();
+        let redo_count = undo_stack.redo_count();
+
+        if undo_count > 0 {
             let desc = undo_stack.undo_description().unwrap_or_default();
-            ui.label(format!("⏮️  Undo: {}", desc))
+            ui.label(format!("⏮️ Undo ({}): {}", undo_count, desc))
                 .on_hover_text("Ctrl+Z to undo");
         } else {
-            ui.label("⏮️  Nothing to undo")
+            ui.label("⏮️ Undo (0)")
                 .on_hover_text("Make some changes to enable undo");
         }
 
         ui.add_space(8.0);
 
-        if undo_stack.can_redo() {
+        if redo_count > 0 {
             let desc = undo_stack.redo_description().unwrap_or_default();
-            ui.label(format!("⏭️  Redo: {}", desc))
+            ui.label(format!("⏭️ Redo ({}): {}", redo_count, desc))
                 .on_hover_text("Ctrl+Y to redo");
         } else {
-            ui.label("⏭️  Nothing to redo")
+            ui.label("⏭️ Redo (0)")
                 .on_hover_text("Undo something to enable redo");
         }
     }

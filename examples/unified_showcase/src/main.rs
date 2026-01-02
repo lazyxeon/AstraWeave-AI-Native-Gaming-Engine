@@ -1581,6 +1581,7 @@ impl ShowcaseApp {
         self.create_mesh_from_data(&vertices, &indices, mat_idx)
     }
 
+    #[allow(dead_code)] // Utility method kept for future terrain demo use
     fn create_plane_mesh(&mut self, size: f32, mat_idx: usize) -> usize {
         let s = size / 2.0;
         let uv_scale = 50.0; // Increase tiling for better detail

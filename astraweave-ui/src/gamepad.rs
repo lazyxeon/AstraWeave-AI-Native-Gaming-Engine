@@ -326,4 +326,176 @@ mod tests {
         assert_eq!(manager.map_button(Button::DPadDown), GamepadAction::Down);
         assert_eq!(manager.map_button(Button::Start), GamepadAction::Pause);
     }
+
+    #[test]
+    fn test_button_mapping_dpad() {
+        let manager = GamepadManager {
+            gilrs: Gilrs::new().expect("gilrs init"),
+            selected_index: 0,
+            max_items: 4,
+            deadzone: 0.3,
+            repeat_delay: 0.2,
+            repeat_timer: 0.0,
+        };
+
+        assert_eq!(manager.map_button(Button::DPadLeft), GamepadAction::Left);
+        assert_eq!(manager.map_button(Button::DPadRight), GamepadAction::Right);
+        // West button should return None
+        assert_eq!(manager.map_button(Button::West), GamepadAction::None);
+        assert_eq!(manager.map_button(Button::North), GamepadAction::None);
+    }
+
+    #[test]
+    fn test_bindings_confirm_button() {
+        let bindings = GamepadBindings::default();
+        assert_eq!(bindings.confirm_button(), Some(Button::South));
+    }
+
+    #[test]
+    fn test_bindings_cancel_button() {
+        let bindings = GamepadBindings::default();
+        assert_eq!(bindings.cancel_button(), Some(Button::East));
+    }
+
+    #[test]
+    fn test_bindings_pause_button() {
+        let bindings = GamepadBindings::default();
+        assert_eq!(bindings.pause_button(), Some(Button::Start));
+    }
+
+    #[test]
+    fn test_bindings_custom() {
+        let bindings = GamepadBindings {
+            confirm: "North".to_string(),
+            cancel: "West".to_string(),
+            pause: "Select".to_string(),
+        };
+        assert_eq!(bindings.confirm_button(), Some(Button::North));
+        assert_eq!(bindings.cancel_button(), Some(Button::West));
+        assert_eq!(bindings.pause_button(), Some(Button::Select));
+    }
+
+    #[test]
+    fn test_bindings_invalid() {
+        let bindings = GamepadBindings {
+            confirm: "Invalid".to_string(),
+            cancel: "NotAButton".to_string(),
+            pause: "Unknown".to_string(),
+        };
+        assert_eq!(bindings.confirm_button(), None);
+        assert_eq!(bindings.cancel_button(), None);
+        assert_eq!(bindings.pause_button(), None);
+    }
+
+    #[test]
+    fn test_to_button_all_values() {
+        assert_eq!(GamepadBindings::to_button("North"), Some(Button::North));
+        assert_eq!(GamepadBindings::to_button("West"), Some(Button::West));
+        assert_eq!(GamepadBindings::to_button("Select"), Some(Button::Select));
+        assert_eq!(GamepadBindings::to_button("DPadUp"), Some(Button::DPadUp));
+        assert_eq!(GamepadBindings::to_button("DPadDown"), Some(Button::DPadDown));
+        assert_eq!(GamepadBindings::to_button("DPadLeft"), Some(Button::DPadLeft));
+        assert_eq!(GamepadBindings::to_button("DPadRight"), Some(Button::DPadRight));
+        assert_eq!(GamepadBindings::to_button("LeftTrigger"), Some(Button::LeftTrigger));
+        assert_eq!(GamepadBindings::to_button("RightTrigger"), Some(Button::RightTrigger));
+        assert_eq!(GamepadBindings::to_button("LeftTrigger2"), Some(Button::LeftTrigger2));
+        assert_eq!(GamepadBindings::to_button("RightTrigger2"), Some(Button::RightTrigger2));
+    }
+
+    #[test]
+    fn test_navigate_up_wrap_at_zero() {
+        let mut manager = GamepadManager {
+            gilrs: Gilrs::new().expect("gilrs init"),
+            selected_index: 0,
+            max_items: 5,
+            deadzone: 0.3,
+            repeat_delay: 0.2,
+            repeat_timer: 0.0,
+        };
+
+        // Should wrap to last item
+        manager.navigate_up();
+        assert_eq!(manager.selected_index, 4);
+    }
+
+    #[test]
+    fn test_navigate_down_wrap_at_max() {
+        let mut manager = GamepadManager {
+            gilrs: Gilrs::new().expect("gilrs init"),
+            selected_index: 4,
+            max_items: 5,
+            deadzone: 0.3,
+            repeat_delay: 0.2,
+            repeat_timer: 0.0,
+        };
+
+        // Should wrap to first item
+        manager.navigate_down();
+        assert_eq!(manager.selected_index, 0);
+    }
+
+    #[test]
+    fn test_set_menu_size_no_clamp_needed() {
+        let mut manager = GamepadManager {
+            gilrs: Gilrs::new().expect("gilrs init"),
+            selected_index: 2,
+            max_items: 5,
+            deadzone: 0.3,
+            repeat_delay: 0.2,
+            repeat_timer: 0.0,
+        };
+
+        // Expand menu - index stays same
+        manager.set_menu_size(10);
+        assert_eq!(manager.max_items, 10);
+        assert_eq!(manager.selected_index, 2);
+    }
+
+    #[test]
+    fn test_set_menu_size_empty() {
+        let mut manager = GamepadManager {
+            gilrs: Gilrs::new().expect("gilrs init"),
+            selected_index: 5,
+            max_items: 10,
+            deadzone: 0.3,
+            repeat_delay: 0.2,
+            repeat_timer: 0.0,
+        };
+
+        // Set to zero - should handle gracefully
+        manager.set_menu_size(0);
+        assert_eq!(manager.max_items, 0);
+        // selected_index should be 0 due to saturating_sub
+    }
+
+    #[test]
+    fn test_gamepad_action_clone_copy() {
+        let action = GamepadAction::Confirm;
+        let cloned = action;
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_gamepad_action_debug() {
+        let action = GamepadAction::Up;
+        let debug_str = format!("{:?}", action);
+        assert_eq!(debug_str, "Up");
+    }
+
+    #[test]
+    fn test_bindings_clone() {
+        let bindings = GamepadBindings::default();
+        let cloned = bindings.clone();
+        assert_eq!(bindings.confirm, cloned.confirm);
+        assert_eq!(bindings.cancel, cloned.cancel);
+        assert_eq!(bindings.pause, cloned.pause);
+    }
+
+    #[test]
+    fn test_bindings_debug() {
+        let bindings = GamepadBindings::default();
+        let debug_str = format!("{:?}", bindings);
+        assert!(debug_str.contains("South"));
+        assert!(debug_str.contains("East"));
+    }
 }

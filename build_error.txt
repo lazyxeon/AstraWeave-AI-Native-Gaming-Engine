@@ -1,0 +1,13 @@
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+error[E0502]: cannot borrow `queue` as immutable because it is also borrowed as mutable
+   --> astraweave-terrain\src\background_loader.rs:695:46
+    |
+694 |         let tasks_to_process: Vec<TerrainTask> = queue
+    |                                                  ----- mutable borrow occurs here
+695 |             .drain(..max_tasks_per_frame.min(queue.len()))
+    |              -----                           ^^^^^ immutable borrow occurs here
+    |              |
+    |              mutable borrow later used by call
+
+For more information about this error, try `rustc --explain E0502`.
+error: could not compile `astraweave-terrain` (lib) due to 1 previous error

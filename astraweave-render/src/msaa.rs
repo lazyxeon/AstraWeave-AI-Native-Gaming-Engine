@@ -8,12 +8,14 @@ use wgpu;
 
 /// MSAA sample count configuration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum MsaaMode {
     /// No anti-aliasing
     Off,
     /// 2x MSAA
     X2,
     /// 4x MSAA (recommended)
+    #[default]
     X4,
     /// 8x MSAA (high quality, more expensive)
     X8,
@@ -45,11 +47,6 @@ impl MsaaMode {
     }
 }
 
-impl Default for MsaaMode {
-    fn default() -> Self {
-        MsaaMode::X4
-    }
-}
 
 /// MSAA render target manager
 ///

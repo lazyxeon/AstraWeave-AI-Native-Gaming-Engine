@@ -1069,9 +1069,9 @@ fn bench_arbiter_goap_control(c: &mut Criterion) {
 ```
 
 📚 **Documentation**:
-- [Complete Implementation Guide](docs/ARBITER_IMPLEMENTATION.md) - Architecture, performance analysis, integration
-- [Quick Reference](docs/ARBITER_QUICK_REFERENCE.md) - API docs, common patterns, troubleshooting
-- [Phase 7 Report](PHASE_7_ARBITER_PHASE_7_COMPLETE.md) - Completion summary
+- [Complete Implementation Guide](../docs/archive/completion_reports/ARBITER_IMPLEMENTATION.md) - Architecture, performance analysis, integration
+- [Quick Reference](../docs/archive/completion_reports/ARBITER_QUICK_REFERENCE.md) - API docs, common patterns, troubleshooting
+- [Phase 7 Report](../docs/journey/phases/PHASE_7_ARBITER_PHASE_7_COMPLETE.md) - Completion summary
 
 ---
 
@@ -1372,7 +1372,7 @@ echo "## My Feature" > docs/new_feature.md
 # 2. Create with proper naming
 echo "## Authentication Feature Plan" > docs/current/AUTH_FEATURE_PLAN.md
 # 3. Update navigation
-echo "- [Auth Feature](AUTH_FEATURE_PLAN.md)" >> docs/current/README.md
+echo "- [Auth Feature](./AUTH_FEATURE_PLAN.md)" >> docs/current/README.md
 # 4. Commit with clear message
 git add docs/current/AUTH_FEATURE_PLAN.md docs/current/README.md
 git commit -m "docs: add auth feature planning document"

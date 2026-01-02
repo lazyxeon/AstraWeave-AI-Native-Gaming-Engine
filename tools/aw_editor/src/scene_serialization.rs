@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use tracing::debug;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EntityData {
@@ -150,7 +151,7 @@ impl SceneData {
         fs::write(&safe_path, ron_string)
             .context(format!("Failed to write scene to {:?}", safe_path))?;
 
-        println!("💾 Saved scene to {:?}", safe_path);
+        debug!("💾 Saved scene to {:?}", safe_path);
         Ok(())
     }
 
@@ -173,7 +174,7 @@ impl SceneData {
         let scene: SceneData = ron::from_str(&contents)
             .context(format!("Failed to deserialize scene from {:?}", safe_path))?;
 
-        println!("📂 Loaded scene from {:?}", safe_path);
+        debug!("📂 Loaded scene from {:?}", safe_path);
         Ok(scene)
     }
 }
@@ -304,6 +305,7 @@ mod tests {
 
     #[test]
     fn test_scene_with_all_components() {
+        use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
         let mut world = World::new();
         let entity = world.spawn(
             "CompleteEntity",
@@ -314,9 +316,9 @@ mod tests {
         );
 
         if let Some(pose) = world.pose_mut(entity) {
-            pose.rotation = 3.14;
-            pose.rotation_x = 1.57;
-            pose.rotation_z = 0.78;
+            pose.rotation = PI;
+            pose.rotation_x = FRAC_PI_2;
+            pose.rotation_z = FRAC_PI_4;
             pose.scale = 1.5;
         }
 
@@ -330,13 +332,13 @@ mod tests {
         assert_eq!(entity_data.team_id, 1);
         assert_eq!(entity_data.hp, 75);
         assert_eq!(entity_data.ammo, 25);
-        assert!((entity_data.rotation - 3.14).abs() < 0.01);
-        assert!((entity_data.rotation_x - 1.57).abs() < 0.01);
-        assert!((entity_data.rotation_z - 0.78).abs() < 0.01);
+        assert!((entity_data.rotation - PI).abs() < 0.01);
+        assert!((entity_data.rotation_x - FRAC_PI_2).abs() < 0.01);
+        assert!((entity_data.rotation_z - FRAC_PI_4).abs() < 0.01);
         assert!((entity_data.scale - 1.5).abs() < 0.01);
 
         let restored_pose = restored.pose(entity).unwrap();
-        assert!((restored_pose.rotation - 3.14).abs() < 0.01);
+        assert!((restored_pose.rotation - PI).abs() < 0.01);
         assert!((restored_pose.scale - 1.5).abs() < 0.01);
     }
 
@@ -418,7 +420,7 @@ mod tests {
         let test_path = Path::new("test_scenes/aw_editor_test_save_load.ron");
 
         save_scene(&world, &test_path).unwrap();
-        
+
         // Construct full path for assertions
         let base = env::current_dir().unwrap();
         let full_path = base.join("content").join(test_path);

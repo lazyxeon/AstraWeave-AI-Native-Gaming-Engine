@@ -389,7 +389,7 @@ async fn test_metrics_tracking() {
     assert_eq!(metrics.total_messages, 5);
     assert!(metrics.current_tokens > 0);
     assert!(metrics.avg_message_tokens > 0.0);
-    assert!(metrics.processing_time_ms >= 0); // May be 0 in fast tests
+    assert!(metrics.processing_time_ms >= 0);
 }
 
 // ============================================================================
