@@ -1,20 +1,3 @@
-//! # astraweave-fluids
-//!
-//! GPU-accelerated fluid simulation using Position-Based Dynamics (PBD).
-//!
-//! ## Features
-//! - **PBD Solver** with adaptive iterations
-//! - **Temperature & Heat Transfer** with Boussinesq buoyancy
-//! - **Multi-Phase Fluids** (water, oil, custom)
-//! - **Screen-Space Fluid Rendering** with caustics and absorption
-//! - **Dynamic Particle Management** with spawn/despawn APIs
-//!
-//! ## Quick Start
-//! ```ignore
-//! let mut system = FluidSystem::new(&device, 100_000);
-//! system.step(&device, &mut encoder, &queue, dt);
-//! ```
-
 pub mod emitter;
 pub mod lod;
 pub mod profiling;
@@ -31,16 +14,6 @@ pub use serialization::{FluidSnapshot, SnapshotParams};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
-/// A single fluid particle in the simulation.
-///
-/// The struct is 80 bytes and GPU-aligned for efficient buffer transfer.
-///
-/// # Fields
-/// - `position`: World-space position (w=1.0)
-/// - `velocity`: Linear velocity (w=0.0)
-/// - `phase`: Fluid type (0=water, 1=oil, 2+=custom)
-/// - `temperature`: Temperature in Kelvin (ambient ~293K)
-/// - `color`: RGBA color for dye advection
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Particle {
