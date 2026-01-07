@@ -107,7 +107,7 @@ use gizmo::state::GizmoMode;
 use material_inspector::MaterialInspector;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel,
-    ChartsPanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, PrefabAction,
+    ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, PrefabAction,
     TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 mod plugin;
@@ -286,6 +286,8 @@ struct EditorApp {
     hierarchy_panel: HierarchyPanel,
     // Phase 5.2: Build Manager
     build_manager_panel: BuildManagerPanel,
+    // Enhanced Console Panel
+    console_panel: ConsolePanel,
     // Phase 5.3: Plugin System
     plugin_manager: plugin::PluginManager,
     plugin_panel: plugin::PluginManagerPanel,
@@ -434,6 +436,8 @@ impl Default for EditorApp {
             hierarchy_panel: HierarchyPanel::new(),
             // Phase 5.2: Build Manager
             build_manager_panel: BuildManagerPanel::new(),
+            // Enhanced Console Panel
+            console_panel: ConsolePanel::new(),
             // Phase 5.3: Plugin System
             plugin_manager: plugin::PluginManager::default(),
             plugin_panel: plugin::PluginManagerPanel::default(),
@@ -1054,12 +1058,7 @@ impl EditorApp {
     }
 
     fn show_console(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Console");
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            for log in &self.console_logs {
-                ui.label(log);
-            }
-        });
+        self.console_panel.show_with_logs(ui, &mut self.console_logs);
     }
 
     fn show_profiler(&mut self, ui: &mut egui::Ui) {
@@ -2101,6 +2100,58 @@ impl eframe::App for EditorApp {
                     ui.horizontal(|ui| {
                         ui.label("Show Console:");
                         ui.checkbox(&mut self.show_console_panel, "");
+                    });
+
+                    ui.add_space(16.0);
+                    ui.heading("Snapping");
+                    ui.add_space(8.0);
+
+                    ui.horizontal(|ui| {
+                        ui.label("Grid Snap:");
+                        ui.checkbox(&mut self.snapping_config.grid_enabled, "");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Grid Size:");
+                        ui.add(egui::DragValue::new(&mut self.snapping_config.grid_size)
+                            .range(0.1..=10.0)
+                            .speed(0.1)
+                            .suffix(" units"));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Angle Snap:");
+                        ui.checkbox(&mut self.snapping_config.angle_enabled, "");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Angle Increment:");
+                        ui.add(egui::DragValue::new(&mut self.snapping_config.angle_increment)
+                            .range(1.0..=90.0)
+                            .speed(1.0)
+                            .suffix("°"));
+                    });
+
+                    ui.add_space(16.0);
+                    ui.collapsing("Keyboard Shortcuts", |ui| {
+                        egui::Grid::new("shortcuts_grid")
+                            .num_columns(2)
+                            .spacing([20.0, 4.0])
+                            .striped(true)
+                            .show(ui, |ui| {
+                                ui.label("Ctrl+S"); ui.label("Save scene"); ui.end_row();
+                                ui.label("Ctrl+Z"); ui.label("Undo"); ui.end_row();
+                                ui.label("Ctrl+Y"); ui.label("Redo"); ui.end_row();
+                                ui.label("Ctrl+C"); ui.label("Copy"); ui.end_row();
+                                ui.label("Ctrl+V"); ui.label("Paste"); ui.end_row();
+                                ui.label("Ctrl+D"); ui.label("Duplicate"); ui.end_row();
+                                ui.label("Delete"); ui.label("Delete entity"); ui.end_row();
+                                ui.label("F5"); ui.label("Play"); ui.end_row();
+                                ui.label("F6"); ui.label("Pause"); ui.end_row();
+                                ui.label("F7"); ui.label("Stop"); ui.end_row();
+                                ui.label("F8"); ui.label("Step frame"); ui.end_row();
+                                ui.label("G"); ui.label("Translate mode"); ui.end_row();
+                                ui.label("R"); ui.label("Rotate mode"); ui.end_row();
+                                ui.label("S"); ui.label("Scale mode"); ui.end_row();
+                                ui.label("Escape"); ui.label("Deselect / cancel"); ui.end_row();
+                            });
                     });
 
                     ui.add_space(12.0);
