@@ -49,6 +49,7 @@ mod widget;
 // Physics debug types are exported for external configuration
 #[allow(unused_imports)]
 pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
+#[allow(unused_imports)]
 pub use terrain_renderer::{TerrainRenderer, TerrainVertex};
 pub use widget::ViewportWidget;
 
