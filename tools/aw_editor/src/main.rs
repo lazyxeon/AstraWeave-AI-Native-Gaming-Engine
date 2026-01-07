@@ -108,7 +108,7 @@ use material_inspector::MaterialInspector;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel,
     ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, PrefabAction,
-    TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
+    ProfilerPanel, SceneStats, SceneStatsPanel, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 mod plugin;
 use prefab::PrefabManager;
@@ -288,6 +288,10 @@ struct EditorApp {
     build_manager_panel: BuildManagerPanel,
     // Enhanced Console Panel
     console_panel: ConsolePanel,
+    // Scene Statistics Panel
+    scene_stats_panel: SceneStatsPanel,
+    // Performance Profiler Panel
+    profiler_panel: ProfilerPanel,
     // Phase 5.3: Plugin System
     plugin_manager: plugin::PluginManager,
     plugin_panel: plugin::PluginManagerPanel,
@@ -438,6 +442,10 @@ impl Default for EditorApp {
             build_manager_panel: BuildManagerPanel::new(),
             // Enhanced Console Panel
             console_panel: ConsolePanel::new(),
+            // Scene Statistics Panel
+            scene_stats_panel: SceneStatsPanel::new(),
+            // Performance Profiler Panel
+            profiler_panel: ProfilerPanel::new(),
             // Phase 5.3: Plugin System
             plugin_manager: plugin::PluginManager::default(),
             plugin_panel: plugin::PluginManagerPanel::default(),
@@ -1932,6 +1940,26 @@ impl eframe::App for EditorApp {
         } else {
             60.0
         };
+
+        self.profiler_panel.push_frame_time(frame_time * 1000.0);
+
+        let selected_count = self.selection_set.entities.len();
+        let scene_entity_count = self
+            .scene_state
+            .as_ref()
+            .map(|s| s.world().entities().len())
+            .unwrap_or(0);
+        self.scene_stats_panel.update_stats(SceneStats {
+            entity_count: scene_entity_count,
+            selected_count,
+            component_count: scene_entity_count * 3,
+            prefab_count: self.prefab_manager.instance_count(),
+            undo_stack_size: self.undo_stack.undo_count(),
+            redo_stack_size: self.undo_stack.redo_count(),
+            memory_estimate_kb: scene_entity_count * 2,
+            scene_path: self.current_scene_path.as_ref().map(|p| p.display().to_string()),
+            is_dirty: self.is_dirty,
+        });
 
         // Phase 7: Dynamic window title with file name and dirty state
         let file_name = self
@@ -3628,6 +3656,14 @@ impl eframe::App for EditorApp {
                     .default_open(console_open)
                     .show(ui, |ui| self.show_console(ui));
                 }
+
+                ui.collapsing("Scene Statistics", |ui| {
+                    self.scene_stats_panel.show_inline(ui);
+                });
+
+                ui.collapsing("Performance Profiler", |ui| {
+                    self.profiler_panel.show(ui);
+                });
 
                 let runtime_state = self.runtime.state();
                 let tick_count = self.runtime.stats().tick_count;

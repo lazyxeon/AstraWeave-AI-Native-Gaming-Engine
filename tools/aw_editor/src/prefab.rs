@@ -579,6 +579,10 @@ impl PrefabManager {
         }
     }
 
+    pub fn instance_count(&self) -> usize {
+        self.instances.len()
+    }
+
     pub fn shared<P: AsRef<Path>>(prefab_directory: P) -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self::new(prefab_directory)))
     }
