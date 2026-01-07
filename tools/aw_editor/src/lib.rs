@@ -12,6 +12,7 @@ pub mod prefab;
 pub mod runtime;
 pub mod scene_serialization;
 pub mod scene_state;
+pub mod terrain_integration;
 pub mod ui;
 
 pub use command::{

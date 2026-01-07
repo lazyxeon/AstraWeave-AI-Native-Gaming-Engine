@@ -461,6 +461,210 @@ impl BiomeConfig {
         }
     }
 
+    pub fn tundra() -> Self {
+        Self {
+            biome_type: BiomeType::Tundra,
+            name: "Frozen Tundra".to_string(),
+            description: "Frozen wasteland with permafrost and sparse vegetation".to_string(),
+            conditions: BiomeConditions {
+                height_range: (0.0, 50.0),
+                temperature_range: (0.0, 0.2),
+                moisture_range: (0.1, 0.5),
+                max_slope: 30.0,
+            },
+            sky: BiomeSky {
+                horizon_color: Vec3::new(0.85, 0.9, 0.95),
+                zenith_color: Vec3::new(0.6, 0.75, 0.9),
+                sun_color: Vec3::new(1.0, 0.95, 0.85),
+                fog_density: 0.4,
+                fog_color: Vec3::new(0.9, 0.95, 1.0),
+                cloud_coverage: 0.6,
+                precipitation: PrecipitationType::Snow,
+            },
+            vegetation: BiomeVegetation {
+                density: 0.15,
+                vegetation_types: vec![
+                    VegetationType {
+                        name: "frozen_shrub".to_string(),
+                        weight: 1.0,
+                        model_path: "assets/models/frozen_shrub.glb".to_string(),
+                        scale_range: (0.5, 1.0),
+                        slope_tolerance: 25.0,
+                    },
+                ],
+                size_variation: (0.4, 1.0),
+                random_rotation: true,
+            },
+            resource_weights: vec![
+                (ResourceKind::Ore, 1.5),
+                (ResourceKind::Crystal, 2.0),
+            ],
+            base_resource_amount: (1, 3),
+            resource_respawn: (60.0, 240.0),
+            ground_textures: vec![
+                "assets/textures/snow_diffuse.png".to_string(),
+                "assets/textures/ice_diffuse.png".to_string(),
+            ],
+            priority: 5,
+        }
+    }
+
+    pub fn swamp() -> Self {
+        Self {
+            biome_type: BiomeType::Swamp,
+            name: "Murky Swamp".to_string(),
+            description: "Wetlands with murky waters and dense undergrowth".to_string(),
+            conditions: BiomeConditions {
+                height_range: (-5.0, 15.0),
+                temperature_range: (0.4, 0.8),
+                moisture_range: (0.8, 1.0),
+                max_slope: 15.0,
+            },
+            sky: BiomeSky {
+                horizon_color: Vec3::new(0.5, 0.55, 0.4),
+                zenith_color: Vec3::new(0.4, 0.5, 0.4),
+                sun_color: Vec3::new(0.9, 0.85, 0.7),
+                fog_density: 0.6,
+                fog_color: Vec3::new(0.5, 0.55, 0.45),
+                cloud_coverage: 0.8,
+                precipitation: PrecipitationType::Rain,
+            },
+            vegetation: BiomeVegetation {
+                density: 0.6,
+                vegetation_types: vec![
+                    VegetationType {
+                        name: "swamp_tree".to_string(),
+                        weight: 1.5,
+                        model_path: "assets/models/swamp_tree.glb".to_string(),
+                        scale_range: (0.8, 1.5),
+                        slope_tolerance: 20.0,
+                    },
+                    VegetationType {
+                        name: "reeds".to_string(),
+                        weight: 3.0,
+                        model_path: "assets/models/reeds.glb".to_string(),
+                        scale_range: (0.6, 1.2),
+                        slope_tolerance: 30.0,
+                    },
+                ],
+                size_variation: (0.6, 1.4),
+                random_rotation: true,
+            },
+            resource_weights: vec![
+                (ResourceKind::Fiber, 3.0),
+                (ResourceKind::Wood, 1.5),
+            ],
+            base_resource_amount: (2, 5),
+            resource_respawn: (30.0, 90.0),
+            ground_textures: vec![
+                "assets/textures/mud_diffuse.png".to_string(),
+                "assets/textures/moss_diffuse.png".to_string(),
+            ],
+            priority: 6,
+        }
+    }
+
+    pub fn beach() -> Self {
+        Self {
+            biome_type: BiomeType::Beach,
+            name: "Sandy Beach".to_string(),
+            description: "Coastal area with sandy shores".to_string(),
+            conditions: BiomeConditions {
+                height_range: (-2.0, 5.0),
+                temperature_range: (0.5, 1.0),
+                moisture_range: (0.4, 0.7),
+                max_slope: 20.0,
+            },
+            sky: BiomeSky {
+                horizon_color: Vec3::new(0.7, 0.85, 0.95),
+                zenith_color: Vec3::new(0.4, 0.6, 0.9),
+                sun_color: Vec3::new(1.0, 0.98, 0.9),
+                fog_density: 0.15,
+                fog_color: Vec3::new(0.8, 0.9, 1.0),
+                cloud_coverage: 0.3,
+                precipitation: PrecipitationType::None,
+            },
+            vegetation: BiomeVegetation {
+                density: 0.1,
+                vegetation_types: vec![
+                    VegetationType {
+                        name: "palm_tree".to_string(),
+                        weight: 1.0,
+                        model_path: "assets/models/palm_tree.glb".to_string(),
+                        scale_range: (0.8, 1.3),
+                        slope_tolerance: 15.0,
+                    },
+                ],
+                size_variation: (0.7, 1.2),
+                random_rotation: true,
+            },
+            resource_weights: vec![
+                (ResourceKind::Fiber, 0.5),
+            ],
+            base_resource_amount: (1, 2),
+            resource_respawn: (60.0, 180.0),
+            ground_textures: vec![
+                "assets/textures/sand_diffuse.png".to_string(),
+            ],
+            priority: 7,
+        }
+    }
+
+    pub fn river() -> Self {
+        Self {
+            biome_type: BiomeType::River,
+            name: "River Basin".to_string(),
+            description: "Flowing water with lush riverbanks".to_string(),
+            conditions: BiomeConditions {
+                height_range: (-10.0, 10.0),
+                temperature_range: (0.3, 0.8),
+                moisture_range: (0.9, 1.0),
+                max_slope: 10.0,
+            },
+            sky: BiomeSky {
+                horizon_color: Vec3::new(0.6, 0.75, 0.85),
+                zenith_color: Vec3::new(0.4, 0.6, 0.85),
+                sun_color: Vec3::new(1.0, 0.95, 0.9),
+                fog_density: 0.2,
+                fog_color: Vec3::new(0.7, 0.8, 0.9),
+                cloud_coverage: 0.4,
+                precipitation: PrecipitationType::None,
+            },
+            vegetation: BiomeVegetation {
+                density: 0.4,
+                vegetation_types: vec![
+                    VegetationType {
+                        name: "willow_tree".to_string(),
+                        weight: 1.5,
+                        model_path: "assets/models/willow_tree.glb".to_string(),
+                        scale_range: (0.9, 1.4),
+                        slope_tolerance: 15.0,
+                    },
+                    VegetationType {
+                        name: "river_grass".to_string(),
+                        weight: 2.5,
+                        model_path: "assets/models/river_grass.glb".to_string(),
+                        scale_range: (0.5, 1.0),
+                        slope_tolerance: 20.0,
+                    },
+                ],
+                size_variation: (0.6, 1.3),
+                random_rotation: true,
+            },
+            resource_weights: vec![
+                (ResourceKind::Fiber, 2.0),
+                (ResourceKind::Wood, 1.0),
+            ],
+            base_resource_amount: (2, 4),
+            resource_respawn: (40.0, 120.0),
+            ground_textures: vec![
+                "assets/textures/river_mud_diffuse.png".to_string(),
+                "assets/textures/wet_grass_diffuse.png".to_string(),
+            ],
+            priority: 8,
+        }
+    }
+
     /// Score how well this biome fits the given environmental conditions
     pub fn score_conditions(&self, height: f32, temperature: f32, moisture: f32) -> f32 {
         let mut score = 0.0;

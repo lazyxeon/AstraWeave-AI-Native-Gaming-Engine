@@ -31,6 +31,7 @@ use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
 use super::physics_renderer::PhysicsDebugRenderer;
 use super::skybox_renderer::SkyboxRenderer;
+use super::terrain_renderer::TerrainRenderer;
 use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
 
@@ -60,6 +61,7 @@ pub struct ViewportRenderer {
     entity_renderer: EntityRenderer,
     gizmo_renderer: GizmoRendererWgpu,
     physics_renderer: PhysicsDebugRenderer,
+    terrain_renderer: TerrainRenderer,
 
     /// Engine renderer adapter for PBR mesh rendering (feature-gated)
     #[cfg(feature = "astraweave-render")]
@@ -105,6 +107,8 @@ impl ViewportRenderer {
         let physics_renderer =
             PhysicsDebugRenderer::new((*device).clone(), (*queue).clone(), 50000)
                 .context("Failed to create physics debug renderer")?;
+        let terrain_renderer =
+            TerrainRenderer::new(&device).context("Failed to create terrain renderer")?;
 
         Ok(Self {
             device,
@@ -114,6 +118,7 @@ impl ViewportRenderer {
             entity_renderer,
             gizmo_renderer,
             physics_renderer,
+            terrain_renderer,
             #[cfg(feature = "astraweave-render")]
             engine_adapter: None,
             use_engine_rendering: false,
@@ -209,6 +214,7 @@ impl ViewportRenderer {
     /// * `physics_debug_lines` - Optional physics debug lines from PhysicsWorld
     /// * `show_grid` - Whether to render the grid at all
     /// * `crosshair_mode` - If true, render only axis lines (crosshair), not full grid
+    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe
     pub fn render(
         &mut self,
         target: &wgpu::Texture,
@@ -219,6 +225,7 @@ impl ViewportRenderer {
         physics_debug_lines: Option<&[astraweave_physics::DebugLine]>,
         show_grid: bool,
         crosshair_mode: bool,
+        shading_mode: u32,
     ) -> Result<()> {
         // Ensure depth buffer matches target size
         let target_size = target.size();
@@ -258,6 +265,18 @@ impl ViewportRenderer {
                 .context("Grid render failed")?;
         }
 
+        // Pass 2.5: Terrain (generated terrain chunks)
+        self.terrain_renderer
+            .render(
+                &mut encoder,
+                &target_view,
+                depth_view,
+                camera,
+                &self.queue,
+                shading_mode,
+            )
+            .context("Terrain render failed")?;
+
         // Pass 3: Entities (engine renderer or cube fallback)
         #[cfg(feature = "astraweave-render")]
         {
@@ -277,6 +296,7 @@ impl ViewportRenderer {
                             world,
                             &self.selected_entities,
                             &self.queue,
+                            shading_mode,
                         )
                         .context("Entity render failed")?;
                 }
@@ -290,6 +310,7 @@ impl ViewportRenderer {
                         world,
                         &self.selected_entities,
                         &self.queue,
+                        shading_mode,
                     )
                     .context("Entity render failed")?;
             }
@@ -305,6 +326,7 @@ impl ViewportRenderer {
                     world,
                     &self.selected_entities,
                     &self.queue,
+                    shading_mode,
                 )
                 .context("Entity render failed")?;
         }
@@ -427,11 +449,44 @@ impl ViewportRenderer {
         &self.selected_entities
     }
 
+    /// Handle GPU device lost
+    ///
+    /// Clears all GPU-dependent resources and prepares for recovery.
+    pub fn handle_device_lost(&mut self) -> Result<()> {
+        tracing::error!("GPU device lost in ViewportRenderer - cleaning up resources for recovery");
+        
+        // Clear resources that depend on the old device
+        self.depth_texture = None;
+        self.depth_view = None;
+        
+        #[cfg(feature = "astraweave-render")]
+        {
+            self.engine_adapter = None;
+        }
+        
+        // Sub-renderers may need to be recreated with a new device too
+        // but that usually happens by recreating the ViewportRenderer itself.
+        
+        Ok(())
+    }
+
     /// Get physics debug options (mutable) for configuration
     pub fn physics_debug_options_mut(
         &mut self,
     ) -> &mut super::physics_renderer::PhysicsDebugOptions {
         &mut self.physics_renderer.options
+    }
+
+    pub fn upload_terrain_chunks(&mut self, chunks: &[(Vec<super::terrain_renderer::TerrainVertex>, Vec<u32>)]) {
+        self.terrain_renderer.upload_chunks(chunks);
+    }
+
+    pub fn clear_terrain(&mut self) {
+        self.terrain_renderer.clear_chunks();
+    }
+
+    pub fn terrain_chunk_count(&self) -> usize {
+        self.terrain_renderer.chunk_count()
     }
 
     /// Check if physics debug rendering is enabled
@@ -493,6 +548,22 @@ impl ViewportRenderer {
     #[cfg(feature = "astraweave-render")]
     pub fn engine_adapter_mut(&mut self) -> Option<&mut EngineRenderAdapter> {
         self.engine_adapter.as_mut()
+    }
+}
+
+impl Drop for ViewportRenderer {
+    fn drop(&mut self) {
+        tracing::debug!(
+            "Dropping ViewportRenderer - cleaning up GPU resources (depth_texture: {})",
+            self.depth_texture.is_some()
+        );
+        // Explicitly clear optional resources
+        self.depth_texture = None;
+        self.depth_view = None;
+        #[cfg(feature = "astraweave-render")]
+        {
+            self.engine_adapter = None;
+        }
     }
 }
 

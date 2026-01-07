@@ -181,6 +181,11 @@ impl ViewportWidget {
         self.toolbar.stats.selection_count = count;
     }
 
+    /// Get access to the underlying renderer
+    pub fn renderer(&self) -> &Arc<Mutex<ViewportRenderer>> {
+        &self.renderer
+    }
+
     /// Render viewport and handle input
     ///
     /// # Arguments
@@ -299,6 +304,7 @@ impl ViewportWidget {
                         self.toolbar.show_grid && self.toolbar.grid_type != GridType::None;
                     let crosshair_mode = self.toolbar.grid_type == GridType::Crosshair;
 
+                    let shading_mode = self.toolbar.shading_mode.to_u32();
                     if let Err(e) = renderer.render(
                         &texture,
                         &self.camera,
@@ -308,6 +314,7 @@ impl ViewportWidget {
                         None,
                         show_grid,
                         crosshair_mode,
+                        shading_mode,
                     ) {
                         warn!(error = %e, "Viewport render failed");
                     }
@@ -875,8 +882,8 @@ impl ViewportWidget {
             self.camera.orbit(delta.x, delta.y);
         }
 
-        // Pan camera (middle mouse drag)
-        if can_control_camera && response.dragged_by(egui::PointerButton::Middle) {
+        // Pan camera (right mouse drag)
+        if can_control_camera && response.dragged_by(egui::PointerButton::Secondary) {
             let delta = response.drag_delta();
             debug!(
                 delta_x = delta.x,
@@ -885,6 +892,39 @@ impl ViewportWidget {
                 "Pan camera"
             );
             self.camera.pan(delta.x, delta.y);
+        }
+
+        // WASD + Space/Shift keyboard movement (FPS-style)
+        if can_control_camera && self.has_focus {
+            ctx.input(|i| {
+                let speed = 0.15;
+                let mut move_delta = glam::Vec3::ZERO;
+                
+                if i.key_down(egui::Key::W) {
+                    move_delta += self.camera.forward() * speed;
+                }
+                if i.key_down(egui::Key::S) {
+                    move_delta -= self.camera.forward() * speed;
+                }
+                if i.key_down(egui::Key::A) {
+                    let right = self.camera.forward().cross(glam::Vec3::Y).normalize();
+                    move_delta -= right * speed;
+                }
+                if i.key_down(egui::Key::D) {
+                    let right = self.camera.forward().cross(glam::Vec3::Y).normalize();
+                    move_delta += right * speed;
+                }
+                if i.key_down(egui::Key::Space) {
+                    move_delta.y += speed;
+                }
+                if i.modifiers.shift {
+                    move_delta.y -= speed;
+                }
+                
+                if move_delta.length_squared() > 0.0001 {
+                    self.camera.translate(move_delta);
+                }
+            });
         }
 
         // Zoom camera OR scale entity (scroll wheel) - only when hovered over viewport
@@ -1320,9 +1360,10 @@ impl ViewportWidget {
                         let z = pose.pos.y as f32;
                         let position = glam::Vec3::new(x, 1.0, z); // Y=1.0 (raised position)
 
-                        // Create AABB for 1x1x1 cube centered at position
-                        let aabb_min = position - glam::Vec3::splat(0.5);
-                        let aabb_max = position + glam::Vec3::splat(0.5);
+                        // Create AABB that accounts for entity scale
+                        let half_size = 0.5 * pose.scale;
+                        let aabb_min = position - glam::Vec3::splat(half_size);
+                        let aabb_max = position + glam::Vec3::splat(half_size);
 
                         if let Some(distance) =
                             Self::ray_intersects_aabb(ray.origin, ray.direction, aabb_min, aabb_max)
@@ -1596,6 +1637,29 @@ impl ViewportWidget {
         &mut self.camera
     }
 
+    /// Set camera state
+    pub fn set_camera(&mut self, camera: OrbitCamera) {
+        self.camera = camera;
+    }
+
+    /// Get snapping configuration
+    pub fn snapping_config(&self) -> crate::gizmo::snapping::SnappingConfig {
+        crate::gizmo::snapping::SnappingConfig {
+            grid_size: self.grid_snap_size,
+            angle_increment: self.angle_snap_increment.to_degrees(),
+            grid_enabled: true,  // These are handled by toolbar toggles
+            angle_enabled: true,
+        }
+    }
+
+    /// Set snapping configuration
+    pub fn set_snapping_config(&mut self, config: crate::gizmo::snapping::SnappingConfig) {
+        self.grid_snap_size = config.grid_size;
+        self.angle_snap_increment = config.angle_increment.to_radians();
+        self.toolbar.snap_size = config.grid_size;
+        self.toolbar.angle_snap_degrees = config.angle_increment;
+    }
+
     /// Ray-AABB intersection test for entity picking
     ///
     /// Returns distance to intersection point if ray hits AABB, None otherwise.
@@ -1728,6 +1792,18 @@ impl ViewportWidget {
     /// Check if an entity is selected
     pub fn is_selected(&self, entity: Entity) -> bool {
         self.selected_entities.contains(&entity)
+    }
+
+    pub fn upload_terrain_chunks(&self, chunks: &[(Vec<super::terrain_renderer::TerrainVertex>, Vec<u32>)]) {
+        if let Ok(mut renderer) = self.renderer.lock() {
+            renderer.upload_terrain_chunks(chunks);
+        }
+    }
+
+    pub fn clear_terrain(&self) {
+        if let Ok(mut renderer) = self.renderer.lock() {
+            renderer.clear_terrain();
+        }
     }
 
     /// Copy selected entities to clipboard

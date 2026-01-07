@@ -33,7 +33,7 @@
 //! viewport.ui(ui, &world)?;
 //! ```
 
-mod camera;
+pub mod camera;
 #[cfg(feature = "astraweave-render")]
 mod engine_adapter;
 mod entity_renderer;
@@ -42,11 +42,13 @@ mod grid_renderer;
 mod physics_renderer;
 mod renderer;
 mod skybox_renderer;
+pub mod terrain_renderer;
 mod toolbar;
 mod widget;
 
 // Physics debug types are exported for external configuration
 #[allow(unused_imports)]
 pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
+pub use terrain_renderer::{TerrainRenderer, TerrainVertex};
 pub use widget::ViewportWidget;
 

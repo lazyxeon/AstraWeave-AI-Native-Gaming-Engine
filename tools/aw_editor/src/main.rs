@@ -86,9 +86,10 @@ mod editor_preferences; // Phase 9 - Editor preferences persistence
 mod runtime; // Week 4 - Deterministic runtime integration
 mod scene_serialization; // Phase 2.2 - Scene Save/Load
 mod scene_state; // Week 1 - Canonical edit-mode world owner
+mod terrain_integration; // Terrain generation integration
 mod ui; // Phase 3 - UI components (StatusBar, etc.)
 mod viewport; // Phase 1.1 - 3D Viewport
-              // mod voxel_tools;  // Temporarily disabled - missing astraweave-terrain dependency
+mod voxel_tools; // Phase 10: Voxel editing tools
 
 use anyhow::Result;
 use astraweave_asset::AssetDatabase;
@@ -324,6 +325,8 @@ struct EditorApp {
     show_console_panel: bool,
     // Phase 10: Confirm dialog for new scene
     show_new_confirm_dialog: bool,
+    // Phase 10: Voxel editing tools
+    voxel_editor: voxel_tools::VoxelEditor,
 }
 
 impl Default for EditorApp {
@@ -470,6 +473,8 @@ impl Default for EditorApp {
             show_console_panel: prefs.show_console_panel,
             // Phase 10: Confirm dialog for new scene
             show_new_confirm_dialog: false,
+            // Phase 10: Voxel editing tools
+            voxel_editor: voxel_tools::VoxelEditor::new(),
         }
     }
 }
@@ -515,6 +520,8 @@ impl EditorApp {
             show_hierarchy_panel: self.show_hierarchy_panel,
             show_inspector_panel: self.show_inspector_panel,
             show_console_panel: self.show_console_panel,
+            camera: self.viewport.as_ref().map(|v| v.camera().clone()),
+            snapping: Some(self.snapping_config),
         };
         prefs.save();
     }
@@ -541,6 +548,8 @@ impl EditorApp {
             show_hierarchy_panel: self.show_hierarchy_panel,
             show_inspector_panel: self.show_inspector_panel,
             show_console_panel: self.show_console_panel,
+            camera: viewport.as_ref().map(|v| v.camera().clone()),
+            snapping: Some(self.snapping_config),
         };
         *self = Self::default();
         self.viewport = viewport;
@@ -550,6 +559,12 @@ impl EditorApp {
         self.show_hierarchy_panel = prefs.show_hierarchy_panel;
         self.show_inspector_panel = prefs.show_inspector_panel;
         self.show_console_panel = prefs.show_console_panel;
+        if let Some(snapping) = prefs.snapping {
+            self.snapping_config = snapping;
+            if let Some(v) = &mut self.viewport {
+                v.set_snapping_config(snapping);
+            }
+        }
         self.scene_state = Some(scene_state::EditorSceneState::new(World::new()));
         self.console_logs
             .push("New scene created".into());
@@ -842,12 +857,24 @@ impl EditorApp {
     fn new(cc: &eframe::CreationContext) -> Result<Self> {
         let mut app = Self::default();
 
+        // Load preferences again to ensure we have the latest
+        let prefs = editor_preferences::EditorPreferences::load();
+
         // Initialize sample entities for testing
         Self::init_sample_entities(&mut app.entity_manager);
 
         // Initialize viewport (requires wgpu render state from CreationContext)
         match ViewportWidget::new(cc) {
-            Ok(viewport) => {
+            Ok(mut viewport) => {
+                // Apply persisted camera and snapping settings
+                if let Some(camera) = prefs.camera {
+                    viewport.set_camera(camera);
+                }
+                if let Some(snapping) = prefs.snapping {
+                    viewport.set_snapping_config(snapping);
+                    app.snapping_config = snapping;
+                }
+                
                 app.viewport = Some(viewport);
                 app.console_logs.push("✅ 3D Viewport initialized".into());
             }
@@ -1329,19 +1356,32 @@ impl EditorApp {
                     .unwrap_or("scene")
                     .to_string();
 
+                self.status = format!("Loading scene {}...", scene_name);
+                self.log(format!("Loading scene: {}...", scene_name));
+
                 match scene_serialization::load_scene(&path) {
                     Ok(loaded_world) => {
+                        // Clear old scene state and prefab instances to prevent memory leaks
+                        self.prefab_manager.clear_instances();
+                        self.undo_stack.clear();
+                        
                         self.scene_state = Some(EditorSceneState::new(loaded_world));
                         self.current_scene_path = Some(path.clone());
+                        self.is_dirty = false;
+                        
                         info!("Loaded scene: {}", scene_name);
-                        self.console_logs
-                            .push(format!("✅ Loaded scene: {}", scene_name));
+                        self.toast_success(format!("Loaded scene: {}", scene_name));
+                        self.log(format!("✅ Loaded scene: {}", scene_name));
                         self.status = format!("Loaded: {}", scene_name);
+                        
+                        // Add to recent files
+                        self.recent_files.add_file(path);
                     }
                     Err(err) => {
                         error!("Failed to load scene '{}': {}", scene_name, err);
-                        self.console_logs
-                            .push(format!("❌ Failed to load scene '{}': {}", scene_name, err));
+                        self.toast_error(format!("Failed to load scene: {}", err));
+                        self.log(format!("❌ Failed to load scene '{}': {}", scene_name, err));
+                        self.status = "Error loading scene".into();
                     }
                 }
             }
@@ -1718,6 +1758,53 @@ impl EditorApp {
         }
     }
 
+    fn show_voxel_editor(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Voxel Editor");
+        ui.label("Interactive terrain sculpting tools");
+        
+        let mut brush = *self.voxel_editor.brush();
+        
+        ui.group(|ui| {
+            ui.label("Brush Settings");
+            egui::ComboBox::from_label("Shape")
+                .selected_text(format!("{:?}", brush.shape))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut brush.shape, voxel_tools::BrushShape::Sphere, "Sphere");
+                    ui.selectable_value(&mut brush.shape, voxel_tools::BrushShape::Cube, "Cube");
+                    ui.selectable_value(&mut brush.shape, voxel_tools::BrushShape::Cylinder, "Cylinder");
+                });
+                
+            egui::ComboBox::from_label("Mode")
+                .selected_text(format!("{:?}", brush.mode))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut brush.mode, voxel_tools::BrushMode::Add, "Add");
+                    ui.selectable_value(&mut brush.mode, voxel_tools::BrushMode::Remove, "Remove");
+                    ui.selectable_value(&mut brush.mode, voxel_tools::BrushMode::Paint, "Paint");
+                });
+                
+            ui.add(egui::Slider::new(&mut brush.radius, 0.1..=20.0).text("Radius"));
+            ui.add(egui::Slider::new(&mut brush.strength, 0.0..=1.0).text("Strength"));
+            ui.checkbox(&mut brush.smooth, "Smooth Edges");
+        });
+        
+        self.voxel_editor.set_brush(brush);
+        
+        ui.separator();
+        
+        ui.horizontal(|ui| {
+            if ui.add_enabled(self.voxel_editor.can_undo(), egui::Button::new("⏪ Undo")).clicked() {
+                self.log("Voxel undo requested (integration pending)");
+            }
+            if ui.add_enabled(self.voxel_editor.can_redo(), egui::Button::new("⏩ Redo")).clicked() {
+                self.log("Voxel redo requested (integration pending)");
+            }
+        });
+        
+        if ui.button("🗑 Clear History").clicked() {
+            self.voxel_editor.clear_history();
+        }
+    }
+
     fn show_navmesh_controls(&mut self, ui: &mut egui::Ui) {
         ui.heading("Navmesh Controls");
         ui.label("Baking and visualization controls");
@@ -1831,6 +1918,13 @@ struct MaterialLiveDoc {
 
 impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if self.is_dirty {
+                self.show_quit_dialog = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            }
+        }
+
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
         self.last_frame_time = now;
@@ -2502,11 +2596,9 @@ impl eframe::App for EditorApp {
             }
         }
 
-        // Update Astract panels
-        if self.editor_mode.is_editing() {
-            self.performance_panel.clear_runtime_stats();
-        } else {
-            let stats = self.runtime.stats().clone();
+        let stats = self.runtime.stats().clone();
+        self.performance_panel.set_frame_time(frame_time * 1000.0);
+        if !self.editor_mode.is_editing() {
             self.performance_panel.push_runtime_stats(&stats);
 
             if self.last_runtime_log.elapsed().as_millis() >= 500 {
@@ -2522,6 +2614,8 @@ impl eframe::App for EditorApp {
         }
         self.performance_panel.update();
         self.charts_panel.update();
+        self.world_panel.update();
+        self.animation_panel.update(frame_time);
 
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.heading("AstraWeave Level & Encounter Editor");
@@ -2628,7 +2722,9 @@ impl eframe::App for EditorApp {
                             Ok(()) => {
                                 self.current_scene_path = Some(path.clone());
                                 self.recent_files.add_file(path.clone());
+                                self.is_dirty = false;
                                 self.status = format!("💾 Saved scene to {:?}", path);
+                                self.toast_success(format!("Saved scene: {:?}", path.file_name().unwrap_or_default()));
                                 self.console_logs
                                     .push(format!("✅ Scene saved: {:?}", path));
                                 self.last_auto_save = std::time::Instant::now();
@@ -2825,8 +2921,31 @@ impl eframe::App for EditorApp {
                     .auto_shrink([false; 2])
                     .show(ui, |ui| {
                         ui.collapsing("🌍 World", |ui| {
-                            self.world_panel.show(ui);
+                            self.world_panel.show_with_level(ui, &mut self.level);
                         });
+
+                        if self.world_panel.terrain_state().chunk_count() > 0 {
+                            if let Some(viewport) = &self.viewport {
+                                let gpu_chunks = self.world_panel.terrain_state().get_gpu_chunks();
+                                let converted: Vec<_> = gpu_chunks
+                                    .iter()
+                                    .map(|(verts, indices)| {
+                                        let converted_verts: Vec<viewport::terrain_renderer::TerrainVertex> = verts
+                                            .iter()
+                                            .map(|v| viewport::terrain_renderer::TerrainVertex {
+                                                position: v.position,
+                                                normal: v.normal,
+                                                uv: v.uv,
+                                                biome_id: v.biome_id,
+                                                _padding: [0; 3],
+                                            })
+                                            .collect();
+                                        (converted_verts, indices.clone())
+                                    })
+                                    .collect();
+                                viewport.upload_terrain_chunks(&converted);
+                            }
+                        }
 
                         ui.add_space(10.0);
 
@@ -2852,7 +2971,7 @@ impl eframe::App for EditorApp {
                         ui.add_space(10.0);
 
                         if self.show_hierarchy_panel {
-                        let mut hierarchy_toasts: Vec<(String, bool)> = Vec::new();
+                        let hierarchy_toasts: Vec<(String, bool)> = Vec::new();
                         let mut hierarchy_updates: Vec<(Option<u32>, Option<u64>, bool)> = Vec::new();
 
                         let entity_count = {
@@ -2866,6 +2985,7 @@ impl eframe::App for EditorApp {
                                 self.runtime.sim_world().map(|w| w.entities().len()).unwrap_or(0)
                             }
                         };
+                        let mut hierarchy_actions = Vec::new();
                         let hierarchy_header = format!("🌲 Hierarchy ({} entities)", entity_count);
                         ui.collapsing(hierarchy_header, |ui| {
                             let runtime_state = self.runtime.state();
@@ -2885,16 +3005,35 @@ impl eframe::App for EditorApp {
                                     self.selected_entity = Some(selected as u64);
                                 }
 
-                                for action in self.hierarchy_panel.take_pending_actions() {
-                                    use crate::panels::hierarchy_panel::HierarchyAction;
+                                hierarchy_actions = self.hierarchy_panel.take_pending_actions();
+                            }
+                        });
+
+                        for action in hierarchy_actions {
+                            use crate::panels::hierarchy_panel::HierarchyAction;
+                            let runtime_state = self.runtime.state();
+                            
+                            // Define return types for results to avoid borrow conflicts
+                            enum ActionResult {
+                                Deleted(u32),
+                                Duplicated(u32, u32),
+                                CreatedPrefab(PathBuf),
+                                Error(String),
+                                Focused(u32),
+                            }
+
+                            let result = {
+                                let world_opt = if runtime_state == RuntimeState::Editing {
+                                    self.scene_state.as_mut().map(|s| s.world_mut())
+                                } else {
+                                    self.runtime.sim_world_mut()
+                                };
+
+                                if let Some(world) = world_opt {
                                     match action {
                                         HierarchyAction::DeleteEntity(entity) => {
                                             world.destroy_entity(entity);
-                                            hierarchy_updates.push((None, None, true));
-                                            hierarchy_toasts.push((
-                                                format!("Deleted entity {}", entity),
-                                                true,
-                                            ));
+                                            Some(ActionResult::Deleted(entity))
                                         }
                                         HierarchyAction::DuplicateEntity(entity) => {
                                             if let Some(name) = world.name(entity) {
@@ -2906,41 +3045,56 @@ impl eframe::App for EditorApp {
                                                     0,
                                                     0,
                                                 );
-                                                hierarchy_updates.push((
-                                                    Some(new_entity),
-                                                    Some(new_entity as u64),
-                                                    true,
-                                                ));
-                                                hierarchy_toasts.push((
-                                                    format!(
-                                                        "Duplicated entity {} -> {}",
-                                                        entity, new_entity
-                                                    ),
-                                                    true,
-                                                ));
+                                                Some(ActionResult::Duplicated(entity, new_entity))
+                                            } else {
+                                                None
                                             }
                                         }
                                         HierarchyAction::CreatePrefab(entity) => {
                                             if let Some(name) = world.name(entity) {
-                                                hierarchy_toasts.push((
-                                                    format!(
-                                                        "Create prefab from '{}' (not yet implemented)",
-                                                        name
-                                                    ),
-                                                    false,
-                                                ));
+                                                let prefab_name = name.to_string();
+                                                match self.prefab_manager.create_prefab(world, entity, &prefab_name) {
+                                                    Ok(path) => Some(ActionResult::CreatedPrefab(path)),
+                                                    Err(e) => Some(ActionResult::Error(e.to_string())),
+                                                }
+                                            } else {
+                                                None
                                             }
                                         }
                                         HierarchyAction::FocusEntity(entity) => {
-                                            hierarchy_toasts.push((
-                                                format!("Focused on entity {}", entity),
-                                                true,
-                                            ));
+                                            Some(ActionResult::Focused(entity))
                                         }
                                     }
+                                } else {
+                                    None
                                 }
+                            };
+
+                            match result {
+                                Some(ActionResult::Deleted(entity)) => {
+                                    hierarchy_updates.push((None, None, true));
+                                    self.toast_success(format!("Deleted entity {}", entity));
+                                    self.log(format!("🗑 Deleted entity {}", entity));
+                                }
+                                Some(ActionResult::Duplicated(old, new)) => {
+                                    hierarchy_updates.push((Some(new), Some(new as u64), true));
+                                    self.toast_success(format!("Duplicated entity {} -> {}", old, new));
+                                    self.log(format!("📋 Duplicated entity {} -> {}", old, new));
+                                }
+                                Some(ActionResult::CreatedPrefab(path)) => {
+                                    self.toast_success(format!("Created prefab: {:?}", path.file_name().unwrap_or_default()));
+                                    self.log(format!("✅ Created prefab at {:?}", path));
+                                }
+                                Some(ActionResult::Error(e)) => {
+                                    self.toast_error(format!("Operation failed: {}", e));
+                                    self.log(format!("❌ Error: {}", e));
+                                }
+                                Some(ActionResult::Focused(entity)) => {
+                                    self.toast_info(format!("Focused on entity {}", entity));
+                                }
+                                None => {}
                             }
-                        });
+                        }
 
                         for (selected_entity, entity_id, is_dirty) in hierarchy_updates {
                             if let Some(sel) = selected_entity {
@@ -3320,6 +3474,16 @@ impl eframe::App for EditorApp {
                         ui.separator();
                         ui.checkbox(&mut self.snapping_config.angle_enabled, "Angle");
                         ui.label(format!("{}°", self.snapping_config.angle_increment));
+
+                        ui.separator();
+                        
+                        // Engine PBR Rendering toggle
+                        let mut use_pbr = viewport.renderer().lock().map(|r| r.use_engine_rendering()).unwrap_or(false);
+                        if ui.checkbox(&mut use_pbr, "🚀 Engine PBR").on_hover_text("Enable full PBR mesh rendering instead of cube placeholders").changed() {
+                            if let Ok(mut renderer) = viewport.renderer().lock() {
+                                renderer.set_use_engine_rendering(use_pbr);
+                            }
+                        }
                     });
 
                     ui.separator();
@@ -3438,6 +3602,7 @@ impl eframe::App for EditorApp {
                 });
                 ui.collapsing("Terrain Painter", |ui| self.show_terrain_painter(ui));
                 ui.collapsing("Navmesh Controls", |ui| self.show_navmesh_controls(ui));
+                ui.collapsing("Voxel Editor", |ui| self.show_voxel_editor(ui));
                 ui.collapsing("Asset Inspector", |ui| self.show_asset_inspector(ui));
             });
         });
@@ -3453,8 +3618,9 @@ impl eframe::App for EditorApp {
 
 fn main() -> Result<()> {
     // Initialize observability
-    astraweave_observability::init_observability(Default::default())
-        .expect("Failed to initialize observability");
+    if let Err(e) = astraweave_observability::init_observability(Default::default()) {
+        eprintln!("⚠️ Warning: Failed to initialize observability: {}", e);
+    }
 
     // Create content directory if it doesn't exist
     let content_dir = PathBuf::from("content");
