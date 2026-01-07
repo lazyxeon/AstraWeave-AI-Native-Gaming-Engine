@@ -785,6 +785,15 @@ impl PrefabManager {
         instance.revert_to_prefab(world)?;
         Ok(())
     }
+
+    /// Clear all tracked prefab instances
+    ///
+    /// Call this when unloading a scene or starting fresh to prevent memory leaks.
+    pub fn clear_instances(&mut self) {
+        let count = self.instances.len();
+        self.instances.clear();
+        debug!("Cleared {} prefab instances", count);
+    }
 }
 
 #[cfg(test)]

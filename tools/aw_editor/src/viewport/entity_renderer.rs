@@ -7,7 +7,7 @@
 //!
 //! # Features
 //!
-//! - Simple cube rendering for each entity (placeholder meshes)
+//! - Primitive geometry rendering for entities (fallback for non-mesh entities)
 //! - Transform matrix support (position, rotation, scale)
 //! - Instanced rendering for performance
 //! - Selection highlighting (different color for selected entities)
@@ -263,6 +263,7 @@ impl EntityRenderer {
     /// * `world` - World containing entities
     /// * `selected_entity` - Currently selected entity (for highlighting)
     /// * `queue` - wgpu queue for buffer writes
+    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe
     ///
     /// # Errors
     ///
@@ -276,6 +277,7 @@ impl EntityRenderer {
         world: &World,
         selected_entities: &[Entity],
         queue: &wgpu::Queue,
+        shading_mode: u32,
     ) -> Result<()> {
         // Update camera uniforms
         let view_proj = camera.view_projection_matrix();
@@ -284,7 +286,7 @@ impl EntityRenderer {
         let uniforms = EntityUniforms {
             view_proj: view_proj.to_cols_array_2d(),
             camera_pos: [camera_pos.x, camera_pos.y, camera_pos.z],
-            _padding: 0.0,
+            shading_mode,
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
@@ -409,7 +411,7 @@ struct Instance {
 struct EntityUniforms {
     view_proj: [[f32; 4]; 4],
     camera_pos: [f32; 3],
-    _padding: f32,
+    shading_mode: u32,
 }
 
 /// Create cube mesh (vertices + indices)

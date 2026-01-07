@@ -112,6 +112,18 @@ impl ViewportToolbar {
                     .inner_margin(8.0)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
+                            // Shading Mode
+                            egui::ComboBox::from_id_salt("shading_mode")
+                                .selected_text(format!("{:?}", self.shading_mode))
+                                .width(90.0)
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Lit, "💡 Lit");
+                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Unlit, "🎨 Unlit");
+                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Wireframe, "🕸 Wireframe");
+                                });
+
+                            ui.separator();
+
                             ui.checkbox(&mut self.show_grid, "Grid");
 
                             // Grid type selector (only show when grid is visible)
@@ -200,12 +212,13 @@ impl ViewportToolbar {
                     });
             });
 
-        // Performance stats panel (bottom-left)
+        // Performance stats panel (bottom-left, inside viewport)
         if self.show_stats {
-            let stats_pos = viewport_rect.left_bottom() + egui::vec2(10.0, -140.0);
+            let stats_pos = viewport_rect.left_bottom() + egui::vec2(10.0, -160.0);
 
             egui::Area::new(egui::Id::new("viewport_stats"))
                 .fixed_pos(stats_pos)
+                .order(egui::Order::Foreground)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::new()
                         .fill(egui::Color32::from_rgba_premultiplied(20, 20, 25, 200))
@@ -266,12 +279,13 @@ impl ViewportToolbar {
                 });
         }
 
-        // Camera & Selection info panel (top-right)
+        // Camera & Selection info panel (top-right, offset from toolbar)
         if self.show_stats {
-            let info_pos = viewport_rect.right_top() + egui::vec2(-130.0, 10.0);
+            let info_pos = viewport_rect.right_top() + egui::vec2(-130.0, 45.0);
 
             egui::Area::new(egui::Id::new("viewport_info"))
                 .fixed_pos(info_pos)
+                .order(egui::Order::Foreground)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::new()
                         .fill(egui::Color32::from_rgba_premultiplied(20, 20, 25, 200))
@@ -310,6 +324,16 @@ pub enum ShadingMode {
 
     /// Wireframe overlay
     Wireframe,
+}
+
+impl ShadingMode {
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            ShadingMode::Lit => 0,
+            ShadingMode::Unlit => 1,
+            ShadingMode::Wireframe => 2,
+        }
+    }
 }
 
 /// Performance statistics for viewport

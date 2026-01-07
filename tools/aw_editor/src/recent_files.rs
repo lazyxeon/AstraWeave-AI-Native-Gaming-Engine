@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -22,18 +23,27 @@ impl RecentFilesManager {
     }
 
     pub fn load() -> Self {
-        if let Ok(contents) = fs::read_to_string(RECENT_FILES_PATH) {
-            if let Ok(manager) = serde_json::from_str(&contents) {
-                return manager;
-            }
+        match fs::read_to_string(RECENT_FILES_PATH) {
+            Ok(contents) => match serde_json::from_str::<Self>(&contents) {
+                Ok(manager) => {
+                    tracing::info!("Loaded {} recent files", manager.files.len());
+                    manager
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to parse recent files: {}. Resetting.", e);
+                    Self::new()
+                }
+            },
+            Err(_) => Self::new(),
         }
-        Self::new()
     }
 
-    pub fn save(&self) {
-        if let Ok(json) = serde_json::to_string_pretty(&self) {
-            let _ = fs::write(RECENT_FILES_PATH, json);
-        }
+    pub fn save(&self) -> Result<()> {
+        let json = serde_json::to_string_pretty(&self)
+            .context("Failed to serialize recent files")?;
+        fs::write(RECENT_FILES_PATH, json)
+            .context("Failed to write recent files to disk")?;
+        Ok(())
     }
 
     pub fn add_file(&mut self, path: PathBuf) {
@@ -47,7 +57,9 @@ impl RecentFilesManager {
             self.files.truncate(MAX_RECENT_FILES);
         }
 
-        self.save();
+        if let Err(e) = self.save() {
+            tracing::error!("Failed to save recent files: {}", e);
+        }
     }
 
     pub fn get_files(&self) -> &[PathBuf] {
@@ -56,12 +68,19 @@ impl RecentFilesManager {
 
     pub fn clear(&mut self) {
         self.files.clear();
-        self.save();
+        if let Err(e) = self.save() {
+            tracing::error!("Failed to clear recent files: {}", e);
+        }
     }
 
     pub fn remove_missing_files(&mut self) {
+        let initial_count = self.files.len();
         self.files.retain(|path| path.exists());
-        self.save();
+        if self.files.len() != initial_count {
+            if let Err(e) = self.save() {
+                tracing::error!("Failed to save recent files after removing missing: {}", e);
+            }
+        }
     }
 }
 

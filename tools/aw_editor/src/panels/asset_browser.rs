@@ -1,5 +1,5 @@
 use egui::{ColorImage, ImageData, ScrollArea, TextureHandle, Ui};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -367,6 +367,8 @@ pub struct AssetBrowser {
     search_query: String,
     view_mode: ViewMode,
     thumbnail_cache: HashMap<PathBuf, TextureHandle>,
+    thumbnail_lru: VecDeque<PathBuf>,
+    max_cache_size: usize,
     thumbnail_size: f32,
     dragged_prefab: Option<PathBuf>,
     // New fields for enhanced organization
@@ -388,6 +390,8 @@ impl AssetBrowser {
             search_query: String::new(),
             view_mode: ViewMode::Grid, // Default to grid for better visual browsing
             thumbnail_cache: HashMap::new(),
+            thumbnail_lru: VecDeque::new(),
+            max_cache_size: 100, // Limit cache to 100 textures
             thumbnail_size: 80.0, // Slightly larger for better visibility
             dragged_prefab: None,
             category_filter: AssetCategory::All,
@@ -495,6 +499,11 @@ impl AssetBrowser {
 
     fn load_thumbnail(&mut self, ctx: &egui::Context, path: &Path) -> Option<TextureHandle> {
         if let Some(texture) = self.thumbnail_cache.get(path) {
+            // Update LRU: move to back
+            if let Some(pos) = self.thumbnail_lru.iter().position(|p| p == path) {
+                let p = self.thumbnail_lru.remove(pos).unwrap();
+                self.thumbnail_lru.push_back(p);
+            }
             return Some(texture.clone());
         }
 
@@ -502,7 +511,13 @@ impl AssetBrowser {
             return None;
         }
 
-        let image_data = image::open(path).ok()?;
+        let image_data = match image::open(path) {
+            Ok(img) => img,
+            Err(e) => {
+                tracing::warn!("Failed to open texture thumbnail for {:?}: {}", path, e);
+                return None;
+            }
+        };
         let rgba = image_data.to_rgba8();
         let size = [rgba.width() as usize, rgba.height() as usize];
         let pixels = rgba.into_raw();
@@ -515,8 +530,17 @@ impl AssetBrowser {
             egui::TextureOptions::LINEAR,
         );
 
+        // Evict oldest if cache full
+        if self.thumbnail_cache.len() >= self.max_cache_size {
+            if let Some(oldest) = self.thumbnail_lru.pop_front() {
+                self.thumbnail_cache.remove(&oldest);
+            }
+        }
+
         self.thumbnail_cache
             .insert(path.to_path_buf(), texture.clone());
+        self.thumbnail_lru.push_back(path.to_path_buf());
+        
         Some(texture)
     }
 

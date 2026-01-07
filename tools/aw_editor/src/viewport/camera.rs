@@ -30,6 +30,7 @@
 //! ```
 
 use glam::{Mat4, Vec3};
+use serde::{Deserialize, Serialize};
 
 /// Professional orbit camera controller
 ///
@@ -45,7 +46,7 @@ use glam::{Mat4, Vec3};
 /// # Performance
 ///
 /// Camera updates are O(1) and typically take <0.1ms per frame.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrbitCamera {
     /// Focal point (what camera orbits around)
     focal_point: Vec3,
@@ -182,6 +183,13 @@ impl OrbitCamera {
         // This gives ~7 scroll ticks to double/halve the distance
         let zoom_factor = 1.0 + (delta * 0.015); // 0.015 = 1.5% per tick
         self.distance = (self.distance / zoom_factor).clamp(self.min_distance, self.max_distance);
+    }
+
+    /// Translate camera (FPS-style WASD movement)
+    ///
+    /// Moves both the camera position and focal point by the given delta.
+    pub fn translate(&mut self, delta: Vec3) {
+        self.focal_point += delta;
     }
 
     /// Frame entity (set focal point and distance to nicely view entity)
