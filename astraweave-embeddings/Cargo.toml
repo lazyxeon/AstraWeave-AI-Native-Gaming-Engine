@@ -10,22 +10,22 @@ repository = "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine"
 # Core dependencies
 anyhow = "1.0"
 async-trait = "0.1"
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "1.0", features = ["v4", "serde"] }
+uuid = { version = "1.19", features = ["v4", "serde"] }
 
 # Vector operations and indexing
-nalgebra = "0.33"
+nalgebra = "0.34"
 rand = { version = "0.9", features = ["small_rng"] }
 
 # ONNX Runtime for sentence transformers
-ort = { version = "2.0.0-rc.10", features = ["cuda", "tensorrt"], optional = true }
+ort = { version = "2.0.0-rc.11", features = ["cuda", "tensorrt"], optional = true }
 
 # Alternative: candle for pure Rust inference
-candle-core = { version = "0.8", optional = true }
-candle-nn = { version = "0.8", optional = true }
-candle-transformers = { version = "0.8", optional = true }
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+candle-transformers = { version = "0.9", optional = true }
 
 # HNSW for approximate nearest neighbor search (optional)
 hnsw_rs = { version = "0.3", optional = true }
