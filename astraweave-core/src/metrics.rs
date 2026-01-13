@@ -44,7 +44,7 @@ impl MetricsRegistry {
         let mut histograms = self.histograms.lock().unwrap();
         histograms
             .entry(key.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(value);
     }
 

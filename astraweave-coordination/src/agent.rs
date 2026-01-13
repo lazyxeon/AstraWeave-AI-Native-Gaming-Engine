@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::info;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
@@ -49,6 +49,12 @@ pub trait Agent: Send + Sync {
 
     /// Handle world event
     async fn handle_world_event(&mut self, event: &WorldEvent) -> Result<()>;
+
+    /// Add a task to the agent's queue
+    async fn add_task(&self, task: Task);
+
+    /// Check if agent is available for new tasks
+    fn is_available(&self) -> bool;
 }
 
 /// State of an agent in the coordination system

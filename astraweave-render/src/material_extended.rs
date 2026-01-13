@@ -117,51 +117,55 @@ impl Default for MaterialGpuExtended {
 impl MaterialGpuExtended {
     /// Create a car paint material (metallic base + clearcoat)
     pub fn car_paint(base_color: Vec3, metallic: f32, roughness: f32) -> Self {
-        let mut mat = Self::default();
-        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];
-        mat.metallic_factor = metallic;
-        mat.roughness_factor = roughness;
-        mat.clearcoat_strength = 1.0;
-        mat.clearcoat_roughness = 0.05; // Glossy clear coat
-        mat.flags |= MATERIAL_FLAG_CLEARCOAT;
-        mat
+        Self {
+            base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0],
+            metallic_factor: metallic,
+            roughness_factor: roughness,
+            clearcoat_strength: 1.0,
+            clearcoat_roughness: 0.05, // Glossy clear coat
+            flags: MATERIAL_FLAG_CLEARCOAT,
+            ..Default::default()
+        }
     }
 
     /// Create a brushed metal material (anisotropic reflections)
     pub fn brushed_metal(base_color: Vec3, roughness: f32, anisotropy: f32, rotation: f32) -> Self {
-        let mut mat = Self::default();
-        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];
-        mat.metallic_factor = 1.0;
-        mat.roughness_factor = roughness;
-        mat.anisotropy_strength = anisotropy;
-        mat.anisotropy_rotation = rotation;
-        mat.flags |= MATERIAL_FLAG_ANISOTROPY;
-        mat
+        Self {
+            base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0],
+            metallic_factor: 1.0,
+            roughness_factor: roughness,
+            anisotropy_strength: anisotropy,
+            anisotropy_rotation: rotation,
+            flags: MATERIAL_FLAG_ANISOTROPY,
+            ..Default::default()
+        }
     }
 
     /// Create a skin material (subsurface scattering)
     pub fn skin(base_color: Vec3, subsurface_tint: Vec3, radius: f32, scale: f32) -> Self {
-        let mut mat = Self::default();
-        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];
-        mat.metallic_factor = 0.0;
-        mat.roughness_factor = 0.5;
-        mat.subsurface_color = [subsurface_tint.x, subsurface_tint.y, subsurface_tint.z];
-        mat.subsurface_radius = radius;
-        mat.subsurface_scale = scale;
-        mat.flags |= MATERIAL_FLAG_SUBSURFACE;
-        mat
+        Self {
+            base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0],
+            metallic_factor: 0.0,
+            roughness_factor: 0.5,
+            subsurface_color: [subsurface_tint.x, subsurface_tint.y, subsurface_tint.z],
+            subsurface_radius: radius,
+            subsurface_scale: scale,
+            flags: MATERIAL_FLAG_SUBSURFACE,
+            ..Default::default()
+        }
     }
 
     /// Create a velvet/fabric material (sheen)
     pub fn velvet(base_color: Vec3, sheen_color: Vec3, sheen_roughness: f32) -> Self {
-        let mut mat = Self::default();
-        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];
-        mat.metallic_factor = 0.0;
-        mat.roughness_factor = 0.8;
-        mat.sheen_color = [sheen_color.x, sheen_color.y, sheen_color.z];
-        mat.sheen_roughness = sheen_roughness;
-        mat.flags |= MATERIAL_FLAG_SHEEN;
-        mat
+        Self {
+            base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0],
+            metallic_factor: 0.0,
+            roughness_factor: 0.8,
+            sheen_color: [sheen_color.x, sheen_color.y, sheen_color.z],
+            sheen_roughness,
+            flags: MATERIAL_FLAG_SHEEN,
+            ..Default::default()
+        }
     }
 
     /// Create a glass material (transmission)
@@ -173,20 +177,21 @@ impl MaterialGpuExtended {
         attenuation_color: Vec3,
         attenuation_dist: f32,
     ) -> Self {
-        let mut mat = Self::default();
-        mat.base_color_factor = [tint.x, tint.y, tint.z, 1.0];
-        mat.metallic_factor = 0.0;
-        mat.roughness_factor = roughness;
-        mat.transmission_factor = transmission;
-        mat.ior = ior;
-        mat.attenuation_color = [
-            attenuation_color.x,
-            attenuation_color.y,
-            attenuation_color.z,
-        ];
-        mat.attenuation_distance = attenuation_dist;
-        mat.flags |= MATERIAL_FLAG_TRANSMISSION;
-        mat
+        Self {
+            base_color_factor: [tint.x, tint.y, tint.z, 1.0],
+            metallic_factor: 0.0,
+            roughness_factor: roughness,
+            transmission_factor: transmission,
+            ior,
+            attenuation_color: [
+                attenuation_color.x,
+                attenuation_color.y,
+                attenuation_color.z,
+            ],
+            attenuation_distance: attenuation_dist,
+            flags: MATERIAL_FLAG_TRANSMISSION,
+            ..Default::default()
+        }
     }
 
     /// Check if a feature is enabled

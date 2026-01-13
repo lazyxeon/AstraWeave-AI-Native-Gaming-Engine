@@ -48,3 +48,7 @@ candle = ["candle-core", "candle-nn", "candle-transformers"]
 criterion = { version = "0.7", features = ["html_reports"] }
 tokio-test = "0.4"
 
+[[bench]]
+name = "embeddings_bench"
+harness = false
+

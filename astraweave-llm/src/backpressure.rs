@@ -221,8 +221,10 @@ pub struct BackpressureMetrics {
 
 impl BackpressureManager {
     pub fn new(config: BackpressureConfig) -> Self {
-        let mut metrics = BackpressureMetrics::default();
-        metrics.adaptive_concurrency_limit = config.max_concurrent_requests;
+        let metrics = BackpressureMetrics {
+            adaptive_concurrency_limit: config.max_concurrent_requests,
+            ..Default::default()
+        };
 
         Self {
             queues: Arc::new(RwLock::new(PriorityQueues::new())),

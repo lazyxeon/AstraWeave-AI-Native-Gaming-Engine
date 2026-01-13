@@ -176,7 +176,7 @@ tungstenite = "0.28"
 tokio-tungstenite = "0.28"
 egui = "0.32"
 eframe = { version = "0.32", default-features = true, features = ["wgpu"] }
-egui_dock = "0.15"
+egui_dock = "0.17"
 egui_graphs = "0.1"
 egui_plot = "0.33"
 petgraph = "0.6"

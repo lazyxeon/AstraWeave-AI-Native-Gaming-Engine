@@ -4,7 +4,17 @@
 struct CameraUniform {
     view_proj: mat4x4<f32>,
     inv_view_proj: mat4x4<f32>,
+    view_inv: mat4x4<f32>,
     cam_pos: vec4<f32>,
+    light_dir: vec4<f32>,
+    time: f32,
+    _pad_a: f32,
+    _pad_b: f32,
+    _pad_c: f32,
+    _pad_v0: vec4<f32>,
+    _pad_v1: vec4<f32>,
+    _pad_v2: vec4<f32>,
+    _pad_v3: vec4<f32>,
 };
 
 @group(0) @binding(0)
@@ -67,7 +77,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @builtin(depth) f32 {
+fn fs_main(in: VertexOutput) -> @builtin(frag_depth) f32 {
     let r2 = dot(in.uv, in.uv);
     if (r2 > 1.0) {
         discard;

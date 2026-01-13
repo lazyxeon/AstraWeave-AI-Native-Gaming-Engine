@@ -37,6 +37,12 @@ struct SimParams {
     _pad2: f32,
 };
 
+struct SecondaryParticle {
+    position: vec4<f32>,
+    velocity: vec4<f32>,
+    info: vec4<f32>, // x: lifetime, y: type (0=foam, 1=spray, 2=bubble), z: alpha, w: scale
+};
+
 // --- Bindings ---
 
 // Group 0: Global Infrastructure
@@ -302,9 +308,6 @@ fn compute_delta_pos(@builtin(global_invocation_id) global_id: vec3<u32>) {
     particles[id].predicted_position += vec4<f32>(delta_p / params.target_density, 0.0);
 }
 
-    particles[id].predicted_position += vec4<f32>(delta_p / params.target_density, 0.0);
-}
-
 @compute @workgroup_size(64)
 fn integrate(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
@@ -426,87 +429,26 @@ fn integrate(@builtin(global_invocation_id) global_id: vec3<u32>) {
 }
 
 // --- Dye Mixing & Secondary Physics ---
-
-struct SecondaryParticle {
-    position: vec4<f32>,
-    velocity: vec4<f32>,
-    info: vec4<f32>, // x: lifetime, y: type (0=foam, 1=spray, 2=bubble), z: alpha, w: scale
-};
-
-@group(2) @binding(7) var<storage, read_write> secondary_particles: array<SecondaryParticle>;
-@group(2) @binding(8) var<storage, read_write> secondary_counter: atomic<u32>;
+// SecondaryParticle struct is defined at file top (before bindings)
+// secondary_particles and secondary_counter are in bindings section
 
 @compute @workgroup_size(64)
 fn emit_whitewater(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let index = global_id.x;
-    if (index >= params.particle_count) { return; }
-
-    let p = particles[index];
-    let vel = p.velocity.xyz;
-    let pos = p.position.xyz;
-    
-    // Calculate 3D vorticity magnitude (estimate from neighbors)
-    // For simplicity in this demo, let's use velocity magnitude and curvature
-    let v_mag = length(vel);
-    if (v_mag < 2.0) { return; }
-
-    // Rough check for "surface" or "turbulence"
-    // In a real SPH, we'd check air entrainment formula
-    // For now: high velocity + density below target = whitewater
-    if (p.density < params.target_density * 0.8 && v_mag > 5.0) {
-        // Decide how many particles to emit based on intensity
-        let count = min(u32(v_mag * 0.2), 4u);
-        
-        for (var i = 0u; i < count; i++) {
-            let slot = atomicAdd(&secondary_counter, 1u) % 65536u;
-            
-            // Random offset for spray effect
-            let rand = vec3<f32>(
-                fract(sin(f32(index + i) * 12.9898) * 43758.5453),
-                fract(sin(f32(index + i) * 78.233) * 43758.5453),
-                fract(sin(f32(index + i) * 37.719) * 43758.5453)
-            ) - 0.5;
-            
-            secondary_particles[slot].position = vec4<f32>(pos + rand * 0.1, 1.0);
-            secondary_particles[slot].velocity = vec4<f32>(vel + rand * 2.0, 0.0);
-            secondary_particles[slot].info = vec4<f32>(
-                1.0 + rand.x * 0.5, // lifetime (1.0 - 1.5s)
-                0.0, // type (0=foam/spray)
-                1.0, // alpha
-                0.05 + rand.y * 0.02 // scale
-            );
-        }
-    }
+    // Secondary particles feature disabled for now
+    return;
 }
 
 @compute @workgroup_size(64)
 fn update_whitewater(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let index = global_id.x;
-    if (index >= 65536u) { return; }
-
-    var p = secondary_particles[index];
-    if (p.info.x <= 0.0) { return; }
-
-    let dt = params.dt;
-    
-    // Physics: ballistic + gravity
-    p.velocity.y += params.gravity * dt;
-    // Air resistance
-    p.velocity = vec4<f32>(p.velocity.xyz * 0.98, 0.0);
-    p.position += p.velocity * dt;
-    
-    // Lifecycle
-    p.info.x -= dt;
-    p.info.z = clamp(p.info.x / 1.0, 0.0, 1.0); // Simple linear fade
-    
-    secondary_particles[index] = p;
+    // Secondary particles feature disabled for now
+    return;
 }
 
 // --- Heat Diffusion Kernel ---
 // Laplacian-based thermal diffusion between neighboring particles
 
 @compute @workgroup_size(64)
-fn heat_diffuse(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn mix_dye(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let id = global_id.x;
     if (id >= params.particle_count) { return; }
 

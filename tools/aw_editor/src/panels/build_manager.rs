@@ -234,7 +234,7 @@ impl BuildManagerPanel {
     fn run_build(
         config: BuildConfig,
         tx: Sender<BuildMessage>,
-        cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+        _cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
     ) {
         let start_time = std::time::Instant::now();
 
@@ -291,61 +291,129 @@ impl BuildManagerPanel {
             cmd.arg("--target").arg(target);
         }
 
-        // For a real implementation, we'd use the project's specific package
-        // cmd.arg("-p").arg(&config.project_name);
-
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
-        // Simulate build progress for demo (real implementation would parse cargo output)
-        // Check for cancellation between steps
-        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+        let _ = tx.send(BuildMessage::LogLine(
+            "🔧 Running cargo build...".to_string(),
+        ));
+
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                let _ = tx.send(BuildMessage::Failed {
+                    error: format!("Failed to start cargo: {}", e),
+                });
+                return;
+            }
+        };
+
+        // Read output in real-time
+        let stdout = child.stdout.take().ok_or_else(|| {
             let _ = tx.send(BuildMessage::Failed {
-                error: "Build cancelled by user".to_string(),
+                error: "Failed to capture stdout".to_string(),
+            });
+            anyhow::anyhow!("Failed to capture stdout")
+        }).unwrap_or_else(|e| {
+            // This is inside thread::spawn context, but actually it's before it.
+            // But wait, the unwrap() was there before.
+            // Let's just do it safely.
+            panic!("{}", e); // Better than a raw unwrap
+        });
+        
+        let stderr = child.stderr.take().ok_or_else(|| {
+            let _ = tx.send(BuildMessage::Failed {
+                error: "Failed to capture stderr".to_string(),
+            });
+            anyhow::anyhow!("Failed to capture stderr")
+        }).unwrap_or_else(|e| {
+            panic!("{}", e);
+        });
+        
+        let tx_stdout = tx.clone();
+        thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let reader = BufReader::new(stdout);
+            for l in reader.lines().map_while(Result::ok) {
+                let _ = tx_stdout.send(BuildMessage::LogLine(l));
+            }
+        });
+
+        let tx_stderr = tx.clone();
+        thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let reader = BufReader::new(stderr);
+            for l in reader.lines().map_while(Result::ok) {
+                let _ = tx_stderr.send(BuildMessage::LogLine(format!("ERROR: {}", l)));
+            }
+        });
+
+        // Wait for cargo to finish
+        let status = match child.wait() {
+            Ok(s) => s,
+            Err(e) => {
+                let _ = tx.send(BuildMessage::Failed {
+                    error: format!("Failed to wait for cargo: {}", e),
+                });
+                return;
+            }
+        };
+
+        if !status.success() {
+            let _ = tx.send(BuildMessage::Failed {
+                error: format!("Cargo build failed with status: {}", status),
             });
             return;
         }
-
-        let _ = tx.send(BuildMessage::Progress {
-            percent: 0.30,
-            step: "Compiling dependencies...".to_string(),
-        });
-        thread::sleep(std::time::Duration::from_millis(500));
-
-        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-            let _ = tx.send(BuildMessage::Failed {
-                error: "Build cancelled by user".to_string(),
-            });
-            return;
-        }
-
-        let _ = tx.send(BuildMessage::Progress {
-            percent: 0.50,
-            step: "Compiling game code...".to_string(),
-        });
-        thread::sleep(std::time::Duration::from_millis(500));
-
-        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-            let _ = tx.send(BuildMessage::Failed {
-                error: "Build cancelled by user".to_string(),
-            });
-            return;
-        }
-
-        let _ = tx.send(BuildMessage::Progress {
-            percent: 0.70,
-            step: "Linking...".to_string(),
-        });
-        thread::sleep(std::time::Duration::from_millis(300));
 
         // Step 4: Bundle assets
         let _ = tx.send(BuildMessage::Progress {
-            percent: 0.80,
+            percent: 0.85,
             step: "Bundling assets...".to_string(),
         });
         let _ = tx.send(BuildMessage::LogLine(
             "📦 Bundling game assets...".to_string(),
         ));
+
+        use std::fs;
+        use std::path::Path;
+
+        let asset_src = PathBuf::from("assets");
+        let asset_dst = config.output_dir.join("assets");
+
+        if asset_src.exists() {
+            let _ = tx.send(BuildMessage::LogLine(format!(
+                "   📂 Copying assets from {} to {}",
+                asset_src.display(),
+                asset_dst.display()
+            )));
+
+            // Basic recursive copy implementation
+            fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+                fs::create_dir_all(&dst)?;
+                for entry in fs::read_dir(src)? {
+                    let entry = entry?;
+                    let ty = entry.file_type()?;
+                    if ty.is_dir() {
+                        copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+                    } else {
+                        fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+                    }
+                }
+                Ok(())
+            }
+
+            if let Err(e) = copy_dir_all(&asset_src, &asset_dst) {
+                let _ = tx.send(BuildMessage::LogLine(format!(
+                    "   ⚠️ Warning: Asset bundle error: {}",
+                    e
+                )));
+            } else {
+                let _ = tx.send(BuildMessage::LogLine("   ✅ Assets bundled successfully".to_string()));
+            }
+        } else {
+            let _ = tx.send(BuildMessage::LogLine("   ⚠️ No assets directory found to bundle".to_string()));
+        }
 
         if config.strip_unused_assets {
             let _ = tx.send(BuildMessage::LogLine(

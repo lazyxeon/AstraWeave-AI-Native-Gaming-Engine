@@ -1,0 +1,87 @@
+warning: unused variable: `max_fps`
+   --> examples\fluids_demo\src\main.rs:629:13
+    |
+629 |         let max_fps = 1.0
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_fps`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: field `mouse_captured` is never read
+  --> examples\fluids_demo\src\main.rs:77:5
+   |
+44 | struct State {
+   |        ----- field in this struct
+...
+77 |     mouse_captured: bool,
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `fluids_demo` (bin "fluids_demo") generated 2 warnings
+    Checking aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+    Checking aw-net-client v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\net\aw-net-client)
+    Checking rhai_authoring v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\rhai_authoring)
+    Checking aw_demo_builder v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_demo_builder)
+    Checking aw_texture_gen v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_texture_gen)
+    Checking debug_overlay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\debug_overlay)
+    Checking persona_loader v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\persona_loader)
+    Checking llm_integration v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_integration)
+error[E0603]: module `camera` is private
+  --> tools\aw_editor\src\editor_preferences.rs:2:22
+   |
+2  | use crate::viewport::camera::OrbitCamera;
+   |                      ^^^^^^ private module
+   |
+note: the module `camera` is defined here
+  --> tools\aw_editor\src\viewport\mod.rs:36:1
+   |
+36 | mod camera;
+   | ^^^^^^^^^^^
+
+warning: unused import: `tracing::debug`
+ --> tools\aw_editor\src\panels\world_panel.rs:7:5
+  |
+7 | use tracing::debug;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `IVec3`
+ --> tools\aw_editor\src\voxel_tools.rs:7:18
+  |
+7 | use glam::{Vec3, IVec3};
+  |                  ^^^^^
+
+    Checking aw_build v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_build)
+    Checking companion_profile v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\companion_profile)
+    Checking biome_showcase v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\biome_showcase)
+    Checking cutscene_render_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\cutscene_render_demo)
+    Checking core_loop_bt_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\core_loop_bt_demo)
+    Checking shadow_csm_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\shadow_csm_demo)
+    Checking renderer_integration_test v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\renderer_integration_test)
+    Checking visual_3d v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\visual_3d)
+    Checking skinning_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\skinning_demo)
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+error[E0063]: missing fields `camera` and `snapping` in initializer of `editor_preferences::EditorPreferences`
+   --> tools\aw_editor\src\main.rs:539:21
+    |
+539 |         let prefs = editor_preferences::EditorPreferences {
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `camera` and `snapping`
+
+    Checking weaving_playground v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\weaving_playground)
+    Checking navmesh_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\navmesh_demo)
+    Checking ecs_ai_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ecs_ai_demo)
+    Checking ecs_ai_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ecs_ai_showcase)
+    Checking physics_demo3d v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\physics_demo3d)
+    Checking core_loop_goap_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\core_loop_goap_demo)
+    Checking terrain_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\terrain_demo)
+    Checking aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+    Checking cinematics_timeline_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\cinematics_timeline_demo)
+    Checking unified_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\unified_showcase)
+    Checking crafting_combat_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\crafting_combat_demo)
+Some errors have detailed explanations: E0063, E0603.
+For more information about an error, try `rustc --explain E0063`.
+    Checking veilweaver_slice_loader v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\veilweaver_slice_loader)
+warning: `aw_editor` (bin "aw_editor") generated 2 warnings
+error: could not compile `aw_editor` (bin "aw_editor") due to 2 previous errors; 2 warnings emitted
+warning: build failed, waiting for other jobs to finish...

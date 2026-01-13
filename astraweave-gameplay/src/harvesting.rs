@@ -22,11 +22,35 @@ impl ResourceNode {
         take
     }
 
+    /// Non-deterministic tick (legacy compatibility).
+    /// For deterministic behavior, use `tick_seeded` instead.
+    #[deprecated(note = "Use tick_seeded for deterministic behavior")]
     pub fn tick(&mut self, dt: f32) {
         if self.amount == 0 {
             self.timer -= dt;
             if self.timer <= 0.0 {
                 self.amount = 1 + (3 * rand::random::<u8>() as u32 % 5);
+                self.timer = 0.0;
+            }
+        }
+    }
+
+    /// Deterministic tick using seeded RNG.
+    /// 
+    /// # Determinism
+    /// 
+    /// This method guarantees identical results given:
+    /// - Same initial state
+    /// - Same delta time
+    /// - Same RNG state
+    /// 
+    /// Use this for gameplay systems requiring determinism (multiplayer, replay).
+    pub fn tick_seeded<R: rand::Rng>(&mut self, dt: f32, rng: &mut R) {
+        if self.amount == 0 {
+            self.timer -= dt;
+            if self.timer <= 0.0 {
+                // Deterministic respawn amount: 1 + (0-4) * 3 = 1, 4, 7, 10, or 13
+                self.amount = 1 + (rng.random::<u8>() as u32 % 5) * 3;
                 self.timer = 0.0;
             }
         }
@@ -139,6 +163,7 @@ mod tests {
         node.amount = 0;
         node.timer = 1.0;
 
+        #[allow(deprecated)]
         node.tick(1.5); // Tick past respawn time
 
         assert!(node.amount > 0, "Should respawn resources");
@@ -147,5 +172,28 @@ mod tests {
             "Should respawn 1-15 resources (1 + rand % 5)"
         );
         assert_eq!(node.timer, 0.0, "Timer should reset");
+    }
+
+    #[test]
+    fn test_tick_seeded_determinism() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+
+        // Run same sequence 3 times with same seed
+        let mut results = Vec::new();
+        for _ in 0..3 {
+            let mut node = create_test_node();
+            node.amount = 0;
+            node.timer = 1.0;
+            let mut rng = StdRng::seed_from_u64(12345);
+
+            node.tick_seeded(1.5, &mut rng);
+            results.push(node.amount);
+        }
+
+        // All runs should produce identical amount
+        assert_eq!(results[0], results[1], "Run 0 and 1 should match");
+        assert_eq!(results[1], results[2], "Run 1 and 2 should match");
+        assert!(results[0] > 0, "Should respawn resources");
     }
 }

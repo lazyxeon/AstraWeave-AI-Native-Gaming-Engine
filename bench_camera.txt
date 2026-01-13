@@ -1,0 +1,35 @@
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: unused variable: `cube_i`
+   --> astraweave-render\benches\camera_primitives_instancing.rs:767:18
+    |
+767 |     let (cube_v, cube_i) = cube();
+    |                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_cube_i`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `plane_v`
+   --> astraweave-render\benches\camera_primitives_instancing.rs:768:10
+    |
+768 |     let (plane_v, plane_i) = plane();
+    |          ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_plane_v`
+
+warning: unused variable: `plane_i`
+   --> astraweave-render\benches\camera_primitives_instancing.rs:768:19
+    |
+768 |     let (plane_v, plane_i) = plane();
+    |                   ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_plane_i`
+
+warning: unused variable: `sphere_i`
+   --> astraweave-render\benches\camera_primitives_instancing.rs:769:20
+    |
+769 |     let (sphere_v, sphere_i) = sphere(16, 16, 1.0);
+    |                    ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sphere_i`
+
+warning: `astraweave-render` (bench "camera_primitives_instancing") generated 4 warnings
+    Finished `bench` profile [optimized] target(s) in 56.95s
+     Running benches\camera_primitives_instancing.rs (target\release\deps\camera_primitives_instancing-5af186268d4089b5.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

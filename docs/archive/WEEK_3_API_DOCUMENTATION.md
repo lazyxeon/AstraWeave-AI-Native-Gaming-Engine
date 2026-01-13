@@ -23,12 +23,12 @@
 
 `ActionStep` is the **core enum** representing all possible AI agent actions in AstraWeave. It uses Rust's tagged enum pattern with serde serialization for JSON interchange.
 
-**Location**: `astraweave-core/src/schema.rs` (lines 147-247)
+**Location**: `astraweave-core/src/schema.rs` (lines 370+)
 
 **Key Characteristics**:
 - ✅ **Enum, not struct** — Use pattern matching, not field access
 - ✅ **Serde tagged** — JSON serialization with `"act"` discriminator
-- ✅ **37+ variants** — Movement, Combat, Tactical, Utility, Support, Special
+- ✅ **38 variants** — Movement (6), Offensive (8), Defensive (6), Tactical, Utility, Support, Special
 - ✅ **Type-safe** — Compiler-enforced action validation
 
 ---

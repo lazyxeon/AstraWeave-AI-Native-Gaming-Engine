@@ -1,12 +1,21 @@
 [book]
 title = "AstraWeave: AI-Native Game Engine Documentation"
 authors = ["AstraWeave Team"]
-description = "Comprehensive documentation for AstraWeave, the first AI-native game engine"
+description = "Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture."
 src = "src"
 language = "en"
 
 [build]
 build-dir = "book"
+create-missing = true
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+# Temporarily disabled due to mdbook 0.5 compatibility issues
+# [preprocessor.admonish]
+# command = "mdbook-admonish"
+# on_failure = "warn"
 
 [output.html]
 no-section-label = false
@@ -16,6 +25,10 @@ site-url = "/AstraWeave-AI-Native-Gaming-Engine/"
 cname = ""
 preferred-dark-theme = "navy"
 default-theme = "light"
+input-404 = "404.md"
+additional-css = ["theme/custom.css"]
+additional-js = ["theme/clipboard.js"]
+theme = "theme"
 
 [output.html.fold]
 enable = true
@@ -23,6 +36,9 @@ level = 1
 
 [output.html.playground]
 editable = false
+copyable = true
+copy-js = true
+runnable = true
 
 [output.html.search]
 enable = true
@@ -34,6 +50,7 @@ boost-hierarchy = 1
 boost-paragraph = 1
 expand = true
 heading-split-level = 3
+copy-js = true
 
 [output.html.print]
 enable = true

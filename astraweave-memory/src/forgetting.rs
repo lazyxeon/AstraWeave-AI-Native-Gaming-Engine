@@ -222,7 +222,7 @@ impl ForgettingEngine {
             * access_modifier
             * spaced_repetition_modifier;
 
-        memory.metadata.strength = new_strength.max(0.0).min(1.0);
+        memory.metadata.strength = new_strength.clamp(0.0, 1.0);
 
         Ok(())
     }

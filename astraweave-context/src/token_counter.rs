@@ -38,17 +38,9 @@ impl TokenCounter {
         // Try to load the requested model encoder. If unavailable, fall back to
         // an estimation-only mode (encoder = None) to allow tests and environments
         // without tokenizer artifacts to run.
-        let encoder = match get_bpe_from_model(model_name) {
-            Ok(enc) => Some(enc),
-            Err(_) => match get_bpe_from_model("cl100k_base") {
-                Ok(enc2) => Some(enc2),
-                Err(_) => {
-                    // Could not load any tokenizer; use estimation-only fallback
-                    // and avoid panicking so tests can run in minimal environments.
-                    None
-                }
-            },
-        };
+        let encoder = get_bpe_from_model(model_name)
+            .ok()
+            .or_else(|| get_bpe_from_model("cl100k_base").ok());
 
         Self {
             encoder,

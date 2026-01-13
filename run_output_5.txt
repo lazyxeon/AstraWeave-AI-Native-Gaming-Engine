@@ -1,0 +1,24 @@
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+   Compiling fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
+warning: unused variable: `max_fps`
+   --> examples\fluids_demo\src\main.rs:635:13
+    |
+635 |         let max_fps = 1.0
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_fps`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: field `mouse_captured` is never read
+  --> examples\fluids_demo\src\main.rs:81:5
+   |
+48 | struct State {
+   |        ----- field in this struct
+...
+81 |     mouse_captured: bool,
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `fluids_demo` (bin "fluids_demo") generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 5m 36s
+     Running `target\release\fluids_demo.exe`

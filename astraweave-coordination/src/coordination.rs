@@ -4,14 +4,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{RwLock, mpsc};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use futures::future::join_all;
 
 use crate::agent::{
-    Agent, AgentMessage, AgentGoal, Task, TaskResult, MessagePriority,
-    CoordinationContext, CoordinationStatus, WorldEvent, ResourceUsage
+    Agent, AgentMessage, AgentGoal, Task,
+    CoordinationContext, CoordinationStatus, WorldEvent,
 };
 
 /// Central coordinator for managing multiple LLM agents
@@ -153,7 +152,7 @@ pub struct EventDispatcher {
 }
 
 /// Metrics for coordination system performance
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CoordinationMetrics {
     pub messages_sent: u64,
     pub messages_delivered: u64,
@@ -361,7 +360,7 @@ impl AgentCoordinator {
         {
             let agents = self.agents.read().await;
             for agent_id in &participant_ids {
-                if let Some(agent) = agents.get(agent_id) {
+                if agents.get(agent_id).is_some() {
                     // Note: This would require agents to implement joining coordination
                     debug!("Added agent {} to coordination session", agent_id);
                 }
@@ -417,21 +416,17 @@ impl AgentCoordinator {
         // Get interested agents
         let interested_agents = self.event_dispatcher.get_interested_agents(&event).await;
 
-        // Dispatch to agents in parallel
-        let dispatch_tasks: Vec<_> = interested_agents.into_iter().map(|agent_id| {
+        // Dispatch to agents sequentially with write lock
+        for agent_id in interested_agents {
             let event = event.clone();
-            async move {
-                let agents = self.agents.read().await;
-                if let Some(agent) = agents.get(&agent_id) {
-                    match agent.handle_world_event(&event).await {
-                        Ok(_) => debug!("Agent {} handled event {}", agent_id, event.id),
-                        Err(e) => warn!("Agent {} failed to handle event {}: {}", agent_id, event.id, e),
-                    }
+            let mut agents = self.agents.write().await;
+            if let Some(agent) = agents.get_mut(&agent_id) {
+                match agent.handle_world_event(&event).await {
+                    Ok(_) => debug!("Agent {} handled event {}", agent_id, event.id),
+                    Err(e) => warn!("Agent {} failed to handle event {}: {}", agent_id, event.id, e),
                 }
             }
-        }).collect();
-
-        join_all(dispatch_tasks).await;
+        }
 
         // Update metrics
         if self.config.enable_metrics {
@@ -469,43 +464,64 @@ impl AgentCoordinator {
     }
 
     /// Select the best agent for a task
-    async fn select_best_agent(&self, candidates: &[String], task: &Task) -> Result<String> {
-        if candidates.is_empty() {
-            return Err(anyhow!("No candidates provided"));
-        }
+    fn select_best_agent<'a>(
+        &'a self,
+        candidates: &'a [String],
+        task: &'a Task,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send + 'a>> {
+        Box::pin(async move {
+            if candidates.is_empty() {
+                return Err(anyhow!("No candidates provided"));
+            }
 
-        match self.config.resource_strategy {
-            ResourceStrategy::FirstCome => Ok(candidates[0].clone()),
-            ResourceStrategy::Priority => {
-                // Select agent with lowest current load
-                let agents = self.agents.read().await;
-                let mut best_agent = candidates[0].clone();
-                let mut lowest_load = f64::MAX;
+            match self.config.resource_strategy {
+                ResourceStrategy::FirstCome => Ok(candidates[0].clone()),
+                ResourceStrategy::Priority => {
+                    // Select agent with lowest current load
+                    let agents = self.agents.read().await;
+                    let mut best_agent = candidates[0].clone();
+                    let mut lowest_load = f64::MAX;
 
-                for agent_id in candidates {
-                    if let Some(agent) = agents.get(agent_id) {
-                        let usage = agent.get_resource_usage();
-                        let load = usage.active_tasks as f64;
-                        if load < lowest_load {
-                            lowest_load = load;
-                            best_agent = agent_id.clone();
+                    for agent_id in candidates {
+                        if let Some(agent) = agents.get(agent_id) {
+                            let usage = agent.get_resource_usage();
+                            let load = usage.active_tasks as f64;
+                            if load < lowest_load {
+                                lowest_load = load;
+                                best_agent = agent_id.clone();
+                            }
                         }
                     }
-                }
 
-                Ok(best_agent)
+                    Ok(best_agent)
+                }
+                ResourceStrategy::LoadBalance => {
+                    // Simple round-robin for now
+                    let index = (task.id.len() % candidates.len()) as usize;
+                    Ok(candidates[index].clone())
+                }
+                ResourceStrategy::Adaptive => {
+                    // For now, use priority strategy instead of recursion
+                    // to avoid infinite recursion issues
+                    let agents = self.agents.read().await;
+                    let mut best_agent = candidates[0].clone();
+                    let mut lowest_load = f64::MAX;
+
+                    for agent_id in candidates {
+                        if let Some(agent) = agents.get(agent_id) {
+                            let usage = agent.get_resource_usage();
+                            let load = usage.active_tasks as f64;
+                            if load < lowest_load {
+                                lowest_load = load;
+                                best_agent = agent_id.clone();
+                            }
+                        }
+                    }
+
+                    Ok(best_agent)
+                }
             }
-            ResourceStrategy::LoadBalance => {
-                // Simple round-robin for now
-                let index = (task.id.len() % candidates.len()) as usize;
-                Ok(candidates[index].clone())
-            }
-            ResourceStrategy::Adaptive => {
-                // For now, use priority strategy
-                // In practice, would use ML to learn optimal assignments
-                self.select_best_agent(candidates, task).await
-            }
-        }
+        })
     }
 
     /// Remove agent from all coordination sessions
@@ -795,7 +811,8 @@ impl EventDispatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agent::BaseAgent;
+    use crate::agent::{BaseAgent, TaskResult, ResourceUsage};
+    use async_trait::async_trait;
 
     struct TestAgent {
         base: BaseAgent,
@@ -826,6 +843,7 @@ mod tests {
         fn get_resource_usage(&self) -> ResourceUsage { self.base.resource_usage.clone() }
         fn get_event_subscriptions(&self) -> Vec<String> { self.base.event_subscriptions.clone() }
         async fn handle_world_event(&mut self, _event: &WorldEvent) -> Result<()> { Ok(()) }
+        async fn add_task(&self, task: Task) { self.base.add_task(task).await }
         fn is_available(&self) -> bool { self.base.is_available() }
     }
 

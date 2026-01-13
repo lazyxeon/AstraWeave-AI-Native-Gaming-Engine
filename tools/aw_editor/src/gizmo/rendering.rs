@@ -66,17 +66,14 @@ impl GizmoRenderer {
         let shaft_radius = length * 0.02; // 2% of length
         let _cone_radius = shaft_radius * 2.5;
 
-        let mut vertices = Vec::new();
-
-        // Shaft (simplified as line for now)
-        vertices.push(Vec3::ZERO);
-        vertices.push(axis * shaft_length);
-
-        // Cone (simplified as line to tip)
-        vertices.push(axis * shaft_length);
-        vertices.push(axis * length);
-
-        vertices
+        vec![
+            // Shaft (simplified as line for now)
+            Vec3::ZERO,
+            axis * shaft_length,
+            // Cone (simplified as line to tip)
+            axis * shaft_length,
+            axis * length,
+        ]
     }
 
     /// Generate rotation circle geometry (single axis)

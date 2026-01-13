@@ -2,10 +2,12 @@
 //
 // Renders entities as simple lit cubes with instance rendering.
 // Uses basic directional lighting for 3D perception.
+// Supports shading modes: 0=Lit, 1=Unlit, 2=Wireframe
 
 struct Uniforms {
     view_proj: mat4x4<f32>,
     camera_pos: vec3<f32>,
+    shading_mode: u32,
 }
 
 struct VertexInput {
@@ -36,7 +38,6 @@ fn vs_main(
     vertex: VertexInput,
     instance: InstanceInput,
 ) -> VertexOutput {
-    // Reconstruct model matrix from instance data
     let model_matrix = mat4x4<f32>(
         instance.model_matrix_0,
         instance.model_matrix_1,
@@ -44,10 +45,7 @@ fn vs_main(
         instance.model_matrix_3,
     );
 
-    // Transform position to world space
     let world_position = model_matrix * vec4<f32>(vertex.position, 1.0);
-
-    // Transform normal to world space (assume uniform scale for now)
     let world_normal = (model_matrix * vec4<f32>(vertex.normal, 0.0)).xyz;
 
     var output: VertexOutput;
@@ -60,13 +58,18 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // Simple directional lighting (sun from top-right)
+    if uniforms.shading_mode == 1u {
+        return in.color;
+    }
+    
+    if uniforms.shading_mode == 2u {
+        return vec4<f32>(0.9, 0.9, 0.9, 1.0);
+    }
+    
     let light_dir = normalize(vec3<f32>(0.5, 1.0, 0.3));
     let ambient = 0.3;
     let diffuse = max(dot(in.world_normal, light_dir), 0.0) * 0.7;
     let lighting = ambient + diffuse;
-
-    // Apply lighting to instance color
     let lit_color = in.color.rgb * lighting;
 
     return vec4<f32>(lit_color, in.color.a);

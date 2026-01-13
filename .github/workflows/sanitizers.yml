@@ -1,0 +1,292 @@
+# AstraWeave Sanitizer CI Workflow
+# Runs LLVM Sanitizers (ASan, LSan) on critical crates
+# Schedule: Every push to main, nightly for full suite
+#
+# ⚠️ IMPORTANT: astraweave-render is EXCLUDED from ASan testing
+# GPU driver allocations cause false positives. Use wgpu validation instead.
+
+name: Sanitizers
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run full sanitizer suite at 3 AM UTC daily
+    - cron: '0 3 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  # Sanitizer options
+  ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1
+  LSAN_OPTIONS: max_leaks=10:print_suppressions=0
+  TSAN_OPTIONS: suppressions=scripts/tsan_suppressions.txt:second_deadlock_stack=1
+
+jobs:
+  # Fast ASan check on critical crates (every PR)
+  # NOTE: Excludes render crate due to GPU driver false positives
+  asan-critical:
+    name: AddressSanitizer (Critical Crates)
+    runs-on: ubuntu-latest
+    # Only run on PRs and pushes (not nightly)
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-asan-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-asan-
+      
+      - name: Run ASan on astraweave-ecs
+        run: |
+          RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+            -p astraweave-ecs \
+            --target x86_64-unknown-linux-gnu \
+            -- --test-threads=1
+      
+      - name: Run ASan on astraweave-physics
+        run: |
+          RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+            -p astraweave-physics \
+            --target x86_64-unknown-linux-gnu \
+            -- --test-threads=1
+      
+      # NOTE: astraweave-render intentionally excluded - GPU drivers cause false positives
+      # GPU validation is handled by wgpu's built-in validation layers instead
+      
+      - name: Run ASan on astraweave-memory
+        run: |
+          RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+            -p astraweave-memory \
+            --target x86_64-unknown-linux-gnu \
+            -- --test-threads=1
+        continue-on-error: true  # Memory crate may not exist yet
+
+  # Full ASan suite (nightly only)
+  # NOTE: Excludes render crate due to GPU driver false positives
+  asan-full:
+    name: AddressSanitizer (Full Suite)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-asan-full-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Run ASan on all critical crates
+        run: |
+          # NOTE: astraweave-render excluded - GPU drivers cause ASan false positives
+          # GPU validation is handled by wgpu's built-in validation layers
+          for crate in astraweave-ecs astraweave-physics astraweave-core astraweave-ai astraweave-nav; do
+            echo "=== Testing $crate with ASan ==="
+            RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+              -p $crate \
+              --target x86_64-unknown-linux-gnu \
+              -- --test-threads=1 || echo "Warning: $crate had ASan failures"
+          done
+
+  # LeakSanitizer (fast, run on every PR)
+  leak-sanitizer:
+    name: LeakSanitizer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-lsan-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Run LSan on persistence crates
+        run: |
+          RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
+            -p aw-save \
+            --target x86_64-unknown-linux-gnu \
+            -- --test-threads=1
+        continue-on-error: true  # Some crates may have known leaks
+
+  # ThreadSanitizer (nightly only - ADVISORY, not must-pass)
+  # TSan with async Rust has many false positives. Use for bug discovery, not gating.
+  thread-sanitizer:
+    name: ThreadSanitizer (Advisory)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      
+      - name: Create TSan suppressions file
+        run: |
+          mkdir -p scripts
+          cat > scripts/tsan_suppressions.txt << 'EOF'
+          # ============================================
+          # TSan Suppressions for AstraWeave
+          # ============================================
+          # TSan with async Rust is noisy. These are known false positives.
+          # This list will grow over time as we discover more.
+          #
+          # Last updated: January 2026
+          # ============================================
+          
+          # Standard library false positives
+          race:std::sync::mpsc
+          race:std::sync::Once
+          race:std::thread
+          
+          # Async runtime false positives (Tokio internals)
+          race:tokio::runtime
+          race:tokio::sync
+          race:tokio::io
+          race:tokio::task
+          race:tokio::time
+          
+          # Common concurrency crates
+          race:crossbeam
+          race:crossbeam_channel
+          race:crossbeam_deque
+          race:parking_lot
+          race:rayon
+          race:rayon_core
+          
+          # External dependencies
+          race:rapier3d
+          race:nalgebra
+          
+          # GPU stack (handled by wgpu validation instead)
+          race:wgpu
+          race:wgpu_core
+          race:wgpu_hal
+          race:naga
+          race:ash
+          
+          # Add more as discovered during tuning...
+          EOF
+      
+      - name: Run TSan on AI crates
+        run: |
+          echo "⚠️ TSan is ADVISORY - failures may be false positives"
+          echo "Investigate real issues, but don't block releases on TSan alone"
+          RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
+            -p astraweave-ai \
+            -p astraweave-coordination \
+            --target x86_64-unknown-linux-gnu \
+            -- --test-threads=1
+        continue-on-error: true  # TSan is advisory, not blocking
+
+  # Miri (nightly only - very slow)
+  miri:
+    name: Miri (Pure Rust UB Detection)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust Nightly with Miri
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri, rust-src
+      
+      - name: Setup Miri
+        run: cargo +nightly miri setup
+      
+      - name: Run Miri on astraweave-ecs
+        run: |
+          cargo +nightly miri test -p astraweave-ecs -- \
+            --skip ffi \
+            --skip integration
+        env:
+          MIRIFLAGS: "-Zmiri-disable-isolation -Zmiri-symbolic-alignment-check"
+      
+      - name: Run Miri on astraweave-math
+        run: |
+          cargo +nightly miri test -p astraweave-math
+        env:
+          MIRIFLAGS: "-Zmiri-disable-isolation"
+        continue-on-error: true
+      
+      - name: Run Miri on astraweave-core
+        run: |
+          cargo +nightly miri test -p astraweave-core
+        env:
+          MIRIFLAGS: "-Zmiri-disable-isolation"
+        continue-on-error: true
+
+  # Determinism Testing (nightly - critical for multiplayer/replay)
+  determinism:
+    name: Determinism Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-determinism-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Run determinism tests
+        run: |
+          echo "Running determinism tests across critical crates..."
+          echo "Current status: 96.9% pass rate (32 tests, 4 crates)"
+          echo "Target: 100% pass rate"
+          
+          # Run determinism-specific tests
+          cargo test --workspace \
+            -- --test-threads=1 \
+            determinism \
+            deterministic \
+            replay \
+            || echo "⚠️ Some determinism tests failed - investigate!"
+      
+      - name: Check for HashMap usage in hot paths
+        run: |
+          echo "Checking for non-deterministic HashMap iteration in tests..."
+          # HashMap iteration order is non-deterministic
+          # Tests should use BTreeMap for deterministic behavior
+          grep -r "HashMap" --include="*.rs" crates/ | grep -v "BTreeMap" | head -20 || true

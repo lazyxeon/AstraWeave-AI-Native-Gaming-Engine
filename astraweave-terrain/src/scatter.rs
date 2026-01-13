@@ -311,7 +311,7 @@ impl VegetationScatter {
         // Calculate resource count based on biome density
         let chunk_area = chunk_size * chunk_size;
         let base_count = (chunk_area * biome_config.vegetation.density * 0.1) as usize; // 10% of vegetation density
-        let count = base_count.max(1).min(20); // Reasonable limits
+        let count = base_count.clamp(1, 20); // Reasonable limits
 
         // Convert to BiomeRule for compatibility
         let biome = Biome::new(biome_config.biome_type, biome_config.clone());

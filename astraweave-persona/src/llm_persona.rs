@@ -343,7 +343,7 @@ pub struct FewShotExample {
 }
 
 /// Memory profile for the persona
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MemoryProfile {
     /// Core memories that define the persona
     pub core_memories: Vec<String>,
@@ -356,17 +356,6 @@ pub struct MemoryProfile {
 
     /// Memory consolidation preferences
     pub consolidation_preferences: ConsolidationPreferences,
-}
-
-impl Default for MemoryProfile {
-    fn default() -> Self {
-        Self {
-            core_memories: Vec::new(),
-            episodic_memories: Vec::new(),
-            semantic_knowledge: Vec::new(),
-            consolidation_preferences: ConsolidationPreferences::default(),
-        }
-    }
 }
 
 /// Preferences for memory consolidation

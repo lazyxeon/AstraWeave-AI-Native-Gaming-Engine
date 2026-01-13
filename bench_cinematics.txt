@@ -1,0 +1,1138 @@
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-cinematics\benches\cinematics_benchmarks.rs:8:17
+  |
+8 | use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:262:13
+    |
+262 |             black_box(Timeline::new("empty", 10.0))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:270:13
+    |
+270 |             black_box(Timeline::new(black_box(name), 60.0))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:270:37
+    |
+270 |             black_box(Timeline::new(black_box(name), 60.0))
+    |                                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:277:13
+    |
+277 |             black_box(Time(black_box(42.5)))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:277:28
+    |
+277 |             black_box(Time(black_box(42.5)))
+    |                            ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:294:13
+    |
+294 |             black_box(CameraKey {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:307:13
+    |
+307 |             black_box(keyframe.clone())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:321:21
+    |
+321 |                     black_box(keyframes)
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:343:13
+    |
+343 |             black_box(Track::Camera { keyframes })
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:350:13
+    |
+350 |             black_box(Track::Animation {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:361:13
+    |
+361 |             black_box(Track::Audio {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:372:13
+    |
+372 |             black_box(Track::Fx {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:383:13
+    |
+383 |             black_box(Track::Fx {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:411:13
+    |
+411 |             black_box(Sequencer::new())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:418:13
+    |
+418 |             black_box(Sequencer::default())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:426:22
+    |
+426 |             seq.seek(black_box(Time(5.0)));
+    |                      ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:427:13
+    |
+427 |             black_box(seq.t)
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:436:13
+    |
+436 |             black_box(seq.step(black_box(0.016), &tl))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:436:32
+    |
+436 |             black_box(seq.step(black_box(0.016), &tl))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:446:13
+    |
+446 |             black_box(seq.step(black_box(0.016), &tl_sparse))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:446:32
+    |
+446 |             black_box(seq.step(black_box(0.016), &tl_sparse))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:466:13
+    |
+466 |             black_box(seq.step(black_box(1.5), &tl_camera))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:466:32
+    |
+466 |             black_box(seq.step(black_box(1.5), &tl_camera))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:480:13
+    |
+480 |             black_box(seq.step(black_box(1.5), &tl_anim))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:480:32
+    |
+480 |             black_box(seq.step(black_box(1.5), &tl_anim))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:494:13
+    |
+494 |             black_box(seq.step(black_box(1.5), &tl_audio))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:494:32
+    |
+494 |             black_box(seq.step(black_box(1.5), &tl_audio))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:508:13
+    |
+508 |             black_box(seq.step(black_box(1.5), &tl_fx))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:508:32
+    |
+508 |             black_box(seq.step(black_box(1.5), &tl_fx))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:518:13
+    |
+518 |             black_box(seq.step(black_box(5.0), &tl_multi))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:518:32
+    |
+518 |             black_box(seq.step(black_box(5.0), &tl_multi))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:547:21
+    |
+547 |                     black_box(total_events)
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:565:13
+    |
+565 |             black_box(total_events)
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:575:13
+    |
+575 |             black_box(seq.step(black_box(1.0 / 60.0), &complex))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:575:32
+    |
+575 |             black_box(seq.step(black_box(1.0 / 60.0), &complex))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:593:13
+    |
+593 |             black_box(serde_json::to_string(&empty))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:601:13
+    |
+601 |             black_box(serde_json::to_string(&simple))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:609:13
+    |
+609 |             black_box(serde_json::to_string(&complex))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:616:13
+    |
+616 |             black_box(serde_json::to_string_pretty(&complex))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:624:13
+    |
+624 |             black_box(serde_json::from_str::<Timeline>(black_box(&simple_json)))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:624:56
+    |
+624 |             black_box(serde_json::from_str::<Timeline>(black_box(&simple_json)))
+    |                                                        ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:632:13
+    |
+632 |             black_box(serde_json::from_str::<Timeline>(black_box(&complex_json)))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:632:56
+    |
+632 |             black_box(serde_json::from_str::<Timeline>(black_box(&complex_json)))
+    |                                                        ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:641:13
+    |
+641 |             black_box(restored)
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:659:13
+    |
+659 |             black_box(SequencerEvent::CameraKey(keyframe.clone()))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:666:13
+    |
+666 |             black_box(SequencerEvent::AnimStart {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:676:13
+    |
+676 |             black_box(SequencerEvent::AudioPlay {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:686:13
+    |
+686 |             black_box(SequencerEvent::FxTrigger {
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:700:13
+    |
+700 |             black_box(event.clone())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:721:21
+    |
+721 |                     black_box(create_timeline_with_mixed_tracks("scale", 60.0, count))
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:736:21
+    |
+736 |                     black_box(seq.step(black_box(0.5), &tl))
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:736:40
+    |
+736 |                     black_box(seq.step(black_box(0.5), &tl))
+    |                                        ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:752:21
+    |
+752 |                     black_box(seq.step(black_box(30.0), &tl))
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:752:40
+    |
+752 |                     black_box(seq.step(black_box(30.0), &tl))
+    |                                        ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:773:13
+    |
+773 |             black_box(seq.step(black_box(0.0), &zero_duration))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:773:32
+    |
+773 |             black_box(seq.step(black_box(0.0), &zero_duration))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:783:13
+    |
+783 |             black_box(seq.step(black_box(0.0001), &tl))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:783:32
+    |
+783 |             black_box(seq.step(black_box(0.0001), &tl))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:793:13
+    |
+793 |             black_box(seq.step(black_box(99.0), &tl))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:793:32
+    |
+793 |             black_box(seq.step(black_box(99.0), &tl))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:807:13
+    |
+807 |             black_box(seq.step(black_box(5.0), &tl_boundary))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:807:32
+    |
+807 |             black_box(seq.step(black_box(5.0), &tl_boundary))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:818:13
+    |
+818 |             black_box(seq.t)
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:828:13
+    |
+828 |             black_box(seq.step(black_box(1.0), &short_tl))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:828:32
+    |
+828 |             black_box(seq.step(black_box(1.0), &short_tl))
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:846:13
+    |
+846 |             black_box(empty.clone())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:854:13
+    |
+854 |             black_box(simple.clone())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:862:13
+    |
+862 |             black_box(complex.clone())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-cinematics\benches\cinematics_benchmarks.rs:870:13
+    |
+870 |             black_box(many_tracks.clone())
+    |             ^^^^^^^^^
+
+warning: `astraweave-cinematics` (bench "cinematics_benchmarks") generated 70 warnings
+    Finished `bench` profile [optimized + debuginfo] target(s) in 3.29s
+     Running benches\cinematics_benchmarks.rs (target\release\deps\cinematics_benchmarks-2ba16bf316de8320.exe)
+Gnuplot not found, using plotters backend
+Benchmarking Timeline Creation/empty
+Benchmarking Timeline Creation/empty: Warming up for 3.0000 s
+Benchmarking Timeline Creation/empty: Collecting 100 samples in estimated 5.0002 s (44M iterations)
+Benchmarking Timeline Creation/empty: Analyzing
+Timeline Creation/empty time:   [103.83 ns 109.49 ns 115.65 ns]
+                        change: [ΓêÆ9.1800% ΓêÆ3.2558% +2.8791%] (p = 0.31 > 0.05)
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  8 (8.00%) high mild
+  1 (1.00%) high severe
+Benchmarking Timeline Creation/with_long_name
+Benchmarking Timeline Creation/with_long_name: Warming up for 3.0000 s
+Benchmarking Timeline Creation/with_long_name: Collecting 100 samples in estimated 5.0006 s (40M iterations)
+Benchmarking Timeline Creation/with_long_name: Analyzing
+Timeline Creation/with_long_name
+                        time:   [118.83 ns 123.83 ns 129.37 ns]
+                        change: [ΓêÆ0.6754% +5.2277% +11.300%] (p = 0.09 > 0.05)
+                        No change in performance detected.
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking Timeline Creation/time_struct
+Benchmarking Timeline Creation/time_struct: Warming up for 3.0000 s
+Benchmarking Timeline Creation/time_struct: Collecting 100 samples in estimated 5.0000 s (2.1B iterations)
+Benchmarking Timeline Creation/time_struct: Analyzing
+Timeline Creation/time_struct
+                        time:   [2.1025 ns 2.1995 ns 2.3108 ns]
+                        change: [ΓêÆ43.885% ΓêÆ27.741% ΓêÆ6.3583%] (p = 0.02 < 0.05)
+                        Performance has improved.
+Found 11 outliers among 100 measurements (11.00%)
+  11 (11.00%) high severe
+
+Benchmarking Camera Keyframes/single_creation
+Benchmarking Camera Keyframes/single_creation: Warming up for 3.0000 s
+Benchmarking Camera Keyframes/single_creation: Collecting 100 samples in estimated 5.0000 s (2.4B iterations)
+Benchmarking Camera Keyframes/single_creation: Analyzing
+Camera Keyframes/single_creation
+                        time:   [2.0057 ns 2.1368 ns 2.2817 ns]
+                        change: [ΓêÆ24.285% ΓêÆ12.000% ΓêÆ0.2243%] (p = 0.09 > 0.05)
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  6 (6.00%) high mild
+  3 (3.00%) high severe
+Benchmarking Camera Keyframes/clone
+Benchmarking Camera Keyframes/clone: Warming up for 3.0000 s
+Benchmarking Camera Keyframes/clone: Collecting 100 samples in estimated 5.0000 s (1.4B iterations)
+Benchmarking Camera Keyframes/clone: Analyzing
+Camera Keyframes/clone  time:   [2.0994 ns 2.2028 ns 2.3157 ns]
+                        change: [+0.9315% +7.9316% +15.995%] (p = 0.03 < 0.05)
+                        Change within noise threshold.
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Camera Keyframes/batch_creation/5
+Benchmarking Camera Keyframes/batch_creation/5: Warming up for 3.0000 s
+Benchmarking Camera Keyframes/batch_creation/5: Collecting 100 samples in estimated 5.0004 s (41M iterations)
+Benchmarking Camera Keyframes/batch_creation/5: Analyzing
+Camera Keyframes/batch_creation/5
+                        time:   [115.75 ns 121.33 ns 127.25 ns]
+                        change: [ΓêÆ5.3763% +1.9283% +8.8597%] (p = 0.61 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  8 (8.00%) high mild
+  2 (2.00%) high severe
+Benchmarking Camera Keyframes/batch_creation/20
+Benchmarking Camera Keyframes/batch_creation/20: Warming up for 3.0000 s
+Benchmarking Camera Keyframes/batch_creation/20: Collecting 100 samples in estimated 5.0008 s (31M iterations)
+Benchmarking Camera Keyframes/batch_creation/20: Analyzing
+Camera Keyframes/batch_creation/20
+                        time:   [187.81 ns 224.14 ns 270.48 ns]
+                        change: [+10.744% +24.178% +42.734%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) high mild
+  6 (6.00%) high severe
+Benchmarking Camera Keyframes/batch_creation/50
+Benchmarking Camera Keyframes/batch_creation/50: Warming up for 3.0000 s
+Benchmarking Camera Keyframes/batch_creation/50: Collecting 100 samples in estimated 5.0003 s (21M iterations)
+Benchmarking Camera Keyframes/batch_creation/50: Analyzing
+Camera Keyframes/batch_creation/50
+                        time:   [249.19 ns 268.28 ns 288.47 ns]
+                        change: [+0.2878% +7.5454% +16.495%] (p = 0.06 > 0.05)
+                        No change in performance detected.
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+Benchmarking Camera Keyframes/batch_creation/100
+Benchmarking Camera Keyframes/batch_creation/100: Warming up for 3.0000 s
+Benchmarking Camera Keyframes/batch_creation/100: Collecting 100 samples in estimated 5.0013 s (12M iterations)
+Benchmarking Camera Keyframes/batch_creation/100: Analyzing
+Camera Keyframes/batch_creation/100
+                        time:   [294.49 ns 306.44 ns 320.72 ns]
+                        change: [ΓêÆ13.725% ΓêÆ8.4813% ΓêÆ3.1168%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 11 outliers among 100 measurements (11.00%)
+  6 (6.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking Track Creation/camera_5_keyframes
+Benchmarking Track Creation/camera_5_keyframes: Warming up for 3.0000 s
+Benchmarking Track Creation/camera_5_keyframes: Collecting 100 samples in estimated 5.0003 s (42M iterations)
+Benchmarking Track Creation/camera_5_keyframes: Analyzing
+Track Creation/camera_5_keyframes
+                        time:   [96.991 ns 100.67 ns 104.55 ns]
+                        change: [ΓêÆ5.3496% ΓêÆ1.1706% +2.8397%] (p = 0.59 > 0.05)
+                        No change in performance detected.
+Found 11 outliers among 100 measurements (11.00%)
+  6 (6.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Track Creation/animation
+Benchmarking Track Creation/animation: Warming up for 3.0000 s
+Benchmarking Track Creation/animation: Collecting 100 samples in estimated 5.0005 s (44M iterations)
+Benchmarking Track Creation/animation: Analyzing
+Track Creation/animation
+                        time:   [98.952 ns 104.58 ns 111.29 ns]
+                        change: [+0.5348% +5.1321% +10.187%] (p = 0.03 < 0.05)
+                        Change within noise threshold.
+Found 11 outliers among 100 measurements (11.00%)
+  8 (8.00%) high mild
+  3 (3.00%) high severe
+Benchmarking Track Creation/audio
+Benchmarking Track Creation/audio: Warming up for 3.0000 s
+Benchmarking Track Creation/audio: Collecting 100 samples in estimated 5.0002 s (47M iterations)
+Benchmarking Track Creation/audio: Analyzing
+Track Creation/audio    time:   [98.297 ns 102.44 ns 106.95 ns]
+                        change: [ΓêÆ58.990% ΓêÆ37.171% ΓêÆ6.8815%] (p = 0.07 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  7 (7.00%) high mild
+  3 (3.00%) high severe
+Benchmarking Track Creation/fx_simple_params
+Benchmarking Track Creation/fx_simple_params: Warming up for 3.0000 s
+Benchmarking Track Creation/fx_simple_params: Collecting 100 samples in estimated 5.0000 s (10M iterations)
+Benchmarking Track Creation/fx_simple_params: Analyzing
+Track Creation/fx_simple_params
+                        time:   [381.72 ns 413.84 ns 449.71 ns]
+                        change: [ΓêÆ10.804% ΓêÆ4.8840% +0.7992%] (p = 0.12 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Track Creation/fx_complex_params
+Benchmarking Track Creation/fx_complex_params: Warming up for 3.0000 s
+Benchmarking Track Creation/fx_complex_params: Collecting 100 samples in estimated 5.0069 s (1.7M iterations)
+Benchmarking Track Creation/fx_complex_params: Analyzing
+Track Creation/fx_complex_params
+                        time:   [3.2282 ┬╡s 3.5106 ┬╡s 3.8437 ┬╡s]
+                        change: [ΓêÆ22.184% ΓêÆ15.018% ΓêÆ7.0311%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+
+Benchmarking Sequencer Operations/creation
+Benchmarking Sequencer Operations/creation: Warming up for 3.0000 s
+Benchmarking Sequencer Operations/creation: Collecting 100 samples in estimated 5.0000 s (4.7B iterations)
+Benchmarking Sequencer Operations/creation: Analyzing
+Sequencer Operations/creation
+                        time:   [1.0832 ns 1.1498 ns 1.2266 ns]
+                        change: [ΓêÆ6.8443% +5.5828% +17.355%] (p = 0.40 > 0.05)
+                        No change in performance detected.
+Found 11 outliers among 100 measurements (11.00%)
+  5 (5.00%) high mild
+  6 (6.00%) high severe
+Benchmarking Sequencer Operations/default
+Benchmarking Sequencer Operations/default: Warming up for 3.0000 s
+Benchmarking Sequencer Operations/default: Collecting 100 samples in estimated 5.0000 s (3.9B iterations)
+Benchmarking Sequencer Operations/default: Analyzing
+Sequencer Operations/default
+                        time:   [1.0660 ns 1.0919 ns 1.1211 ns]
+                        change: [ΓêÆ49.474% ΓêÆ35.902% ΓêÆ19.222%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+Benchmarking Sequencer Operations/seek
+Benchmarking Sequencer Operations/seek: Warming up for 3.0000 s
+Benchmarking Sequencer Operations/seek: Collecting 100 samples in estimated 5.0000 s (2.7B iterations)
+Benchmarking Sequencer Operations/seek: Analyzing
+Sequencer Operations/seek
+                        time:   [1.9396 ns 2.0536 ns 2.2006 ns]
+                        change: [ΓêÆ3.6840% +6.6154% +19.615%] (p = 0.29 > 0.05)
+                        No change in performance detected.
+Found 6 outliers among 100 measurements (6.00%)
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Sequencer Operations/step_empty_timeline
+Benchmarking Sequencer Operations/step_empty_timeline: Warming up for 3.0000 s
+Benchmarking Sequencer Operations/step_empty_timeline: Collecting 100 samples in estimated 5.0001 s (153M iterations)
+Benchmarking Sequencer Operations/step_empty_timeline: Analyzing
+Sequencer Operations/step_empty_timeline
+                        time:   [31.257 ns 39.181 ns 49.584 ns]
+                        change: [+16.356% +35.255% +60.233%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+Benchmarking Sequencer Operations/step_no_events
+Benchmarking Sequencer Operations/step_no_events: Warming up for 3.0000 s
+Benchmarking Sequencer Operations/step_no_events: Collecting 100 samples in estimated 5.0000 s (138M iterations)
+Benchmarking Sequencer Operations/step_no_events: Analyzing
+Sequencer Operations/step_no_events
+                        time:   [33.896 ns 37.460 ns 41.386 ns]
+                        change: [ΓêÆ9.6310% +4.4655% +20.653%] (p = 0.56 > 0.05)
+                        No change in performance detected.
+Found 12 outliers among 100 measurements (12.00%)
+  7 (7.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking Event Emission/camera_event
+Benchmarking Event Emission/camera_event: Warming up for 3.0000 s
+Benchmarking Event Emission/camera_event: Collecting 100 samples in estimated 5.0002 s (31M iterations)
+Benchmarking Event Emission/camera_event: Analyzing
+Event Emission/camera_event
+                        time:   [145.29 ns 154.93 ns 166.45 ns]
+                        change: [ΓêÆ8.3042% ΓêÆ3.3043% +2.4585%] (p = 0.23 > 0.05)
+                        No change in performance detected.
+Found 7 outliers among 100 measurements (7.00%)
+  1 (1.00%) high mild
+  6 (6.00%) high severe
+Benchmarking Event Emission/animation_event
+Benchmarking Event Emission/animation_event: Warming up for 3.0000 s
+Benchmarking Event Emission/animation_event: Collecting 100 samples in estimated 5.0002 s (22M iterations)
+Benchmarking Event Emission/animation_event: Analyzing
+Event Emission/animation_event
+                        time:   [223.50 ns 226.08 ns 228.75 ns]
+                        change: [ΓêÆ6.5787% ΓêÆ4.6582% ΓêÆ2.8397%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  3 (3.00%) low mild
+  4 (4.00%) high mild
+Benchmarking Event Emission/audio_event
+Benchmarking Event Emission/audio_event: Warming up for 3.0000 s
+Benchmarking Event Emission/audio_event: Collecting 100 samples in estimated 5.0012 s (22M iterations)
+Benchmarking Event Emission/audio_event: Analyzing
+Event Emission/audio_event
+                        time:   [236.09 ns 242.26 ns 248.99 ns]
+                        change: [ΓêÆ3.0633% +0.0584% +3.2032%] (p = 0.97 > 0.05)
+                        No change in performance detected.
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+Benchmarking Event Emission/fx_event
+Benchmarking Event Emission/fx_event: Warming up for 3.0000 s
+Benchmarking Event Emission/fx_event: Collecting 100 samples in estimated 5.0018 s (9.9M iterations)
+Benchmarking Event Emission/fx_event: Analyzing
+Event Emission/fx_event time:   [473.02 ns 482.57 ns 493.53 ns]
+                        change: [ΓêÆ39.463% ΓêÆ32.717% ΓêÆ25.670%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+Benchmarking Event Emission/multiple_events_step
+Benchmarking Event Emission/multiple_events_step: Warming up for 3.0000 s
+Benchmarking Event Emission/multiple_events_step: Collecting 100 samples in estimated 5.0087 s (2.3M iterations)
+Benchmarking Event Emission/multiple_events_step: Analyzing
+Event Emission/multiple_events_step
+                        time:   [2.1495 ┬╡s 2.7514 ┬╡s 3.5058 ┬╡s]
+                        change: [+0.9979% +16.893% +39.268%] (p = 0.06 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  3 (3.00%) high mild
+  7 (7.00%) high severe
+
+Benchmarking Timeline Playback/60fps_1sec/5
+Benchmarking Timeline Playback/60fps_1sec/5: Warming up for 3.0000 s
+Benchmarking Timeline Playback/60fps_1sec/5: Collecting 100 samples in estimated 5.0023 s (2.6M iterations)
+Benchmarking Timeline Playback/60fps_1sec/5: Analyzing
+Timeline Playback/60fps_1sec/5
+                        time:   [1.8671 ┬╡s 1.9239 ┬╡s 1.9873 ┬╡s]
+                        change: [ΓêÆ19.046% ΓêÆ9.0629% ΓêÆ0.7747%] (p = 0.08 > 0.05)
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Timeline Playback/60fps_1sec/20
+Benchmarking Timeline Playback/60fps_1sec/20: Warming up for 3.0000 s
+Benchmarking Timeline Playback/60fps_1sec/20: Collecting 100 samples in estimated 5.0203 s (616k iterations)
+Benchmarking Timeline Playback/60fps_1sec/20: Analyzing
+Timeline Playback/60fps_1sec/20
+                        time:   [5.3587 ┬╡s 5.4728 ┬╡s 5.5965 ┬╡s]
+                        change: [ΓêÆ10.248% ΓêÆ5.5197% ΓêÆ1.0287%] (p = 0.02 < 0.05)
+                        Performance has improved.
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking Timeline Playback/60fps_1sec/50
+Benchmarking Timeline Playback/60fps_1sec/50: Warming up for 3.0000 s
+Benchmarking Timeline Playback/60fps_1sec/50: Collecting 100 samples in estimated 5.0180 s (404k iterations)
+Benchmarking Timeline Playback/60fps_1sec/50: Analyzing
+Timeline Playback/60fps_1sec/50
+                        time:   [14.350 ┬╡s 16.351 ┬╡s 18.782 ┬╡s]
+                        change: [ΓêÆ26.195% ΓêÆ10.793% +5.2150%] (p = 0.26 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  3 (3.00%) high mild
+  7 (7.00%) high severe
+Benchmarking Timeline Playback/60fps_1sec/100
+Benchmarking Timeline Playback/60fps_1sec/100: Warming up for 3.0000 s
+Benchmarking Timeline Playback/60fps_1sec/100: Collecting 100 samples in estimated 5.0740 s (187k iterations)
+Benchmarking Timeline Playback/60fps_1sec/100: Analyzing
+Timeline Playback/60fps_1sec/100
+                        time:   [27.408 ┬╡s 30.382 ┬╡s 34.585 ┬╡s]
+                        change: [ΓêÆ9.0806% ΓêÆ2.0506% +7.1989%] (p = 0.64 > 0.05)
+                        No change in performance detected.
+Found 12 outliers among 100 measurements (12.00%)
+  3 (3.00%) high mild
+  9 (9.00%) high severe
+Benchmarking Timeline Playback/complex_30sec_full
+Benchmarking Timeline Playback/complex_30sec_full: Warming up for 3.0000 s
+Benchmarking Timeline Playback/complex_30sec_full: Collecting 100 samples in estimated 5.4940 s (35k iterations)
+Benchmarking Timeline Playback/complex_30sec_full: Analyzing
+Timeline Playback/complex_30sec_full
+                        time:   [147.61 ┬╡s 152.17 ┬╡s 157.74 ┬╡s]
+                        change: [ΓêÆ26.122% ΓêÆ17.984% ΓêÆ9.7270%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Timeline Playback/complex_single_frame
+Benchmarking Timeline Playback/complex_single_frame: Warming up for 3.0000 s
+Benchmarking Timeline Playback/complex_single_frame: Collecting 100 samples in estimated 5.0000 s (50M iterations)
+Benchmarking Timeline Playback/complex_single_frame: Analyzing
+Timeline Playback/complex_single_frame
+                        time:   [90.253 ns 92.279 ns 95.115 ns]
+                        change: [ΓêÆ48.683% ΓêÆ35.360% ΓêÆ18.753%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 6 outliers among 100 measurements (6.00%)
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking JSON Serialization/serialize_empty
+Benchmarking JSON Serialization/serialize_empty: Warming up for 3.0000 s
+Benchmarking JSON Serialization/serialize_empty: Collecting 100 samples in estimated 5.0001 s (15M iterations)
+Benchmarking JSON Serialization/serialize_empty: Analyzing
+JSON Serialization/serialize_empty
+                        time:   [315.34 ns 321.66 ns 328.55 ns]
+                        change: [ΓêÆ19.131% ΓêÆ12.279% ΓêÆ5.4264%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking JSON Serialization/serialize_simple
+Benchmarking JSON Serialization/serialize_simple: Warming up for 3.0000 s
+Benchmarking JSON Serialization/serialize_simple: Collecting 100 samples in estimated 5.0203 s (975k iterations)
+Benchmarking JSON Serialization/serialize_simple: Analyzing
+JSON Serialization/serialize_simple
+                        time:   [3.9351 ┬╡s 4.2108 ┬╡s 4.5750 ┬╡s]
+                        change: [ΓêÆ8.7041% +4.7695% +17.490%] (p = 0.51 > 0.05)
+                        No change in performance detected.
+Found 11 outliers among 100 measurements (11.00%)
+  2 (2.00%) high mild
+  9 (9.00%) high severe
+Benchmarking JSON Serialization/serialize_complex
+Benchmarking JSON Serialization/serialize_complex: Warming up for 3.0000 s
+Benchmarking JSON Serialization/serialize_complex: Collecting 100 samples in estimated 5.0555 s (242k iterations)
+Benchmarking JSON Serialization/serialize_complex: Analyzing
+JSON Serialization/serialize_complex
+                        time:   [20.198 ┬╡s 21.232 ┬╡s 22.451 ┬╡s]
+                        change: [ΓêÆ10.541% ΓêÆ3.2540% +4.0133%] (p = 0.42 > 0.05)
+                        No change in performance detected.
+Found 12 outliers among 100 measurements (12.00%)
+  8 (8.00%) high mild
+  4 (4.00%) high severe
+Benchmarking JSON Serialization/serialize_complex_pretty
+Benchmarking JSON Serialization/serialize_complex_pretty: Warming up for 3.0000 s
+Benchmarking JSON Serialization/serialize_complex_pretty: Collecting 100 samples in estimated 5.0893 s (146k iterations)
+Benchmarking JSON Serialization/serialize_complex_pretty: Analyzing
+JSON Serialization/serialize_complex_pretty
+                        time:   [35.054 ┬╡s 36.508 ┬╡s 38.353 ┬╡s]
+                        change: [ΓêÆ15.382% ΓêÆ9.6446% ΓêÆ4.1763%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 9 outliers among 100 measurements (9.00%)
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+Benchmarking JSON Serialization/deserialize_simple
+Benchmarking JSON Serialization/deserialize_simple: Warming up for 3.0000 s
+Benchmarking JSON Serialization/deserialize_simple: Collecting 100 samples in estimated 5.0072 s (1.3M iterations)
+Benchmarking JSON Serialization/deserialize_simple: Analyzing
+JSON Serialization/deserialize_simple
+                        time:   [4.3272 ┬╡s 5.1636 ┬╡s 6.1509 ┬╡s]
+                        change: [ΓêÆ5.4178% +10.923% +28.444%] (p = 0.20 > 0.05)
+                        No change in performance detected.
+Found 12 outliers among 100 measurements (12.00%)
+  5 (5.00%) high mild
+  7 (7.00%) high severe
+Benchmarking JSON Serialization/deserialize_complex
+Benchmarking JSON Serialization/deserialize_complex: Warming up for 3.0000 s
+Benchmarking JSON Serialization/deserialize_complex: Collecting 100 samples in estimated 5.0254 s (258k iterations)
+Benchmarking JSON Serialization/deserialize_complex: Analyzing
+JSON Serialization/deserialize_complex
+                        time:   [19.633 ┬╡s 20.450 ┬╡s 21.363 ┬╡s]
+                        change: [ΓêÆ8.3173% ΓêÆ3.7496% +0.6939%] (p = 0.12 > 0.05)
+                        No change in performance detected.
+Found 12 outliers among 100 measurements (12.00%)
+  3 (3.00%) high mild
+  9 (9.00%) high severe
+Benchmarking JSON Serialization/roundtrip_complex
+Benchmarking JSON Serialization/roundtrip_complex: Warming up for 3.0000 s
+Benchmarking JSON Serialization/roundtrip_complex: Collecting 100 samples in estimated 5.0301 s (126k iterations)
+Benchmarking JSON Serialization/roundtrip_complex: Analyzing
+JSON Serialization/roundtrip_complex
+                        time:   [39.060 ┬╡s 40.126 ┬╡s 41.301 ┬╡s]
+                        change: [ΓêÆ16.369% ΓêÆ8.3562% +0.0479%] (p = 0.06 > 0.05)
+                        No change in performance detected.
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking Event Creation/camera_key_event
+Benchmarking Event Creation/camera_key_event: Warming up for 3.0000 s
+Benchmarking Event Creation/camera_key_event: Collecting 100 samples in estimated 5.0000 s (682M iterations)
+Benchmarking Event Creation/camera_key_event: Analyzing
+Event Creation/camera_key_event
+                        time:   [7.5206 ns 7.8667 ns 8.2659 ns]
+                        change: [ΓêÆ14.007% ΓêÆ8.7131% ΓêÆ3.5598%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Event Creation/anim_start_event
+Benchmarking Event Creation/anim_start_event: Warming up for 3.0000 s
+Benchmarking Event Creation/anim_start_event: Collecting 100 samples in estimated 5.0004 s (54M iterations)
+Benchmarking Event Creation/anim_start_event: Analyzing
+Event Creation/anim_start_event
+                        time:   [91.908 ns 94.230 ns 96.878 ns]
+                        change: [ΓêÆ22.317% ΓêÆ8.8930% +4.0353%] (p = 0.29 > 0.05)
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  4 (4.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Event Creation/audio_play_event
+Benchmarking Event Creation/audio_play_event: Warming up for 3.0000 s
+Benchmarking Event Creation/audio_play_event: Collecting 100 samples in estimated 5.0003 s (53M iterations)
+Benchmarking Event Creation/audio_play_event: Analyzing
+Event Creation/audio_play_event
+                        time:   [93.337 ns 95.583 ns 98.300 ns]
+                        change: [+1.4929% +12.165% +24.515%] (p = 0.02 < 0.05)
+                        Performance has regressed.
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Event Creation/fx_trigger_event
+Benchmarking Event Creation/fx_trigger_event: Warming up for 3.0000 s
+Benchmarking Event Creation/fx_trigger_event: Collecting 100 samples in estimated 5.0009 s (14M iterations)
+Benchmarking Event Creation/fx_trigger_event: Analyzing
+Event Creation/fx_trigger_event
+                        time:   [339.42 ns 361.17 ns 396.36 ns]
+                        change: [ΓêÆ45.524% ΓêÆ32.146% ΓêÆ15.343%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Event Creation/event_clone_complex
+Benchmarking Event Creation/event_clone_complex: Warming up for 3.0000 s
+Benchmarking Event Creation/event_clone_complex: Collecting 100 samples in estimated 5.0048 s (4.5M iterations)
+Benchmarking Event Creation/event_clone_complex: Analyzing
+Event Creation/event_clone_complex
+                        time:   [1.0357 ┬╡s 1.0897 ┬╡s 1.1530 ┬╡s]
+                        change: [ΓêÆ10.134% ΓêÆ2.6915% +5.3533%] (p = 0.51 > 0.05)
+                        No change in performance detected.
+Found 14 outliers among 100 measurements (14.00%)
+  5 (5.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking Timeline Scaling/creation/10
+Benchmarking Timeline Scaling/creation/10: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/creation/10: Collecting 100 samples in estimated 5.0009 s (1.5M iterations)
+Benchmarking Timeline Scaling/creation/10: Analyzing
+Timeline Scaling/creation/10
+                        time:   [2.6725 ┬╡s 2.7611 ┬╡s 2.8849 ┬╡s]
+                        change: [ΓêÆ9.7141% ΓêÆ2.8381% +5.3203%] (p = 0.46 > 0.05)
+                        No change in performance detected.
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Timeline Scaling/creation/50
+Benchmarking Timeline Scaling/creation/50: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/creation/50: Collecting 100 samples in estimated 5.0430 s (338k iterations)
+Benchmarking Timeline Scaling/creation/50: Analyzing
+Timeline Scaling/creation/50
+                        time:   [13.610 ┬╡s 13.881 ┬╡s 14.268 ┬╡s]
+                        change: [ΓêÆ42.335% ΓêÆ31.675% ΓêÆ18.714%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking Timeline Scaling/creation/100
+Benchmarking Timeline Scaling/creation/100: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/creation/100: Collecting 100 samples in estimated 5.0333 s (187k iterations)
+Benchmarking Timeline Scaling/creation/100: Analyzing
+Timeline Scaling/creation/100
+                        time:   [25.855 ┬╡s 26.433 ┬╡s 27.301 ┬╡s]
+                        change: [ΓêÆ35.818% ΓêÆ26.688% ΓêÆ17.046%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  6 (6.00%) high mild
+  1 (1.00%) high severe
+Benchmarking Timeline Scaling/creation/500
+Benchmarking Timeline Scaling/creation/500: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/creation/500: Collecting 100 samples in estimated 5.5494 s (35k iterations)
+Benchmarking Timeline Scaling/creation/500: Analyzing
+Timeline Scaling/creation/500
+                        time:   [186.95 ┬╡s 197.66 ┬╡s 209.77 ┬╡s]
+                        change: [+21.630% +31.136% +40.740%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Timeline Scaling/creation/1000
+Benchmarking Timeline Scaling/creation/1000: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/creation/1000: Collecting 100 samples in estimated 5.6130 s (15k iterations)
+Benchmarking Timeline Scaling/creation/1000: Analyzing
+Timeline Scaling/creation/1000
+                        time:   [327.61 ┬╡s 377.85 ┬╡s 440.26 ┬╡s]
+                        change: [ΓêÆ14.201% ΓêÆ2.7782% +9.9317%] (p = 0.66 > 0.05)
+                        No change in performance detected.
+Found 11 outliers among 100 measurements (11.00%)
+  4 (4.00%) high mild
+  7 (7.00%) high severe
+Benchmarking Timeline Scaling/step/10
+Benchmarking Timeline Scaling/step/10: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/step/10: Collecting 100 samples in estimated 5.0003 s (65M iterations)
+Benchmarking Timeline Scaling/step/10: Analyzing
+Timeline Scaling/step/10
+                        time:   [72.937 ns 81.888 ns 93.473 ns]
+                        change: [ΓêÆ34.246% ΓêÆ19.782% ΓêÆ3.8965%] (p = 0.03 < 0.05)
+                        Performance has improved.
+Found 16 outliers among 100 measurements (16.00%)
+  4 (4.00%) high mild
+  12 (12.00%) high severe
+Benchmarking Timeline Scaling/step/50
+Benchmarking Timeline Scaling/step/50: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/step/50: Collecting 100 samples in estimated 5.0018 s (9.3M iterations)
+Benchmarking Timeline Scaling/step/50: Analyzing
+Timeline Scaling/step/50
+                        time:   [336.94 ns 376.80 ns 427.04 ns]
+                        change: [ΓêÆ68.609% ΓêÆ58.654% ΓêÆ44.851%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking Timeline Scaling/step/100
+Benchmarking Timeline Scaling/step/100: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/step/100: Collecting 100 samples in estimated 5.0025 s (9.2M iterations)
+Benchmarking Timeline Scaling/step/100: Analyzing
+Timeline Scaling/step/100
+                        time:   [485.10 ns 512.89 ns 545.66 ns]
+                        change: [ΓêÆ75.106% ΓêÆ64.282% ΓêÆ43.115%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+Benchmarking Timeline Scaling/step/500
+Benchmarking Timeline Scaling/step/500: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/step/500: Collecting 100 samples in estimated 5.0007 s (1.6M iterations)
+Benchmarking Timeline Scaling/step/500: Analyzing
+Timeline Scaling/step/500
+                        time:   [3.1688 ┬╡s 3.5399 ┬╡s 4.2187 ┬╡s]
+                        change: [ΓêÆ94.825% ΓêÆ92.371% ΓêÆ87.341%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+Benchmarking Timeline Scaling/camera_keyframes_step/10
+Benchmarking Timeline Scaling/camera_keyframes_step/10: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/camera_keyframes_step/10: Collecting 100 samples in estimated 5.0001 s (11M iterations)
+Benchmarking Timeline Scaling/camera_keyframes_step/10: Analyzing
+Timeline Scaling/camera_keyframes_step/10
+                        time:   [388.81 ns 421.56 ns 459.93 ns]
+                        change: [ΓêÆ17.473% ΓêÆ2.9033% +13.327%] (p = 0.73 > 0.05)
+                        No change in performance detected.
+Found 14 outliers among 100 measurements (14.00%)
+  7 (7.00%) high mild
+  7 (7.00%) high severe
+Benchmarking Timeline Scaling/camera_keyframes_step/50
+Benchmarking Timeline Scaling/camera_keyframes_step/50: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/camera_keyframes_step/50: Collecting 100 samples in estimated 5.0049 s (5.1M iterations)
+Benchmarking Timeline Scaling/camera_keyframes_step/50: Analyzing
+Timeline Scaling/camera_keyframes_step/50
+                        time:   [1.0550 ┬╡s 1.1150 ┬╡s 1.1780 ┬╡s]
+                        change: [ΓêÆ61.307% ΓêÆ47.430% ΓêÆ27.394%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Timeline Scaling/camera_keyframes_step/100
+Benchmarking Timeline Scaling/camera_keyframes_step/100: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/camera_keyframes_step/100: Collecting 100 samples in estimated 5.0037 s (2.7M iterations)
+Benchmarking Timeline Scaling/camera_keyframes_step/100: Analyzing
+Timeline Scaling/camera_keyframes_step/100
+                        time:   [1.7272 ┬╡s 1.8349 ┬╡s 1.9553 ┬╡s]
+                        change: [ΓêÆ52.972% ΓêÆ39.454% ΓêÆ20.090%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 6 outliers among 100 measurements (6.00%)
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Timeline Scaling/camera_keyframes_step/500
+Benchmarking Timeline Scaling/camera_keyframes_step/500: Warming up for 3.0000 s
+Benchmarking Timeline Scaling/camera_keyframes_step/500: Collecting 100 samples in estimated 5.0440 s (207k iterations)
+Benchmarking Timeline Scaling/camera_keyframes_step/500: Analyzing
+Timeline Scaling/camera_keyframes_step/500
+                        time:   [6.2501 ┬╡s 7.2403 ┬╡s 8.4990 ┬╡s]
+                        change: [+15.082% +99.281% +206.39%] (p = 0.04 < 0.05)
+                        Performance has regressed.
+Found 13 outliers among 100 measurements (13.00%)
+  4 (4.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking Edge Cases/zero_duration_step
+Benchmarking Edge Cases/zero_duration_step: Warming up for 3.0000 s
+Benchmarking Edge Cases/zero_duration_step: Collecting 100 samples in estimated 5.0001 s (146M iterations)
+Benchmarking Edge Cases/zero_duration_step: Analyzing
+Edge Cases/zero_duration_step
+                        time:   [31.470 ns 32.828 ns 34.352 ns]
+                        change: [ΓêÆ0.4106% +6.6912% +14.154%] (p = 0.06 > 0.05)
+                        No change in performance detected.
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+Benchmarking Edge Cases/sub_ms_step
+Benchmarking Edge Cases/sub_ms_step: Warming up for 3.0000 s
+Benchmarking Edge Cases/sub_ms_step: Collecting 100 samples in estimated 5.0007 s (22M iterations)
+Benchmarking Edge Cases/sub_ms_step: Analyzing
+Edge Cases/sub_ms_step  time:   [172.53 ns 177.66 ns 183.25 ns]
+                        change: [ΓêÆ27.395% ΓêÆ14.667% ΓêÆ0.9635%] (p = 0.06 > 0.05)
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  6 (6.00%) high mild
+  3 (3.00%) high severe
+Benchmarking Edge Cases/large_step
+Benchmarking Edge Cases/large_step: Warming up for 3.0000 s
+Benchmarking Edge Cases/large_step: Collecting 100 samples in estimated 5.0248 s (207k iterations)
+Benchmarking Edge Cases/large_step: Analyzing
+Edge Cases/large_step   time:   [20.756 ┬╡s 22.080 ┬╡s 23.611 ┬╡s]
+                        change: [ΓêÆ40.434% ΓêÆ18.307% +5.2169%] (p = 0.27 > 0.05)
+                        No change in performance detected.
+Found 11 outliers among 100 measurements (11.00%)
+  7 (7.00%) high mild
+  4 (4.00%) high severe
+Benchmarking Edge Cases/exact_event_time
+Benchmarking Edge Cases/exact_event_time: Warming up for 3.0000 s
+Benchmarking Edge Cases/exact_event_time: Collecting 100 samples in estimated 5.0009 s (17M iterations)
+Benchmarking Edge Cases/exact_event_time: Analyzing
+Edge Cases/exact_event_time
+                        time:   [250.55 ns 263.94 ns 278.74 ns]
+                        change: [ΓêÆ4.5152% +6.2880% +17.725%] (p = 0.31 > 0.05)
+                        No change in performance detected.
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+Benchmarking Edge Cases/repeated_seeks
+Benchmarking Edge Cases/repeated_seeks: Warming up for 3.0000 s
+Benchmarking Edge Cases/repeated_seeks: Collecting 100 samples in estimated 5.0000 s (3.1B iterations)
+Benchmarking Edge Cases/repeated_seeks: Analyzing
+Edge Cases/repeated_seeks
+                        time:   [1.1496 ns 1.2098 ns 1.2731 ns]
+                        change: [ΓêÆ17.771% ΓêÆ4.9977% +8.4765%] (p = 0.50 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking Edge Cases/out_of_range_error
+Benchmarking Edge Cases/out_of_range_error: Warming up for 3.0000 s
+Benchmarking Edge Cases/out_of_range_error: Collecting 100 samples in estimated 5.0022 s (10M iterations)
+Benchmarking Edge Cases/out_of_range_error: Analyzing
+Edge Cases/out_of_range_error
+                        time:   [355.84 ns 381.11 ns 410.60 ns]
+                        change: [ΓêÆ23.572% ΓêÆ12.926% ΓêÆ1.3985%] (p = 0.04 < 0.05)
+                        Performance has improved.
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking Timeline Clone/empty
+Benchmarking Timeline Clone/empty: Warming up for 3.0000 s
+Benchmarking Timeline Clone/empty: Collecting 100 samples in estimated 5.0010 s (21M iterations)
+Benchmarking Timeline Clone/empty: Analyzing
+Timeline Clone/empty    time:   [135.31 ns 142.86 ns 151.07 ns]
+                        change: [ΓêÆ5.0582% +3.8669% +12.897%] (p = 0.39 > 0.05)
+                        No change in performance detected.
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+Benchmarking Timeline Clone/simple
+Benchmarking Timeline Clone/simple: Warming up for 3.0000 s
+Benchmarking Timeline Clone/simple: Collecting 100 samples in estimated 5.0007 s (14M iterations)
+Benchmarking Timeline Clone/simple: Analyzing
+Timeline Clone/simple   time:   [340.84 ns 352.08 ns 364.72 ns]
+                        change: [ΓêÆ14.032% ΓêÆ7.4293% ΓêÆ0.6968%] (p = 0.04 < 0.05)
+                        Change within noise threshold.
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking Timeline Clone/complex
+Benchmarking Timeline Clone/complex: Warming up for 3.0000 s
+Benchmarking Timeline Clone/complex: Collecting 100 samples in estimated 5.0138 s (1.8M iterations)
+Benchmarking Timeline Clone/complex: Analyzing
+Timeline Clone/complex  time:   [2.6093 ┬╡s 2.6516 ┬╡s 2.6976 ┬╡s]
+                        change: [ΓêÆ26.721% ΓêÆ21.977% ΓêÆ17.307%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 4 outliers among 100 measurements (4.00%)
+  1 (1.00%) low mild
+  3 (3.00%) high mild
+Benchmarking Timeline Clone/100_tracks
+Benchmarking Timeline Clone/100_tracks: Warming up for 3.0000 s
+Benchmarking Timeline Clone/100_tracks: Collecting 100 samples in estimated 5.1235 s (187k iterations)
+Benchmarking Timeline Clone/100_tracks: Analyzing
+Timeline Clone/100_tracks
+                        time:   [22.370 ┬╡s 23.346 ┬╡s 24.364 ┬╡s]
+                        change: [ΓêÆ34.996% ΓêÆ24.871% ΓêÆ13.541%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+
