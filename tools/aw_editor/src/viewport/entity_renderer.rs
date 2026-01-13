@@ -7,7 +7,7 @@
 //!
 //! # Features
 //!
-//! - Simple cube rendering for each entity (placeholder meshes)
+//! - Primitive geometry rendering for entities (fallback for non-mesh entities)
 //! - Transform matrix support (position, rotation, scale)
 //! - Instanced rendering for performance
 //! - Selection highlighting (different color for selected entities)
@@ -83,7 +83,7 @@ impl EntityRenderer {
             label: Some("Entity Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -263,10 +263,12 @@ impl EntityRenderer {
     /// * `world` - World containing entities
     /// * `selected_entity` - Currently selected entity (for highlighting)
     /// * `queue` - wgpu queue for buffer writes
+    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe
     ///
     /// # Errors
     ///
     /// Returns error if buffer write or rendering fails.
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
@@ -276,6 +278,7 @@ impl EntityRenderer {
         world: &World,
         selected_entities: &[Entity],
         queue: &wgpu::Queue,
+        shading_mode: u32,
     ) -> Result<()> {
         // Update camera uniforms
         let view_proj = camera.view_projection_matrix();
@@ -284,7 +287,7 @@ impl EntityRenderer {
         let uniforms = EntityUniforms {
             view_proj: view_proj.to_cols_array_2d(),
             camera_pos: [camera_pos.x, camera_pos.y, camera_pos.z],
-            _padding: 0.0,
+            shading_mode,
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
@@ -338,7 +341,12 @@ impl EntityRenderer {
     ///
     /// Creates Instance data for each entity with a Position component.
     /// Selected entity is highlighted with orange color.
-    fn collect_instances(&self, world: &World, selected_entities: &[Entity], frustum: &Frustum) -> Vec<Instance> {
+    fn collect_instances(
+        &self,
+        world: &World,
+        selected_entities: &[Entity],
+        frustum: &Frustum,
+    ) -> Vec<Instance> {
         let mut instances = Vec::new();
         const ENTITY_RADIUS: f32 = 0.866;
 
@@ -409,7 +417,7 @@ struct Instance {
 struct EntityUniforms {
     view_proj: [[f32; 4]; 4],
     camera_pos: [f32; 3],
-    _padding: f32,
+    shading_mode: u32,
 }
 
 /// Create cube mesh (vertices + indices)

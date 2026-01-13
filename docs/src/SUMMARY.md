@@ -52,10 +52,7 @@
 
 # Reference Implementation
 
-- [Veilweaver Overview](../../Games-VEILWEAVER/documentation/overview.md)
-- [Game Mechanics](../../Games-VEILWEAVER/documentation/mechanics.md)
-- [AI Integration](../../Games-VEILWEAVER/documentation/ai-integration.md)
-- [World Design](../../Games-VEILWEAVER/documentation/world-design.md)
+- [Veilweaver Overview](./veilweaver/overview.md)
 
 # Engine Development
 
@@ -73,6 +70,7 @@
 - [Configuration](./reference/configuration.md)
 - [Command Line Tools](./reference/cli-tools.md)
 - [Platform Support](./reference/platforms.md)
+- [Glossary](./reference/glossary.md)
 
 # Resources
 
@@ -82,4 +80,5 @@
 - [Common Patterns](./resources/patterns.md)
 - [Troubleshooting](./resources/troubleshooting.md)
 - [Community](./resources/community.md)
-- [Roadmap](../root-archive/roadmap.md)
+- [Roadmap](./resources/roadmap.md)
+- [Benchmark Dashboard](./benchmarks.md)

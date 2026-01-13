@@ -1,5 +1,3 @@
-#![cfg(feature = "astraweave-render")]
-
 use anyhow::{Context, Result};
 use std::path::Path;
 use std::sync::Arc;

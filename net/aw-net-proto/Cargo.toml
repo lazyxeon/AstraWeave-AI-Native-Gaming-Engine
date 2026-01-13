@@ -12,3 +12,10 @@ lz4_flex = "0.11"
 thiserror = "2"
 time = { version = "0.3", features = ["macros"] }
 rand = "0.9"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "proto_bench"
+harness = false

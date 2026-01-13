@@ -1,0 +1,31 @@
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+error[E0412]: cannot find type `SmoothParams256` in this scope
+  --> astraweave-fluids\src\renderer.rs:53:33
+   |
+17 | pub struct SmoothParams {
+   | ----------------------- similarly named struct `SmoothParams` defined here
+...
+53 |             std::mem::size_of::<SmoothParams256>()
+   |                                 ^^^^^^^^^^^^^^^
+   |
+help: a struct with a similar name exists
+   |
+53 -             std::mem::size_of::<SmoothParams256>()
+53 +             std::mem::size_of::<SmoothParams>()
+   |
+help: you might be missing a type parameter
+   |
+44 | impl<SmoothParams256> FluidRenderer {
+   |     +++++++++++++++++
+
+warning: unused import: `wgpu::util::DeviceExt`
+ --> astraweave-fluids\src\renderer.rs:1:5
+  |
+1 | use wgpu::util::DeviceExt;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+For more information about this error, try `rustc --explain E0412`.
+warning: `astraweave-fluids` (lib) generated 1 warning
+error: could not compile `astraweave-fluids` (lib) due to 1 previous error; 1 warning emitted

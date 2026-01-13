@@ -1,3 +1,5 @@
+use crate::gizmo::snapping::SnappingConfig;
+use crate::viewport::camera::OrbitCamera;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -11,6 +13,8 @@ pub struct EditorPreferences {
     pub show_hierarchy_panel: bool,
     pub show_inspector_panel: bool,
     pub show_console_panel: bool,
+    pub camera: Option<OrbitCamera>,
+    pub snapping: Option<SnappingConfig>,
 }
 
 impl Default for EditorPreferences {
@@ -22,6 +26,8 @@ impl Default for EditorPreferences {
             show_hierarchy_panel: true,
             show_inspector_panel: true,
             show_console_panel: true,
+            camera: None,
+            snapping: None,
         }
     }
 }
@@ -37,8 +43,15 @@ impl EditorPreferences {
     }
 
     pub fn save(&self) {
-        if let Ok(json) = serde_json::to_string_pretty(&self) {
-            let _ = fs::write(PREFERENCES_PATH, json);
+        match serde_json::to_string_pretty(&self) {
+            Ok(json) => {
+                if let Err(e) = fs::write(PREFERENCES_PATH, json) {
+                    tracing::error!("Failed to write editor preferences to {}: {}", PREFERENCES_PATH, e);
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to serialize editor preferences: {}", e);
+            }
         }
     }
 }

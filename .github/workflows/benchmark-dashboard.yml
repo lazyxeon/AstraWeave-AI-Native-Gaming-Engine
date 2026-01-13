@@ -145,7 +145,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages
           publish_branch: gh-pages
-          force_orphan: true
+          keep_files: true
+          destination_dir: benchmarks
           commit_message: 'Update benchmark dashboard: ${{ github.sha }}'
       
       - name: Create Regression Issue (if needed)

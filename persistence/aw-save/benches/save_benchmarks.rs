@@ -15,6 +15,18 @@
 //! - Full load cycle: <50 ms (fast enough for level transitions)
 //! - Migration: <150 ms for old saves
 
+// =============================================================================
+// MISSION-CRITICAL CORRECTNESS ASSERTIONS
+// =============================================================================
+// Persistence benchmarks validate CORRECTNESS of save/load systems.
+// Assertions verify:
+//   1. Serialization Round-Trip: Decoded data matches original
+//   2. Compression Integrity: Decompressed size matches original
+//   3. Checksum Determinism: Same input produces same CRC32
+//   4. Save/Load Fidelity: Loaded bundle matches saved bundle
+//   5. Schema Validity: Version numbers and IDs are preserved
+// =============================================================================
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;
@@ -26,6 +38,44 @@ use aw_save::{
     CompanionProfile, ItemStack, PlayerInventory, SaveBundleV2, SaveManager, WorldState,
     SAVE_SCHEMA_VERSION,
 };
+
+/// CORRECTNESS: Validate serialized data can be deserialized back identically
+#[inline]
+fn assert_round_trip_valid(original: &SaveBundleV2, decoded: &SaveBundleV2, context: &str) {
+    assert_eq!(original.schema, decoded.schema,
+        "[CORRECTNESS FAILURE] {}: schema mismatch", context);
+    assert_eq!(original.player_id, decoded.player_id,
+        "[CORRECTNESS FAILURE] {}: player_id mismatch", context);
+    assert_eq!(original.slot, decoded.slot,
+        "[CORRECTNESS FAILURE] {}: slot mismatch", context);
+    assert_eq!(original.world.tick, decoded.world.tick,
+        "[CORRECTNESS FAILURE] {}: world tick mismatch", context);
+    assert_eq!(original.world.ecs_blob.len(), decoded.world.ecs_blob.len(),
+        "[CORRECTNESS FAILURE] {}: ecs_blob size mismatch", context);
+    assert_eq!(original.world.state_hash, decoded.world.state_hash,
+        "[CORRECTNESS FAILURE] {}: state_hash mismatch", context);
+    assert_eq!(original.companions.len(), decoded.companions.len(),
+        "[CORRECTNESS FAILURE] {}: companions count mismatch", context);
+    assert_eq!(original.inventory.credits, decoded.inventory.credits,
+        "[CORRECTNESS FAILURE] {}: credits mismatch", context);
+}
+
+/// CORRECTNESS: Validate compression preserves data size
+#[inline]
+fn assert_compression_valid(original_size: usize, decompressed_size: usize, context: &str) {
+    assert_eq!(original_size, decompressed_size,
+        "[CORRECTNESS FAILURE] {}: compression size mismatch (orig={}, decomp={})", 
+        context, original_size, decompressed_size);
+}
+
+/// CORRECTNESS: Validate checksum is non-zero and deterministic
+#[inline]
+fn assert_checksum_valid(crc1: u32, crc2: u32, context: &str) {
+    assert_ne!(crc1, 0, 
+        "[CORRECTNESS FAILURE] {}: CRC32 is zero (degenerate input?)", context);
+    assert_eq!(crc1, crc2,
+        "[CORRECTNESS FAILURE] {}: CRC32 non-deterministic ({} vs {})", context, crc1, crc2);
+}
 
 // ============================================================================
 // Helper Functions
@@ -107,6 +157,9 @@ fn bench_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let bytes = postcard::to_allocvec(&bundle).unwrap();
+            // CORRECTNESS: Validate non-empty serialization
+            assert!(!bytes.is_empty(),
+                "[CORRECTNESS FAILURE] serialize_small: produced empty bytes");
             std_black_box(bytes)
         })
     });
@@ -117,6 +170,8 @@ fn bench_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let bytes = postcard::to_allocvec(&bundle).unwrap();
+            assert!(!bytes.is_empty(),
+                "[CORRECTNESS FAILURE] serialize_medium: produced empty bytes");
             std_black_box(bytes)
         })
     });
@@ -127,6 +182,8 @@ fn bench_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let bytes = postcard::to_allocvec(&bundle).unwrap();
+            assert!(!bytes.is_empty(),
+                "[CORRECTNESS FAILURE] serialize_large: produced empty bytes");
             std_black_box(bytes)
         })
     });
@@ -138,6 +195,8 @@ fn bench_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let decoded: SaveBundleV2 = postcard::from_bytes(&bytes).unwrap();
+            // CORRECTNESS: Validate round-trip integrity
+            assert_round_trip_valid(&bundle, &decoded, "deserialize_small");
             std_black_box(decoded)
         })
     });
@@ -149,6 +208,7 @@ fn bench_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let decoded: SaveBundleV2 = postcard::from_bytes(&bytes).unwrap();
+            assert_round_trip_valid(&bundle, &decoded, "deserialize_large");
             std_black_box(decoded)
         })
     });
@@ -168,9 +228,16 @@ fn bench_compression(c: &mut Criterion) {
     group.bench_function("lz4_compress_10kb", |b| {
         let bundle = create_test_bundle(10 * 1024);
         let bytes = postcard::to_allocvec(&bundle).unwrap();
+        let original_size = bytes.len();
 
         b.iter(|| {
             let compressed = lz4_flex::compress_prepend_size(&bytes);
+            // CORRECTNESS: Validate compression produces output
+            assert!(!compressed.is_empty(),
+                "[CORRECTNESS FAILURE] lz4_compress_10kb: produced empty output");
+            // CORRECTNESS: Verify round-trip
+            let decompressed = lz4_flex::decompress_size_prepended(&compressed).unwrap();
+            assert_compression_valid(original_size, decompressed.len(), "lz4_compress_10kb");
             std_black_box(compressed)
         })
     });
@@ -180,9 +247,14 @@ fn bench_compression(c: &mut Criterion) {
     group.bench_function("lz4_compress_100kb", |b| {
         let bundle = create_test_bundle(100 * 1024);
         let bytes = postcard::to_allocvec(&bundle).unwrap();
+        let original_size = bytes.len();
 
         b.iter(|| {
             let compressed = lz4_flex::compress_prepend_size(&bytes);
+            assert!(!compressed.is_empty(),
+                "[CORRECTNESS FAILURE] lz4_compress_100kb: produced empty output");
+            let decompressed = lz4_flex::decompress_size_prepended(&compressed).unwrap();
+            assert_compression_valid(original_size, decompressed.len(), "lz4_compress_100kb");
             std_black_box(compressed)
         })
     });
@@ -192,9 +264,14 @@ fn bench_compression(c: &mut Criterion) {
     group.bench_function("lz4_compress_1mb", |b| {
         let bundle = create_test_bundle(1024 * 1024);
         let bytes = postcard::to_allocvec(&bundle).unwrap();
+        let original_size = bytes.len();
 
         b.iter(|| {
             let compressed = lz4_flex::compress_prepend_size(&bytes);
+            assert!(!compressed.is_empty(),
+                "[CORRECTNESS FAILURE] lz4_compress_1mb: produced empty output");
+            let decompressed = lz4_flex::decompress_size_prepended(&compressed).unwrap();
+            assert_compression_valid(original_size, decompressed.len(), "lz4_compress_1mb");
             std_black_box(compressed)
         })
     });
@@ -204,10 +281,13 @@ fn bench_compression(c: &mut Criterion) {
     group.bench_function("lz4_decompress_10kb", |b| {
         let bundle = create_test_bundle(10 * 1024);
         let bytes = postcard::to_allocvec(&bundle).unwrap();
+        let original_size = bytes.len();
         let compressed = lz4_flex::compress_prepend_size(&bytes);
 
         b.iter(|| {
             let decompressed = lz4_flex::decompress_size_prepended(&compressed).unwrap();
+            // CORRECTNESS: Validate decompression size matches
+            assert_compression_valid(original_size, decompressed.len(), "lz4_decompress_10kb");
             std_black_box(decompressed)
         })
     });
@@ -217,10 +297,12 @@ fn bench_compression(c: &mut Criterion) {
     group.bench_function("lz4_decompress_1mb", |b| {
         let bundle = create_test_bundle(1024 * 1024);
         let bytes = postcard::to_allocvec(&bundle).unwrap();
+        let original_size = bytes.len();
         let compressed = lz4_flex::compress_prepend_size(&bytes);
 
         b.iter(|| {
             let decompressed = lz4_flex::decompress_size_prepended(&compressed).unwrap();
+            assert_compression_valid(original_size, decompressed.len(), "lz4_decompress_1mb");
             std_black_box(decompressed)
         })
     });
@@ -239,11 +321,17 @@ fn bench_checksum(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(10 * 1024));
     group.bench_function("crc32_10kb", |b| {
         let data = vec![0x42; 10 * 1024];
+        // Pre-compute expected CRC for determinism check
+        let mut ref_hasher = crc32fast::Hasher::new();
+        ref_hasher.update(&data);
+        let expected_crc = ref_hasher.finalize();
 
         b.iter(|| {
             let mut hasher = crc32fast::Hasher::new();
             hasher.update(&data);
             let crc = hasher.finalize();
+            // CORRECTNESS: Validate CRC determinism
+            assert_checksum_valid(crc, expected_crc, "crc32_10kb");
             std_black_box(crc)
         })
     });
@@ -252,11 +340,15 @@ fn bench_checksum(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(100 * 1024));
     group.bench_function("crc32_100kb", |b| {
         let data = vec![0x42; 100 * 1024];
+        let mut ref_hasher = crc32fast::Hasher::new();
+        ref_hasher.update(&data);
+        let expected_crc = ref_hasher.finalize();
 
         b.iter(|| {
             let mut hasher = crc32fast::Hasher::new();
             hasher.update(&data);
             let crc = hasher.finalize();
+            assert_checksum_valid(crc, expected_crc, "crc32_100kb");
             std_black_box(crc)
         })
     });
@@ -265,11 +357,15 @@ fn bench_checksum(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(1024 * 1024));
     group.bench_function("crc32_1mb", |b| {
         let data = vec![0x42; 1024 * 1024];
+        let mut ref_hasher = crc32fast::Hasher::new();
+        ref_hasher.update(&data);
+        let expected_crc = ref_hasher.finalize();
 
         b.iter(|| {
             let mut hasher = crc32fast::Hasher::new();
             hasher.update(&data);
             let crc = hasher.finalize();
+            assert_checksum_valid(crc, expected_crc, "crc32_1mb");
             std_black_box(crc)
         })
     });
@@ -292,6 +388,9 @@ fn bench_save_load_cycle(c: &mut Criterion) {
 
         b.iter(|| {
             let path = mgr.save("player1", 0, bundle.clone()).unwrap();
+            // CORRECTNESS: Validate save file created
+            assert!(path.exists(),
+                "[CORRECTNESS FAILURE] full_save_small: save file not created");
             std_black_box(path)
         })
     });
@@ -304,6 +403,8 @@ fn bench_save_load_cycle(c: &mut Criterion) {
 
         b.iter(|| {
             let path = mgr.save("player1", 0, bundle.clone()).unwrap();
+            assert!(path.exists(),
+                "[CORRECTNESS FAILURE] full_save_medium: save file not created");
             std_black_box(path)
         })
     });
@@ -316,6 +417,8 @@ fn bench_save_load_cycle(c: &mut Criterion) {
 
         b.iter(|| {
             let path = mgr.save("player1", 0, bundle.clone()).unwrap();
+            assert!(path.exists(),
+                "[CORRECTNESS FAILURE] full_save_large: save file not created");
             std_black_box(path)
         })
     });
@@ -329,6 +432,8 @@ fn bench_save_load_cycle(c: &mut Criterion) {
 
         b.iter(|| {
             let (loaded, _path) = mgr.load_latest_slot("player1", 0).unwrap();
+            // CORRECTNESS: Validate loaded data matches saved
+            assert_round_trip_valid(&bundle, &loaded, "full_load_small");
             std_black_box(loaded)
         })
     });
@@ -342,6 +447,7 @@ fn bench_save_load_cycle(c: &mut Criterion) {
 
         b.iter(|| {
             let (loaded, _path) = mgr.load_latest_slot("player1", 0).unwrap();
+            assert_round_trip_valid(&bundle, &loaded, "full_load_large");
             std_black_box(loaded)
         })
     });
@@ -355,6 +461,8 @@ fn bench_save_load_cycle(c: &mut Criterion) {
         b.iter(|| {
             let _save_path = mgr.save("player1", 0, bundle.clone()).unwrap();
             let (loaded, _load_path) = mgr.load_latest_slot("player1", 0).unwrap();
+            // CORRECTNESS: Validate full round-trip
+            assert_round_trip_valid(&bundle, &loaded, "round_trip_100kb");
             std_black_box(loaded)
         })
     });

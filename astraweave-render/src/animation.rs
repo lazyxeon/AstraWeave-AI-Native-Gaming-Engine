@@ -378,8 +378,10 @@ impl Default for JointPalette {
 
 impl JointPalette {
     pub fn from_matrices(matrices: &[Mat4]) -> Self {
-        let mut palette = Self::default();
-        palette.joint_count = matrices.len().min(MAX_JOINTS) as u32;
+        let mut palette = Self {
+            joint_count: matrices.len().min(MAX_JOINTS) as u32,
+            ..Default::default()
+        };
 
         for (i, matrix) in matrices.iter().take(MAX_JOINTS).enumerate() {
             palette.joints[i] = JointMatrixGPU::from(*matrix);

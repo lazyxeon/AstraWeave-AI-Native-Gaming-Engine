@@ -15,6 +15,14 @@ use std::ptr::{self, NonNull};
 /// - SIMD-friendly contiguous memory
 /// - Cache-friendly iteration
 /// - Proper drop handling via function pointer
+///
+/// # Type-Erased API
+///
+/// For archetype storage, BlobVec provides type-erased operations:
+/// - `from_layout()`: Create BlobVec from runtime Layout
+/// - `push_raw()`: Push bytes with clone function
+/// - `get_raw()` / `get_raw_mut()`: Get raw pointers
+/// - `swap_remove_raw()`: Remove without returning value
 pub struct BlobVec {
     /// Raw pointer to the start of component data
     data: NonNull<u8>,
@@ -51,6 +59,40 @@ impl BlobVec {
     /// Create a new BlobVec with specified capacity
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self {
         let mut blob = Self::new::<T>();
+        if capacity > 0 {
+            blob.reserve(capacity);
+        }
+        blob
+    }
+
+    // ========================================================================
+    // Type-Erased Constructors (for ComponentMeta integration)
+    // ========================================================================
+
+    /// Create a BlobVec from a runtime Layout (type-erased).
+    ///
+    /// Used by archetype storage when component type is only known as TypeId.
+    ///
+    /// # Arguments
+    /// * `item_layout` - Memory layout for each item
+    /// * `drop_fn` - Function to drop an item (None if no drop needed)
+    pub fn from_layout(item_layout: Layout, drop_fn: Option<unsafe fn(*mut u8)>) -> Self {
+        Self {
+            data: NonNull::dangling(),
+            len: 0,
+            capacity: 0,
+            item_layout,
+            drop_fn,
+        }
+    }
+
+    /// Create a BlobVec from a runtime Layout with pre-allocated capacity.
+    pub fn from_layout_with_capacity(
+        item_layout: Layout,
+        drop_fn: Option<unsafe fn(*mut u8)>,
+        capacity: usize,
+    ) -> Self {
+        let mut blob = Self::from_layout(item_layout, drop_fn);
         if capacity > 0 {
             blob.reserve(capacity);
         }
@@ -112,6 +154,127 @@ impl BlobVec {
         let ptr = self.data.as_ptr().add(self.len * self.item_layout.size());
         ptr.cast::<T>().write(value);
         self.len += 1;
+    }
+
+    // ========================================================================
+    // Type-Erased Operations (for archetype storage)
+    // ========================================================================
+
+    /// Push raw bytes with a clone function (type-erased push).
+    ///
+    /// This is used by archetype transitions where we only have a raw pointer
+    /// and a clone function from ComponentMeta.
+    ///
+    /// # Safety
+    /// - `src` must point to valid data matching this BlobVec's layout
+    /// - `clone_fn` must correctly copy data from src to dst
+    pub unsafe fn push_raw(&mut self, src: *const u8, clone_fn: unsafe fn(*const u8, *mut u8)) {
+        if self.len == self.capacity {
+            self.reserve(1);
+        }
+
+        let dst = self.data.as_ptr().add(self.len * self.item_layout.size());
+        clone_fn(src, dst);
+        self.len += 1;
+    }
+
+    /// Get a raw pointer to the component at the specified index.
+    ///
+    /// Returns None if index is out of bounds.
+    ///
+    /// # Safety
+    /// The returned pointer is only valid while no mutations occur.
+    pub fn get_raw(&self, index: usize) -> Option<*const u8> {
+        if index >= self.len {
+            return None;
+        }
+        Some(unsafe { self.data.as_ptr().add(index * self.item_layout.size()) })
+    }
+
+    /// Get a mutable raw pointer to the component at the specified index.
+    ///
+    /// Returns None if index is out of bounds.
+    ///
+    /// # Safety
+    /// - The returned pointer is only valid while the BlobVec is not reallocated
+    /// - Caller must ensure no aliasing
+    pub fn get_raw_mut(&mut self, index: usize) -> Option<*mut u8> {
+        if index >= self.len {
+            return None;
+        }
+        Some(unsafe { self.data.as_ptr().add(index * self.item_layout.size()) })
+    }
+
+    /// Swap-remove at index without returning the value (drops it).
+    ///
+    /// This is used when removing an entity from an archetype
+    /// where we don't need to preserve the component value.
+    ///
+    /// # Panics
+    /// Panics if index is out of bounds.
+    pub fn swap_remove_raw(&mut self, index: usize) {
+        assert!(index < self.len, "index out of bounds");
+
+        let item_size = self.item_layout.size();
+        let last_index = self.len - 1;
+
+        // Drop the element at index
+        if let Some(drop_fn) = self.drop_fn {
+            unsafe {
+                let ptr = self.data.as_ptr().add(index * item_size);
+                drop_fn(ptr);
+            }
+        }
+
+        // If not the last element, copy last element to this position
+        if index != last_index {
+            unsafe {
+                let src = self.data.as_ptr().add(last_index * item_size);
+                let dst = self.data.as_ptr().add(index * item_size);
+                ptr::copy_nonoverlapping(src, dst, item_size);
+            }
+        }
+
+        self.len -= 1;
+    }
+
+    /// Swap-remove and copy bytes to destination (for archetype transitions).
+    ///
+    /// Like swap_remove_raw but copies the removed value to `dst` instead of dropping.
+    ///
+    /// # Safety
+    /// - `dst` must have enough space and proper alignment
+    /// - `clone_fn` must correctly copy the data
+    ///
+    /// # Panics
+    /// Panics if index is out of bounds.
+    pub unsafe fn swap_remove_raw_to(
+        &mut self,
+        index: usize,
+        dst: *mut u8,
+        clone_fn: unsafe fn(*const u8, *mut u8),
+    ) {
+        assert!(index < self.len, "index out of bounds");
+
+        let item_size = self.item_layout.size();
+        let last_index = self.len - 1;
+
+        // Copy the element at index to dst
+        let src = self.data.as_ptr().add(index * item_size);
+        clone_fn(src, dst);
+
+        // Drop the original at index (cast const ptr to mut for drop)
+        if let Some(drop_fn) = self.drop_fn {
+            drop_fn(src as *const u8 as *mut u8);
+        }
+
+        // If not the last element, move last element to this position
+        if index != last_index {
+            let last_src = self.data.as_ptr().add(last_index * item_size);
+            ptr::copy_nonoverlapping(last_src, src as *const u8 as *mut u8, item_size);
+        }
+
+        self.len -= 1;
     }
 
     /// Get a reference to a component at the specified index

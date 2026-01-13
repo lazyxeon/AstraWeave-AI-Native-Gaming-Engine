@@ -18,6 +18,7 @@ pub struct StatusBar;
 
 impl StatusBar {
     /// Render the status bar
+    #[allow(clippy::too_many_arguments)]
     pub fn show(
         ui: &mut Ui,
         editor_mode: &EditorMode,

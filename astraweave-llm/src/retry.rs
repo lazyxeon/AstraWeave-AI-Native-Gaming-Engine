@@ -69,11 +69,43 @@ impl RetryConfig {
         // Apply cap
         let capped_backoff = base_backoff.min(self.max_backoff_ms as f64) as u64;
 
-        // Add jitter (random ±25%) to reduce thundering herd
+        // Add jitter (deterministic ±25% based on attempt) to reduce thundering herd
+        // Deterministic: same attempt number always produces same jitter
         let final_backoff = if self.jitter {
             let jitter_range = (capped_backoff as f64 * 0.25) as u64;
-            let jitter = (rand::random::<u64>() % (jitter_range * 2)).saturating_sub(jitter_range);
-            capped_backoff.saturating_add(jitter as u64)
+            // Deterministic jitter derived from attempt number
+            let jitter_seed = (attempt as u64).wrapping_mul(0x517cc1b727220a95);
+            let jitter = (jitter_seed % (jitter_range * 2 + 1)).saturating_sub(jitter_range);
+            capped_backoff.saturating_add(jitter)
+        } else {
+            capped_backoff
+        };
+
+        Duration::from_millis(final_backoff)
+    }
+
+    /// Calculate backoff duration with seeded RNG for external determinism control
+    /// 
+    /// # Determinism
+    /// 
+    /// Use this variant when you need control over the RNG source for replay systems.
+    pub fn backoff_for_attempt_seeded<R: rand::Rng>(&self, attempt: u32, rng: &mut R) -> Duration {
+        if self.max_attempts == 0 {
+            return Duration::from_millis(0);
+        }
+
+        // Exponential backoff: initial * multiplier^attempt
+        let base_backoff =
+            self.initial_backoff_ms as f64 * self.backoff_multiplier.powi(attempt as i32);
+
+        // Apply cap
+        let capped_backoff = base_backoff.min(self.max_backoff_ms as f64) as u64;
+
+        // Add jitter (random ±25%) from provided RNG
+        let final_backoff = if self.jitter {
+            let jitter_range = (capped_backoff as f64 * 0.25) as u64;
+            let jitter = (rng.random::<u64>() % (jitter_range * 2 + 1)).saturating_sub(jitter_range);
+            capped_backoff.saturating_add(jitter)
         } else {
             capped_backoff
         };

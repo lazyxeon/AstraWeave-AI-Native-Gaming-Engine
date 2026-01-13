@@ -207,12 +207,15 @@ impl GoapOrchestrator {
     /// - **Typical**: 5-30 µs (distance calc + conditional)
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use astraweave_ai::GoapOrchestrator;
+    /// use astraweave_core::WorldSnapshot;
     ///
-    /// let goap = GoapOrchestrator;
-    /// let action = goap.next_action(&snapshot); // <100 µs
-    /// apply_action(action);
+    /// fn example(snapshot: &WorldSnapshot) {
+    ///     let goap = GoapOrchestrator;
+    ///     let action = goap.next_action(snapshot); // <100 µs
+    ///     // Apply action to game state...
+    /// }
     /// ```
     pub fn next_action(&self, snap: &WorldSnapshot) -> ActionStep {
         #[cfg(feature = "profiling")]

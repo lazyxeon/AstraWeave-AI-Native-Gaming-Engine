@@ -412,8 +412,8 @@ fn compress_to_bc(
     height: u32,
     format: CompressionFormat,
 ) -> Result<Vec<u8>> {
-    let block_width = (width + 3) / 4;
-    let block_height = (height + 3) / 4;
+    let block_width = width.div_ceil(4);
+    let block_height = height.div_ceil(4);
     let num_blocks = (block_width * block_height) as usize;
 
     let block_size = match format {
@@ -537,7 +537,7 @@ pub fn infer_config_from_path(path: &Path) -> BakeConfig {
         config.color_space = ColorSpace::Linear;
         config.compression = CompressionFormat::Bc5;
     }
-    // Detect ORM/metallic-roughness-AO maps
+    // Detect ORM/metallic-roughness-AO and AO/occlusion maps
     else if filename.contains("orm")
         || filename.contains("roughness")
         || filename.contains("metallic")
@@ -545,12 +545,9 @@ pub fn infer_config_from_path(path: &Path) -> BakeConfig {
         || filename.contains("_mra.")
         || filename.ends_with("_mra.png")
         || filename.ends_with("_orm.png")
+        || filename.contains("ao")
+        || filename.contains("occlusion")
     {
-        config.color_space = ColorSpace::Linear;
-        config.compression = CompressionFormat::Bc7;
-    }
-    // Detect ambient occlusion
-    else if filename.contains("ao") || filename.contains("occlusion") {
         config.color_space = ColorSpace::Linear;
         config.compression = CompressionFormat::Bc7;
     }

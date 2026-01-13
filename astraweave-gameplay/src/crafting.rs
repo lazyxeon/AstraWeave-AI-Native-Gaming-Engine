@@ -20,6 +20,9 @@ pub struct RecipeBook {
 }
 
 impl RecipeBook {
+    /// Non-deterministic craft (legacy compatibility).
+    /// For deterministic behavior, use `craft_seeded` instead.
+    #[deprecated(note = "Use craft_seeded for deterministic behavior")]
     pub fn craft(&self, name: &str, inv: &mut Inventory) -> Option<Item> {
         let r = self.recipes.iter().find(|r| r.name == name)?;
         // check costs
@@ -43,6 +46,46 @@ impl RecipeBook {
         // create item
         let itm = Item {
             id: rand::random::<u32>(),
+            name: r.name.clone(),
+            kind: r.output_item.clone(),
+            echo: None,
+        };
+        Some(itm)
+    }
+
+    /// Deterministic craft using seeded RNG.
+    /// 
+    /// # Determinism
+    /// 
+    /// This method guarantees identical item IDs given:
+    /// - Same recipe name
+    /// - Same inventory state
+    /// - Same RNG state
+    /// 
+    /// Use this for gameplay systems requiring determinism (multiplayer, replay).
+    pub fn craft_seeded<R: rand::Rng>(&self, name: &str, inv: &mut Inventory, rng: &mut R) -> Option<Item> {
+        let r = self.recipes.iter().find(|r| r.name == name)?;
+        // check costs
+        for c in &r.costs {
+            let have = inv
+                .resources
+                .iter()
+                .find(|(k, _)| *k == c.kind)
+                .map(|(_, n)| *n)
+                .unwrap_or(0);
+            if have < c.count {
+                return None;
+            }
+        }
+        // pay costs
+        for c in &r.costs {
+            if !inv.remove_resource(c.kind, c.count) {
+                return None;
+            }
+        }
+        // create item with deterministic ID
+        let itm = Item {
+            id: rng.random::<u32>(),
             name: r.name.clone(),
             kind: r.output_item.clone(),
             echo: None,

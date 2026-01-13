@@ -15,11 +15,12 @@ pub struct Memory {
 }
 
 /// Types of memories in the hierarchical memory system
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 pub enum MemoryType {
     /// Short-term sensory impressions
     Sensory,
     /// Active working memory for current tasks
+    #[default]
     Working,
     /// Episodic memories of specific events
     Episodic,
@@ -31,12 +32,6 @@ pub enum MemoryType {
     Emotional,
     /// Social memories about relationships and interactions
     Social,
-}
-
-impl Default for MemoryType {
-    fn default() -> Self {
-        MemoryType::Working
-    }
 }
 
 /// Content of a memory with structured data
@@ -484,7 +479,7 @@ impl Memory {
         // Boost from recent access
         let access_boost = if time_since_access < 1.0 { 0.2 } else { 0.0 };
 
-        (base_strength + access_boost).min(1.0).max(0.0)
+        (base_strength + access_boost).clamp(0.0, 1.0)
     }
 
     /// Add an association to another memory
@@ -497,7 +492,7 @@ impl Memory {
         let association = MemoryAssociation {
             memory_id,
             association_type,
-            strength: strength.max(0.0).min(1.0),
+            strength: strength.clamp(0.0, 1.0),
             formed_at: Utc::now(),
         };
 

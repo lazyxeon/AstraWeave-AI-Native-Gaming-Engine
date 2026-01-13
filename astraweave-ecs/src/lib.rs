@@ -50,6 +50,7 @@ use astraweave_profiling::{plot, span};
 pub mod archetype;
 pub mod blob_vec;
 pub mod command_buffer;
+pub mod component_meta;
 pub mod entity_allocator;
 pub mod events;
 pub mod rng;
@@ -71,6 +72,7 @@ use std::collections::HashMap;
 
 use archetype::{ArchetypeSignature, ArchetypeStorage};
 pub use command_buffer::CommandBuffer;
+use component_meta::ComponentMetaRegistry;
 pub use entity_allocator::{Entity, EntityAllocator};
 pub use events::{Event, EventReader, Events};
 pub use rng::Rng;
@@ -98,12 +100,29 @@ impl SystemStage {
 }
 // Entity and EntityAllocator are now exported from entity_allocator module
 
+/// The ECS World: contains all entities, components, and resources.
+///
+/// # Component Storage
+///
+/// The World supports two component storage modes:
+///
+/// 1. **Legacy Mode (default)**: Components stored in `Box<dyn Any>`.
+///    - Works for any component type
+///    - Higher overhead due to heap indirection
+///
+/// 2. **BlobVec Mode (optimized)**: Components stored in contiguous BlobVec.
+///    - Requires component to implement Clone
+///    - Register with `world.register_component::<T>()`
+///    - 2-10× faster iteration
 #[derive(Default)]
 pub struct World {
     entity_allocator: EntityAllocator,
     archetypes: ArchetypeStorage,
     resources: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>, // singletons
     type_registry: TypeRegistry,
+    /// Component metadata registry for BlobVec storage
+    /// Components registered here use the high-performance BlobVec path
+    component_registry: ComponentMetaRegistry,
 }
 
 impl World {
@@ -144,6 +163,15 @@ impl World {
     #[inline]
     pub fn is_alive(&self, entity: Entity) -> bool {
         self.entity_allocator.is_alive(entity)
+    }
+
+    /// Check if a component type is registered for BlobVec storage.
+    ///
+    /// Components registered with `register_component::<T>()` where T: Clone
+    /// will use the high-performance BlobVec path.
+    #[inline]
+    pub fn is_component_registered_blob<T: Component>(&self) -> bool {
+        self.component_registry.is_registered(TypeId::of::<T>())
     }
 
     pub fn insert<T: Component>(&mut self, e: Entity, c: T) {
@@ -492,8 +520,10 @@ impl World {
     /// let mut world = World::new();
     /// world.register_component::<Position>();
     /// ```
-    pub fn register_component<T: Component>(&mut self) {
+    pub fn register_component<T: Component + Clone>(&mut self) {
         self.type_registry.register::<T>();
+        // Also register with component_meta for BlobVec storage
+        self.component_registry.register::<T>();
     }
 
     /// Insert a type-erased component (used by CommandBuffer).

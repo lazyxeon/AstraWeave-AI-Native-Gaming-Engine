@@ -196,29 +196,31 @@ impl ContextValue {
     }
 }
 
-impl ToString for ContextValue {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for ContextValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ContextValue::String(s) => s.clone(),
-            ContextValue::Number(n) => n.to_string(),
-            ContextValue::Boolean(b) => b.to_string(),
+            ContextValue::String(s) => write!(f, "{}", s),
+            ContextValue::Number(n) => write!(f, "{}", n),
+            ContextValue::Boolean(b) => write!(f, "{}", b),
             ContextValue::Array(arr) => {
-                format!(
-                    "[{}]",
-                    arr.iter()
-                        .map(|v| v.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
+                write!(f, "[")?;
+                for (i, v) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", v)?;
+                }
+                write!(f, "]")
             }
             ContextValue::Object(obj) => {
-                format!(
-                    "{{{}}}",
-                    obj.iter()
-                        .map(|(k, v)| format!("{}: {}", k, v.to_string()))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
+                write!(f, "{{")?;
+                for (i, (k, v)) in obj.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", k, v)?;
+                }
+                write!(f, "}}")
             }
         }
     }

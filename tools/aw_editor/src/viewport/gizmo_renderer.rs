@@ -192,6 +192,7 @@ impl GizmoRendererWgpu {
     /// * `entity_position` - 2D grid position of selected entity
     /// * `hovered_axis` - Currently hovered axis for visual highlighting
     /// * `queue` - wgpu queue
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
