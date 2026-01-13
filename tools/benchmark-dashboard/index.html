@@ -260,13 +260,64 @@
             color: #666;
             font-size: 0.9em;
         }
+        
+        /* Alert styles for regression detection */
+        .alert-success {
+            padding: 20px;
+            background: rgba(67, 233, 123, 0.1);
+            border: 1px solid rgba(67, 233, 123, 0.3);
+            border-radius: 8px;
+            color: #43e97b;
+        }
+        
+        .alert-warning {
+            padding: 20px;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 8px;
+            color: #ff6b6b;
+        }
+        
+        .alert-info {
+            padding: 20px;
+            background: rgba(79, 172, 254, 0.1);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 8px;
+            color: #4facfe;
+        }
+        
+        /* Production health dashboard styles */
+        #production-health .health-grid {
+            margin-bottom: 20px;
+        }
+        
+        #production-health .health-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        #production-health .health-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Benchmark version badge */
+        .version-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: #0f0c29;
+            border-radius: 16px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 12px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>⚡ AstraWeave Benchmark Dashboard</h1>
-            <div class="subtitle">Performance Telemetry & Regression Tracking</div>
+            <h1>⚡ AstraWeave Benchmark Dashboard <span class="version-badge">v5.54</span></h1>
+            <div class="subtitle">Performance Telemetry & Regression Tracking | Production-Ready Benchmark Infrastructure</div>
         </header>
         
         <div class="filters">
@@ -304,6 +355,18 @@
                 <select id="benchmark-select">
                     <option value="">Loading...</option>
                 </select>
+            </div>
+        </div>
+        
+        <div class="chart-container" id="health-container" style="margin-bottom: 30px;">
+            <div class="chart-title">🏥 Production Health Summary</div>
+            <div id="production-health"></div>
+        </div>
+        
+        <div class="chart-container" id="alerts-container" style="margin-bottom: 30px;">
+            <div class="chart-title">⚡ Regression Detection</div>
+            <div id="regression-alerts">
+                <div class="loading">Analyzing benchmark data...</div>
             </div>
         </div>
         

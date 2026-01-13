@@ -1,0 +1,544 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+   Compiling astraweave-input v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling astraweave-nav v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+   Compiling asset_signing v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\asset_signing)
+   Compiling astraweave-cinematics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-cinematics)
+   Compiling astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: unused import: `TextureStreamingStats`
+    --> astraweave-render\tests\coverage_booster_render.rs:5415:73
+     |
+5415 |     use astraweave_render::texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `ResourceTable`
+    --> astraweave-render\tests\coverage_booster_render.rs:7060:75
+     |
+7060 |     use astraweave_render::graph::{RenderGraph, RenderNode, GraphContext, ResourceTable};
+     |                                                                           ^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+    --> astraweave-render\tests\coverage_booster_render.rs:7205:9
+     |
+7205 |     use std::collections::HashMap;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TextureStreamingStats`
+    --> astraweave-render\tests\coverage_booster_render.rs:7444:73
+     |
+7444 |     use astraweave_render::texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `VxgiConfig`
+    --> astraweave-render\tests\coverage_booster_render.rs:7642:49
+     |
+7642 |     use astraweave_render::gi::{HybridGiConfig, VxgiConfig};
+     |                                                 ^^^^^^^^^^
+
+warning: unused import: `ResourceTable`
+    --> astraweave-render\tests\coverage_booster_render.rs:8331:50
+     |
+8331 |     use astraweave_render::graph::{GraphContext, ResourceTable};
+     |                                                  ^^^^^^^^^^^^^
+
+warning: unused import: `std::any::Any`
+    --> astraweave-render\tests\coverage_booster_render.rs:8332:9
+     |
+8332 |     use std::any::Any;
+     |         ^^^^^^^^^^^^^
+
+warning: unused import: `glam::Vec3`
+    --> astraweave-render\tests\coverage_booster_render.rs:8974:9
+     |
+8974 |     use glam::Vec3;
+     |         ^^^^^^^^^^
+
+warning: unused import: `MaterialGpu`
+    --> astraweave-render\tests\coverage_booster_render.rs:9069:39
+     |
+9069 |     use astraweave_render::material::{MaterialGpu, MaterialLayerDesc, MaterialPackDesc, ArrayLayout, MaterialLoadStats};
+     |                                       ^^^^^^^^^^^
+
+warning: unused import: `Mesh`
+    --> astraweave-render\tests\coverage_booster_render.rs:9243:79
+     |
+9243 |     use astraweave_render::types::{Vertex, SkinnedVertex, Instance, Material, Mesh, InstanceRaw, ClusterDims, cluster_index};
+     |                                                                               ^^^^
+
+warning: unused import: `Vec4`
+    --> astraweave-render\tests\coverage_booster_render.rs:9244:28
+     |
+9244 |     use glam::{Mat4, Vec3, Vec4};
+     |                            ^^^^
+
+warning: unused import: `GpuDecal`
+    --> astraweave-render\tests\coverage_booster_render.rs:9416:60
+     |
+9416 |     use astraweave_render::decals::{Decal, DecalBlendMode, GpuDecal};
+     |                                                            ^^^^^^^^
+
+warning: unused imports: `AnimationChannel`, `AnimationClip`, `ChannelData`, and `JointPalette`
+    --> astraweave-render\tests\coverage_booster_render.rs:9707:9
+     |
+9707 |         AnimationClip, AnimationChannel, AnimationState, ChannelData, 
+     |         ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^                  ^^^^^^^^^^^
+9708 |         Interpolation, Joint, Transform, JointPalette, MAX_JOINTS
+     |                                          ^^^^^^^^^^^^
+
+warning: unused import: `MaterialDefinitionExtended`
+    --> astraweave-render\tests\coverage_booster_render.rs:9788:9
+     |
+9788 |         MaterialDefinitionExtended, MaterialGpuExtended,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `queue`
+    --> astraweave-render\tests\coverage_booster_render.rs:4646:18
+     |
+4646 |     let (device, queue) = adapter
+     |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_queue`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `queue`
+    --> astraweave-render\tests\coverage_booster_render.rs:4709:18
+     |
+4709 |     let (device, queue) = adapter
+     |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_queue`
+
+warning: unused variable: `resources`
+    --> astraweave-render\tests\coverage_booster_render.rs:4997:9
+     |
+4997 |     let resources = node.resources().unwrap();
+     |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_resources`
+
+warning: unused variable: `tx`
+    --> astraweave-render\tests\coverage_booster_render.rs:5033:10
+     |
+5033 |     let (tx, rx) = tokio::sync::watch::channel(());
+     |          ^^ help: if this is intentional, prefix it with an underscore: `_tx`
+
+warning: unused variable: `sky1`
+    --> astraweave-render\tests\coverage_booster_render.rs:5174:9
+     |
+5174 |     let sky1 = SkyRenderer::new(config1);
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_sky1`
+
+warning: unused variable: `tod1`
+    --> astraweave-render\tests\coverage_booster_render.rs:6987:9
+     |
+6987 |     let tod1 = TimeOfDay::new(0.0, 1.0);   // midnight, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod1`
+
+warning: unused variable: `tod2`
+    --> astraweave-render\tests\coverage_booster_render.rs:6988:9
+     |
+6988 |     let tod2 = TimeOfDay::new(6.0, 1.0);   // dawn, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod2`
+
+warning: unused variable: `tod3`
+    --> astraweave-render\tests\coverage_booster_render.rs:6989:9
+     |
+6989 |     let tod3 = TimeOfDay::new(12.0, 1.0);  // noon, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod3`
+
+warning: unused variable: `tod4`
+    --> astraweave-render\tests\coverage_booster_render.rs:6990:9
+     |
+6990 |     let tod4 = TimeOfDay::new(18.0, 1.0);  // dusk, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod4`
+
+warning: unused variable: `tod5`
+    --> astraweave-render\tests\coverage_booster_render.rs:6991:9
+     |
+6991 |     let tod5 = TimeOfDay::new(23.0, 1.0);  // late night, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod5`
+
+warning: unused variable: `tod_fast`
+    --> astraweave-render\tests\coverage_booster_render.rs:6994:9
+     |
+6994 |     let tod_fast = TimeOfDay::new(12.0, 10.0);   // noon, 10x speed
+     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_fast`
+
+warning: unused variable: `tod_slow`
+    --> astraweave-render\tests\coverage_booster_render.rs:6995:9
+     |
+6995 |     let tod_slow = TimeOfDay::new(12.0, 0.1);    // noon, 0.1x speed
+     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_slow`
+
+warning: unused variable: `tod_paused`
+    --> astraweave-render\tests\coverage_booster_render.rs:6996:9
+     |
+6996 |     let tod_paused = TimeOfDay::new(12.0, 0.0);  // noon, paused
+     |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_paused`
+
+warning: unused variable: `tod_boundary`
+    --> astraweave-render\tests\coverage_booster_render.rs:6999:9
+     |
+6999 |     let tod_boundary = TimeOfDay::new(24.0, 1.0);
+     |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_boundary`
+
+warning: unused variable: `tod_negative_scale`
+    --> astraweave-render\tests\coverage_booster_render.rs:7000:9
+     |
+7000 |     let tod_negative_scale = TimeOfDay::new(0.0, -1.0); // negative time scale
+     |         ^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_negative_scale`
+
+warning: unused variable: `usage_storage`
+    --> astraweave-render\tests\coverage_booster_render.rs:8864:9
+     |
+8864 |     let usage_storage = TextureUsages::STORAGE_BINDING;
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_usage_storage`
+
+warning: unused variable: `usage_render`
+    --> astraweave-render\tests\coverage_booster_render.rs:8865:9
+     |
+8865 |     let usage_render = TextureUsages::RENDER_ATTACHMENT;
+     |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_usage_render`
+
+warning: unused variable: `usage_copy`
+    --> astraweave-render\tests\coverage_booster_render.rs:8866:9
+     |
+8866 |     let usage_copy = TextureUsages::COPY_SRC | TextureUsages::COPY_DST;
+     |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_usage_copy`
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4356:5
+     |
+4356 |     system.add_decal(decal1);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+     = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+     |
+4356 |     let _ = system.add_decal(decal1);
+     |     +++++++
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4357:5
+     |
+4357 |     system.add_decal(decal2);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+     |
+4357 |     let _ = system.add_decal(decal2);
+     |     +++++++
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4358:5
+     |
+4358 |     system.add_decal(decal3);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+     |
+4358 |     let _ = system.add_decal(decal3);
+     |     +++++++
+
+warning: `astraweave-render` (test "coverage_booster_render") generated 35 warnings (run `cargo fix --test "coverage_booster_render"` to apply 14 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 43s
+     Running tests\coverage_booster_render.rs (target\llvm-cov-target\debug\deps\coverage_booster_render-8875a0a33052e923.exe)
+
+running 167 tests
+test test_advanced_post_types_wave21 ... ok
+test test_camera_and_controller ... ok
+test test_camera_controller_comprehensive ... ok
+test test_animation_interpolation ... ok
+test test_cpu_mesh_comprehensive_wave20 ... ok
+test test_create_blend_state_wave20 ... ok
+test test_animation_types_wave21 ... ok
+test test_blend_mode_enum_wave20 ... ok
+test test_cone_tracing_shader_wave19 ... ok
+test test_culling_additional_wave21 ... ok
+test test_culling_details_wave18 ... ok
+test test_debug_quad_module ... ok
+test test_decals_types_wave21 ... ok
+test test_culling_node_detailed ... ok
+test test_culling_node_module ... ok
+test test_culling_node_comprehensive_wave19 ... ok
+test test_clustered_renderer_extensive ... ok
+test test_deferred_gbuffer_formats ... ok
+test test_effects_types_wave21 ... ok
+test test_environment_additional_coverage ... ok
+test test_deferred_types_wave21 ... ok
+test test_environment_additional_features ... ok
+test test_environment_extended_coverage_wave19 ... ok
+test test_environment_extensive ... ok
+test test_environment_time_of_day_detailed ... ok
+test test_environment_types_wave21 ... ok
+test test_environment_full_coverage ... ok
+test test_environment_weather_comprehensive ... ok
+test test_environment_weather_sky_wave18 ... ok
+test test_gi_hybrid_config ... ok
+test test_gpu_memory_module ... ok
+test test_gpu_particles_types_wave21 ... ok
+test test_advanced_post_processing ... ok
+test test_culling_pipeline_extensive ... ok
+test test_decal_system_comprehensive ... ok
+test test_graph_adapter_wave21 ... ok
+test test_graph_adapter_detailed ... ok
+test test_graph_additional_coverage ... ok
+test test_deferred_renderer_comprehensive ... ok
+test test_graph_more_paths_wave14 ... ok
+test test_hybrid_gi_config_wave19 ... ok
+test test_graph_context_creation_wave20 ... ok
+test test_gpu_particles_comprehensive ... ok
+test test_deferred_renderer_more_coverage ... ok
+test test_graph_adapter_full_path ... ok
+test test_graph_adapter_integration ... ok
+test test_environment_sky_renderer_detailed ... ok
+test test_ibl_manager_types_wave21 ... ok
+test test_instance_aabb_additional_wave19 ... ok
+test test_ibl_edge_cases_extended_wave14 ... ok
+test test_lod_generator_extensive ... ok
+test test_material_comprehensive_fields ... ok
+test test_material_comprehensive_wave18 ... ok
+test test_material_extended_coverage ... ok
+test test_material_extended_types_wave21 ... ok
+test test_material_layer_desc_wave18 ... ok
+test test_material_layer_detailed_paths ... ok
+test test_material_loader_comprehensive ... ok
+test test_material_loader_edge_cases ... ok
+test test_material_loader_full_workflow ... ok
+test test_material_loader_more_coverage ... ok
+test test_material_more_coverage_wave14 ... ok
+test test_ibl_manager_methods ... ok
+test test_ibl_manager_edge_cases ... ok
+test test_material_types_wave21 ... ok
+test test_mesh_registry_types_wave21 ... ok
+test test_mesh_types_wave21 ... ok
+test test_mesh_vertex_comprehensive_wave20 ... ok
+test test_overlay_module_wave21 ... ok
+test test_primitives_module ... ok
+test test_msaa_types_wave21 ... ok
+test test_ibl_capture_and_bake ... ok
+test test_ibl_additional_coverage ... ok
+test test_render_graph_comprehensive_wave18 ... ok
+test test_ibl_manager_detailed ... ok
+test test_instancing_system ... ok
+test test_msaa_module ... ok
+test test_ibl_extended_wave18 ... ok
+test test_render_graph_module ... ok
+test test_render_extra_systems ... ok
+test test_render_core_systems ... ok
+test test_renderer_bake_environment_wave16 ... ok
+test test_renderer_additional_methods_wave18 ... ok
+test test_renderer_bake_environment ... ok
+test test_render_systems_logic ... ok
+test test_renderer_cascade_and_shadow_methods ... ok
+test test_renderer_full_mesh_creation_wave16 ... ok
+test test_renderer_extensive_methods ... ok
+test test_renderer_full_pipeline ... ok
+test test_renderer_material_params ... ok
+test test_renderer_mesh_creation_methods ... ok
+test test_render_advanced_features ... ok
+test test_render_loop_and_materials ... ok
+test test_renderer_internal_methods ... ok
+test test_renderer_resize_and_accessors ... ok
+test test_renderer_mesh_methods_wave16 ... ok
+test test_renderer_more_coverage ... ok
+test test_renderer_model_management ... ok
+test test_renderer_more_methods ... ok
+test test_renderer_texture_methods_wave16 ... ok
+test test_renderer_shadow_material_params_wave16 ... ok
+test test_renderer_timeline_cinematics_wave16 ... ok
+test test_renderer_more_accessors_wave14 ... ok
+test test_renderer_skinned_mesh_wave16 ... ok
+test test_residency_extended_coverage ... ok
+test test_residency_extended_wave18 ... ok
+test test_residency_manager_detailed ... ok
+test test_residency_module ... ok
+test test_residency_types_wave21 ... ok
+test test_resource_table_error_paths_wave20 ... ok
+test test_renderer_skinned_mesh ... ok
+test test_renderer_texture_methods ... ok
+test test_shadow_csm_cascades_wave18 ... ok
+test test_sky_renderer_extended ... ok
+test test_texture_additional_paths_wave19 ... ok
+test test_texture_additional_paths_wave21 ... ok
+test test_renderer_update_camera_wave16 ... ok
+test test_renderer_weather_wave16 ... ok
+test test_texture_edge_cases_wave14 ... ok
+test test_sky_and_time_comprehensive ... ok
+test test_renderer_weather_and_environment ... ok
+test test_renderer_water_system ... ok
+test test_renderer_timeline_methods ... ok
+test test_texture_streaming_additional_wave20 ... ok
+test test_texture_streaming_comprehensive ... ok
+test test_shadow_csm_extensive ... ok
+test test_texture_streaming_detailed_wave14 ... ok
+test test_texture_streaming_eviction_and_stats ... ok
+test test_texture_streaming_load_request_ordering_wave19 ... ok
+test test_texture_more_variants ... ok
+test test_texture_streaming_manager_comprehensive_wave19 ... ok
+test test_texture_streaming_manager_full ... ok
+test test_texture_extended_coverage ... ok
+test test_texture_streaming_stats_wave19 ... ok
+test test_texture_streaming_structures ... ok
+test test_texture_module ... ok
+test test_texture_streaming_priority_ordering ... ok
+test test_texture_streaming_stats_coverage ... ok
+test test_texture_streaming_sync ... ok
+test test_texture_streaming_wave18 ... ok
+test test_transparency_advanced ... ok
+test test_transparency_depth_sorting_edge_cases_wave20 ... ok
+test test_transparent_instance_struct_wave20 ... ok
+test test_types_module_wave21 ... ok
+test test_transparency_types_wave21 ... ok
+test test_vertex_compression ... ok
+test test_transparency_manager_comprehensive_wave20 ... ok
+test test_voxel_radiance_wave19 ... ok
+test test_voxel_vertex_and_material_wave19 ... ok
+test test_voxel_vertex_and_material_wave21 ... ok
+test test_voxelization_config_comprehensive_wave21 ... ok
+test test_voxelization_mesh_and_config ... ok
+test test_texture_loading_paths_wave18 ... ok
+test test_voxelization_pipeline_gpu_creation ... ok
+test test_voxelization_stats_wave19 ... ok
+test test_voxelization_config_comprehensive_wave19 ... ok
+test test_voxelization_config_and_mesh ... ok
+test test_voxelization_mesh_wave19 ... ok
+test test_voxelization_pipeline_comprehensive ... ok
+test test_vxgi_config_comprehensive_wave19 ... ok
+test test_voxelization_structures ... ok
+test test_water_additional_wave18 ... ok
+test test_texture_streaming_detailed ... ok
+test test_texture_creation_variants ... ok
+test test_vxgi_additional_coverage ... ok
+test test_weather_system_comprehensive ... ok
+test test_texture_remaining_coverage ... ok
+
+test result: ok. 167 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 54.42s
+
+Filename                                              Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+astraweave-asset\src\cell_loader.rs                       142               142     0.00%           8                 8     0.00%          72                72     0.00%           0                 0         -
+astraweave-asset\src\lib.rs                              2392              2377     0.63%         137               135     1.46%        1302              1288     1.08%           0                 0         -
+astraweave-asset\src\nanite_preprocess.rs                 814               814     0.00%          32                32     0.00%         493               493     0.00%           0                 0         -
+astraweave-behavior\src\goap.rs                           276               276     0.00%          32                32     0.00%         202               202     0.00%           0                 0         -
+astraweave-behavior\src\goap_cache.rs                     214               214     0.00%          27                27     0.00%         176               176     0.00%           0                 0         -
+astraweave-behavior\src\interner.rs                        44                44     0.00%           8                 8     0.00%          34                34     0.00%           0                 0         -
+astraweave-behavior\src\lib.rs                             14                14     0.00%           2                 2     0.00%          10                10     0.00%           0                 0         -
+astraweave-cinematics\src\lib.rs                           72                51    29.17%           5                 2    60.00%          61                44    27.87%           0                 0         -
+astraweave-core\src\capture_replay.rs                      62                62     0.00%           4                 4     0.00%          35                35     0.00%           0                 0         -
+astraweave-core\src\ecs_adapter.rs                         40                40     0.00%           3                 3     0.00%          34                34     0.00%           0                 0         -
+astraweave-core\src\ecs_components.rs                      21                21     0.00%           3                 3     0.00%          13                13     0.00%           0                 0         -
+astraweave-core\src\ecs_events.rs                          19                19     0.00%           5                 5     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\metrics.rs                            112               112     0.00%          15                15     0.00%          61                61     0.00%           0                 0         -
+astraweave-core\src\perception.rs                          26                26     0.00%           2                 2     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\schema.rs                              77                77     0.00%          13                13     0.00%          98                98     0.00%           0                 0         -
+astraweave-core\src\sim.rs                                  5                 5     0.00%           1                 1     0.00%           3                 3     0.00%           0                 0         -
+astraweave-core\src\tool_vocabulary.rs                      2                 2     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-core\src\tools.rs                              340               340     0.00%          10                10     0.00%         173               173     0.00%           0                 0         -
+astraweave-core\src\world.rs                              217               217     0.00%          29                29     0.00%         144               144     0.00%           0                 0         -
+astraweave-ecs\src\archetype.rs                           335               335     0.00%          28                28     0.00%         218               218     0.00%           0                 0         -
+astraweave-ecs\src\blob_vec.rs                            233               233     0.00%          15                15     0.00%         145               145     0.00%           0                 0         -
+astraweave-ecs\src\command_buffer.rs                        8                 8     0.00%           1                 1     0.00%           4                 4     0.00%           0                 0         -
+astraweave-ecs\src\component_meta.rs                       14                14     0.00%           3                 3     0.00%           9                 9     0.00%           0                 0         -
+astraweave-ecs\src\entity_allocator.rs                     97                97     0.00%          16                16     0.00%          90                90     0.00%           0                 0         -
+astraweave-ecs\src\lib.rs                                 339               339     0.00%          27                27     0.00%         226               226     0.00%           0                 0         -
+astraweave-ecs\src\sparse_set.rs                           99                99     0.00%          14                14     0.00%          68                68     0.00%           0                 0         -
+astraweave-ecs\src\system_param.rs                         99                99     0.00%           5                 5     0.00%          80                80     0.00%           0                 0         -
+astraweave-ecs\src\type_registry.rs                        47                47     0.00%           6                 6     0.00%          43                43     0.00%           0                 0         -
+astraweave-gameplay\src\biome_spawn.rs                     58                58     0.00%           1                 1     0.00%          38                38     0.00%           0                 0         -
+astraweave-gameplay\src\combat.rs                          82                82     0.00%           3                 3     0.00%          73                73     0.00%           0                 0         -
+astraweave-gameplay\src\combat_physics.rs                   2                 2     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-gameplay\src\crafting.rs                        50                50     0.00%           5                 5     0.00%          43                43     0.00%           0                 0         -
+astraweave-gameplay\src\dialogue.rs                       225               225     0.00%          12                12     0.00%         126               126     0.00%           0                 0         -
+astraweave-gameplay\src\items.rs                           36                36     0.00%           6                 6     0.00%          25                25     0.00%           0                 0         -
+astraweave-gameplay\src\quests.rs                          37                37     0.00%           3                 3     0.00%          24                24     0.00%           0                 0         -
+astraweave-gameplay\src\stats.rs                           32                32     0.00%           4                 4     0.00%          34                34     0.00%           0                 0         -
+astraweave-gameplay\src\veilweaver_slice.rs               154               154     0.00%          13                13     0.00%         119               119     0.00%           0                 0         -
+astraweave-gameplay\src\veilweaver_tutorial.rs            156               156     0.00%          16                16     0.00%         120               120     0.00%           0                 0         -
+astraweave-gameplay\src\weave_portals.rs                    8                 8     0.00%           1                 1     0.00%           4                 4     0.00%           0                 0         -
+astraweave-materials\src\lib.rs                           463               389    15.98%          23                15    34.78%         227               185    18.50%           0                 0         -
+astraweave-nav\src\lib.rs                                 419               419     0.00%          24                24     0.00%         250               250     0.00%           0                 0         -
+astraweave-physics\src\cloth.rs                           542               542     0.00%          33                33     0.00%         365               365     0.00%           0                 0         -
+astraweave-physics\src\destruction.rs                     403               403     0.00%          42                42     0.00%         354               354     0.00%           0                 0         -
+astraweave-physics\src\environment.rs                     456               456     0.00%          41                41     0.00%         310               310     0.00%           0                 0         -
+astraweave-physics\src\gravity.rs                         204               204     0.00%          26                26     0.00%         178               178     0.00%           0                 0         -
+astraweave-physics\src\lib.rs                             846               846     0.00%          40                40     0.00%         551               551     0.00%           0                 0         -
+astraweave-physics\src\projectile.rs                      118               118     0.00%          14                14     0.00%         114               114     0.00%           0                 0         -
+astraweave-physics\src\ragdoll.rs                         435               435     0.00%          22                22     0.00%         406               406     0.00%           0                 0         -
+astraweave-physics\src\vehicle.rs                         577               577     0.00%          51                51     0.00%         472               472     0.00%           0                 0         -
+astraweave-render\src\advanced_post.rs                    222                 2    99.10%           9                 0   100.00%         314                 2    99.36%           0                 0         -
+astraweave-render\src\animation.rs                        286                70    75.52%          17                 0   100.00%         225                53    76.44%           0                 0         -
+astraweave-render\src\camera.rs                           235                18    92.34%          16                 0   100.00%         186                12    93.55%           0                 0         -
+astraweave-render\src\clustered.rs                        225                 4    98.22%           3                 0   100.00%         105                 4    96.19%           0                 0         -
+astraweave-render\src\clustered_forward.rs                220                 2    99.09%          12                 0   100.00%         255                 0   100.00%           0                 0         -
+astraweave-render\src\clustered_megalights.rs             186                 4    97.85%           3                 0   100.00%         374                 1    99.73%           0                 0         -
+astraweave-render\src\culling.rs                          319                63    80.25%          21                 5    76.19%         317                47    85.17%           0                 0         -
+astraweave-render\src\culling_node.rs                      43                22    48.84%           5                 1    80.00%          40                14    65.00%           0                 0         -
+astraweave-render\src\debug_quad.rs                        13                 0   100.00%           2                 0   100.00%          45                 0   100.00%           0                 0         -
+astraweave-render\src\decals.rs                           130                11    91.54%          13                 1    92.31%         130                 7    94.62%           0                 0         -
+astraweave-render\src\deferred.rs                         201                12    94.03%           9                 1    88.89%         302                 6    98.01%           0                 0         -
+astraweave-render\src\depth.rs                             22                 0   100.00%           1                 0   100.00%          25                 0   100.00%           0                 0         -
+astraweave-render\src\effects.rs                          115                23    80.00%          10                 2    80.00%          95                18    81.05%           0                 0         -
+astraweave-render\src\environment.rs                      811               220    72.87%          50                 4    92.00%         859               182    78.81%           0                 0         -
+astraweave-render\src\gi\mod.rs                             3                 0   100.00%           1                 0   100.00%           7                 0   100.00%           0                 0         -
+astraweave-render\src\gi\voxelization_pipeline.rs         259               233    10.04%          17                10    41.18%         324               280    13.58%           0                 0         -
+astraweave-render\src\gi\vxgi.rs                          136                13    90.44%           7                 4    42.86%         181                13    92.82%           0                 0         -
+astraweave-render\src\gpu_memory.rs                       174                43    75.29%          16                 3    81.25%         136                30    77.94%           0                 0         -
+astraweave-render\src\gpu_particles.rs                    118                 2    98.31%           4                 0   100.00%         172                 2    98.84%           0                 0         -
+astraweave-render\src\graph.rs                            206                21    89.81%          27                 2    92.59%         171                11    93.57%           0                 0         -
+astraweave-render\src\graph_adapter.rs                     28                15    46.43%           3                 1    66.67%          17                 7    58.82%           0                 0         -
+astraweave-render\src\ibl.rs                              671               192    71.39%          16                 7    56.25%         837               187    77.66%           0                 0         -
+astraweave-render\src\instancing.rs                       241                 1    99.59%          36                 0   100.00%         221                 1    99.55%           0                 0         -
+astraweave-render\src\lod_generator.rs                    361                17    95.29%          19                 3    84.21%         229                15    93.45%           0                 0         -
+astraweave-render\src\material.rs                         363                55    84.85%          31                 7    77.42%         355                37    89.58%           0                 0         -
+astraweave-render\src\material_extended.rs                155               136    12.26%          17                13    23.53%         202               147    27.23%           0                 0         -
+astraweave-render\src\material_loader.rs                  992               464    53.23%          38                20    47.37%         893               353    60.47%           0                 0         -
+astraweave-render\src\mesh.rs                             133                 0   100.00%           5                 0   100.00%          80                 0   100.00%           0                 0         -
+astraweave-render\src\mesh_registry.rs                     96                84    12.50%           9                 6    33.33%          72                59    18.06%           0                 0         -
+astraweave-render\src\msaa.rs                             106                 5    95.28%          11                 0   100.00%         122                 2    98.36%           0                 0         -
+astraweave-render\src\overlay.rs                           63                19    69.84%           3                 2    33.33%          76                 8    89.47%           0                 0         -
+astraweave-render\src\primitives.rs                       179                 0   100.00%           3                 0   100.00%         132                 0   100.00%           0                 0         -
+astraweave-render\src\renderer.rs                        2730               730    73.26%          77                11    85.71%        3145               532    83.08%           0                 0         -
+astraweave-render\src\residency.rs                        109                60    44.95%           9                 2    77.78%          86                35    59.30%           0                 0         -
+astraweave-render\src\shadow_csm.rs                       243                 5    97.94%           6                 1    83.33%         388                 4    98.97%           0                 0         -
+astraweave-render\src\terrain.rs                          257               148    42.41%          14                10    28.57%         181               106    41.44%           0                 0         -
+astraweave-render\src\texture.rs                          400               135    66.25%          19                 8    57.89%         418               112    73.21%           0                 0         -
+astraweave-render\src\texture_streaming.rs                235               136    42.13%          17                 5    70.59%         161                72    55.28%           0                 0         -
+astraweave-render\src\transparency.rs                      75                 0   100.00%          12                 0   100.00%          97                 0   100.00%           0                 0         -
+astraweave-render\src\types.rs                             52                 0   100.00%           6                 0   100.00%         172                 0   100.00%           0                 0         -
+astraweave-render\src\vertex_compression.rs               141                 2    98.58%          12                 0   100.00%          85                 2    97.65%           0                 0         -
+astraweave-render\src\water.rs                            177                26    85.31%           7                 2    71.43%         186                 9    95.16%           0                 0         -
+astraweave-scene\src\gpu_resource_manager.rs              181               181     0.00%          18                18     0.00%         169               169     0.00%           0                 0         -
+astraweave-scene\src\lib.rs                                17                17     0.00%           4                 4     0.00%          22                22     0.00%           0                 0         -
+astraweave-scene\src\partitioned_scene.rs                 172               172     0.00%          18                18     0.00%         124               124     0.00%           0                 0         -
+astraweave-scene\src\streaming.rs                          50                50     0.00%          16                16     0.00%          52                52     0.00%           0                 0         -
+astraweave-scene\src\world_partition.rs                   445               445     0.00%          45                45     0.00%         310               310     0.00%           0                 0         -
+astraweave-terrain\src\background_loader.rs               163               163     0.00%          36                36     0.00%         133               133     0.00%           0                 0         -
+astraweave-terrain\src\biome.rs                           365               187    48.77%          20                15    25.00%         573               293    48.87%           0                 0         -
+astraweave-terrain\src\chunk.rs                           239               207    13.39%          28                20    28.57%         150               114    24.00%           0                 0         -
+astraweave-terrain\src\climate.rs                         141                 3    97.87%          10                 1    90.00%         121                 3    97.52%           0                 0         -
+astraweave-terrain\src\heightmap.rs                       351               143    59.26%          16                 8    50.00%         210                83    60.48%           0                 0         -
+astraweave-terrain\src\lib.rs                             236               130    44.92%          12                 7    41.67%         145                74    48.97%           0                 0         -
+astraweave-terrain\src\lod_manager.rs                     280               280     0.00%          29                29     0.00%         234               234     0.00%           0                 0         -
+astraweave-terrain\src\meshing.rs                         367               367     0.00%          24                24     0.00%         236               236     0.00%           0                 0         -
+astraweave-terrain\src\noise_gen.rs                       131                61    53.44%           8                 4    50.00%         125                37    70.40%           0                 0         -
+astraweave-terrain\src\noise_simd.rs                      134                71    47.01%           2                 1    50.00%          70                35    50.00%           0                 0         -
+astraweave-terrain\src\scatter.rs                         319               319     0.00%          13                13     0.00%         221               221     0.00%           0                 0         -
+astraweave-terrain\src\solver.rs                          203               203     0.00%          14                14     0.00%         151               151     0.00%           0                 0         -
+astraweave-terrain\src\streaming_diagnostics.rs           200               200     0.00%          28                28     0.00%         167               167     0.00%           0                 0         -
+astraweave-terrain\src\structures.rs                      446               437     2.02%          20                18    10.00%         325               311     4.31%           0                 0         -
+astraweave-terrain\src\terrain_modifier.rs                  7                 7     0.00%           2                 2     0.00%           2                 2     0.00%           0                 0         -
+astraweave-terrain\src\terrain_persistence.rs              28                28     0.00%          10                10     0.00%          17                17     0.00%           0                 0         -
+astraweave-terrain\src\voxel_data.rs                      359               359     0.00%          48                48     0.00%         238               238     0.00%           0                 0         -
+tools\aw_asset_cli\src\texture_baker.rs                   517               489     5.42%          17                14    17.65%         315               298     5.40%           0                 0         -
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                   28545             18865    33.91%        1884              1344    28.66%       24187             13280    45.09%           0                 0         -

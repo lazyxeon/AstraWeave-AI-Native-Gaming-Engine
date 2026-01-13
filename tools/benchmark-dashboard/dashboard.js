@@ -758,6 +758,155 @@ function updateGeneratedTime() {
             img.style.display = 'none';
         });
     });
+    
+    // Render regression alerts
+    renderRegressionAlerts();
+    
+    // Render production health summary
+    renderProductionHealthSummary();
+}
+
+// Detect and display performance regressions (>10% degradation)
+function renderRegressionAlerts() {
+    const alertContainer = document.getElementById('regression-alerts');
+    if (!alertContainer) return;
+    
+    alertContainer.innerHTML = '';
+    
+    // Group by benchmark and detect regressions
+    const groups = {};
+    filteredData.forEach(d => {
+        if (!groups[d.benchmark_name]) groups[d.benchmark_name] = [];
+        groups[d.benchmark_name].push(d);
+    });
+    
+    const regressions = [];
+    const REGRESSION_THRESHOLD = 10; // % increase = regression for benchmarks
+    
+    for (const [name, entries] of Object.entries(groups)) {
+        entries.sort((a, b) => a.timestamp - b.timestamp);
+        if (entries.length < 2) continue;
+        
+        const oldest = entries[0];
+        const latest = entries[entries.length - 1];
+        const change = ((latest.value - oldest.value) / oldest.value) * 100;
+        
+        if (change > REGRESSION_THRESHOLD) {
+            regressions.push({
+                name,
+                baseline: oldest.value,
+                current: latest.value,
+                change,
+                unit: latest.unit,
+                system: detectSystem(latest.crate)
+            });
+        }
+    }
+    
+    if (regressions.length === 0) {
+        alertContainer.innerHTML = `
+            <div class="alert-success">
+                ✅ <strong>No Performance Regressions Detected</strong>
+                <p style="margin-top: 8px; font-size: 0.9em; color: #a0a0a0;">
+                    All ${Object.keys(groups).length} benchmarks within acceptable thresholds (±${REGRESSION_THRESHOLD}%)
+                </p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort by severity (highest change first)
+    regressions.sort((a, b) => b.change - a.change);
+    
+    alertContainer.innerHTML = `
+        <div class="alert-warning">
+            ⚠️ <strong>${regressions.length} Performance Regression${regressions.length > 1 ? 's' : ''} Detected</strong>
+            <div class="regression-list" style="margin-top: 12px; max-height: 200px; overflow-y: auto;">
+                ${regressions.slice(0, 10).map(r => `
+                    <div class="regression-item" style="padding: 8px; border-left: 3px solid #ff6b6b; margin: 6px 0; background: rgba(255,107,107,0.1); border-radius: 4px;">
+                        <div style="font-weight: 600; color: #ff6b6b;">${r.name}</div>
+                        <div style="font-size: 0.85em; color: #a0a0a0; margin-top: 4px;">
+                            ${formatNumber(r.baseline)} → ${formatNumber(r.current)} ${r.unit} 
+                            <span style="color: #ff6b6b; font-weight: 600;">(+${r.change.toFixed(1)}%)</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            ${regressions.length > 10 ? `<div style="margin-top: 8px; color: #a0a0a0; font-size: 0.85em;">...and ${regressions.length - 10} more</div>` : ''}
+        </div>
+    `;
+}
+
+// Render production health summary with key metrics
+function renderProductionHealthSummary() {
+    const summaryContainer = document.getElementById('production-health');
+    if (!summaryContainer) return;
+    
+    // Calculate overall metrics
+    const uniqueBenchmarks = new Set(filteredData.map(d => d.benchmark_name)).size;
+    const uniqueCrates = new Set(filteredData.map(d => d.crate)).size;
+    const dateRange = filteredData.length > 0 
+        ? Math.ceil((Math.max(...filteredData.map(d => d.timestamp)) - Math.min(...filteredData.map(d => d.timestamp))) / (24 * 60 * 60 * 1000))
+        : 0;
+    
+    // Calculate system breakdown
+    const systemCounts = {};
+    filteredData.forEach(d => {
+        const system = detectSystem(d.crate);
+        systemCounts[system] = (systemCounts[system] || 0) + 1;
+    });
+    
+    // Calculate performance grade
+    let grade = 'A+';
+    let gradeColor = '#43e97b';
+    const groups = {};
+    filteredData.forEach(d => {
+        if (!groups[d.benchmark_name]) groups[d.benchmark_name] = [];
+        groups[d.benchmark_name].push(d);
+    });
+    
+    let regressionCount = 0;
+    for (const entries of Object.values(groups)) {
+        entries.sort((a, b) => a.timestamp - b.timestamp);
+        if (entries.length >= 2) {
+            const change = ((entries[entries.length-1].value - entries[0].value) / entries[0].value) * 100;
+            if (change > 10) regressionCount++;
+        }
+    }
+    
+    const regressionPercent = (regressionCount / Object.keys(groups).length) * 100;
+    if (regressionPercent > 20) { grade = 'C'; gradeColor = '#ff6b6b'; }
+    else if (regressionPercent > 10) { grade = 'B'; gradeColor = '#feca57'; }
+    else if (regressionPercent > 5) { grade = 'A'; gradeColor = '#43e97b'; }
+    else { grade = 'A+'; gradeColor = '#00f2fe'; }
+    
+    summaryContainer.innerHTML = `
+        <div class="health-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
+            <div class="health-card" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 2.5em; font-weight: bold; color: ${gradeColor};">${grade}</div>
+                <div style="color: #a0a0a0; font-size: 0.85em; margin-top: 4px;">Health Grade</div>
+            </div>
+            <div class="health-card" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 2em; font-weight: bold; color: #4facfe;">${uniqueBenchmarks}</div>
+                <div style="color: #a0a0a0; font-size: 0.85em; margin-top: 4px;">Benchmarks</div>
+            </div>
+            <div class="health-card" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 2em; font-weight: bold; color: #4facfe;">${uniqueCrates}</div>
+                <div style="color: #a0a0a0; font-size: 0.85em; margin-top: 4px;">Crates</div>
+            </div>
+            <div class="health-card" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div style="font-size: 2em; font-weight: bold; color: #4facfe;">${dateRange}d</div>
+                <div style="color: #a0a0a0; font-size: 0.85em; margin-top: 4px;">Data Range</div>
+            </div>
+        </div>
+        <div class="system-breakdown" style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
+            ${Object.entries(systemCounts).map(([sys, count]) => `
+                <span style="padding: 4px 12px; background: ${COLOR_SCHEME[sys] || '#666'}22; color: ${COLOR_SCHEME[sys] || '#666'}; border-radius: 16px; font-size: 0.8em;">
+                    ${sys}: ${count}
+                </span>
+            `).join('')}
+        </div>
+    `;
 }
 
 // Show error message

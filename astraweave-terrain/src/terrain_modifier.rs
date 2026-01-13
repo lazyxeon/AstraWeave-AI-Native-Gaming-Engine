@@ -246,9 +246,11 @@ impl TerrainModifier {
     /// This is the main tick function, called once per frame.
     /// Returns statistics about work done.
     pub fn tick(&mut self, voxel_grid: &mut VoxelGrid) -> ModifierStats {
-        let mut stats = ModifierStats::default();
-        stats.ops_pending = self.op_queue.len();
-        stats.chunks_pending_remesh = self.dirty_chunks.len();
+        let mut stats = ModifierStats {
+            ops_pending: self.op_queue.len(),
+            chunks_pending_remesh: self.dirty_chunks.len(),
+            ..Default::default()
+        };
 
         // ===========================
         // DATA PASS: Apply voxel operations

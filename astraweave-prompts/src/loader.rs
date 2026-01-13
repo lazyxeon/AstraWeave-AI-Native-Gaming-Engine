@@ -89,14 +89,14 @@ impl PromptLoader {
     /// Parse frontmatter from template content
     /// Supports TOML frontmatter delimited by +++
     fn parse_frontmatter(&self, content: &str) -> Result<(Option<TemplateMetadata>, String)> {
-        if content.starts_with("+++") {
-            if let Some(end) = content[3..].find("+++") {
-                let frontmatter = &content[3..end+3];
-                let body = &content[end+6..];
-                
+        if let Some(stripped) = content.strip_prefix("+++") {
+            if let Some(end) = stripped.find("+++") {
+                let frontmatter = &stripped[..end];
+                let body = &stripped[end + 3..];
+
                 let metadata: TemplateMetadata = toml::from_str(frontmatter)
                     .context("Failed to parse TOML frontmatter")?;
-                    
+
                 return Ok((Some(metadata), body.trim().to_string()));
             }
         }

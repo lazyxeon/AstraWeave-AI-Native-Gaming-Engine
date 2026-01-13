@@ -10,6 +10,18 @@
 //!
 //! These benchmarks measure CPU performance for culling and LOD operations.
 
+// =============================================================================
+// MISSION-CRITICAL CORRECTNESS ASSERTIONS
+// =============================================================================
+// Culling & LOD benchmarks validate CORRECTNESS of visibility systems.
+// Assertions verify:
+//   1. AABB Validity: Bounding boxes have non-negative extent, finite values
+//   2. Frustum Planes: Normal vectors are normalized, plane equations valid
+//   3. Culling Results: Visible count <= total count, indices valid
+//   4. LOD Selection: LOD index is within valid range for mesh
+//   5. Batch Integrity: Draw indirect commands have valid counts
+// =============================================================================
+
 #![allow(dead_code)]
 #![allow(private_interfaces)]
 #![allow(unused_variables)]
@@ -18,6 +30,40 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Through
 use std::hint::black_box;
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+
+/// CORRECTNESS: Validate AABB has valid geometry
+#[inline]
+fn assert_aabb_valid(center: [f32; 3], extent: [f32; 3], context: &str) {
+    // Center must be finite
+    for i in 0..3 {
+        assert!(center[i].is_finite(),
+            "[CORRECTNESS FAILURE] {}: AABB center[{}] is non-finite ({})", context, i, center[i]);
+    }
+    // Extent must be non-negative and finite
+    for i in 0..3 {
+        assert!(extent[i] >= 0.0 && extent[i].is_finite(),
+            "[CORRECTNESS FAILURE] {}: AABB extent[{}] invalid ({})", context, i, extent[i]);
+    }
+}
+
+/// CORRECTNESS: Validate frustum plane is properly normalized
+#[inline]
+fn assert_frustum_plane_valid(plane: [f32; 4], context: &str) {
+    // Normal should be approximately unit length
+    let normal_len = (plane[0]*plane[0] + plane[1]*plane[1] + plane[2]*plane[2]).sqrt();
+    assert!(normal_len > 0.99 && normal_len < 1.01,
+        "[CORRECTNESS FAILURE] {}: frustum plane normal not normalized (len={})", context, normal_len);
+    // Distance should be finite
+    assert!(plane[3].is_finite(),
+        "[CORRECTNESS FAILURE] {}: frustum plane distance non-finite ({})", context, plane[3]);
+}
+
+/// CORRECTNESS: Validate culling results are consistent
+#[inline]
+fn assert_culling_result_valid(visible_count: usize, total_count: usize, context: &str) {
+    assert!(visible_count <= total_count,
+        "[CORRECTNESS FAILURE] {}: visible ({}) > total ({})", context, visible_count, total_count);
+}
 
 // ============================================================================
 // AABB & Frustum Structures (matching culling.rs)
@@ -35,6 +81,8 @@ pub struct InstanceAABB {
 
 impl InstanceAABB {
     pub fn new(center: [f32; 3], extent: [f32; 3], instance_index: u32) -> Self {
+        // CORRECTNESS: Validate AABB on construction
+        assert_aabb_valid(center, extent, "InstanceAABB::new");
         Self {
             center,
             _pad0: 0,

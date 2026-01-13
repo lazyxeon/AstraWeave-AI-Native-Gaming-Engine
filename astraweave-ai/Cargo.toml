@@ -68,3 +68,15 @@ harness = false
 [[bench]]
 name = "integration_pipeline"
 harness = false
+
+[[bench]]
+name = "multi_agent_pipeline"
+harness = false
+
+[[bench]]
+name = "goap_performance_bench"
+harness = false
+
+[[bench]]
+name = "goap_vs_rule_bench"
+harness = false

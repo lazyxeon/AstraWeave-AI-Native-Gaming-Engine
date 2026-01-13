@@ -32,7 +32,7 @@ impl Default for CompressionConfig {
 }
 
 /// Result of compression operation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CompressionResult {
     /// Number of memories processed
     pub memories_processed: usize,
@@ -42,17 +42,6 @@ pub struct CompressionResult {
     pub size_reduction: usize,
     /// Processing time in milliseconds
     pub processing_time_ms: u64,
-}
-
-impl Default for CompressionResult {
-    fn default() -> Self {
-        Self {
-            memories_processed: 0,
-            memories_compressed: 0,
-            size_reduction: 0,
-            processing_time_ms: 0,
-        }
-    }
 }
 
 /// Memory compression engine
@@ -68,7 +57,7 @@ impl CompressionEngine {
     }
 
     /// Compress eligible memories
-    pub fn compress_memories(&self, memories: &mut Vec<Memory>) -> Result<CompressionResult> {
+    pub fn compress_memories(&self, memories: &mut [Memory]) -> Result<CompressionResult> {
         let start_time = std::time::Instant::now();
         let mut result = CompressionResult::default();
 

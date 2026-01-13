@@ -74,8 +74,10 @@ impl TerrainState {
     }
 
     fn biomes_for_primary(primary: &str) -> Vec<BiomeConfig> {
-        let primary_type = BiomeType::from_str(primary).unwrap_or(BiomeType::Grassland);
-        
+        let primary_type = primary
+            .parse::<BiomeType>()
+            .unwrap_or(BiomeType::Grassland);
+
         let mut biomes = vec![Self::biome_config_for_type(primary_type)];
         
         for bt in BiomeType::all() {

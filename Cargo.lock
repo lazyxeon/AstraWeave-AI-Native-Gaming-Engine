@@ -655,6 +655,7 @@ name = "astraweave-cinematics"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "criterion 0.7.0",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
@@ -695,6 +696,7 @@ dependencies = [
  "dashmap",
  "futures",
  "petgraph",
+ "rand 0.9.2",
  "serde",
  "serde_json",
  "tokio",
@@ -731,6 +733,7 @@ dependencies = [
  "astraweave-rag",
  "async-trait",
  "chrono",
+ "criterion 0.5.1",
  "rand 0.9.2",
  "regex",
  "serde",
@@ -971,6 +974,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-core",
+ "criterion 0.5.1",
  "futures-util",
  "proptest",
  "rand 0.9.2",
@@ -1087,6 +1091,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "criterion 0.5.1",
  "postcard",
  "serde",
  "serde_bytes",
@@ -1179,6 +1184,7 @@ dependencies = [
  "astraweave-prompts",
  "astraweave-rag",
  "chrono",
+ "criterion 0.5.1",
  "futures",
  "rand 0.9.2",
  "serde",
@@ -1264,6 +1270,7 @@ dependencies = [
  "astraweave-asset",
  "astraweave-ecs",
  "astraweave-render",
+ "criterion 0.7.0",
  "glam 0.30.8",
  "serde",
  "serde_json",
@@ -1796,6 +1803,7 @@ name = "aw-net-proto"
 version = "0.1.0"
 dependencies = [
  "bincode 2.0.1",
+ "criterion 0.5.1",
  "lz4_flex",
  "postcard",
  "rand 0.9.2",
@@ -1948,7 +1956,9 @@ dependencies = [
  "astraweave-quests",
  "astraweave-render",
  "astraweave-security",
+ "astraweave-terrain",
  "bytemuck",
+ "chrono",
  "criterion 0.5.1",
  "eframe",
  "egui 0.32.3",
@@ -1959,6 +1969,7 @@ dependencies = [
  "image",
  "notify",
  "petgraph",
+ "pollster",
  "rand 0.8.5",
  "rhai",
  "ron 0.8.1",
@@ -3810,15 +3821,6 @@ checksum = "1f99fe3cac305af9d6d92971af60d0f7ea4d783201ef1673571567b6699964d9"
 
 [[package]]
 name = "ecolor"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d72e9c39f6e11a2e922d04a34ec5e7ef522ea3f5a1acfca7a19d16ad5fe50f5"
-dependencies = [
- "emath 0.30.0",
-]
-
-[[package]]
-name = "ecolor"
 version = "0.32.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94bdf37f8d5bd9aa7f753573fdda9cf7343afa73dd28d7bfe9593bd9798fc07e"
@@ -3924,19 +3926,6 @@ dependencies = [
 
 [[package]]
 name = "egui"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "252d52224d35be1535d7fd1d6139ce071fb42c9097773e79f7665604f5596b5e"
-dependencies = [
- "ahash",
- "emath 0.30.0",
- "epaint 0.30.0",
- "nohash-hasher",
- "profiling",
-]
-
-[[package]]
-name = "egui"
 version = "0.32.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d5d0306cd61ca75e29682926d71f2390160247f135965242e904a636f51c0dc"
@@ -3995,12 +3984,12 @@ dependencies = [
 
 [[package]]
 name = "egui_dock"
-version = "0.15.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a2e6e4f8bc019bcd7cee5240c6c76a9eed421b364307739561c92acc4cc0f22"
+checksum = "baa7ef4e24fccd35639705ba68a58a5713c19b15a2cd426c0a26901b5954882c"
 dependencies = [
  "duplicate",
- "egui 0.30.0",
+ "egui 0.32.3",
  "paste",
 ]
 
@@ -4063,12 +4052,6 @@ name = "emath"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8ecd80612937e0267909d5351770fe150004e24dab93954f69ca62eecd3f77e"
-
-[[package]]
-name = "emath"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4fe73c1207b864ee40aa0b0c038d6092af1030744678c60188a05c28553515d"
 
 [[package]]
 name = "emath"
@@ -4196,21 +4179,6 @@ dependencies = [
  "emath 0.21.0",
  "nohash-hasher",
  "parking_lot 0.12.5",
-]
-
-[[package]]
-name = "epaint"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5666f8d25236293c966fbb3635eac18b04ad1914e3bab55bc7d44b9980cafcac"
-dependencies = [
- "ab_glyph",
- "ahash",
- "ecolor 0.30.0",
- "emath 0.30.0",
- "nohash-hasher",
- "parking_lot 0.12.5",
- "profiling",
 ]
 
 [[package]]

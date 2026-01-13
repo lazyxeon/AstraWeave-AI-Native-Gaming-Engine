@@ -4,6 +4,7 @@ use astraweave_gameplay::types::ResourceKind;
 use astraweave_gameplay::BiomeRule;
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Types of biomes available in the world
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -33,19 +34,9 @@ impl BiomeType {
         }
     }
 
-    /// Parse from string
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s.to_lowercase().as_str() {
-            "grassland" => Some(BiomeType::Grassland),
-            "desert" => Some(BiomeType::Desert),
-            "forest" => Some(BiomeType::Forest),
-            "mountain" => Some(BiomeType::Mountain),
-            "tundra" => Some(BiomeType::Tundra),
-            "swamp" => Some(BiomeType::Swamp),
-            "beach" => Some(BiomeType::Beach),
-            "river" => Some(BiomeType::River),
-            _ => None,
-        }
+    /// Parse from string (case-insensitive)
+    pub fn parse(s: &str) -> Option<Self> {
+        s.parse().ok()
     }
 
     /// Get all available biome types
@@ -60,6 +51,52 @@ impl BiomeType {
             BiomeType::Beach,
             BiomeType::River,
         ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParseBiomeTypeError;
+
+impl std::fmt::Display for ParseBiomeTypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid biome type")
+    }
+}
+
+impl std::error::Error for ParseBiomeTypeError {}
+
+impl FromStr for BiomeType {
+    type Err = ParseBiomeTypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+
+        if s.eq_ignore_ascii_case("grassland") {
+            return Ok(BiomeType::Grassland);
+        }
+        if s.eq_ignore_ascii_case("desert") {
+            return Ok(BiomeType::Desert);
+        }
+        if s.eq_ignore_ascii_case("forest") {
+            return Ok(BiomeType::Forest);
+        }
+        if s.eq_ignore_ascii_case("mountain") {
+            return Ok(BiomeType::Mountain);
+        }
+        if s.eq_ignore_ascii_case("tundra") {
+            return Ok(BiomeType::Tundra);
+        }
+        if s.eq_ignore_ascii_case("swamp") {
+            return Ok(BiomeType::Swamp);
+        }
+        if s.eq_ignore_ascii_case("beach") {
+            return Ok(BiomeType::Beach);
+        }
+        if s.eq_ignore_ascii_case("river") {
+            return Ok(BiomeType::River);
+        }
+
+        Err(ParseBiomeTypeError)
     }
 }
 
@@ -768,8 +805,8 @@ mod tests {
     #[test]
     fn test_biome_type_string_conversion() {
         assert_eq!(BiomeType::Grassland.as_str(), "grassland");
-        assert_eq!(BiomeType::from_str("desert"), Some(BiomeType::Desert));
-        assert_eq!(BiomeType::from_str("invalid"), None);
+        assert_eq!(BiomeType::parse("desert"), Some(BiomeType::Desert));
+        assert_eq!(BiomeType::parse("invalid"), None);
     }
 
     #[test]

@@ -91,7 +91,11 @@ async fn test_error_handling_scenarios() {
     #[cfg(feature = "llm_cache")]
     astraweave_llm::clear_global_cache();
 
-    let world_snapshot = create_complex_scenario();
+    // Use unique world snapshot with distinctive objective to ensure unique cache key
+    // This prevents cache collisions with parallel tests that use the same scenario
+    let mut world_snapshot = create_complex_scenario();
+    world_snapshot.t = 999.99; // Unique timestamp
+    world_snapshot.objective = Some("ERROR_HANDLING_TEST_UNIQUE_OBJECTIVE_12345".to_string());
     let tool_registry = create_comprehensive_registry();
 
     // Test with client that returns invalid JSON
@@ -108,7 +112,7 @@ async fn test_error_handling_scenarios() {
     let plan_source = plan_from_llm(&bad_client, &world_snapshot, &tool_registry).await;
     // Should fallback to heuristic or emergency plan (Phase 7 multi-tier fallback)
     match plan_source {
-        PlanSource::Llm(_) => panic!("Expected fallback"),
+        PlanSource::Llm(_) => panic!("Expected fallback from BadJsonClient"),
         PlanSource::Fallback { plan, .. } => {
             // Phase 7: Plans use UUID-based IDs
             assert!(
@@ -118,6 +122,10 @@ async fn test_error_handling_scenarios() {
             );
         }
     }
+
+    // Clear cache again before second test case to prevent race conditions with parallel tests
+    #[cfg(feature = "llm_cache")]
+    astraweave_llm::clear_global_cache();
 
     // Test with client that returns JSON with disallowed tools
     struct DisallowedToolClient;
@@ -135,8 +143,8 @@ async fn test_error_handling_scenarios() {
     let disallowed_client = DisallowedToolClient;
     let plan_source = plan_from_llm(&disallowed_client, &world_snapshot, &tool_registry).await;
     // Should fallback to heuristic or emergency plan (Phase 7)
-    match plan_source {
-        PlanSource::Llm(_) => panic!("Expected fallback"),
+    match &plan_source {
+        PlanSource::Llm(_) => panic!("Expected fallback from DisallowedToolClient"),
         PlanSource::Fallback { plan, .. } => {
             // Phase 7: Plans use UUID-based IDs
             assert!(

@@ -111,6 +111,13 @@ use panels::{
     ProfilerPanel, SceneStats, SceneStatsPanel, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 mod plugin;
+mod dock_layout;
+mod dock_panels;
+mod panel_type;
+mod tab_viewer;
+use dock_layout::{DockLayout, LayoutPreset};
+use panel_type::PanelType;
+use tab_viewer::{EditorDrawContext, EditorTabViewer, EntityInfo};
 use prefab::PrefabManager;
 use recent_files::RecentFilesManager;
 use runtime::{EditorRuntime, RuntimeState};
@@ -237,6 +244,23 @@ impl BehaviorGraphBinding {
     }
 }
 
+/// Simple asset registry for tracking loaded assets
+#[derive(Default)]
+struct AssetRegistry {
+    count: usize,
+}
+
+impl AssetRegistry {
+    fn count(&self) -> usize {
+        self.count
+    }
+    
+    #[allow(dead_code)]
+    fn set_count(&mut self, count: usize) {
+        self.count = count;
+    }
+}
+
 struct EditorApp {
     content_root: PathBuf,
     level: LevelDoc,
@@ -333,6 +357,18 @@ struct EditorApp {
     show_new_confirm_dialog: bool,
     // Phase 10: Voxel editing tools
     voxel_editor: voxel_tools::VoxelEditor,
+    // Phase 11: Professional Docking System
+    dock_layout: DockLayout,
+    dock_tab_viewer: EditorTabViewer,
+    use_docking: bool,
+    /// Counter for generating unique entity IDs
+    next_entity_id: u64,
+    /// Track if scene has unsaved changes
+    is_scene_modified: bool,
+    /// Asset registry for counting loaded assets
+    asset_registry: AssetRegistry,
+    /// Last save timestamp
+    last_save_time: Option<String>,
 }
 
 impl Default for EditorApp {
@@ -487,6 +523,16 @@ impl Default for EditorApp {
             show_new_confirm_dialog: false,
             // Phase 10: Voxel editing tools
             voxel_editor: voxel_tools::VoxelEditor::new(),
+            // Phase 11: Professional Docking System
+            dock_layout: DockLayout::from_preset(LayoutPreset::Default),
+            dock_tab_viewer: EditorTabViewer::new(),
+            use_docking: true, // Enable docking by default
+            // Entity ID counter - start after sample entities (100+)
+            next_entity_id: 100,
+            // Scene modification tracking
+            is_scene_modified: false,
+            asset_registry: AssetRegistry::default(),
+            last_save_time: None,
         }
     }
 }
@@ -897,6 +943,11 @@ impl EditorApp {
                 // Continue without viewport (fallback to 2D mode)
             }
         }
+
+        // Initialize default scene so asset imports work immediately
+        let default_world = astraweave_core::World::new();
+        app.scene_state = Some(EditorSceneState::new(default_world));
+        app.console_logs.push("✅ Default scene created".into());
 
         Ok(app)
     }
@@ -1925,11 +1976,9 @@ struct MaterialLiveDoc {
 
 impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if ctx.input(|i| i.viewport().close_requested()) {
-            if self.is_dirty {
-                self.show_quit_dialog = true;
-                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-            }
+        if ctx.input(|i| i.viewport().close_requested()) && self.is_dirty {
+            self.show_quit_dialog = true;
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
         }
 
         let now = std::time::Instant::now();
@@ -2901,6 +2950,67 @@ impl eframe::App for EditorApp {
                     }
                 });
 
+                // Window menu for docking layouts
+                ui.menu_button("🪟 Window", |ui| {
+                    // Toggle between legacy and docking UI
+                    if ui.checkbox(&mut self.use_docking, "📐 Use Docking Layout").changed() {
+                        let mode = if self.use_docking { "Docking" } else { "Legacy" };
+                        self.status = format!("Switched to {} layout mode", mode);
+                    }
+                    
+                    ui.separator();
+                    ui.label("Layout Presets:");
+                    
+                    if ui.button("📊 Default").clicked() {
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Default);
+                        self.status = "Applied Default layout".to_string();
+                        ui.close();
+                    }
+                    if ui.button("📐 Wide").clicked() {
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Wide);
+                        self.status = "Applied Wide layout".to_string();
+                        ui.close();
+                    }
+                    if ui.button("📦 Compact").clicked() {
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Compact);
+                        self.status = "Applied Compact layout".to_string();
+                        ui.close();
+                    }
+                    if ui.button("🎨 Modeling").clicked() {
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Modeling);
+                        self.status = "Applied Modeling layout".to_string();
+                        ui.close();
+                    }
+                    if ui.button("🎬 Animation").clicked() {
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Animation);
+                        self.status = "Applied Animation layout".to_string();
+                        ui.close();
+                    }
+                    if ui.button("🐛 Debug").clicked() {
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Debug);
+                        self.status = "Applied Debug layout".to_string();
+                        ui.close();
+                    }
+                    
+                    ui.separator();
+                    ui.label("Panels:");
+                    
+                    // Show available panels to add
+                    for &panel_type in PanelType::all() {
+                        let is_visible = self.dock_layout.has_panel(&panel_type);
+                        let label = format!("{} {}", panel_type.icon(), panel_type.title());
+                        if ui.selectable_label(is_visible, label).clicked() {
+                            if is_visible {
+                                self.dock_layout.remove_panel(&panel_type);
+                                self.status = format!("Closed {} panel", panel_type.title());
+                            } else {
+                                self.dock_layout.add_panel(panel_type);
+                                self.status = format!("Opened {} panel", panel_type.title());
+                            }
+                        }
+                    }
+                });
+
                 if ui.button("⚙ Settings").clicked() {
                     self.show_settings_dialog = true;
                 }
@@ -2986,11 +3096,35 @@ impl eframe::App for EditorApp {
             // Show play controls in toolbar
             ui.separator();
             self.show_play_controls(ui);
+            
+            // Compact performance indicator in header
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let frame_time = self.runtime.stats().frame_time_ms;
+                let fps_color = if self.current_fps >= 55.0 {
+                    egui::Color32::from_rgb(100, 255, 100) // Green
+                } else if self.current_fps >= 30.0 {
+                    egui::Color32::from_rgb(255, 200, 100) // Yellow
+                } else {
+                    egui::Color32::from_rgb(255, 100, 100) // Red
+                };
+                
+                ui.label(egui::RichText::new(format!("FPS: {:.0}", self.current_fps))
+                    .color(fps_color)
+                    .strong());
+                ui.separator();
+                ui.label(egui::RichText::new(format!("{:.1}ms", frame_time))
+                    .color(egui::Color32::from_gray(180)));
+                ui.separator();
+                ui.label(egui::RichText::new("⚡")
+                    .color(fps_color));
+            });
         });
 
-        // LEFT PANEL - Astract World & Entity panels
+        // LEFT PANEL - Astract World & Entity panels (fixed width to not shrink viewport)
         egui::SidePanel::left("astract_left_panel")
-            .default_width(300.0)
+            .default_width(250.0)
+            .max_width(300.0)
+            .resizable(true)
             .show(ctx, |ui| {
                 ui.heading("🎨 Astract Panels");
                 ui.separator();
@@ -3028,20 +3162,26 @@ impl eframe::App for EditorApp {
 
                         ui.add_space(10.0);
 
+                        // Asset browser - collapsible but defaults open, constrained height
                         let asset_count = self.asset_browser.get_asset_count();
-                        let assets_header = format!("📦 Assets ({} files)", asset_count);
-                        ui.collapsing(assets_header, |ui| {
-                            self.asset_browser.show(ui);
-                            
-                            // Process dragged prefabs after UI rendering
-                            if let Some(dragged_path) = self.asset_browser.take_dragged_prefab() {
-                                // Default spawn position: center of viewport (0, 0 in grid coordinates)
-                                let spawn_pos = (0, 0);
-                                self.spawn_prefab_from_drag(dragged_path, spawn_pos);
-                            }
-                        });
+                        egui::CollapsingHeader::new(format!("📦 Assets ({} files)", asset_count))
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                // Constrained height for asset browser to not dominate the panel
+                                ui.set_max_height(200.0);
+                                self.asset_browser.show(ui);
+                            });
+                        
+                        // Show import/apply buttons OUTSIDE the collapsing section so they're visible
+                        self.asset_browser.show_selection_actions(ui);
+                        
+                        // Process dragged prefabs after UI rendering
+                        if let Some(dragged_path) = self.asset_browser.take_dragged_prefab() {
+                            let spawn_pos = (0, 0);
+                            self.spawn_prefab_from_drag(dragged_path, spawn_pos);
+                        }
 
-                        // Process asset actions outside the collapsing closure
+                        // Process asset actions outside the collapsing section
                         let actions = self.asset_browser.take_pending_actions();
                         for action in actions {
                             self.handle_asset_action(action);
@@ -3453,12 +3593,7 @@ impl eframe::App for EditorApp {
                     });
             });
 
-        // RIGHT PANEL - Astract Performance panel
-        egui::SidePanel::right("astract_right_panel")
-            .default_width(350.0)
-            .show(ctx, |ui| {
-                self.performance_panel.show(ui);
-            });
+        // Performance indicator was moved to header - see show_play_controls
 
         // BOTTOM PANEL - StatusBar (Phase 3.5 & 4)
         let entity_count = self
@@ -3489,13 +3624,335 @@ impl eframe::App for EditorApp {
                 );
             });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
-            if let Some(viewport) = &mut self.viewport {
-                // Phase 14: Update viewport HUD with selection count
-                viewport.set_selection_count(self.selection_set.count());
+        // Render main content area - either docking layout or legacy panels
+        if self.use_docking {
+            // Phase 11: Professional Docking System
+            // Sync selected entity to tab viewer
+            self.dock_tab_viewer.set_selected_entity(self.selected_entity);
+            self.dock_tab_viewer.set_is_playing(!self.editor_mode.is_editing());
+            self.dock_tab_viewer.begin_frame();
+            
+            // Sync entity list for hierarchy panel
+            let entity_list: Vec<EntityInfo> = self.entity_manager.entities().iter()
+                .map(|(id, entity)| EntityInfo {
+                    id: *id,
+                    name: entity.name.clone(),
+                    components: entity.components.keys().cloned().collect(),
+                    entity_type: if entity.components.contains_key("Camera") {
+                        "Camera".to_string()
+                    } else if entity.components.contains_key("Light") {
+                        "Light".to_string()
+                    } else if entity.components.contains_key("Mesh") {
+                        "Mesh".to_string()
+                    } else {
+                        "Entity".to_string()
+                    },
+                })
+                .collect();
+            self.dock_tab_viewer.set_entity_list(entity_list);
+            
+            // Sync selected entity transform for inspector
+            if let Some(entity_id) = self.selected_entity {
+                if let Some(entity) = self.entity_manager.get(entity_id) {
+                    let (pos, rot, scale) = entity.transform();
+                    // Convert to 2D-like format: x, y, rotation_z, scale_x, scale_y
+                    let angle = rot.to_euler(glam::EulerRot::ZXY).0;
+                    self.dock_tab_viewer.set_selected_transform(Some((
+                        pos.x, pos.y, angle, scale.x, scale.y
+                    )));
+                    let entity_type = if entity.components.contains_key("Camera") {
+                        "Camera".to_string()
+                    } else if entity.components.contains_key("Light") {
+                        "Light".to_string()
+                    } else if entity.components.contains_key("Mesh") {
+                        "Mesh".to_string()
+                    } else {
+                        "Entity".to_string()
+                    };
+                    self.dock_tab_viewer.set_selected_entity_info(Some(EntityInfo {
+                        id: entity_id,
+                        name: entity.name.clone(),
+                        components: entity.components.keys().cloned().collect(),
+                        entity_type,
+                    }));
+                } else {
+                    self.dock_tab_viewer.set_selected_transform(None);
+                    self.dock_tab_viewer.set_selected_entity_info(None);
+                }
+            } else {
+                self.dock_tab_viewer.set_selected_transform(None);
+                self.dock_tab_viewer.set_selected_entity_info(None);
+            }
+            
+            // Sync console logs
+            self.dock_tab_viewer.set_console_logs(self.console_logs.clone());
+            
+            // Sync runtime stats for profiler panel
+            let runtime_stats = tab_viewer::RuntimeStatsInfo {
+                frame_time_ms: self.runtime.stats().frame_time_ms,
+                fps: self.current_fps,
+                entity_count: self.entity_manager.entities().len(),
+                tick_count: self.runtime.stats().tick_count,
+                is_playing: self.runtime.is_playing(),
+                is_paused: self.runtime.is_paused(),
+                // Subsystem timing (placeholder values - would come from actual profiling)
+                render_time_ms: self.runtime.stats().frame_time_ms * 0.4, // ~40% for render
+                physics_time_ms: self.runtime.stats().frame_time_ms * 0.15, // ~15% for physics
+                ai_time_ms: self.runtime.stats().frame_time_ms * 0.1, // ~10% for AI
+                script_time_ms: self.runtime.stats().frame_time_ms * 0.05, // ~5% for scripts
+                audio_time_ms: self.runtime.stats().frame_time_ms * 0.02, // ~2% for audio
+                draw_calls: 150 + (self.entity_manager.entities().len() * 2), // Estimate
+                triangles: 50000 + (self.entity_manager.entities().len() * 1000), // Estimate
+                gpu_memory_bytes: 256 * 1024 * 1024, // 256 MB placeholder
+            };
+            self.dock_tab_viewer.set_runtime_stats(runtime_stats);
+            
+            // Sync scene stats
+            let total_components: usize = self
+                .entity_manager
+                .entities()
+                .values()
+                .map(|e| e.components.len())
+                .sum();
+            let entity_count = self.entity_manager.entities().len();
+            let scene_stats = tab_viewer::SceneStatsInfo {
+                total_entities: entity_count,
+                total_components,
+                prefab_instances: 0, // Would count prefab instances
+                selected_count: self.selection_set.count(),
+                memory_usage_bytes: entity_count * 1024 + total_components * 256, // Rough estimate
+                active_systems: 12, // Typical system count
+                loaded_assets: self.asset_registry.count(),
+                light_count: entity_count / 10, // Estimate ~10% are lights
+                mesh_count: entity_count / 2, // Estimate ~50% have meshes
+                physics_bodies: entity_count / 4, // Estimate ~25% have physics
+                is_modified: self.is_scene_modified,
+                audio_sources: entity_count / 20, // Estimate ~5% have audio
+                particle_systems: entity_count / 30, // Estimate ~3% are particles
+                camera_count: 1 + (entity_count / 50), // At least 1 camera
+                collider_count: entity_count / 3, // Estimate ~33% have colliders
+                script_count: entity_count / 2, // Estimate ~50% have scripts
+                ui_element_count: 0, // Would count UI elements
+                scene_path: self.current_scene_path.as_ref().map(|p| p.display().to_string()),
+                last_save_time: self.last_save_time.clone(),
+            };
+            self.dock_tab_viewer.set_scene_stats(scene_stats);
+            
+            // Sync undo/redo counts
+            self.dock_tab_viewer.set_undo_redo_counts(
+                self.undo_stack.len(),
+                0 // Redo count would come from redo stack
+            );
+            
+            // Update frame time history for profiler graph
+            self.dock_tab_viewer.push_frame_time(self.runtime.stats().frame_time_ms);
+            
+            // Render the docking layout with EditorDrawContext for viewport integration
+            // We need to carefully structure borrows to avoid conflicts
+            {
+                // Get mutable world from scene state
+                let world_opt = self.scene_state.as_mut().map(|s| s.world_mut());
+                
+                // Build the context with available resources
+                if let (Some(world), Some(viewport)) = (world_opt, self.viewport.as_mut()) {
+                    // Full context with 3D viewport
+                    let mut context = EditorDrawContext::new(&mut self.dock_tab_viewer)
+                        .with_viewport(viewport)
+                        .with_world(world)
+                        .with_entity_manager(&mut self.entity_manager)
+                        .with_undo_stack(&mut self.undo_stack)
+                        .with_prefab_manager(&mut self.prefab_manager);
+                    self.dock_layout.show(ctx, &mut context);
+                } else {
+                    // Fallback: no viewport or world available, use basic tab viewer
+                    self.dock_layout.show(ctx, &mut self.dock_tab_viewer);
+                }
+            }
+            
+            // Check for transform changes and emit events
+            self.dock_tab_viewer.check_transform_changes();
+            
+            // Handle panel close events (separate from PanelEvent for backward compatibility)
+            for panel in self.dock_tab_viewer.take_closed_panels() {
+                self.status = format!("Closed {} panel", panel.title());
+            }
+            for panel in self.dock_tab_viewer.take_panels_to_add() {
+                self.dock_layout.add_panel(panel);
+                self.status = format!("Added {} panel", panel.title());
+            }
+            self.dock_tab_viewer.check_transform_changes();
+            
+            // Handle panel events from the tab viewer
+            for event in self.dock_tab_viewer.take_events() {
+                match event {
+                    tab_viewer::PanelEvent::EntitySelected(entity_id) => {
+                        self.selected_entity = Some(entity_id);
+                        self.selection_set.primary = Some(entity_id);
+                        self.status = format!("Selected entity {}", entity_id);
+                    }
+                    tab_viewer::PanelEvent::EntityDeselected => {
+                        self.selected_entity = None;
+                        self.selection_set.primary = None;
+                        self.status = "Deselected entity".to_string();
+                    }
+                    tab_viewer::PanelEvent::TransformPositionChanged { entity_id, x, y } => {
+                        // Update entity transform in scene
+                        self.status = format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
+                        // TODO: Update actual entity transform in scene graph when available
+                    }
+                    tab_viewer::PanelEvent::TransformRotationChanged { entity_id, rotation } => {
+                        self.status = format!("Entity {} rotation: {:.1}°", entity_id, rotation);
+                        // TODO: Update actual entity rotation in scene graph when available
+                    }
+                    tab_viewer::PanelEvent::TransformScaleChanged { entity_id, scale_x, scale_y } => {
+                        self.status = format!("Entity {} scale: ({:.2}, {:.2})", entity_id, scale_x, scale_y);
+                        // TODO: Update actual entity scale in scene graph when available
+                    }
+                    tab_viewer::PanelEvent::CreateEntity => {
+                        // Create a new entity with a unique ID
+                        let new_id = self.next_entity_id;
+                        self.next_entity_id += 1;
+                        let new_entity = tab_viewer::EntityInfo {
+                            id: new_id,
+                            name: format!("Entity_{}", new_id),
+                            entity_type: "Empty".to_string(),
+                            components: vec![],
+                        };
+                        self.dock_tab_viewer.add_entity(new_entity);
+                        self.selected_entity = Some(new_id);
+                        self.selection_set.primary = Some(new_id);
+                        self.status = format!("Created entity {}", new_id);
+                    }
+                    tab_viewer::PanelEvent::DeleteEntity(entity_id) => {
+                        // Remove entity from list
+                        self.dock_tab_viewer.remove_entity(entity_id);
+                        if self.selected_entity == Some(entity_id) {
+                            self.selected_entity = None;
+                            self.selection_set.primary = None;
+                        }
+                        self.status = format!("Deleted entity {}", entity_id);
+                    }
+                    tab_viewer::PanelEvent::DuplicateEntity(entity_id) => {
+                        // Find and duplicate the entity
+                        let source_info = self.dock_tab_viewer.find_entity(entity_id).cloned();
+                        if let Some(source) = source_info {
+                            let new_id = self.next_entity_id;
+                            self.next_entity_id += 1;
+                            let new_entity = tab_viewer::EntityInfo {
+                                id: new_id,
+                                name: format!("{}_copy", source.name),
+                                entity_type: source.entity_type.clone(),
+                                components: source.components.clone(),
+                            };
+                            self.dock_tab_viewer.add_entity(new_entity);
+                            self.selected_entity = Some(new_id);
+                            self.selection_set.primary = Some(new_id);
+                            self.status = format!("Duplicated entity {} as {}", entity_id, new_id);
+                        }
+                    }
+                    tab_viewer::PanelEvent::PanelClosed(panel) => {
+                        self.status = format!("Closed {} panel", panel.title());
+                    }
+                    tab_viewer::PanelEvent::PanelFocused(panel) => {
+                        self.status = format!("Focused {} panel", panel.title());
+                    }
+                    tab_viewer::PanelEvent::AddPanel(panel) => {
+                        self.dock_layout.add_panel(panel);
+                        self.status = format!("Added {} panel", panel.title());
+                    }
+                    tab_viewer::PanelEvent::MaterialChanged { name, property, value } => {
+                        self.status = format!("Material '{}': {} = {:.2}", name, property, value);
+                    }
+                    tab_viewer::PanelEvent::AnimationPlayStateChanged { is_playing } => {
+                        if is_playing {
+                            self.status = "Animation playing".to_string();
+                        } else {
+                            self.status = "Animation paused".to_string();
+                        }
+                    }
+                    tab_viewer::PanelEvent::AnimationFrameChanged { frame } => {
+                        self.status = format!("Animation frame: {}", frame);
+                    }
+                    tab_viewer::PanelEvent::AnimationKeyframeAdded { track_index, frame, value } => {
+                        self.status = format!("Added keyframe at frame {} (track {}, value {:.2})", frame, track_index, value);
+                    }
+                    tab_viewer::PanelEvent::ThemeChanged(theme) => {
+                        self.status = format!("Theme changed to {:?}", theme);
+                    }
+                    tab_viewer::PanelEvent::BuildRequested { target, profile } => {
+                        self.status = format!("Build requested: {} ({})", target, profile);
+                    }
+                    tab_viewer::PanelEvent::ConsoleCleared => {
+                        self.status = "Console cleared".to_string();
+                    }
+                    tab_viewer::PanelEvent::AssetSelected(asset) => {
+                        self.status = format!("Selected asset: {}", asset);
+                    }
+                    tab_viewer::PanelEvent::BehaviorNodeSelected(node_id) => {
+                        self.status = format!("Selected behavior node: {}", node_id);
+                    }
+                    tab_viewer::PanelEvent::GraphNodeSelected(node_id) => {
+                        self.status = format!("Selected graph node: {}", node_id);
+                    }
+                    tab_viewer::PanelEvent::HierarchySearchChanged(search) => {
+                        self.status = format!("Hierarchy search: {}", search);
+                    }
+                    tab_viewer::PanelEvent::ConsoleSearchChanged(search) => {
+                        self.status = format!("Console search: {}", search);
+                    }
+                    tab_viewer::PanelEvent::RefreshSceneStats => {
+                        self.status = "Refreshing scene statistics...".to_string();
+                    }
+                    tab_viewer::PanelEvent::AddComponent { entity_id, component_type } => {
+                        self.status = format!("Adding {} to entity {}", component_type, entity_id);
+                        // Would add component to entity in actual implementation
+                    }
+                    tab_viewer::PanelEvent::RemoveComponent { entity_id, component_type } => {
+                        self.status = format!("Removing {} from entity {}", component_type, entity_id);
+                        // Would remove component from entity in actual implementation
+                    }
+                    tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
+                        let mode_names = ["Shaded", "Wireframe", "Unlit", "Normals", "UVs"];
+                        self.status = format!("Viewport view mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
+                    }
+                    tab_viewer::PanelEvent::ViewportGizmoModeChanged(mode) => {
+                        let mode_names = ["Translate", "Rotate", "Scale"];
+                        self.status = format!("Gizmo mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
+                    }
+                    tab_viewer::PanelEvent::ViewportGizmoSpaceChanged(space) => {
+                        self.status = format!("Gizmo space: {}", if space == 0 { "Local" } else { "World" });
+                    }
+                    tab_viewer::PanelEvent::ViewportOverlayToggled { overlay, enabled } => {
+                        self.status = format!("Viewport overlay '{}': {}", overlay, if enabled { "enabled" } else { "disabled" });
+                    }
+                    tab_viewer::PanelEvent::ViewportCameraChanged { fov, near, far, speed } => {
+                        self.status = format!("Camera: FOV={:.0}°, Clip={:.2}-{:.0}, Speed={:.1}", fov, near, far, speed);
+                    }
+                    tab_viewer::PanelEvent::ViewportFocusOnSelection => {
+                        self.status = "Focusing on selection...".to_string();
+                    }
+                    tab_viewer::PanelEvent::ViewportResetCamera => {
+                        self.status = "Camera reset to default position".to_string();
+                    }
+                    tab_viewer::PanelEvent::ViewportCameraPreset(preset) => {
+                        self.status = format!("Camera preset applied: {}", preset);
+                    }
+                    tab_viewer::PanelEvent::ResetLayout => {
+                        // Reset dock state to default layout
+                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Default);
+                        self.status = "Layout reset to default".to_string();
+                    }
+                }
+            }
+        } else {
+            // Legacy layout - original CentralPanel rendering
+            egui::CentralPanel::default().show(ctx, |ui| {
+                // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
+                if let Some(viewport) = &mut self.viewport {
+                    // Phase 14: Update viewport HUD with selection count
+                    viewport.set_selection_count(self.selection_set.count());
 
-                // Phase 4: Visual indicator for play mode
+                    // Phase 4: Visual indicator for play mode
                 let viewport_frame = if !self.editor_mode.is_editing() {
                     let border_color = if self.editor_mode.is_playing() {
                         egui::Color32::from_rgb(100, 200, 100)
@@ -3693,6 +4150,7 @@ impl eframe::App for EditorApp {
                 ui.collapsing("Asset Inspector", |ui| self.show_asset_inspector(ui));
             });
         });
+        } // End of else block for legacy layout
 
         self.render_toasts(ctx);
 
@@ -3715,7 +4173,12 @@ fn main() -> Result<()> {
     let _ = fs::create_dir_all(content_dir.join("levels"));
     let _ = fs::create_dir_all(content_dir.join("encounters"));
 
-    let options = eframe::NativeOptions::default();
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_maximized(true)
+            .with_title("AstraWeave Level & Encounter Editor"),
+        ..Default::default()
+    };
     eframe::run_native(
         "AstraWeave Level & Encounter Editor",
         options,

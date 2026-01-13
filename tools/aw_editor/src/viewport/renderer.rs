@@ -215,6 +215,7 @@ impl ViewportRenderer {
     /// * `show_grid` - Whether to render the grid at all
     /// * `crosshair_mode` - If true, render only axis lines (crosshair), not full grid
     /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
         target: &wgpu::Texture,

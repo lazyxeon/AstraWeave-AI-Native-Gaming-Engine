@@ -59,6 +59,9 @@ pub trait VectorStoreInterface: Send + Sync {
     async fn get(&self, id: &str) -> Option<Memory>;
     async fn remove(&self, id: &str) -> Option<Memory>;
     fn len(&self) -> usize;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     async fn get_all_memories(&self) -> Vec<Memory>;
 }
 
@@ -354,7 +357,7 @@ impl RagPipeline {
         }
 
         // Order results
-        self.order_results(&mut retrieved_memories);
+        self.order_results(retrieved_memories.as_mut_slice());
 
         // Cache results
         if self.config.performance.enable_caching {
@@ -725,7 +728,7 @@ impl RagPipeline {
     }
 
     /// Order results based on configuration
-    fn order_results(&self, memories: &mut Vec<RetrievedMemory>) {
+    fn order_results(&self, memories: &mut [RetrievedMemory]) {
         match self.config.injection.ordering_strategy {
             crate::OrderingStrategy::SimilarityDesc => {
                 memories
@@ -1129,7 +1132,7 @@ mod tests {
             create_retrieved_memory("3", 0.7),
         ];
         
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         
         assert_eq!(memories[0].memory.id, "2"); // 0.9
         assert_eq!(memories[1].memory.id, "3"); // 0.7
@@ -1147,7 +1150,7 @@ mod tests {
             create_retrieved_memory("3", 0.7),
         ];
         
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         
         assert_eq!(memories[0].memory.id, "1"); // 0.5
         assert_eq!(memories[1].memory.id, "3"); // 0.7
@@ -1165,7 +1168,7 @@ mod tests {
             create_retrieved_memory_with_importance("3", 0.6),
         ];
         
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         
         assert_eq!(memories[0].memory.id, "2"); // 0.9
         assert_eq!(memories[1].memory.id, "3"); // 0.6
@@ -1184,7 +1187,7 @@ mod tests {
             create_retrieved_memory_with_timestamp("3", now.saturating_sub(500)),
         ];
         
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         
         assert_eq!(memories[0].memory.id, "2"); // most recent
         assert_eq!(memories[1].memory.id, "3");
@@ -1322,7 +1325,7 @@ mod tests {
             create_retrieved_memory_with_timestamp("3", now.saturating_sub(500)),
         ];
         
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         
         assert_eq!(memories[0].memory.id, "1"); // oldest
         assert_eq!(memories[1].memory.id, "3");
@@ -1340,7 +1343,7 @@ mod tests {
             create_retrieved_memory_with_importance("3", 0.6),
         ];
         
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         
         assert_eq!(memories[0].memory.id, "1"); // 0.3
         assert_eq!(memories[1].memory.id, "3"); // 0.6
@@ -1359,7 +1362,7 @@ mod tests {
         ];
         
         // Just verify it doesn't panic and returns same number of elements
-        pipeline.order_results(&mut memories);
+        pipeline.order_results(memories.as_mut_slice());
         assert_eq!(memories.len(), 3);
     }
 

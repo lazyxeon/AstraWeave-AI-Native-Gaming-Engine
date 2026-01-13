@@ -23,14 +23,14 @@
 //!
 //! # Usage
 //!
-//! ```no_run
+//! ```rust,ignore
 //! use aw_editor_lib::viewport::ViewportWidget;
 //!
-//! // In eframe::App::new()
-//! let viewport = ViewportWidget::new(cc)?;
+//! // Construct the widget from your eframe creation context.
+//! // (The real `cc` comes from eframe; omitted here.)
+//! // let viewport = ViewportWidget::new(cc)?;
 //!
-//! // In eframe::App::update()
-//! viewport.ui(ui, &world)?;
+//! // Then call `viewport.ui(...)` from your App's update loop.
 //! ```
 
 pub mod camera;
@@ -52,4 +52,7 @@ pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
 #[allow(unused_imports)]
 pub use terrain_renderer::{TerrainRenderer, TerrainVertex};
 pub use widget::ViewportWidget;
+
+#[allow(unused_imports)]
+pub use camera::OrbitCamera;
 

@@ -527,7 +527,8 @@ impl FallbackOrchestrator {
 
         // If no rules matched, ensure we don't return an empty plan (which might cause issues)
         // The default config usually has a "Scan" fallback, but just in case:
-        if steps.is_empty() && reg.tools.iter().any(|t| t.name == "scan") {
+        // Check case-insensitively to support both PascalCase and snake_case registries
+        if steps.is_empty() && reg.tools.iter().any(|t| t.name.eq_ignore_ascii_case("scan")) {
             steps.push(ActionStep::Scan { radius: 10.0 });
         }
 

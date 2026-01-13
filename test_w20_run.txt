@@ -1,0 +1,174 @@
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: unused import: `TextureStreamingStats`
+    --> astraweave-render\tests\coverage_booster_render.rs:5415:73
+     |
+5415 |     use astraweave_render::texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `ResourceTable`
+    --> astraweave-render\tests\coverage_booster_render.rs:7060:75
+     |
+7060 |     use astraweave_render::graph::{RenderGraph, RenderNode, GraphContext, ResourceTable};
+     |                                                                           ^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+    --> astraweave-render\tests\coverage_booster_render.rs:7205:9
+     |
+7205 |     use std::collections::HashMap;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TextureStreamingStats`
+    --> astraweave-render\tests\coverage_booster_render.rs:7444:73
+     |
+7444 |     use astraweave_render::texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `VxgiConfig`
+    --> astraweave-render\tests\coverage_booster_render.rs:7642:49
+     |
+7642 |     use astraweave_render::gi::{HybridGiConfig, VxgiConfig};
+     |                                                 ^^^^^^^^^^
+
+warning: unused import: `ResourceTable`
+    --> astraweave-render\tests\coverage_booster_render.rs:8331:50
+     |
+8331 |     use astraweave_render::graph::{GraphContext, ResourceTable};
+     |                                                  ^^^^^^^^^^^^^
+
+warning: unused import: `std::any::Any`
+    --> astraweave-render\tests\coverage_booster_render.rs:8332:9
+     |
+8332 |     use std::any::Any;
+     |         ^^^^^^^^^^^^^
+
+warning: unused variable: `queue`
+    --> astraweave-render\tests\coverage_booster_render.rs:4646:18
+     |
+4646 |     let (device, queue) = adapter
+     |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_queue`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `queue`
+    --> astraweave-render\tests\coverage_booster_render.rs:4709:18
+     |
+4709 |     let (device, queue) = adapter
+     |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_queue`
+
+warning: unused variable: `resources`
+    --> astraweave-render\tests\coverage_booster_render.rs:4997:9
+     |
+4997 |     let resources = node.resources().unwrap();
+     |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_resources`
+
+warning: unused variable: `tx`
+    --> astraweave-render\tests\coverage_booster_render.rs:5033:10
+     |
+5033 |     let (tx, rx) = tokio::sync::watch::channel(());
+     |          ^^ help: if this is intentional, prefix it with an underscore: `_tx`
+
+warning: unused variable: `sky1`
+    --> astraweave-render\tests\coverage_booster_render.rs:5174:9
+     |
+5174 |     let sky1 = SkyRenderer::new(config1);
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_sky1`
+
+warning: unused variable: `tod1`
+    --> astraweave-render\tests\coverage_booster_render.rs:6987:9
+     |
+6987 |     let tod1 = TimeOfDay::new(0.0, 1.0);   // midnight, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod1`
+
+warning: unused variable: `tod2`
+    --> astraweave-render\tests\coverage_booster_render.rs:6988:9
+     |
+6988 |     let tod2 = TimeOfDay::new(6.0, 1.0);   // dawn, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod2`
+
+warning: unused variable: `tod3`
+    --> astraweave-render\tests\coverage_booster_render.rs:6989:9
+     |
+6989 |     let tod3 = TimeOfDay::new(12.0, 1.0);  // noon, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod3`
+
+warning: unused variable: `tod4`
+    --> astraweave-render\tests\coverage_booster_render.rs:6990:9
+     |
+6990 |     let tod4 = TimeOfDay::new(18.0, 1.0);  // dusk, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod4`
+
+warning: unused variable: `tod5`
+    --> astraweave-render\tests\coverage_booster_render.rs:6991:9
+     |
+6991 |     let tod5 = TimeOfDay::new(23.0, 1.0);  // late night, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod5`
+
+warning: unused variable: `tod_fast`
+    --> astraweave-render\tests\coverage_booster_render.rs:6994:9
+     |
+6994 |     let tod_fast = TimeOfDay::new(12.0, 10.0);   // noon, 10x speed
+     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_fast`
+
+warning: unused variable: `tod_slow`
+    --> astraweave-render\tests\coverage_booster_render.rs:6995:9
+     |
+6995 |     let tod_slow = TimeOfDay::new(12.0, 0.1);    // noon, 0.1x speed
+     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_slow`
+
+warning: unused variable: `tod_paused`
+    --> astraweave-render\tests\coverage_booster_render.rs:6996:9
+     |
+6996 |     let tod_paused = TimeOfDay::new(12.0, 0.0);  // noon, paused
+     |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_paused`
+
+warning: unused variable: `tod_boundary`
+    --> astraweave-render\tests\coverage_booster_render.rs:6999:9
+     |
+6999 |     let tod_boundary = TimeOfDay::new(24.0, 1.0);
+     |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_boundary`
+
+warning: unused variable: `tod_negative_scale`
+    --> astraweave-render\tests\coverage_booster_render.rs:7000:9
+     |
+7000 |     let tod_negative_scale = TimeOfDay::new(0.0, -1.0); // negative time scale
+     |         ^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_negative_scale`
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4356:5
+     |
+4356 |     system.add_decal(decal1);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+     = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+     |
+4356 |     let _ = system.add_decal(decal1);
+     |     +++++++
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4357:5
+     |
+4357 |     system.add_decal(decal2);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+     |
+4357 |     let _ = system.add_decal(decal2);
+     |     +++++++
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4358:5
+     |
+4358 |     system.add_decal(decal3);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+     |
+4358 |     let _ = system.add_decal(decal3);
+     |     +++++++
+

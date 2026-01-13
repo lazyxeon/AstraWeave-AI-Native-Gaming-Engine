@@ -1,0 +1,1431 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+   Compiling astraweave-input v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling astraweave-nav v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+   Compiling asset_signing v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\asset_signing)
+   Compiling astraweave-cinematics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-cinematics)
+   Compiling astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+   Compiling aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: unused import: `TextureStreamingStats`
+    --> astraweave-render\tests\coverage_booster_render.rs:5415:73
+     |
+5415 |     use astraweave_render::texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `ResourceTable`
+    --> astraweave-render\tests\coverage_booster_render.rs:7060:75
+     |
+7060 |     use astraweave_render::graph::{RenderGraph, RenderNode, GraphContext, ResourceTable};
+     |                                                                           ^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+    --> astraweave-render\tests\coverage_booster_render.rs:7205:9
+     |
+7205 |     use std::collections::HashMap;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TextureStreamingStats`
+    --> astraweave-render\tests\coverage_booster_render.rs:7444:73
+     |
+7444 |     use astraweave_render::texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `VxgiConfig`
+    --> astraweave-render\tests\coverage_booster_render.rs:7642:49
+     |
+7642 |     use astraweave_render::gi::{HybridGiConfig, VxgiConfig};
+     |                                                 ^^^^^^^^^^
+
+warning: unused import: `ResourceTable`
+    --> astraweave-render\tests\coverage_booster_render.rs:8331:50
+     |
+8331 |     use astraweave_render::graph::{GraphContext, ResourceTable};
+     |                                                  ^^^^^^^^^^^^^
+
+warning: unused import: `std::any::Any`
+    --> astraweave-render\tests\coverage_booster_render.rs:8332:9
+     |
+8332 |     use std::any::Any;
+     |         ^^^^^^^^^^^^^
+
+warning: unused import: `glam::Vec3`
+    --> astraweave-render\tests\coverage_booster_render.rs:8974:9
+     |
+8974 |     use glam::Vec3;
+     |         ^^^^^^^^^^
+
+warning: unused import: `MaterialGpu`
+    --> astraweave-render\tests\coverage_booster_render.rs:9069:39
+     |
+9069 |     use astraweave_render::material::{MaterialGpu, MaterialLayerDesc, MaterialPackDesc, ArrayLayout, MaterialLoadStats};
+     |                                       ^^^^^^^^^^^
+
+warning: unused import: `Mesh`
+    --> astraweave-render\tests\coverage_booster_render.rs:9243:79
+     |
+9243 |     use astraweave_render::types::{Vertex, SkinnedVertex, Instance, Material, Mesh, InstanceRaw, ClusterDims, cluster_index};
+     |                                                                               ^^^^
+
+warning: unused import: `Vec4`
+    --> astraweave-render\tests\coverage_booster_render.rs:9244:28
+     |
+9244 |     use glam::{Mat4, Vec3, Vec4};
+     |                            ^^^^
+
+warning: unused import: `GpuDecal`
+    --> astraweave-render\tests\coverage_booster_render.rs:9416:60
+     |
+9416 |     use astraweave_render::decals::{Decal, DecalBlendMode, GpuDecal};
+     |                                                            ^^^^^^^^
+
+warning: unused imports: `AnimationChannel`, `AnimationClip`, `ChannelData`, and `JointPalette`
+    --> astraweave-render\tests\coverage_booster_render.rs:9707:9
+     |
+9707 |         AnimationClip, AnimationChannel, AnimationState, ChannelData, 
+     |         ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^                  ^^^^^^^^^^^
+9708 |         Interpolation, Joint, Transform, JointPalette, MAX_JOINTS
+     |                                          ^^^^^^^^^^^^
+
+warning: unused import: `MaterialDefinitionExtended`
+    --> astraweave-render\tests\coverage_booster_render.rs:9788:9
+     |
+9788 |         MaterialDefinitionExtended, MaterialGpuExtended,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `astraweave_render::texture_streaming::TextureHandle`
+    --> astraweave-render\tests\coverage_booster_render.rs:9981:9
+     |
+9981 |     use astraweave_render::texture_streaming::TextureHandle;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `astraweave_render::texture::Texture`
+    --> astraweave-render\tests\coverage_booster_render.rs:9982:9
+     |
+9982 |     use astraweave_render::texture::Texture;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+    --> astraweave-render\tests\coverage_booster_render.rs:9983:9
+     |
+9983 |     use std::sync::Arc;
+     |         ^^^^^^^^^^^^^^
+
+warning: unused import: `glam::Vec3`
+     --> astraweave-render\tests\coverage_booster_render.rs:10202:9
+      |
+10202 |     use glam::Vec3;
+      |         ^^^^^^^^^^
+
+warning: unused import: `TerrainLayerDesc`
+     --> astraweave-render\tests\coverage_booster_render.rs:11774:68
+      |
+11774 |     use astraweave_render::terrain_material::{TerrainMaterialDesc, TerrainLayerDesc};
+      |                                                                    ^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::path::PathBuf`
+     --> astraweave-render\tests\coverage_booster_render.rs:11775:9
+      |
+11775 |     use std::path::PathBuf;
+      |         ^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `queue`
+    --> astraweave-render\tests\coverage_booster_render.rs:4646:18
+     |
+4646 |     let (device, queue) = adapter
+     |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_queue`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `queue`
+    --> astraweave-render\tests\coverage_booster_render.rs:4709:18
+     |
+4709 |     let (device, queue) = adapter
+     |                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_queue`
+
+warning: unused variable: `resources`
+    --> astraweave-render\tests\coverage_booster_render.rs:4997:9
+     |
+4997 |     let resources = node.resources().unwrap();
+     |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_resources`
+
+warning: unused variable: `tx`
+    --> astraweave-render\tests\coverage_booster_render.rs:5033:10
+     |
+5033 |     let (tx, rx) = tokio::sync::watch::channel(());
+     |          ^^ help: if this is intentional, prefix it with an underscore: `_tx`
+
+warning: unused variable: `sky1`
+    --> astraweave-render\tests\coverage_booster_render.rs:5174:9
+     |
+5174 |     let sky1 = SkyRenderer::new(config1);
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_sky1`
+
+warning: unused variable: `tod1`
+    --> astraweave-render\tests\coverage_booster_render.rs:6987:9
+     |
+6987 |     let tod1 = TimeOfDay::new(0.0, 1.0);   // midnight, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod1`
+
+warning: unused variable: `tod2`
+    --> astraweave-render\tests\coverage_booster_render.rs:6988:9
+     |
+6988 |     let tod2 = TimeOfDay::new(6.0, 1.0);   // dawn, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod2`
+
+warning: unused variable: `tod3`
+    --> astraweave-render\tests\coverage_booster_render.rs:6989:9
+     |
+6989 |     let tod3 = TimeOfDay::new(12.0, 1.0);  // noon, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod3`
+
+warning: unused variable: `tod4`
+    --> astraweave-render\tests\coverage_booster_render.rs:6990:9
+     |
+6990 |     let tod4 = TimeOfDay::new(18.0, 1.0);  // dusk, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod4`
+
+warning: unused variable: `tod5`
+    --> astraweave-render\tests\coverage_booster_render.rs:6991:9
+     |
+6991 |     let tod5 = TimeOfDay::new(23.0, 1.0);  // late night, normal speed
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_tod5`
+
+warning: unused variable: `tod_fast`
+    --> astraweave-render\tests\coverage_booster_render.rs:6994:9
+     |
+6994 |     let tod_fast = TimeOfDay::new(12.0, 10.0);   // noon, 10x speed
+     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_fast`
+
+warning: unused variable: `tod_slow`
+    --> astraweave-render\tests\coverage_booster_render.rs:6995:9
+     |
+6995 |     let tod_slow = TimeOfDay::new(12.0, 0.1);    // noon, 0.1x speed
+     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_slow`
+
+warning: unused variable: `tod_paused`
+    --> astraweave-render\tests\coverage_booster_render.rs:6996:9
+     |
+6996 |     let tod_paused = TimeOfDay::new(12.0, 0.0);  // noon, paused
+     |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_paused`
+
+warning: unused variable: `tod_boundary`
+    --> astraweave-render\tests\coverage_booster_render.rs:6999:9
+     |
+6999 |     let tod_boundary = TimeOfDay::new(24.0, 1.0);
+     |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_boundary`
+
+warning: unused variable: `tod_negative_scale`
+    --> astraweave-render\tests\coverage_booster_render.rs:7000:9
+     |
+7000 |     let tod_negative_scale = TimeOfDay::new(0.0, -1.0); // negative time scale
+     |         ^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tod_negative_scale`
+
+warning: unused variable: `usage_storage`
+    --> astraweave-render\tests\coverage_booster_render.rs:8864:9
+     |
+8864 |     let usage_storage = TextureUsages::STORAGE_BINDING;
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_usage_storage`
+
+warning: unused variable: `usage_render`
+    --> astraweave-render\tests\coverage_booster_render.rs:8865:9
+     |
+8865 |     let usage_render = TextureUsages::RENDER_ATTACHMENT;
+     |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_usage_render`
+
+warning: unused variable: `usage_copy`
+    --> astraweave-render\tests\coverage_booster_render.rs:8866:9
+     |
+8866 |     let usage_copy = TextureUsages::COPY_SRC | TextureUsages::COPY_DST;
+     |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_usage_copy`
+
+warning: variable does not need to be mutable
+     --> astraweave-render\tests\coverage_booster_render.rs:10216:9
+      |
+10216 |     let mut noon_tod = TimeOfDay::new(12.0, 1.0);
+      |         ----^^^^^^^^
+      |         |
+      |         help: remove this `mut`
+      |
+      = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+     --> astraweave-render\tests\coverage_booster_render.rs:10220:9
+      |
+10220 |     let mut sunset_tod = TimeOfDay::new(18.0, 1.0);
+      |         ----^^^^^^^^^^
+      |         |
+      |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+     --> astraweave-render\tests\coverage_booster_render.rs:10224:9
+      |
+10224 |     let mut midnight_tod = TimeOfDay::new(0.0, 1.0);
+      |         ----^^^^^^^^^^^^
+      |         |
+      |         help: remove this `mut`
+
+warning: unused variable: `mirror`
+     --> astraweave-render\tests\coverage_booster_render.rs:10371:9
+      |
+10371 |     let mirror = wgpu::AddressMode::MirrorRepeat;
+      |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_mirror`
+
+warning: unused variable: `dawn_light`
+     --> astraweave-render\tests\coverage_booster_render.rs:11118:9
+      |
+11118 |     let dawn_light = dawn.get_light_color();
+      |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_dawn_light`
+
+warning: unused variable: `quality_copy`
+     --> astraweave-render\tests\coverage_booster_render.rs:11288:9
+      |
+11288 |     let quality_copy = low;
+      |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_quality_copy`
+
+warning: unused variable: `quality_clone`
+     --> astraweave-render\tests\coverage_booster_render.rs:11289:9
+      |
+11289 |     let quality_clone = high.clone();
+      |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_quality_clone`
+
+warning: unused variable: `mode_clone`
+     --> astraweave-render\tests\coverage_booster_render.rs:11309:9
+      |
+11309 |     let mode_clone = procedural_mode.clone();
+      |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_mode_clone`
+
+warning: unused variable: `mesh_kind`
+     --> astraweave-render\tests\coverage_booster_render.rs:11343:9
+      |
+11343 |     let mesh_kind = AssetKind::Mesh;
+      |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_mesh_kind`
+
+warning: unused variable: `rain_copy`
+     --> astraweave-render\tests\coverage_booster_render.rs:11515:9
+      |
+11515 |     let rain_copy = rain;
+      |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rain_copy`
+
+warning: unused variable: `wind_copy`
+     --> astraweave-render\tests\coverage_booster_render.rs:11516:9
+      |
+11516 |     let wind_copy = wind;
+      |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_wind_copy`
+
+warning: unused variable: `none_clone`
+     --> astraweave-render\tests\coverage_booster_render.rs:11519:9
+      |
+11519 |     let none_clone = none.clone();
+      |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_none_clone`
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4356:5
+     |
+4356 |     system.add_decal(decal1);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+     = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+     |
+4356 |     let _ = system.add_decal(decal1);
+     |     +++++++
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4357:5
+     |
+4357 |     system.add_decal(decal2);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+     |
+4357 |     let _ = system.add_decal(decal2);
+     |     +++++++
+
+warning: unused `std::result::Result` that must be used
+    --> astraweave-render\tests\coverage_booster_render.rs:4358:5
+     |
+4358 |     system.add_decal(decal3);
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+     |
+4358 |     let _ = system.add_decal(decal3);
+     |     +++++++
+
+warning: `astraweave-render` (test "coverage_booster_render") generated 53 warnings (run `cargo fix --test "coverage_booster_render"` to apply 23 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 24s
+     Running unittests src\lib.rs (target\llvm-cov-target\debug\deps\astraweave_render-17df2b1d22ef8f24.exe)
+
+running 369 tests
+test animation::tests::test_cpu_skinning_single_joint ... ok
+test animation::tests::test_cpu_skinning_blend ... ok
+test animation::tests::test_joint_matrices_hierarchy ... ok
+test animation::tests::test_joint_matrices_single_joint ... ok
+test animation::tests::test_skeleton_mismatched_transform_count ... ok
+test animation::tests::test_transform_default ... ok
+test animation::tests::test_animation_state_update_clamping ... ok
+test animation::tests::test_animation_state_update_looping ... ok
+test animation::tests::test_empty_skeleton ... ok
+test animation::tests::test_skeleton_invalid_parent_index ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_sample_empty_channels ... ok
+test animation::tests::test_find_keyframes ... ok
+test animation::tests::test_transform_to_matrix ... ok
+test animation::tests::test_joint_palette_creation ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_sample_invalid_joint_index ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_sample_rotation_channel ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_state_play_pause_stop ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_state_restart ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_not_playing ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_speed_zero ... ok
+test animation_extra_tests::animation_extra_tests::test_compute_joint_matrices_with_inverse_bind ... ok
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_invalid_joint_index ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_sample_scale_channel ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_sample_step_interpolation ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_multiple_wraps ... ok
+test animation_extra_tests::animation_extra_tests::test_compute_joint_matrices_deep_hierarchy ... ok
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_normal_transformation ... ok
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_partial_weights ... ok
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_negative_time_looping ... ok
+test animation_extra_tests::animation_extra_tests::test_compute_joint_matrices_multiple_roots ... ok
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_zero_weights ... ok
+test animation_extra_tests::animation_extra_tests::test_joint_matrix_gpu_size ... ok
+test animation_extra_tests::animation_extra_tests::test_joint_palette_matrix_conversion ... ok
+test animation_extra_tests::animation_extra_tests::test_joint_palette_from_matrices_max_overflow ... ok
+test animation_extra_tests::animation_extra_tests::test_transform_lerp_one ... ok
+test animation_extra_tests::animation_extra_tests::test_transform_lerp_zero ... ok
+test camera::tests::test_camera_basic_functionality ... ok
+test camera::tests::test_camera_controller_movement ... ok
+test animation_extra_tests::animation_extra_tests::test_joint_palette_default ... ok
+test animation_extra_tests::animation_extra_tests::test_joint_palette_from_matrices_empty ... ok
+test animation_extra_tests::animation_extra_tests::test_joint_palette_size ... ok
+test animation_extra_tests::animation_extra_tests::test_transform_to_matrix_with_rotation ... ok
+test camera::tests::test_camera_mode_toggle ... ok
+test animation_extra_tests::animation_extra_tests::test_transform_to_matrix_with_scale ... ok
+test camera::tests::test_mouse_delta_processing ... ok
+test camera::tests::test_orbit_mode_behavior ... ok
+test animation_extra_tests::animation_extra_tests::test_transform_lerp_midpoint ... ok
+test camera::tests::test_camera_zoom_functionality ... ok
+test clustered::tests::parse_cluster_cs ... ok
+test clustered::tests::test_cluster_index_bounds ... ok
+test clustered_megalights::tests::test_cluster_bounds_layout ... ok
+test clustered_megalights::tests::test_cluster_params_layout ... ok
+test culling::tests::test_aabb_from_transform ... ok
+test culling::tests::test_aabb_inside_frustum ... ok
+test clustered::tests::cpu_binning_indices_valid ... ok
+test clustered::tests::cpu_binning_produces_consistent_counts ... ok
+test clustered_forward::tests::test_cluster_config_default ... ok
+test clustered_forward::tests::test_gpu_light_creation ... ok
+test clustered_megalights::tests::test_prefix_sum_params_layout ... ok
+test culling::tests::test_aabb_outside_frustum ... ok
+test clustered_megalights::tests::test_gpu_light_layout ... ok
+test culling::tests::test_cpu_culling ... ok
+test culling::tests::test_frustum_extraction ... ok
+test decals::tests::test_decal_fade ... ok
+test deferred::tests::test_gbuffer_formats_default ... ok
+test decals::tests::test_decal_new ... ok
+test decals::tests::test_gpu_decal_size ... ok
+test effects::tests::test_weather_fx_buffer_exists ... ok
+test depth::tests::test_depth_create ... ok
+test depth::tests::test_depth_format_consistent ... ok
+test effects::tests::test_weather_fx_new ... ok
+test effects::tests::test_weather_fx_rain_spawns_up_to_max ... ok
+test depth::tests::test_depth_create_different_sizes ... ok
+test effects::tests::test_weather_kind_debug ... ok
+test environment::tests::test_day_night_detection ... ok
+test environment::tests::test_sun_position_calculation ... ok
+test environment::tests::test_sky_config_default ... ok
+test environment::tests::test_weather_system ... ok
+test environment::tests::test_time_of_day_creation ... ok
+test effects::tests::test_weather_fx_set_kind ... ok
+test gi::voxelization_pipeline::tests::test_voxel_material_size ... ok
+test gi::voxelization_pipeline::tests::test_voxel_vertex_size ... ok
+test gi::voxelization_pipeline::tests::test_voxelization_config_default ... ok
+test gi::vxgi::tests::test_vxgi_config_default ... ok
+test gi::voxelization_pipeline::tests::test_voxelization_mesh ... ok
+test gi::vxgi::tests::test_voxel_radiance_size ... ok
+test gpu_memory::tests::test_basic_allocation ... ok
+test gpu_memory::tests::test_hard_limit_blocking ... ok
+test gpu_memory::tests::test_snapshot ... ok
+test gpu_memory::tests::test_soft_limit_callback ... ok
+test gpu_memory::tests::test_usage_percentage ... ok
+test gpu_particles::tests::test_emitter_params_size ... ok
+test gpu_particles::tests::test_gpu_particle_size ... ok
+test graph::tests::render_graph_runs_in_order ... ok
+test ibl::tests::test_face_indexing ... ok
+test ibl::tests::test_ibl_quality_presets ... ok
+test ibl::tests::test_ibl_resources_struct ... ok
+test ibl::tests::test_prefilter_params_roughness_calculation ... ok
+test ibl::tests::test_sample_count_by_quality ... ok
+test ibl::tests::test_shader_constant_consistency ... ok
+test ibl::tests::test_sky_mode_creation ... ok
+test ibl::tests::test_uniform_buffer_alignment ... ok
+test instancing::tests::test_batch_clearing ... ok
+test instancing::tests::test_circle_pattern ... ok
+test instancing::tests::test_batch_management ... ok
+test instancing::tests::test_draw_call_reduction ... ok
+test instancing::tests::test_instance_creation ... ok
+test instancing::tests::test_grid_pattern ... ok
+test instancing::tests::test_instance_manager ... ok
+test instancing::tests::test_instance_raw_size ... ok
+test instancing::tests::test_pattern_with_variations ... ok
+test instancing::tests::test_instance_to_raw ... ok
+test lod_generator::tests::test_empty_mesh_simplification ... ok
+test lod_generator::tests::test_degenerate_mesh_all_coplanar ... ok
+test lod_generator::tests::test_lod_level_exceeds_triangle_count ... ok
+test lod_generator::tests::test_lod_generation ... ok
+test lod_generator::tests::test_mesh_integrity_after_simplification ... ok
+test lod_generator::tests::test_quadric_error_at_infinity ... ok
+test lod_generator::tests::test_reduction_calculation ... ok
+test lod_generator::tests::test_quadric_evaluation ... ok
+test lod_generator::tests::test_target_vertex_count_less_than_three ... ok
+test material::tests::test_arrays_toml_parsing ... ok
+test material::tests::test_fallback_coverage ... ok
+test lod_generator::tests::test_simplification_reduces_vertices ... ok
+test material::tests::test_material_layer_desc_default ... ok
+test material::tests::test_material_load_stats_concise_summary ... ok
+test material::tests::test_stable_layer_index_mapping ... ok
+test material::tests::test_toml_parsing_basic ... ok
+test material::tests::test_validate_array_layout_duplicate_indices ... ok
+test material::tests::test_validate_array_layout_valid ... ok
+test material::tests::test_validate_material_pack_duplicate_keys ... ok
+test material::tests::test_validate_material_pack_empty_biome ... ok
+test material::tests::test_validate_material_pack_invalid_tiling ... ok
+test material::tests::test_validate_material_pack_invalid_triplanar ... ok
+test material::tests::test_validate_material_pack_valid ... ok
+test material_extended::tests::test_brushed_metal_material ... ok
+test material_extended::tests::test_car_paint_material ... ok
+test material_extended::tests::test_extreme_color_values ... ok
+test material_extended::tests::test_feature_flags ... ok
+test material_extended::tests::test_glass_material ... ok
+test material_extended::tests::test_invalid_toml_missing_required_fields ... ok
+test material_extended::tests::test_material_size ... ok
+test material_extended::tests::test_skin_material ... ok
+test material_extended::tests::test_out_of_range_values ... ok
+test material_extended::tests::test_toml_conversion ... ok
+test material_extended::tests::test_velvet_material ... ok
+test mesh::tests::test_compute_tangents_empty ... ok
+test mesh::tests::test_compute_tangents_single_triangle ... ok
+test mesh::tests::test_compute_tangents_incomplete_triangle ... ok
+test mesh::tests::test_compute_tangents_single_vertex_degenerate ... ok
+test mesh::tests::test_cpu_mesh_aabb_empty ... ok
+test mesh::tests::test_cpu_mesh_aabb_multiple_vertices ... ok
+test mesh::tests::test_cpu_mesh_aabb_single_vertex ... ok
+test mesh::tests::test_cpu_mesh_clone ... ok
+test mesh::tests::test_mesh_vertex_attribs_locations ... ok
+test mesh::tests::test_cpu_mesh_default ... ok
+test mesh::tests::test_mesh_vertex_from_arrays ... ok
+test mesh::tests::test_mesh_vertex_layout ... ok
+test mesh::tests::test_mesh_vertex_pod_traits ... ok
+test mesh::tests::test_mesh_vertex_new ... ok
+test mesh_registry::tests::cpu_mesh_aabb ... ok
+test mesh_registry::tests::test_gpu_mesh_aabb_some ... ok
+test mesh_registry::tests::test_mesh_handle_equality ... ok
+test mesh_registry::tests::test_mesh_handle_debug ... ok
+test mesh_registry::tests::test_mesh_handle_hash_consistency ... ok
+test mesh_registry::tests::test_mesh_key_clone ... ok
+test mesh_registry::tests::test_mesh_key_debug ... ok
+test mesh_registry::tests::test_mesh_key_equality ... ok
+test mesh_registry::tests::test_mesh_registry_get_empty ... ok
+test mesh_registry::tests::test_mesh_key_hash_consistency ... ok
+test mesh_registry::tests::test_mesh_registry_new ... ok
+test mesh_registry::tests::test_mesh_registry_next_id_increments ... ok
+test msaa::tests::test_msaa_mode_default ... ok
+test msaa::tests::test_msaa_mode_is_enabled ... ok
+test msaa::tests::test_msaa_mode_sample_counts ... ok
+test msaa::tests::test_msaa_multisample_state ... ok
+test msaa::tests::test_msaa_render_target_new ... ok
+test effects::tests::test_weather_fx_particles_despawn ... ok
+test effects::tests::test_weather_fx_update_none ... ok
+test graph::tests::resource_table_transient_texture ... ok
+test effects::tests::test_weather_fx_update_rain ... ok
+test overlay::tests::test_overlay_params_values ... ok
+test overlay::tests::test_overlay_params_zeroed ... ok
+test overlay::tests::test_overlay_params_pod ... ok
+test post::tests::bloom_config_default ... ok
+test post::tests::bloom_config_validate_mip_count ... ok
+test post::tests::bloom_config_validate_threshold ... ok
+test post::tests::bloom_config_validate_intensity ... ok
+test post::tests::parse_bloom_composite ... ok
+test overlay::tests::test_overlay_fx_multiple_updates ... ok
+test post::tests::parse_bloom_threshold ... ok
+test post::tests::parse_bloom_upsample ... ok
+test effects::tests::test_weather_fx_switch_kind_clears ... ok
+test post::tests::parse_ssgi ... ok
+test post::tests::parse_ssr ... ok
+test effects::tests::test_weather_fx_update_wind ... ok
+test post::tests::parse_bloom_downsample ... ok
+test post::tests::ssgi_bindings_declared ... ok
+test post::tests::ssr_bindings_declared ... ok
+test primitives::tests::test_cube_geometry ... ok
+test primitives::tests::test_cube_normals ... ok
+test primitives::tests::test_plane_normals ... ok
+test primitives::tests::test_plane_positions ... ok
+test post::tests::parse_ssao ... ok
+test primitives::tests::test_cube_uvs ... ok
+test primitives::tests::test_plane_geometry ... ok
+test primitives::tests::test_sphere_minimum_resolution ... ok
+test primitives::tests::test_sphere_below_minimum ... ok
+test primitives::tests::test_sphere_indices_validity ... ok
+test primitives::tests::test_sphere_normals ... ok
+test renderer::tests::test_aabb_in_view_space ... ok
+test renderer::mat_integration_tests::material_package_composes_valid_shader ... ok
+test renderer_tests::tests::test_animation_clip_creation ... ok
+test primitives::tests::test_sphere_uvs ... ok
+test renderer::tests::test_frustum_corners_ws ... ok
+test renderer::tests::test_inside_frustum_sphere ... ok
+test primitives::tests::test_sphere_radius ... ok
+test renderer_tests::tests::test_camera_creation ... ok
+test renderer_tests::tests::test_camera_projection_matrix ... ok
+test renderer_tests::tests::test_camera_ubo_packing ... ok
+test renderer_tests::tests::test_camera_update ... ok
+test renderer_tests::tests::test_camera_view_matrix_calculation ... ok
+test renderer_tests::tests::test_camera_view_proj_combined ... ok
+test renderer_tests::tests::test_cascade_split_calculation ... ok
+test renderer_tests::tests::test_cluster_config_default ... ok
+test renderer_tests::tests::test_cluster_dims_calculation ... ok
+test renderer_tests::tests::test_cluster_dims_different_resolutions ... ok
+test overlay::tests::test_overlay_fx_different_formats ... ok
+test renderer_tests::tests::test_cpu_light_structure ... ok
+test renderer_tests::tests::test_bind_group_with_uniform_buffer ... ok
+test renderer_tests::tests::test_camera_bind_group_layout ... ok
+test renderer_tests::tests::test_bind_group_with_texture_and_sampler ... ok
+test renderer_tests::tests::test_depth_texture_format ... ok
+test overlay::tests::test_overlay_fx_new ... ok
+test renderer_tests::tests::test_gpu_light_creation ... ok
+test renderer_tests::tests::test_frustum_planes_extraction ... ok
+test renderer_tests::tests::test_gpu_light_bytemuck ... ok
+test renderer_tests::tests::test_instance_aabb_creation ... ok
+test renderer_tests::tests::test_instance_batch_conversion ... ok
+test renderer_tests::tests::test_camera_buffer_creation ... ok
+test renderer_tests::tests::test_instance_raw_conversion ... ok
+test renderer_tests::tests::test_instance_raw_size ... ok
+test renderer_tests::tests::test_instance_transform_to_raw ... ok
+test overlay::tests::test_overlay_fx_update ... ok
+test renderer_tests::tests::test_light_color_day ... ok
+test renderer_tests::tests::test_light_direction_day ... ok
+test renderer_tests::tests::test_light_direction_night ... ok
+test renderer_tests::tests::test_command_encoder_creation ... ok
+test renderer_tests::tests::test_instance_buffer_creation ... ok
+test renderer_tests::tests::test_hdr_texture_creation ... ok
+test renderer_tests::tests::test_material_byte_conversion ... ok
+test renderer_tests::tests::test_material_data_packing ... ok
+test renderer_tests::tests::test_depth_texture_creation ... ok
+test renderer_tests::tests::test_large_mesh_buffer_capacity ... ok
+test renderer_tests::tests::test_depth_texture_view ... ok
+test renderer_tests::tests::test_moon_position_opposite_sun ... ok
+test renderer_tests::tests::test_instance_buffer_upload ... ok
+test renderer_tests::tests::test_multiple_instances_packing ... ok
+test renderer_tests::tests::test_linear_sampler_creation ... ok
+test renderer_tests::tests::test_material_bind_group_layout ... ok
+test renderer_tests::tests::test_material_buffer_creation ... ok
+test renderer_tests::tests::test_pipeline_with_blending ... ok
+test renderer_tests::tests::test_pipeline_with_depth_stencil ... ok
+test renderer_tests::tests::test_mesh_index_buffer_creation ... ok
+test renderer_tests::tests::test_mesh_buffer_creation ... ok
+test renderer_tests::tests::test_material_package_shader_compilation ... ok
+test renderer_tests::tests::test_multiple_bind_groups ... ok
+test renderer_tests::tests::test_queue_submit ... ok
+test renderer_tests::tests::test_render_pass_descriptor ... ok
+test renderer_tests::tests::test_render_pass_with_depth ... ok
+test renderer_tests::tests::test_queue_write_texture ... ok
+test renderer_tests::tests::test_renderer_read_timestamp_query ... ok
+test renderer_tests::tests::test_renderer_instance_updates ... ok
+test renderer_tests::tests::test_queue_write_buffer ... ok
+test renderer_tests::tests::test_renderer_lifecycle_headless ... ok
+test renderer_tests::tests::test_render_pipeline_creation ... ok
+test renderer_tests::tests::test_shadow_bind_group_layout ... ok
+test renderer_tests::tests::test_repeat_sampler_creation ... ok
+test renderer_tests::tests::test_shader_module_creation ... ok
+test renderer_tests::tests::test_shadow_ortho_matrix ... ok
+test renderer_tests::tests::test_shadow_frustum_corners ... ok
+test renderer_tests::tests::test_renderer_shadow_map_creation ... ok
+test renderer_tests::tests::test_shadow_view_matrix ... ok
+test renderer_tests::tests::test_sky_config_default ... ok
+test renderer_tests::tests::test_sun_position_midnight ... ok
+test renderer_tests::tests::test_sun_position_noon ... ok
+test renderer_tests::tests::test_renderer_water_initialization ... ok
+test renderer_tests::tests::test_renderer_post_processing_initialization ... ok
+test renderer_tests::tests::test_sun_position_sunrise ... ok
+test renderer_tests::tests::test_sun_position_sunset ... ok
+test renderer_tests::tests::test_time_of_day_default ... ok
+test renderer_tests::tests::test_time_of_day_new ... ok
+test renderer_tests::tests::test_viewport_transform ... ok
+test renderer_tests::tests::test_weather_particle_creation ... ok
+test residency::tests::test_residency_load_and_evict ... ok
+test shadow_csm::tests::test_atlas_offset_calculation ... ok
+test renderer_tests::tests::test_weather_system_creation ... ok
+test shadow_csm::tests::test_cascade_split_distribution ... ok
+test terrain::tests::test_biome_id_conversion ... ok
+test shadow_csm::tests::test_gpu_shadow_cascade_size ... ok
+test renderer_tests::tests::test_shadow_comparison_sampler ... ok
+test renderer_tests::tests::test_shadow_texture_creation ... ok
+test renderer_tests::tests::test_shadow_light_buffer ... ok
+test terrain::tests::test_vegetation_type_conversion ... ok
+test terrain::tests::test_terrain_renderer_creation ... ok
+test renderer_tests::tests::test_shadow_texture_array_views ... ok
+test terrain_material::tests::test_blend_mode_edge_cases ... ok
+test terrain_material::tests::test_blend_sharpness_extremes ... ok
+test terrain_material::tests::test_default_terrain_layer ... ok
+test terrain_material::tests::test_default_terrain_material ... ok
+test terrain_material::tests::test_desert_factory ... ok
+test terrain_material::tests::test_extreme_uv_scales ... ok
+test terrain_material::tests::test_empty_layer_list ... ok
+test terrain_material::tests::test_forest_factory ... ok
+test terrain_material::tests::test_normal_blend_parsing ... ok
+test terrain_material::tests::test_grassland_factory ... ok
+test terrain_material::tests::test_more_than_four_layers ... ok
+test terrain_material::tests::test_pod_zeroable_terrain_layer ... ok
+test terrain_material::tests::test_terrain_material_size ... ok
+test terrain_material::tests::test_to_gpu_conversion ... ok
+test terrain_material::tests::test_pod_zeroable_terrain_material ... ok
+test terrain_material::tests::test_terrain_layer_size ... ok
+test renderer_tests::tests::test_renderer_mesh_creation ... ok
+test terrain::tests::test_mesh_generation ... ok
+test texture::tests::test_validate_texture_assets_empty ... ok
+test texture::tests::test_validate_texture_assets_nonexistent ... ok
+test terrain::tests::test_terrain_preview ... ok
+test transparency::tests::test_add_instance ... ok
+test transparency::tests::test_clear ... ok
+test transparency::tests::test_depth_sorting ... ok
+test transparency::tests::test_filter_by_blend_mode ... ok
+test transparency::tests::test_transparency_manager_new ... ok
+test types::tests::test_cluster_dims_debug ... ok
+test types::tests::test_cluster_index_clamping ... ok
+test types::tests::test_cluster_index_depth_progression ... ok
+test types::tests::test_instance_from_pos_scale_color ... ok
+test types::tests::test_instance_raw_conversion ... ok
+test types::tests::test_instance_raw_layout_attributes ... ok
+test types::tests::test_instance_raw_layout_stride ... ok
+test types::tests::test_instance_raw_pod_traits ... ok
+test types::tests::test_material_clone ... ok
+test types::tests::test_skinned_vertex_layout_attributes ... ok
+test types::tests::test_skinned_vertex_layout_stride ... ok
+test types::tests::test_skinned_vertex_pod_traits ... ok
+test types::tests::test_vertex_layout_attributes ... ok
+test types::tests::test_vertex_layout_stride ... ok
+test types::tests::test_vertex_pod_traits ... ok
+test types::tests_cluster::bins_within_bounds ... ok
+test types::tests_cluster::corners_map_to_edges ... ok
+test vertex_compression::tests::test_batch_compression ... ok
+test vertex_compression::tests::test_compressed_vertex_size ... ok
+test vertex_compression::tests::test_half_float_encoding ... ok
+test vertex_compression::tests::test_half_float_uv_encoding ... ok
+test vertex_compression::tests::test_memory_savings_calculation ... ok
+test vertex_compression::tests::test_octahedral_encoding_diagonal ... ok
+test vertex_compression::tests::test_octahedral_encoding_negative ... ok
+test vertex_compression::tests::test_octahedral_encoding_up_vector ... ok
+test vertex_compression::tests::test_vertex_compression_roundtrip ... ok
+test water::tests::test_uniforms_size ... ok
+test water::tests::test_water_plane_generation ... ok
+test renderer_tests::tests::test_texture_bind_group_layout ... ok
+test water::tests::test_water_vertex_desc ... ok
+test texture::tests::test_from_bytes_invalid_data ... ok
+test texture::tests::test_from_bytes_valid_png ... ok
+test texture::tests::test_white_and_normal_different_labels ... ok
+test texture::tests::test_create_default_normal ... ok
+test texture::tests::test_create_default_white ... ok
+test water::tests::test_water_renderer_new_and_update ... ok
+test terrain::tests::test_chunk_radius_loading ... ok
+
+test result: ok. 369 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28.48s
+
+     Running tests\bloom_integration.rs (target\llvm-cov-target\debug\deps\bloom_integration-ea4b01fe3d53d91a.exe)
+
+running 1 test
+test test_bloom_disabled ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\coverage_booster_render.rs (target\llvm-cov-target\debug\deps\coverage_booster_render-8875a0a33052e923.exe)
+
+running 219 tests
+test test_advanced_post_types_wave21 ... ok
+test test_blend_mode_enum_wave20 ... ok
+test test_blend_modes_comprehensive_wave22 ... ok
+test test_animation_interpolation ... ok
+test test_cone_tracing_shader_wave19 ... ok
+test test_animation_state_extended_wave22 ... ok
+test test_animation_types_wave21 ... ok
+test test_camera_controller_comprehensive ... ok
+test test_camera_and_controller ... ok
+test test_create_blend_state_wave20 ... ok
+test test_cpu_mesh_comprehensive_wave20 ... ok
+test test_culling_additional_wave21 ... ok
+test test_culling_advanced_wave23 ... ok
+test test_culling_details_wave18 ... ok
+test test_decal_fade_extended_wave22 ... ok
+test test_debug_quad_module ... ok
+test test_decals_types_wave21 ... ok
+test test_clustered_renderer_extensive ... ok
+test test_culling_pipeline_extensive ... ok
+test test_decal_system_comprehensive ... ok
+test test_deferred_types_wave21 ... ok
+test test_deferred_gbuffer_formats ... ok
+test test_culling_node_module ... ok
+test test_effects_types_wave21 ... ok
+test test_culling_node_detailed ... ok
+test test_environment_additional_features ... ok
+test test_environment_additional_coverage ... ok
+test test_effects_weather_wave23 ... ok
+test test_environment_color_grading_wave22 ... ok
+test test_environment_extended_coverage_wave19 ... ok
+test test_environment_time_of_day_detailed ... ok
+test test_environment_full_coverage ... ok
+test test_environment_extensive ... ok
+test test_environment_weather_sky_wave18 ... ok
+test test_environment_types_wave21 ... ok
+test test_environment_weather_comprehensive ... ok
+test test_frustum_planes_wave22 ... ok
+test test_gi_hybrid_config ... ok
+test test_gpu_memory_module ... ok
+test test_gpu_particles_types_wave21 ... ok
+test test_advanced_post_processing ... ok
+test test_culling_node_comprehensive_wave19 ... ok
+test test_graph_adapter_wave21 ... ok
+test test_graph_additional_coverage ... ok
+test test_graph_context_creation_wave20 ... ok
+test test_graph_more_paths_wave14 ... ok
+test test_hybrid_gi_config_wave19 ... ok
+test test_graph_adapter_detailed ... ok
+test test_gpu_particles_comprehensive ... ok
+test test_deferred_renderer_comprehensive ... ok
+test test_ibl_environment_integration_wave23 ... ok
+test test_environment_sky_renderer_detailed ... ok
+test test_ibl_extended_wave24 ... ok
+test test_deferred_renderer_more_coverage ... ok
+test test_ibl_extended_wave18 ... ok
+test test_graph_adapter_full_path ... ok
+test test_ibl_manager_types_wave21 ... ok
+test test_instance_aabb_additional_wave19 ... ok
+test test_instance_aabb_wave22 ... ok
+test test_ibl_edge_cases_extended_wave14 ... ok
+test test_lod_generator_extensive ... ok
+test test_lod_types_wave22 ... ok
+test test_material_comprehensive_fields ... ok
+test test_material_comprehensive_wave18 ... ok
+test test_material_definition_extended_to_gpu_wave23 ... ok
+test test_material_extended_coverage ... ok
+test test_material_extended_types_wave21 ... ok
+test test_material_gpu_extended_factory_methods_wave23 ... ok
+test test_material_gpu_extended_features_wave22 ... ok
+test test_material_layer_desc_wave18 ... ok
+test test_material_layer_detailed_paths ... ok
+test test_material_load_stats_wave24 ... ok
+test test_material_loader_comprehensive ... ok
+test test_material_loader_edge_cases ... ok
+test test_material_loader_full_workflow ... ok
+test test_graph_adapter_integration ... ok
+test test_material_loader_more_coverage ... ok
+test test_material_more_coverage_wave14 ... ok
+test test_material_types_wave21 ... ok
+test test_mesh_registry_additional_wave22 ... ok
+test test_mesh_registry_comprehensive_wave23 ... ok
+test test_mesh_types_wave21 ... ok
+test test_mesh_registry_types_wave21 ... ok
+test test_mesh_vertex_comprehensive_wave20 ... ok
+test test_msaa_types_wave21 ... ok
+test test_overlay_module_wave21 ... ok
+test test_overlay_module_wave23 ... ok
+test test_post_fx_types_wave22 ... ok
+test test_primitives_module ... ok
+test test_ibl_manager_methods ... ok
+test test_ibl_manager_edge_cases ... ok
+test test_ibl_additional_coverage ... ok
+test test_render_graph_comprehensive_wave18 ... ok
+test test_instancing_system ... ok
+test test_msaa_module ... ok
+test test_ibl_capture_and_bake ... ok
+test test_ibl_manager_detailed ... ok
+test test_render_graph_module ... ok
+test test_render_extra_systems ... ok
+test test_render_core_systems ... ok
+test test_render_advanced_features ... ok
+test test_renderer_additional_methods_wave18 ... ok
+test test_renderer_full_mesh_creation_wave16 ... ok
+test test_renderer_bake_environment_wave16 ... ok
+test test_render_systems_logic ... ok
+test test_renderer_cascade_and_shadow_methods ... ok
+test test_renderer_extensive_methods ... ok
+test test_renderer_bake_environment ... ok
+test test_renderer_full_pipeline ... ok
+test test_renderer_internal_methods ... ok
+test test_renderer_more_accessors_wave14 ... ok
+test test_renderer_mesh_methods_wave16 ... ok
+test test_render_loop_and_materials ... ok
+test test_renderer_material_params ... ok
+test test_renderer_model_management ... ok
+test test_renderer_mesh_creation_methods ... ok
+test test_renderer_skinned_mesh_wave16 ... ok
+test test_renderer_shadow_material_params_wave16 ... ok
+test test_renderer_texture_methods_wave16 ... ok
+test test_renderer_types_wave24 ... ok
+test test_renderer_more_coverage ... ok
+test test_renderer_timeline_cinematics_wave16 ... ok
+test test_renderer_more_methods ... ok
+test test_renderer_resize_and_accessors ... ok
+test test_residency_extended_coverage ... ok
+test test_residency_extended_wave18 ... ok
+test test_residency_info_wave22 ... ok
+test test_residency_manager_detailed ... ok
+test test_residency_module ... ok
+test test_residency_structures_wave23 ... ok
+test test_residency_types_wave21 ... ok
+test test_resource_table_error_paths_wave20 ... ok
+test test_shadow_csm_cascades_wave18 ... ok
+test test_renderer_texture_methods ... ok
+test test_skinned_vertex_wave22 ... ok
+test test_renderer_weather_wave16 ... ok
+test test_sky_config_wave24 ... ok
+test test_sky_renderer_extended ... ok
+test test_terrain_layer_desc_wave24 ... ok
+test test_renderer_update_camera_wave16 ... ok
+test test_terrain_material_desc_normal_blend_wave24 ... ok
+test test_terrain_layer_gpu_wave24 ... ok
+test test_terrain_material_desc_wave24 ... ok
+test test_terrain_renderer_extensive ... ok
+test test_terrain_material_gpu_wave24 ... ok
+test test_renderer_skinned_mesh ... ok
+test test_texture_additional_paths_wave19 ... ok
+test test_texture_additional_paths_wave21 ... ok
+test test_renderer_timeline_methods ... ok
+test test_texture_edge_cases_wave14 ... ok
+test test_renderer_water_system ... ok
+test test_texture_handle_wave22 ... ok
+test test_renderer_weather_and_environment ... ok
+test test_shadow_csm_extensive ... ok
+test test_texture_extended_coverage ... ok
+test test_texture_creation_variants ... ok
+test test_texture_sampling_wave22 ... ok
+test test_texture_streaming_additional_wave20 ... ok
+test test_texture_streaming_comprehensive ... ok
+test test_texture_streaming_comprehensive_wave23 ... ok
+test test_sky_and_time_comprehensive ... ok
+test test_texture_streaming_detailed_wave14 ... ok
+test test_texture_streaming_eviction_and_stats ... ok
+test test_texture_streaming_load_request_ordering_wave19 ... ok
+test test_texture_streaming_manager_comprehensive_wave19 ... ok
+test test_texture_streaming_manager_full ... ok
+test test_texture_streaming_manager_methods_wave24 ... ok
+test test_texture_streaming_priority_ordering ... ok
+test test_texture_streaming_stats_coverage ... ok
+test test_texture_streaming_stats_wave19 ... ok
+test test_texture_streaming_stats_wave22 ... ok
+test test_texture_streaming_stats_wave24 ... ok
+test test_texture_streaming_structures ... ok
+test test_texture_streaming_sync ... ok
+test test_texture_streaming_wave18 ... ok
+test test_texture_usage_wave22 ... ok
+test test_time_of_day_extended_wave23 ... ok
+test test_time_of_day_light_color_wave22 ... ok
+test test_time_of_day_wave22 ... ok
+test test_transparency_advanced ... ok
+test test_transparency_depth_sorting_edge_cases_wave20 ... ok
+test test_transparency_manager_comprehensive_wave20 ... ok
+test test_transparency_types_wave21 ... ok
+test test_transparent_instance_struct_wave20 ... ok
+test test_types_module_wave21 ... ok
+test test_vertex_compression ... ok
+test test_voxel_material_wave22 ... ok
+test test_voxel_radiance_wave19 ... ok
+test test_voxel_vertex_and_material_wave19 ... ok
+test test_voxel_vertex_and_material_wave21 ... ok
+test test_voxel_vertex_wave22 ... ok
+test test_voxelization_config_and_mesh ... ok
+test test_voxelization_config_comprehensive_wave19 ... ok
+test test_voxelization_config_comprehensive_wave21 ... ok
+test test_voxelization_config_wave22 ... ok
+test test_voxelization_mesh_and_config ... ok
+test test_voxelization_mesh_wave19 ... ok
+test test_voxelization_mesh_wave22 ... ok
+test test_voxelization_pipeline_comprehensive ... ok
+test test_voxelization_pipeline_comprehensive_wave24 ... ok
+test test_voxelization_pipeline_edge_cases_wave23 ... ok
+test test_voxelization_pipeline_gpu_creation ... ok
+test test_voxelization_stats_wave19 ... ok
+test test_voxelization_stats_wave22 ... ok
+test test_voxelization_structures ... ok
+test test_vxgi_additional_coverage ... ok
+test test_vxgi_config_comprehensive_wave19 ... ok
+test test_water_additional_wave18 ... ok
+test test_weather_particles_wave24 ... ok
+test test_weather_system_comprehensive ... ok
+test test_weather_system_extended_wave24 ... ok
+test test_weather_type_enum_wave24 ... ok
+test test_texture_module ... ok
+test test_texture_streaming_detailed ... ok
+test test_texture_more_variants ... ok
+test test_texture_loading_paths_wave18 ... ok
+test test_texture_remaining_coverage ... ok
+test test_terrain_renderer_module has been running for over 60 seconds
+test test_terrain_rendering_wave18 has been running for over 60 seconds
+test test_terrain_renderer_module ... ok
+test test_terrain_rendering_wave18 ... ok
+
+test result: ok. 219 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10564.24s
+
+     Running tests\culling_debug.rs (target\llvm-cov-target\debug\deps\culling_debug-a11afe193fb39dba.exe)
+
+running 2 tests
+test debug_view_space_coordinates ... ok
+test debug_perspective_frustum ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\culling_integration.rs (target\llvm-cov-target\debug\deps\culling_integration-f25b8f2db1ffabff.exe)
+
+running 5 tests
+test test_cpu_vs_gpu_culling_parity ... ok
+test test_gpu_culling_pipeline_creation ... ok
+test test_empty_instance_list ... ok
+test test_culling_reduces_draw_count ... ok
+test test_all_instances_visible_when_inside_frustum ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.45s
+
+     Running tests\culling_layout.rs (target\llvm-cov-target\debug\deps\culling_layout-627867978f22ac04.exe)
+
+running 2 tests
+test test_multiple_instances_layout ... ok
+test test_instance_aabb_layout ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\golden_backend_tests.rs (target\llvm-cov-target\debug\deps\golden_backend_tests-2e1164cb194033ca.exe)
+
+running 3 tests
+test tests::golden_triangle_render ... ok
+test tests::golden_determinism_check ... ok
+test tests::test_backend_detection ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.62s
+
+     Running tests\golden_postfx.rs (target\llvm-cov-target\debug\deps\golden_postfx-66fb39bf14f8b01e.exe)
+
+running 1 test
+test golden_postfx_compose_matches_cpu ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+
+     Running tests\gpu_resource_leak_detection.rs (target\llvm-cov-target\debug\deps\gpu_resource_leak_detection-00d35cc1378db248.exe)
+
+running 5 tests
+test test_texture_lifecycle_no_leaks ... ok
+test test_buffer_lifecycle_no_leaks ... ok
+test test_pipeline_lifecycle_no_leaks ... ok
+test test_headless_device_creation ... ok
+test test_renderer_lifecycle_stress_test ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.46s
+
+     Running tests\graph_smoke.rs (target\llvm-cov-target\debug\deps\graph_smoke-7684f9ea1b2d0d13.exe)
+
+running 2 tests
+test graph_executes_all_nodes ... ok
+test adapter_nodes_compile ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\headless_integration.rs (target\llvm-cov-target\debug\deps\headless_integration-1781baa18fa4f2e5.exe)
+
+running 1 test
+test headless_biome_pack_and_pipeline_compat ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.43s
+
+     Running tests\ibl_integration.rs (target\llvm-cov-target\debug\deps\ibl_integration-d19e4ac959f244e2.exe)
+
+running 1 test
+test test_ibl_disabled ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\indirect_draw.rs (target\llvm-cov-target\debug\deps\indirect_draw-83a067cfab830d98.exe)
+
+running 7 tests
+test test_build_indirect_commands_from_batches ... ok
+test test_batching_with_materials ... ok
+test test_batch_visible_instances ... ok
+test test_draw_batch_building ... ok
+test test_draw_indirect_command_creation ... ok
+test test_empty_batch_list ... ok
+test test_single_instance_per_batch ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\material_validation.rs (target\llvm-cov-target\debug\deps\material_validation-938d7772d280d828.exe)
+
+running 8 tests
+test test_validate_array_layout_valid ... ok
+test test_validate_array_layout_with_gaps ... ok
+test test_validate_material_pack_empty_biome ... ok
+test test_validate_array_layout_duplicate_indices ... ok
+test test_validate_material_pack_duplicate_keys ... ok
+test test_validate_material_pack_valid ... ok
+test test_validate_material_pack_invalid_triplanar ... ok
+test test_validate_material_pack_invalid_tiling ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\materials_spec.rs (target\llvm-cov-target\debug\deps\materials_spec-f3868e51a4178a2c.exe)
+
+running 4 tests
+test concise_summary_formats_expected_fields ... ok
+test path_resolution_uses_base_dir_and_normalizes ... ok
+test parses_materials_and_arrays_and_orders_layers ... ok
+test packs_mra_from_separate_planes_when_missing_mra ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.43s
+
+     Running tests\memory_safety_tests.rs (target\llvm-cov-target\debug\deps\memory_safety_tests-94519ad806a3bb2c.exe)
+
+running 1 test
+test test_mesh_registry_pruning ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.52s
+
+     Running tests\shader_validation.rs (target\llvm-cov-target\debug\deps\shader_validation-6e2e83121fe5d024.exe)
+
+running 3 tests
+test test_shader_features_compatibility ... ok
+test test_shader_entry_points ... ok
+test test_all_shaders_compile ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+
+     Running tests\shadow_integration.rs (target\llvm-cov-target\debug\deps\shadow_integration-e7ea113f823f53bc.exe)
+
+running 1 test
+test test_shadow_map_initialization ... ignored, Requires main thread event loop (fails on Windows/macOS in test runner)
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\skinning_integration.rs (target\llvm-cov-target\debug\deps\skinning_integration-9bb5776889b3b939.exe)
+
+running 9 tests
+test test_cpu_skinning_vertex ... ok
+test test_joint_palette_conversion ... ok
+test test_cpu_skinning_deterministic ... ok
+test test_large_skeleton ... ok
+test test_animation_sampling_interpolation ... ok
+test test_golden_pose ... ok
+test test_hierarchical_transform_propagation ... ok
+test test_max_joints_limit ... ok
+test test_skinning_weighted_blend ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests\skinning_parity_cpu_vs_gpu.rs (target\llvm-cov-target\debug\deps\skinning_parity_cpu_vs_gpu-00ed27f13ff6dc20.exe)
+
+running 2 tests
+test test_cpu_skinning_animated ... ok
+test test_cpu_skinning_rest_pose ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\skinning_pose_frame_golden.rs (target\llvm-cov-target\debug\deps\skinning_pose_frame_golden-14c195b3fcf84695.exe)
+
+running 11 tests
+test test_animated_pose_determinism ... ok
+test test_animated_pose_full_cycle ... ok
+test test_animated_pose_keyframe_t1 ... ok
+test test_animated_pose_joint_matrices_t1 ... ok
+test test_utils::tests::test_simple_skeleton ... ok
+test test_animated_pose_clamping_beyond_duration ... ok
+test test_animated_pose_clamping_negative_time ... ok
+test test_animated_pose_hierarchical_propagation ... ok
+test test_animated_pose_interpolated_t0_5 ... ok
+test test_animated_pose_vertex_skinning_t1 ... ok
+test test_utils::tests::test_compute_matrices ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\skinning_rest_pose_golden.rs (target\llvm-cov-target\debug\deps\skinning_rest_pose_golden-7edd5ed13b6d84e4.exe)
+
+running 8 tests
+test test_rest_pose_blended_weights ... ok
+test test_rest_pose_golden_baseline ... ok
+test test_rest_pose_determinism ... ok
+test test_rest_pose_normalized_weights ... ok
+test test_rest_pose_single_joint ... ok
+test test_rest_pose_zero_weights ... ok
+test test_utils::tests::test_compute_matrices ... ok
+test test_utils::tests::test_simple_skeleton ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\skinning_stress_many_entities.rs (target\llvm-cov-target\debug\deps\skinning_stress_many_entities-01b1ca16134d59df.exe)
+
+running 7 tests
+test test_stress_cpu_high ... ignored, Long-running stress test; run manually
+test test_stress_large_dt ... ok
+test test_stress_memory_stability ... ok
+test test_stress_negative_dt ... ok
+test test_stress_zero_dt ... ok
+test test_stress_determinism ... ok
+test test_stress_cpu_moderate ... ok
+
+test result: ok. 6 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests\test_pbr_advanced.rs (target\llvm-cov-target\debug\deps\test_pbr_advanced-9bcb043dbe14d598.exe)
+
+running 28 tests
+test test_anisotropy_negative_strength ... ok
+test test_beer_lambert_attenuation ... ok
+test test_charlie_distribution_retroreflection ... ok
+test test_clearcoat_distribution_peaks_at_normal ... ok
+test test_clearcoat_fresnel_at_normal_incidence ... ok
+test test_clearcoat_material_creation ... ok
+test test_anisotropic_aspect_ratio ... ok
+test test_anisotropic_rotation ... ok
+test test_brushed_metal_material ... ok
+test test_clearcoat_energy_conservation ... ok
+test test_fresnel_dielectric_at_grazing ... ok
+test test_burley_diffusion_non_negative ... ok
+test test_clearcoat_fresnel_at_grazing_angle ... ok
+test test_feature_flag_combinations ... ok
+test test_material_size_and_alignment ... ok
+test test_multi_lobe_energy_conservation ... ok
+test test_skin_material ... ok
+test test_sss_energy_conservation ... ok
+test test_fresnel_dielectric_at_normal_incidence ... ok
+test test_glass_material ... ok
+test test_sheen_roughness_falloff ... ok
+test test_sheen_energy_conservation ... ok
+test test_toml_defaults ... ok
+test test_toml_material_parsing ... ok
+test test_velvet_material ... ok
+test test_wrap_diffuse_profile ... ok
+test test_transmission_energy_conservation ... ok
+test test_total_internal_reflection ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\test_pbr_brdf.rs (target\llvm-cov-target\debug\deps\test_pbr_brdf-be9d536c5e85e43f.exe)
+
+running 24 tests
+test test_brdf_non_negative ... ok
+test test_brdf_specular_increases_with_smoothness ... ok
+test test_brdf_zero_at_backface ... ok
+test test_energy_conservation_dielectric ... ok
+test test_energy_conservation_metal ... ok
+test test_energy_conservation_partial_metal ... ok
+test test_fresnel_at_grazing_angle ... ok
+test test_fresnel_at_normal_incidence ... ok
+test test_fresnel_monotonic_increase ... ok
+test test_fresnel_clamping ... ok
+test test_fresnel_schlick_known_value ... ok
+test test_ggx_increases_with_roughness_at_grazing ... ok
+test test_fresnel_with_metal_f0 ... ok
+test test_ggx_decreases_with_roughness_at_peak ... ok
+test test_ggx_known_value ... ok
+test test_ggx_long_tail ... ok
+test test_ggx_peaks_at_normal_incidence ... ok
+test test_smith_bounded_by_one ... ok
+test test_ggx_numerical_stability_at_zero ... ok
+test test_smith_decreases_at_grazing_angles ... ok
+test test_smith_is_product_of_view_and_light ... ok
+test test_smith_decreases_with_roughness ... ok
+test test_smith_known_value ... ok
+test test_smith_numerical_stability ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\test_pbr_visual_validation.rs (target\llvm-cov-target\debug\deps\test_pbr_visual_validation-916c8ba53dfd44c7.exe)
+
+running 8 tests
+test test_clearcoat_grid_generation ... ok
+test test_grid_material_ordering ... ok
+test test_subsurface_grid_generation ... ok
+test test_transmission_grid_generation ... ok
+test test_anisotropy_grid_generation ... ok
+test test_multi_feature_grid_generation ... ok
+test test_sheen_grid_generation ... ok
+test test_validation_scene_generation ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\test_terrain_material.rs (target\llvm-cov-target\debug\deps\test_terrain_material-e004b51c09603d59.exe)
+
+running 25 tests
+test terrain_material_tests::test_default_terrain_layer ... ok
+test terrain_material_tests::test_extreme_triplanar_power ... ok
+test terrain_material_tests::test_forest_factory ... ok
+test terrain_material_tests::test_default_terrain_material ... ok
+test terrain_material_tests::test_desert_factory ... ok
+test terrain_material_tests::test_grassland_factory ... ok
+test terrain_material_tests::test_height_based_weight_adjustment ... ok
+test terrain_material_tests::test_height_range_validation ... ok
+test terrain_material_tests::test_per_layer_uv_scaling ... ok
+test terrain_material_tests::test_pod_zeroable_terrain_layer ... ok
+test terrain_material_tests::test_normal_blend_parsing ... ok
+test terrain_material_tests::test_pod_zeroable_terrain_material ... ok
+test terrain_material_tests::test_single_layer_fallback ... ok
+test terrain_material_tests::test_splat_weight_normalization_concept ... ok
+test terrain_material_tests::test_terrain_layer_size_and_alignment ... ok
+test terrain_material_tests::test_terrain_layer_toml_defaults ... ok
+test terrain_material_tests::test_to_gpu_conversion_basic ... ok
+test terrain_material_tests::test_triplanar_blend_factor_flat_surface ... ok
+test terrain_material_tests::test_terrain_material_toml_roundtrip ... ok
+test terrain_material_tests::test_triplanar_blend_factor_steep_slope ... ok
+test terrain_material_tests::test_terrain_material_size_and_alignment ... ok
+test terrain_material_tests::test_to_gpu_handles_missing_textures ... ok
+test terrain_material_tests::test_to_gpu_conversion_grassland ... ok
+test terrain_material_tests::test_triplanar_blend_factor_vertical_cliff ... ok
+test terrain_material_tests::test_zero_splat_uv_scale ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\test_utils.rs (target\llvm-cov-target\debug\deps\test_utils-618a74a9b9d6d7a0.exe)
+
+running 2 tests
+test tests::test_simple_skeleton ... ok
+test tests::test_compute_matrices ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\test_visual_regression.rs (target\llvm-cov-target\debug\deps\test_visual_regression-c2bf3cb96307e1ff.exe)
+
+running 5 tests
+test visual_regression::tests::test_image_delta_different ... ok
+test visual_regression::tests::test_image_delta_identical ... ok
+test test_basic_rendering::test_clear_color ... ok
+test test_basic_rendering::test_simple_triangle ... ok
+test test_basic_rendering::test_depth_buffer ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.77s
+
+Filename                                              Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+astraweave-asset\src\cell_loader.rs                       142               142     0.00%           8                 8     0.00%          72                72     0.00%           0                 0         -
+astraweave-asset\src\lib.rs                              2392              2377     0.63%         137               135     1.46%        1302              1288     1.08%           0                 0         -
+astraweave-asset\src\nanite_preprocess.rs                 814               814     0.00%          32                32     0.00%         493               493     0.00%           0                 0         -
+astraweave-behavior\src\goap.rs                           276               276     0.00%          32                32     0.00%         202               202     0.00%           0                 0         -
+astraweave-behavior\src\goap_cache.rs                     214               214     0.00%          27                27     0.00%         176               176     0.00%           0                 0         -
+astraweave-behavior\src\interner.rs                        44                44     0.00%           8                 8     0.00%          34                34     0.00%           0                 0         -
+astraweave-behavior\src\lib.rs                             14                14     0.00%           2                 2     0.00%          10                10     0.00%           0                 0         -
+astraweave-cinematics\src\lib.rs                           72                51    29.17%           5                 2    60.00%          61                44    27.87%           0                 0         -
+astraweave-core\src\capture_replay.rs                      62                62     0.00%           4                 4     0.00%          35                35     0.00%           0                 0         -
+astraweave-core\src\ecs_adapter.rs                         40                40     0.00%           3                 3     0.00%          34                34     0.00%           0                 0         -
+astraweave-core\src\ecs_components.rs                      21                21     0.00%           3                 3     0.00%          13                13     0.00%           0                 0         -
+astraweave-core\src\ecs_events.rs                          19                19     0.00%           5                 5     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\metrics.rs                            112               112     0.00%          15                15     0.00%          61                61     0.00%           0                 0         -
+astraweave-core\src\perception.rs                          26                26     0.00%           2                 2     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\schema.rs                              77                77     0.00%          13                13     0.00%          98                98     0.00%           0                 0         -
+astraweave-core\src\sim.rs                                  5                 5     0.00%           1                 1     0.00%           3                 3     0.00%           0                 0         -
+astraweave-core\src\tool_vocabulary.rs                      2                 2     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-core\src\tools.rs                              340               340     0.00%          10                10     0.00%         173               173     0.00%           0                 0         -
+astraweave-core\src\world.rs                              217               217     0.00%          29                29     0.00%         144               144     0.00%           0                 0         -
+astraweave-ecs\src\archetype.rs                           335               335     0.00%          28                28     0.00%         218               218     0.00%           0                 0         -
+astraweave-ecs\src\blob_vec.rs                            233               233     0.00%          15                15     0.00%         145               145     0.00%           0                 0         -
+astraweave-ecs\src\command_buffer.rs                        8                 8     0.00%           1                 1     0.00%           4                 4     0.00%           0                 0         -
+astraweave-ecs\src\component_meta.rs                       14                14     0.00%           3                 3     0.00%           9                 9     0.00%           0                 0         -
+astraweave-ecs\src\entity_allocator.rs                     97                97     0.00%          16                16     0.00%          90                90     0.00%           0                 0         -
+astraweave-ecs\src\lib.rs                                 339               339     0.00%          27                27     0.00%         226               226     0.00%           0                 0         -
+astraweave-ecs\src\sparse_set.rs                           99                99     0.00%          14                14     0.00%          68                68     0.00%           0                 0         -
+astraweave-ecs\src\system_param.rs                         99                99     0.00%           5                 5     0.00%          80                80     0.00%           0                 0         -
+astraweave-ecs\src\type_registry.rs                        47                47     0.00%           6                 6     0.00%          43                43     0.00%           0                 0         -
+astraweave-gameplay\src\biome_spawn.rs                     58                 0   100.00%           1                 0   100.00%          38                 0   100.00%           0                 0         -
+astraweave-gameplay\src\combat.rs                          82                82     0.00%           3                 3     0.00%          73                73     0.00%           0                 0         -
+astraweave-gameplay\src\combat_physics.rs                   2                 2     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-gameplay\src\crafting.rs                        50                50     0.00%           5                 5     0.00%          43                43     0.00%           0                 0         -
+astraweave-gameplay\src\dialogue.rs                       225               225     0.00%          12                12     0.00%         126               126     0.00%           0                 0         -
+astraweave-gameplay\src\items.rs                           36                36     0.00%           6                 6     0.00%          25                25     0.00%           0                 0         -
+astraweave-gameplay\src\quests.rs                          37                37     0.00%           3                 3     0.00%          24                24     0.00%           0                 0         -
+astraweave-gameplay\src\stats.rs                           32                32     0.00%           4                 4     0.00%          34                34     0.00%           0                 0         -
+astraweave-gameplay\src\veilweaver_slice.rs               154               154     0.00%          13                13     0.00%         119               119     0.00%           0                 0         -
+astraweave-gameplay\src\veilweaver_tutorial.rs            156               156     0.00%          16                16     0.00%         120               120     0.00%           0                 0         -
+astraweave-gameplay\src\weave_portals.rs                    8                 8     0.00%           1                 1     0.00%           4                 4     0.00%           0                 0         -
+astraweave-materials\src\lib.rs                           463               381    17.71%          23                15    34.78%         227               182    19.82%           0                 0         -
+astraweave-nav\src\lib.rs                                 419               419     0.00%          24                24     0.00%         250               250     0.00%           0                 0         -
+astraweave-physics\src\cloth.rs                           542               542     0.00%          33                33     0.00%         365               365     0.00%           0                 0         -
+astraweave-physics\src\destruction.rs                     403               403     0.00%          42                42     0.00%         354               354     0.00%           0                 0         -
+astraweave-physics\src\environment.rs                     456               456     0.00%          41                41     0.00%         310               310     0.00%           0                 0         -
+astraweave-physics\src\gravity.rs                         204               204     0.00%          26                26     0.00%         178               178     0.00%           0                 0         -
+astraweave-physics\src\lib.rs                             846               846     0.00%          40                40     0.00%         551               551     0.00%           0                 0         -
+astraweave-physics\src\projectile.rs                      118               118     0.00%          14                14     0.00%         114               114     0.00%           0                 0         -
+astraweave-physics\src\ragdoll.rs                         435               435     0.00%          22                22     0.00%         406               406     0.00%           0                 0         -
+astraweave-physics\src\vehicle.rs                         577               577     0.00%          51                51     0.00%         472               472     0.00%           0                 0         -
+astraweave-render\src\advanced_post.rs                    222                 2    99.10%           9                 0   100.00%         314                 2    99.36%           0                 0         -
+astraweave-render\src\animation.rs                        534                25    95.32%          31                 0   100.00%         418                13    96.89%           0                 0         -
+astraweave-render\src\animation_extra_tests.rs            499                 1    99.80%          30                 0   100.00%         431                 1    99.77%           0                 0         -
+astraweave-render\src\camera.rs                           397                21    94.71%          22                 0   100.00%         308                12    96.10%           0                 0         -
+astraweave-render\src\clustered.rs                        395                 4    98.99%          10                 0   100.00%         187                 4    97.86%           0                 0         -
+astraweave-render\src\clustered_forward.rs                239                 2    99.16%          14                 0   100.00%         269                 0   100.00%           0                 0         -
+astraweave-render\src\clustered_megalights.rs             202                 4    98.02%           7                 0   100.00%         390                 1    99.74%           0                 0         -
+astraweave-render\src\culling.rs                          428                10    97.66%          26                 1    96.15%         369                 7    98.10%           0                 0         -
+astraweave-render\src\culling_node.rs                      43                22    48.84%           5                 1    80.00%          40                14    65.00%           0                 0         -
+astraweave-render\src\debug_quad.rs                        13                 0   100.00%           2                 0   100.00%          45                 0   100.00%           0                 0         -
+astraweave-render\src\decals.rs                           153                11    92.81%          16                 1    93.75%         146                 7    95.21%           0                 0         -
+astraweave-render\src\deferred.rs                         207                12    94.20%          10                 1    90.00%         307                 6    98.05%           0                 0         -
+astraweave-render\src\depth.rs                            128                 2    98.44%           9                 0   100.00%         111                 0   100.00%           0                 0         -
+astraweave-render\src\effects.rs                          354                11    96.89%          31                 0   100.00%         227                 0   100.00%           0                 0         -
+astraweave-render\src\environment.rs                      878               220    74.94%          55                 4    92.73%         897               182    79.71%           0                 0         -
+astraweave-render\src\gi\mod.rs                             3                 0   100.00%           1                 0   100.00%           7                 0   100.00%           0                 0         -
+astraweave-render\src\gi\voxelization_pipeline.rs         291               233    19.93%          21                10    52.38%         346               280    19.08%           0                 0         -
+astraweave-render\src\gi\vxgi.rs                          145                13    91.03%           9                 4    55.56%         189                13    93.12%           0                 0         -
+astraweave-render\src\gpu_memory.rs                       296                19    93.58%          23                 1    95.65%         187                10    94.65%           0                 0         -
+astraweave-render\src\gpu_particles.rs                    124                 2    98.39%           6                 0   100.00%         178                 2    98.88%           0                 0         -
+astraweave-render\src\graph.rs                            292                23    92.12%          31                 3    90.32%         234                14    94.02%           0                 0         -
+astraweave-render\src\graph_adapter.rs                     28                15    46.43%           3                 1    66.67%          17                 7    58.82%           0                 0         -
+astraweave-render\src\ibl.rs                              840               217    74.17%          25                 8    68.00%         948               207    78.16%           0                 0         -
+astraweave-render\src\instancing.rs                       395                 1    99.75%          46                 0   100.00%         298                 1    99.66%           0                 0         -
+astraweave-render\src\lod_generator.rs                    626                14    97.76%          31                 2    93.55%         355                 9    97.46%           0                 0         -
+astraweave-render\src\material.rs                         584                44    92.47%          47                 5    89.36%         555                31    94.41%           0                 0         -
+astraweave-render\src\material_extended.rs                328                 1    99.70%          28                 0   100.00%         358                 0   100.00%           0                 0         -
+astraweave-render\src\material_loader.rs                  992               364    63.31%          38                18    52.63%         893               243    72.79%           0                 0         -
+astraweave-render\src\mesh.rs                             393                 3    99.24%          19                 0   100.00%         233                 0   100.00%           0                 0         -
+astraweave-render\src\mesh_registry.rs                    227                 8    96.48%          21                 0   100.00%         162                 3    98.15%           0                 0         -
+astraweave-render\src\msaa.rs                             156                 5    96.79%          16                 0   100.00%         148                 2    98.65%           0                 0         -
+astraweave-render\src\overlay.rs                          184                13    92.93%          16                 1    93.75%         176                 5    97.16%           0                 0         -
+astraweave-render\src\post.rs                             193                 0   100.00%          23                 0   100.00%         107                 0   100.00%           0                 0         -
+astraweave-render\src\primitives.rs                       417                32    92.33%          16                 0   100.00%         241                 7    97.10%           0                 0         -
+astraweave-render\src\renderer.rs                        2905               728    74.94%          84                10    88.10%        3264               529    83.79%           0                 0         -
+astraweave-render\src\renderer_tests.rs                  1806                 7    99.61%         136                 0   100.00%        1719                 5    99.71%           0                 0         -
+astraweave-render\src\residency.rs                        184                21    88.59%          12                 3    75.00%         131                14    89.31%           0                 0         -
+astraweave-render\src\shadow_csm.rs                       306                 5    98.37%           9                 1    88.89%         426                 4    99.06%           0                 0         -
+astraweave-render\src\terrain.rs                          346                54    84.39%          20                 3    85.00%         226                40    82.30%           0                 0         -
+astraweave-render\src\terrain_material.rs                 470                 6    98.72%          37                 2    94.59%         470                 2    99.57%           0                 0         -
+astraweave-render\src\texture.rs                          577               141    75.56%          33                 8    75.76%         511               112    78.08%           0                 0         -
+astraweave-render\src\texture_streaming.rs                235               136    42.13%          17                 5    70.59%         161                72    55.28%           0                 0         -
+astraweave-render\src\transparency.rs                     158                 0   100.00%          17                 0   100.00%         135                 0   100.00%           0                 0         -
+astraweave-render\src\types.rs                            251                 1    99.60%          23                 0   100.00%         291                 1    99.66%           0                 0         -
+astraweave-render\src\vertex_compression.rs               287                 3    98.95%          21                 0   100.00%         168                 2    98.81%           0                 0         -
+astraweave-render\src\water.rs                            243                25    89.71%          12                 1    91.67%         226                 8    96.46%           0                 0         -
+astraweave-scene\src\gpu_resource_manager.rs              181               181     0.00%          18                18     0.00%         169               169     0.00%           0                 0         -
+astraweave-scene\src\lib.rs                                17                17     0.00%           4                 4     0.00%          22                22     0.00%           0                 0         -
+astraweave-scene\src\partitioned_scene.rs                 172               172     0.00%          18                18     0.00%         124               124     0.00%           0                 0         -
+astraweave-scene\src\streaming.rs                          50                50     0.00%          16                16     0.00%          52                52     0.00%           0                 0         -
+astraweave-scene\src\world_partition.rs                   445               445     0.00%          45                45     0.00%         310               310     0.00%           0                 0         -
+astraweave-terrain\src\background_loader.rs               163               163     0.00%          36                36     0.00%         133               133     0.00%           0                 0         -
+astraweave-terrain\src\biome.rs                           365               173    52.60%          20                13    35.00%         573               277    51.66%           0                 0         -
+astraweave-terrain\src\chunk.rs                           239               105    56.07%          28                14    50.00%         150                60    60.00%           0                 0         -
+astraweave-terrain\src\climate.rs                         141                 3    97.87%          10                 1    90.00%         121                 3    97.52%           0                 0         -
+astraweave-terrain\src\heightmap.rs                       351                87    75.21%          16                 7    56.25%         210                66    68.57%           0                 0         -
+astraweave-terrain\src\lib.rs                             236                58    75.42%          12                 4    66.67%         145                33    77.24%           0                 0         -
+astraweave-terrain\src\lod_manager.rs                     280               280     0.00%          29                29     0.00%         234               234     0.00%           0                 0         -
+astraweave-terrain\src\meshing.rs                         367               367     0.00%          24                24     0.00%         236               236     0.00%           0                 0         -
+astraweave-terrain\src\noise_gen.rs                       131                61    53.44%           8                 4    50.00%         125                37    70.40%           0                 0         -
+astraweave-terrain\src\noise_simd.rs                      134                71    47.01%           2                 1    50.00%          70                35    50.00%           0                 0         -
+astraweave-terrain\src\scatter.rs                         319                89    72.10%          13                 3    76.92%         221                56    74.66%           0                 0         -
+astraweave-terrain\src\solver.rs                          203               203     0.00%          14                14     0.00%         151               151     0.00%           0                 0         -
+astraweave-terrain\src\streaming_diagnostics.rs           200               200     0.00%          28                28     0.00%         167               167     0.00%           0                 0         -
+astraweave-terrain\src\structures.rs                      446               109    75.56%          20                 3    85.00%         325                81    75.08%           0                 0         -
+astraweave-terrain\src\terrain_modifier.rs                  7                 7     0.00%           2                 2     0.00%           2                 2     0.00%           0                 0         -
+astraweave-terrain\src\terrain_persistence.rs              28                28     0.00%          10                10     0.00%          17                17     0.00%           0                 0         -
+astraweave-terrain\src\voxel_data.rs                      359               359     0.00%          48                48     0.00%         238               238     0.00%           0                 0         -
+tools\aw_asset_cli\src\texture_baker.rs                   517               485     6.19%          17                13    23.53%         315               297     5.71%           0                 0         -
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                   35788             17481    51.15%        2389              1268    46.92%       29588             12217    58.71%           0                 0         -

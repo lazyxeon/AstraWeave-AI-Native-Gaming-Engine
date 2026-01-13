@@ -115,7 +115,7 @@ impl BiomeShowcase {
         world_config.structures.include_defensive = true;
 
         // Filter to specific biome if requested
-        if let Some(biome_type) = BiomeType::from_str(&args.biome) {
+        if let Some(biome_type) = BiomeType::parse(&args.biome) {
             world_config.biomes.retain(|b| b.biome_type == biome_type);
             println!("Focusing on biome: {}", args.biome);
         }

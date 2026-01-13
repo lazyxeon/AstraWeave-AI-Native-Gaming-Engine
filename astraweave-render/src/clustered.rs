@@ -30,7 +30,7 @@ fn cluster_index(ix: u32, iy: u32, iz: u32, dims: ClusterDims) -> usize {
 /// - screen: (width,height)
 /// - near/far: camera near/far planes (positive distances)
 /// - fov_y: vertical field of view in radians
-/// Returns: (counts, indices, offsets) where offsets is exclusive scan over counts
+///   Returns: (counts, indices, offsets) where offsets is exclusive scan over counts
 pub fn bin_lights_cpu(
     lights: &[CpuLight],
     dims: ClusterDims,

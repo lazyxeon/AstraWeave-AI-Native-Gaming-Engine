@@ -331,6 +331,7 @@ impl MegaLightsRenderer {
     }
 
     /// Update bind groups when buffers change
+    #[allow(clippy::too_many_arguments)]
     pub fn update_bind_groups(
         &mut self,
         device: &wgpu::Device,

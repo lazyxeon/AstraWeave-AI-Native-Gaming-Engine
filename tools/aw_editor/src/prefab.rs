@@ -20,13 +20,6 @@ impl PrefabHierarchySnapshot {
         }
     }
 
-    /// Build a snapshot from an iterator of `(parent, children)` pairs.
-    pub fn from_iter<T: IntoIterator<Item = (Entity, Vec<Entity>)>>(iter: T) -> Self {
-        Self {
-            children: iter.into_iter().collect(),
-        }
-    }
-
     /// Insert or replace the children recorded for `parent`.
     pub fn insert_children(&mut self, parent: Entity, children: Vec<Entity>) {
         self.children.insert(parent, children);
@@ -858,10 +851,12 @@ mod tests {
         let child_b = world.spawn("ChildB", IVec2 { x: -1, y: 1 }, Team { id: 0 }, 100, 0);
         let grandchild = world.spawn("Grandchild", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
 
-        let snapshot = PrefabHierarchySnapshot::from_iter([
+        let snapshot: PrefabHierarchySnapshot = [
             (root, vec![child_a, child_b]),
             (child_a, vec![grandchild]),
-        ]);
+        ]
+        .into_iter()
+        .collect();
 
         let prefab = PrefabData::from_entity_with_hierarchy(
             &world,

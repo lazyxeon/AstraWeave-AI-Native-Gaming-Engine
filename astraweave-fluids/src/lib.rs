@@ -1121,4 +1121,307 @@ mod tests {
 
         assert_eq!(cell_idx, 1 + 2 * 128 + 2 * 128 * 128);
     }
+
+    // ================== DynamicObject Tests ==================
+
+    #[test]
+    fn test_dynamic_object_size() {
+        // DynamicObject should be 144 bytes:
+        // transform: 4x4 f32 = 64 bytes
+        // inv_transform: 4x4 f32 = 64 bytes
+        // half_extents: 4 f32 = 16 bytes
+        // Total = 144 bytes
+        assert_eq!(std::mem::size_of::<DynamicObject>(), 144);
+    }
+
+    #[test]
+    fn test_dynamic_object_identity() {
+        let obj = DynamicObject {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            inv_transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            half_extents: [1.0, 1.0, 1.0, 0.0], // Box type (w=0)
+        };
+
+        assert_eq!(obj.transform[0][0], 1.0);
+        assert_eq!(obj.transform[3][3], 1.0);
+        assert_eq!(obj.half_extents[3], 0.0); // Box type
+    }
+
+    #[test]
+    fn test_dynamic_object_sphere() {
+        let sphere = DynamicObject {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [5.0, 10.0, 15.0, 1.0], // Position at (5, 10, 15)
+            ],
+            inv_transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [-5.0, -10.0, -15.0, 1.0],
+            ],
+            half_extents: [2.0, 2.0, 2.0, 1.0], // Sphere type (w=1), radius=2
+        };
+
+        assert_eq!(sphere.half_extents[3], 1.0); // Sphere type
+        assert_eq!(sphere.transform[3][0], 5.0); // X position
+    }
+
+    #[test]
+    fn test_dynamic_object_bytemuck_cast() {
+        let obj = DynamicObject {
+            transform: [[1.0; 4]; 4],
+            inv_transform: [[2.0; 4]; 4],
+            half_extents: [3.0, 4.0, 5.0, 0.0],
+        };
+
+        let bytes: &[u8] = bytemuck::bytes_of(&obj);
+        assert_eq!(bytes.len(), std::mem::size_of::<DynamicObject>());
+
+        let recovered: &DynamicObject = bytemuck::from_bytes(bytes);
+        assert_eq!(recovered.transform[0][0], 1.0);
+        assert_eq!(recovered.inv_transform[0][0], 2.0);
+        assert_eq!(recovered.half_extents[0], 3.0);
+    }
+
+    #[test]
+    fn test_dynamic_object_copy() {
+        let obj = DynamicObject {
+            transform: [[1.0; 4]; 4],
+            inv_transform: [[1.0; 4]; 4],
+            half_extents: [1.0; 4],
+        };
+
+        let copied = obj; // Copy trait
+        assert_eq!(copied.transform[0][0], obj.transform[0][0]);
+    }
+
+    #[test]
+    fn test_dynamic_object_clone() {
+        let obj = DynamicObject {
+            transform: [[5.0; 4]; 4],
+            inv_transform: [[6.0; 4]; 4],
+            half_extents: [1.0, 2.0, 3.0, 4.0],
+        };
+
+        let cloned = obj.clone();
+        assert_eq!(cloned.half_extents, obj.half_extents);
+    }
+
+    // ================== SecondaryParticle Tests ==================
+
+    #[test]
+    fn test_secondary_particle_size() {
+        // SecondaryParticle should be 48 bytes:
+        // position: 4 f32 = 16 bytes
+        // velocity: 4 f32 = 16 bytes
+        // info: 4 f32 = 16 bytes
+        // Total = 48 bytes
+        assert_eq!(std::mem::size_of::<SecondaryParticle>(), 48);
+    }
+
+    #[test]
+    fn test_secondary_particle_creation() {
+        let particle = SecondaryParticle {
+            position: [1.0, 2.0, 3.0, 1.0],
+            velocity: [0.0, -1.0, 0.0, 0.0],
+            info: [1.0, 0.0, 1.0, 0.5], // lifetime=1s, type=spray, alpha=1, scale=0.5
+        };
+
+        assert_eq!(particle.position[0], 1.0);
+        assert_eq!(particle.velocity[1], -1.0);
+        assert_eq!(particle.info[0], 1.0); // lifetime
+        assert_eq!(particle.info[2], 1.0); // alpha
+    }
+
+    #[test]
+    fn test_secondary_particle_types() {
+        // Type 0: Spray
+        let spray = SecondaryParticle {
+            position: [0.0; 4],
+            velocity: [0.0; 4],
+            info: [1.0, 0.0, 1.0, 1.0], // type = 0 (spray)
+        };
+        assert_eq!(spray.info[1], 0.0);
+
+        // Type 1: Foam
+        let foam = SecondaryParticle {
+            position: [0.0; 4],
+            velocity: [0.0; 4],
+            info: [2.0, 1.0, 0.8, 0.5], // type = 1 (foam)
+        };
+        assert_eq!(foam.info[1], 1.0);
+
+        // Type 2: Bubbles
+        let bubble = SecondaryParticle {
+            position: [0.0; 4],
+            velocity: [0.0; 4],
+            info: [0.5, 2.0, 0.5, 0.25], // type = 2 (bubble)
+        };
+        assert_eq!(bubble.info[1], 2.0);
+    }
+
+    #[test]
+    fn test_secondary_particle_bytemuck_cast() {
+        let particles = vec![
+            SecondaryParticle {
+                position: [1.0, 2.0, 3.0, 1.0],
+                velocity: [0.1, 0.2, 0.3, 0.0],
+                info: [1.0, 0.0, 1.0, 1.0],
+            },
+            SecondaryParticle {
+                position: [4.0, 5.0, 6.0, 1.0],
+                velocity: [0.4, 0.5, 0.6, 0.0],
+                info: [2.0, 1.0, 0.5, 0.5],
+            },
+        ];
+
+        let bytes: &[u8] = bytemuck::cast_slice(&particles);
+        assert_eq!(bytes.len(), 2 * std::mem::size_of::<SecondaryParticle>());
+
+        let recovered: &[SecondaryParticle] = bytemuck::cast_slice(bytes);
+        assert_eq!(recovered.len(), 2);
+        assert_eq!(recovered[0].position[0], 1.0);
+        assert_eq!(recovered[1].position[0], 4.0);
+    }
+
+    #[test]
+    fn test_secondary_particle_copy() {
+        let particle = SecondaryParticle {
+            position: [1.0, 2.0, 3.0, 1.0],
+            velocity: [0.0, -1.0, 0.0, 0.0],
+            info: [1.0, 0.0, 1.0, 0.5],
+        };
+
+        let copied = particle; // Copy trait
+        assert_eq!(copied.position, particle.position);
+    }
+
+    #[test]
+    fn test_secondary_particle_clone() {
+        let particle = SecondaryParticle {
+            position: [10.0, 20.0, 30.0, 1.0],
+            velocity: [1.0, 2.0, 3.0, 0.0],
+            info: [5.0, 1.0, 0.8, 2.0],
+        };
+
+        let cloned = particle.clone();
+        assert_eq!(cloned.info, particle.info);
+    }
+
+    // ================== Additional Particle Tests ==================
+
+    #[test]
+    fn test_particle_phase_values() {
+        // Test different phase types
+        let water = Particle {
+            position: [0.0; 4],
+            velocity: [0.0; 4],
+            predicted_position: [0.0; 4],
+            lambda: 0.0,
+            density: 1.0,
+            phase: 0, // Water
+            temperature: 293.0,
+            color: [0.2, 0.5, 0.8, 1.0],
+        };
+        assert_eq!(water.phase, 0);
+
+        let oil = Particle {
+            phase: 1, // Oil
+            ..water
+        };
+        assert_eq!(oil.phase, 1);
+
+        let custom = Particle {
+            phase: 2, // Custom
+            ..water
+        };
+        assert_eq!(custom.phase, 2);
+    }
+
+    #[test]
+    fn test_particle_temperature() {
+        // Test temperature handling
+        let cold = Particle {
+            position: [0.0; 4],
+            velocity: [0.0; 4],
+            predicted_position: [0.0; 4],
+            lambda: 0.0,
+            density: 1.0,
+            phase: 0,
+            temperature: 273.0, // 0°C
+            color: [0.0; 4],
+        };
+        assert_eq!(cold.temperature, 273.0);
+
+        let hot = Particle {
+            temperature: 373.0, // 100°C
+            ..cold
+        };
+        assert_eq!(hot.temperature, 373.0);
+    }
+
+    #[test]
+    fn test_particle_color_channels() {
+        let particle = Particle {
+            position: [0.0; 4],
+            velocity: [0.0; 4],
+            predicted_position: [0.0; 4],
+            lambda: 0.0,
+            density: 1.0,
+            phase: 0,
+            temperature: 293.0,
+            color: [1.0, 0.5, 0.25, 0.75], // RGBA
+        };
+
+        assert_eq!(particle.color[0], 1.0);   // Red
+        assert_eq!(particle.color[1], 0.5);   // Green
+        assert_eq!(particle.color[2], 0.25);  // Blue
+        assert_eq!(particle.color[3], 0.75);  // Alpha
+    }
+
+    #[test]
+    fn test_sim_params_dt_values() {
+        let params_60fps = SimParams {
+            smoothing_radius: 1.0,
+            target_density: 1.0,
+            pressure_multiplier: 1.0,
+            viscosity: 1.0,
+            surface_tension: 1.0,
+            gravity: -9.81,
+            dt: 1.0 / 60.0, // 60 FPS
+            particle_count: 100,
+            grid_width: 10,
+            grid_height: 10,
+            grid_depth: 10,
+            cell_size: 1.0,
+            object_count: 0,
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
+        };
+
+        // dt for 60 FPS should be approximately 0.0167
+        assert!((params_60fps.dt - 0.0166666).abs() < 0.001);
+
+        let params_144fps = SimParams {
+            dt: 1.0 / 144.0, // 144 FPS
+            ..params_60fps
+        };
+
+        // dt for 144 FPS should be approximately 0.00694
+        assert!((params_144fps.dt - 0.00694).abs() < 0.001);
+    }
 }

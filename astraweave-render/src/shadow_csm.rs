@@ -467,7 +467,12 @@ impl CsmRenderer {
         split_distances[0] = near;
         split_distances[CASCADE_COUNT] = far;
 
-        for i in 1..CASCADE_COUNT {
+        for (i, split) in split_distances
+            .iter_mut()
+            .enumerate()
+            .take(CASCADE_COUNT)
+            .skip(1)
+        {
             let i_f = i as f32;
             let n_f = CASCADE_COUNT as f32;
 
@@ -478,7 +483,7 @@ impl CsmRenderer {
             let uniform_split = near + (far - near) * (i_f / n_f);
 
             // Blend
-            split_distances[i] = lambda * log_split + (1.0 - lambda) * uniform_split;
+            *split = lambda * log_split + (1.0 - lambda) * uniform_split;
         }
 
         // Update each cascade

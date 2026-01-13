@@ -327,7 +327,7 @@ pub enum ShadingMode {
 }
 
 impl ShadingMode {
-    pub fn to_u32(&self) -> u32 {
+    pub fn to_u32(self) -> u32 {
         match self {
             ShadingMode::Lit => 0,
             ShadingMode::Unlit => 1,

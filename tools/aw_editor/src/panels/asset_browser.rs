@@ -391,7 +391,7 @@ impl AssetBrowser {
             view_mode: ViewMode::Grid, // Default to grid for better visual browsing
             thumbnail_cache: HashMap::new(),
             thumbnail_lru: VecDeque::new(),
-            max_cache_size: 100, // Limit cache to 100 textures
+            max_cache_size: 100,  // Limit cache to 100 textures
             thumbnail_size: 80.0, // Slightly larger for better visibility
             dragged_prefab: None,
             category_filter: AssetCategory::All,
@@ -441,9 +441,10 @@ impl AssetBrowser {
                 // Texture type filter (only applies to textures)
                 if let Some(tex_filter) = &self.texture_type_filter {
                     if entry.asset_type == AssetType::Texture
-                        && entry.texture_type.as_ref() != Some(tex_filter) {
-                            return false;
-                        }
+                        && entry.texture_type.as_ref() != Some(tex_filter)
+                    {
+                        return false;
+                    }
                 }
 
                 // Legacy filter_type support
@@ -459,9 +460,9 @@ impl AssetBrowser {
                         .name
                         .to_lowercase()
                         .contains(&self.search_query.to_lowercase())
-                    {
-                        return false;
-                    }
+                {
+                    return false;
+                }
 
                 true
             })
@@ -501,8 +502,9 @@ impl AssetBrowser {
         if let Some(texture) = self.thumbnail_cache.get(path) {
             // Update LRU: move to back
             if let Some(pos) = self.thumbnail_lru.iter().position(|p| p == path) {
-                let p = self.thumbnail_lru.remove(pos).unwrap();
-                self.thumbnail_lru.push_back(p);
+                if let Some(p) = self.thumbnail_lru.remove(pos) {
+                    self.thumbnail_lru.push_back(p);
+                }
             }
             return Some(texture.clone());
         }
@@ -511,10 +513,26 @@ impl AssetBrowser {
             return None;
         }
 
+        // Only attempt to load formats supported by the image crate
+        // Skip KTX2, DDS, and other GPU-compressed formats
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.to_lowercase())
+            .unwrap_or_default();
+
+        if !matches!(
+            ext.as_str(),
+            "png" | "jpg" | "jpeg" | "bmp" | "gif" | "tga" | "tiff"
+        ) {
+            // Unsupported format for thumbnails - silently skip
+            return None;
+        }
+
         let image_data = match image::open(path) {
             Ok(img) => img,
-            Err(e) => {
-                tracing::warn!("Failed to open texture thumbnail for {:?}: {}", path, e);
+            Err(_) => {
+                // Silently skip - don't spam logs for every unsupported file
                 return None;
             }
         };
@@ -540,7 +558,7 @@ impl AssetBrowser {
         self.thumbnail_cache
             .insert(path.to_path_buf(), texture.clone());
         self.thumbnail_lru.push_back(path.to_path_buf());
-        
+
         Some(texture)
     }
 
@@ -706,10 +724,10 @@ impl AssetBrowser {
                                 }
                             }
 
-                            if response.double_clicked()
-                                && entry.asset_type == AssetType::Directory {
-                                    path_to_navigate = Some(entry.path.clone());
-                                }
+                            if response.double_clicked() && entry.asset_type == AssetType::Directory
+                            {
+                                path_to_navigate = Some(entry.path.clone());
+                            }
 
                             if response.hovered() {
                                 response
@@ -717,10 +735,9 @@ impl AssetBrowser {
                                     .on_hover_text(entry.path.display().to_string());
                             }
 
-                            if entry.asset_type == AssetType::Prefab
-                                && response.drag_started() {
-                                    self.dragged_prefab = Some(entry.path.clone());
-                                }
+                            if entry.asset_type == AssetType::Prefab && response.drag_started() {
+                                self.dragged_prefab = Some(entry.path.clone());
+                            }
                         }
 
                         if self.entries.is_empty() {
@@ -847,9 +864,10 @@ impl AssetBrowser {
                                         }
 
                                         if response.double_clicked()
-                                            && entry_asset_type == AssetType::Directory {
-                                                path_to_navigate = Some(entry_path.clone());
-                                            }
+                                            && entry_asset_type == AssetType::Directory
+                                        {
+                                            path_to_navigate = Some(entry_path.clone());
+                                        }
 
                                         if response.hovered() {
                                             response
@@ -858,9 +876,10 @@ impl AssetBrowser {
                                         }
 
                                         if entry_asset_type == AssetType::Prefab
-                                            && response.drag_started() {
-                                                self.dragged_prefab = Some(entry_path.clone());
-                                            }
+                                            && response.drag_started()
+                                        {
+                                            self.dragged_prefab = Some(entry_path.clone());
+                                        }
 
                                         ui.add(
                                             egui::Label::new(&entry_name)
@@ -989,6 +1008,88 @@ impl AssetBrowser {
                                 path: parent.to_path_buf(),
                             });
                         }
+                    }
+                });
+            });
+        }
+    }
+
+    /// Show the selection actions panel (import/apply buttons) separately
+    /// Call this OUTSIDE the collapsing/scroll area to ensure buttons are visible
+    pub fn show_selection_actions(&mut self, ui: &mut Ui) {
+        if let Some(selected) = &self.selected_asset.clone() {
+            let asset_type = AssetType::from_path(selected);
+            let texture_type = if asset_type == AssetType::Texture {
+                Some(TextureType::from_filename(
+                    selected
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or(""),
+                ))
+            } else {
+                None
+            };
+
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label(asset_type.icon());
+                    ui.strong(
+                        selected
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string(),
+                    );
+                    if let Some(tex_type) = texture_type {
+                        ui.colored_label(tex_type.color(), format!("[{}]", tex_type.label()));
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    // Context-appropriate action buttons
+                    match asset_type {
+                        AssetType::Model => {
+                            if ui.button("➕ Import to Scene").clicked() {
+                                self.pending_actions.push(AssetAction::ImportModel {
+                                    path: selected.clone(),
+                                });
+                            }
+                        }
+                        AssetType::Texture => {
+                            let tex_type = texture_type.unwrap_or(TextureType::Albedo);
+                            if ui
+                                .button(format!("🎨 Apply as {}", tex_type.label()))
+                                .clicked()
+                            {
+                                self.pending_actions.push(AssetAction::ApplyTexture {
+                                    path: selected.clone(),
+                                    texture_type: tex_type,
+                                });
+                            }
+                        }
+                        AssetType::Material => {
+                            if ui.button("💎 Apply Material").clicked() {
+                                self.pending_actions.push(AssetAction::ApplyMaterial {
+                                    path: selected.clone(),
+                                });
+                            }
+                        }
+                        AssetType::Scene => {
+                            if ui.button("🌍 Load Scene").clicked() {
+                                self.pending_actions.push(AssetAction::LoadScene {
+                                    path: selected.clone(),
+                                });
+                            }
+                        }
+                        AssetType::Prefab => {
+                            if ui.button("💾 Spawn Prefab").clicked() {
+                                self.pending_actions.push(AssetAction::SpawnPrefab {
+                                    path: selected.clone(),
+                                });
+                            }
+                        }
+                        _ => {}
                     }
                 });
             });

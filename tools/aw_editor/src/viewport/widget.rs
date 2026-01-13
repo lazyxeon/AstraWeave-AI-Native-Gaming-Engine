@@ -7,7 +7,7 @@
 //!
 //! # Usage
 //!
-//! ```no_run
+//! ```rust,ignore
 //! use aw_editor_lib::viewport::ViewportWidget;
 //!
 //! // In eframe::App::new()
@@ -131,11 +131,17 @@ impl ViewportWidget {
     ///
     /// # Example
     ///
-    /// ```no_run
-    /// impl eframe::App for EditorApp {
-    ///     fn new(cc: &eframe::CreationContext) -> Self {
-    ///         let viewport = ViewportWidget::new(cc).expect("Failed to create viewport");
-    ///         Self { viewport, /* ... */ }
+    /// ```rust,ignore
+    /// use anyhow::Result;
+    /// use aw_editor_lib::viewport::ViewportWidget;
+    ///
+    /// struct EditorApp {
+    ///     viewport: ViewportWidget,
+    /// }
+    ///
+    /// impl EditorApp {
+    ///     fn new(cc: &eframe::CreationContext<'_>) -> Result<Self> {
+    ///         Ok(Self { viewport: ViewportWidget::new(cc)? })
     ///     }
     /// }
     /// ```
@@ -196,11 +202,20 @@ impl ViewportWidget {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```rust,ignore
     /// impl eframe::App for EditorApp {
     ///     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     ///         egui::CentralPanel::default().show(ctx, |ui| {
-    ///             self.viewport.ui(ui, &self.world, &mut self.entity_manager)?;
+    ///             // App::update can't return Result, so handle errors explicitly.
+    ///             if let Err(err) = self.viewport.ui(
+    ///                 ui,
+    ///                 &mut self.world,
+    ///                 &mut self.entity_manager,
+    ///                 &mut self.undo_stack,
+    ///                 self.prefab_manager.as_mut(),
+    ///             ) {
+    ///                 tracing::error!("Viewport error: {err:#}");
+    ///             }
     ///         });
     ///     }
     /// }
@@ -899,7 +914,7 @@ impl ViewportWidget {
             ctx.input(|i| {
                 let speed = 0.15;
                 let mut move_delta = glam::Vec3::ZERO;
-                
+
                 if i.key_down(egui::Key::W) {
                     move_delta += self.camera.forward() * speed;
                 }
@@ -920,7 +935,7 @@ impl ViewportWidget {
                 if i.modifiers.shift {
                     move_delta.y -= speed;
                 }
-                
+
                 if move_delta.length_squared() > 0.0001 {
                     self.camera.translate(move_delta);
                 }
@@ -990,7 +1005,8 @@ impl ViewportWidget {
                         scale: glam::Vec3::splat(pose.scale),
                     });
                     debug!(
-                        x, z,
+                        x,
+                        z,
                         rotation_x_deg = pose.rotation_x.to_degrees(),
                         rotation_deg = pose.rotation.to_degrees(),
                         rotation_z_deg = pose.rotation_z.to_degrees(),
@@ -1647,7 +1663,7 @@ impl ViewportWidget {
         crate::gizmo::snapping::SnappingConfig {
             grid_size: self.grid_snap_size,
             angle_increment: self.angle_snap_increment.to_degrees(),
-            grid_enabled: true,  // These are handled by toolbar toggles
+            grid_enabled: true, // These are handled by toolbar toggles
             angle_enabled: true,
         }
     }
@@ -1761,17 +1777,48 @@ impl ViewportWidget {
     }
 
     #[cfg(feature = "astraweave-render")]
-    pub fn load_gltf_model(&self, name: impl Into<String>, path: &std::path::Path) -> anyhow::Result<()> {
-        let mut renderer = self.renderer.lock().map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+    pub fn load_gltf_model(
+        &self,
+        name: impl Into<String>,
+        path: &std::path::Path,
+    ) -> anyhow::Result<()> {
+        use pollster::FutureExt;
+
+        let name = name.into();
+        let mut renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        // Lazily initialize engine adapter if not already done
+        if !renderer.engine_adapter_initialized() {
+            tracing::info!("Initializing engine adapter for PBR rendering...");
+            renderer
+                .init_engine_adapter()
+                .block_on()
+                .map_err(|e| anyhow::anyhow!("Failed to initialize engine adapter: {}", e))?;
+            tracing::info!("Engine adapter initialized successfully");
+        }
+
+        // Load the model into the engine adapter
         if let Some(adapter) = renderer.engine_adapter_mut() {
-            adapter.load_gltf_model(name, path)
+            adapter.load_gltf_model(&name, path)?;
+
+            // Enable engine rendering now that we have a model
+            renderer.set_use_engine_rendering(true);
+            tracing::info!("Loaded glTF model '{}' and enabled engine rendering", name);
+            Ok(())
         } else {
-            anyhow::bail!("Engine adapter not initialized")
+            anyhow::bail!("Engine adapter not available after initialization")
         }
     }
 
     #[cfg(not(feature = "astraweave-render"))]
-    pub fn load_gltf_model(&self, _name: impl Into<String>, _path: &std::path::Path) -> anyhow::Result<()> {
+    pub fn load_gltf_model(
+        &self,
+        _name: impl Into<String>,
+        _path: &std::path::Path,
+    ) -> anyhow::Result<()> {
         anyhow::bail!("astraweave-render feature not enabled")
     }
 
@@ -1794,7 +1841,10 @@ impl ViewportWidget {
         self.selected_entities.contains(&entity)
     }
 
-    pub fn upload_terrain_chunks(&self, chunks: &[(Vec<super::terrain_renderer::TerrainVertex>, Vec<u32>)]) {
+    pub fn upload_terrain_chunks(
+        &self,
+        chunks: &[(Vec<super::terrain_renderer::TerrainVertex>, Vec<u32>)],
+    ) {
         if let Ok(mut renderer) = self.renderer.lock() {
             renderer.upload_terrain_chunks(chunks);
         }

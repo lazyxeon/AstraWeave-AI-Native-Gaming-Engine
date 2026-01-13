@@ -413,7 +413,10 @@ pub fn generate_lod_hierarchy(
     let lod0_meshlets = generate_meshlets(positions, normals, tangents, uvs, indices)?;
 
     let mut all_meshlets = lod0_meshlets;
-    let mut lod_ranges: Vec<std::ops::Range<usize>> = vec![0..all_meshlets.len()];
+    let mut lod_ranges: Vec<std::ops::Range<usize>> = vec![std::ops::Range {
+        start: 0,
+        end: all_meshlets.len(),
+    }];
 
     // Generate simplified LODs
     let mut current_positions = positions.to_vec();

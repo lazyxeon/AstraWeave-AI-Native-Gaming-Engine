@@ -4,7 +4,7 @@
 //! for improved performance. Uses manual loop unrolling and pre-allocation
 //! to enable compiler auto-vectorization (LLVM).
 
-use crate::{ChunkId, Heightmap, HeightmapConfig, TerrainNoise};
+use crate::{ChunkId, Heightmap, TerrainNoise};
 
 /// Optimized heightmap generator with manual loop unrolling
 ///
@@ -23,9 +23,6 @@ impl SimdHeightmapGenerator {
         chunk_size: f32,
         resolution: u32,
     ) -> anyhow::Result<Heightmap> {
-        let mut heightmap_config = HeightmapConfig::default();
-        heightmap_config.resolution = resolution;
-
         // Pre-allocate heightmap data with exact capacity (no reallocs!)
         let total_points = (resolution * resolution) as usize;
         let mut heights = Vec::with_capacity(total_points);

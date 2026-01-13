@@ -334,10 +334,8 @@ impl BuildManagerPanel {
         thread::spawn(move || {
             use std::io::{BufRead, BufReader};
             let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let _ = tx_stdout.send(BuildMessage::LogLine(l));
-                }
+            for l in reader.lines().map_while(Result::ok) {
+                let _ = tx_stdout.send(BuildMessage::LogLine(l));
             }
         });
 
@@ -345,10 +343,8 @@ impl BuildManagerPanel {
         thread::spawn(move || {
             use std::io::{BufRead, BufReader};
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let _ = tx_stderr.send(BuildMessage::LogLine(format!("ERROR: {}", l)));
-                }
+            for l in reader.lines().map_while(Result::ok) {
+                let _ = tx_stderr.send(BuildMessage::LogLine(format!("ERROR: {}", l)));
             }
         });
 

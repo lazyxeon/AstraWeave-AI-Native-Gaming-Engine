@@ -10,10 +10,49 @@
 //! These are CPU-side benchmarks simulating the animation pipeline.
 //! GPU skinning would add ~1-2µs upload overhead per skeleton.
 
+// =============================================================================
+// MISSION-CRITICAL CORRECTNESS ASSERTIONS
+// =============================================================================
+// Animation benchmarks validate CORRECTNESS of skeletal animation systems.
+// Assertions verify:
+//   1. Quaternion Validity: Rotation quaternions are normalized (length ≈ 1)
+//   2. Transform Validity: Matrices are finite, non-singular
+//   3. Interpolation Bounds: lerp/slerp results are within valid parameter range
+//   4. Joint Hierarchy: Parent indices are valid (< child index)
+//   5. Blend Weights: Weights sum to 1.0 (or close enough for crossfade)
+// =============================================================================
+
 #![allow(dead_code)]
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::hint::black_box;
+
+/// CORRECTNESS: Validate quaternion is normalized
+#[inline]
+fn assert_quaternion_normalized(q: &Quat, context: &str) {
+    let len = (q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w).sqrt();
+    assert!((len - 1.0).abs() < 0.01,
+        "[CORRECTNESS FAILURE] {}: quaternion not normalized (len={})", context, len);
+}
+
+/// CORRECTNESS: Validate transform matrix is finite and valid
+#[inline]
+fn assert_transform_matrix_valid(mat: &[[f32; 4]; 4], context: &str) {
+    for row in 0..4 {
+        for col in 0..4 {
+            assert!(mat[row][col].is_finite(),
+                "[CORRECTNESS FAILURE] {}: matrix[{}][{}] non-finite ({})", 
+                context, row, col, mat[row][col]);
+        }
+    }
+}
+
+/// CORRECTNESS: Validate interpolation parameter is in valid range
+#[inline]
+fn assert_interp_param_valid(t: f32, context: &str) {
+    assert!(t >= 0.0 && t <= 1.0,
+        "[CORRECTNESS FAILURE] {}: interpolation parameter {} out of range [0,1]", context, t);
+}
 
 // ============================================================================
 // Local Implementations (mirroring animation.rs patterns)

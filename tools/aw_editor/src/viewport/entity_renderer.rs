@@ -83,7 +83,7 @@ impl EntityRenderer {
             label: Some("Entity Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -268,6 +268,7 @@ impl EntityRenderer {
     /// # Errors
     ///
     /// Returns error if buffer write or rendering fails.
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
@@ -340,7 +341,12 @@ impl EntityRenderer {
     ///
     /// Creates Instance data for each entity with a Position component.
     /// Selected entity is highlighted with orange color.
-    fn collect_instances(&self, world: &World, selected_entities: &[Entity], frustum: &Frustum) -> Vec<Instance> {
+    fn collect_instances(
+        &self,
+        world: &World,
+        selected_entities: &[Entity],
+        frustum: &Frustum,
+    ) -> Vec<Instance> {
         let mut instances = Vec::new();
         const ENTITY_RADIUS: f32 = 0.866;
 

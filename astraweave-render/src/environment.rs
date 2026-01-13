@@ -515,6 +515,7 @@ impl SkyRenderer {
         self.time_of_day.update();
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &self,
         device: &wgpu::Device,
