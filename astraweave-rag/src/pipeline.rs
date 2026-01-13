@@ -784,15 +784,22 @@ impl RagPipeline {
 
     /// Get cached result if available and not expired
     fn get_cached_result(&self, cache_key: &str) -> Option<CachedResult> {
-        if let Some(cached) = self.cache.get(cache_key) {
+        // Check if entry exists and get its age
+        let should_remove = if let Some(cached) = self.cache.get(cache_key) {
             let age = current_timestamp() - cached.timestamp;
             if age <= self.config.performance.cache_ttl {
                 return Some(cached.clone());
-            } else {
-                // Remove expired entry
-                self.cache.remove(cache_key);
             }
+            true // Entry is expired, needs removal
+        } else {
+            false
+        };
+        
+        // Drop the read lock before attempting write lock for removal
+        if should_remove {
+            self.cache.remove(cache_key);
         }
+        
         None
     }
 

@@ -244,35 +244,30 @@ impl DockLayout {
     ///
     /// Layout structure:
     /// ```text
-    /// +----------+------------------+----------+
-    /// |          |                  |          |
-    /// | Hierarc. |                  | Inspect. |
-    /// | Assets   |     Viewport     | Transf.  |
-    /// |          |                  |          |
-    /// +----------+------------------+----------+
-    /// |          Console | Profiler | Stats    |
+    /// +----------------------------------------+
+    /// |                   |  Inspector         |
+    /// |     Viewport      |  Transform         |
+    /// |                   |                    |
+    /// +-------------------+--------------------+
+    /// |      Console | Profiler | Stats        |
     /// +----------------------------------------+
     /// ```
+    /// Note: Left panels (Hierarchy, Assets) are handled by the legacy
+    /// Astract Panels side panel, not the docking system.
     fn create_default_layout() -> DockState<PanelType> {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // Split left panel (15% width - narrower for more viewport space)
-        // Keep core navigation panels visible by default.
-        let [_left, _right] = surface.split_left(
-            NodeIndex::root(),
-            0.15,
-            vec![PanelType::Hierarchy, PanelType::AssetBrowser],
-        );
+        // No left panel here - already handled by legacy Astract Panels side panel
 
-        // Split right panel (15% width - narrower for more viewport space)
+        // Split right panel (18% width for inspector/transform)
         let [_center, _right_panel] = surface.split_right(
             NodeIndex::root(),
-            0.85,
+            0.82,
             vec![PanelType::Inspector, PanelType::Transform],
         );
 
-        // Split bottom panel (20% height - smaller for more viewport space)
+        // Split bottom panel (20% height for console/profiler)
         let [_top, _bottom] = surface.split_below(
             NodeIndex::root(),
             0.80,
@@ -291,9 +286,7 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // Minimal left panel (15%)
-        let [_left, _right] =
-            surface.split_left(NodeIndex::root(), 0.15, vec![PanelType::Hierarchy]);
+        // No left panel - handled by legacy Astract Panels
 
         // Minimal right panel (15%)
         let [_center, _right_panel] =
@@ -307,21 +300,12 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // Left panel (25%)
-        let [_left, _right] = surface.split_left(
-            NodeIndex::root(),
-            0.25,
-            vec![
-                PanelType::Hierarchy,
-                PanelType::AssetBrowser,
-                PanelType::World,
-            ],
-        );
+        // No left panel - handled by legacy Astract Panels
 
         // Right panel (25%)
         let [_center, _right_panel] = surface.split_right(
             NodeIndex::root(),
-            0.70,
+            0.75,
             vec![
                 PanelType::Inspector,
                 PanelType::Transform,
@@ -349,9 +333,7 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // Left panel with hierarchy only (15%)
-        let [_left, _right] =
-            surface.split_left(NodeIndex::root(), 0.15, vec![PanelType::Hierarchy]);
+        // No left panel - handled by legacy Astract Panels
 
         // Right panel with transform tools (20%)
         let [_center, _right_panel] = surface.split_right(
@@ -368,9 +350,7 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // Left panel (20%)
-        let [_left, _right] =
-            surface.split_left(NodeIndex::root(), 0.2, vec![PanelType::Hierarchy]);
+        // No left panel - handled by legacy Astract Panels
 
         // Right panel with animation graph (25%)
         let [_center, _right_panel] = surface.split_right(
@@ -394,9 +374,7 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // Left panel (20%)
-        let [_left, _right] =
-            surface.split_left(NodeIndex::root(), 0.2, vec![PanelType::Hierarchy]);
+        // No left panel - handled by legacy Astract Panels
 
         // Right panel with performance (25%)
         let [_center, _right_panel] = surface.split_right(
@@ -425,9 +403,13 @@ impl DockLayout {
 
         // Customize tab appearance
         style.tab.tab_body.inner_margin = egui::Margin::symmetric(8, 4);
+        // Tab body uses default theme colors
 
         // Separator styling
-        style.separator.width = 2.0;
+        style.separator.width = 4.0;
+        // Separator uses default theme colors for idle/hover states
+
+        // Tab bar uses default theme background
 
         style
     }
@@ -441,7 +423,8 @@ impl DockLayout {
         self.style = Style::from_egui(ctx.style().as_ref());
         self.style.tab_bar.height = 24.0;
         self.style.tab.tab_body.inner_margin = egui::Margin::symmetric(8, 4);
-        self.style.separator.width = 2.0;
+        self.style.separator.width = 4.0;
+        // Production theme uses default egui_dock colors derived from egui style
 
         DockArea::new(&mut self.dock_state)
             .style(self.style.clone())
@@ -460,7 +443,8 @@ impl DockLayout {
         self.style = Style::from_egui(ui.style().as_ref());
         self.style.tab_bar.height = 24.0;
         self.style.tab.tab_body.inner_margin = egui::Margin::symmetric(8, 4);
-        self.style.separator.width = 2.0;
+        self.style.separator.width = 4.0;
+        // Production theme uses default egui_dock colors derived from egui style
 
         DockArea::new(&mut self.dock_state)
             .style(self.style.clone())

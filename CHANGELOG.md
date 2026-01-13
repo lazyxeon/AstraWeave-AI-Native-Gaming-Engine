@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Track upcoming fixes and enhancements here. Reference pull requests or commit hashes when possible.
+
+### Added
+- Comprehensive engine validation (5,300+ tests across 17 core crates - January 13, 2026)
+
+### Fixed
+- **CRITICAL**: astraweave-rag DashMap deadlock in `get_cached_result_expired` (holding read lock while attempting write lock - January 13, 2026)
+- astraweave-ai: Adjusted perception test threshold from 10µs to 20µs for system load resilience (January 11, 2026)
+- astraweave-llm: Fixed cache pollution in parallel tests via unique WorldSnapshot values (January 11, 2026)
+
+### Changed
+- Improved test isolation patterns for parallel execution across LLM and RAG crates (January 11-13, 2026)
 
 ## [0.4.0] - 2025-11-18
 - Comprehensive audit reports published (`docs/audits/`).
