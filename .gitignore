@@ -81,6 +81,29 @@ build-timing.txt
 release-timing.txt
 audit-report.md
 
+# Temporary build/test output files (root level)
+build_*.txt
+cargo_*.txt
+check_*.txt
+cov_*.txt
+coverage_*.txt
+test_*.txt
+run_output*.txt
+run_log*.txt
+*_cov.txt
+err.txt
+debug_output*.txt
+crash_log*.txt
+warnings.txt
+*_error*.txt
+*_errors*.txt
+
+# Temporary trace/metadata files
+astraweave_demo_trace.json
+metadata.json
+benchmark_validation_report.json
+*_coverage*.csv
+
 # Coverage and profiling
 /coverage/
 *.profraw

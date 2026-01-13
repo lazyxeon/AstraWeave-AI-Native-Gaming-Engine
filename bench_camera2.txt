@@ -1,2 +1,0 @@
-    Blocking waiting for file lock on package cache
-   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
