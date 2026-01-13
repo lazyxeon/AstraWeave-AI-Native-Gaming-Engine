@@ -101,85 +101,92 @@ impl AdvancedWidgetsPanel {
             .scene_hierarchy
             .add_node(TreeNode::new(3, "Entities").with_icon("🎮"));
 
-        let player = self
+        if let Some(player) = self
             .scene_hierarchy
             .add_child(entities, TreeNode::new(20, "Player").with_icon("👤"))
-            .unwrap();
-        self.scene_hierarchy
-            .add_child(player, TreeNode::new(21, "Camera").with_icon("📷"));
-        self.scene_hierarchy
-            .add_child(player, TreeNode::new(22, "Weapon").with_icon("🔫"));
+        {
+            self.scene_hierarchy
+                .add_child(player, TreeNode::new(21, "Camera").with_icon("📷"));
+            self.scene_hierarchy
+                .add_child(player, TreeNode::new(22, "Weapon").with_icon("🔫"));
+        }
 
-        let enemies = self
+        if let Some(enemies) = self
             .scene_hierarchy
             .add_child(entities, TreeNode::new(23, "Enemies").with_icon("👾"))
-            .unwrap();
-        self.scene_hierarchy
-            .add_child(enemies, TreeNode::new(24, "Enemy_1").with_icon("🤖"));
-        self.scene_hierarchy
-            .add_child(enemies, TreeNode::new(25, "Enemy_2").with_icon("🤖"));
-        self.scene_hierarchy
-            .add_child(enemies, TreeNode::new(26, "Enemy_3").with_icon("🤖"));
+        {
+            self.scene_hierarchy
+                .add_child(enemies, TreeNode::new(24, "Enemy_1").with_icon("🤖"));
+            self.scene_hierarchy
+                .add_child(enemies, TreeNode::new(25, "Enemy_2").with_icon("🤖"));
+            self.scene_hierarchy
+                .add_child(enemies, TreeNode::new(26, "Enemy_3").with_icon("🤖"));
+        }
 
-        let npcs = self
+        if let Some(npcs) = self
             .scene_hierarchy
             .add_child(entities, TreeNode::new(27, "NPCs").with_icon("🧑"))
-            .unwrap();
-        self.scene_hierarchy
-            .add_child(npcs, TreeNode::new(28, "Merchant").with_icon("🏪"));
-        self.scene_hierarchy
-            .add_child(npcs, TreeNode::new(29, "Guard").with_icon("🛡️"));
+        {
+            self.scene_hierarchy
+                .add_child(npcs, TreeNode::new(28, "Merchant").with_icon("🏪"));
+            self.scene_hierarchy
+                .add_child(npcs, TreeNode::new(29, "Guard").with_icon("🛡️"));
+        }
 
         // Asset Browser: Game asset organization
         let assets = self
             .asset_browser
             .add_node(TreeNode::new(100, "Assets").with_icon("📦"));
 
-        let models = self
+        if let Some(models) = self
             .asset_browser
             .add_child(assets, TreeNode::new(101, "Models").with_icon("🗿"))
-            .unwrap();
-        self.asset_browser
-            .add_child(models, TreeNode::new(110, "character.fbx").with_icon("📄"));
-        self.asset_browser
-            .add_child(models, TreeNode::new(111, "weapon.fbx").with_icon("📄"));
-        self.asset_browser.add_child(
-            models,
-            TreeNode::new(112, "environment.fbx").with_icon("📄"),
-        );
+        {
+            self.asset_browser
+                .add_child(models, TreeNode::new(110, "character.fbx").with_icon("📄"));
+            self.asset_browser
+                .add_child(models, TreeNode::new(111, "weapon.fbx").with_icon("📄"));
+            self.asset_browser.add_child(
+                models,
+                TreeNode::new(112, "environment.fbx").with_icon("📄"),
+            );
+        }
 
-        let textures = self
+        if let Some(textures) = self
             .asset_browser
             .add_child(assets, TreeNode::new(102, "Textures").with_icon("🖼️"))
-            .unwrap();
-        self.asset_browser
-            .add_child(textures, TreeNode::new(120, "albedo.png").with_icon("📄"));
-        self.asset_browser
-            .add_child(textures, TreeNode::new(121, "normal.png").with_icon("📄"));
-        self.asset_browser
-            .add_child(textures, TreeNode::new(122, "metallic.png").with_icon("📄"));
+        {
+            self.asset_browser
+                .add_child(textures, TreeNode::new(120, "albedo.png").with_icon("📄"));
+            self.asset_browser
+                .add_child(textures, TreeNode::new(121, "normal.png").with_icon("📄"));
+            self.asset_browser
+                .add_child(textures, TreeNode::new(122, "metallic.png").with_icon("📄"));
+        }
 
-        let audio = self
+        if let Some(audio) = self
             .asset_browser
             .add_child(assets, TreeNode::new(103, "Audio").with_icon("🔊"))
-            .unwrap();
-        self.asset_browser
-            .add_child(audio, TreeNode::new(130, "music.ogg").with_icon("🎵"));
-        self.asset_browser
-            .add_child(audio, TreeNode::new(131, "sfx_shot.wav").with_icon("🔊"));
-        self.asset_browser
-            .add_child(audio, TreeNode::new(132, "sfx_step.wav").with_icon("🔊"));
+        {
+            self.asset_browser
+                .add_child(audio, TreeNode::new(130, "music.ogg").with_icon("🎵"));
+            self.asset_browser
+                .add_child(audio, TreeNode::new(131, "sfx_shot.wav").with_icon("🔊"));
+            self.asset_browser
+                .add_child(audio, TreeNode::new(132, "sfx_step.wav").with_icon("🔊"));
+        }
 
-        let scripts = self
+        if let Some(scripts) = self
             .asset_browser
             .add_child(assets, TreeNode::new(104, "Scripts").with_icon("📜"))
-            .unwrap();
-        self.asset_browser.add_child(
-            scripts,
-            TreeNode::new(140, "player_controller.rs").with_icon("🦀"),
-        );
-        self.asset_browser
-            .add_child(scripts, TreeNode::new(141, "enemy_ai.rs").with_icon("🦀"));
+        {
+            self.asset_browser.add_child(
+                scripts,
+                TreeNode::new(140, "player_controller.rs").with_icon("🦀"),
+            );
+            self.asset_browser
+                .add_child(scripts, TreeNode::new(141, "enemy_ai.rs").with_icon("🦀"));
+        }
 
         self.initialized = true;
     }

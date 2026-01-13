@@ -168,7 +168,7 @@ pub struct RenderGraph {
 }
 
 /// --- Adapter nodes: integrate existing `Renderer` passes into the graph ---
-
+///
 /// A node that clears a target view to a color, producing a named view resource.
 pub struct ClearNode {
     name: String,

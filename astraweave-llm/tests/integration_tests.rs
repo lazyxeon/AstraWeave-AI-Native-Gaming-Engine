@@ -19,25 +19,48 @@ use std::sync::Arc;
 // ============================================================================
 
 fn create_test_registry() -> ToolRegistry {
+    // Tool names MUST be PascalCase to match ActionStep enum variants
+    // and FallbackOrchestrator's simplified_tools list
     ToolRegistry {
         tools: vec![
             ToolSpec {
-                name: "move_to".into(),
+                name: "MoveTo".into(),
                 args: [("x", "i32"), ("y", "i32")]
                     .into_iter()
                     .map(|(k, v)| (k.into(), v.into()))
                     .collect(),
             },
             ToolSpec {
-                name: "throw".into(),
+                name: "Attack".into(),
+                args: [("target_id", "u32")]
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
+            },
+            ToolSpec {
+                name: "Throw".into(), // Legacy alias
                 args: [("item", "enum[smoke,grenade]"), ("x", "i32"), ("y", "i32")]
                     .into_iter()
                     .map(|(k, v)| (k.into(), v.into()))
                     .collect(),
             },
             ToolSpec {
-                name: "cover_fire".into(),
+                name: "CoverFire".into(),
                 args: [("target_id", "u32"), ("duration", "f32")]
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
+            },
+            ToolSpec {
+                name: "Scan".into(),
+                args: [("radius", "f32")]
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
+            },
+            ToolSpec {
+                name: "Wait".into(),
+                args: [("duration", "f32")]
                     .into_iter()
                     .map(|(k, v)| (k.into(), v.into()))
                     .collect(),
@@ -80,6 +103,9 @@ fn create_test_world_snapshot() -> WorldSnapshot {
 }
 
 // Custom mock LLM that returns valid plans
+// NOTE: Must only use tools that are in FallbackOrchestrator's simplified_tools list:
+// MoveTo, ThrowSmoke, ThrowExplosive, AoEAttack, TakeCover, Attack, Approach, Retreat,
+// MarkTarget, Distract, Reload, Scan, Wait, Block, Heal
 struct ValidPlanMock;
 
 #[async_trait::async_trait]
@@ -89,7 +115,7 @@ impl LlmClient for ValidPlanMock {
             "plan_id": "integration-test-plan",
             "steps": [
                 {"act": "MoveTo", "x": 5, "y": 5},
-                {"act": "CoverFire", "target_id": 99, "duration": 2.0}
+                {"act": "Attack", "target_id": 99}
             ]
         }"#
         .to_string())
@@ -123,14 +149,10 @@ async fn test_end_to_end_valid_llm_response() {
             }
 
             match &plan.steps[1] {
-                ActionStep::CoverFire {
-                    target_id,
-                    duration,
-                } => {
+                ActionStep::Attack { target_id } => {
                     assert_eq!(*target_id, 99);
-                    assert!((duration - 2.0).abs() < 0.001);
                 }
-                _ => panic!("Expected CoverFire as second step"),
+                _ => panic!("Expected Attack as second step"),
             }
         }
         PlanSource::Fallback { .. } => panic!("Expected LLM plan, got fallback"),
@@ -143,7 +165,14 @@ async fn test_end_to_end_valid_llm_response() {
 
 #[tokio::test]
 async fn test_fallback_on_llm_failure() {
-    let snap = create_test_world_snapshot();
+    // Clear global cache to prevent cross-test pollution
+    #[cfg(feature = "llm_cache")]
+    astraweave_llm::clear_global_cache();
+
+    // Use unique snapshot to avoid cache collisions with parallel tests
+    let mut snap = create_test_world_snapshot();
+    snap.t = 888.88; // Unique timestamp
+    snap.objective = Some("FALLBACK_TEST_UNIQUE_888".to_string());
     let reg = create_test_registry();
     let client = AlwaysErrMock;
 
@@ -252,10 +281,11 @@ fn test_build_prompt_structure() {
     let prompt = build_prompt(&snap, &reg);
 
     // Verify prompt contains expected elements
+    // Note: Tool names are PascalCase to match ActionStep enum variants
     assert!(prompt.contains("AI game companion planner"));
-    assert!(prompt.contains("move_to"));
-    assert!(prompt.contains("throw"));
-    assert!(prompt.contains("cover_fire"));
+    assert!(prompt.contains("MoveTo"));
+    assert!(prompt.contains("Throw"));
+    assert!(prompt.contains("Attack"));
     assert!(prompt.contains("Return ONLY JSON"));
     assert!(prompt.contains("plan_id"));
     assert!(prompt.contains("steps"));
@@ -281,8 +311,8 @@ fn test_parse_invalid_json_fails() {
 #[test]
 fn test_parse_plan_with_disallowed_tool() {
     let mut reg = create_test_registry();
-    // Remove move_to tool
-    reg.tools.retain(|t| t.name != "move_to");
+    // Remove MoveTo tool (PascalCase to match registry)
+    reg.tools.retain(|t| t.name != "MoveTo");
 
     let json = r#"{
         "plan_id": "test",

@@ -1,23 +1,150 @@
-// tools/aw_editor/src/panels/world_panel.rs - World state viewer using Astract
-
 use super::Panel;
-use astract::prelude::*;
+use crate::terrain_integration::{all_biome_options, biome_display_name, TerrainState};
+use crate::LevelDoc;
 use egui::Ui;
-use tracing::debug;
 
-/// World panel - displays and edits world state
-///
-/// Demonstrates Astract hooks:
-/// - use_state for panel-local state
-/// - RSX macros for declarative UI (when available)
-/// - Component composition
 pub struct WorldPanel {
-    // Panel doesn't need state - hooks manage it
+    pub terrain_state: TerrainState,
+    chunk_radius: i32,
+    generation_status: Option<String>,
+    auto_regenerate: bool,
 }
 
 impl WorldPanel {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            terrain_state: TerrainState::new(),
+            chunk_radius: 2,
+            generation_status: None,
+            auto_regenerate: false,
+        }
+    }
+
+    pub fn show_with_level(&mut self, ui: &mut Ui, level: &mut LevelDoc) {
+        ui.heading("World State");
+        ui.separator();
+
+        let old_biome = level.biome.clone();
+        let old_seed = level.seed;
+
+        ui.group(|ui| {
+            ui.label("Biome");
+            
+            egui::ComboBox::from_id_salt("biome_selector")
+                .selected_text(biome_display_name(&level.biome))
+                .show_ui(ui, |ui| {
+                    for (value, display) in all_biome_options() {
+                        if ui.selectable_label(level.biome == *value, *display).clicked() {
+                            level.biome = value.to_string();
+                        }
+                    }
+                });
+
+            ui.label(format!("Current: {}", biome_display_name(&level.biome)));
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label("Seed");
+            ui.add(egui::Slider::new(&mut level.seed, 0..=99999).text("seed"));
+            if ui.button("Randomize").clicked() {
+                level.seed = rand::random::<u64>() % 100000;
+            }
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label("Terrain Generation");
+            
+            ui.horizontal(|ui| {
+                ui.label("Chunk Radius:");
+                ui.add(egui::Slider::new(&mut self.chunk_radius, 1..=5).text("chunks"));
+            });
+
+            let chunks_to_generate = (self.chunk_radius * 2 + 1).pow(2);
+            ui.label(format!("Will generate {} chunks", chunks_to_generate));
+
+            ui.horizontal(|ui| {
+                ui.checkbox(&mut self.auto_regenerate, "Auto-regenerate on change");
+            });
+
+            ui.add_space(5.0);
+
+            let generate_clicked = ui.button("Generate Terrain").clicked();
+            
+            self.terrain_state.configure(level.seed, &level.biome);
+
+            let should_generate = generate_clicked || 
+                (self.auto_regenerate && (old_biome != level.biome || old_seed != level.seed));
+
+            if should_generate {
+                match self.terrain_state.generate_terrain(self.chunk_radius) {
+                    Ok(count) => {
+                        self.generation_status = Some(format!(
+                            "Generated {} chunks with seed {} and biome {}",
+                            count,
+                            level.seed,
+                            biome_display_name(&level.biome)
+                        ));
+                    }
+                    Err(e) => {
+                        self.generation_status = Some(format!("Generation failed: {}", e));
+                    }
+                }
+            }
+
+            if let Some(status) = &self.generation_status {
+                ui.add_space(5.0);
+                ui.label(status);
+            }
+
+            if self.terrain_state.chunk_count() > 0 {
+                ui.add_space(5.0);
+                ui.label(format!(
+                    "Active: {} chunks loaded",
+                    self.terrain_state.chunk_count()
+                ));
+            }
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label("Time of Day");
+            ui.horizontal(|ui| {
+                ui.label("Current:");
+                ui.text_edit_singleline(&mut level.sky.time_of_day);
+            });
+
+            ui.horizontal(|ui| {
+                if ui.button("Dawn").clicked() {
+                    level.sky.time_of_day = "dawn".to_string();
+                }
+                if ui.button("Noon").clicked() {
+                    level.sky.time_of_day = "noon".to_string();
+                }
+                if ui.button("Dusk").clicked() {
+                    level.sky.time_of_day = "dusk".to_string();
+                }
+            });
+        });
+
+        ui.add_space(10.0);
+        
+        ui.group(|ui| {
+            ui.label("Weather");
+            ui.text_edit_singleline(&mut level.sky.weather);
+        });
+    }
+
+    pub fn terrain_state(&self) -> &TerrainState {
+        &self.terrain_state
+    }
+
+    pub fn terrain_state_mut(&mut self) -> &mut TerrainState {
+        &mut self.terrain_state
     }
 }
 
@@ -32,102 +159,6 @@ impl Panel for WorldPanel {
         "World"
     }
 
-    fn show(&mut self, ui: &mut Ui) {
-        ui.heading("🌍 World State");
-        ui.separator();
-
-        // Use Astract hooks for state management
-        let (biome, set_biome) = use_state(ui, "world_biome", "Forest".to_string());
-        let (seed, set_seed) = use_state(ui, "world_seed", 12345u64);
-        let (time_of_day, set_time_of_day) = use_state(ui, "world_time", 12.0f32);
-
-        ui.group(|ui| {
-            ui.label("🌲 Biome");
-            ui.horizontal(|ui| {
-                if ui.button("Forest").clicked() {
-                    set_biome.set(ui, "Forest".to_string());
-                }
-                if ui.button("Desert").clicked() {
-                    set_biome.set(ui, "Desert".to_string());
-                }
-                if ui.button("Tundra").clicked() {
-                    set_biome.set(ui, "Tundra".to_string());
-                }
-            });
-            ui.label(format!("Current: {}", biome));
-        });
-
-        ui.add_space(10.0);
-
-        ui.group(|ui| {
-            ui.label("🎲 Seed");
-            let mut seed_val = seed;
-            if ui
-                .add(egui::Slider::new(&mut seed_val, 0..=99999).text("seed"))
-                .changed()
-            {
-                set_seed.set(ui, seed_val);
-            }
-            if ui.button("🔀 Randomize").clicked() {
-                set_seed.set(ui, rand::random::<u64>() % 100000);
-            }
-        });
-
-        ui.add_space(10.0);
-
-        ui.group(|ui| {
-            ui.label("🌞 Time of Day");
-            let mut time_val = time_of_day;
-            if ui
-                .add(
-                    egui::Slider::new(&mut time_val, 0.0..=24.0)
-                        .text("hours")
-                        .suffix(" h"),
-                )
-                .changed()
-            {
-                set_time_of_day.set(ui, time_val);
-            }
-
-            ui.horizontal(|ui| {
-                if ui.button("🌅 Dawn (6h)").clicked() {
-                    set_time_of_day.set(ui, 6.0);
-                }
-                if ui.button("☀️ Noon (12h)").clicked() {
-                    set_time_of_day.set(ui, 12.0);
-                }
-                if ui.button("🌆 Dusk (18h)").clicked() {
-                    set_time_of_day.set(ui, 18.0);
-                }
-                if ui.button("🌙 Midnight (0h)").clicked() {
-                    set_time_of_day.set(ui, 0.0);
-                }
-            });
-        });
-
-        ui.add_space(10.0);
-
-        // Memoized derived state (sky color based on time)
-        let sky_color = use_memo(ui, "sky_color", time_of_day, |&time| {
-            if (6.0..12.0).contains(&time) {
-                "🌅 Orange (Dawn)"
-            } else if (12.0..18.0).contains(&time) {
-                "☀️ Blue (Day)"
-            } else if (18.0..21.0).contains(&time) {
-                "🌆 Purple (Dusk)"
-            } else {
-                "🌙 Dark Blue (Night)"
-            }
-        });
-
-        ui.group(|ui| {
-            ui.label("Sky");
-            ui.label(format!("Color: {}", sky_color));
-        });
-
-        // Effect example: log when seed changes
-        use_effect(ui, "seed_change_log", seed, |&s| {
-            debug!("🌍 World seed changed to: {}", s);
-        });
+    fn show(&mut self, _ui: &mut Ui) {
     }
 }

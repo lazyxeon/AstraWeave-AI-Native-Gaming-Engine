@@ -325,7 +325,7 @@ impl BehaviorGraphEditorUi {
         let label = self
             .new_node_kind
             .default_label(&self.new_node_label, doc.nodes().len());
-        let kind = self.new_node_kind.to_kind(&self.new_node_label);
+        let kind = self.new_node_kind.kind_for_input(&self.new_node_label);
         match doc.add_child_node(parent_id, label, kind) {
             Ok(id) => {
                 self.selected_node = Some(id);
@@ -407,7 +407,7 @@ impl NodeTemplate {
         }
     }
 
-    fn to_kind(&self, input: &str) -> BehaviorGraphNodeKind {
+    fn kind_for_input(&self, input: &str) -> BehaviorGraphNodeKind {
         match self {
             NodeTemplate::Action => BehaviorGraphNodeKind::Action {
                 name: fallback_name(input, "action"),

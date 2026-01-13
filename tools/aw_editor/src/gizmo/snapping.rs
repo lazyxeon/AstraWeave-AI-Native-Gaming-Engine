@@ -1,6 +1,7 @@
 use glam::{Quat, Vec3};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct SnappingConfig {
     pub grid_size: f32,
     pub angle_increment: f32,

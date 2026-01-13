@@ -277,7 +277,7 @@ impl PluginManager {
             .get_mut(plugin_id)
             .ok_or_else(|| PluginError::Other(format!("Plugin '{}' not found", plugin_id)))?;
 
-        if entry.state != PluginState::Loaded {
+        if entry.state != PluginState::Loaded && entry.state != PluginState::Error {
             return Err(PluginError::Other("Plugin already initialized".to_string()));
         }
 
@@ -292,6 +292,7 @@ impl PluginManager {
         match entry.plugin.on_load(&mut plugin_ctx) {
             Ok(()) => {
                 entry.state = PluginState::Active;
+                entry.error = None;
                 tracing::info!("Plugin '{}' initialized", plugin_id);
                 Ok(())
             }
@@ -464,6 +465,7 @@ pub struct PluginInfo {
 /// Panel for managing plugins in the editor UI
 pub struct PluginManagerPanel {
     filter_text: String,
+    last_error: Option<String>,
 }
 
 impl Default for PluginManagerPanel {
@@ -476,12 +478,31 @@ impl PluginManagerPanel {
     pub fn new() -> Self {
         Self {
             filter_text: String::new(),
+            last_error: None,
         }
     }
 
     pub fn show(&mut self, ui: &mut Ui, manager: &mut PluginManager, ctx: &Context) {
         ui.heading("🔌 Plugin Manager");
         ui.add_space(8.0);
+
+        // Show global error if any
+        let mut dismiss = false;
+        if let Some(error) = &self.last_error {
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("⚠️").color(egui::Color32::RED));
+                    ui.label(egui::RichText::new(error).color(egui::Color32::RED));
+                    if ui.button("Dismiss").clicked() {
+                        dismiss = true;
+                    }
+                });
+            });
+            ui.add_space(8.0);
+        }
+        if dismiss {
+            self.last_error = None;
+        }
 
         // Search filter
         ui.horizontal(|ui| {
@@ -527,7 +548,7 @@ impl PluginManagerPanel {
     }
 
     fn show_plugin_entry(
-        &self,
+        &mut self,
         ui: &mut Ui,
         info: &PluginInfo,
         manager: &mut PluginManager,
@@ -586,7 +607,9 @@ impl PluginManagerPanel {
                 match info.state {
                     PluginState::Loaded => {
                         if ui.button("Initialize").clicked() {
-                            let _ = manager.initialize(&info.id, ctx);
+                            if let Err(e) = manager.initialize(&info.id, ctx) {
+                                self.last_error = Some(format!("Failed to initialize plugin '{}': {}", info.metadata.name, e));
+                            }
                         }
                     }
                     PluginState::Active => {
@@ -601,13 +624,17 @@ impl PluginManagerPanel {
                     }
                     PluginState::Error => {
                         if ui.button("Retry").clicked() {
-                            let _ = manager.initialize(&info.id, ctx);
+                            if let Err(e) = manager.initialize(&info.id, ctx) {
+                                self.last_error = Some(format!("Retry failed for plugin '{}': {}", info.metadata.name, e));
+                            }
                         }
                     }
                 }
 
                 if ui.button("🗑️").clicked() {
-                    let _ = manager.unload(&info.id, ctx);
+                    if let Err(e) = manager.unload(&info.id, ctx) {
+                        self.last_error = Some(format!("Failed to unload plugin '{}': {}", info.metadata.name, e));
+                    }
                 }
             });
         });

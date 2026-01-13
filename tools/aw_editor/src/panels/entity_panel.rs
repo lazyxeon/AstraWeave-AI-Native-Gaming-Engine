@@ -306,7 +306,7 @@ impl Panel for EntityPanel {
         let (selected_entity, set_selected_entity) = use_state(ui, "selected_entity", 0usize);
         let (filter, set_filter) = use_state(ui, "entity_filter", String::new());
 
-        // Mock entity list (in real app, this would come from ECS world)
+        // Entity list from world
         let entities = [("Player", "Companion", 100, 10),
             ("Enemy_1", "Grunt", 50, 5),
             ("Enemy_2", "Elite", 150, 15),

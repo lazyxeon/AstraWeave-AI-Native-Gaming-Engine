@@ -142,8 +142,10 @@ impl TerrainNoise {
         chunk_size: f32,
         resolution: u32,
     ) -> anyhow::Result<Heightmap> {
-        let mut heightmap_config = HeightmapConfig::default();
-        heightmap_config.resolution = resolution;
+        let heightmap_config = HeightmapConfig {
+            resolution,
+            ..Default::default()
+        };
         let mut heightmap = Heightmap::new(heightmap_config)?;
 
         let world_origin = chunk_id.to_world_pos(chunk_size);

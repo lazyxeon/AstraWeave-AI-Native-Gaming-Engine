@@ -291,12 +291,22 @@ impl Phi3Medium {
         let device = self.device.clone();
         let config = self.config.clone();
         let tokenizer = self.tokenizer.clone();
+        let prompt_owned = prompt.to_string(); // Clone prompt for deterministic seed
 
         // Run inference in blocking task (CPU/GPU bound)
         let generated_tokens = tokio::task::spawn_blocking(move || -> Result<Vec<u32>> {
             let mut model_guard = model.blocking_lock();
             let mut tokens = tokens;
             let mut generated = Vec::new();
+            
+            // Create deterministic RNG from seed (derived from prompt hash for reproducibility)
+            use rand::SeedableRng;
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            let mut hasher = DefaultHasher::new();
+            prompt_owned.hash(&mut hasher);
+            let seed = hasher.finish();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
 
             for _ in 0..config.max_tokens {
                 // Convert tokens to tensor
@@ -311,8 +321,8 @@ impl Phi3Medium {
                     config.temperature,
                     config.top_p,
                     config.repeat_penalty,
-                    config.repeat_penalty, // Fixed: passed repeat_penalty twice instead of context? No, wait.
                     &tokens,
+                    &mut rng,
                 )?;
 
                 // Check for EOS token (Phi-3 EOS is typically 2 or 32000)
@@ -345,13 +355,18 @@ impl Phi3Medium {
     }
 
     /// Sample next token from logits using temperature and top-p
+    /// 
+    /// # Determinism
+    /// 
+    /// This method is deterministic when given the same logits and RNG state.
     #[cfg(feature = "phi3")]
-    fn sample_token(
+    fn sample_token<R: rand::Rng>(
         logits: &Tensor,
         temperature: f32,
         top_p: f32,
         repeat_penalty: f32,
         context: &[u32],
+        rng: &mut R,
     ) -> Result<u32> {
         // Get last token logits
         let logits = logits.squeeze(0)?.to_vec1::<f32>()?;
@@ -391,9 +406,8 @@ impl Phi3Medium {
             }
         }
 
-        // Sample from nucleus
+        // Sample from nucleus using provided RNG for determinism
         use rand::Rng;
-        let mut rng = rand::thread_rng();
         let sample_val: f32 = rng.gen_range(0.0..cumulative);
 
         let mut acc = 0.0;

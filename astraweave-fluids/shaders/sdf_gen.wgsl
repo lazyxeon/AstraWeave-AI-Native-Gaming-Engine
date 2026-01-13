@@ -37,7 +37,7 @@ fn sd_sphere(p: vec3<f32>, s: f32) -> f32 {
 // Pass 0: Initialization
 // Seeds the texture with dynamic object locations. 
 // Uses RGBA32Float: RGB = nearest point coordinate, A = signed distance (initial)
-@compute @workgroup_size(8, 8, 8)
+@compute @workgroup_size(8, 8, 4)
 fn init(@builtin(global_invocation_id) id: vec3<u32>) {
     if (any(id >= vec3<u32>(config.resolution))) { return; }
 
@@ -78,7 +78,7 @@ fn init(@builtin(global_invocation_id) id: vec3<u32>) {
 @group(2) @binding(0) var<uniform> jfa_params: JfaParams;
 
 // Pass 1: Jump Flood Step
-@compute @workgroup_size(8, 8, 8)
+@compute @workgroup_size(8, 8, 4)
 fn jfa_step(@builtin(global_invocation_id) id: vec3<u32>) {
     if (any(id >= vec3<u32>(config.resolution))) { return; }
 
@@ -118,7 +118,7 @@ fn jfa_step(@builtin(global_invocation_id) id: vec3<u32>) {
 }
 
 // Pass 2: Finalize
-@compute @workgroup_size(8, 8, 8)
+@compute @workgroup_size(8, 8, 4)
 fn finalize(@builtin(global_invocation_id) id: vec3<u32>) {
     if (any(id >= vec3<u32>(config.resolution))) { return; }
 

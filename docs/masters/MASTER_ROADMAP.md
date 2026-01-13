@@ -1,7 +1,7 @@
 # AstraWeave: Master Strategic Roadmap
 
-**Version**: 1.42  
-**Last Updated**: December 21, 2025  
+**Version**: 1.43  
+**Last Updated**: January 2026  
 **Status**: Authoritative Source
 
 ---
@@ -55,17 +55,18 @@ AstraWeave is the **world's first AI-native game engine** where AI agents are fi
 
 | System | Status | Key Features |
 |--------|--------|--------------|
-| **ECS** | Production | Archetype-based, deterministic, 7-stage pipeline |
+| **ECS** | Production | Archetype-based, BlobVec storage, deterministic, 7-stage pipeline, 220 tests |
 | **AI** | Production | 6 planning modes, GOAP, Behavior Trees, LLM integration |
 | **Rendering** | Production | wgpu 25, PBR/IBL, CSM shadows, post-processing, **Headless Support** |
 | **Physics** | Production | Rapier3D, character controller, spatial hashing |
 | **Audio** | Production | Spatial audio, 4-bus mixer, rodio backend |
 | **Navigation** | Production | Navmesh, A*, portal graphs (66/66 tests) |
 
-### Recent Additions (December 2025)
+### Recent Additions (January 2026)
 
 | Feature | Location | Tests |
 |---------|----------|-------|
+| **✅ ECS BlobVec Optimization** | `astraweave-ecs/src/archetype.rs` | **220** |
 | **Headless Renderer & GPU Verification** | `astraweave-render/src/renderer.rs` | 369 |
 | **AI-Orchestrated Dynamic Terrain** | Multiple crates | 320+ |
 | TLS/SSL Security | `astraweave-net/src/tls.rs` | 3 |
@@ -282,6 +283,9 @@ Key achievements:
 
 | Version | Date | Summary |
 |---------|------|---------|
+| **1.44** | **Jan 2026** | **Revised Validation Plan v2.0**: Comprehensive tool research (LLVM Sanitizers, wgpu validation, Miri/Kani alternatives). Created `REVISED_VALIDATION_PLAN.md` with crate-specific recommendations. Added `sanitizers.yml` CI workflow (ASan, LSan, TSan, Miri). Removed Kani (ROI too low), added `contracts` crate alternative. Added `validate.ps1` local runner script. |
+| 1.43 | Jan 2026 | ✅ ECS REGRESSION FIXED: Critical BlobVec performance regression from NASA-grade audit v5.52 **FULLY RESOLVED**. Root cause: HashMap allocation in Archetype::new() even in legacy mode. Fix: Lazy initialization with Option<HashMap>. Results: entity_spawn 52% faster, entity_despawn 68% faster, 10K+ entities @ 60 FPS restored. All 220 ECS tests passing. Grade: B- → A+ |
+| 1.42 | Dec 21, 2025 | Renderer production validation: Comprehensive headless verification |
 | 1.41 | Dec 20, 2025 | Renderer Headless Refactor: Refactored `Renderer` for CI-safe testing, added 365 tests, increased coverage to ~42% |
 | 1.40 | Dec 8, 2025 | AI-Orchestrated Dynamic Terrain: 8 phases complete (TerrainSolver, TerrainModifier, NavMesh invalidation, Persistence, LLM prompts, Quest generation), 320+ tests |
 | 1.39 | Dec 6, 2025 | Steam Platform: astraweave-steam crate with Steamworks SDK, achievements, stats, Platform trait |

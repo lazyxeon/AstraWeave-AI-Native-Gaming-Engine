@@ -125,12 +125,15 @@ impl ForgettingEngine {
                     .memory_strengths
                     .entry(memory_id.clone())
                     .or_insert_with(|| {
-                        let mut strength = MemoryStrength::default();
-                        strength.protected =
-                            self.config.protected_categories.contains(&memory.category);
-                        // Use memory timestamp as initial last_access
-                        strength.last_access = memory.timestamp as i64;
-                        strength
+                        MemoryStrength {
+                            protected: self
+                                .config
+                                .protected_categories
+                                .contains(&memory.category),
+                            // Use memory timestamp as initial last_access
+                            last_access: memory.timestamp as i64,
+                            ..Default::default()
+                        }
                     });
 
                 // Calculate current strength based on time decay

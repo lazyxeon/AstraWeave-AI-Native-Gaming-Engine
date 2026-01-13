@@ -235,6 +235,7 @@ pub struct ClusterDims {
 /// - screen coords in [0,width) x [0,height)
 /// - near/far planes
 /// - dims: number of clusters in x/y/z
+#[allow(clippy::too_many_arguments)]
 pub fn cluster_index(
     px: u32,
     py: u32,

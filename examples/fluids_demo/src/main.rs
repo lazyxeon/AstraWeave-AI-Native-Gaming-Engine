@@ -33,9 +33,13 @@ struct Camera {
 
 impl Camera {
     fn build_view_projection_matrix(&self) -> Mat4 {
-        let view = Mat4::look_at_rh(self.eye, self.target, self.up);
+        let view = self.build_view_matrix();
         let proj = Mat4::perspective_rh(self.fovy.to_radians(), self.aspect, self.znear, self.zfar);
         proj * view
+    }
+
+    fn build_view_matrix(&self) -> Mat4 {
+        Mat4::look_at_rh(self.eye, self.target, self.up)
     }
 }
 
@@ -83,9 +87,94 @@ struct State {
     // Simulation parameters (egui controlled)
     sim_speed: f32,
     show_debug_panel: bool,
+
+    // Mouse interaction
+    mouse_pos: [f32; 2],
+    last_mouse_pos: [f32; 2],
+    mouse_left_pressed: bool,
+    mouse_right_pressed: bool,
+    spawn_burst_size: u32,
+    drag_force_strength: f32,
+
+    // Performance controls
+    target_particle_count: u32,
+    quality_preset: u32, // 0=Low, 1=Medium, 2=High, 3=Ultra
+    show_foam: bool,
 }
 
 impl State {
+    /// Convert screen coordinates to a ray in world space
+    fn screen_to_world_ray(&self, screen_x: f32, screen_y: f32) -> (Vec3, Vec3) {
+        let ndc_x = (2.0 * screen_x / self.size.width as f32) - 1.0;
+        let ndc_y = 1.0 - (2.0 * screen_y / self.size.height as f32);
+
+        let inv_view_proj = self.camera.build_view_projection_matrix().inverse();
+
+        let near_ndc = glam::Vec4::new(ndc_x, ndc_y, 0.0, 1.0);
+        let far_ndc = glam::Vec4::new(ndc_x, ndc_y, 1.0, 1.0);
+
+        let near_world = inv_view_proj * near_ndc;
+        let far_world = inv_view_proj * far_ndc;
+
+        let near_pos = Vec3::new(near_world.x, near_world.y, near_world.z) / near_world.w;
+        let far_pos = Vec3::new(far_world.x, far_world.y, far_world.z) / far_world.w;
+
+        let direction = (far_pos - near_pos).normalize();
+        (near_pos, direction)
+    }
+
+    /// Intersect ray with horizontal plane at given Y height
+    fn ray_plane_intersection(
+        &self,
+        ray_origin: Vec3,
+        ray_dir: Vec3,
+        plane_y: f32,
+    ) -> Option<Vec3> {
+        if ray_dir.y.abs() < 0.0001 {
+            return None;
+        }
+        let t = (plane_y - ray_origin.y) / ray_dir.y;
+        if t < 0.0 {
+            return None;
+        }
+        Some(ray_origin + ray_dir * t)
+    }
+
+    /// Spawn particles at mouse cursor position
+    fn spawn_particles_at_cursor(&mut self) {
+        let (origin, dir) = self.screen_to_world_ray(self.mouse_pos[0], self.mouse_pos[1]);
+
+        // Intersect with Y=5 plane (fluid center height)
+        if let Some(hit_pos) = self.ray_plane_intersection(origin, dir, 5.0) {
+            let count = self.spawn_burst_size as usize;
+            let mut positions = Vec::with_capacity(count);
+            let mut velocities = Vec::with_capacity(count);
+            let mut colors = Vec::with_capacity(count);
+
+            for i in 0..count {
+                // Random spread around hit position
+                let angle = (i as f32 / count as f32) * std::f32::consts::TAU;
+                let radius = (i as f32 * 0.1).sin() * 0.5;
+                let offset_x = angle.cos() * radius;
+                let offset_z = angle.sin() * radius;
+
+                positions.push([hit_pos.x + offset_x, hit_pos.y + 0.5, hit_pos.z + offset_z]);
+                velocities.push([0.0, -2.0, 0.0]); // Slight downward velocity
+                colors.push([0.3, 0.6, 1.0, 1.0]); // Bright blue
+            }
+
+            self.fluid_system
+                .spawn_particles(&self.queue, &positions, &velocities, Some(&colors));
+            log::info!(
+                "Spawned {} particles at ({:.1}, {:.1}, {:.1})",
+                count,
+                hit_pos.x,
+                hit_pos.y,
+                hit_pos.z
+            );
+        }
+    }
+
     fn toggle_render_mode(&mut self) {
         self.scenario_manager.next();
         if let Some(scenario) = self.scenario_manager.current() {
@@ -127,7 +216,7 @@ impl State {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+                required_features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
                 required_limits: wgpu::Limits::default(),
                 memory_hints: wgpu::MemoryHints::default(),
                 trace: wgpu::Trace::Off,
@@ -301,6 +390,19 @@ impl State {
             // Simulation parameters
             sim_speed: 1.0,
             show_debug_panel: true,
+
+            // Mouse interaction
+            mouse_pos: [0.0, 0.0],
+            last_mouse_pos: [0.0, 0.0],
+            mouse_left_pressed: false,
+            mouse_right_pressed: false,
+            spawn_burst_size: 50,
+            drag_force_strength: 10.0,
+
+            // Performance controls
+            target_particle_count: 20000,
+            quality_preset: 2, // High
+            show_foam: true,
         }
     }
 
@@ -436,14 +538,16 @@ impl State {
         // Build Camera Uniform
         let view_proj = self.camera.build_view_projection_matrix();
         let inv_view_proj = view_proj.inverse();
+        let view_inv = self.camera.build_view_matrix().inverse();
         let light_dir = glam::Vec3::new(0.5, 1.0, 0.2).normalize();
         let camera_uniform = CameraUniform {
             view_proj: view_proj.to_cols_array_2d(),
             inv_view_proj: inv_view_proj.to_cols_array_2d(),
+            view_inv: view_inv.to_cols_array_2d(),
             cam_pos: [self.camera.eye.x, self.camera.eye.y, self.camera.eye.z, 1.0],
             light_dir: [light_dir.x, light_dir.y, light_dir.z, 1.0],
             time: self.start_time.elapsed().as_secs_f32(),
-            padding: [0.0; 3],
+            padding: [0.0; 19],
         };
 
         // Render to scene texture (Background Pass)
@@ -598,6 +702,61 @@ impl State {
                         ui.label(format!("Distance: {:.1}", self.camera_distance));
                         ui.label(format!("Pitch: {:.2}rad", self.camera_pitch));
 
+                        // Interactive Controls
+                        ui.heading("🖱️ Interaction");
+                        ui.separator();
+
+                        ui.horizontal(|ui| {
+                            ui.label("Spawn Burst:");
+                            ui.add(egui::Slider::new(&mut self.spawn_burst_size, 10..=200));
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Drag Force:");
+                            ui.add(egui::Slider::new(&mut self.drag_force_strength, 1.0..=50.0));
+                        });
+
+                        ui.checkbox(&mut self.show_foam, "Show Foam");
+
+                        ui.add_space(8.0);
+
+                        // Quality Presets
+                        ui.heading("🎨 Quality");
+                        ui.separator();
+
+                        ui.horizontal(|ui| {
+                            if ui
+                                .selectable_label(self.quality_preset == 0, "Low")
+                                .clicked()
+                            {
+                                self.quality_preset = 0;
+                                self.target_particle_count = 5000;
+                            }
+                            if ui
+                                .selectable_label(self.quality_preset == 1, "Med")
+                                .clicked()
+                            {
+                                self.quality_preset = 1;
+                                self.target_particle_count = 10000;
+                            }
+                            if ui
+                                .selectable_label(self.quality_preset == 2, "High")
+                                .clicked()
+                            {
+                                self.quality_preset = 2;
+                                self.target_particle_count = 20000;
+                            }
+                            if ui
+                                .selectable_label(self.quality_preset == 3, "Ultra")
+                                .clicked()
+                            {
+                                self.quality_preset = 3;
+                                self.target_particle_count = 50000;
+                            }
+                        });
+
+                        ui.label(format!("Target Particles: {}", self.target_particle_count));
+
                         ui.add_space(8.0);
 
                         // Controls Help
@@ -606,6 +765,8 @@ impl State {
                         ui.small("WASD - Orbit camera");
                         ui.small("Q/E - Zoom in/out");
                         ui.small("SPACE - Switch scenario");
+                        ui.small("Left Click - Spawn particles");
+                        ui.small("Right Drag - Apply force");
                         ui.small("F1 - Toggle this panel");
                         ui.small("ESC - Exit");
                     });
@@ -667,7 +828,7 @@ impl State {
 }
 
 struct App {
-    state: Option<State>,
+    state: Option<Box<State>>,
 }
 
 impl ApplicationHandler for App {
@@ -680,7 +841,7 @@ impl ApplicationHandler for App {
                     )
                     .unwrap(),
             );
-            self.state = Some(pollster::block_on(State::new(window)));
+            self.state = Some(Box::new(pollster::block_on(State::new(window))));
         }
     }
 
@@ -760,6 +921,32 @@ impl ApplicationHandler for App {
                             state.keys_pressed.remove(&code);
                         }
                     },
+                    // Mouse cursor tracking
+                    WindowEvent::CursorMoved { position, .. } => {
+                        state.last_mouse_pos = state.mouse_pos;
+                        state.mouse_pos = [position.x as f32, position.y as f32];
+                    }
+                    // Mouse button handling
+                    WindowEvent::MouseInput {
+                        state: button_state,
+                        button,
+                        ..
+                    } => {
+                        match button {
+                            winit::event::MouseButton::Left => {
+                                let pressed = button_state == ElementState::Pressed;
+                                // Spawn particles on left click
+                                if pressed && !state.mouse_left_pressed {
+                                    state.spawn_particles_at_cursor();
+                                }
+                                state.mouse_left_pressed = pressed;
+                            }
+                            winit::event::MouseButton::Right => {
+                                state.mouse_right_pressed = button_state == ElementState::Pressed;
+                            }
+                            _ => {}
+                        }
+                    }
                     WindowEvent::Resized(physical_size) => {
                         state.resize(physical_size);
                     }

@@ -10,6 +10,76 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Through
 use std::hint::black_box;
 use glam::{Quat, Vec2, Vec3};
 
+// =============================================================================
+// MISSION-CRITICAL CORRECTNESS ASSERTIONS
+// =============================================================================
+// Mesh optimization benchmarks validate CORRECTNESS of vertex processing.
+// Assertions verify:
+//   1. Octahedral Encoding: Normal round-trip preserves direction within tolerance
+//   2. Half-Float Encoding: UV round-trip preserves values within precision limits
+//   3. LOD Generation: Simplified mesh maintains valid geometry (indices, counts)
+//   4. Instancing: Instance transforms are valid (finite, non-zero scale)
+//   5. Memory Savings: Compression ratios are physically valid (0 < savings < 1)
+// =============================================================================
+
+/// CORRECTNESS: Validate octahedral encoding round-trip preserves normal direction
+#[inline]
+fn assert_octahedral_roundtrip_valid(original: Vec3, encoded: [i16; 2], context: &str) {
+    // Encoded values should be in valid range
+    assert!(encoded[0] >= -32767 && encoded[0] <= 32767,
+        "[CORRECTNESS FAILURE] {}: encoded X out of range {}", context, encoded[0]);
+    assert!(encoded[1] >= -32767 && encoded[1] <= 32767,
+        "[CORRECTNESS FAILURE] {}: encoded Y out of range {}", context, encoded[1]);
+    // Decode and verify round-trip
+    let decoded = OctahedralEncoder::decode(encoded);
+    let dot = original.dot(decoded);
+    assert!(dot > 0.99,
+        "[CORRECTNESS FAILURE] {}: normal round-trip error too large (dot={})", context, dot);
+}
+
+/// CORRECTNESS: Validate half-float UV round-trip preserves values
+#[inline]
+fn assert_half_float_roundtrip_valid(original: Vec2, encoded: [u16; 2], context: &str) {
+    let decoded = HalfFloatEncoder::decode_vec2(encoded);
+    let error_x = (original.x - decoded.x).abs();
+    let error_y = (original.y - decoded.y).abs();
+    // Half-float precision is ~0.001 for values in [0,1]
+    assert!(error_x < 0.01,
+        "[CORRECTNESS FAILURE] {}: UV X round-trip error {} > 0.01", context, error_x);
+    assert!(error_y < 0.01,
+        "[CORRECTNESS FAILURE] {}: UV Y round-trip error {} > 0.01", context, error_y);
+}
+
+/// CORRECTNESS: Validate LOD mesh has valid geometry
+#[inline]
+fn assert_lod_mesh_valid(vertex_count: usize, index_count: usize, original_vertices: usize, context: &str) {
+    // Must have at least 3 vertices for a triangle
+    assert!(vertex_count >= 3,
+        "[CORRECTNESS FAILURE] {}: LOD mesh has < 3 vertices ({})", context, vertex_count);
+    // Must have at least 3 indices for a triangle
+    assert!(index_count >= 3,
+        "[CORRECTNESS FAILURE] {}: LOD mesh has < 3 indices ({})", context, index_count);
+    // Index count must be divisible by 3 (triangles)
+    assert!(index_count % 3 == 0,
+        "[CORRECTNESS FAILURE] {}: LOD index count {} not divisible by 3", context, index_count);
+    // LOD should have fewer or equal vertices than original
+    assert!(vertex_count <= original_vertices,
+        "[CORRECTNESS FAILURE] {}: LOD has more vertices ({}) than original ({})", 
+        context, vertex_count, original_vertices);
+}
+
+/// CORRECTNESS: Validate memory savings ratio is physically valid
+#[inline]
+fn assert_memory_savings_valid(original_bytes: usize, compressed_bytes: usize, savings_ratio: f32, context: &str) {
+    // Savings ratio should be in valid range [0, 1)
+    assert!(savings_ratio >= 0.0 && savings_ratio < 1.0,
+        "[CORRECTNESS FAILURE] {}: savings ratio {} out of valid range [0,1)", context, savings_ratio);
+    // Compressed should be smaller than original
+    assert!(compressed_bytes <= original_bytes,
+        "[CORRECTNESS FAILURE] {}: compressed ({}) larger than original ({})", 
+        context, compressed_bytes, original_bytes);
+}
+
 // ============================================================================
 // VERTEX COMPRESSION BENCHMARKS
 // ============================================================================
@@ -26,7 +96,10 @@ fn bench_octahedral_encoding(c: &mut Criterion) {
     group.bench_function("encode", |b| {
         b.iter(|| {
             for normal in &normals {
-                black_box(OctahedralEncoder::encode(black_box(*normal)));
+                let encoded = OctahedralEncoder::encode(black_box(*normal));
+                // CORRECTNESS: Validate encoded values are in valid range
+                assert_octahedral_roundtrip_valid(*normal, encoded, "octahedral/encode");
+                black_box(encoded);
             }
         });
     });
@@ -38,8 +111,14 @@ fn bench_octahedral_encoding(c: &mut Criterion) {
 
     group.bench_function("decode", |b| {
         b.iter(|| {
-            for enc in &encoded {
-                black_box(OctahedralEncoder::decode(black_box(*enc)));
+            for (i, enc) in encoded.iter().enumerate() {
+                let decoded = OctahedralEncoder::decode(black_box(*enc));
+                // CORRECTNESS: Decoded normal should be unit length
+                let len = decoded.length();
+                assert!((len - 1.0).abs() < 0.01,
+                    "[CORRECTNESS FAILURE] octahedral/decode: decoded normal {} not unit length (len={})", 
+                    i, len);
+                black_box(decoded);
             }
         });
     });
@@ -60,7 +139,10 @@ fn bench_half_float_encoding(c: &mut Criterion) {
     group.bench_function("encode_vec2", |b| {
         b.iter(|| {
             for uv in &uvs {
-                black_box(HalfFloatEncoder::encode_vec2(black_box(*uv)));
+                let encoded = HalfFloatEncoder::encode_vec2(black_box(*uv));
+                // CORRECTNESS: Validate round-trip precision
+                assert_half_float_roundtrip_valid(*uv, encoded, "half_float/encode");
+                black_box(encoded);
             }
         });
     });

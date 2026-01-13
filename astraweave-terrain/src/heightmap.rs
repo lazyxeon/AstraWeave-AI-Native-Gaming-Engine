@@ -185,8 +185,8 @@ impl Heightmap {
             let mut velocity_z = vec![0.0f32; self.data.len()];
 
             // Add water (rain)
-            for i in 0..water.len() {
-                water[i] += strength * 0.01;
+            for w in &mut water {
+                *w += strength * 0.01;
             }
 
             // Flow simulation

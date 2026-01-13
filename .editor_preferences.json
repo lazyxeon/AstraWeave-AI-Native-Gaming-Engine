@@ -1,0 +1,32 @@
+{
+  "show_grid": true,
+  "auto_save_enabled": false,
+  "auto_save_interval_secs": 300.0,
+  "show_hierarchy_panel": true,
+  "show_inspector_panel": true,
+  "show_console_panel": true,
+  "camera": {
+    "focal_point": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distance": 25.0,
+    "yaw": 0.7853982,
+    "pitch": 0.5235988,
+    "fov": 60.0,
+    "aspect": 1.7777778,
+    "near": 0.01,
+    "far": 1000.0,
+    "min_distance": 0.1,
+    "max_distance": 200.0,
+    "min_pitch": -1.5607964,
+    "max_pitch": 1.5607964
+  },
+  "snapping": {
+    "grid_size": 1.0,
+    "angle_increment": 15.0,
+    "grid_enabled": true,
+    "angle_enabled": true
+  }
+}

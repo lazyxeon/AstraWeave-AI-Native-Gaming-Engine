@@ -6,6 +6,8 @@ use std::collections::{BTreeMap, HashMap};
 #[cfg(feature = "profiling")]
 use astraweave_profiling::span;
 
+use crate::blob_vec::BlobVec;
+use crate::component_meta::ComponentMeta;
 use crate::sparse_set::SparseSet;
 use crate::{Component, Entity};
 
@@ -41,23 +43,62 @@ impl ArchetypeSignature {
 }
 
 /// Archetype storage: all entities with the same component signature
+///
+/// # Storage Modes
+///
+/// The archetype supports two storage modes for backward compatibility:
+///
+/// 1. **Box Mode** (legacy): Uses `Vec<Box<dyn Any>>` for each component column.
+///    - Higher overhead due to heap indirection and virtual dispatch
+///    - Used when component metadata is not available
+///
+/// 2. **BlobVec Mode** (optimized): Uses contiguous `BlobVec` for each column.
+///    - Zero heap indirection, cache-friendly iteration
+///    - Requires `ComponentMeta` to be provided at archetype creation
+///
+/// The `uses_blob` flag indicates which mode is active.
+///
+/// # Performance Note (Lazy Initialization)
+///
+/// BlobVec fields (`blob_components`, `component_metas`) use `Option` for lazy
+/// initialization. This avoids HashMap allocation overhead in Box mode, which
+/// is critical for spawn/despawn performance (previous regression: +388%).
 pub struct Archetype {
     pub id: ArchetypeId,
     pub signature: ArchetypeSignature,
 
-    /// NEW: Packed entity list for iteration (cache-friendly)
+    /// Packed entity list for iteration (cache-friendly)
     entities: Vec<Entity>,
 
-    /// NEW: O(1) entity lookup (replaces BTreeMap)
+    /// O(1) entity lookup (replaces BTreeMap)
     entity_index: SparseSet,
 
-    /// Component columns: TypeId -> Vec<Box<dyn Any>>
-    /// NOTE: Still using Box for now (type-erased storage)
-    /// Future: Replace with BlobVec once we add type registry
+    /// Legacy component columns: TypeId -> Vec<Box<dyn Any>>
+    /// Used when ComponentMeta is not available
     components: HashMap<TypeId, Vec<Box<dyn std::any::Any + Send + Sync>>>,
+
+    // ========================================================================
+    // BlobVec Storage (High-Performance Path)
+    // ========================================================================
+
+    /// BlobVec component columns: TypeId -> BlobVec
+    /// Used when ComponentMeta is available (typed path)
+    /// NOTE: Lazy initialized (Option) to avoid allocation in Box mode
+    blob_components: Option<HashMap<TypeId, BlobVec>>,
+
+    /// Component metadata for each type (needed for clone/drop in transitions)
+    /// NOTE: Lazy initialized (Option) to avoid allocation in Box mode
+    component_metas: Option<HashMap<TypeId, ComponentMeta>>,
+
+    /// Whether this archetype uses BlobVec storage (true) or Box storage (false)
+    uses_blob: bool,
 }
 
 impl Archetype {
+    /// Create a new archetype with Box storage (legacy mode).
+    ///
+    /// BlobVec fields are NOT allocated (lazy initialization) to avoid
+    /// spawn/despawn performance regression.
     pub fn new(id: ArchetypeId, signature: ArchetypeSignature) -> Self {
         let mut components = HashMap::new();
         for ty in &signature.components {
@@ -69,7 +110,47 @@ impl Archetype {
             entities: Vec::new(),
             entity_index: SparseSet::new(),
             components,
+            // BlobVec fields NOT allocated (lazy init for performance)
+            blob_components: None,
+            component_metas: None,
+            uses_blob: false,
         }
+    }
+
+    /// Create a new archetype with BlobVec storage (high-performance mode).
+    ///
+    /// # Arguments
+    /// * `id` - Unique archetype identifier
+    /// * `signature` - Component type signature
+    /// * `metas` - HashMap of TypeId -> ComponentMeta for each component
+    pub fn new_with_blob(
+        id: ArchetypeId,
+        signature: ArchetypeSignature,
+        metas: HashMap<TypeId, ComponentMeta>,
+    ) -> Self {
+        let mut blob_components = HashMap::new();
+        for ty in &signature.components {
+            if let Some(meta) = metas.get(ty) {
+                blob_components.insert(*ty, meta.create_blob_vec());
+            }
+        }
+
+        Self {
+            id,
+            signature,
+            entities: Vec::new(),
+            entity_index: SparseSet::new(),
+            components: HashMap::new(), // Not used in blob mode
+            blob_components: Some(blob_components),
+            component_metas: Some(metas),
+            uses_blob: true,
+        }
+    }
+
+    /// Check if this archetype uses BlobVec storage.
+    #[inline]
+    pub fn uses_blob(&self) -> bool {
+        self.uses_blob
     }
 
     /// Add an entity with its components (must match signature)
@@ -78,7 +159,7 @@ impl Archetype {
         entity: Entity,
         mut component_data: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>,
     ) {
-        // NEW: Use SparseSet for O(1) lookup (12-57× faster than BTreeMap)
+        // Use SparseSet for O(1) lookup (12-57× faster than BTreeMap)
         self.entity_index.insert(entity);
         self.entities.push(entity);
 
@@ -94,19 +175,97 @@ impl Archetype {
         }
     }
 
-    /// Get component for entity
+    // ========================================================================
+    // Typed BlobVec Operations (High-Performance Path)
+    // ========================================================================
+
+    /// Add a single typed component to an entity already in this archetype.
+    ///
+    /// This is used for the high-performance typed path when transitioning
+    /// entities between archetypes.
+    ///
+    /// # Safety
+    /// - Entity must already be added to this archetype
+    /// - Component type must be in the signature
+    /// - Archetype must use BlobVec storage
+    pub fn push_component_typed<T: Component>(&mut self, component: T) {
+        debug_assert!(self.uses_blob, "push_component_typed requires BlobVec mode");
+        let type_id = TypeId::of::<T>();
+
+        if let Some(blob_components) = &mut self.blob_components {
+            if let Some(blob) = blob_components.get_mut(&type_id) {
+                unsafe {
+                    blob.push(component);
+                }
+            }
+        }
+    }
+
+    /// Add entity with typed components using BlobVec storage.
+    ///
+    /// This bypasses Box<dyn Any> for maximum performance.
+    ///
+    /// # Arguments
+    /// * `entity` - The entity to add
+    /// * `components` - Raw component data as bytes with clone functions
+    pub fn add_entity_typed_raw(
+        &mut self,
+        entity: Entity,
+        components: &[(TypeId, *const u8)],
+    ) {
+        debug_assert!(self.uses_blob, "add_entity_typed_raw requires BlobVec mode");
+
+        self.entity_index.insert(entity);
+        self.entities.push(entity);
+
+        let blob_components = match &mut self.blob_components {
+            Some(bc) => bc,
+            None => return,
+        };
+        let component_metas = match &self.component_metas {
+            Some(cm) => cm,
+            None => return,
+        };
+
+        for (type_id, src_ptr) in components {
+            if let (Some(blob), Some(meta)) = (
+                blob_components.get_mut(type_id),
+                component_metas.get(type_id),
+            ) {
+                unsafe {
+                    blob.push_raw(*src_ptr, meta.clone_fn);
+                }
+            }
+        }
+    }
+
+    /// Get component for entity (hybrid: checks BlobVec first, then Box)
     pub fn get<T: Component>(&self, entity: Entity) -> Option<&T> {
-        // NEW: O(1) lookup with SparseSet (12-57× faster than BTreeMap)
         let row = self.entity_index.get(entity)?;
+
+        // Fast path: BlobVec storage
+        if self.uses_blob {
+            let blob = self.blob_components.as_ref()?.get(&TypeId::of::<T>())?;
+            return unsafe { blob.get::<T>(row) };
+        }
+
+        // Legacy path: Box storage
         let column = self.components.get(&TypeId::of::<T>())?;
         let boxed = column.get(row)?;
         boxed.downcast_ref::<T>()
     }
 
-    /// Get mutable component for entity
+    /// Get mutable component for entity (hybrid: checks BlobVec first, then Box)
     pub fn get_mut<T: Component>(&mut self, entity: Entity) -> Option<&mut T> {
-        // NEW: O(1) lookup with SparseSet (12-57× faster than BTreeMap)
         let row = self.entity_index.get(entity)?;
+
+        // Fast path: BlobVec storage
+        if self.uses_blob {
+            let blob = self.blob_components.as_mut()?.get_mut(&TypeId::of::<T>())?;
+            return unsafe { blob.get_mut::<T>(row) };
+        }
+
+        // Legacy path: Box storage
         let column = self.components.get_mut(&TypeId::of::<T>())?;
         let boxed = column.get_mut(row)?;
         boxed.downcast_mut::<T>()
@@ -197,6 +356,10 @@ impl Archetype {
     /// improvement (2.70ms → 1.144ms) and 9.4× faster movement (1,000µs → 106µs). Further
     /// query optimization has diminishing returns vs complexity/safety trade-offs.
     pub fn iter_components<T: Component>(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
+        // NOTE: We can't easily branch on uses_blob here because the return types differ.
+        // The BlobVec path would return a different iterator type.
+        // For now, always use the Box path in iter_components.
+        // The typed fast path is available via iter_components_blob().
         let column = self.components.get(&TypeId::of::<T>());
         self.entities
             .iter()
@@ -207,6 +370,44 @@ impl Archetype {
                     .and_then(|boxed| boxed.downcast_ref::<T>())
                     .map(|component| (entity, component))
             })
+    }
+
+    /// High-performance iteration using BlobVec storage.
+    ///
+    /// Returns a slice of components for direct SIMD-friendly iteration.
+    /// Only works for archetypes using BlobVec mode.
+    ///
+    /// # Returns
+    /// - `Some((entities, components))` if this archetype uses BlobVec and has the component
+    /// - `None` if using Box mode or component not present
+    ///
+    /// # Safety
+    /// The returned slice is only valid while the archetype is not modified.
+    pub fn iter_components_blob<T: Component>(&self) -> Option<(&[Entity], &[T])> {
+        if !self.uses_blob {
+            return None;
+        }
+
+        let blob = self.blob_components.as_ref()?.get(&TypeId::of::<T>())?;
+        let components = unsafe { blob.as_slice::<T>() };
+        Some((&self.entities, components))
+    }
+
+    /// High-performance mutable iteration using BlobVec storage.
+    ///
+    /// Returns a mutable slice of components for direct modification.
+    /// Only works for archetypes using BlobVec mode.
+    ///
+    /// # Safety
+    /// The returned slice is only valid while the archetype is not modified.
+    pub fn iter_components_blob_mut<T: Component>(&mut self) -> Option<(&[Entity], &mut [T])> {
+        if !self.uses_blob {
+            return None;
+        }
+
+        let blob = self.blob_components.as_mut()?.get_mut(&TypeId::of::<T>())?;
+        let components = unsafe { blob.as_slice_mut::<T>() };
+        Some((&self.entities, components))
     }
 }
 
@@ -265,6 +466,35 @@ impl ArchetypeStorage {
         self.next_id += 1;
 
         let archetype = Archetype::new(id, signature.clone());
+        self.archetypes.insert(id, archetype);
+        self.signature_to_id.insert(signature, id);
+
+        id
+    }
+
+    /// Get or create archetype with BlobVec storage (high-performance mode).
+    ///
+    /// Unlike `get_or_create_archetype`, this creates archetypes with contiguous
+    /// BlobVec storage for faster iteration.
+    ///
+    /// # Arguments
+    /// * `signature` - Component type signature
+    /// * `metas` - Component metadata for each type (must include all signature types)
+    pub fn get_or_create_archetype_with_blob(
+        &mut self,
+        signature: ArchetypeSignature,
+        metas: HashMap<TypeId, ComponentMeta>,
+    ) -> ArchetypeId {
+        if let Some(&id) = self.signature_to_id.get(&signature) {
+            // If archetype already exists but uses Box mode, we can't upgrade it
+            // (would require migrating all existing entities)
+            return id;
+        }
+
+        let id = ArchetypeId(self.next_id);
+        self.next_id += 1;
+
+        let archetype = Archetype::new_with_blob(id, signature.clone(), metas);
         self.archetypes.insert(id, archetype);
         self.signature_to_id.insert(signature, id);
 

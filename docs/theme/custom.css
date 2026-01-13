@@ -1,0 +1,180 @@
+/* AstraWeave Documentation Custom Theme */
+
+/* Copy button styling */
+.copy-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 6px 8px;
+    background: var(--bg);
+    border: 1px solid var(--searchbar-border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s, transform 0.1s;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+}
+
+.copy-button:hover {
+    background: var(--quote-bg);
+    transform: scale(1.05);
+}
+
+.copy-button:active {
+    transform: scale(0.95);
+}
+
+.copy-button.copied {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+pre:hover .copy-button {
+    opacity: 1;
+}
+
+pre {
+    position: relative;
+}
+
+/* Enhanced code block styling */
+pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+/* Admonish callout enhancements */
+.admonition {
+    border-radius: 8px;
+    margin: 1.5em 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admonition-title {
+    font-weight: 600;
+}
+
+/* Table styling improvements */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+}
+
+table th,
+table td {
+    padding: 12px 16px;
+    border: 1px solid var(--table-border-color);
+}
+
+table th {
+    background: var(--quote-bg);
+    font-weight: 600;
+}
+
+table tr:hover {
+    background: var(--table-alternate-bg);
+}
+
+/* Navigation improvements */
+.chapter li.chapter-item {
+    margin: 4px 0;
+}
+
+.chapter li.chapter-item a {
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.chapter li.chapter-item a:hover {
+    background: var(--quote-bg);
+}
+
+/* Search improvements */
+#searchresults {
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+#searchresults li {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--table-border-color);
+}
+
+#searchresults li:last-child {
+    border-bottom: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .copy-button {
+        opacity: 1;
+        padding: 4px 6px;
+    }
+    
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* Print styling */
+@media print {
+    .copy-button {
+        display: none;
+    }
+    
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+}
+
+/* Keyboard focus styles for accessibility */
+.copy-button:focus {
+    opacity: 1;
+    outline: 2px solid var(--search-mark-bg);
+    outline-offset: 2px;
+}
+
+a:focus {
+    outline: 2px solid var(--search-mark-bg);
+    outline-offset: 2px;
+}
+
+/* Syntax highlighting enhancements */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-title,
+.hljs-section,
+.hljs-doctag,
+.hljs-name,
+.hljs-strong {
+    font-weight: 600;
+}
+
+/* Scrollbar styling for code blocks */
+pre::-webkit-scrollbar {
+    height: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: var(--quote-bg);
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: var(--sidebar-active);
+}

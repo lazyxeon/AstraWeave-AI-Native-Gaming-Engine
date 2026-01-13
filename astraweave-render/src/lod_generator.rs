@@ -136,8 +136,7 @@ struct EdgeCollapse {
 
 impl PartialOrd for EdgeCollapse {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // Min-heap: lower error = higher priority
-        other.error.partial_cmp(&self.error)
+        Some(self.cmp(other))
     }
 }
 
@@ -151,7 +150,8 @@ impl Eq for EdgeCollapse {}
 
 impl Ord for EdgeCollapse {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+        // Min-heap: lower error = higher priority
+        other.error.partial_cmp(&self.error).unwrap_or(Ordering::Equal)
     }
 }
 

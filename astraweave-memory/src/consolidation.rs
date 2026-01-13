@@ -50,16 +50,12 @@ impl ConsolidationEngine {
     /// Consolidate a collection of memories
     pub fn consolidate(&self, memories: &mut [Memory]) -> Result<ConsolidationResult> {
         let start_time = std::time::Instant::now();
-        let mut result = ConsolidationResult::default();
-
-        // Form temporal associations
-        result.temporal_associations = self.form_temporal_associations(memories)?;
-
-        // Form spatial associations
-        result.spatial_associations = self.form_spatial_associations(memories)?;
-
-        // Form conceptual associations
-        result.conceptual_associations = self.form_conceptual_associations(memories)?;
+        let mut result = ConsolidationResult {
+            temporal_associations: self.form_temporal_associations(memories)?,
+            spatial_associations: self.form_spatial_associations(memories)?,
+            conceptual_associations: self.form_conceptual_associations(memories)?,
+            ..Default::default()
+        };
 
         // Update consolidation states
         for memory in memories.iter_mut() {

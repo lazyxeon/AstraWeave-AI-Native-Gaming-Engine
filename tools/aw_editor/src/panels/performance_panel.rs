@@ -58,7 +58,15 @@ impl PerformancePanel {
         self.widget.update_from_frame_time(frame_time);
     }
 
-    /// Clear runtime stats when exiting play mode so the panel returns to idle simulation
+    /// Set actual editor frame time
+    pub fn set_frame_time(&mut self, frame_time_ms: f32) {
+        if self.runtime_stats.is_none() {
+            self.widget.update_from_frame_time(frame_time_ms);
+            self.frame_count += 1;
+        }
+    }
+
+    /// Clear runtime stats when exiting play mode so the panel returns to idle
     pub fn clear_runtime_stats(&mut self) {
         self.runtime_stats = None;
     }
@@ -121,13 +129,13 @@ impl Panel for PerformancePanel {
                     );
                 }
             } else {
-                ui.label("📊 Integration Info");
-                ui.label("This widget uses live frame timing data.");
-                ui.label("Connects to:");
-                ui.label("• Tracy profiler zones");
-                ui.label("• ECS system timings");
-                ui.label("• GPU frame time queries");
-                ui.label("• Custom instrumentation");
+                ui.label("📊 Profiler Integration");
+                ui.label("Live frame timing data is active.");
+                ui.label("Integration points include:");
+                ui.label("• Tracy profiler zones (internal)");
+                ui.label("• ECS system timings (real-time)");
+                ui.label("• GPU frame time queries (wgpu)");
+                ui.label("• Custom instrumentation points");
             }
         });
 

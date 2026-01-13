@@ -72,7 +72,7 @@ impl Default for CAiController {
 /// # Example
 /// ```
 /// use astraweave_ai::core_loop::{CAiController, PlannerMode, dispatch_planner};
-/// use astraweave_core::{WorldSnapshot, PlayerState, CompanionState, IVec2};
+/// use astraweave_core::{WorldSnapshot, PlayerState, CompanionState, EnemyState, IVec2};
 /// use std::collections::BTreeMap;
 ///
 /// let controller = CAiController {
@@ -80,6 +80,7 @@ impl Default for CAiController {
 ///     policy: None,
 /// };
 ///
+/// // Create snapshot with an enemy so the planner returns non-empty steps
 /// let snapshot = WorldSnapshot {
 ///     t: 0.0,
 ///     me: CompanionState {
@@ -94,7 +95,13 @@ impl Default for CAiController {
 ///         stance: "stand".into(),
 ///         orders: vec![],
 ///     },
-///     enemies: vec![],
+///     enemies: vec![EnemyState {
+///         id: 1,
+///         pos: IVec2 { x: 10, y: 10 },
+///         hp: 100,
+///         cover: "none".into(),
+///         last_seen: 0.0,
+///     }],
 ///     pois: vec![],
 ///     obstacles: vec![],
 ///     objective: None,

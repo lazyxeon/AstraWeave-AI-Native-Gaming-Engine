@@ -5,14 +5,20 @@ pub mod behavior_graph;
 pub mod clipboard;
 pub mod command;
 pub mod component_ui;
+pub mod dock_layout;
 pub mod editor_mode;
 pub mod entity_manager;
+pub mod panel_type;
 pub mod plugin;
 pub mod prefab;
 pub mod runtime;
 pub mod scene_serialization;
 pub mod scene_state;
+pub mod tab_viewer;
+pub mod terrain_integration;
 pub mod ui;
+pub mod viewport;
+pub mod editor_preferences;
 
 pub use command::{
     EditorCommand, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack,
@@ -30,6 +36,9 @@ pub use runtime::{EditorRuntime, RuntimeState, RuntimeStats};
 pub use scene_serialization::{EntityData, SceneData};
 pub use scene_state::{EditorSceneState, TransformableScene};
 pub use ui::StatusBar;
+pub use panel_type::PanelType;
+pub use dock_layout::{DockLayout, LayoutPreset};
+pub use tab_viewer::{SimpleTabViewer, EditorTabViewer, PanelEvent};
 
 pub mod gizmo {
     // Export all modules

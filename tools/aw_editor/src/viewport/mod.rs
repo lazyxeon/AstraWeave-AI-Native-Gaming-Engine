@@ -23,17 +23,17 @@
 //!
 //! # Usage
 //!
-//! ```no_run
+//! ```rust,ignore
 //! use aw_editor_lib::viewport::ViewportWidget;
 //!
-//! // In eframe::App::new()
-//! let viewport = ViewportWidget::new(cc)?;
+//! // Construct the widget from your eframe creation context.
+//! // (The real `cc` comes from eframe; omitted here.)
+//! // let viewport = ViewportWidget::new(cc)?;
 //!
-//! // In eframe::App::update()
-//! viewport.ui(ui, &world)?;
+//! // Then call `viewport.ui(...)` from your App's update loop.
 //! ```
 
-mod camera;
+pub mod camera;
 #[cfg(feature = "astraweave-render")]
 mod engine_adapter;
 mod entity_renderer;
@@ -42,11 +42,17 @@ mod grid_renderer;
 mod physics_renderer;
 mod renderer;
 mod skybox_renderer;
+pub mod terrain_renderer;
 mod toolbar;
 mod widget;
 
 // Physics debug types are exported for external configuration
 #[allow(unused_imports)]
 pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
+#[allow(unused_imports)]
+pub use terrain_renderer::{TerrainRenderer, TerrainVertex};
 pub use widget::ViewportWidget;
+
+#[allow(unused_imports)]
+pub use camera::OrbitCamera;
 

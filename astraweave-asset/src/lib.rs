@@ -795,11 +795,11 @@ pub mod gltf_loader {
                     let base = offset + i * stride;
                     let mut matrix = [[0.0f32; 4]; 4];
                     for row in 0..4 {
-                        for col in 0..4 {
+                        for (col, col_data) in matrix.iter_mut().enumerate() {
                             let idx = base + (row * 4 + col) * 4;
                             if idx + 4 <= buffer_data.len() {
                                 let bytes = &buffer_data[idx..idx + 4];
-                                matrix[col][row] =
+                                col_data[row] =
                                     f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
                             }
                         }

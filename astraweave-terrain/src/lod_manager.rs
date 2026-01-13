@@ -257,7 +257,7 @@ impl LodManager {
         let cache = self
             .mesh_cache
             .entry(chunk_id)
-            .or_insert_with(ChunkLodCache::new);
+            .or_default();
         cache.set_mesh(lod, mesh);
     }
 

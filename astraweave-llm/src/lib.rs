@@ -50,7 +50,17 @@ static GLOBAL_CACHE: LazyLock<PromptCache> = LazyLock::new(|| {
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(4096);
-    PromptCache::new(capacity)
+
+    // Phase 7: Similarity cache hits are nondeterministic across prompt variants and
+    // can cause unexpected cross-test pollution when tests run in parallel.
+    // Keep exact-match caching enabled by default, and make similarity matching opt-in.
+    let similarity_threshold = std::env::var("LLM_CACHE_SIM_THRESH")
+        .ok()
+        .and_then(|s| s.parse::<f32>().ok())
+        .map(|v| v.clamp(0.0, 1.0))
+        .unwrap_or(1.0);
+
+    PromptCache::with_similarity_threshold(capacity, similarity_threshold)
 });
 
 /// Clear the global LLM cache (useful for testing)
@@ -1410,7 +1420,13 @@ pub fn fallback_heuristic_plan(snap: &WorldSnapshot, reg: &ToolRegistry) -> Plan
             // Move towards player if far
             let dist = (snap.me.pos.x - snap.player.pos.x).abs()
                 + (snap.me.pos.y - snap.player.pos.y).abs();
-            if dist > 3 && reg.tools.iter().any(|t| t.name == "move_to") {
+            // Check for both PascalCase (ActionStep) and snake_case (legacy) tool names
+            if dist > 3
+                && reg
+                    .tools
+                    .iter()
+                    .any(|t| t.name == "MoveTo" || t.name == "move_to")
+            {
                 steps.push(ActionStep::MoveTo {
                     x: snap.player.pos.x,
                     y: snap.player.pos.y,
@@ -1421,7 +1437,13 @@ pub fn fallback_heuristic_plan(snap: &WorldSnapshot, reg: &ToolRegistry) -> Plan
     }
 
     // If enemies nearby, provide cover fire
-    if !snap.enemies.is_empty() && reg.tools.iter().any(|t| t.name == "cover_fire") {
+    // Check for both PascalCase and snake_case tool names
+    if !snap.enemies.is_empty()
+        && reg
+            .tools
+            .iter()
+            .any(|t| t.name == "CoverFire" || t.name == "cover_fire")
+    {
         let enemy = &snap.enemies[0];
         steps.push(ActionStep::CoverFire {
             target_id: enemy.id,

@@ -1,12 +1,20 @@
-struct ViewParams {
+struct CameraUniform {
     view_proj: mat4x4<f32>,
+    inv_view_proj: mat4x4<f32>,
     view_inv: mat4x4<f32>,
-    proj_inv: mat4x4<f32>,
-    camera_pos: vec4<f32>,
-    screen_size: vec2<f32>,
+    cam_pos: vec4<f32>,
+    light_dir: vec4<f32>,
+    time: f32,
+    _pad_a: f32,
+    _pad_b: f32,
+    _pad_c: f32,
+    _pad_v0: vec4<f32>,
+    _pad_v1: vec4<f32>,
+    _pad_v2: vec4<f32>,
+    _pad_v3: vec4<f32>,
 };
 
-@group(0) @binding(0) var<uniform> view_params: ViewParams;
+@group(0) @binding(0) var<uniform> view_params: CameraUniform;
 
 struct SecondaryParticle {
     position: vec4<f32>,

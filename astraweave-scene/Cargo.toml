@@ -16,8 +16,13 @@ wgpu = { workspace = true }
 [dev-dependencies]
 astraweave-render = { path = "../astraweave-render" }
 serde_json.workspace = true
+criterion = { workspace = true }
 
 [features]
 default = []
 ecs = []
 world-partition = []
+
+[[bench]]
+name = "scene_partition_streaming"
+harness = false

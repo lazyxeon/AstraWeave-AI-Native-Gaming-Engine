@@ -446,46 +446,47 @@ fn create_simple_scenario() -> WorldSnapshot {
 
 fn create_full_registry() -> ToolRegistry {
     // Create registry with common tools for testing
+    // IMPORTANT: Tool names must be PascalCase to match action_step_to_tool_name()
     ToolRegistry {
         tools: vec![
             ToolSpec {
-                name: "move_to".to_string(),
+                name: "MoveTo".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "attack".to_string(),
+                name: "Attack".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "take_cover".to_string(),
+                name: "TakeCover".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "heal".to_string(),
+                name: "Heal".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "reload".to_string(),
+                name: "Reload".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "scan".to_string(),
+                name: "Scan".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "wait".to_string(),
+                name: "Wait".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "retreat".to_string(),
+                name: "Retreat".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "approach".to_string(),
+                name: "Approach".to_string(),
                 args: BTreeMap::new(),
             },
             ToolSpec {
-                name: "dodge".to_string(),
+                name: "Dodge".to_string(),
                 args: BTreeMap::new(),
             },
         ],

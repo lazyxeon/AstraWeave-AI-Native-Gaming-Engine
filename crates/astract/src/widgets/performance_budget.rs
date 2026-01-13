@@ -169,10 +169,13 @@ impl PerformanceBudgetWidget {
 
     /// Show widget in egui UI (compact + optional expanded view)
     pub fn show(&mut self, ui: &mut egui::Ui) {
+        // Use smoothed average over last 30 frames to reduce strobe effect
+        let display_budget = self.average(30);
+        
         ui.horizontal(|ui| {
             // Compact view (always visible)
-            let percent = self.current.percent_used();
-            let color = if self.current.is_over_budget() {
+            let percent = display_budget.percent_used();
+            let color = if display_budget.is_over_budget() {
                 egui::Color32::RED
             } else if percent > 80.0 {
                 egui::Color32::YELLOW
@@ -180,7 +183,7 @@ impl PerformanceBudgetWidget {
                 egui::Color32::GREEN
             };
 
-            ui.colored_label(color, format!("{:.1}ms", self.current.total_used()));
+            ui.colored_label(color, format!("{:.1}ms", display_budget.total_used()));
             ui.label("/");
             ui.label(format!("{:.1}ms", FrameBudget::FRAME_TIME_MS));
 
@@ -201,12 +204,12 @@ impl PerformanceBudgetWidget {
                 ui.label("% Used");
                 ui.end_row();
 
-                self.show_category(ui, "ECS", self.current.ecs, 2.7);
-                self.show_category(ui, "Physics", self.current.physics, 3.0);
-                self.show_category(ui, "Rendering", self.current.rendering, 8.0);
-                self.show_category(ui, "AI", self.current.ai, 1.0);
-                self.show_category(ui, "Audio", self.current.audio, 0.5);
-                self.show_category(ui, "UI", self.current.ui, 0.5);
+                self.show_category(ui, "ECS", display_budget.ecs, 2.7);
+                self.show_category(ui, "Physics", display_budget.physics, 3.0);
+                self.show_category(ui, "Rendering", display_budget.rendering, 8.0);
+                self.show_category(ui, "AI", display_budget.ai, 1.0);
+                self.show_category(ui, "Audio", display_budget.audio, 0.5);
+                self.show_category(ui, "UI", display_budget.ui, 0.5);
             });
         });
 

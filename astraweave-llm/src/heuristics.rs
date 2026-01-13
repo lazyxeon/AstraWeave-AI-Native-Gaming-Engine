@@ -110,16 +110,22 @@ impl HeuristicRule {
     }
 
     fn create_action(&self, snap: &WorldSnapshot, reg: &ToolRegistry) -> Option<ActionStep> {
+        // Helper to check if registry has a tool (case-insensitive to support both
+        // snake_case (from get_all_tools) and PascalCase (from action_step_to_tool_name))
+        fn has_tool(reg: &ToolRegistry, name: &str) -> bool {
+            reg.tools.iter().any(|t| t.name.eq_ignore_ascii_case(name))
+        }
+
         match &self.action {
             HeuristicAction::HealSelf => {
-                if reg.tools.iter().any(|t| t.name == "heal") {
+                if has_tool(reg, "heal") {
                     Some(ActionStep::Heal { target_id: Some(0) })
                 } else {
                     None
                 }
             }
             HeuristicAction::Reload => {
-                if reg.tools.iter().any(|t| t.name == "reload") {
+                if has_tool(reg, "reload") {
                     Some(ActionStep::Reload)
                 } else {
                     None
@@ -127,7 +133,7 @@ impl HeuristicRule {
             }
             HeuristicAction::AttackNearestEnemy => {
                 if let Some(enemy) = snap.enemies.first() {
-                    if reg.tools.iter().any(|t| t.name == "attack") {
+                    if has_tool(reg, "attack") {
                         Some(ActionStep::Attack {
                             target_id: enemy.id,
                         })
@@ -140,7 +146,7 @@ impl HeuristicRule {
             }
             HeuristicAction::TakeCover { distance } => {
                 if let Some(enemy) = snap.enemies.first() {
-                    if reg.tools.iter().any(|t| t.name == "take_cover") {
+                    if has_tool(reg, "takecover") || has_tool(reg, "take_cover") {
                         let dist_int = *distance as i32;
                         let cover_x = if snap.me.pos.x > enemy.pos.x {
                             snap.me.pos.x + dist_int
@@ -162,7 +168,7 @@ impl HeuristicRule {
             }
             HeuristicAction::MoveToObjective => {
                 if let Some(poi) = snap.pois.first() {
-                    if reg.tools.iter().any(|t| t.name == "move_to") {
+                    if has_tool(reg, "moveto") || has_tool(reg, "move_to") {
                         Some(ActionStep::MoveTo {
                             x: poi.pos.x,
                             y: poi.pos.y,
@@ -176,7 +182,7 @@ impl HeuristicRule {
                 }
             }
             HeuristicAction::Scan { radius } => {
-                if reg.tools.iter().any(|t| t.name == "scan") {
+                if has_tool(reg, "scan") {
                     Some(ActionStep::Scan { radius: *radius })
                 } else {
                     None

@@ -172,10 +172,13 @@ impl ConversationSummarizer {
         let prompt = self.build_summary_prompt(&conversation_text, messages)?;
 
         // Generate summary using LLM
-        let summary_text = self.llm_client.complete(&prompt).await.map_err(|e| {
-            self.update_metrics_failed();
-            e
-        })?;
+        let summary_text = self
+            .llm_client
+            .complete(&prompt)
+            .await
+            .inspect_err(|_e| {
+                self.update_metrics_failed();
+            })?;
 
         // Clean and validate summary
         let cleaned_summary = self.clean_summary(&summary_text);

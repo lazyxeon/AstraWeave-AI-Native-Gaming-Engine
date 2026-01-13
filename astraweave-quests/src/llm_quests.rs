@@ -454,11 +454,10 @@ Validation Criteria:
             quest.metadata.difficulty_level,
             context.player_id
         );
-        // Store quest summary as memory - attempt to get a mutable reference to the inner pipeline
-        let cloned_pipeline = self.rag_pipeline.clone();
-        if let Some(inner) = Arc::get_mut(&mut cloned_pipeline.clone()) {
-            // best-effort: call add_memory if we have unique ownership
-            let _ = inner.add_memory(quest_summary.clone());
+        // Store quest summary as memory - best-effort if we have unique ownership
+        let mut cloned_pipeline = self.rag_pipeline.clone();
+        if let Some(inner) = Arc::get_mut(&mut cloned_pipeline) {
+            let _ = inner.add_memory(quest_summary).await;
         } else {
             // cannot obtain mutable access; skip storing to avoid panics
         }

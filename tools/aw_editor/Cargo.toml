@@ -42,6 +42,8 @@ rhai = { workspace = true }
 glam = { workspace = true }
 rand = "0.8"
 tracing = { workspace = true }
+chrono = "0.4"
+pollster = "0.4"
 astract = { path = "../../crates/astract" }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs" }
@@ -56,6 +58,7 @@ astraweave-nav = { path = "../../astraweave-nav" }
 astraweave-observability = { path = "../../astraweave-observability" }
 astraweave-physics = { path = "../../astraweave-physics" }
 astraweave-security = { path = "../../astraweave-security" }
+astraweave-terrain = { path = "../../astraweave-terrain" }
 [dev-dependencies]
 approx = "0.5"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -69,3 +72,9 @@ path = "benches/gizmo_benchmarks_simple.rs"
 [lib]
 name = "aw_editor_lib"
 path = "src/lib.rs"
+
+[[bin]]
+name = "aw_editor"
+path = "src/main.rs"
+test = false
+bench = false

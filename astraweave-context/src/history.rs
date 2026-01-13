@@ -511,16 +511,14 @@ impl ConversationHistory {
     pub fn import(data: SerializableHistory, llm_client: Option<Arc<dyn LlmClient>>) -> Self {
         let token_counter = TokenCounter::new(&data.config.encoding_model);
 
-        let history = Self {
+        Self {
             config: data.config,
             messages: Arc::new(RwLock::new(data.messages.into())),
             summary: Arc::new(RwLock::new(data.summary)),
             token_counter,
             metrics: Arc::new(RwLock::new(data.metrics)),
             llm_client,
-        };
-
-        history
+        }
     }
 }
 

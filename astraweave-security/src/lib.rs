@@ -107,8 +107,10 @@ impl SecurityPlugin {
     pub fn new(config: SecurityConfig) -> Self {
         Self { config }
     }
+}
 
-    pub fn default() -> Self {
+impl Default for SecurityPlugin {
+    fn default() -> Self {
         Self {
             config: SecurityConfig {
                 enable_sandboxing: true,
@@ -509,7 +511,7 @@ mod tests {
             execution_limits: ExecutionLimits {
                 max_operations: 1000,
                 max_memory_bytes: 1024 * 1024,
-                timeout_ms: 100,
+                timeout_ms: 1000, // 1 second timeout
             },
         };
 

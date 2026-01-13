@@ -65,7 +65,7 @@ fn main() -> Result<()> {
 
     // Filter biomes if specified
     if let Some(biome_name) = args.biome {
-        if let Some(biome_type) = BiomeType::from_str(&biome_name) {
+        if let Some(biome_type) = BiomeType::parse(&biome_name) {
             world_config.biomes.retain(|b| b.biome_type == biome_type);
             println!("Filtered to biome: {}", biome_name);
         } else {

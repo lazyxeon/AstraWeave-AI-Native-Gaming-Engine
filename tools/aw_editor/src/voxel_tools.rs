@@ -4,7 +4,7 @@
 //! brushes for adding/removing voxels, undo/redo, and real-time preview.
 
 use astraweave_terrain::{Voxel, VoxelGrid, ChunkCoord, MaterialId};
-use glam::{Vec3, IVec3};
+use glam::Vec3;
 use std::collections::VecDeque;
 
 /// Brush shape for voxel editing

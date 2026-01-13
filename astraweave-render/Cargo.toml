@@ -127,3 +127,15 @@ harness = false
 [[bench]]
 name = "transparency_environment_msaa"
 harness = false
+
+[[bench]]
+name = "camera_primitives_instancing"
+harness = false
+
+[[bench]]
+name = "graph_mesh_material_texture"
+harness = false
+
+[[bench]]
+name = "gpu_memory_terrain_skinning_depth_overlay"
+harness = false

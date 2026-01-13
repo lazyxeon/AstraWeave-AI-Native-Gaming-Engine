@@ -424,7 +424,7 @@ impl QuestLlmSystem {
             quality -= 0.1; // Slight penalty for taking much longer than expected
         }
 
-        quality.max(0.1).min(1.0)
+        quality.clamp(0.1, 1.0)
     }
 }
 

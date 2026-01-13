@@ -23,3 +23,8 @@ rand.workspace = true  # Phase 10: Terrain quest triggers
 
 [dev-dependencies]
 astraweave-embeddings = { path = "../astraweave-embeddings" }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "quest_bench"
+harness = false
