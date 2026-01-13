@@ -1,5 +1,0 @@
-    Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on package cache
- Downloading crates ...
-  Downloaded winreg v0.55.0
-    Blocking waiting for file lock on build directory
