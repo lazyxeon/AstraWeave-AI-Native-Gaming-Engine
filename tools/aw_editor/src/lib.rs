@@ -1,13 +1,16 @@
 // Library exports for aw_editor (enables benchmarks and testing)
 #![allow(dead_code)] // Suppress dead code warnings for benchmark-only exports
 
+pub mod asset_pack;
 pub mod behavior_graph;
 pub mod clipboard;
 pub mod command;
 pub mod component_ui;
 pub mod dock_layout;
 pub mod editor_mode;
+pub mod editor_preferences;
 pub mod entity_manager;
+pub mod game_project;
 pub mod panel_type;
 pub mod plugin;
 pub mod prefab;
@@ -18,13 +21,14 @@ pub mod tab_viewer;
 pub mod terrain_integration;
 pub mod ui;
 pub mod viewport;
-pub mod editor_preferences;
 
 pub use command::{
     EditorCommand, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack,
 };
+pub use dock_layout::{DockLayout, LayoutPreset};
 pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
+pub use panel_type::PanelType;
 pub use plugin::{
     EditorPlugin, PluginContext, PluginError, PluginEvent, PluginManager, PluginMetadata,
 };
@@ -35,10 +39,8 @@ pub use prefab::{
 pub use runtime::{EditorRuntime, RuntimeState, RuntimeStats};
 pub use scene_serialization::{EntityData, SceneData};
 pub use scene_state::{EditorSceneState, TransformableScene};
+pub use tab_viewer::{EditorTabViewer, PanelEvent, SimpleTabViewer};
 pub use ui::StatusBar;
-pub use panel_type::PanelType;
-pub use dock_layout::{DockLayout, LayoutPreset};
-pub use tab_viewer::{SimpleTabViewer, EditorTabViewer, PanelEvent};
 
 pub mod gizmo {
     // Export all modules

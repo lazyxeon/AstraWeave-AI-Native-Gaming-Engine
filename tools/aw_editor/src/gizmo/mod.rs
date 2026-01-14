@@ -27,7 +27,6 @@ pub use picking::{GizmoHandle, GizmoPicker};
 pub use rendering::{GizmoRenderParams, GizmoRenderer};
 pub use rotate::RotateGizmo;
 pub use scale::ScaleGizmo;
-pub use scene_viewport::Transform;
 pub use snapping::SnappingConfig;
 pub use state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
 pub use translate::TranslateGizmo;

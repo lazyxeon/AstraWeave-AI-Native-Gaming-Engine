@@ -90,6 +90,8 @@ mod terrain_integration; // Terrain generation integration
 mod ui; // Phase 3 - UI components (StatusBar, etc.)
 mod viewport; // Phase 1.1 - 3D Viewport
 mod voxel_tools; // Phase 10: Voxel editing tools
+mod game_project; // Game project configuration (game.toml)
+mod asset_pack; // Phase 2: Asset packaging and compression
 
 use anyhow::Result;
 use astraweave_asset::AssetDatabase;
@@ -107,7 +109,7 @@ use gizmo::state::GizmoMode;
 use material_inspector::MaterialInspector;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel,
-    ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, PrefabAction,
+    ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel,
     ProfilerPanel, SceneStats, SceneStatsPanel, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 mod plugin;
@@ -526,7 +528,7 @@ impl Default for EditorApp {
             // Phase 11: Professional Docking System
             dock_layout: DockLayout::from_preset(LayoutPreset::Default),
             dock_tab_viewer: EditorTabViewer::new(),
-            use_docking: true, // Enable docking by default
+            use_docking: true, // Re-enabled after fixing layout gap
             // Entity ID counter - start after sample entities (100+)
             next_entity_id: 100,
             // Scene modification tracking
@@ -1976,6 +1978,12 @@ struct MaterialLiveDoc {
 
 impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // FORCE zero spacing for all panels to eliminate unclaimed gaps
+        let mut style = (*ctx.style()).clone();
+        style.spacing.item_spacing = egui::vec2(0.0, 0.0);
+        style.spacing.window_margin = egui::Margin::same(0);
+        ctx.set_style(style);
+
         if ctx.input(|i| i.viewport().close_requested()) && self.is_dirty {
             self.show_quit_dialog = true;
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
@@ -2745,8 +2753,10 @@ impl eframe::App for EditorApp {
         self.world_panel.update();
         self.animation_panel.update(frame_time);
 
-        egui::TopBottomPanel::top("top").show(ctx, |ui| {
-            ui.heading("AstraWeave Level & Encounter Editor");
+        egui::TopBottomPanel::top("top")
+            .show(ctx, |ui| {
+                ui.set_min_size(ui.available_size());
+                ui.heading("AstraWeave Level & Encounter Editor");
             ui.separator();
             ui.horizontal(|ui| {
                 if ui.button("New").clicked() {
@@ -3120,489 +3130,14 @@ impl eframe::App for EditorApp {
             });
         });
 
-        // LEFT PANEL - Astract World & Entity panels (fixed width to not shrink viewport)
-        egui::SidePanel::left("astract_left_panel")
-            .default_width(250.0)
-            .max_width(300.0)
-            .resizable(true)
-            .show(ctx, |ui| {
-                ui.heading("🎨 Astract Panels");
-                ui.separator();
-
-                // Add ScrollArea to handle expanded menus
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false; 2])
-                    .show(ui, |ui| {
-                        ui.collapsing("🌍 World", |ui| {
-                            self.world_panel.show_with_level(ui, &mut self.level);
-                        });
-
-                        if self.world_panel.terrain_state().chunk_count() > 0 {
-                            if let Some(viewport) = &self.viewport {
-                                let gpu_chunks = self.world_panel.terrain_state().get_gpu_chunks();
-                                let converted: Vec<_> = gpu_chunks
-                                    .iter()
-                                    .map(|(verts, indices)| {
-                                        let converted_verts: Vec<viewport::terrain_renderer::TerrainVertex> = verts
-                                            .iter()
-                                            .map(|v| viewport::terrain_renderer::TerrainVertex {
-                                                position: v.position,
-                                                normal: v.normal,
-                                                uv: v.uv,
-                                                biome_id: v.biome_id,
-                                                _padding: [0; 3],
-                                            })
-                                            .collect();
-                                        (converted_verts, indices.clone())
-                                    })
-                                    .collect();
-                                viewport.upload_terrain_chunks(&converted);
-                            }
-                        }
-
-                        ui.add_space(10.0);
-
-                        // Asset browser - collapsible but defaults open, constrained height
-                        let asset_count = self.asset_browser.get_asset_count();
-                        egui::CollapsingHeader::new(format!("📦 Assets ({} files)", asset_count))
-                            .default_open(true)
-                            .show(ui, |ui| {
-                                // Constrained height for asset browser to not dominate the panel
-                                ui.set_max_height(200.0);
-                                self.asset_browser.show(ui);
-                            });
-                        
-                        // Show import/apply buttons OUTSIDE the collapsing section so they're visible
-                        self.asset_browser.show_selection_actions(ui);
-                        
-                        // Process dragged prefabs after UI rendering
-                        if let Some(dragged_path) = self.asset_browser.take_dragged_prefab() {
-                            let spawn_pos = (0, 0);
-                            self.spawn_prefab_from_drag(dragged_path, spawn_pos);
-                        }
-
-                        // Process asset actions outside the collapsing section
-                        let actions = self.asset_browser.take_pending_actions();
-                        for action in actions {
-                            self.handle_asset_action(action);
-                        }
-
-                        ui.add_space(10.0);
-
-                        if self.show_hierarchy_panel {
-                        let hierarchy_toasts: Vec<(String, bool)> = Vec::new();
-                        let mut hierarchy_updates: Vec<(Option<u32>, Option<u64>, bool)> = Vec::new();
-
-                        let entity_count = {
-                            let runtime_state = self.runtime.state();
-                            if runtime_state == RuntimeState::Editing {
-                                self.scene_state
-                                    .as_ref()
-                                    .map(|state| state.world().entities().len())
-                                    .unwrap_or(0)
-                            } else {
-                                self.runtime.sim_world().map(|w| w.entities().len()).unwrap_or(0)
-                            }
-                        };
-                        let mut hierarchy_actions = Vec::new();
-                        let hierarchy_header = format!("🌲 Hierarchy ({} entities)", entity_count);
-                        ui.collapsing(hierarchy_header, |ui| {
-                            let runtime_state = self.runtime.state();
-                            let world_opt = if runtime_state == RuntimeState::Editing {
-                                self.scene_state
-                                    .as_mut()
-                                    .map(|state| state.world_mut())
-                            } else {
-                                self.runtime.sim_world_mut()
-                            };
-
-                            if let Some(world) = world_opt {
-                                self.hierarchy_panel.sync_with_world(world);
-                                if let Some(selected) =
-                                    self.hierarchy_panel.show_with_world(ui, world)
-                                {
-                                    self.selected_entity = Some(selected as u64);
-                                }
-
-                                hierarchy_actions = self.hierarchy_panel.take_pending_actions();
-                            }
-                        });
-
-                        for action in hierarchy_actions {
-                            use crate::panels::hierarchy_panel::HierarchyAction;
-                            let runtime_state = self.runtime.state();
-                            
-                            // Define return types for results to avoid borrow conflicts
-                            enum ActionResult {
-                                Deleted(u32),
-                                Duplicated(u32, u32),
-                                CreatedPrefab(PathBuf),
-                                Error(String),
-                                Focused(u32),
-                            }
-
-                            let result = {
-                                let world_opt = if runtime_state == RuntimeState::Editing {
-                                    self.scene_state.as_mut().map(|s| s.world_mut())
-                                } else {
-                                    self.runtime.sim_world_mut()
-                                };
-
-                                if let Some(world) = world_opt {
-                                    match action {
-                                        HierarchyAction::DeleteEntity(entity) => {
-                                            world.destroy_entity(entity);
-                                            Some(ActionResult::Deleted(entity))
-                                        }
-                                        HierarchyAction::DuplicateEntity(entity) => {
-                                            if let Some(name) = world.name(entity) {
-                                                let new_name = format!("{}_copy", name);
-                                                let new_entity = world.spawn(
-                                                    &new_name,
-                                                    astraweave_core::IVec2 { x: 0, y: 0 },
-                                                    astraweave_core::Team { id: 0 },
-                                                    0,
-                                                    0,
-                                                );
-                                                Some(ActionResult::Duplicated(entity, new_entity))
-                                            } else {
-                                                None
-                                            }
-                                        }
-                                        HierarchyAction::CreatePrefab(entity) => {
-                                            if let Some(name) = world.name(entity) {
-                                                let prefab_name = name.to_string();
-                                                match self.prefab_manager.create_prefab(world, entity, &prefab_name) {
-                                                    Ok(path) => Some(ActionResult::CreatedPrefab(path)),
-                                                    Err(e) => Some(ActionResult::Error(e.to_string())),
-                                                }
-                                            } else {
-                                                None
-                                            }
-                                        }
-                                        HierarchyAction::FocusEntity(entity) => {
-                                            Some(ActionResult::Focused(entity))
-                                        }
-                                    }
-                                } else {
-                                    None
-                                }
-                            };
-
-                            match result {
-                                Some(ActionResult::Deleted(entity)) => {
-                                    hierarchy_updates.push((None, None, true));
-                                    self.toast_success(format!("Deleted entity {}", entity));
-                                    self.log(format!("🗑 Deleted entity {}", entity));
-                                }
-                                Some(ActionResult::Duplicated(old, new)) => {
-                                    hierarchy_updates.push((Some(new), Some(new as u64), true));
-                                    self.toast_success(format!("Duplicated entity {} -> {}", old, new));
-                                    self.log(format!("📋 Duplicated entity {} -> {}", old, new));
-                                }
-                                Some(ActionResult::CreatedPrefab(path)) => {
-                                    self.toast_success(format!("Created prefab: {:?}", path.file_name().unwrap_or_default()));
-                                    self.log(format!("✅ Created prefab at {:?}", path));
-                                }
-                                Some(ActionResult::Error(e)) => {
-                                    self.toast_error(format!("Operation failed: {}", e));
-                                    self.log(format!("❌ Error: {}", e));
-                                }
-                                Some(ActionResult::Focused(entity)) => {
-                                    self.toast_info(format!("Focused on entity {}", entity));
-                                }
-                                None => {}
-                            }
-                        }
-
-                        for (selected_entity, entity_id, is_dirty) in hierarchy_updates {
-                            if let Some(sel) = selected_entity {
-                                self.hierarchy_panel.set_selected(Some(sel));
-                            } else {
-                                self.hierarchy_panel.set_selected(None);
-                            }
-                            self.selected_entity = entity_id;
-                            if is_dirty {
-                                self.is_dirty = true;
-                            }
-                        }
-
-                        for (msg, is_success) in hierarchy_toasts {
-                            if is_success {
-                                self.toast_success(msg);
-                            } else {
-                                self.toast_info(msg);
-                            }
-                        }
-
-                        let all_selected = self.hierarchy_panel.get_all_selected();
-                        self.selection_set.clear();
-                        for &entity_id in &all_selected {
-                            self.selection_set.add(entity_id as u64, false);
-                        }
-                        if let Some(primary) = all_selected.last() {
-                            self.selection_set.primary = Some(*primary as u64);
-                        }
-                        } // end show_hierarchy_panel
-
-                        ui.add_space(10.0);
-
-                        ui.collapsing("🔧 Transform", |ui| {
-                            // Sync selected entity to transform panel
-                            if let Some(selected_id) = self.selected_entity {
-                                if let Some(entity) = self.entity_manager.get(selected_id) {
-                                    // Update panel with entity transform
-                                    let transform = crate::gizmo::Transform {
-                                        position: entity.position,
-                                        rotation: entity.rotation,
-                                        scale: entity.scale,
-                                    };
-                                    self.transform_panel.set_selected(transform);
-                                }
-                            } else {
-                                self.transform_panel.clear_selection();
-                            }
-
-                            self.transform_panel.show(ui);
-
-                            // Apply changes back to entity if transform was modified
-                            if let Some(selected_id) = self.selected_entity {
-                                if let Some(new_transform) = self.transform_panel.get_transform() {
-                                    self.entity_manager.update_transform(
-                                        selected_id,
-                                        new_transform.position,
-                                        new_transform.rotation,
-                                        new_transform.scale,
-                                    );
-                                }
-                            }
-                        });
-
-                        ui.add_space(10.0);
-
-                        ui.collapsing("📊 Charts", |ui| {
-                            self.charts_panel.show(ui);
-                        });
-
-                        ui.add_space(10.0);
-
-                        ui.collapsing("🎮 Entities", |ui| {
-                            let selected_u32 = self.selected_entity.map(|e| e as u32);
-                            let has_scene = self.scene_state.is_some();
-                            
-                            // Look up prefab instance if entity is selected
-                            let prefab_instance = selected_u32.and_then(|entity| {
-                                self.prefab_manager.find_instance(entity)
-                            });
-                            
-                            let (component_edit, prefab_action) = {
-                                let scene_handle = self.scene_state.as_mut();
-                                self.entity_panel.show_with_scene_state(
-                                    ui,
-                                    scene_handle,
-                                    selected_u32,
-                                    prefab_instance,
-                                )
-                            };
-
-                            // Handle prefab actions (Apply/Revert)
-                            if let Some(action) = prefab_action {
-                                let _span = span!(Level::INFO, "prefab_action", action = ?action).entered();
-                                
-                                match action {
-                                    PrefabAction::RevertToOriginal(entity) => {
-                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
-                                            let source = instance.source.display().to_string();
-                                            if let Some(world) = self.scene_state.as_mut().map(|s| s.world_mut()) {
-                                                match instance.revert_to_prefab(world) {
-                                                    Ok(()) => {
-                                                        info!("Reverted entity #{} to prefab: {}", entity, source);
-                                                        self.console_logs.push(format!(
-                                                            "🔄 Reverted entity #{} to prefab original",
-                                                            entity
-                                                        ));
-                                                        self.status = "🔄 Reverted to prefab".into();
-                                                    }
-                                                    Err(e) => {
-                                                        error!("Failed to revert entity #{} to {}: {}", entity, source, e);
-                                                        self.console_logs.push(format!(
-                                                            "❌ Failed to revert entity #{}: {}",
-                                                            entity, e
-                                                        ));
-                                                        self.status = format!("❌ Revert failed: {}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    PrefabAction::ApplyChangesToFile(entity) => {
-                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
-                                            let source = instance.source.display().to_string();
-                                            if let Some(world) = self.scene_state.as_ref().map(|s| s.world()) {
-                                                match instance.apply_to_prefab(world) {
-                                                    Ok(()) => {
-                                                        info!("Applied entity #{} changes to prefab: {}", entity, source);
-                                                        self.console_logs.push(format!(
-                                                            "💾 Applied entity #{} changes to prefab file",
-                                                            entity
-                                                        ));
-                                                        self.status = "💾 Applied to prefab".into();
-                                                    }
-                                                    Err(e) => {
-                                                        error!("Failed to apply entity #{} to {}: {}", entity, source, e);
-                                                        self.console_logs.push(format!(
-                                                            "❌ Failed to apply entity #{}: {}",
-                                                            entity, e
-                                                        ));
-                                                        self.status = format!("❌ Apply failed: {}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    PrefabAction::RevertAllToOriginal(entity) => {
-                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
-                                            let source = instance.source.display().to_string();
-                                            let entity_count = instance.entity_mapping.len();
-                                            if let Some(world) = self.scene_state.as_mut().map(|s| s.world_mut()) {
-                                                match instance.revert_all_to_prefab(world) {
-                                                    Ok(()) => {
-                                                        info!("Reverted {} entities to prefab: {}", entity_count, source);
-                                                        self.console_logs.push(format!(
-                                                            "🔄 Reverted {} entities to prefab original",
-                                                            entity_count
-                                                        ));
-                                                        self.status = format!("🔄 Reverted {} entities to prefab", entity_count);
-                                                    }
-                                                    Err(e) => {
-                                                        error!("Failed to revert {} entities to {}: {}", entity_count, source, e);
-                                                        self.console_logs.push(format!(
-                                                            "❌ Failed to revert {} entities: {}",
-                                                            entity_count, e
-                                                        ));
-                                                        self.status = format!("❌ Revert all failed: {}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    PrefabAction::ApplyAllChangesToFile(entity) => {
-                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
-                                            let source = instance.source.display().to_string();
-                                            let entity_count = instance.entity_mapping.len();
-                                            if let Some(world) = self.scene_state.as_ref().map(|s| s.world()) {
-                                                match instance.apply_all_to_prefab(world) {
-                                                    Ok(()) => {
-                                                        info!("Applied {} entities to prefab: {}", entity_count, source);
-                                                        self.console_logs.push(format!(
-                                                            "💾 Applied {} entities to prefab file",
-                                                            entity_count
-                                                        ));
-                                                        self.status = format!("💾 Applied {} entities to prefab", entity_count);
-                                                    }
-                                                    Err(e) => {
-                                                        error!("Failed to apply {} entities to {}: {}", entity_count, source, e);
-                                                        self.console_logs.push(format!(
-                                                            "❌ Failed to apply {} entities: {}",
-                                                            entity_count, e
-                                                        ));
-                                                        self.status = format!("❌ Apply all failed: {}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            if let Some(component_edit) = component_edit {
-                                use crate::command::{
-                                    EditAmmoCommand, EditHealthCommand, EditTeamCommand,
-                                };
-                                use crate::component_ui::ComponentEdit;
-
-                                let cmd: Box<dyn crate::command::EditorCommand> =
-                                    match component_edit {
-                                        ComponentEdit::Health {
-                                            entity,
-                                            old_hp,
-                                            new_hp,
-                                        } => EditHealthCommand::new(entity, old_hp, new_hp),
-                                        ComponentEdit::Team {
-                                            entity,
-                                            old_id,
-                                            new_id,
-                                        } => EditTeamCommand::new(
-                                            entity,
-                                            Team { id: old_id },
-                                            Team { id: new_id },
-                                        ),
-                                        ComponentEdit::Ammo {
-                                            entity,
-                                            old_rounds,
-                                            new_rounds,
-                                        } => EditAmmoCommand::new(entity, old_rounds, new_rounds),
-                                    };
-
-                                if has_scene {
-                                    self.undo_stack.push_executed(cmd);
-                                }
-                            }
-                        });
-
-                        ui.add_space(10.0);
-
-                        ui.collapsing("🎨 Advanced Widgets", |ui| {
-                            self.advanced_widgets_panel.show(ui);
-                        });
-
-                        ui.add_space(10.0);
-
-                        ui.collapsing("🕸️ Graph Visualization", |ui| {
-                            self.graph_panel.show(ui);
-                        });
-
-                        ui.add_space(10.0);
-
-                        ui.collapsing("🎬 Animation", |_ui| {
-                            self.animation_panel.show(ctx);
-                        });
-
-                        ui.add_space(10.0);
-
-                        // Phase 5.2: Build Manager
-                        ui.collapsing("🔨 Build Manager", |ui| {
-                            self.build_manager_panel.show(ui);
-                        });
-
-                        ui.add_space(10.0);
-
-                        // Phase 5.3: Plugin System
-                        ui.collapsing("🔌 Plugins", |ui| {
-                            self.plugin_panel.show(ui, &mut self.plugin_manager, ctx);
-                        });
-
-                        ui.add_space(10.0);
-
-                        // Phase 5.5: Theme & Layout
-                        ui.collapsing("🎨 Theme & Layout", |ui| {
-                            self.theme_manager.show(ui);
-                            // Apply theme changes immediately
-                            self.theme_manager.apply_theme(ctx);
-                        });
-                    });
-            });
-
-        // Performance indicator was moved to header - see show_play_controls
-
-        // BOTTOM PANEL - StatusBar (Phase 3.5 & 4)
-        let entity_count = self
+        // BOTTOM PANEL - StatusBar (Phase 3.5 & 4) - Moved before SidePanel for standard layout order
+        let bottom_entity_count = self
             .scene_state
             .as_ref()
             .map(|s| s.world().entities().len())
             .unwrap_or(0);
 
-        let scene_path_str = self
+        let bottom_scene_path_str = self
             .current_scene_path
             .as_ref()
             .and_then(|p| p.to_str());
@@ -3610,6 +3145,7 @@ impl eframe::App for EditorApp {
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
             .show(ctx, |ui| {
+                ui.set_min_size(ui.available_size());
                 StatusBar::show(
                     ui,
                     &self.editor_mode,
@@ -3619,10 +3155,45 @@ impl eframe::App for EditorApp {
                     &self.snapping_config,
                     self.current_fps,
                     self.is_dirty,
-                    entity_count,
-                    scene_path_str,
+                    bottom_entity_count,
+                    bottom_scene_path_str,
                 );
             });
+
+        // LEFT PANEL - Only show in legacy mode (pruned for docking)
+        if !self.use_docking {
+            egui::SidePanel::left("astract_left_panel")
+                .resizable(true)
+                .min_width(250.0)
+                .frame(egui::Frame::NONE.inner_margin(0.0))
+                .show(ctx, |ui| {
+                    ui.set_min_size(ui.available_size());
+                    
+                    ui.vertical(|ui| {
+                        ui.set_min_size(ui.available_size());
+                        
+                        ui.heading("📋 Hierarchy");
+                        ui.add_space(4.0);
+                        
+                        // Search bar
+                        ui.horizontal(|ui| {
+                            ui.set_min_width(ui.available_width());
+                            ui.label("🔍");
+                            ui.text_edit_singleline(&mut self.level.title);
+                        });
+                        ui.separator();
+
+                        egui::ScrollArea::vertical()
+                            .auto_shrink([false, false])
+                            .show(ui, |ui| {
+                                ui.set_min_size(ui.available_size());
+                                self.show_scene_hierarchy(ui);
+                            });
+                    });
+                });
+        }
+
+        // Performance indicator was moved to header - see show_play_controls
 
         // Render main content area - either docking layout or legacy panels
         if self.use_docking {
@@ -3749,25 +3320,29 @@ impl eframe::App for EditorApp {
             
             // Render the docking layout with EditorDrawContext for viewport integration
             // We need to carefully structure borrows to avoid conflicts
-            {
-                // Get mutable world from scene state
-                let world_opt = self.scene_state.as_mut().map(|s| s.world_mut());
-                
-                // Build the context with available resources
-                if let (Some(world), Some(viewport)) = (world_opt, self.viewport.as_mut()) {
-                    // Full context with 3D viewport
-                    let mut context = EditorDrawContext::new(&mut self.dock_tab_viewer)
-                        .with_viewport(viewport)
-                        .with_world(world)
-                        .with_entity_manager(&mut self.entity_manager)
-                        .with_undo_stack(&mut self.undo_stack)
-                        .with_prefab_manager(&mut self.prefab_manager);
-                    self.dock_layout.show(ctx, &mut context);
-                } else {
-                    // Fallback: no viewport or world available, use basic tab viewer
-                    self.dock_layout.show(ctx, &mut self.dock_tab_viewer);
-                }
-            }
+            // Use CentralPanel with no frame to render dock in remaining space (after side panels)
+            egui::CentralPanel::default()
+                .frame(egui::Frame::NONE.inner_margin(0.0))
+                .show(ctx, |ui| {
+                    ui.set_min_size(ui.available_size());
+                    
+                    // Get mutable world from scene state
+                    let world_opt = self.scene_state.as_mut().map(|s| s.world_mut());
+                    
+                    // Unified context rendering to avoid type-switching issues
+                    let mut context = EditorDrawContext::new(&mut self.dock_tab_viewer);
+                    
+                    if let (Some(world), Some(viewport)) = (world_opt, self.viewport.as_mut()) {
+                        context = context
+                            .with_viewport(viewport)
+                            .with_world(world)
+                            .with_entity_manager(&mut self.entity_manager)
+                            .with_undo_stack(&mut self.undo_stack)
+                            .with_prefab_manager(&mut self.prefab_manager);
+                    }
+                    
+                    self.dock_layout.show_inside(ui, &mut context);
+                });
             
             // Check for transform changes and emit events
             self.dock_tab_viewer.check_transform_changes();
@@ -3946,7 +3521,9 @@ impl eframe::App for EditorApp {
             }
         } else {
             // Legacy layout - original CentralPanel rendering
-            egui::CentralPanel::default().show(ctx, |ui| {
+            egui::CentralPanel::default()
+                .frame(egui::Frame::NONE.inner_margin(0.0).fill(egui::Color32::from_rgb(0, 255, 0))) // GREEN for legacy
+                .show(ctx, |ui| {
                 // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
                 if let Some(viewport) = &mut self.viewport {
                     // Phase 14: Update viewport HUD with selection count

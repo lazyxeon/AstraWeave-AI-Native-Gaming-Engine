@@ -1,8 +1,9 @@
 # AstraWeave: Master Strategic Roadmap
 
-**Version**: 1.43  
-**Last Updated**: January 2026  
-**Status**: Authoritative Source
+**Version**: 1.44  
+**Last Updated**: January 13, 2026  
+**Status**: Authoritative Source  
+**Validation**: ✅ PASS — [Full Report](../current/ENGINE_VALIDATION_2026_01_13.md)
 
 ---
 
@@ -24,15 +25,21 @@
 
 AstraWeave is the **world's first AI-native game engine** where AI agents are first-class citizens, not bolted-on features. The entire codebase is developed iteratively by AI Agents (GitHub Copilot/Antigravity) with zero human-written code.
 
-### Current State (December 2025)
+### Current State (January 13, 2026)
 
 | Metric | Value |
 |--------|-------|
+| **Validation Status** | ✅ **A+ Grade (95/100)** |
+| **Tests Passing** | **5,372/5,383 (99.8%)** |
+| **Compilation** | **17/17 core crates** (0 errors, 0 warnings) |
 | Workspace Packages | 121 (47 core + 74 examples/tools) |
 | Total Tests | 7,600+ |
 | Test Coverage (Overall) | ~78% |
 | Frame Time (p95) | ~2.70ms |
 | Agent Capacity | 12,700+ @ 60 FPS |
+| **Determinism** | **100% validated** |
+
+**Recent Critical Fix** (Jan 13, 2026): astraweave-rag DashMap deadlock resolved — [Details](../../CHANGELOG.md)
 
 ### What AstraWeave Is
 

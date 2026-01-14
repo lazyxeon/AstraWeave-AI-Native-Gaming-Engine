@@ -41,7 +41,7 @@ pub use asset_browser::{AssetAction, AssetBrowser, TextureType};
 pub use build_manager::BuildManagerPanel;
 pub use charts_panel::ChartsPanel;
 pub use console_panel::ConsolePanel;
-pub use entity_panel::{EntityPanel, PrefabAction};
+pub use entity_panel::EntityPanel;
 pub use graph_panel::GraphPanel;
 pub use hierarchy_panel::HierarchyPanel;
 pub use performance_panel::PerformancePanel;
