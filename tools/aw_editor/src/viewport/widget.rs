@@ -42,7 +42,8 @@ use super::renderer::ViewportRenderer;
 use super::toolbar::{GridType, ViewportToolbar};
 use crate::entity_manager::EntityManager;
 use crate::gizmo::{
-    AxisConstraint, GizmoHandle, GizmoMode, GizmoPicker, GizmoState, TransformSnapshot,
+    AxisConstraint, GizmoHandle, GizmoMode, GizmoPicker, GizmoState, RotateGizmo, ScaleGizmo,
+    TransformSnapshot,
 };
 use astraweave_core::{Entity, World};
 
@@ -85,7 +86,7 @@ pub struct ViewportWidget {
     toolbar: ViewportToolbar,
 
     /// Currently selected entities (supports multi-selection)
-    selected_entities: Vec<Entity>,
+    selected_entities: Vec<crate::entity_manager::EntityId>,
 
     /// Track if left mouse button was pressed (for click detection)
     mouse_pressed_pos: Option<egui::Pos2>,
@@ -300,7 +301,8 @@ impl ViewportWidget {
         // Update renderer selected entities
         {
             if let Ok(mut renderer) = self.renderer.lock() {
-                renderer.set_selected_entities(&self.selected_entities);
+                let entities_u32: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
+                renderer.set_selected_entities(&entities_u32);
             }
         }
 
@@ -527,7 +529,7 @@ impl ViewportWidget {
         }
 
         let selected = self.selected_entity()?;
-        let pose = world.pose(selected)?;
+        let pose = world.pose(selected as u32)?;
 
         // Get mouse position in viewport
         let pointer_pos = ui.ctx().pointer_latest_pos()?;
@@ -597,7 +599,7 @@ impl ViewportWidget {
         if self.gizmo_state.is_active() && response.dragged_by(egui::PointerButton::Primary) {
             if let Some(selected_id) = self.selected_entity() {
                 // Get entity's current pose
-                if let Some(pose) = world.pose(selected_id) {
+                if let Some(pose) = world.pose(selected_id as u32) {
                     let mouse_delta = self.gizmo_state.mouse_delta();
 
                     match self.gizmo_state.mode {
@@ -654,7 +656,7 @@ impl ViewportWidget {
                                             let new_x = final_x.round() as i32;
                                             let new_z = final_z.round() as i32;
 
-                                            if let Some(pose_mut) = world.pose_mut(selected_id) {
+                                            if let Some(pose_mut) = world.pose_mut(selected_id as u32) {
                                                 pose_mut.pos.x = new_x;
                                                 pose_mut.pos.y = new_z; // IVec2.y = world Z
 
@@ -754,7 +756,7 @@ impl ViewportWidget {
                                                 }
                                             };
 
-                                            if let Some(pose_mut) = world.pose_mut(selected_id) {
+                                            if let Some(pose_mut) = world.pose_mut(selected_id as u32) {
                                                 pose_mut.pos.x = new_x;
                                                 pose_mut.pos.y = new_z; // IVec2.y = world Z
 
@@ -777,98 +779,84 @@ impl ViewportWidget {
                             }
                         }
                         GizmoMode::Rotate { constraint: _ } => {
-                            // IMPORTANT: We need to remember the start rotation when drag begins
-                            // For now, we'll store it in the TransformSnapshot rotation field
-
-                            // Try to get start rotation from snapshot (stored as Quat)
-                            let (start_x, start_y, start_z) =
-                                if let Some(snapshot) = &self.gizmo_state.start_transform {
-                                    // Extract XYZ rotations from quaternion
-                                    snapshot.rotation.to_euler(glam::EulerRot::XYZ)
-                                } else {
-                                    // Fallback: capture current as start
-                                    (pose.rotation_x, pose.rotation, pose.rotation_z)
+                            // Try to get start transform snapshot
+                            if let Some(snapshot) = &self.gizmo_state.start_transform {
+                                // CRITICAL FIX: Read CURRENT constraint (not captured at match time!)
+                                let constraint = match self.gizmo_state.mode {
+                                    GizmoMode::Rotate { constraint: c } => c,
+                                    _ => crate::gizmo::AxisConstraint::None,
                                 };
 
-                            // Calculate rotation angle from TOTAL mouse movement since drag started
-                            let rotation_sensitivity = 0.005; // 200px = 1 radian (57.3°)
+                                // Check if Ctrl is held for angle snapping
+                                let snap_enabled =
+                                    ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
 
-                            // CRITICAL FIX: Read CURRENT constraint (not captured at match time!)
-                            // This allows mid-drag constraint changes via X/Y/Z keys
-                            let constraint = match self.gizmo_state.mode {
-                                GizmoMode::Rotate { constraint: c } => c,
-                                _ => crate::gizmo::AxisConstraint::None,
-                            };
-
-                            let (rotation_angle, target_axis) = match constraint {
-                                crate::gizmo::AxisConstraint::None => {
-                                    // No explicit constraint - default to Y-axis (yaw) but don't highlight
-                                    (mouse_delta.x * rotation_sensitivity, "Y")
-                                }
-                                crate::gizmo::AxisConstraint::Y => {
-                                    // Y-axis explicitly selected: horizontal mouse movement
-                                    (mouse_delta.x * rotation_sensitivity, "Y")
-                                }
-                                crate::gizmo::AxisConstraint::X => {
-                                    // X-axis (pitch): vertical mouse movement (inverted for intuitive control)
-                                    (-mouse_delta.y * rotation_sensitivity, "X")
-                                }
-                                crate::gizmo::AxisConstraint::Z => {
-                                    // Z-axis (roll): vertical mouse movement (same direction as X but different axis)
-                                    (mouse_delta.y * rotation_sensitivity, "Z")
-                                }
-                                _ => (0.0, "None"), // No rotation for planar constraints
-                            };
-
-                            // Check if Ctrl is held for angle snapping
-                            let snap_enabled =
-                                ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
-
-                            // Apply angle snapping if enabled (snap the delta, not the total)
-                            let final_angle = if snap_enabled {
-                                self.snap_angle(rotation_angle)
-                            } else {
-                                rotation_angle
-                            };
-
-                            // Set rotation to START + TOTAL_ANGLE (not accumulate frame by frame!)
-                            if let Some(pose_mut) = world.pose_mut(selected_id) {
-                                match target_axis {
-                                    "X" => pose_mut.rotation_x = start_x + final_angle,
-                                    "Y" => pose_mut.rotation = start_y + final_angle,
-                                    "Z" => pose_mut.rotation_z = start_z + final_angle,
-                                    _ => {}
-                                }
-
-                                debug!(
-                                    entity = ?selected_id,
+                                // Calculate rotation delta using modular gizmo
+                                // 200px = 1 radian means 100px = 0.5 radians (sensitivity)
+                                let rotation_delta_quat = RotateGizmo::calculate_rotation(
+                                    mouse_delta,
+                                    constraint,
+                                    0.5, // sensitivity: radians per 100 pixels
                                     snap_enabled,
-                                    axis = target_axis,
-                                    start_degrees = match target_axis {
-                                        "X" => start_x.to_degrees(),
-                                        "Y" => start_y.to_degrees(),
-                                        "Z" => start_z.to_degrees(),
-                                        _ => 0.0,
-                                    },
-                                    mouse_delta_x = mouse_delta.x,
-                                    mouse_delta_y = mouse_delta.y,
-                                    angle_degrees = final_angle.to_degrees(),
-                                    new_degrees = match target_axis {
-                                        "X" => pose_mut.rotation_x.to_degrees(),
-                                        "Y" => pose_mut.rotation.to_degrees(),
-                                        "Z" => pose_mut.rotation_z.to_degrees(),
-                                        _ => 0.0,
-                                    },
-                                    "Rotate"
+                                    snapshot.rotation,
+                                    false, // local_space
                                 );
+
+                                // Apply delta to start rotation
+                                let new_rotation_quat = rotation_delta_quat * snapshot.rotation;
+
+                                // Convert back to Euler angles for Pose
+                                let (new_x, new_y, new_z) =
+                                    new_rotation_quat.to_euler(glam::EulerRot::XYZ);
+
+                                if let Some(pose_mut) = world.pose_mut(selected_id as u32) {
+                                    pose_mut.rotation_x = new_x;
+                                    pose_mut.rotation = new_y;
+                                    pose_mut.rotation_z = new_z;
+
+                                    debug!(
+                                        entity = ?selected_id,
+                                        snap_enabled,
+                                        constraint = ?constraint,
+                                        mouse_delta_x = mouse_delta.x,
+                                        mouse_delta_y = mouse_delta.y,
+                                        "Rotate (modular)"
+                                    );
+                                }
                             }
                         }
                         GizmoMode::Scale {
-                            constraint: _,
-                            uniform: _,
+                            constraint,
+                            uniform,
                         } => {
-                            // SCALE MODE: Uses scroll wheel (handled above), not mouse drag
-                            // No-op here - scaling happens via scroll wheel in the zoom section
+                            if let Some(snapshot) = &self.gizmo_state.start_transform {
+                                // Calculate scale multiplier from mouse delta
+                                let scale_multiplier = ScaleGizmo::calculate_scale(
+                                    mouse_delta,
+                                    constraint,
+                                    uniform,
+                                    1.0, // sensitivity
+                                    snapshot.rotation,
+                                    false, // local_space
+                                );
+
+                                // Apply to pose (World only supports uniform f32 scale for now)
+                                if let Some(pose_mut) = world.pose_mut(selected_id as u32) {
+                                    // Use X component as uniform scale factor
+                                    let new_scale =
+                                        (snapshot.scale.x * scale_multiplier.x).clamp(0.1, 10.0);
+                                    pose_mut.scale = new_scale;
+
+                                    debug!(
+                                        entity = ?selected_id,
+                                        mouse_delta_x = mouse_delta.x,
+                                        mouse_delta_y = mouse_delta.y,
+                                        multiplier = scale_multiplier.x,
+                                        new_scale,
+                                        "Scale (drag)"
+                                    );
+                                }
+                            }
                         }
                         GizmoMode::Inactive => {}
                     }
@@ -948,36 +936,16 @@ impl ViewportWidget {
                 // Use raw scroll delta
                 let scroll = i.smooth_scroll_delta.y;
                 if scroll.abs() > 0.1 {
-                    // Check if we're in Scale mode
-                    if matches!(self.gizmo_state.mode, GizmoMode::Scale { .. }) {
-                        // SCALE MODE: Adjust entity scale with scroll wheel
-                        if let Some(selected_id) = self.selected_entity() {
-                            if let Some(pose_mut) = world.pose_mut(selected_id) {
-                                // Scale by 1% per scroll tick (very smooth, gradual scaling)
-                                let scale_delta = 1.0 + (scroll * 0.01);
-                                let new_scale = (pose_mut.scale * scale_delta).clamp(0.1, 10.0);
-                                pose_mut.scale = new_scale;
-
-                                debug!(
-                                    entity = ?selected_id,
-                                    scale_delta,
-                                    new_scale,
-                                    "Scale (scroll)"
-                                );
-                            }
-                        }
-                    } else {
-                        // CAMERA ZOOM: Normal camera control
-                        // Clamp to ±1.0 for very smooth zoom
-                        let clamped_scroll = scroll.clamp(-1.0, 1.0);
-                        self.camera.zoom(clamped_scroll);
-                    }
+                    // CAMERA ZOOM: Normal camera control
+                    // Clamp to ±1.0 for very smooth zoom
+                    let clamped_scroll = scroll.clamp(-1.0, 1.0);
+                    self.camera.zoom(clamped_scroll);
                 }
             });
         }
 
         // Sync selected entity to gizmo state
-        self.gizmo_state.selected_entity = self.selected_entity();
+        self.gizmo_state.selected_entity = self.selected_entity().map(|id| id as u32);
 
         // Clear gizmo state if entity deselected
         if self.selected_entity().is_none() && self.gizmo_state.is_active() {
@@ -989,7 +957,7 @@ impl ViewportWidget {
         if self.gizmo_state.is_active() && self.gizmo_state.start_transform.is_none() {
             if let Some(selected_id) = self.selected_entity() {
                 // Try to capture from World entity first (for actual transforms)
-                if let Some(pose) = world.pose(selected_id) {
+                if let Some(pose) = world.pose(selected_id as u32) {
                     let x = pose.pos.x as f32;
                     let z = pose.pos.y as f32;
                     // Create quaternion from XYZ Euler angles
@@ -1059,7 +1027,7 @@ impl ViewportWidget {
             if i.key_pressed(egui::Key::X) {
                 // Capture current position before applying constraint
                 if let Some(selected_id) = self.selected_entity() {
-                    if let Some(pose) = world.pose(selected_id) {
+                    if let Some(pose) = world.pose(selected_id as u32) {
                         let current_pos =
                             glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
@@ -1075,7 +1043,7 @@ impl ViewportWidget {
             if i.key_pressed(egui::Key::Y) {
                 // Capture current position before applying constraint
                 if let Some(selected_id) = self.selected_entity() {
-                    if let Some(pose) = world.pose(selected_id) {
+                    if let Some(pose) = world.pose(selected_id as u32) {
                         let current_pos =
                             glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
@@ -1091,7 +1059,7 @@ impl ViewportWidget {
             if i.key_pressed(egui::Key::Z) {
                 // Capture current position before applying constraint
                 if let Some(selected_id) = self.selected_entity() {
-                    if let Some(pose) = world.pose(selected_id) {
+                    if let Some(pose) = world.pose(selected_id as u32) {
                         let current_pos =
                             glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
@@ -1189,7 +1157,7 @@ impl ViewportWidget {
             if i.key_pressed(egui::Key::F) {
                 if let Some(selected_id) = self.selected_entity() {
                     // Frame World entity (match rendering position)
-                    if let Some(pose) = world.pose(selected_id) {
+                    if let Some(pose) = world.pose(selected_id as u32) {
                         let x = pose.pos.x as f32;
                         let z = pose.pos.y as f32;
                         let position = glam::Vec3::new(x, 1.0, z); // Y=1.0 (raised position)
@@ -1408,7 +1376,7 @@ impl ViewportWidget {
                             "🎯 Before toggle: selected_entities = {:?}",
                             self.selected_entities
                         );
-                        self.toggle_selection(entity_id);
+                        self.toggle_selection(entity_id.into());
                         debug!(
                             "🎯 Toggled World entity {} (now {} entities selected): {:?}",
                             entity_id,
@@ -1421,7 +1389,7 @@ impl ViewportWidget {
                             "🎯 Before add: selected_entities = {:?}",
                             self.selected_entities
                         );
-                        self.add_to_selection(entity_id);
+                        self.add_to_selection(entity_id.into());
                         debug!(
                             "🎯 Added World entity {} to selection ({} entities selected): {:?}",
                             entity_id,
@@ -1430,7 +1398,7 @@ impl ViewportWidget {
                         );
                     } else {
                         // Regular click: Single select (clears others)
-                        self.set_selected_entity(Some(entity_id));
+                        self.set_selected_entity(Some(entity_id.into()));
                         debug!(
                             "🎯 Selected World entity {} at distance {:.2}",
                             entity_id, distance
@@ -1737,22 +1705,22 @@ impl ViewportWidget {
     }
 
     /// Get the primary selected entity (for single-selection compatibility)
-    pub fn selected_entity(&self) -> Option<Entity> {
+    pub fn selected_entity(&self) -> Option<crate::entity_manager::EntityId> {
         self.selected_entities.first().copied()
     }
 
     /// Get all selected entities
-    pub fn selected_entities(&self) -> &[Entity] {
+    pub fn selected_entities(&self) -> &[crate::entity_manager::EntityId] {
         &self.selected_entities
     }
 
     /// Set the selected entities (replaces current selection)
-    pub fn set_selected_entities(&mut self, entities: Vec<Entity>) {
+    pub fn set_selected_entities(&mut self, entities: Vec<crate::entity_manager::EntityId>) {
         self.selected_entities = entities;
     }
 
     /// Set a single selected entity (clears other selections)
-    pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
+    pub fn set_selected_entity(&mut self, entity: Option<crate::entity_manager::EntityId>) {
         self.selected_entities.clear();
         if let Some(e) = entity {
             self.selected_entities.push(e);
@@ -1760,14 +1728,14 @@ impl ViewportWidget {
     }
 
     /// Add an entity to the selection (for multi-select)
-    pub fn add_to_selection(&mut self, entity: Entity) {
+    pub fn add_to_selection(&mut self, entity: crate::entity_manager::EntityId) {
         if !self.selected_entities.contains(&entity) {
             self.selected_entities.push(entity);
         }
     }
 
     /// Remove an entity from the selection
-    pub fn remove_from_selection(&mut self, entity: Entity) {
+    pub fn remove_from_selection(&mut self, entity: crate::entity_manager::EntityId) {
         self.selected_entities.retain(|&e| e != entity);
     }
 
@@ -1823,7 +1791,7 @@ impl ViewportWidget {
     }
 
     /// Toggle entity selection
-    pub fn toggle_selection(&mut self, entity: Entity) {
+    pub fn toggle_selection(&mut self, entity: crate::entity_manager::EntityId) {
         if self.selected_entities.contains(&entity) {
             self.remove_from_selection(entity);
         } else {
@@ -1837,7 +1805,7 @@ impl ViewportWidget {
     }
 
     /// Check if an entity is selected
-    pub fn is_selected(&self, entity: Entity) -> bool {
+    pub fn is_selected(&self, entity: crate::entity_manager::EntityId) -> bool {
         self.selected_entities.contains(&entity)
     }
 
@@ -1862,7 +1830,7 @@ impl ViewportWidget {
             return;
         }
 
-        let entities: Vec<_> = self.selected_entities.to_vec();
+        let entities: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
         self.clipboard = Some(crate::clipboard::ClipboardData::from_entities(
             world, &entities,
         ));
@@ -1877,7 +1845,7 @@ impl ViewportWidget {
             match clipboard.spawn_entities(world, offset) {
                 Ok(spawned) => {
                     let count = spawned.len();
-                    self.selected_entities = spawned;
+                    self.selected_entities = spawned.into_iter().map(|id| id as u64).collect();
                     debug!("📋 Pasted {} entities", count);
                 }
                 Err(e) => {
@@ -1908,7 +1876,7 @@ impl ViewportWidget {
         );
 
         // Use DuplicateEntitiesCommand for proper undo support
-        let source_entities: Vec<_> = self.selected_entities.to_vec();
+        let source_entities: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
         let offset = astraweave_core::IVec2 { x: 2, y: 0 }; // Offset 2 units right
 
         let duplicate_cmd = crate::command::DuplicateEntitiesCommand::new(source_entities, offset);
@@ -1932,7 +1900,7 @@ impl ViewportWidget {
             return;
         }
 
-        let entities_to_delete: Vec<_> = self.selected_entities.to_vec();
+        let entities_to_delete: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
 
         let delete_cmd = crate::command::DeleteEntitiesCommand::new(entities_to_delete);
         if let Err(e) = undo_stack.execute(delete_cmd, world) {
@@ -1957,7 +1925,7 @@ impl ViewportWidget {
         // This is a workaround - ideally World would have an entities() iterator
         for entity_id in 0..1000 {
             if world.pose(entity_id).is_some() {
-                self.selected_entities.push(entity_id);
+                self.selected_entities.push(entity_id.into());
                 debug!("  ✅ Found entity {}", entity_id);
             }
         }

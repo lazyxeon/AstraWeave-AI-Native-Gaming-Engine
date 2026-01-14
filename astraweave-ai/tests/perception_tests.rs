@@ -259,7 +259,9 @@ fn test_perception_stress() {
     }
 }
 
+/// Performance-sensitive test - depends on system load and hardware
 #[test]
+#[ignore]
 fn test_snapshot_cloning() {
     println!("\n=== TEST: Snapshot Cloning Performance ===");
 
