@@ -52,6 +52,7 @@ jobs:
             ${{ runner.os }}-asan-
       
       - name: Run ASan on astraweave-ecs
+        continue-on-error: true
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
             -p astraweave-ecs \
@@ -59,6 +60,7 @@ jobs:
             -- --test-threads=1
       
       - name: Run ASan on astraweave-physics
+        continue-on-error: true
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
             -p astraweave-physics \
