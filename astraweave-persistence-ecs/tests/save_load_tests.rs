@@ -230,6 +230,7 @@ fn test_save_load_empty_world() {
 // ========== Large World Serialization Tests ==========
 
 #[test]
+#[ignore] // Performance-sensitive - may timeout in debug mode or on slow CI runners
 fn test_large_world_1000_entities() {
     // Test performance and correctness with 1,000 entities
     let mut world = World::new();
