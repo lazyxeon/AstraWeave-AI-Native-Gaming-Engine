@@ -259,92 +259,143 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
     anyhow::bail!("BC7 feature not enabled. Enable with --features bc7")
 }
 
-/// Compress RGBA image to ASTC format (adaptive block compression for mobile)
+/// Compress RGBA image to ASTC format via external CLI tool (basisu)
 ///
 /// ASTC provides flexible block sizes from 4×4 to 12×12.
 /// Best for mobile GPUs (iOS Metal, Android Vulkan).
 ///
 /// ## Implementation
-/// Uses `basis-universal` for high-quality ASTC encoding.
+/// This function shells out to the `basisu` CLI tool for encoding.
+/// The basis-universal Rust crate is primarily for transcoding (decoding),
+/// not encoding. For encoding, use the official basisu CLI tool.
+///
+/// ## Prerequisites
+/// Install basisu CLI: https://github.com/BinomialLLC/basis_universal
 #[cfg(feature = "astc")]
-pub fn compress_astc(rgba: &RgbaImage, block_size: AstcBlockSize) -> Result<Vec<u8>> {
+pub fn compress_astc(rgba: &RgbaImage, _block_size: AstcBlockSize) -> Result<Vec<u8>> {
     let (width, height) = rgba.dimensions();
-    let start = std::time::Instant::now();
 
-    // Initialize basis-universal encoder
-    basis_universal::Encoder::init();
+    // Create temp file for input
+    let temp_dir = std::env::temp_dir();
+    let input_path = temp_dir.join(format!("basis_input_{}.png", std::process::id()));
+    let output_path = temp_dir.join(format!("basis_output_{}.basis", std::process::id()));
 
-    let mut params = basis_universal::CompressorParams::new();
-    params.set_basis_format(basis_universal::BasisFormat::UASTC4444);
-    params.set_generate_mipmaps(true);
+    // Save input image
+    rgba.save(&input_path)
+        .map_err(|e| anyhow::anyhow!("Failed to save input image: {}", e))?;
 
-    // Create source image for basis
-    let mut source_image = params.source_image_mut(0);
-    source_image.init(rgba.as_raw(), width, height, 4);
+    // Run basisu CLI
+    let status = std::process::Command::new("basisu")
+        .arg("-uastc") // UASTC mode for high quality
+        .arg("-file")
+        .arg(&input_path)
+        .arg("-output_file")
+        .arg(&output_path)
+        .status();
 
-    let mut compressor = basis_universal::Compressor::new(4);
-    unsafe { compressor.init(&params) };
-    compressor
-        .process()
-        .map_err(|e| anyhow::anyhow!("Basis compression failed: {:?}", e))?;
+    // Cleanup input file
+    let _ = std::fs::remove_file(&input_path);
 
-    let compressed = compressor.basis_file().to_vec();
-    let elapsed = start.elapsed().as_millis() as u64;
+    match status {
+        Ok(exit_status) if exit_status.success() => {
+            let compressed = std::fs::read(&output_path)?;
+            let _ = std::fs::remove_file(&output_path);
 
-    tracing::info!(
-        "ASTC (Basis) compressed {}×{} in {}ms ({} → {} bytes, {:.1}% reduction)",
-        width,
-        height,
-        elapsed,
-        rgba.len(),
-        compressed.len(),
-        100.0 * (1.0 - compressed.len() as f32 / rgba.len() as f32)
-    );
+            tracing::info!(
+                "ASTC (Basis CLI) compressed {}×{} ({} → {} bytes, {:.1}% reduction)",
+                width,
+                height,
+                rgba.len(),
+                compressed.len(),
+                100.0 * (1.0 - compressed.len() as f32 / rgba.len() as f32)
+            );
 
-    Ok(compressed)
+            Ok(compressed)
+        }
+        Ok(_) => {
+            anyhow::bail!(
+                "basisu CLI failed. Ensure basisu is installed and in PATH.\n\
+                Install from: https://github.com/BinomialLLC/basis_universal"
+            )
+        }
+        Err(e) => {
+            anyhow::bail!(
+                "Failed to run basisu CLI: {}. \n\
+                Ensure basisu is installed and in PATH.\n\
+                Install from: https://github.com/BinomialLLC/basis_universal",
+                e
+            )
+        }
+    }
 }
 
-/// Compress RGBA image to KTX2 format using Basis Universal
+/// Transcode a .basis file to BC7 format for desktop GPUs
 ///
-/// KTX2 is the preferred container for GPU-compressed textures.
-/// It can contain Basis Universal (ETC1S) or UASTC data, which can be
-/// transcoded on-the-fly to any GPU format (BC7, ASTC, etc.)
+/// This uses the basis-universal Rust crate for transcoding.
+/// The input must be a valid .basis file (created by basisu CLI).
 #[cfg(feature = "astc")]
-pub fn compress_to_ktx2(rgba: &RgbaImage, quality: u32) -> Result<Vec<u8>> {
-    let (width, height) = rgba.dimensions();
-    let start = std::time::Instant::now();
+pub fn transcode_basis_to_bc7(basis_data: &[u8]) -> Result<Vec<u8>> {
+    use basis_universal::{Transcoder, TranscoderTextureFormat};
 
-    basis_universal::Encoder::init();
+    let mut transcoder = Transcoder::new();
 
-    let mut params = basis_universal::CompressorParams::new();
-    params.set_basis_format(basis_universal::BasisFormat::UASTC4444);
-    params.set_uastc_quality_level(quality.clamp(0, 4)); // 0=fastest, 4=slowest
-    params.set_generate_mipmaps(true);
-    params.set_write_output_basis_files(true);
+    if !transcoder.validate_header(basis_data) {
+        anyhow::bail!("Invalid basis file header");
+    }
 
-    let mut image = params.source_image_mut(0);
-    image.init(rgba.as_raw(), width, height, 4);
+    transcoder
+        .prepare_transcoding(basis_data)
+        .map_err(|_| anyhow::anyhow!("Failed to prepare transcoding"))?;
 
-    let mut compressor = basis_universal::Compressor::new(1);
-    unsafe { compressor.init(&params) };
-    compressor
-        .process()
-        .map_err(|e| anyhow::anyhow!("KTX2 compression failed: {:?}", e))?;
+    let image_count = transcoder.image_count(basis_data);
+    if image_count == 0 {
+        anyhow::bail!("No images in basis file");
+    }
 
-    let compressed = compressor.basis_file().to_vec();
-    let elapsed = start.elapsed().as_millis() as u64;
+    // Transcode first image, mip level 0
+    let transcoded = transcoder
+        .transcode_image_level(
+            basis_data,
+            TranscoderTextureFormat::BC7_RGBA,
+            basis_universal::TranscodeParameters {
+                image_index: 0,
+                level_index: 0,
+                ..Default::default()
+            },
+        )
+        .map_err(|_| anyhow::anyhow!("Failed to transcode to BC7"))?;
 
-    tracing::info!(
-        "KTX2 (Basis) compressed {}×{} in {}ms ({} → {} bytes, {:.1}% reduction)",
-        width,
-        height,
-        elapsed,
-        rgba.len(),
-        compressed.len(),
-        100.0 * (1.0 - compressed.len() as f32 / rgba.len() as f32)
-    );
+    Ok(transcoded)
+}
 
-    Ok(compressed)
+/// Transcode a .basis file to ASTC 4x4 format for mobile GPUs
+#[cfg(feature = "astc")]
+pub fn transcode_basis_to_astc(basis_data: &[u8]) -> Result<Vec<u8>> {
+    use basis_universal::{Transcoder, TranscoderTextureFormat};
+
+    let mut transcoder = Transcoder::new();
+
+    if !transcoder.validate_header(basis_data) {
+        anyhow::bail!("Invalid basis file header");
+    }
+
+    transcoder
+        .prepare_transcoding(basis_data)
+        .map_err(|_| anyhow::anyhow!("Failed to prepare transcoding"))?;
+
+    let transcoded = transcoder
+        .transcode_image_level(
+            basis_data,
+            TranscoderTextureFormat::ASTC_4x4_RGBA,
+            basis_universal::TranscodeParameters {
+                image_index: 0,
+                level_index: 0,
+                ..Default::default()
+            },
+        )
+        .map_err(|_| anyhow::anyhow!("Failed to transcode to ASTC"))?;
+
+    Ok(transcoded)
 }
 
 #[cfg(not(feature = "astc"))]
