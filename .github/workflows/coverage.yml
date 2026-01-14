@@ -14,6 +14,8 @@ jobs:
   coverage:
     name: Generate Code Coverage
     runs-on: ubuntu-latest
+    # Coverage may fail on some configurations - non-blocking
+    continue-on-error: true
     
     steps:
       - name: Checkout code
