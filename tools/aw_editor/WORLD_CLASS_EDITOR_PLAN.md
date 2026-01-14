@@ -55,25 +55,30 @@ The AstraWeave Editor is at **82% production readiness** with a solid architectu
 
 **Objective**: Render real glTF meshes with PBR materials
 
-### Week 1: Mesh Loading & Display
+### Week 1: Mesh Loading & Display ✅ INFRASTRUCTURE COMPLETE
 
-#### Day 1-2: Engine Adapter Integration
-The `EngineRenderAdapter` already exists but isn't wired up. Tasks:
+#### Day 1-2: Engine Adapter Integration ✅ DONE
+- Engine rendering path verified in `viewport/renderer.rs` (lines 280-315)
+- `EngineRenderAdapter` properly wired up with lazy initialization
+- Camera conversion to engine format working (`to_engine_camera()`)
+- Model loading via `load_gltf_model()` functional
 
-```rust
-// In viewport/renderer.rs - Enable engine rendering path
-pub fn enable_engine_rendering(&mut self) {
-    #[cfg(feature = "astraweave-render")]
-    {
-        self.use_engine_rendering = true;
-    }
-}
-```
+**Completed Infrastructure**:
+- `viewport/renderer.rs` - Engine render path integrated
+- `viewport/engine_adapter.rs` - glTF loading with diagnostics
+- `viewport/widget.rs` - FPS counter + rendering mode indicator added
 
-**Files to modify**:
-- `viewport/renderer.rs` - Wire engine adapter into render loop
-- `viewport/engine_adapter.rs` - Already has `load_gltf_model()`
-- `viewport/widget.rs` - Add toggle for engine vs cube rendering
+**New Debug Menu Features**:
+- 📦 Load Test Model (barrels.glb)
+- 🛏️ Load Test Model (bed.glb)
+- 🌲 Load Pine Tree
+- 🔄 Toggle Engine Rendering
+- 📋 Show Engine Info
+- 📁 Scan For Models
+
+**Viewport HUD**:
+- FPS counter (top-left, color-coded: green/yellow/red)
+- Rendering mode indicator (bottom-left: PBR Engine / Cube)
 
 #### Day 3-4: Asset Browser → Viewport Integration
 Connect "Import Model" action to engine renderer:
