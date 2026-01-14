@@ -1,5 +1,3 @@
-use wgpu::util::DeviceExt;
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
@@ -589,6 +587,7 @@ impl FluidRenderer {
         });
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
@@ -641,7 +640,7 @@ impl FluidRenderer {
             });
             cpass.set_pipeline(&self.smooth_pipeline);
             cpass.set_bind_group(0, &self.smooth_bind_group, &[]);
-            cpass.dispatch_workgroups((self.width + 15) / 16, (self.height + 15) / 16, 1);
+            cpass.dispatch_workgroups(self.width.div_ceil(16), self.height.div_ceil(16), 1);
         }
 
         // 3. Shade Pass

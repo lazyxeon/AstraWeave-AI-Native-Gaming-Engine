@@ -98,7 +98,7 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
     let bytes_per_pixel = 4u64;
     let row_bytes = width as u64 * bytes_per_pixel;
     let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as u64;
-    let padded_row_bytes = ((row_bytes + align - 1) / align) * align;
+    let padded_row_bytes = row_bytes.div_ceil(align) * align;
     let buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("readback"),
         size: padded_row_bytes * height as u64,
@@ -144,7 +144,7 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
     let mut img = vec![0u8; (width * height * 4) as usize];
     for y in 0..height as usize {
         let src_off = y as u64 * padded_row_bytes;
-        let dst_off = y as usize * width as usize * 4;
+        let dst_off = y * width as usize * 4;
         img[dst_off..dst_off + (width as usize * 4)]
             .copy_from_slice(&data[src_off as usize..(src_off + row_bytes) as usize]);
     }

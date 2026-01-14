@@ -67,7 +67,7 @@ pub struct PlayerProfile {
 }
 
 /// Game settings (graphics, audio, controls)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GameSettings {
     pub graphics: GraphicsSettings,
     pub audio: AudioSettings,
@@ -132,7 +132,7 @@ pub struct ControlSettings {
 }
 
 /// Player statistics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PlayerStats {
     /// Total playtime (seconds)
     pub playtime_seconds: u64,
@@ -190,16 +190,6 @@ impl Default for PlayerProfile {
     }
 }
 
-impl Default for GameSettings {
-    fn default() -> Self {
-        Self {
-            graphics: GraphicsSettings::default(),
-            audio: AudioSettings::default(),
-            controls: ControlSettings::default(),
-        }
-    }
-}
-
 impl Default for GraphicsSettings {
     fn default() -> Self {
         Self {
@@ -237,17 +227,6 @@ impl Default for ControlSettings {
             mouse_sensitivity: 1.0,
             invert_y: false,
             key_bindings,
-        }
-    }
-}
-
-impl Default for PlayerStats {
-    fn default() -> Self {
-        Self {
-            playtime_seconds: 0,
-            enemies_defeated: 0,
-            deaths: 0,
-            achievements: Vec::new(),
         }
     }
 }

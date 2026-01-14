@@ -213,12 +213,7 @@ impl SaveSlotManager {
 
     /// Get next available slot ID
     pub fn next_available_slot(&self) -> Option<usize> {
-        for slot_id in 0..self.max_slots {
-            if !self.slot_exists(slot_id) {
-                return Some(slot_id);
-            }
-        }
-        None
+        (0..self.max_slots).find(|&slot_id| !self.slot_exists(slot_id))
     }
 }
 

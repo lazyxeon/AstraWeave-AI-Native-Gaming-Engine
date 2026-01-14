@@ -709,8 +709,8 @@ impl FluidSystem {
         // 1. Generate SDF
         self.sdf_system.generate(encoder, queue);
 
-        let particle_workgroups = (self.particle_count + 63) / 64;
-        let current_src = (self.frame_index % 2) as usize;
+        let particle_workgroups = self.particle_count.div_ceil(64);
+        let current_src = self.frame_index % 2;
 
         // --- Setup Bind Groups ---
         let global_bg = &self.global_bind_group;
@@ -768,7 +768,7 @@ impl FluidSystem {
             cpass.set_pipeline(&self.clear_grid_pipeline);
             cpass.set_bind_group(0, global_bg, &[]);
             cpass.dispatch_workgroups(
-                (self.grid_width * self.grid_height * self.grid_depth + 63) / 64,
+                (self.grid_width * self.grid_height * self.grid_depth).div_ceil(64),
                 1,
                 1,
             );
@@ -848,8 +848,8 @@ impl FluidSystem {
             cpass.dispatch_workgroups(1024, 1, 1); // 1024 * 64 = 65536
         }
         // 6. Copy error to staging for adaptive iterations (asynchronously)
-        let staging_idx = (self.frame_index % 2) as usize;
-        let other_idx = (1 - staging_idx) as usize;
+        let staging_idx = self.frame_index % 2;
+        let other_idx = 1 - staging_idx;
 
         // Ensure the current staging buffer is unmapped before copy
         if self.staging_mapped[staging_idx] {

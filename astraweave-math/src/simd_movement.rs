@@ -92,10 +92,14 @@ pub fn update_positions_simd(positions: &mut [Vec3], velocities: &[Vec3], dt: f3
 
         // Unrolled loop: process 4 entities per iteration
         // Compiler can vectorize this into single AVX2 instruction
-        positions[base + 0] += velocities[base + 0] * dt;
-        positions[base + 1] += velocities[base + 1] * dt;
-        positions[base + 2] += velocities[base + 2] * dt;
-        positions[base + 3] += velocities[base + 3] * dt;
+        let vel_dt_0 = velocities[base] * dt;
+        let vel_dt_1 = velocities[base + 1] * dt;
+        let vel_dt_2 = velocities[base + 2] * dt;
+        let vel_dt_3 = velocities[base + 3] * dt;
+        positions[base] += vel_dt_0;
+        positions[base + 1] += vel_dt_1;
+        positions[base + 2] += vel_dt_2;
+        positions[base + 3] += vel_dt_3;
     }
 
     // Handle remainder (when count not divisible by BATCH_SIZE)
