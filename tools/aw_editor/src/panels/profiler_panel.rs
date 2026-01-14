@@ -93,19 +93,30 @@ impl ProfilerPanel {
     }
 
     fn min_fps(&self) -> f32 {
-        self.fps_samples.iter().cloned().fold(f32::INFINITY, f32::min)
+        self.fps_samples
+            .iter()
+            .cloned()
+            .fold(f32::INFINITY, f32::min)
     }
 
     fn max_fps(&self) -> f32 {
         self.fps_samples.iter().cloned().fold(0.0, f32::max)
     }
 
-    fn draw_graph(&self, ui: &mut Ui, data: &VecDeque<f32>, label: &str, max_val: f32, color: egui::Color32) {
+    fn draw_graph(
+        &self,
+        ui: &mut Ui,
+        data: &VecDeque<f32>,
+        label: &str,
+        max_val: f32,
+        color: egui::Color32,
+    ) {
         let height = 60.0;
         let width = ui.available_width().min(300.0);
 
         ui.label(label);
-        let (response, painter) = ui.allocate_painter(egui::vec2(width, height), egui::Sense::hover());
+        let (response, painter) =
+            ui.allocate_painter(egui::vec2(width, height), egui::Sense::hover());
         let rect = response.rect;
 
         painter.rect_filled(rect, 2.0, egui::Color32::from_gray(30));
@@ -135,7 +146,10 @@ impl ProfilerPanel {
         let budget_line_y = rect.bottom() - (16.67 / max_display).clamp(0.0, 1.0) * height;
         if label.contains("Frame") && budget_line_y > rect.top() {
             painter.line_segment(
-                [egui::pos2(rect.left(), budget_line_y), egui::pos2(rect.right(), budget_line_y)],
+                [
+                    egui::pos2(rect.left(), budget_line_y),
+                    egui::pos2(rect.right(), budget_line_y),
+                ],
                 egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 100, 100)),
             );
         }
@@ -191,7 +205,8 @@ impl Panel for ProfilerPanel {
 
                 if !self.memory_samples.is_empty() {
                     let current_mem = self.memory_samples.back().copied().unwrap_or(0);
-                    let avg_mem: usize = self.memory_samples.iter().sum::<usize>() / self.memory_samples.len();
+                    let avg_mem: usize =
+                        self.memory_samples.iter().sum::<usize>() / self.memory_samples.len();
                     ui.label("Memory:");
                     ui.label(format!("{} KB", current_mem));
                     ui.label(format!("{} KB", avg_mem));
@@ -209,21 +224,44 @@ impl Panel for ProfilerPanel {
 
         if self.show_frame_graph && !self.frame_times.is_empty() {
             ui.add_space(4.0);
-            let max_ft = self.frame_times.iter().cloned().fold(0.0f32, f32::max).max(33.33);
-            self.draw_graph(ui, &self.frame_times, "Frame Time (ms) - Red line = 60 FPS budget", max_ft, egui::Color32::from_rgb(100, 200, 255));
+            let max_ft = self
+                .frame_times
+                .iter()
+                .cloned()
+                .fold(0.0f32, f32::max)
+                .max(33.33);
+            self.draw_graph(
+                ui,
+                &self.frame_times,
+                "Frame Time (ms) - Red line = 60 FPS budget",
+                max_ft,
+                egui::Color32::from_rgb(100, 200, 255),
+            );
         }
 
         if self.show_fps_graph && !self.fps_samples.is_empty() {
             ui.add_space(4.0);
             let max_fps = self.max_fps().max(120.0);
-            self.draw_graph(ui, &self.fps_samples, "FPS", max_fps, egui::Color32::from_rgb(100, 255, 100));
+            self.draw_graph(
+                ui,
+                &self.fps_samples,
+                "FPS",
+                max_fps,
+                egui::Color32::from_rgb(100, 255, 100),
+            );
         }
 
         if self.show_memory_graph && !self.memory_samples.is_empty() {
             ui.add_space(4.0);
             let mem_floats: VecDeque<f32> = self.memory_samples.iter().map(|&m| m as f32).collect();
             let max_mem = self.peak_memory_kb as f32;
-            self.draw_graph(ui, &mem_floats, "Memory (KB)", max_mem.max(1024.0), egui::Color32::from_rgb(255, 180, 100));
+            self.draw_graph(
+                ui,
+                &mem_floats,
+                "Memory (KB)",
+                max_mem.max(1024.0),
+                egui::Color32::from_rgb(255, 180, 100),
+            );
         }
 
         ui.add_space(8.0);

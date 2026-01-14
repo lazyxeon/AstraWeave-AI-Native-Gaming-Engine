@@ -105,9 +105,7 @@ impl<'a> TabViewer for EditorDrawContext<'a> {
                 ) {
                     // Render the actual 3D viewport
                     let prefab_mgr = self.prefab_manager.as_deref_mut();
-                    if let Err(e) =
-                        viewport.ui(ui, world, entity_manager, undo_stack, prefab_mgr)
-                    {
+                    if let Err(e) = viewport.ui(ui, world, entity_manager, undo_stack, prefab_mgr) {
                         // Show error in viewport if rendering fails
                         ui.centered_and_justified(|ui| {
                             ui.colored_label(egui::Color32::RED, format!("Viewport Error: {}", e));

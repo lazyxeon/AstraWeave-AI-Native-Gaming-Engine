@@ -249,7 +249,10 @@ impl EditorRuntime {
         }
 
         // Restore edit snapshot
-        let restored_world = self.edit_snapshot.as_ref().map(|snapshot| snapshot.to_world());
+        let restored_world = self
+            .edit_snapshot
+            .as_ref()
+            .map(|snapshot| snapshot.to_world());
 
         // Reset runtime state
         self.sim_app = None;

@@ -1,6 +1,6 @@
 use super::Panel;
+use crate::level_doc::LevelDoc;
 use crate::terrain_integration::{all_biome_options, biome_display_name, TerrainState};
-use crate::LevelDoc;
 use egui::Ui;
 
 pub struct WorldPanel {
@@ -29,12 +29,15 @@ impl WorldPanel {
 
         ui.group(|ui| {
             ui.label("Biome");
-            
+
             egui::ComboBox::from_id_salt("biome_selector")
                 .selected_text(biome_display_name(&level.biome))
                 .show_ui(ui, |ui| {
                     for (value, display) in all_biome_options() {
-                        if ui.selectable_label(level.biome == *value, *display).clicked() {
+                        if ui
+                            .selectable_label(level.biome == *value, *display)
+                            .clicked()
+                        {
                             level.biome = value.to_string();
                         }
                     }
@@ -57,7 +60,7 @@ impl WorldPanel {
 
         ui.group(|ui| {
             ui.label("Terrain Generation");
-            
+
             ui.horizontal(|ui| {
                 ui.label("Chunk Radius:");
                 ui.add(egui::Slider::new(&mut self.chunk_radius, 1..=5).text("chunks"));
@@ -73,11 +76,11 @@ impl WorldPanel {
             ui.add_space(5.0);
 
             let generate_clicked = ui.button("Generate Terrain").clicked();
-            
+
             self.terrain_state.configure(level.seed, &level.biome);
 
-            let should_generate = generate_clicked || 
-                (self.auto_regenerate && (old_biome != level.biome || old_seed != level.seed));
+            let should_generate = generate_clicked
+                || (self.auto_regenerate && (old_biome != level.biome || old_seed != level.seed));
 
             if should_generate {
                 match self.terrain_state.generate_terrain(self.chunk_radius) {
@@ -132,7 +135,7 @@ impl WorldPanel {
         });
 
         ui.add_space(10.0);
-        
+
         ui.group(|ui| {
             ui.label("Weather");
             ui.text_edit_singleline(&mut level.sky.weather);
@@ -159,6 +162,5 @@ impl Panel for WorldPanel {
         "World"
     }
 
-    fn show(&mut self, _ui: &mut Ui) {
-    }
+    fn show(&mut self, _ui: &mut Ui) {}
 }

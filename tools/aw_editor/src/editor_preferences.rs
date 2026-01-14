@@ -46,7 +46,11 @@ impl EditorPreferences {
         match serde_json::to_string_pretty(&self) {
             Ok(json) => {
                 if let Err(e) = fs::write(PREFERENCES_PATH, json) {
-                    tracing::error!("Failed to write editor preferences to {}: {}", PREFERENCES_PATH, e);
+                    tracing::error!(
+                        "Failed to write editor preferences to {}: {}",
+                        PREFERENCES_PATH,
+                        e
+                    );
                 }
             }
             Err(e) => {

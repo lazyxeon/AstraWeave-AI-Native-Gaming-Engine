@@ -67,3 +67,34 @@ phase_script = "content/encounters/forest_breach.phases.rhai"
 The editor creates a `reload.signal` file when saving, which the engine can watch to automatically reload content.
 
 Rhai scripts for boss encounters are stored in the `content/encounters/` directory.
+
+## Debug Menu
+
+The editor includes a Debug menu (`🐛 Debug`) for testing engine features:
+
+### Viewport Tests
+- **Load Test Model (barrels.glb)**: Loads a sample 3D model to verify the PBR rendering pipeline
+- **Toggle Engine Rendering**: Switch between the full engine renderer and fallback cube renderer
+
+### Diagnostics
+- **Show Engine Info**: Display current engine status (rendering mode, adapter initialization)
+- **Clear Console**: Clear all console log messages
+
+## 3D Viewport
+
+The viewport supports full PBR (Physically-Based Rendering) through integration with `astraweave-render`:
+
+### Features
+- Orbit camera (right-click drag to rotate, scroll to zoom)
+- Grid rendering with snap support
+- Gizmo transform tools (translate, rotate, scale)
+- glTF model loading with automatic material import
+- Entity selection and multi-selection
+
+### Keyboard Shortcuts
+- **W**: Switch to Translate gizmo
+- **E**: Switch to Rotate gizmo  
+- **R**: Switch to Scale gizmo
+- **F**: Frame selected entity
+- **G**: Toggle grid visibility
+- **F1-F12**: Camera bookmark recall (Ctrl+F1-F12 to save)

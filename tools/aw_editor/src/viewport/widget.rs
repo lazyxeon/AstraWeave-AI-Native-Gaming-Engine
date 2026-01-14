@@ -301,7 +301,8 @@ impl ViewportWidget {
         // Update renderer selected entities
         {
             if let Ok(mut renderer) = self.renderer.lock() {
-                let entities_u32: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
+                let entities_u32: Vec<u32> =
+                    self.selected_entities.iter().map(|&id| id as u32).collect();
                 renderer.set_selected_entities(&entities_u32);
             }
         }
@@ -656,7 +657,9 @@ impl ViewportWidget {
                                             let new_x = final_x.round() as i32;
                                             let new_z = final_z.round() as i32;
 
-                                            if let Some(pose_mut) = world.pose_mut(selected_id as u32) {
+                                            if let Some(pose_mut) =
+                                                world.pose_mut(selected_id as u32)
+                                            {
                                                 pose_mut.pos.x = new_x;
                                                 pose_mut.pos.y = new_z; // IVec2.y = world Z
 
@@ -756,7 +759,9 @@ impl ViewportWidget {
                                                 }
                                             };
 
-                                            if let Some(pose_mut) = world.pose_mut(selected_id as u32) {
+                                            if let Some(pose_mut) =
+                                                world.pose_mut(selected_id as u32)
+                                            {
                                                 pose_mut.pos.x = new_x;
                                                 pose_mut.pos.y = new_z; // IVec2.y = world Z
 
@@ -1876,7 +1881,8 @@ impl ViewportWidget {
         );
 
         // Use DuplicateEntitiesCommand for proper undo support
-        let source_entities: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
+        let source_entities: Vec<u32> =
+            self.selected_entities.iter().map(|&id| id as u32).collect();
         let offset = astraweave_core::IVec2 { x: 2, y: 0 }; // Offset 2 units right
 
         let duplicate_cmd = crate::command::DuplicateEntitiesCommand::new(source_entities, offset);
@@ -1900,7 +1906,8 @@ impl ViewportWidget {
             return;
         }
 
-        let entities_to_delete: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
+        let entities_to_delete: Vec<u32> =
+            self.selected_entities.iter().map(|&id| id as u32).collect();
 
         let delete_cmd = crate::command::DeleteEntitiesCommand::new(entities_to_delete);
         if let Err(e) = undo_stack.execute(delete_cmd, world) {

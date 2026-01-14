@@ -48,7 +48,7 @@ impl ConsolePanel {
 
     pub fn show_with_logs(&mut self, ui: &mut Ui, logs: &mut Vec<String>) -> bool {
         let mut cleared = false;
-        
+
         let total_count = logs.len();
         let warning_count = logs.iter().filter(|l| l.contains("⚠️")).count();
         let error_count = logs.iter().filter(|l| l.contains("❌")).count();
@@ -58,27 +58,26 @@ impl ConsolePanel {
             ui.heading("Console");
             ui.separator();
             ui.label(format!("{} logs", total_count));
-            
+
             if info_count > 0 {
                 ui.label(
                     egui::RichText::new(format!("{} info", info_count))
-                        .color(egui::Color32::from_rgb(100, 149, 237))
+                        .color(egui::Color32::from_rgb(100, 149, 237)),
                 );
             }
             if warning_count > 0 {
                 ui.label(
                     egui::RichText::new(format!("{} warn", warning_count))
-                        .color(egui::Color32::YELLOW)
+                        .color(egui::Color32::YELLOW),
                 );
             }
             if error_count > 0 {
                 ui.label(
-                    egui::RichText::new(format!("{} err", error_count))
-                        .color(egui::Color32::RED)
+                    egui::RichText::new(format!("{} err", error_count)).color(egui::Color32::RED),
                 );
             }
         });
-        
+
         ui.separator();
 
         ui.horizontal(|ui| {
@@ -95,7 +94,7 @@ impl ConsolePanel {
             ui.add(
                 egui::TextEdit::singleline(&mut self.search_text)
                     .hint_text("Search logs...")
-                    .desired_width(150.0)
+                    .desired_width(150.0),
             );
 
             if ui.small_button("X").on_hover_text("Clear search").clicked() {
@@ -111,7 +110,11 @@ impl ConsolePanel {
                 cleared = true;
             }
 
-            if ui.button("Copy All").on_hover_text("Copy logs to clipboard").clicked() {
+            if ui
+                .button("Copy All")
+                .on_hover_text("Copy logs to clipboard")
+                .clicked()
+            {
                 let all_logs = logs.join("\n");
                 ui.ctx().copy_text(all_logs);
             }
@@ -124,7 +127,9 @@ impl ConsolePanel {
             .filter(|log| {
                 self.filter_level.matches(log)
                     && (self.search_text.is_empty()
-                        || log.to_lowercase().contains(&self.search_text.to_lowercase()))
+                        || log
+                            .to_lowercase()
+                            .contains(&self.search_text.to_lowercase()))
             })
             .collect();
 
@@ -180,8 +185,7 @@ impl Panel for ConsolePanel {
         "Console"
     }
 
-    fn show(&mut self, _ui: &mut Ui) {
-    }
+    fn show(&mut self, _ui: &mut Ui) {}
 }
 
 #[cfg(test)]

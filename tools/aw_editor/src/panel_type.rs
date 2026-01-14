@@ -44,58 +44,58 @@ use std::fmt;
 pub enum PanelType {
     /// Scene hierarchy tree showing entity parent-child relationships
     Hierarchy,
-    
+
     /// Property inspector for selected entities/assets
     Inspector,
-    
+
     /// Asset browser for browsing and managing project assets
     AssetBrowser,
-    
+
     /// 3D viewport for scene editing and visualization
     Viewport,
-    
+
     /// Console output for logs, warnings, and errors
     Console,
-    
+
     /// Performance profiler showing frame timing and system metrics
     Profiler,
-    
+
     /// Build manager for project compilation and export
     BuildManager,
-    
+
     /// Scene statistics (entity count, memory usage, etc.)
     SceneStats,
-    
+
     /// Transform editing panel (position, rotation, scale)
     Transform,
-    
+
     /// Performance monitoring graphs
     Performance,
-    
+
     /// Data visualization charts
     Charts,
-    
+
     /// Advanced widgets panel (color pickers, curves, etc.)
     AdvancedWidgets,
-    
+
     /// Node graph editor for behavior/shader graphs
     Graph,
-    
+
     /// Animation timeline and keyframe editor
     Animation,
-    
+
     /// Theme manager for editor appearance customization
     ThemeManager,
-    
+
     /// World settings and environment configuration
     World,
-    
+
     /// Material editor with PBR preview
     MaterialEditor,
-    
+
     /// Entity properties panel (alternative inspector view)
     EntityPanel,
-    
+
     /// Behavior graph editor for AI logic
     BehaviorGraph,
 }
@@ -127,7 +127,7 @@ impl PanelType {
             Self::BehaviorGraph => "Behavior Graph",
         }
     }
-    
+
     /// Returns a short icon representation for this panel
     ///
     /// Icons are used in compact tab views and toolbar buttons.
@@ -154,7 +154,7 @@ impl PanelType {
             Self::BehaviorGraph => "🧠",
         }
     }
-    
+
     /// Returns whether this panel can be closed by the user
     ///
     /// Some panels (like Viewport) may be marked as not closable
@@ -167,7 +167,7 @@ impl PanelType {
             _ => true,
         }
     }
-    
+
     /// Returns whether this panel should have scroll bars
     pub fn has_scroll(&self) -> bool {
         match self {
@@ -179,7 +179,7 @@ impl PanelType {
             _ => true,
         }
     }
-    
+
     /// Returns a list of all available panel types
     pub fn all() -> &'static [PanelType] {
         &[
@@ -204,22 +204,22 @@ impl PanelType {
             Self::BehaviorGraph,
         ]
     }
-    
+
     /// Returns the default panels for the left dock area
     pub fn default_left_panels() -> Vec<PanelType> {
         vec![Self::Hierarchy, Self::AssetBrowser]
     }
-    
+
     /// Returns the default panels for the right dock area
     pub fn default_right_panels() -> Vec<PanelType> {
         vec![Self::Inspector, Self::Transform]
     }
-    
+
     /// Returns the default panels for the bottom dock area
     pub fn default_bottom_panels() -> Vec<PanelType> {
         vec![Self::Console, Self::Profiler, Self::SceneStats]
     }
-    
+
     /// Returns the default panel for the center area
     pub fn default_center_panel() -> PanelType {
         Self::Viewport
@@ -280,14 +280,14 @@ mod tests {
         let deserialized: PanelType = serde_json::from_str(&json).unwrap();
         assert_eq!(panel, deserialized);
     }
-    
+
     #[test]
     fn test_default_layout() {
         let left = PanelType::default_left_panels();
         let right = PanelType::default_right_panels();
         let bottom = PanelType::default_bottom_panels();
         let center = PanelType::default_center_panel();
-        
+
         assert!(left.contains(&PanelType::Hierarchy));
         assert!(right.contains(&PanelType::Inspector));
         assert!(bottom.contains(&PanelType::Console));

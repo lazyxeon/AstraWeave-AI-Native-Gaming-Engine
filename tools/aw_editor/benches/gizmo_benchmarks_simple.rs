@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use glam::{Mat4, Quat, Vec2, Vec3};
+use std::hint::black_box;
 use winit::keyboard::KeyCode;
 
 // Import from the library

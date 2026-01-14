@@ -70,7 +70,6 @@ impl RotateGizmo {
         };
 
         // Create rotation quaternion
-        
 
         if local_space {
             // Rotate axis to local space

@@ -148,15 +148,21 @@ impl FileWatcher {
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
             if file_name.ends_with(".prefab.ron") {
-                let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path.clone()));
+                let mut state = debounce_state
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                state
+                    .buffer
+                    .insert(path.clone(), ReloadEvent::Prefab(path.clone()));
                 state.last_event_time.insert(path, Instant::now());
             } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy().to_lowercase();
 
                 // Material TOML files
                 if ext_str == "toml" {
-                    let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                    let mut state = debounce_state
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     state
                         .buffer
                         .insert(path.clone(), ReloadEvent::Material(path.clone()));
@@ -167,7 +173,9 @@ impl FileWatcher {
                     ext_str.as_str(),
                     "png" | "jpg" | "jpeg" | "ktx2" | "dds" | "basis"
                 ) {
-                    let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                    let mut state = debounce_state
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     state
                         .buffer
                         .insert(path.clone(), ReloadEvent::Texture(path.clone()));
@@ -175,8 +183,12 @@ impl FileWatcher {
                 }
                 // Model files
                 else if matches!(ext_str.as_str(), "glb" | "gltf") {
-                    let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                    state.buffer.insert(path.clone(), ReloadEvent::Model(path.clone()));
+                    let mut state = debounce_state
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    state
+                        .buffer
+                        .insert(path.clone(), ReloadEvent::Model(path.clone()));
                     state.last_event_time.insert(path, Instant::now());
                 }
             }
@@ -190,7 +202,9 @@ impl FileWatcher {
         loop {
             std::thread::sleep(Duration::from_millis(100));
 
-            let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            let mut state = debounce_state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
 
             // Check if any buffered events are ready to send
             let now = Instant::now();
