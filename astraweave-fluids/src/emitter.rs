@@ -2,6 +2,9 @@
 //!
 //! Provides mesh-based and point-based fluid emitters for runtime particle spawning.
 
+/// Type alias for particle spawn data: (positions, velocities, colors)
+type ParticleSpawnData = (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>);
+
 /// A fluid emitter that spawns particles from mesh surfaces or points.
 pub struct FluidEmitter {
     /// World-space transform for the emitter
@@ -77,15 +80,16 @@ impl FluidEmitter {
 
     /// Create a new mesh surface emitter.
     pub fn from_mesh(vertices: Vec<[f32; 3]>, normals: Vec<[f32; 3]>, rate: f32) -> Self {
-        let mut emitter = Self::default();
-        emitter.shape = EmitterShape::Mesh { vertices, normals };
-        emitter.rate = rate;
-        emitter
+        Self {
+            shape: EmitterShape::Mesh { vertices, normals },
+            rate,
+            ..Default::default()
+        }
     }
 
     /// Update the emitter and return particles to spawn.
     /// Returns (positions, velocities, colors) for spawning.
-    pub fn tick(&mut self, dt: f32) -> (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>) {
+    pub fn tick(&mut self, dt: f32) -> ParticleSpawnData {
         if !self.enabled {
             return (Vec::new(), Vec::new(), Vec::new());
         }
@@ -108,7 +112,7 @@ impl FluidEmitter {
             let (pos, normal) = self.sample_shape(i as u32);
 
             // Apply jitter
-            let jitter_seed = (i as f32 * 12.9898).sin() * 43758.5453;
+            let jitter_seed = (i as f32 * 12.9898).sin() * 43_758.547;
             let jx = (jitter_seed.fract() - 0.5) * self.jitter;
             let jy = ((jitter_seed * 2.0).fract() - 0.5) * self.jitter;
             let jz = ((jitter_seed * 3.0).fract() - 0.5) * self.jitter;

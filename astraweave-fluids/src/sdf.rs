@@ -264,7 +264,7 @@ impl SdfSystem {
     }
 
     pub fn generate(&self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue) {
-        let workgroups = (self.resolution + 7) / 8;
+        let workgroups = self.resolution.div_ceil(8);
 
         // 1. Init
         {
@@ -280,7 +280,7 @@ impl SdfSystem {
         }
 
         // 2. JFA Steps
-        let mut step_size = (self.resolution / 2) as u32;
+        let mut step_size = self.resolution / 2;
         let mut current_read_a = false; // After init, texture_b has data, so next step reads B, writes A.
 
         while step_size >= 1 {
