@@ -359,6 +359,32 @@ impl ViewportWidget {
                     egui::Color32::WHITE,
                 );
 
+                // FPS counter (top-left corner)
+                let fps_text = format!("{:.0} FPS", fps);
+                let fps_color = if fps >= 55.0 {
+                    egui::Color32::from_rgb(100, 220, 100) // Green: 55+ FPS
+                } else if fps >= 30.0 {
+                    egui::Color32::from_rgb(220, 200, 80) // Yellow: 30-55 FPS
+                } else {
+                    egui::Color32::from_rgb(220, 100, 100) // Red: <30 FPS
+                };
+                let fps_rect = egui::Rect::from_min_size(
+                    rect.left_top() + egui::vec2(10.0, 10.0),
+                    egui::vec2(80.0, 22.0),
+                );
+                ui.painter().rect_filled(
+                    fps_rect,
+                    3.0,
+                    egui::Color32::from_rgba_premultiplied(0, 0, 0, 180),
+                );
+                ui.painter().text(
+                    fps_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    fps_text,
+                    egui::FontId::monospace(14.0),
+                    fps_color,
+                );
+
                 // Overlay camera info (top-right corner, semi-transparent)
                 let pos = self.camera.position();
                 let dist = self.camera.distance();
@@ -417,6 +443,38 @@ impl ViewportWidget {
                 if is_hovering && ui.ctx().input(|i| i.pointer.primary_clicked()) {
                     self.camera.reset_to_origin();
                     debug!("Camera reset to origin");
+                }
+
+                // Rendering mode indicator (below camera reset button)
+                #[cfg(feature = "astraweave-render")]
+                {
+                    let (render_mode, render_color) = if let Ok(renderer) = self.renderer.lock() {
+                        if renderer.use_engine_rendering() && renderer.engine_adapter_initialized() {
+                            ("🎨 PBR Engine", egui::Color32::from_rgb(80, 200, 120))
+                        } else if renderer.engine_adapter_initialized() {
+                            ("🔷 Cube (PBR ready)", egui::Color32::from_rgb(120, 160, 200))
+                        } else {
+                            ("🔷 Cube Renderer", egui::Color32::from_rgb(100, 140, 180))
+                        }
+                    } else {
+                        ("⚠️ Renderer Error", egui::Color32::from_rgb(200, 100, 100))
+                    };
+                    let mode_rect = egui::Rect::from_min_size(
+                        rect.left_bottom() + egui::vec2(10.0, -30.0),
+                        egui::vec2(150.0, 22.0),
+                    );
+                    ui.painter().rect_filled(
+                        mode_rect,
+                        3.0,
+                        egui::Color32::from_rgba_premultiplied(0, 0, 0, 180),
+                    );
+                    ui.painter().text(
+                        mode_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        render_mode,
+                        egui::FontId::proportional(12.0),
+                        render_color,
+                    );
                 }
 
                 // Snapping indicator (top-right, below camera info)
