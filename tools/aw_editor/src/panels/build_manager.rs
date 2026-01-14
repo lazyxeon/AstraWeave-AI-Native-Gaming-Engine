@@ -2,7 +2,10 @@
 //
 // Provides one-click build, target platform selection, asset bundling,
 // and output logs with error reporting.
+//
+// Phase 1 Enhancement: GameProject integration for game.toml configuration
 
+use crate::game_project::GameProject;
 use crate::panels::Panel;
 use egui::{Color32, RichText, Ui};
 use std::path::PathBuf;
@@ -141,7 +144,7 @@ pub enum BuildMessage {
     },
 }
 
-/// Build Manager Panel - Phase 5.2
+/// Build Manager Panel - Phase 5.2 with GameProject integration
 pub struct BuildManagerPanel {
     config: BuildConfig,
     status: BuildStatus,
@@ -152,6 +155,12 @@ pub struct BuildManagerPanel {
     run_after_build: bool,
     /// Flag to signal build cancellation to the build thread
     cancel_requested: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// Loaded game project configuration (from game.toml)
+    game_project: Option<GameProject>,
+    /// Path to the game project file
+    game_project_path: Option<PathBuf>,
+    /// Error from loading game project
+    game_project_error: Option<String>,
 }
 
 impl Default for BuildManagerPanel {
@@ -162,7 +171,7 @@ impl Default for BuildManagerPanel {
 
 impl BuildManagerPanel {
     pub fn new() -> Self {
-        Self {
+        let mut panel = Self {
             config: BuildConfig::default(),
             status: BuildStatus::Idle,
             build_logs: Vec::new(),
@@ -170,7 +179,58 @@ impl BuildManagerPanel {
             show_advanced: false,
             run_after_build: false,
             cancel_requested: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            game_project: None,
+            game_project_path: None,
+            game_project_error: None,
+        };
+
+        // Try to load game.toml on startup
+        panel.try_load_game_project();
+
+        panel
+    }
+
+    /// Attempt to load game.toml from current directory or parents
+    pub fn try_load_game_project(&mut self) {
+        if let Some(path) = GameProject::find_project_file() {
+            match GameProject::load(&path) {
+                Ok(project) => {
+                    // Apply project settings to build config
+                    self.config.project_name = project.project.name.clone();
+                    self.config.output_dir = project.build.output_dir.clone();
+
+                    self.game_project = Some(project);
+                    self.game_project_path = Some(path);
+                    self.game_project_error = None;
+                }
+                Err(e) => {
+                    self.game_project_error = Some(format!("{}", e));
+                }
+            }
         }
+    }
+
+    /// Create a new game.toml with default settings
+    pub fn create_game_project(&mut self, path: &std::path::Path) {
+        let project = GameProject::new(&self.config.project_name, "scenes/main.scene");
+
+        match project.save(path) {
+            Ok(()) => {
+                self.game_project = Some(project);
+                self.game_project_path = Some(path.to_path_buf());
+                self.game_project_error = None;
+                self.build_logs
+                    .push(format!("✅ Created game.toml at {}", path.display()));
+            }
+            Err(e) => {
+                self.game_project_error = Some(format!("Failed to create game.toml: {}", e));
+            }
+        }
+    }
+
+    /// Check if a game project is loaded
+    pub fn has_game_project(&self) -> bool {
+        self.game_project.is_some()
     }
 
     /// Start a build in a background thread
@@ -309,27 +369,35 @@ impl BuildManagerPanel {
         };
 
         // Read output in real-time
-        let stdout = child.stdout.take().ok_or_else(|| {
-            let _ = tx.send(BuildMessage::Failed {
-                error: "Failed to capture stdout".to_string(),
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| {
+                let _ = tx.send(BuildMessage::Failed {
+                    error: "Failed to capture stdout".to_string(),
+                });
+                anyhow::anyhow!("Failed to capture stdout")
+            })
+            .unwrap_or_else(|e| {
+                // This is inside thread::spawn context, but actually it's before it.
+                // But wait, the unwrap() was there before.
+                // Let's just do it safely.
+                panic!("{}", e); // Better than a raw unwrap
             });
-            anyhow::anyhow!("Failed to capture stdout")
-        }).unwrap_or_else(|e| {
-            // This is inside thread::spawn context, but actually it's before it.
-            // But wait, the unwrap() was there before.
-            // Let's just do it safely.
-            panic!("{}", e); // Better than a raw unwrap
-        });
-        
-        let stderr = child.stderr.take().ok_or_else(|| {
-            let _ = tx.send(BuildMessage::Failed {
-                error: "Failed to capture stderr".to_string(),
+
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| {
+                let _ = tx.send(BuildMessage::Failed {
+                    error: "Failed to capture stderr".to_string(),
+                });
+                anyhow::anyhow!("Failed to capture stderr")
+            })
+            .unwrap_or_else(|e| {
+                panic!("{}", e);
             });
-            anyhow::anyhow!("Failed to capture stderr")
-        }).unwrap_or_else(|e| {
-            panic!("{}", e);
-        });
-        
+
         let tx_stdout = tx.clone();
         thread::spawn(move || {
             use std::io::{BufRead, BufReader};
@@ -409,10 +477,14 @@ impl BuildManagerPanel {
                     e
                 )));
             } else {
-                let _ = tx.send(BuildMessage::LogLine("   ✅ Assets bundled successfully".to_string()));
+                let _ = tx.send(BuildMessage::LogLine(
+                    "   ✅ Assets bundled successfully".to_string(),
+                ));
             }
         } else {
-            let _ = tx.send(BuildMessage::LogLine("   ⚠️ No assets directory found to bundle".to_string()));
+            let _ = tx.send(BuildMessage::LogLine(
+                "   ⚠️ No assets directory found to bundle".to_string(),
+            ));
         }
 
         if config.strip_unused_assets {

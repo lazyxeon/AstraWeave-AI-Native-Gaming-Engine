@@ -90,6 +90,8 @@ mod terrain_integration; // Terrain generation integration
 mod ui; // Phase 3 - UI components (StatusBar, etc.)
 mod viewport; // Phase 1.1 - 3D Viewport
 mod voxel_tools; // Phase 10: Voxel editing tools
+mod game_project; // Game project configuration (game.toml)
+mod asset_pack; // Phase 2: Asset packaging and compression
 
 use anyhow::Result;
 use astraweave_asset::AssetDatabase;
@@ -107,7 +109,7 @@ use gizmo::state::GizmoMode;
 use material_inspector::MaterialInspector;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel,
-    ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, PrefabAction,
+    ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel,
     ProfilerPanel, SceneStats, SceneStatsPanel, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 mod plugin;
@@ -2752,7 +2754,6 @@ impl eframe::App for EditorApp {
         self.animation_panel.update(frame_time);
 
         egui::TopBottomPanel::top("top")
-            .frame(egui::Frame::NONE.fill(egui::Color32::from_rgb(255, 0, 255))) // MAGENTA
             .show(ctx, |ui| {
                 ui.set_min_size(ui.available_size());
                 ui.heading("AstraWeave Level & Encounter Editor");
@@ -3143,7 +3144,6 @@ impl eframe::App for EditorApp {
 
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
-            .frame(egui::Frame::NONE.fill(egui::Color32::from_rgb(0, 255, 255))) // CYAN
             .show(ctx, |ui| {
                 ui.set_min_size(ui.available_size());
                 StatusBar::show(
@@ -3165,7 +3165,7 @@ impl eframe::App for EditorApp {
             egui::SidePanel::left("astract_left_panel")
                 .resizable(true)
                 .min_width(250.0)
-                .frame(egui::Frame::NONE.inner_margin(0.0).fill(egui::Color32::from_rgb(0, 0, 255))) // BLUE
+                .frame(egui::Frame::NONE.inner_margin(0.0))
                 .show(ctx, |ui| {
                     ui.set_min_size(ui.available_size());
                     
@@ -3322,7 +3322,7 @@ impl eframe::App for EditorApp {
             // We need to carefully structure borrows to avoid conflicts
             // Use CentralPanel with no frame to render dock in remaining space (after side panels)
             egui::CentralPanel::default()
-                .frame(egui::Frame::NONE.inner_margin(0.0).fill(egui::Color32::from_rgb(255, 0, 0))) // RED
+                .frame(egui::Frame::NONE.inner_margin(0.0))
                 .show(ctx, |ui| {
                     ui.set_min_size(ui.available_size());
                     

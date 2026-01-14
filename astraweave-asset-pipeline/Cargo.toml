@@ -37,7 +37,7 @@ tracing = "0.1"
 tokio-test = "0.4"
 
 [features]
-default = ["bc7"]
+default = ["astc"]
 bc7 = ["dep:intel_tex"] # BC7 compression for desktop using intel_tex
-astc = ["basis-universal"] # ASTC compression for mobile
+astc = ["basis-universal"] # ASTC/ETC/BCn compression via basis-universal
 all = ["bc7", "astc"]

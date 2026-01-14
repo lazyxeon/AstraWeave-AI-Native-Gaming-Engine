@@ -59,6 +59,13 @@ astraweave-observability = { path = "../../astraweave-observability" }
 astraweave-physics = { path = "../../astraweave-physics" }
 astraweave-security = { path = "../../astraweave-security" }
 astraweave-terrain = { path = "../../astraweave-terrain" }
+clap = { version = "4", features = ["derive"] }
+env_logger = "0.11"
+log = "0.4"
+zstd = "0.13"
+lz4_flex = "0.11"
+crc32fast = "1.4"
+
 [dev-dependencies]
 approx = "0.5"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -76,5 +83,11 @@ path = "src/lib.rs"
 [[bin]]
 name = "aw_editor"
 path = "src/main.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "aw_game_runtime"
+path = "src/bin/aw_game_runtime.rs"
 test = false
 bench = false

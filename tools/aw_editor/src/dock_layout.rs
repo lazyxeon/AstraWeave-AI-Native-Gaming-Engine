@@ -469,11 +469,13 @@ mod tests {
         // Should have viewport
         assert!(layout.is_panel_visible(&PanelType::Viewport));
 
-        // Should have hierarchy
-        assert!(layout.is_panel_visible(&PanelType::Hierarchy));
+        // Should have inspector (right panel in dock)
+        assert!(layout.is_panel_visible(&PanelType::Inspector));
 
-        // Should have console
+        // Should have console (bottom panel in dock)
         assert!(layout.is_panel_visible(&PanelType::Console));
+
+        // Note: Hierarchy and AssetBrowser are in legacy side panel, not dock
     }
 
     #[test]
@@ -538,8 +540,9 @@ mod tests {
         // Reset
         layout.reset_to_default();
 
-        // Should have default panels
+        // Should have default dock panels (not legacy side panel ones)
         assert!(layout.is_panel_visible(&PanelType::Console));
-        assert!(layout.is_panel_visible(&PanelType::AssetBrowser));
+        assert!(layout.is_panel_visible(&PanelType::Inspector));
+        assert!(layout.is_panel_visible(&PanelType::Viewport));
     }
 }

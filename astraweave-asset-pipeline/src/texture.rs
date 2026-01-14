@@ -82,7 +82,7 @@ pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
         height,
         stride: width * 4,
     };
-    
+
     // Use basic settings with alpha support (fast profile)
     // For higher quality offline, use alpha_slow_settings()
     let settings = intel_tex::bc7::alpha_basic_settings();
@@ -264,62 +264,87 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
 /// ASTC provides flexible block sizes from 4×4 to 12×12.
 /// Best for mobile GPUs (iOS Metal, Android Vulkan).
 ///
-/// ## Format Details
-/// - Block size: Configurable (4×4, 6×6, 8×8, etc.)
-/// - Quality: Adaptive (trade size vs quality)
-/// - GPU support: iOS, Android, Vulkan, GL ES 3.2+
-///
-/// ## Implementation Status
-/// **ASTC compression requires external library integration:**
-///
-/// ### Option A: basis-universal (Recommended)
-/// ```toml
-/// [dependencies]
-/// basis-universal = "0.3"
-/// ```
-/// Provides ASTC encoding with good quality and cross-platform support.
-///
-/// ### Option B: astc-encoder
-/// Use Khronos astc-encoder via FFI bindings.
-/// Highest quality but requires native library.
-///
-/// ### Integration Steps:
-/// 1. Add basis-universal dependency to Cargo.toml
-/// 2. Replace this function with proper ASTC encoder calls
-/// 3. Handle different block sizes (4x4, 6x6, 8x8)
-/// 4. Add quality level selection (fast, normal, thorough)
-///
-/// ## Example
-/// ```no_run
-/// use astraweave_asset_pipeline::texture::{compress_astc, AstcBlockSize};
-/// use image::RgbaImage;
-///
-/// # fn example() -> anyhow::Result<()> {
-/// let rgba = image::open("texture.png")?.to_rgba8();
-/// let compressed = compress_astc(&rgba, AstcBlockSize::Block4x4)?;
-///
-/// // 4×4 blocks give 8:1 compression (87.5% reduction)
-/// assert!(compressed.len() < rgba.len() / 8);
-/// # Ok(())
-/// # }
-/// ```
+/// ## Implementation
+/// Uses `basis-universal` for high-quality ASTC encoding.
 #[cfg(feature = "astc")]
 pub fn compress_astc(rgba: &RgbaImage, block_size: AstcBlockSize) -> Result<Vec<u8>> {
     let (width, height) = rgba.dimensions();
+    let start = std::time::Instant::now();
 
-    anyhow::bail!(
-        "ASTC compression not yet implemented. Texture size: {}x{}, block size: {:?}\n\
-        \n\
-        To enable ASTC compression:\n\
-        1. Add 'basis-universal = \"0.3\"' to Cargo.toml\n\
-        2. Implement ASTC encoder integration in this function\n\
-        3. See function documentation for integration guide\n\
-        \n\
-        Alternative: Use external tools like 'astcenc' CLI for offline compression.",
+    // Initialize basis-universal encoder
+    basis_universal::Encoder::init();
+
+    let mut params = basis_universal::CompressorParams::new();
+    params.set_basis_format(basis_universal::BasisFormat::UASTC4444);
+    params.set_generate_mipmaps(true);
+
+    // Create source image for basis
+    let mut source_image = params.source_image_mut(0);
+    source_image.init(rgba.as_raw(), width, height, 4);
+
+    let mut compressor = basis_universal::Compressor::new(4);
+    unsafe { compressor.init(&params) };
+    compressor
+        .process()
+        .map_err(|e| anyhow::anyhow!("Basis compression failed: {:?}", e))?;
+
+    let compressed = compressor.basis_file().to_vec();
+    let elapsed = start.elapsed().as_millis() as u64;
+
+    tracing::info!(
+        "ASTC (Basis) compressed {}×{} in {}ms ({} → {} bytes, {:.1}% reduction)",
         width,
         height,
-        block_size
+        elapsed,
+        rgba.len(),
+        compressed.len(),
+        100.0 * (1.0 - compressed.len() as f32 / rgba.len() as f32)
     );
+
+    Ok(compressed)
+}
+
+/// Compress RGBA image to KTX2 format using Basis Universal
+///
+/// KTX2 is the preferred container for GPU-compressed textures.
+/// It can contain Basis Universal (ETC1S) or UASTC data, which can be
+/// transcoded on-the-fly to any GPU format (BC7, ASTC, etc.)
+#[cfg(feature = "astc")]
+pub fn compress_to_ktx2(rgba: &RgbaImage, quality: u32) -> Result<Vec<u8>> {
+    let (width, height) = rgba.dimensions();
+    let start = std::time::Instant::now();
+
+    basis_universal::Encoder::init();
+
+    let mut params = basis_universal::CompressorParams::new();
+    params.set_basis_format(basis_universal::BasisFormat::UASTC4444);
+    params.set_uastc_quality_level(quality.clamp(0, 4)); // 0=fastest, 4=slowest
+    params.set_generate_mipmaps(true);
+    params.set_write_output_basis_files(true);
+
+    let mut image = params.source_image_mut(0);
+    image.init(rgba.as_raw(), width, height, 4);
+
+    let mut compressor = basis_universal::Compressor::new(1);
+    unsafe { compressor.init(&params) };
+    compressor
+        .process()
+        .map_err(|e| anyhow::anyhow!("KTX2 compression failed: {:?}", e))?;
+
+    let compressed = compressor.basis_file().to_vec();
+    let elapsed = start.elapsed().as_millis() as u64;
+
+    tracing::info!(
+        "KTX2 (Basis) compressed {}×{} in {}ms ({} → {} bytes, {:.1}% reduction)",
+        width,
+        height,
+        elapsed,
+        rgba.len(),
+        compressed.len(),
+        100.0 * (1.0 - compressed.len() as f32 / rgba.len() as f32)
+    );
+
+    Ok(compressed)
 }
 
 #[cfg(not(feature = "astc"))]
