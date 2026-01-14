@@ -1,0 +1,58 @@
+theme = "HighContrast"
+layout_preset = "Scripting"
+font_size = 10.0
+animations_enabled = true
+
+[custom_colors]
+background = [
+    30,
+    30,
+    30,
+]
+panel_fill = [
+    40,
+    40,
+    40,
+]
+text = [
+    220,
+    220,
+    220,
+]
+accent = [
+    100,
+    150,
+    255,
+]
+selection = [
+    60,
+    100,
+    180,
+]
+warning = [
+    255,
+    180,
+    50,
+]
+error = [
+    255,
+    80,
+    80,
+]
+success = [
+    100,
+    200,
+    100,
+]
+
+[layout_state]
+left_panel_width = 350.0
+right_panel_width = 300.0
+bottom_panel_height = 250.0
+left_panel_visible = true
+right_panel_visible = false
+bottom_panel_visible = false
+
+[layout_state.expanded_sections]
+"Behavior Graph" = true
+Console = true

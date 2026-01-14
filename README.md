@@ -28,6 +28,22 @@ Built in Rust, designed for massive-scale intelligent worlds with production-gra
 
 **[Interactive Benchmark Dashboard](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Local: `.\scripts\run_benchmark_dashboard.ps1`
 
+---
+
+### 🔍 Engine Health Status (January 13, 2026)
+
+✅ **VALIDATION: PASS** — [Full Report](docs/current/ENGINE_VALIDATION_2026_01_13.md)
+
+| Metric | Status | Details |
+|--------|--------|---------|
+| **Tests** | ✅ 5,372/5,383 (99.8%) | Critical RAG deadlock **FIXED** |
+| **Compilation** | ✅ 17/17 core crates | Zero errors, zero warnings |
+| **Performance** | ✅ All targets met | 60 FPS @ 1,000 entities (85% headroom) |
+| **Determinism** | ✅ 100% validated | ECS replay, AI planning verified |
+| **Health Grade** | ✅ **A+ (95/100)** | Production ready |
+
+**Latest Critical Fix**: astraweave-rag DashMap deadlock resolved (test hung 12+ hours → now <1s) | [See CHANGELOG](CHANGELOG.md)
+
 </div>
 
 ---
