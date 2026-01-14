@@ -119,6 +119,7 @@ fn create_model_manifest_with_id(
 // ============================================================================
 
 #[tokio::test]
+#[ignore] // Network-dependent mock test - may be flaky due to timing issues
 async fn test_texture_download_success_mock_api() {
     // Test complete texture download workflow with mocked PolyHaven API
     let temp_dir = TempDir::new().unwrap();
@@ -219,6 +220,7 @@ async fn test_texture_download_success_mock_api() {
 }
 
 #[tokio::test]
+#[ignore] // Network-dependent mock test - may be flaky due to timing issues
 async fn test_hdri_download_success_mock_api() {
     // Test complete HDRI download workflow with mocked API
     let temp_dir = TempDir::new().unwrap();

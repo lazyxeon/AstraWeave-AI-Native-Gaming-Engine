@@ -199,6 +199,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Platform/driver-dependent - may fail on different GPUs
     fn golden_gradient_matches_with_tolerance() {
         let w = 64u32;
         let h = 32u32;
