@@ -6,13 +6,17 @@ pub mod behavior_graph;
 pub mod clipboard;
 pub mod command;
 pub mod component_ui;
+pub mod distribution;
 pub mod dock_layout;
 pub mod editor_mode;
 pub mod editor_preferences;
 pub mod entity_manager;
 pub mod game_project;
+pub mod level_doc;
 pub mod panel_type;
+pub mod panels;
 pub mod plugin;
+pub mod polish;
 pub mod prefab;
 pub mod runtime;
 pub mod scene_serialization;
@@ -21,6 +25,12 @@ pub mod tab_viewer;
 pub mod terrain_integration;
 pub mod ui;
 pub mod viewport;
+
+// Re-export level document types
+pub use level_doc::{
+    BiomePaint, BossCfg, Circle, DirectorOp, FateThread, FortRegion, LevelDoc, NpcSpawn, Obstacle,
+    Sky, Spawn, Trigger,
+};
 
 pub use command::{
     EditorCommand, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack,

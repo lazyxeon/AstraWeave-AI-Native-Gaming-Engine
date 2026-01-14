@@ -11,7 +11,6 @@
 //! - Performance stats display
 //! - Camera bookmarks
 
-
 /// Grid display type for viewport
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GridType {
@@ -117,9 +116,21 @@ impl ViewportToolbar {
                                 .selected_text(format!("{:?}", self.shading_mode))
                                 .width(90.0)
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Lit, "💡 Lit");
-                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Unlit, "🎨 Unlit");
-                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Wireframe, "🕸 Wireframe");
+                                    ui.selectable_value(
+                                        &mut self.shading_mode,
+                                        ShadingMode::Lit,
+                                        "💡 Lit",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.shading_mode,
+                                        ShadingMode::Unlit,
+                                        "🎨 Unlit",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.shading_mode,
+                                        ShadingMode::Wireframe,
+                                        "🕸 Wireframe",
+                                    );
                                 });
 
                             ui.separator();
@@ -242,19 +253,20 @@ impl ViewportToolbar {
                                     egui::vec2(graph_width, graph_height),
                                     egui::Sense::hover(),
                                 );
-                                let max_time = self.stats.frame_time_history
+                                let max_time = self
+                                    .stats
+                                    .frame_time_history
                                     .iter()
                                     .copied()
                                     .fold(16.67f32, f32::max);
                                 let painter = ui.painter();
-                                painter.rect_filled(
-                                    rect,
-                                    2.0,
-                                    egui::Color32::from_rgb(30, 30, 40),
-                                );
+                                painter.rect_filled(rect, 2.0, egui::Color32::from_rgb(30, 30, 40));
                                 let target_line_y = rect.max.y - (16.67 / max_time) * graph_height;
                                 painter.line_segment(
-                                    [egui::pos2(rect.min.x, target_line_y), egui::pos2(rect.max.x, target_line_y)],
+                                    [
+                                        egui::pos2(rect.min.x, target_line_y),
+                                        egui::pos2(rect.max.x, target_line_y),
+                                    ],
                                     egui::Stroke::new(1.0, egui::Color32::from_rgb(80, 80, 80)),
                                 );
                                 let history = &self.stats.frame_time_history;

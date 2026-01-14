@@ -39,10 +39,9 @@ impl RecentFilesManager {
     }
 
     pub fn save(&self) -> Result<()> {
-        let json = serde_json::to_string_pretty(&self)
-            .context("Failed to serialize recent files")?;
-        fs::write(RECENT_FILES_PATH, json)
-            .context("Failed to write recent files to disk")?;
+        let json =
+            serde_json::to_string_pretty(&self).context("Failed to serialize recent files")?;
+        fs::write(RECENT_FILES_PATH, json).context("Failed to write recent files to disk")?;
         Ok(())
     }
 

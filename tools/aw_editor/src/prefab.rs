@@ -708,9 +708,9 @@ impl PrefabManager {
                     .and_then(|s| s.to_str())
                     .map(|s| s.ends_with(".prefab"))
                     .unwrap_or(false)
-                {
-                    prefab_files.push(path);
-                }
+            {
+                prefab_files.push(path);
+            }
         }
 
         Ok(prefab_files)
@@ -851,12 +851,10 @@ mod tests {
         let child_b = world.spawn("ChildB", IVec2 { x: -1, y: 1 }, Team { id: 0 }, 100, 0);
         let grandchild = world.spawn("Grandchild", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
 
-        let snapshot: PrefabHierarchySnapshot = [
-            (root, vec![child_a, child_b]),
-            (child_a, vec![grandchild]),
-        ]
-        .into_iter()
-        .collect();
+        let snapshot: PrefabHierarchySnapshot =
+            [(root, vec![child_a, child_b]), (child_a, vec![grandchild])]
+                .into_iter()
+                .collect();
 
         let prefab = PrefabData::from_entity_with_hierarchy(
             &world,

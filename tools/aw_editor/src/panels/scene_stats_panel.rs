@@ -41,7 +41,7 @@ impl SceneStatsPanel {
                 ui.label(
                     egui::RichText::new("(unsaved)")
                         .color(egui::Color32::from_rgb(255, 180, 100))
-                        .small()
+                        .small(),
                 );
             }
         });
@@ -68,7 +68,10 @@ impl SceneStatsPanel {
                 ui.end_row();
 
                 ui.label("Undo History:");
-                ui.label(format!("{} / {}", stats.undo_stack_size, stats.redo_stack_size));
+                ui.label(format!(
+                    "{} / {}",
+                    stats.undo_stack_size, stats.redo_stack_size
+                ));
                 ui.end_row();
 
                 ui.label("Memory (est):");

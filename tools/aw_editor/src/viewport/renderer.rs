@@ -95,15 +95,13 @@ impl ViewportRenderer {
     ///
     /// Returns error if sub-renderer creation fails.
     pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Result<Self> {
-        let grid_renderer =
-            GridRenderer::new(&device).context("Failed to create grid renderer")?;
+        let grid_renderer = GridRenderer::new(&device).context("Failed to create grid renderer")?;
         let skybox_renderer =
             SkyboxRenderer::new(&device).context("Failed to create skybox renderer")?;
         let entity_renderer =
             EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
-        let gizmo_renderer =
-            GizmoRendererWgpu::new((*device).clone(), (*queue).clone(), 10000)
-                .context("Failed to create gizmo renderer")?;
+        let gizmo_renderer = GizmoRendererWgpu::new((*device).clone(), (*queue).clone(), 10000)
+            .context("Failed to create gizmo renderer")?;
         let physics_renderer =
             PhysicsDebugRenderer::new((*device).clone(), (*queue).clone(), 50000)
                 .context("Failed to create physics debug renderer")?;
@@ -455,19 +453,19 @@ impl ViewportRenderer {
     /// Clears all GPU-dependent resources and prepares for recovery.
     pub fn handle_device_lost(&mut self) -> Result<()> {
         tracing::error!("GPU device lost in ViewportRenderer - cleaning up resources for recovery");
-        
+
         // Clear resources that depend on the old device
         self.depth_texture = None;
         self.depth_view = None;
-        
+
         #[cfg(feature = "astraweave-render")]
         {
             self.engine_adapter = None;
         }
-        
+
         // Sub-renderers may need to be recreated with a new device too
         // but that usually happens by recreating the ViewportRenderer itself.
-        
+
         Ok(())
     }
 
@@ -478,7 +476,10 @@ impl ViewportRenderer {
         &mut self.physics_renderer.options
     }
 
-    pub fn upload_terrain_chunks(&mut self, chunks: &[(Vec<super::terrain_renderer::TerrainVertex>, Vec<u32>)]) {
+    pub fn upload_terrain_chunks(
+        &mut self,
+        chunks: &[(Vec<super::terrain_renderer::TerrainVertex>, Vec<u32>)],
+    ) {
         self.terrain_renderer.upload_chunks(chunks);
     }
 
@@ -526,14 +527,10 @@ impl ViewportRenderer {
             (1920, 1080)
         };
 
-        let adapter = EngineRenderAdapter::new(
-            self.device.clone(),
-            self.queue.clone(),
-            width,
-            height,
-        )
-        .await
-        .context("Failed to initialize engine render adapter")?;
+        let adapter =
+            EngineRenderAdapter::new(self.device.clone(), self.queue.clone(), width, height)
+                .await
+                .context("Failed to initialize engine render adapter")?;
 
         self.engine_adapter = Some(adapter);
         Ok(())

@@ -67,9 +67,9 @@ impl HierarchyPanel {
         for entity in world.entities() {
             if let std::collections::hash_map::Entry::Vacant(e) = self.hierarchy.entry(entity) {
                 e.insert(HierarchyNode {
-                        entity,
-                        children: Vec::new(),
-                    });
+                    entity,
+                    children: Vec::new(),
+                });
                 self.root_entities.push(entity);
             }
         }
@@ -227,9 +227,7 @@ impl HierarchyPanel {
             .show(ui, |ui| {
                 let root_entities = self.root_entities.clone();
                 for entity in root_entities {
-                    if is_filtering
-                        && !self.entity_matches_filter(world, entity, &search_lower)
-                    {
+                    if is_filtering && !self.entity_matches_filter(world, entity, &search_lower) {
                         continue;
                     }
                     if let Some(new_selection) = self.show_entity_tree(ui, world, entity, 0) {
@@ -317,7 +315,8 @@ impl HierarchyPanel {
             }
 
             if response.double_clicked() {
-                self.pending_actions.push(HierarchyAction::FocusEntity(entity));
+                self.pending_actions
+                    .push(HierarchyAction::FocusEntity(entity));
             }
 
             response.context_menu(|ui| {

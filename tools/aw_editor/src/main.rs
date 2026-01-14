@@ -68,30 +68,31 @@ impl Toast {
     }
 }
 
+mod asset_pack;
 mod behavior_graph;
 mod brdf_preview;
 mod clipboard; // Phase 3.4 - Copy/Paste/Duplicate
 mod command; // Phase 2.1 - Undo/Redo system
 mod component_ui; // Phase 2.3 - Component-based inspector
 mod editor_mode; // Phase 4.2 - Play-in-Editor
+mod editor_preferences; // Phase 9 - Editor preferences persistence
 mod entity_manager;
 mod file_watcher;
+mod game_project; // Game project configuration (game.toml)
 mod gizmo;
 mod interaction; // Phase 8.1 Week 5 Day 3 - Gizmo interaction helpers (auto-tracking)
+mod level_doc; // Level document types
 mod material_inspector;
 mod panels;
 mod prefab; // Phase 4.1 - Prefab System
 mod recent_files; // Phase 3 - Recent files tracking
-mod editor_preferences; // Phase 9 - Editor preferences persistence
 mod runtime; // Week 4 - Deterministic runtime integration
 mod scene_serialization; // Phase 2.2 - Scene Save/Load
 mod scene_state; // Week 1 - Canonical edit-mode world owner
 mod terrain_integration; // Terrain generation integration
 mod ui; // Phase 3 - UI components (StatusBar, etc.)
 mod viewport; // Phase 1.1 - 3D Viewport
-mod voxel_tools; // Phase 10: Voxel editing tools
-mod game_project; // Game project configuration (game.toml)
-mod asset_pack; // Phase 2: Asset packaging and compression
+mod voxel_tools; // Phase 10: Voxel editing tools // Phase 2: Asset packaging and compression
 
 use anyhow::Result;
 use astraweave_asset::AssetDatabase;
@@ -110,22 +111,23 @@ use material_inspector::MaterialInspector;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel,
     ChartsPanel, ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel,
-    ProfilerPanel, SceneStats, SceneStatsPanel, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
+    ProfilerPanel, SceneStats, SceneStatsPanel, TextureType, ThemeManagerPanel, TransformPanel,
+    WorldPanel,
 };
-mod plugin;
 mod dock_layout;
 mod dock_panels;
 mod panel_type;
+mod plugin;
 mod tab_viewer;
 use dock_layout::{DockLayout, LayoutPreset};
 use panel_type::PanelType;
-use tab_viewer::{EditorDrawContext, EditorTabViewer, EntityInfo};
 use prefab::PrefabManager;
 use recent_files::RecentFilesManager;
 use runtime::{EditorRuntime, RuntimeState};
 use scene_state::{EditorSceneState, TransformableScene};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
+use tab_viewer::{EditorDrawContext, EditorTabViewer, EntityInfo};
 use tracing::{debug, error, info, span, warn, Level};
 use ui::StatusBar;
 use uuid::Uuid;
@@ -256,7 +258,7 @@ impl AssetRegistry {
     fn count(&self) -> usize {
         self.count
     }
-    
+
     #[allow(dead_code)]
     fn set_count(&mut self, count: usize) {
         self.count = count;
@@ -383,9 +385,9 @@ impl Default for EditorApp {
             // Scan assets directory
             let _ = asset_db.scan_directory(&PathBuf::from("assets"));
         }
-        
+
         let prefs = editor_preferences::EditorPreferences::load();
-        
+
         Self {
             content_root: PathBuf::from("content"),
             level: LevelDoc {
@@ -596,7 +598,8 @@ impl EditorApp {
         let mins = (secs % 3600) / 60;
         let secs = secs % 60;
         let timestamp = format!("[{:02}:{:02}:{:02}]", hours, mins, secs);
-        self.console_logs.push(format!("{} {}", timestamp, message.into()));
+        self.console_logs
+            .push(format!("{} {}", timestamp, message.into()));
     }
 
     fn create_new_scene(&mut self) {
@@ -626,8 +629,7 @@ impl EditorApp {
             }
         }
         self.scene_state = Some(scene_state::EditorSceneState::new(World::new()));
-        self.console_logs
-            .push("New scene created".into());
+        self.console_logs.push("New scene created".into());
         self.status = "New scene created".into();
     }
 
@@ -660,7 +662,10 @@ impl EditorApp {
             );
 
             let toast_rect = egui::Rect::from_min_size(
-                egui::pos2(screen_rect.max.x - TOAST_WIDTH - TOAST_PADDING, y_offset - 40.0),
+                egui::pos2(
+                    screen_rect.max.x - TOAST_WIDTH - TOAST_PADDING,
+                    y_offset - 40.0,
+                ),
                 egui::vec2(TOAST_WIDTH, 35.0),
             );
 
@@ -934,7 +939,7 @@ impl EditorApp {
                     viewport.set_snapping_config(snapping);
                     app.snapping_config = snapping;
                 }
-                
+
                 app.viewport = Some(viewport);
                 app.console_logs.push("✅ 3D Viewport initialized".into());
             }
@@ -1119,7 +1124,8 @@ impl EditorApp {
     }
 
     fn show_console(&mut self, ui: &mut egui::Ui) {
-        self.console_panel.show_with_logs(ui, &mut self.console_logs);
+        self.console_panel
+            .show_with_logs(ui, &mut self.console_logs);
     }
 
     fn show_profiler(&mut self, ui: &mut egui::Ui) {
@@ -1306,10 +1312,8 @@ impl EditorApp {
                     if let Some(viewport) = &self.viewport {
                         if let Err(e) = viewport.load_gltf_model(&model_name, &path) {
                             warn!("Failed to load glTF model into renderer: {}", e);
-                            self.console_logs.push(format!(
-                                "⚠️ glTF loading failed: {}",
-                                e
-                            ));
+                            self.console_logs
+                                .push(format!("⚠️ glTF loading failed: {}", e));
                         } else {
                             debug!("Loaded glTF model '{}' into engine renderer", model_name);
                         }
@@ -1424,16 +1428,16 @@ impl EditorApp {
                         // Clear old scene state and prefab instances to prevent memory leaks
                         self.prefab_manager.clear_instances();
                         self.undo_stack.clear();
-                        
+
                         self.scene_state = Some(EditorSceneState::new(loaded_world));
                         self.current_scene_path = Some(path.clone());
                         self.is_dirty = false;
-                        
+
                         info!("Loaded scene: {}", scene_name);
                         self.toast_success(format!("Loaded scene: {}", scene_name));
                         self.log(format!("✅ Loaded scene: {}", scene_name));
                         self.status = format!("Loaded: {}", scene_name);
-                        
+
                         // Add to recent files
                         self.recent_files.add_file(path);
                     }
@@ -1821,19 +1825,27 @@ impl EditorApp {
     fn show_voxel_editor(&mut self, ui: &mut egui::Ui) {
         ui.heading("Voxel Editor");
         ui.label("Interactive terrain sculpting tools");
-        
+
         let mut brush = *self.voxel_editor.brush();
-        
+
         ui.group(|ui| {
             ui.label("Brush Settings");
             egui::ComboBox::from_label("Shape")
                 .selected_text(format!("{:?}", brush.shape))
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut brush.shape, voxel_tools::BrushShape::Sphere, "Sphere");
+                    ui.selectable_value(
+                        &mut brush.shape,
+                        voxel_tools::BrushShape::Sphere,
+                        "Sphere",
+                    );
                     ui.selectable_value(&mut brush.shape, voxel_tools::BrushShape::Cube, "Cube");
-                    ui.selectable_value(&mut brush.shape, voxel_tools::BrushShape::Cylinder, "Cylinder");
+                    ui.selectable_value(
+                        &mut brush.shape,
+                        voxel_tools::BrushShape::Cylinder,
+                        "Cylinder",
+                    );
                 });
-                
+
             egui::ComboBox::from_label("Mode")
                 .selected_text(format!("{:?}", brush.mode))
                 .show_ui(ui, |ui| {
@@ -1841,25 +1853,31 @@ impl EditorApp {
                     ui.selectable_value(&mut brush.mode, voxel_tools::BrushMode::Remove, "Remove");
                     ui.selectable_value(&mut brush.mode, voxel_tools::BrushMode::Paint, "Paint");
                 });
-                
+
             ui.add(egui::Slider::new(&mut brush.radius, 0.1..=20.0).text("Radius"));
             ui.add(egui::Slider::new(&mut brush.strength, 0.0..=1.0).text("Strength"));
             ui.checkbox(&mut brush.smooth, "Smooth Edges");
         });
-        
+
         self.voxel_editor.set_brush(brush);
-        
+
         ui.separator();
-        
+
         ui.horizontal(|ui| {
-            if ui.add_enabled(self.voxel_editor.can_undo(), egui::Button::new("⏪ Undo")).clicked() {
+            if ui
+                .add_enabled(self.voxel_editor.can_undo(), egui::Button::new("⏪ Undo"))
+                .clicked()
+            {
                 self.log("Voxel undo requested (integration pending)");
             }
-            if ui.add_enabled(self.voxel_editor.can_redo(), egui::Button::new("⏩ Redo")).clicked() {
+            if ui
+                .add_enabled(self.voxel_editor.can_redo(), egui::Button::new("⏩ Redo"))
+                .clicked()
+            {
                 self.log("Voxel redo requested (integration pending)");
             }
         });
-        
+
         if ui.button("🗑 Clear History").clicked() {
             self.voxel_editor.clear_history();
         }
@@ -2014,7 +2032,10 @@ impl eframe::App for EditorApp {
             undo_stack_size: self.undo_stack.undo_count(),
             redo_stack_size: self.undo_stack.redo_count(),
             memory_estimate_kb: scene_entity_count * 2,
-            scene_path: self.current_scene_path.as_ref().map(|p| p.display().to_string()),
+            scene_path: self
+                .current_scene_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
             is_dirty: self.is_dirty,
         });
 
@@ -2043,12 +2064,16 @@ impl eframe::App for EditorApp {
             && self.last_auto_save.elapsed().as_secs_f32() > self.auto_save_interval_secs
         {
             if let Some(world) = self.edit_world() {
-                let path = self.current_scene_path.clone().unwrap_or_else(|| {
-                    self.content_root.join("scenes/autosave.scene.ron")
-                });
+                let path = self
+                    .current_scene_path
+                    .clone()
+                    .unwrap_or_else(|| self.content_root.join("scenes/autosave.scene.ron"));
                 if scene_serialization::save_scene(world, &path).is_ok() {
                     self.last_auto_save = std::time::Instant::now();
-                    self.toast_info(format!("Auto-saved to {:?}", path.file_name().unwrap_or_default()));
+                    self.toast_info(format!(
+                        "Auto-saved to {:?}",
+                        path.file_name().unwrap_or_default()
+                    ));
                 }
             }
         }
@@ -2165,9 +2190,11 @@ impl eframe::App for EditorApp {
 
                     ui.horizontal(|ui| {
                         ui.label("Interval (seconds):");
-                        ui.add(egui::DragValue::new(&mut self.auto_save_interval_secs)
-                            .range(30.0..=3600.0)
-                            .speed(10.0));
+                        ui.add(
+                            egui::DragValue::new(&mut self.auto_save_interval_secs)
+                                .range(30.0..=3600.0)
+                                .speed(10.0),
+                        );
                     });
 
                     ui.add_space(16.0);
@@ -2197,10 +2224,12 @@ impl eframe::App for EditorApp {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Grid Size:");
-                        ui.add(egui::DragValue::new(&mut self.snapping_config.grid_size)
-                            .range(0.1..=10.0)
-                            .speed(0.1)
-                            .suffix(" units"));
+                        ui.add(
+                            egui::DragValue::new(&mut self.snapping_config.grid_size)
+                                .range(0.1..=10.0)
+                                .speed(0.1)
+                                .suffix(" units"),
+                        );
                     });
                     ui.horizontal(|ui| {
                         ui.label("Angle Snap:");
@@ -2208,10 +2237,12 @@ impl eframe::App for EditorApp {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Angle Increment:");
-                        ui.add(egui::DragValue::new(&mut self.snapping_config.angle_increment)
-                            .range(1.0..=90.0)
-                            .speed(1.0)
-                            .suffix("°"));
+                        ui.add(
+                            egui::DragValue::new(&mut self.snapping_config.angle_increment)
+                                .range(1.0..=90.0)
+                                .speed(1.0)
+                                .suffix("°"),
+                        );
                     });
 
                     ui.add_space(16.0);
@@ -2221,21 +2252,51 @@ impl eframe::App for EditorApp {
                             .spacing([20.0, 4.0])
                             .striped(true)
                             .show(ui, |ui| {
-                                ui.label("Ctrl+S"); ui.label("Save scene"); ui.end_row();
-                                ui.label("Ctrl+Z"); ui.label("Undo"); ui.end_row();
-                                ui.label("Ctrl+Y"); ui.label("Redo"); ui.end_row();
-                                ui.label("Ctrl+C"); ui.label("Copy"); ui.end_row();
-                                ui.label("Ctrl+V"); ui.label("Paste"); ui.end_row();
-                                ui.label("Ctrl+D"); ui.label("Duplicate"); ui.end_row();
-                                ui.label("Delete"); ui.label("Delete entity"); ui.end_row();
-                                ui.label("F5"); ui.label("Play"); ui.end_row();
-                                ui.label("F6"); ui.label("Pause"); ui.end_row();
-                                ui.label("F7"); ui.label("Stop"); ui.end_row();
-                                ui.label("F8"); ui.label("Step frame"); ui.end_row();
-                                ui.label("G"); ui.label("Translate mode"); ui.end_row();
-                                ui.label("R"); ui.label("Rotate mode"); ui.end_row();
-                                ui.label("S"); ui.label("Scale mode"); ui.end_row();
-                                ui.label("Escape"); ui.label("Deselect / cancel"); ui.end_row();
+                                ui.label("Ctrl+S");
+                                ui.label("Save scene");
+                                ui.end_row();
+                                ui.label("Ctrl+Z");
+                                ui.label("Undo");
+                                ui.end_row();
+                                ui.label("Ctrl+Y");
+                                ui.label("Redo");
+                                ui.end_row();
+                                ui.label("Ctrl+C");
+                                ui.label("Copy");
+                                ui.end_row();
+                                ui.label("Ctrl+V");
+                                ui.label("Paste");
+                                ui.end_row();
+                                ui.label("Ctrl+D");
+                                ui.label("Duplicate");
+                                ui.end_row();
+                                ui.label("Delete");
+                                ui.label("Delete entity");
+                                ui.end_row();
+                                ui.label("F5");
+                                ui.label("Play");
+                                ui.end_row();
+                                ui.label("F6");
+                                ui.label("Pause");
+                                ui.end_row();
+                                ui.label("F7");
+                                ui.label("Stop");
+                                ui.end_row();
+                                ui.label("F8");
+                                ui.label("Step frame");
+                                ui.end_row();
+                                ui.label("G");
+                                ui.label("Translate mode");
+                                ui.end_row();
+                                ui.label("R");
+                                ui.label("Rotate mode");
+                                ui.end_row();
+                                ui.label("S");
+                                ui.label("Scale mode");
+                                ui.end_row();
+                                ui.label("Escape");
+                                ui.label("Deselect / cancel");
+                                ui.end_row();
                             });
                     });
 
@@ -2352,17 +2413,18 @@ impl eframe::App for EditorApp {
                             self.current_scene_path = Some(path.clone());
                             self.recent_files.add_file(path.clone());
                             self.status = format!("Saved scene to {:?}", path);
-                            self.console_logs
-                                .push(format!("Scene saved: {:?}", path));
+                            self.console_logs.push(format!("Scene saved: {:?}", path));
                             self.last_auto_save = std::time::Instant::now();
                             self.is_dirty = false;
-                            self.toasts.push(Toast::new("Scene saved successfully", ToastLevel::Success));
+                            self.toasts
+                                .push(Toast::new("Scene saved successfully", ToastLevel::Success));
                         }
                         Err(e) => {
                             self.status = format!("Scene save failed: {}", e);
                             self.console_logs
                                 .push(format!("Failed to save scene: {}", e));
-                            self.toasts.push(Toast::new(format!("Save failed: {}", e), ToastLevel::Error));
+                            self.toasts
+                                .push(Toast::new(format!("Save failed: {}", e), ToastLevel::Error));
                         }
                     }
                 } else {
@@ -2492,35 +2554,32 @@ impl eframe::App for EditorApp {
             }
 
             // Delete: Delete selected entities
-            if i.key_pressed(egui::Key::Delete)
-                && self.editor_mode.can_edit() {
-                    if let Some(scene_state) = self.scene_state.as_mut() {
-                        let selected = self.hierarchy_panel.get_all_selected();
-                        if !selected.is_empty() {
-                            let cmd = command::DeleteEntitiesCommand::new(selected.clone());
-                            let delete_result =
-                                self.undo_stack.execute(cmd, scene_state.world_mut());
+            if i.key_pressed(egui::Key::Delete) && self.editor_mode.can_edit() {
+                if let Some(scene_state) = self.scene_state.as_mut() {
+                    let selected = self.hierarchy_panel.get_all_selected();
+                    if !selected.is_empty() {
+                        let cmd = command::DeleteEntitiesCommand::new(selected.clone());
+                        let delete_result = self.undo_stack.execute(cmd, scene_state.world_mut());
 
-                            match delete_result {
-                                Ok(()) => {
-                                    self.hierarchy_panel.set_selected(None);
-                                    self.selected_entity = None;
-                                    self.status =
-                                        format!("🗑️  Deleted {} entities", selected.len());
-                                    self.console_logs
-                                        .push(format!("✅ Deleted {} entities", selected.len()));
-                                }
-                                Err(e) => {
-                                    self.status = format!("❌ Delete failed: {}", e);
-                                    self.console_logs.push(format!("❌ Delete failed: {}", e));
-                                }
+                        match delete_result {
+                            Ok(()) => {
+                                self.hierarchy_panel.set_selected(None);
+                                self.selected_entity = None;
+                                self.status = format!("🗑️  Deleted {} entities", selected.len());
+                                self.console_logs
+                                    .push(format!("✅ Deleted {} entities", selected.len()));
                             }
-                        } else {
-                            self.console_logs
-                                .push("⚠️  No entities selected to delete".into());
+                            Err(e) => {
+                                self.status = format!("❌ Delete failed: {}", e);
+                                self.console_logs.push(format!("❌ Delete failed: {}", e));
+                            }
                         }
+                    } else {
+                        self.console_logs
+                            .push("⚠️  No entities selected to delete".into());
                     }
                 }
+            }
 
             // Ctrl+N: New Scene
             if i.modifiers.ctrl && i.key_pressed(egui::Key::N) && !i.modifiers.shift {
@@ -2566,7 +2625,8 @@ impl eframe::App for EditorApp {
                             self.current_scene_path = Some(path.clone());
                             self.recent_files.add_file(path.clone());
                             self.status = format!("💾 Saved scene as {:?}", path);
-                            self.console_logs.push(format!("✅ Scene saved as: {:?}", path));
+                            self.console_logs
+                                .push(format!("✅ Scene saved as: {:?}", path));
                         }
                         Err(e) => {
                             self.status = format!("❌ Save As failed: {}", e);
@@ -2967,10 +3027,10 @@ impl eframe::App for EditorApp {
                         let mode = if self.use_docking { "Docking" } else { "Legacy" };
                         self.status = format!("Switched to {} layout mode", mode);
                     }
-                    
+
                     ui.separator();
                     ui.label("Layout Presets:");
-                    
+
                     if ui.button("📊 Default").clicked() {
                         self.dock_layout = DockLayout::from_preset(LayoutPreset::Default);
                         self.status = "Applied Default layout".to_string();
@@ -3001,10 +3061,10 @@ impl eframe::App for EditorApp {
                         self.status = "Applied Debug layout".to_string();
                         ui.close();
                     }
-                    
+
                     ui.separator();
                     ui.label("Panels:");
-                    
+
                     // Show available panels to add
                     for &panel_type in PanelType::all() {
                         let is_visible = self.dock_layout.has_panel(&panel_type);
@@ -3024,6 +3084,175 @@ impl eframe::App for EditorApp {
                 if ui.button("⚙ Settings").clicked() {
                     self.show_settings_dialog = true;
                 }
+
+                // Debug menu for testing engine features
+                ui.menu_button("🐛 Debug", |ui| {
+                    ui.label("🎨 Viewport Tests:");
+
+                    #[cfg(feature = "astraweave-render")]
+                    {
+                        // Test glTF loading with a sample model
+                        if ui.button("📦 Load Test Model (barrels.glb)").clicked() {
+                            let test_path = PathBuf::from("assets/models/barrels.glb");
+                            if test_path.exists() {
+                                if let Some(viewport) = &self.viewport {
+                                    match viewport.load_gltf_model("test_barrels", &test_path) {
+                                        Ok(()) => {
+                                            self.toast_success("Test model loaded successfully!");
+                                            self.console_logs.push("✅ Loaded test model: barrels.glb".into());
+                                            self.status = "Test model loaded - PBR rendering enabled".into();
+                                        }
+                                        Err(e) => {
+                                            self.toast_error(format!("Model load failed: {}", e));
+                                            self.console_logs.push(format!("❌ Test model failed: {}", e));
+                                            self.status = format!("Model load error: {}", e);
+                                        }
+                                    }
+                                } else {
+                                    self.console_logs.push("⚠️ Viewport not initialized".into());
+                                }
+                            } else {
+                                self.console_logs.push(format!("⚠️ Test model not found: {:?}", test_path));
+                            }
+                            ui.close();
+                        }
+
+                        // Load bed model (another simple test)
+                        if ui.button("🛏️ Load Test Model (bed.glb)").clicked() {
+                            let test_path = PathBuf::from("assets/models/bed.glb");
+                            if test_path.exists() {
+                                if let Some(viewport) = &self.viewport {
+                                    match viewport.load_gltf_model("test_bed", &test_path) {
+                                        Ok(()) => {
+                                            self.toast_success("Bed model loaded!");
+                                            self.console_logs.push("✅ Loaded test model: bed.glb".into());
+                                        }
+                                        Err(e) => {
+                                            self.console_logs.push(format!("❌ bed.glb failed: {}", e));
+                                        }
+                                    }
+                                }
+                            } else {
+                                self.console_logs.push("⚠️ bed.glb not found".into());
+                            }
+                            ui.close();
+                        }
+
+                        // Load pine tree - check local first, then external locations
+                        if ui.button("🌲 Load Pine Tree").clicked() {
+                            // Try multiple possible paths - local first, then external
+                            let possible_paths = [
+                                PathBuf::from("assets/models/pine_tree_01_1k.glb"),  // Local copy
+                                PathBuf::from("../pine_forest/pine_tree_01_1k.glb"),
+                                PathBuf::from("../../Downloads/pine_forest/pine_tree_01_1k.glb"),
+                            ];
+                            let mut loaded = false;
+                            for test_path in &possible_paths {
+                                if test_path.exists() {
+                                    if let Some(viewport) = &self.viewport {
+                                        match viewport.load_gltf_model("pine_tree", test_path) {
+                                            Ok(()) => {
+                                                self.toast_success("Pine tree loaded!");
+                                                self.console_logs.push(format!(
+                                                    "✅ Loaded pine tree from: {:?}",
+                                                    test_path
+                                                ));
+                                                loaded = true;
+                                                break;
+                                            }
+                                            Err(e) => {
+                                                self.console_logs.push(format!(
+                                                    "❌ Pine tree failed: {} (from {:?})",
+                                                    e, test_path
+                                                ));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if !loaded {
+                                self.console_logs.push("⚠️ Pine tree not found in any expected location".into());
+                            }
+                            ui.close();
+                        }
+
+                        // Toggle engine rendering
+                        if ui.button("🔄 Toggle Engine Rendering").clicked() {
+                            if let Some(viewport) = &self.viewport {
+                                if let Ok(mut renderer) = viewport.renderer().lock() {
+                                    let current = renderer.use_engine_rendering();
+                                    renderer.set_use_engine_rendering(!current);
+                                    let state = if !current { "enabled" } else { "disabled" };
+                                    self.console_logs.push(format!("🎨 Engine rendering {}", state));
+                                    self.status = format!("Engine rendering {}", state);
+                                }
+                            }
+                            ui.close();
+                        }
+                    }
+
+                    #[cfg(not(feature = "astraweave-render"))]
+                    {
+                        ui.label("⚠️ astraweave-render feature not enabled");
+                    }
+
+                    ui.separator();
+                    ui.label("📊 Diagnostics:");
+
+                    if ui.button("📋 Show Engine Info").clicked() {
+                        if let Some(viewport) = &self.viewport {
+                            if let Ok(renderer) = viewport.renderer().lock() {
+                                let engine_active = renderer.use_engine_rendering();
+                                let adapter_init = renderer.engine_adapter_initialized();
+                                self.console_logs.push(format!(
+                                    "🎮 Engine Status:\n  - Engine Rendering: {}\n  - Adapter Initialized: {}",
+                                    engine_active, adapter_init
+                                ));
+                            }
+                        }
+                        ui.close();
+                    }
+
+                    if ui.button("📁 Scan For Models").clicked() {
+                        let scan_dirs = [
+                            ("Local", PathBuf::from("assets/models")),
+                            ("Pine Forest", PathBuf::from("../pine_forest")),
+                            ("Downloads PF", PathBuf::from("../../Downloads/pine_forest")),
+                        ];
+                        let mut found_any = false;
+                        for (name, dir) in &scan_dirs {
+                            if dir.exists() {
+                                if let Ok(entries) = std::fs::read_dir(dir) {
+                                    let glb_files: Vec<_> = entries
+                                        .filter_map(|e| e.ok())
+                                        .filter(|e| {
+                                            e.path().extension().map_or(false, |ext| {
+                                                ext == "glb" || ext == "gltf"
+                                            })
+                                        })
+                                        .take(8)
+                                        .collect();
+                                    if !glb_files.is_empty() {
+                                        found_any = true;
+                                        self.console_logs.push(format!("📁 {} ({}):", name, glb_files.len()));
+                                        for entry in glb_files {
+                                            self.console_logs.push(format!("  • {}", entry.file_name().to_string_lossy()));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if !found_any {
+                            self.console_logs.push("⚠️ No glTF/glb models found in any scanned directory".into());
+                        }
+                        ui.close();
+                    }
+
+                    if ui.button("🗑️ Clear Console").clicked() {
+                        self.console_logs.clear();
+                        ui.close();
+                    }
+                });
 
                 ui.separator();
 
@@ -3106,7 +3335,7 @@ impl eframe::App for EditorApp {
             // Show play controls in toolbar
             ui.separator();
             self.show_play_controls(ui);
-            
+
             // Compact performance indicator in header
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let frame_time = self.runtime.stats().frame_time_ms;
@@ -3117,7 +3346,7 @@ impl eframe::App for EditorApp {
                 } else {
                     egui::Color32::from_rgb(255, 100, 100) // Red
                 };
-                
+
                 ui.label(egui::RichText::new(format!("FPS: {:.0}", self.current_fps))
                     .color(fps_color)
                     .strong());
@@ -3137,10 +3366,7 @@ impl eframe::App for EditorApp {
             .map(|s| s.world().entities().len())
             .unwrap_or(0);
 
-        let bottom_scene_path_str = self
-            .current_scene_path
-            .as_ref()
-            .and_then(|p| p.to_str());
+        let bottom_scene_path_str = self.current_scene_path.as_ref().and_then(|p| p.to_str());
 
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
@@ -3168,13 +3394,13 @@ impl eframe::App for EditorApp {
                 .frame(egui::Frame::NONE.inner_margin(0.0))
                 .show(ctx, |ui| {
                     ui.set_min_size(ui.available_size());
-                    
+
                     ui.vertical(|ui| {
                         ui.set_min_size(ui.available_size());
-                        
+
                         ui.heading("📋 Hierarchy");
                         ui.add_space(4.0);
-                        
+
                         // Search bar
                         ui.horizontal(|ui| {
                             ui.set_min_width(ui.available_width());
@@ -3199,12 +3425,17 @@ impl eframe::App for EditorApp {
         if self.use_docking {
             // Phase 11: Professional Docking System
             // Sync selected entity to tab viewer
-            self.dock_tab_viewer.set_selected_entity(self.selected_entity);
-            self.dock_tab_viewer.set_is_playing(!self.editor_mode.is_editing());
+            self.dock_tab_viewer
+                .set_selected_entity(self.selected_entity);
+            self.dock_tab_viewer
+                .set_is_playing(!self.editor_mode.is_editing());
             self.dock_tab_viewer.begin_frame();
-            
+
             // Sync entity list for hierarchy panel
-            let entity_list: Vec<EntityInfo> = self.entity_manager.entities().iter()
+            let entity_list: Vec<EntityInfo> = self
+                .entity_manager
+                .entities()
+                .iter()
                 .map(|(id, entity)| EntityInfo {
                     id: *id,
                     name: entity.name.clone(),
@@ -3221,16 +3452,15 @@ impl eframe::App for EditorApp {
                 })
                 .collect();
             self.dock_tab_viewer.set_entity_list(entity_list);
-            
+
             // Sync selected entity transform for inspector
             if let Some(entity_id) = self.selected_entity {
                 if let Some(entity) = self.entity_manager.get(entity_id) {
                     let (pos, rot, scale) = entity.transform();
                     // Convert to 2D-like format: x, y, rotation_z, scale_x, scale_y
                     let angle = rot.to_euler(glam::EulerRot::ZXY).0;
-                    self.dock_tab_viewer.set_selected_transform(Some((
-                        pos.x, pos.y, angle, scale.x, scale.y
-                    )));
+                    self.dock_tab_viewer
+                        .set_selected_transform(Some((pos.x, pos.y, angle, scale.x, scale.y)));
                     let entity_type = if entity.components.contains_key("Camera") {
                         "Camera".to_string()
                     } else if entity.components.contains_key("Light") {
@@ -3240,12 +3470,13 @@ impl eframe::App for EditorApp {
                     } else {
                         "Entity".to_string()
                     };
-                    self.dock_tab_viewer.set_selected_entity_info(Some(EntityInfo {
-                        id: entity_id,
-                        name: entity.name.clone(),
-                        components: entity.components.keys().cloned().collect(),
-                        entity_type,
-                    }));
+                    self.dock_tab_viewer
+                        .set_selected_entity_info(Some(EntityInfo {
+                            id: entity_id,
+                            name: entity.name.clone(),
+                            components: entity.components.keys().cloned().collect(),
+                            entity_type,
+                        }));
                 } else {
                     self.dock_tab_viewer.set_selected_transform(None);
                     self.dock_tab_viewer.set_selected_entity_info(None);
@@ -3254,10 +3485,11 @@ impl eframe::App for EditorApp {
                 self.dock_tab_viewer.set_selected_transform(None);
                 self.dock_tab_viewer.set_selected_entity_info(None);
             }
-            
+
             // Sync console logs
-            self.dock_tab_viewer.set_console_logs(self.console_logs.clone());
-            
+            self.dock_tab_viewer
+                .set_console_logs(self.console_logs.clone());
+
             // Sync runtime stats for profiler panel
             let runtime_stats = tab_viewer::RuntimeStatsInfo {
                 frame_time_ms: self.runtime.stats().frame_time_ms,
@@ -3269,15 +3501,15 @@ impl eframe::App for EditorApp {
                 // Subsystem timing (placeholder values - would come from actual profiling)
                 render_time_ms: self.runtime.stats().frame_time_ms * 0.4, // ~40% for render
                 physics_time_ms: self.runtime.stats().frame_time_ms * 0.15, // ~15% for physics
-                ai_time_ms: self.runtime.stats().frame_time_ms * 0.1, // ~10% for AI
+                ai_time_ms: self.runtime.stats().frame_time_ms * 0.1,     // ~10% for AI
                 script_time_ms: self.runtime.stats().frame_time_ms * 0.05, // ~5% for scripts
                 audio_time_ms: self.runtime.stats().frame_time_ms * 0.02, // ~2% for audio
                 draw_calls: 150 + (self.entity_manager.entities().len() * 2), // Estimate
                 triangles: 50000 + (self.entity_manager.entities().len() * 1000), // Estimate
-                gpu_memory_bytes: 256 * 1024 * 1024, // 256 MB placeholder
+                gpu_memory_bytes: 256 * 1024 * 1024,                      // 256 MB placeholder
             };
             self.dock_tab_viewer.set_runtime_stats(runtime_stats);
-            
+
             // Sync scene stats
             let total_components: usize = self
                 .entity_manager
@@ -3295,29 +3527,33 @@ impl eframe::App for EditorApp {
                 active_systems: 12, // Typical system count
                 loaded_assets: self.asset_registry.count(),
                 light_count: entity_count / 10, // Estimate ~10% are lights
-                mesh_count: entity_count / 2, // Estimate ~50% have meshes
+                mesh_count: entity_count / 2,   // Estimate ~50% have meshes
                 physics_bodies: entity_count / 4, // Estimate ~25% have physics
                 is_modified: self.is_scene_modified,
                 audio_sources: entity_count / 20, // Estimate ~5% have audio
                 particle_systems: entity_count / 30, // Estimate ~3% are particles
                 camera_count: 1 + (entity_count / 50), // At least 1 camera
                 collider_count: entity_count / 3, // Estimate ~33% have colliders
-                script_count: entity_count / 2, // Estimate ~50% have scripts
-                ui_element_count: 0, // Would count UI elements
-                scene_path: self.current_scene_path.as_ref().map(|p| p.display().to_string()),
+                script_count: entity_count / 2,   // Estimate ~50% have scripts
+                ui_element_count: 0,              // Would count UI elements
+                scene_path: self
+                    .current_scene_path
+                    .as_ref()
+                    .map(|p| p.display().to_string()),
                 last_save_time: self.last_save_time.clone(),
             };
             self.dock_tab_viewer.set_scene_stats(scene_stats);
-            
+
             // Sync undo/redo counts
             self.dock_tab_viewer.set_undo_redo_counts(
                 self.undo_stack.len(),
-                0 // Redo count would come from redo stack
+                0, // Redo count would come from redo stack
             );
-            
+
             // Update frame time history for profiler graph
-            self.dock_tab_viewer.push_frame_time(self.runtime.stats().frame_time_ms);
-            
+            self.dock_tab_viewer
+                .push_frame_time(self.runtime.stats().frame_time_ms);
+
             // Render the docking layout with EditorDrawContext for viewport integration
             // We need to carefully structure borrows to avoid conflicts
             // Use CentralPanel with no frame to render dock in remaining space (after side panels)
@@ -3325,13 +3561,13 @@ impl eframe::App for EditorApp {
                 .frame(egui::Frame::NONE.inner_margin(0.0))
                 .show(ctx, |ui| {
                     ui.set_min_size(ui.available_size());
-                    
+
                     // Get mutable world from scene state
                     let world_opt = self.scene_state.as_mut().map(|s| s.world_mut());
-                    
+
                     // Unified context rendering to avoid type-switching issues
                     let mut context = EditorDrawContext::new(&mut self.dock_tab_viewer);
-                    
+
                     if let (Some(world), Some(viewport)) = (world_opt, self.viewport.as_mut()) {
                         context = context
                             .with_viewport(viewport)
@@ -3340,13 +3576,13 @@ impl eframe::App for EditorApp {
                             .with_undo_stack(&mut self.undo_stack)
                             .with_prefab_manager(&mut self.prefab_manager);
                     }
-                    
+
                     self.dock_layout.show_inside(ui, &mut context);
                 });
-            
+
             // Check for transform changes and emit events
             self.dock_tab_viewer.check_transform_changes();
-            
+
             // Handle panel close events (separate from PanelEvent for backward compatibility)
             for panel in self.dock_tab_viewer.take_closed_panels() {
                 self.status = format!("Closed {} panel", panel.title());
@@ -3356,7 +3592,7 @@ impl eframe::App for EditorApp {
                 self.status = format!("Added {} panel", panel.title());
             }
             self.dock_tab_viewer.check_transform_changes();
-            
+
             // Handle panel events from the tab viewer
             for event in self.dock_tab_viewer.take_events() {
                 match event {
@@ -3372,15 +3608,26 @@ impl eframe::App for EditorApp {
                     }
                     tab_viewer::PanelEvent::TransformPositionChanged { entity_id, x, y } => {
                         // Update entity transform in scene
-                        self.status = format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
+                        self.status =
+                            format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
                         // TODO: Update actual entity transform in scene graph when available
                     }
-                    tab_viewer::PanelEvent::TransformRotationChanged { entity_id, rotation } => {
+                    tab_viewer::PanelEvent::TransformRotationChanged {
+                        entity_id,
+                        rotation,
+                    } => {
                         self.status = format!("Entity {} rotation: {:.1}°", entity_id, rotation);
                         // TODO: Update actual entity rotation in scene graph when available
                     }
-                    tab_viewer::PanelEvent::TransformScaleChanged { entity_id, scale_x, scale_y } => {
-                        self.status = format!("Entity {} scale: ({:.2}, {:.2})", entity_id, scale_x, scale_y);
+                    tab_viewer::PanelEvent::TransformScaleChanged {
+                        entity_id,
+                        scale_x,
+                        scale_y,
+                    } => {
+                        self.status = format!(
+                            "Entity {} scale: ({:.2}, {:.2})",
+                            entity_id, scale_x, scale_y
+                        );
                         // TODO: Update actual entity scale in scene graph when available
                     }
                     tab_viewer::PanelEvent::CreateEntity => {
@@ -3435,7 +3682,11 @@ impl eframe::App for EditorApp {
                         self.dock_layout.add_panel(panel);
                         self.status = format!("Added {} panel", panel.title());
                     }
-                    tab_viewer::PanelEvent::MaterialChanged { name, property, value } => {
+                    tab_viewer::PanelEvent::MaterialChanged {
+                        name,
+                        property,
+                        value,
+                    } => {
                         self.status = format!("Material '{}': {} = {:.2}", name, property, value);
                     }
                     tab_viewer::PanelEvent::AnimationPlayStateChanged { is_playing } => {
@@ -3448,8 +3699,15 @@ impl eframe::App for EditorApp {
                     tab_viewer::PanelEvent::AnimationFrameChanged { frame } => {
                         self.status = format!("Animation frame: {}", frame);
                     }
-                    tab_viewer::PanelEvent::AnimationKeyframeAdded { track_index, frame, value } => {
-                        self.status = format!("Added keyframe at frame {} (track {}, value {:.2})", frame, track_index, value);
+                    tab_viewer::PanelEvent::AnimationKeyframeAdded {
+                        track_index,
+                        frame,
+                        value,
+                    } => {
+                        self.status = format!(
+                            "Added keyframe at frame {} (track {}, value {:.2})",
+                            frame, track_index, value
+                        );
                     }
                     tab_viewer::PanelEvent::ThemeChanged(theme) => {
                         self.status = format!("Theme changed to {:?}", theme);
@@ -3478,30 +3736,56 @@ impl eframe::App for EditorApp {
                     tab_viewer::PanelEvent::RefreshSceneStats => {
                         self.status = "Refreshing scene statistics...".to_string();
                     }
-                    tab_viewer::PanelEvent::AddComponent { entity_id, component_type } => {
+                    tab_viewer::PanelEvent::AddComponent {
+                        entity_id,
+                        component_type,
+                    } => {
                         self.status = format!("Adding {} to entity {}", component_type, entity_id);
                         // Would add component to entity in actual implementation
                     }
-                    tab_viewer::PanelEvent::RemoveComponent { entity_id, component_type } => {
-                        self.status = format!("Removing {} from entity {}", component_type, entity_id);
+                    tab_viewer::PanelEvent::RemoveComponent {
+                        entity_id,
+                        component_type,
+                    } => {
+                        self.status =
+                            format!("Removing {} from entity {}", component_type, entity_id);
                         // Would remove component from entity in actual implementation
                     }
                     tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
                         let mode_names = ["Shaded", "Wireframe", "Unlit", "Normals", "UVs"];
-                        self.status = format!("Viewport view mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
+                        self.status = format!(
+                            "Viewport view mode: {}",
+                            mode_names.get(mode).unwrap_or(&"Unknown")
+                        );
                     }
                     tab_viewer::PanelEvent::ViewportGizmoModeChanged(mode) => {
                         let mode_names = ["Translate", "Rotate", "Scale"];
-                        self.status = format!("Gizmo mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
+                        self.status =
+                            format!("Gizmo mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
                     }
                     tab_viewer::PanelEvent::ViewportGizmoSpaceChanged(space) => {
-                        self.status = format!("Gizmo space: {}", if space == 0 { "Local" } else { "World" });
+                        self.status = format!(
+                            "Gizmo space: {}",
+                            if space == 0 { "Local" } else { "World" }
+                        );
                     }
                     tab_viewer::PanelEvent::ViewportOverlayToggled { overlay, enabled } => {
-                        self.status = format!("Viewport overlay '{}': {}", overlay, if enabled { "enabled" } else { "disabled" });
+                        self.status = format!(
+                            "Viewport overlay '{}': {}",
+                            overlay,
+                            if enabled { "enabled" } else { "disabled" }
+                        );
                     }
-                    tab_viewer::PanelEvent::ViewportCameraChanged { fov, near, far, speed } => {
-                        self.status = format!("Camera: FOV={:.0}°, Clip={:.2}-{:.0}, Speed={:.1}", fov, near, far, speed);
+                    tab_viewer::PanelEvent::ViewportCameraChanged {
+                        fov,
+                        near,
+                        far,
+                        speed,
+                    } => {
+                        self.status = format!(
+                            "Camera: FOV={:.0}°, Clip={:.2}-{:.0}, Speed={:.1}",
+                            fov, near, far, speed
+                        );
                     }
                     tab_viewer::PanelEvent::ViewportFocusOnSelection => {
                         self.status = "Focusing on selection...".to_string();
@@ -3589,7 +3873,7 @@ impl eframe::App for EditorApp {
                         ui.label(format!("{}°", self.snapping_config.angle_increment));
 
                         ui.separator();
-                        
+
                         // Engine PBR Rendering toggle
                         let mut use_pbr = viewport.renderer().lock().map(|r| r.use_engine_rendering()).unwrap_or(false);
                         if ui.checkbox(&mut use_pbr, "🚀 Engine PBR").on_hover_text("Enable full PBR mesh rendering instead of cube placeholders").changed() {

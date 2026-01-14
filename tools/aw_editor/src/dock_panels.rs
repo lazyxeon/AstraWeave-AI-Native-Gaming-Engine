@@ -7,14 +7,14 @@
 use crate::panel_type::PanelType;
 use crate::panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, BuildManagerPanel, ChartsPanel,
-    ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, PerformancePanel, ProfilerPanel,
-    SceneStatsPanel, ThemeManagerPanel, TransformPanel, WorldPanel, Panel,
+    ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, ProfilerPanel,
+    SceneStatsPanel, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 use astraweave_core::World;
 use egui::Ui;
-use egui_dock::TabViewer;
-use egui_dock::tab_viewer::OnCloseResponse;
 use egui_dock::egui;
+use egui_dock::tab_viewer::OnCloseResponse;
+use egui_dock::TabViewer;
 
 /// Context containing all panel instances for dock rendering
 ///
@@ -26,34 +26,34 @@ pub struct DockPanelContext<'a> {
     pub console_panel: &'a mut ConsolePanel,
     pub profiler_panel: &'a mut ProfilerPanel,
     pub scene_stats_panel: &'a mut SceneStatsPanel,
-    
+
     // Asset panels
     pub asset_browser: &'a mut AssetBrowser,
-    
+
     // Entity/Transform panels
     pub entity_panel: &'a mut EntityPanel,
     pub transform_panel: &'a mut TransformPanel,
-    
+
     // World panel
     pub world_panel: &'a mut WorldPanel,
-    
+
     // Graph editors
     pub graph_panel: &'a mut GraphPanel,
     pub animation_panel: &'a mut AnimationPanel,
-    
+
     // Performance/Debug panels
     pub performance_panel: &'a mut PerformancePanel,
     pub charts_panel: &'a mut ChartsPanel,
     pub advanced_widgets_panel: &'a mut AdvancedWidgetsPanel,
-    
+
     // Build/Theme
     pub build_manager_panel: &'a mut BuildManagerPanel,
     pub theme_manager: &'a mut ThemeManagerPanel,
-    
+
     // World state
     pub world: Option<&'a mut World>,
     pub console_logs: &'a mut Vec<String>,
-    
+
     // Selection state
     pub selected_entity: Option<u64>,
     pub is_playing: bool,
@@ -137,16 +137,16 @@ impl<'a> DockPanelContext<'a> {
             }
         }
     }
-    
+
     /// Render the inspector panel with entity details
     fn render_inspector(&mut self, ui: &mut Ui) {
         ui.heading("🔍 Inspector");
         ui.separator();
-        
+
         if let Some(entity_id) = self.selected_entity {
             ui.label(format!("Selected Entity: {}", entity_id));
             ui.add_space(8.0);
-            
+
             if let Some(world) = self.world.as_ref() {
                 // Try to get entity details from world
                 if let Ok(entity) = u32::try_from(entity_id) {
@@ -169,7 +169,7 @@ impl<'a> DockPanelContext<'a> {
                             });
                         });
                     }
-                    
+
                     // Show components
                     ui.collapsing("Components", |ui| {
                         ui.label("• Pose");
@@ -190,7 +190,7 @@ impl<'a> DockPanelContext<'a> {
             });
         }
     }
-    
+
     /// Render viewport placeholder (actual viewport renders separately)
     fn render_viewport_placeholder(&self, ui: &mut Ui) {
         ui.centered_and_justified(|ui| {
@@ -223,7 +223,7 @@ impl MinimalPanelContext {
             is_playing: false,
         }
     }
-    
+
     /// Render a panel with minimal context (placeholders)
     pub fn render_panel(&self, ui: &mut Ui, panel_type: &PanelType) {
         match panel_type {
@@ -280,7 +280,7 @@ impl Default for MinimalPanelContext {
 }
 
 /// Tab viewer that uses DockPanelContext for full panel rendering
-/// 
+///
 /// This implements `egui_dock::TabViewer` and dispatches rendering
 /// to actual panel implementations via `DockPanelContext`.
 pub struct ContextualTabViewer<'a> {
@@ -299,11 +299,11 @@ impl<'a> ContextualTabViewer<'a> {
             entity_selected: None,
         }
     }
-    
+
     pub fn take_closed_panels(&mut self) -> Vec<PanelType> {
         std::mem::take(&mut self.panels_to_close)
     }
-    
+
     pub fn take_panels_to_add(&mut self) -> Vec<PanelType> {
         std::mem::take(&mut self.panels_to_add)
     }
@@ -324,7 +324,7 @@ impl<'a> TabViewer for ContextualTabViewer<'a> {
             });
             ui.separator();
         }
-        
+
         // Dispatch to actual panel rendering via context
         self.context.render_panel(ui, tab);
     }
@@ -362,38 +362,69 @@ impl<'a> TabViewer for ContextualTabViewer<'a> {
     ) {
         ui.heading("Add Panel");
         ui.separator();
-        
+
         // Group panels by category
         ui.collapsing("Core", |ui| {
-            for panel in [PanelType::Viewport, PanelType::Inspector, PanelType::Hierarchy] {
-                if ui.button(format!("{} {}", panel.icon(), panel.title())).clicked() {
+            for panel in [
+                PanelType::Viewport,
+                PanelType::Inspector,
+                PanelType::Hierarchy,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
                     self.panels_to_add.push(panel);
                     ui.close();
                 }
             }
         });
-        
+
         ui.collapsing("Assets & World", |ui| {
-            for panel in [PanelType::AssetBrowser, PanelType::World, PanelType::EntityPanel] {
-                if ui.button(format!("{} {}", panel.icon(), panel.title())).clicked() {
+            for panel in [
+                PanelType::AssetBrowser,
+                PanelType::World,
+                PanelType::EntityPanel,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
                     self.panels_to_add.push(panel);
                     ui.close();
                 }
             }
         });
-        
+
         ui.collapsing("Debug & Profiling", |ui| {
-            for panel in [PanelType::Console, PanelType::Profiler, PanelType::SceneStats, PanelType::Performance] {
-                if ui.button(format!("{} {}", panel.icon(), panel.title())).clicked() {
+            for panel in [
+                PanelType::Console,
+                PanelType::Profiler,
+                PanelType::SceneStats,
+                PanelType::Performance,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
                     self.panels_to_add.push(panel);
                     ui.close();
                 }
             }
         });
-        
+
         ui.collapsing("Editors", |ui| {
-            for panel in [PanelType::Animation, PanelType::Graph, PanelType::BehaviorGraph, PanelType::Charts, PanelType::MaterialEditor] {
-                if ui.button(format!("{} {}", panel.icon(), panel.title())).clicked() {
+            for panel in [
+                PanelType::Animation,
+                PanelType::Graph,
+                PanelType::BehaviorGraph,
+                PanelType::Charts,
+                PanelType::MaterialEditor,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
                     self.panels_to_add.push(panel);
                     ui.close();
                 }

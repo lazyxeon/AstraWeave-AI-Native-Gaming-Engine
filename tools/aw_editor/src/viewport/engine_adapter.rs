@@ -77,6 +77,9 @@ impl EngineRenderAdapter {
     pub fn load_gltf_model(&mut self, name: impl Into<String>, path: &Path) -> Result<()> {
         use astraweave_render::{mesh_gltf, Instance};
 
+        let name = name.into();
+        tracing::info!("Loading glTF model '{}' from: {}", name, path.display());
+
         let opts = mesh_gltf::GltfOptions::default();
         let cpu_meshes = mesh_gltf::load_gltf(path, &opts)
             .with_context(|| format!("Failed to load glTF: {}", path.display()))?;
@@ -85,13 +88,18 @@ impl EngineRenderAdapter {
             anyhow::bail!("glTF file contains no meshes: {}", path.display());
         }
 
-        let mesh = self.renderer.create_mesh_from_cpu_mesh(&cpu_meshes[0]);
-        let instance = Instance::from_pos_scale_color(
-            glam::Vec3::ZERO,
-            glam::Vec3::ONE,
-            [1.0, 1.0, 1.0, 1.0],
+        tracing::info!(
+            "Loaded {} mesh(es), first mesh has {} vertices, {} indices",
+            cpu_meshes.len(),
+            cpu_meshes[0].vertices.len(),
+            cpu_meshes[0].indices.len()
         );
-        self.renderer.add_model(name, mesh, &[instance]);
+
+        let mesh = self.renderer.create_mesh_from_cpu_mesh(&cpu_meshes[0]);
+        let instance =
+            Instance::from_pos_scale_color(glam::Vec3::ZERO, glam::Vec3::ONE, [1.0, 1.0, 1.0, 1.0]);
+        self.renderer.add_model(&name, mesh, &[instance]);
+        tracing::info!("Model '{}' added to renderer", name);
         Ok(())
     }
 

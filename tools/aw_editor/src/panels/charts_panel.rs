@@ -230,7 +230,9 @@ impl Panel for ChartsPanel {
                 Color32::from_rgb(100, 180, 255),
             );
 
-            if let (Some(first), Some(last)) = (self.frame_history.first(), self.frame_history.last()) {
+            if let (Some(first), Some(last)) =
+                (self.frame_history.first(), self.frame_history.last())
+            {
                 let min_time = first.0;
                 let max_time = last.0;
                 line_chart.add_series(

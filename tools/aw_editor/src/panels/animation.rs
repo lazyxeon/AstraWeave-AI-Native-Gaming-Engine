@@ -595,9 +595,11 @@ impl AnimationPanel {
                                 value: val,
                                 easing: EasingFunction::Linear,
                             });
-                            track
-                                .keyframes
-                                .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+                            track.keyframes.sort_by(|a, b| {
+                                a.time
+                                    .partial_cmp(&b.time)
+                                    .unwrap_or(std::cmp::Ordering::Equal)
+                            });
                         }
 
                         if ui.small_button("🗑").clicked() {

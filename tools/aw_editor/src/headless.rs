@@ -159,10 +159,7 @@ impl GizmoHarness {
             entity, operation, ..
         }) = interaction::cancel_active_gizmo(&mut self.gizmo, &mut self.world)
         {
-            telemetry::record(EditorTelemetryEvent::GizmoCancelled {
-                entity,
-                operation,
-            });
+            telemetry::record(EditorTelemetryEvent::GizmoCancelled { entity, operation });
         }
         self.gizmo.cancelled = false;
         Ok(())

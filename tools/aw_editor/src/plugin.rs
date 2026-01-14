@@ -608,7 +608,10 @@ impl PluginManagerPanel {
                     PluginState::Loaded => {
                         if ui.button("Initialize").clicked() {
                             if let Err(e) = manager.initialize(&info.id, ctx) {
-                                self.last_error = Some(format!("Failed to initialize plugin '{}': {}", info.metadata.name, e));
+                                self.last_error = Some(format!(
+                                    "Failed to initialize plugin '{}': {}",
+                                    info.metadata.name, e
+                                ));
                             }
                         }
                     }
@@ -625,7 +628,10 @@ impl PluginManagerPanel {
                     PluginState::Error => {
                         if ui.button("Retry").clicked() {
                             if let Err(e) = manager.initialize(&info.id, ctx) {
-                                self.last_error = Some(format!("Retry failed for plugin '{}': {}", info.metadata.name, e));
+                                self.last_error = Some(format!(
+                                    "Retry failed for plugin '{}': {}",
+                                    info.metadata.name, e
+                                ));
                             }
                         }
                     }
@@ -633,7 +639,10 @@ impl PluginManagerPanel {
 
                 if ui.button("🗑️").clicked() {
                     if let Err(e) = manager.unload(&info.id, ctx) {
-                        self.last_error = Some(format!("Failed to unload plugin '{}': {}", info.metadata.name, e));
+                        self.last_error = Some(format!(
+                            "Failed to unload plugin '{}': {}",
+                            info.metadata.name, e
+                        ));
                     }
                 }
             });

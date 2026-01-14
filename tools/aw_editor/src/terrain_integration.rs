@@ -74,12 +74,10 @@ impl TerrainState {
     }
 
     fn biomes_for_primary(primary: &str) -> Vec<BiomeConfig> {
-        let primary_type = primary
-            .parse::<BiomeType>()
-            .unwrap_or(BiomeType::Grassland);
+        let primary_type = primary.parse::<BiomeType>().unwrap_or(BiomeType::Grassland);
 
         let mut biomes = vec![Self::biome_config_for_type(primary_type)];
-        
+
         for bt in BiomeType::all() {
             if *bt != primary_type {
                 biomes.push(Self::biome_config_for_type(*bt));
@@ -105,9 +103,10 @@ impl TerrainState {
         self.generator = Some(WorldGenerator::new(self.config.clone()));
         self.generated_chunks.clear();
 
-        let generator = self.generator.as_mut().ok_or_else(|| {
-            anyhow::anyhow!("Generator not initialized")
-        })?;
+        let generator = self
+            .generator
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("Generator not initialized"))?;
 
         let chunk_size = self.config.chunk_size;
         let mut count = 0;
@@ -115,12 +114,12 @@ impl TerrainState {
         for x in -chunk_radius..=chunk_radius {
             for z in -chunk_radius..=chunk_radius {
                 let chunk_id = ChunkId { x, z };
-                
+
                 let (chunk, _scatter) = generator.generate_chunk_with_scatter(chunk_id)?;
-                
+
                 let world_pos = chunk_id.to_world_pos(chunk_size);
                 let world_offset = Vec3::new(world_pos.x, 0.0, world_pos.y);
-                
+
                 let (vertices, indices) = Self::generate_heightmap_mesh(
                     chunk.heightmap(),
                     chunk.biome_map(),
@@ -128,12 +127,15 @@ impl TerrainState {
                     world_offset,
                 );
 
-                self.generated_chunks.insert(chunk_id, GeneratedChunk {
-                    chunk,
-                    vertices,
-                    indices,
-                    world_position: world_offset,
-                });
+                self.generated_chunks.insert(
+                    chunk_id,
+                    GeneratedChunk {
+                        chunk,
+                        vertices,
+                        indices,
+                        world_position: world_offset,
+                    },
+                );
 
                 count += 1;
             }
@@ -151,21 +153,22 @@ impl TerrainState {
     ) -> (Vec<TerrainVertex>, Vec<u32>) {
         let resolution = heightmap.resolution() as usize;
         let cell_size = chunk_size / (resolution - 1) as f32;
-        
+
         let mut vertices = Vec::with_capacity(resolution * resolution);
         let mut indices = Vec::with_capacity((resolution - 1) * (resolution - 1) * 6);
 
         for z in 0..resolution {
             for x in 0..resolution {
                 let height = heightmap.get_height(x as u32, z as u32);
-                
+
                 let world_x = world_offset.x + x as f32 * cell_size;
                 let world_z = world_offset.z + z as f32 * cell_size;
-                
+
                 let normal = Self::calculate_normal(heightmap, x, z, cell_size);
-                
+
                 let biome_idx = z * resolution + x;
-                let biome_id = biome_map.get(biome_idx)
+                let biome_id = biome_map
+                    .get(biome_idx)
                     .map(|b| Self::biome_to_id(*b))
                     .unwrap_or(0);
 
@@ -200,12 +203,28 @@ impl TerrainState {
 
     fn calculate_normal(heightmap: &Heightmap, x: usize, z: usize, cell_size: f32) -> Vec3 {
         let resolution = heightmap.resolution() as usize;
-        
+
         let h_center = heightmap.get_height(x as u32, z as u32);
-        let h_left = if x > 0 { heightmap.get_height((x - 1) as u32, z as u32) } else { h_center };
-        let h_right = if x < resolution - 1 { heightmap.get_height((x + 1) as u32, z as u32) } else { h_center };
-        let h_up = if z > 0 { heightmap.get_height(x as u32, (z - 1) as u32) } else { h_center };
-        let h_down = if z < resolution - 1 { heightmap.get_height(x as u32, (z + 1) as u32) } else { h_center };
+        let h_left = if x > 0 {
+            heightmap.get_height((x - 1) as u32, z as u32)
+        } else {
+            h_center
+        };
+        let h_right = if x < resolution - 1 {
+            heightmap.get_height((x + 1) as u32, z as u32)
+        } else {
+            h_center
+        };
+        let h_up = if z > 0 {
+            heightmap.get_height(x as u32, (z - 1) as u32)
+        } else {
+            h_center
+        };
+        let h_down = if z < resolution - 1 {
+            heightmap.get_height(x as u32, (z + 1) as u32)
+        } else {
+            h_center
+        };
 
         let dx = (h_right - h_left) / (2.0 * cell_size);
         let dz = (h_down - h_up) / (2.0 * cell_size);
@@ -245,7 +264,7 @@ impl TerrainState {
     pub fn get_all_indices(&self, vertex_offset: u32) -> Vec<u32> {
         let mut all_indices = Vec::new();
         let mut current_offset = vertex_offset;
-        
+
         for gen_chunk in self.generated_chunks.values() {
             for &idx in &gen_chunk.indices {
                 all_indices.push(idx + current_offset);
@@ -259,11 +278,16 @@ impl TerrainState {
         let chunk_size = self.config.chunk_size;
         let chunk_x = (world_x / chunk_size).floor() as i32;
         let chunk_z = (world_z / chunk_size).floor() as i32;
-        let chunk_id = ChunkId { x: chunk_x, z: chunk_z };
+        let chunk_id = ChunkId {
+            x: chunk_x,
+            z: chunk_z,
+        };
 
         if let Some(gen_chunk) = self.generated_chunks.get(&chunk_id) {
             let world_pos = Vec3::new(world_x, 0.0, world_z);
-            gen_chunk.chunk.get_height_at_world_pos(world_pos, chunk_size)
+            gen_chunk
+                .chunk
+                .get_height_at_world_pos(world_pos, chunk_size)
         } else {
             None
         }
@@ -327,7 +351,7 @@ impl TerrainVertex {
 pub fn biome_display_name(biome_str: &str) -> &'static str {
     match biome_str {
         "grassland" => "Grassland",
-        "desert" => "Desert", 
+        "desert" => "Desert",
         "forest" => "Forest",
         "mountain" => "Mountain",
         "tundra" => "Tundra",

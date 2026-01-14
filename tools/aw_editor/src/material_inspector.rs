@@ -259,11 +259,7 @@ impl MaterialInspector {
                             passed: true,
                             errors: Vec::new(),
                             warnings: Vec::new(),
-                            info: vec![format!(
-                                "Loaded albedo: {}×{}",
-                                width,
-                                height
-                            )],
+                            info: vec![format!("Loaded albedo: {}×{}", width, height)],
                         });
                     }
                     Err(e) => {
@@ -298,11 +294,7 @@ impl MaterialInspector {
                             passed: true,
                             errors: Vec::new(),
                             warnings: Vec::new(),
-                            info: vec![format!(
-                                "Loaded normal: {}×{}",
-                                width,
-                                height
-                            )],
+                            info: vec![format!("Loaded normal: {}×{}", width, height)],
                         });
                     }
                     Err(e) => {
@@ -335,11 +327,7 @@ impl MaterialInspector {
                                 passed: true,
                                 errors: Vec::new(),
                                 warnings: Vec::new(),
-                                info: vec![format!(
-                                    "Loaded ORM: {}×{}",
-                                    width,
-                                    height
-                                )],
+                                info: vec![format!("Loaded ORM: {}×{}", width, height)],
                             });
                         }
                         Err(e) => {

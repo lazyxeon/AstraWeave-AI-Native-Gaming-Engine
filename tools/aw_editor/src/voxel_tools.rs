@@ -3,7 +3,7 @@
 //! This module provides interactive voxel editing capabilities including
 //! brushes for adding/removing voxels, undo/redo, and real-time preview.
 
-use astraweave_terrain::{Voxel, VoxelGrid, ChunkCoord, MaterialId};
+use astraweave_terrain::{ChunkCoord, MaterialId, Voxel, VoxelGrid};
 use glam::Vec3;
 use std::collections::VecDeque;
 
@@ -95,17 +95,17 @@ impl VoxelEditor {
             preview_mode: false,
         }
     }
-    
+
     /// Set brush configuration
     pub fn set_brush(&mut self, brush: BrushConfig) {
         self.brush = brush;
     }
-    
+
     /// Get current brush configuration
     pub fn brush(&self) -> &BrushConfig {
         &self.brush
     }
-    
+
     /// Apply brush at world position
     pub fn apply_brush(&mut self, grid: &mut VoxelGrid, position: Vec3) -> Vec<ChunkCoord> {
         let mut operation = EditOperation {
@@ -113,12 +113,12 @@ impl VoxelEditor {
             before: Vec::new(),
             after: Vec::new(),
         };
-        
+
         let mut affected_chunks = Vec::new();
-        
+
         // Get voxels in brush radius
         let voxels = self.get_voxels_in_brush(position);
-        
+
         for voxel_pos in voxels {
             // Store before state
             if let Some(voxel) = grid.get_voxel(voxel_pos) {
@@ -126,25 +126,25 @@ impl VoxelEditor {
             } else {
                 operation.before.push((voxel_pos, Voxel::default()));
             }
-            
+
             // Apply brush effect
             let new_voxel = self.apply_brush_to_voxel(
                 grid.get_voxel(voxel_pos).unwrap_or_default(),
                 voxel_pos,
                 position,
             );
-            
+
             // Set new voxel
             grid.set_voxel(voxel_pos, new_voxel);
             operation.after.push((voxel_pos, new_voxel));
-            
+
             // Track affected chunk
             let chunk_coord = ChunkCoord::from_world_pos(voxel_pos);
             if !affected_chunks.contains(&chunk_coord) {
                 affected_chunks.push(chunk_coord);
             }
         }
-        
+
         // Add to undo stack if not in preview mode
         if !self.preview_mode {
             self.undo_stack.push_back(operation);
@@ -153,39 +153,37 @@ impl VoxelEditor {
             }
             self.redo_stack.clear();
         }
-        
+
         affected_chunks
     }
-    
+
     /// Get all voxel positions within brush radius
     fn get_voxels_in_brush(&self, center: Vec3) -> Vec<Vec3> {
         let mut voxels = Vec::new();
         let radius_int = self.brush.radius.ceil() as i32;
-        
+
         for x in -radius_int..=radius_int {
             for y in -radius_int..=radius_int {
                 for z in -radius_int..=radius_int {
                     let offset = Vec3::new(x as f32, y as f32, z as f32);
                     let pos = center + offset;
-                    
+
                     if self.is_in_brush(pos, center) {
                         voxels.push(pos);
                     }
                 }
             }
         }
-        
+
         voxels
     }
-    
+
     /// Check if position is within brush shape
     fn is_in_brush(&self, pos: Vec3, center: Vec3) -> bool {
         let offset = pos - center;
-        
+
         match self.brush.shape {
-            BrushShape::Sphere => {
-                offset.length() <= self.brush.radius
-            }
+            BrushShape::Sphere => offset.length() <= self.brush.radius,
             BrushShape::Cube => {
                 offset.x.abs() <= self.brush.radius
                     && offset.y.abs() <= self.brush.radius
@@ -197,7 +195,7 @@ impl VoxelEditor {
             }
         }
     }
-    
+
     /// Apply brush effect to a single voxel
     fn apply_brush_to_voxel(&self, mut voxel: Voxel, pos: Vec3, center: Vec3) -> Voxel {
         let distance = (pos - center).length();
@@ -206,9 +204,9 @@ impl VoxelEditor {
         } else {
             1.0
         };
-        
+
         let strength = self.brush.strength * falloff;
-        
+
         match self.brush.mode {
             BrushMode::Add => {
                 voxel.density = (voxel.density + strength).min(1.0);
@@ -225,15 +223,15 @@ impl VoxelEditor {
                 }
             }
         }
-        
+
         voxel
     }
-    
+
     /// Undo last operation
     pub fn undo(&mut self, grid: &mut VoxelGrid) -> Option<Vec<ChunkCoord>> {
         if let Some(operation) = self.undo_stack.pop_back() {
             let mut affected_chunks = Vec::new();
-            
+
             // Restore before state
             for (pos, voxel) in &operation.before {
                 grid.set_voxel(*pos, *voxel);
@@ -242,21 +240,21 @@ impl VoxelEditor {
                     affected_chunks.push(chunk_coord);
                 }
             }
-            
+
             // Add to redo stack
             self.redo_stack.push_back(operation);
-            
+
             Some(affected_chunks)
         } else {
             None
         }
     }
-    
+
     /// Redo last undone operation
     pub fn redo(&mut self, grid: &mut VoxelGrid) -> Option<Vec<ChunkCoord>> {
         if let Some(operation) = self.redo_stack.pop_back() {
             let mut affected_chunks = Vec::new();
-            
+
             // Restore after state
             for (pos, voxel) in &operation.after {
                 grid.set_voxel(*pos, *voxel);
@@ -265,37 +263,37 @@ impl VoxelEditor {
                     affected_chunks.push(chunk_coord);
                 }
             }
-            
+
             // Add back to undo stack
             self.undo_stack.push_back(operation);
-            
+
             Some(affected_chunks)
         } else {
             None
         }
     }
-    
+
     /// Check if undo is available
     pub fn can_undo(&self) -> bool {
         !self.undo_stack.is_empty()
     }
-    
+
     /// Check if redo is available
     pub fn can_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
-    
+
     /// Clear undo/redo history
     pub fn clear_history(&mut self) {
         self.undo_stack.clear();
         self.redo_stack.clear();
     }
-    
+
     /// Enable/disable preview mode
     pub fn set_preview_mode(&mut self, enabled: bool) {
         self.preview_mode = enabled;
     }
-    
+
     /// Check if in preview mode
     pub fn is_preview_mode(&self) -> bool {
         self.preview_mode
@@ -324,34 +322,34 @@ impl VoxelRaycaster {
             step_size: 0.5,
         }
     }
-    
+
     /// Cast a ray and find the first solid voxel
     pub fn raycast(&self, grid: &VoxelGrid, origin: Vec3, direction: Vec3) -> Option<Vec3> {
         let direction = direction.normalize();
         let mut current_pos = origin;
         let mut distance = 0.0;
-        
+
         while distance < self.max_distance {
             if let Some(voxel) = grid.get_voxel(current_pos) {
                 if voxel.is_solid() {
                     return Some(current_pos);
                 }
             }
-            
+
             current_pos += direction * self.step_size;
             distance += self.step_size;
         }
-        
+
         None
     }
-    
+
     /// Cast a ray and find the first empty voxel adjacent to a solid voxel
     pub fn raycast_surface(&self, grid: &VoxelGrid, origin: Vec3, direction: Vec3) -> Option<Vec3> {
         let direction = direction.normalize();
         let mut current_pos = origin;
         let mut distance = 0.0;
         let mut last_pos = origin;
-        
+
         while distance < self.max_distance {
             if let Some(voxel) = grid.get_voxel(current_pos) {
                 if voxel.is_solid() {
@@ -359,12 +357,12 @@ impl VoxelRaycaster {
                     return Some(last_pos);
                 }
             }
-            
+
             last_pos = current_pos;
             current_pos += direction * self.step_size;
             distance += self.step_size;
         }
-        
+
         None
     }
 }
@@ -392,7 +390,7 @@ mod tests {
     fn test_brush_sphere_shape() {
         let editor = VoxelEditor::new();
         let center = Vec3::new(0.0, 0.0, 0.0);
-        
+
         assert!(editor.is_in_brush(Vec3::new(0.0, 0.0, 0.0), center));
         assert!(editor.is_in_brush(Vec3::new(3.0, 0.0, 0.0), center));
         assert!(!editor.is_in_brush(Vec3::new(10.0, 0.0, 0.0), center));
@@ -402,17 +400,17 @@ mod tests {
     fn test_undo_redo() {
         let mut editor = VoxelEditor::new();
         let mut grid = VoxelGrid::new();
-        
+
         let pos = Vec3::new(10.0, 10.0, 10.0);
         editor.apply_brush(&mut grid, pos);
-        
+
         assert!(editor.can_undo());
         assert!(!editor.can_redo());
-        
+
         editor.undo(&mut grid);
         assert!(!editor.can_undo());
         assert!(editor.can_redo());
-        
+
         editor.redo(&mut grid);
         assert!(editor.can_undo());
         assert!(!editor.can_redo());
@@ -422,13 +420,13 @@ mod tests {
     fn test_raycaster() {
         let raycaster = VoxelRaycaster::new(100.0);
         let mut grid = VoxelGrid::new();
-        
+
         // Add a solid voxel
         grid.set_voxel(Vec3::new(10.0, 0.0, 0.0), Voxel::new(1.0, 1));
-        
+
         let origin = Vec3::new(0.0, 0.0, 0.0);
         let direction = Vec3::new(1.0, 0.0, 0.0);
-        
+
         let hit = raycaster.raycast(&grid, origin, direction);
         assert!(hit.is_some());
     }
