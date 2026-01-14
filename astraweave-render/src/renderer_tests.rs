@@ -829,14 +829,10 @@ mod tests {
         let light = CpuLight {
             pos: vec3(0.0, 5.0, 0.0),
             radius: 10.0,
-            color: vec3(1.0, 1.0, 1.0),
-            intensity: 1.0,
         };
 
         assert_eq!(light.pos, vec3(0.0, 5.0, 0.0));
         assert_eq!(light.radius, 10.0);
-        assert_eq!(light.color, vec3(1.0, 1.0, 1.0));
-        assert_eq!(light.intensity, 1.0);
     }
 
     // ========================================================================
