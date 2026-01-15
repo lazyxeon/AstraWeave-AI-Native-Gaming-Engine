@@ -4042,6 +4042,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     pub fn has_model(&self, name: &str) -> bool {
         self.models.contains_key(name)
     }
+
+    /// Get the number of loaded models.
+    pub fn model_count(&self) -> usize {
+        self.models.len()
+    }
+
+    /// Get names of all loaded models.
+    pub fn model_names(&self) -> Vec<String> {
+        self.models.keys().cloned().collect()
+    }
 }
 
 #[cfg(test)]

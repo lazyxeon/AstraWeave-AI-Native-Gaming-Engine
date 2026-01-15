@@ -3250,6 +3250,56 @@ impl eframe::App for EditorApp {
                         ui.close();
                     }
 
+                    ui.separator();
+                    ui.label("🎨 Material Testing:");
+
+                    if ui.button("🔴 Red Material").clicked() {
+                        if let Some(viewport) = &self.viewport {
+                            if let Err(e) = viewport.set_material_params([1.0, 0.2, 0.2, 1.0], 0.0, 0.5) {
+                                self.console_logs.push(format!("⚠️ Material error: {}", e));
+                            } else {
+                                self.console_logs.push("🔴 Applied red material".into());
+                            }
+                        }
+                        ui.close();
+                    }
+
+                    if ui.button("🟢 Green Metallic").clicked() {
+                        if let Some(viewport) = &self.viewport {
+                            if let Err(e) = viewport.set_material_params([0.2, 0.8, 0.2, 1.0], 0.9, 0.3) {
+                                self.console_logs.push(format!("⚠️ Material error: {}", e));
+                            } else {
+                                self.console_logs.push("🟢 Applied green metallic".into());
+                            }
+                        }
+                        ui.close();
+                    }
+
+                    if ui.button("🔵 Blue Rough").clicked() {
+                        if let Some(viewport) = &self.viewport {
+                            if let Err(e) = viewport.set_material_params([0.2, 0.3, 0.9, 1.0], 0.1, 0.9) {
+                                self.console_logs.push(format!("⚠️ Material error: {}", e));
+                            } else {
+                                self.console_logs.push("🔵 Applied blue rough".into());
+                            }
+                        }
+                        ui.close();
+                    }
+
+                    if ui.button("⬜ White Default").clicked() {
+                        if let Some(viewport) = &self.viewport {
+                            if let Err(e) = viewport.set_material_params([1.0, 1.0, 1.0, 1.0], 0.0, 0.5) {
+                                self.console_logs.push(format!("⚠️ Material error: {}", e));
+                            } else {
+                                self.console_logs.push("⬜ Applied white default".into());
+                            }
+                        }
+                        ui.close();
+                    }
+
+                    ui.separator();
+                    ui.label("📁 Model Discovery:");
+
                     if ui.button("📁 Scan For Models").clicked() {
                         let scan_dirs = [
                             ("Local", PathBuf::from("assets/models")),

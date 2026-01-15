@@ -1857,6 +1857,37 @@ impl ViewportWidget {
         anyhow::bail!("astraweave-render feature not enabled")
     }
 
+    /// Set material parameters for the viewport renderer
+    #[cfg(feature = "astraweave-render")]
+    pub fn set_material_params(
+        &self,
+        base_color: [f32; 4],
+        metallic: f32,
+        roughness: f32,
+    ) -> anyhow::Result<()> {
+        let mut renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter_mut() {
+            adapter.set_material_params(base_color, metallic, roughness);
+            Ok(())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn set_material_params(
+        &self,
+        _base_color: [f32; 4],
+        _metallic: f32,
+        _roughness: f32,
+    ) -> anyhow::Result<()> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
     /// Toggle entity selection
     pub fn toggle_selection(&mut self, entity: crate::entity_manager::EntityId) {
         if self.selected_entities.contains(&entity) {
