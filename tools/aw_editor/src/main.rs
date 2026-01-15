@@ -633,6 +633,207 @@ impl EditorApp {
         self.status = "New scene created".into();
     }
 
+    /// Week 4: Handle files dropped onto the editor window
+    fn handle_dropped_files(&mut self, ctx: &egui::Context) {
+        // Show drop overlay when files are being dragged over
+        let hovered_files = ctx.input(|i| i.raw.hovered_files.clone());
+        if !hovered_files.is_empty() {
+            self.show_drop_overlay(ctx, &hovered_files);
+        }
+
+        // Check for dropped files
+        let dropped_files: Vec<std::path::PathBuf> = ctx.input(|i| {
+            i.raw.dropped_files
+                .iter()
+                .filter_map(|f| f.path.clone())
+                .collect()
+        });
+
+        if dropped_files.is_empty() {
+            return;
+        }
+
+        for path in dropped_files {
+            let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown");
+
+            match extension.to_lowercase().as_str() {
+                // 3D Models - Load to viewport
+                "glb" | "gltf" => {
+                    self.log(format!("📦 Importing model: {}", file_name));
+                    if let Some(viewport) = &self.viewport {
+                        match viewport.load_gltf_model(file_name, &path) {
+                            Ok(_) => {
+                                self.toast_success(format!("Loaded model: {}", file_name));
+                                self.log(format!("✅ Model loaded: {}", file_name));
+                            }
+                            Err(e) => {
+                                self.toast_error(format!("Failed to load {}: {}", file_name, e));
+                                self.log(format!("❌ Model load failed: {} - {}", file_name, e));
+                            }
+                        }
+                    } else {
+                        self.toast_error("No viewport available for model preview");
+                        self.log("⚠️ Cannot import model: viewport not initialized");
+                    }
+                }
+
+                // Scene files - Load scene
+                "ron" => {
+                    if path.to_string_lossy().contains("scene") {
+                        self.log(format!("📂 Loading scene: {}", file_name));
+                        match scene_serialization::load_scene(&path) {
+                            Ok(world) => {
+                                self.scene_state = Some(scene_state::EditorSceneState::new(world));
+                                self.current_scene_path = Some(path.clone());
+                                self.recent_files.add_file(path.clone());
+                                self.is_dirty = false;
+                                self.toast_success(format!("Loaded scene: {}", file_name));
+                                self.log(format!("✅ Scene loaded: {}", file_name));
+                            }
+                            Err(e) => {
+                                self.toast_error(format!("Failed to load scene: {}", e));
+                                self.log(format!("❌ Scene load failed: {}", e));
+                            }
+                        }
+                    } else {
+                        self.log(format!("ℹ️ RON file dropped (not a scene): {}", file_name));
+                    }
+                }
+
+                // Textures - Log for future implementation
+                "png" | "jpg" | "jpeg" | "ktx2" => {
+                    self.log(format!("🖼️ Texture dropped: {} (apply to selected material - TODO)", file_name));
+                    self.toast_info(format!("Texture: {} (texture application coming soon)", file_name));
+                }
+
+                // Materials - Log for future implementation
+                "toml" => {
+                    if path.to_string_lossy().contains("material") {
+                        self.log(format!("🎨 Material definition: {} (load material - TODO)", file_name));
+                        self.toast_info(format!("Material: {} (material loading coming soon)", file_name));
+                    } else {
+                        self.log(format!("📄 TOML file dropped: {}", file_name));
+                    }
+                }
+
+                // Audio files - Log for future implementation
+                "ogg" | "wav" | "mp3" => {
+                    self.log(format!("🔊 Audio file: {} (audio import - TODO)", file_name));
+                    self.toast_info(format!("Audio: {} (audio import coming soon)", file_name));
+                }
+
+                // Unknown file types
+                _ => {
+                    self.log(format!("❓ Unknown file type dropped: {} ({})", file_name, extension));
+                    self.toast_info(format!("Unknown file: .{} not supported", extension));
+                }
+            }
+        }
+    }
+
+    /// Week 4: Show visual overlay when dragging files over editor
+    fn show_drop_overlay(&self, ctx: &egui::Context, hovered_files: &[egui::HoveredFile]) {
+        let screen_rect = ctx.screen_rect();
+        
+        // Count file types
+        let mut model_count = 0;
+        let mut scene_count = 0;
+        let mut texture_count = 0;
+        let mut other_count = 0;
+
+        for file in hovered_files {
+            if let Some(path) = &file.path {
+                match path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase().as_str() {
+                    "glb" | "gltf" => model_count += 1,
+                    "ron" => scene_count += 1,
+                    "png" | "jpg" | "jpeg" | "ktx2" => texture_count += 1,
+                    _ => other_count += 1,
+                }
+            } else {
+                other_count += 1;
+            }
+        }
+
+        // Build description text
+        let mut parts = Vec::new();
+        if model_count > 0 {
+            parts.push(format!("📦 {} model{}", model_count, if model_count > 1 { "s" } else { "" }));
+        }
+        if scene_count > 0 {
+            parts.push(format!("📂 {} scene{}", scene_count, if scene_count > 1 { "s" } else { "" }));
+        }
+        if texture_count > 0 {
+            parts.push(format!("🖼️ {} texture{}", texture_count, if texture_count > 1 { "s" } else { "" }));
+        }
+        if other_count > 0 {
+            parts.push(format!("📄 {} file{}", other_count, if other_count > 1 { "s" } else { "" }));
+        }
+
+        let description = if parts.is_empty() {
+            "Drop files here".to_string()
+        } else {
+            parts.join(", ")
+        };
+
+        // Paint semi-transparent overlay
+        let painter = ctx.layer_painter(egui::LayerId::new(
+            egui::Order::Foreground,
+            egui::Id::new("drop_overlay"),
+        ));
+
+        // Background dimming
+        painter.rect_filled(
+            screen_rect,
+            0.0,
+            egui::Color32::from_rgba_unmultiplied(0, 0, 0, 150),
+        );
+
+        // Center box with info
+        let box_size = egui::vec2(400.0, 150.0);
+        let box_rect = egui::Rect::from_center_size(screen_rect.center(), box_size);
+
+        painter.rect_filled(
+            box_rect,
+            12.0,
+            egui::Color32::from_rgb(40, 60, 80),
+        );
+
+        painter.rect_stroke(
+            box_rect,
+            12.0,
+            egui::Stroke::new(3.0, egui::Color32::from_rgb(100, 180, 255)),
+            egui::StrokeKind::Outside,
+        );
+
+        // Icon
+        painter.text(
+            box_rect.center() - egui::vec2(0.0, 30.0),
+            egui::Align2::CENTER_CENTER,
+            "📥",
+            egui::FontId::proportional(48.0),
+            egui::Color32::WHITE,
+        );
+
+        // "Drop files here" text
+        painter.text(
+            box_rect.center() + egui::vec2(0.0, 20.0),
+            egui::Align2::CENTER_CENTER,
+            "Drop to import",
+            egui::FontId::proportional(20.0),
+            egui::Color32::from_rgb(200, 200, 200),
+        );
+
+        // File type description
+        painter.text(
+            box_rect.center() + egui::vec2(0.0, 45.0),
+            egui::Align2::CENTER_CENTER,
+            &description,
+            egui::FontId::proportional(14.0),
+            egui::Color32::from_rgb(150, 200, 255),
+        );
+    }
+
     fn render_toasts(&mut self, ctx: &egui::Context) {
         const TOAST_DURATION: f32 = 4.0;
         const TOAST_WIDTH: f32 = 300.0;
@@ -2136,6 +2337,9 @@ impl eframe::App for EditorApp {
             self.show_quit_dialog = true;
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
         }
+
+        // Week 4: Handle drag-drop file imports
+        self.handle_dropped_files(ctx);
 
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
