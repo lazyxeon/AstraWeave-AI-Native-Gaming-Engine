@@ -101,19 +101,21 @@ Connect "Import Model" action to engine renderer:
 
 ### Week 2: PBR Material Integration
 
-#### Day 1-2: Material Inspector → Viewport Sync
-Currently, material inspector is read-only. Need to:
+#### Day 1-2: Material Inspector → Viewport Sync ✅ DONE
+Material parameter API added:
 
-```rust
-// In material_inspector.rs
-pub fn apply_material_to_viewport(&self, viewport: &mut ViewportWidget) {
-    // Update engine renderer's material for selected entity
-}
-```
+**Completed Features**:
+- `Renderer::set_material_params(base_color, metallic, roughness)` - Core renderer method
+- `EngineRenderAdapter::set_material_params()` - Editor adapter wrapper with logging
+- `ViewportWidget::set_material_params()` - Public API for editor integration
+- `Renderer::model_count()` and `Renderer::model_names()` - Model discovery methods
+- Debug menu "Material Testing" section with preset materials (Red, Green Metallic, Blue Rough, White)
 
-**Files to modify**:
-- `material_inspector.rs` - Add viewport sync method
-- `viewport/engine_adapter.rs` - Add `update_material()` method
+**Files modified**:
+- `astraweave-render/src/renderer.rs` - Added model_count() and model_names() methods
+- `viewport/engine_adapter.rs` - Added set_material_params() wrapper
+- `viewport/widget.rs` - Added public set_material_params() method
+- `main.rs` - Added Material Testing section to Debug menu
 
 #### Day 3-4: Texture Loading Pipeline
 Enable texture preview from asset browser:

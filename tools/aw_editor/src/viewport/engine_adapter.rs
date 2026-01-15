@@ -110,6 +110,28 @@ impl EngineRenderAdapter {
     pub fn clear_model(&mut self, name: &str) {
         self.renderer.clear_model(name);
     }
+
+    /// Set material parameters for the current model
+    pub fn set_material_params(&mut self, base_color: [f32; 4], metallic: f32, roughness: f32) {
+        self.renderer
+            .set_material_params(base_color, metallic, roughness);
+        tracing::debug!(
+            "Material params set: color={:?}, metallic={}, roughness={}",
+            base_color,
+            metallic,
+            roughness
+        );
+    }
+
+    /// Get model count
+    pub fn model_count(&self) -> usize {
+        self.renderer.model_count()
+    }
+
+    /// List all loaded model names
+    pub fn model_names(&self) -> Vec<String> {
+        self.renderer.model_names()
+    }
 }
 
 #[cfg(not(feature = "astraweave-render"))]
