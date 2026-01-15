@@ -731,6 +731,82 @@ impl EditorApp {
         result
     }
 
+    /// Week 4 Day 3-4: Import texture with BC7 compression
+    fn import_texture_with_compression(&mut self, path: &std::path::Path, file_name: &str) {
+        use astraweave_asset_pipeline::compress_bc7;
+        
+        self.log(format!("🖼️ Importing texture: {}", file_name));
+        
+        // Load the image
+        let image = match image::open(path) {
+            Ok(img) => img,
+            Err(e) => {
+                self.log(format!("❌ Failed to open image: {}", e));
+                self.toast_error(format!("Failed to open: {}", file_name));
+                return;
+            }
+        };
+        
+        let rgba = image.to_rgba8();
+        let (width, height) = rgba.dimensions();
+        let original_size = rgba.len();
+        
+        self.log(format!("📊 Image dimensions: {}×{}, {} bytes", width, height, original_size));
+        
+        // Check if dimensions are divisible by 4 (required for BC7)
+        if width % 4 != 0 || height % 4 != 0 {
+            self.log(format!("⚠️ BC7 requires dimensions divisible by 4 (got {}×{})", width, height));
+            self.log("💡 Consider resizing to nearest power of 2 (e.g., 512×512, 1024×1024, 2048×2048)".to_string());
+            self.toast_info(format!("{}: Needs resize for compression ({}×{})", file_name, width, height));
+            return;
+        }
+        
+        // Compress to BC7
+        let start_time = std::time::Instant::now();
+        match compress_bc7(&rgba) {
+            Ok(compressed) => {
+                let elapsed = start_time.elapsed();
+                let compressed_size = compressed.len();
+                let ratio = original_size as f32 / compressed_size as f32;
+                let reduction = 100.0 * (1.0 - compressed_size as f32 / original_size as f32);
+                
+                self.log(format!(
+                    "✅ BC7 compression complete: {} → {} bytes ({:.1}:1, {:.1}% reduction) in {:.2}s",
+                    original_size, compressed_size, ratio, reduction, elapsed.as_secs_f32()
+                ));
+                
+                // Save compressed texture to project folder
+                let output_path = self.content_root.join("textures").join(format!(
+                    "{}.bc7.bin",
+                    path.file_stem().and_then(|s| s.to_str()).unwrap_or("texture")
+                ));
+                
+                // Create textures directory if needed
+                if let Some(parent) = output_path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                
+                match std::fs::write(&output_path, &compressed) {
+                    Ok(_) => {
+                        self.log(format!("💾 Saved BC7 texture: {}", output_path.display()));
+                        self.toast_success(format!(
+                            "Compressed {}: {:.1}× smaller",
+                            file_name, ratio
+                        ));
+                    }
+                    Err(e) => {
+                        self.log(format!("❌ Failed to save compressed texture: {}", e));
+                        self.toast_error(format!("Failed to save: {}", file_name));
+                    }
+                }
+            }
+            Err(e) => {
+                self.log(format!("❌ BC7 compression failed: {}", e));
+                self.toast_error(format!("Compression failed: {}", file_name));
+            }
+        }
+    }
+
     /// Week 4: Handle files dropped onto the editor window
     fn handle_dropped_files(&mut self, ctx: &egui::Context) {
         // Show drop overlay when files are being dragged over
@@ -819,10 +895,15 @@ impl EditorApp {
                     }
                 }
 
-                // Textures - Log for future implementation
-                "png" | "jpg" | "jpeg" | "ktx2" => {
-                    self.log(format!("🖼️ Texture dropped: {} (apply to selected material - TODO)", file_name));
-                    self.toast_info(format!("Texture: {} (texture application coming soon)", file_name));
+                // Textures - Import with BC7 compression
+                "png" | "jpg" | "jpeg" => {
+                    self.import_texture_with_compression(&path, file_name);
+                }
+                
+                // KTX2 textures - Already compressed, just register
+                "ktx2" => {
+                    self.log(format!("🖼️ KTX2 texture imported: {} (already compressed)", file_name));
+                    self.toast_success(format!("Imported: {} (KTX2)", file_name));
                 }
 
                 // Materials - Log for future implementation

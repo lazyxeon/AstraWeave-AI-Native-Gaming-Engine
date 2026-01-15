@@ -65,7 +65,7 @@ log = "0.4"
 zstd = "0.13"
 lz4_flex = "0.11"
 crc32fast = "1.4"
-astraweave-asset-pipeline = { path = "../../astraweave-asset-pipeline", default-features = false }
+astraweave-asset-pipeline = { path = "../../astraweave-asset-pipeline", default-features = false, features = ["bc7"] }
 [dev-dependencies]
 approx = "0.5"
 criterion = { version = "0.5", features = ["html_reports"] }
