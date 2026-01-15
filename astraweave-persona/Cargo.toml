@@ -20,17 +20,17 @@ astraweave-prompts = { path = "../astraweave-prompts" }
 astraweave-rag = { path = "../astraweave-rag" }
 
 # Async runtime
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 async-trait = "0.1"
 
 # Additional utilities
-uuid = { version = "1.0", features = ["v4", "serde"] }
+uuid = { version = "1.19", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 rand = "0.9"
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }
-tempfile = "3.0"
+tempfile = "3.24"
 
 [[bench]]
 name = "persona_benchmarks"

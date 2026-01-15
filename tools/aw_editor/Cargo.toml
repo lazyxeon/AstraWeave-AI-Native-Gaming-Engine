@@ -21,7 +21,7 @@ profiling = ["astraweave-profiling/profiling"]
 [dependencies]
 eframe = { workspace = true, features = ["wgpu"] }
 egui = { workspace = true }
-egui-wgpu = "0.32.0"
+egui-wgpu = "0.33.3"
 egui_dock = { workspace = true }
 egui_graphs = { workspace = true }
 wgpu = { workspace = true }
@@ -29,7 +29,7 @@ bytemuck = { version = "1.19", features = ["derive"] }
 petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-ron = "0.8"
+ron = "0.12"
 toml = { workspace = true }
 notify = "8"
 anyhow = { workspace = true }
@@ -40,7 +40,7 @@ walkdir = "2"
 winit = { workspace = true }
 rhai = { workspace = true }
 glam = { workspace = true }
-rand = "0.8"
+rand = "0.9"
 tracing = { workspace = true }
 chrono = "0.4"
 pollster = "0.4"
@@ -63,12 +63,12 @@ clap = { version = "4", features = ["derive"] }
 env_logger = "0.11"
 log = "0.4"
 zstd = "0.13"
-lz4_flex = "0.11"
+lz4_flex = "0.12"
 crc32fast = "1.4"
 astraweave-asset-pipeline = { path = "../../astraweave-asset-pipeline" }
 [dev-dependencies]
 approx = "0.5"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 tempfile = "3"
 
 [[bench]]
