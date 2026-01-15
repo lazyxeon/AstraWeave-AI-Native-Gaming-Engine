@@ -251,7 +251,6 @@ impl RenderNode for RendererMainNode {
     }
 }
 
-
 impl RenderGraph {
     pub fn new() -> Self {
         Self::default()

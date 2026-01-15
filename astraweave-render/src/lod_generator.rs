@@ -151,7 +151,10 @@ impl Eq for EdgeCollapse {}
 impl Ord for EdgeCollapse {
     fn cmp(&self, other: &Self) -> Ordering {
         // Min-heap: lower error = higher priority
-        other.error.partial_cmp(&self.error).unwrap_or(Ordering::Equal)
+        other
+            .error
+            .partial_cmp(&self.error)
+            .unwrap_or(Ordering::Equal)
     }
 }
 

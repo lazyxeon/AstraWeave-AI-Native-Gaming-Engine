@@ -108,10 +108,7 @@ fn test_all_shaders_compile() {
 
         // Skip modular shaders that require concatenation (e.g. pbr.wgsl depends on clustered/vxgi modules)
         if relative_path.to_string_lossy().contains("pbr.wgsl") {
-            println!(
-                "⏭️  {} (Modular shader - skipped)",
-                relative_path.display()
-            );
+            println!("⏭️  {} (Modular shader - skipped)", relative_path.display());
             success_count += 1;
             continue;
         }

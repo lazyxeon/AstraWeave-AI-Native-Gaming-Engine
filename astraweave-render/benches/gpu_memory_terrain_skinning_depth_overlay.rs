@@ -168,11 +168,11 @@ impl MockGpuMemoryBudget {
         }
         budget.current += size;
         self.total_used += size;
-        
+
         if budget.is_over_soft_limit() {
             // Could emit soft limit event here, but for benchmark we just continue
         }
-        
+
         Ok(())
     }
 
@@ -225,13 +225,13 @@ impl MockGpuMemoryBudget {
 #[repr(C, align(16))]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TerrainLayerGpu {
-    pub texture_indices: [u32; 4],   // 16 bytes
-    pub uv_scale: [f32; 2],          // 8 bytes
-    pub height_range: [f32; 2],      // 8 bytes
-    pub blend_sharpness: f32,        // 4 bytes
-    pub triplanar_power: f32,        // 4 bytes
-    pub material_factors: [f32; 2],  // 8 bytes
-    pub _pad: [u32; 4],              // 16 bytes
+    pub texture_indices: [u32; 4],  // 16 bytes
+    pub uv_scale: [f32; 2],         // 8 bytes
+    pub height_range: [f32; 2],     // 8 bytes
+    pub blend_sharpness: f32,       // 4 bytes
+    pub triplanar_power: f32,       // 4 bytes
+    pub material_factors: [f32; 2], // 8 bytes
+    pub _pad: [u32; 4],             // 16 bytes
 }
 
 impl TerrainLayerGpu {
@@ -271,14 +271,14 @@ impl TerrainLayerGpu {
 #[repr(C, align(16))]
 #[derive(Clone, Copy, Debug)]
 pub struct TerrainMaterialGpu {
-    pub layers: [TerrainLayerGpu; 4],       // 256 bytes
-    pub splat_map_index: u32,               // 4 bytes
-    pub splat_uv_scale: f32,                // 4 bytes
-    pub triplanar_enabled: u32,             // 4 bytes
-    pub normal_blend_method: u32,           // 4 bytes
-    pub triplanar_slope_threshold: f32,     // 4 bytes
-    pub height_blend_enabled: u32,          // 4 bytes
-    pub _pad: [u32; 10],                    // 40 bytes
+    pub layers: [TerrainLayerGpu; 4],   // 256 bytes
+    pub splat_map_index: u32,           // 4 bytes
+    pub splat_uv_scale: f32,            // 4 bytes
+    pub triplanar_enabled: u32,         // 4 bytes
+    pub normal_blend_method: u32,       // 4 bytes
+    pub triplanar_slope_threshold: f32, // 4 bytes
+    pub height_blend_enabled: u32,      // 4 bytes
+    pub _pad: [u32; 10],                // 40 bytes
 }
 
 impl Default for TerrainMaterialGpu {
@@ -382,15 +382,12 @@ impl JointPalette {
         let count = count.min(MAX_JOINTS);
         let mut palette = Self::default();
         palette.joint_count = count as u32;
-        
+
         // Identity matrix
         let identity: [f32; 16] = [
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         ];
-        
+
         for i in 0..count {
             palette.matrices[i] = identity;
         }
@@ -583,10 +580,10 @@ impl MockDepthBuffer {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct OverlayParams {
-    pub fade: f32,       // 0..1 black fade
-    pub letterbox: f32,  // 0..0.45 fraction of screen height for bars
-    pub vignette: f32,   // 0..1 vignette intensity
-    pub chromatic: f32,  // 0..1 chromatic aberration
+    pub fade: f32,      // 0..1 black fade
+    pub letterbox: f32, // 0..0.45 fraction of screen height for bars
+    pub vignette: f32,  // 0..1 vignette intensity
+    pub chromatic: f32, // 0..1 chromatic aberration
 }
 
 impl OverlayParams {
@@ -619,7 +616,10 @@ impl OverlayParams {
 
     #[inline]
     pub fn is_active(&self) -> bool {
-        self.fade > 0.001 || self.letterbox > 0.001 || self.vignette > 0.001 || self.chromatic > 0.001
+        self.fade > 0.001
+            || self.letterbox > 0.001
+            || self.vignette > 0.001
+            || self.chromatic > 0.001
     }
 
     pub fn as_bytes(&self) -> [u8; 16] {
@@ -716,7 +716,7 @@ impl DofConfig {
     pub fn calculate_coc(&self, depth: f32) -> f32 {
         let near_focus = self.focus_distance - self.focus_range * 0.5;
         let far_focus = self.focus_distance + self.focus_range * 0.5;
-        
+
         if depth < near_focus {
             ((near_focus - depth) / near_focus * self.near_blur_scale).min(self.bokeh_size)
         } else if depth > far_focus {
@@ -767,14 +767,14 @@ impl ColorGradingConfig {
             color[1] * (2.0f32).powf(self.exposure),
             color[2] * (2.0f32).powf(self.exposure),
         ];
-        
+
         // Contrast
         c = [
             (c[0] - 0.5) * self.contrast + 0.5,
             (c[1] - 0.5) * self.contrast + 0.5,
             (c[2] - 0.5) * self.contrast + 0.5,
         ];
-        
+
         // Saturation
         let luma = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722;
         c = [
@@ -782,7 +782,7 @@ impl ColorGradingConfig {
             luma + (c[1] - luma) * self.saturation,
             luma + (c[2] - luma) * self.saturation,
         ];
-        
+
         c
     }
 }
@@ -834,15 +834,15 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
 
     // 1. Budget manager creation
     group.bench_function("manager_creation_default", |b| {
-        b.iter(|| {
-            black_box(MockGpuMemoryBudget::new())
-        });
+        b.iter(|| black_box(MockGpuMemoryBudget::new()));
     });
 
     // 2. Budget manager with custom size
     group.bench_function("manager_creation_custom_4gb", |b| {
         b.iter(|| {
-            black_box(MockGpuMemoryBudget::with_total_budget(4 * 1024 * 1024 * 1024))
+            black_box(MockGpuMemoryBudget::with_total_budget(
+                4 * 1024 * 1024 * 1024,
+            ))
         });
     });
 
@@ -853,9 +853,7 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
             hard_limit: 512 * 1024 * 1024,
             current: 128 * 1024 * 1024,
         };
-        b.iter(|| {
-            black_box(budget.remaining())
-        });
+        b.iter(|| black_box(budget.remaining()));
     });
 
     // 4. Usage ratio calculation
@@ -865,9 +863,7 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
             hard_limit: 512 * 1024 * 1024,
             current: 384 * 1024 * 1024,
         };
-        b.iter(|| {
-            black_box(budget.usage_ratio())
-        });
+        b.iter(|| black_box(budget.usage_ratio()));
     });
 
     // 5. Allocation check
@@ -878,9 +874,7 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
             current: 256 * 1024 * 1024,
         };
         let size = 64 * 1024 * 1024u64;
-        b.iter(|| {
-            black_box(budget.can_allocate(black_box(size)))
-        });
+        b.iter(|| black_box(budget.can_allocate(black_box(size))));
     });
 
     // 6. Try allocate operation
@@ -898,7 +892,10 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
         let mut mgr = MockGpuMemoryBudget::new();
         let _ = mgr.try_allocate(MemoryCategory::Geometry, 100 * 1024 * 1024);
         b.iter(|| {
-            mgr.free(black_box(MemoryCategory::Geometry), black_box(1024 * 1024u64));
+            mgr.free(
+                black_box(MemoryCategory::Geometry),
+                black_box(1024 * 1024u64),
+            );
         });
     });
 
@@ -906,9 +903,7 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
     group.bench_function("pressure_level", |b| {
         let mut mgr = MockGpuMemoryBudget::new();
         let _ = mgr.try_allocate(MemoryCategory::Textures, 1024 * 1024 * 1024);
-        b.iter(|| {
-            black_box(mgr.pressure_level())
-        });
+        b.iter(|| black_box(mgr.pressure_level()));
     });
 
     // 9. Category iteration
@@ -927,9 +922,7 @@ fn bench_gpu_memory_budget(c: &mut Criterion) {
         let mut mgr = MockGpuMemoryBudget::new();
         let _ = mgr.try_allocate(MemoryCategory::Textures, 256 * 1024 * 1024);
         let _ = mgr.try_allocate(MemoryCategory::Geometry, 128 * 1024 * 1024);
-        b.iter(|| {
-            black_box(mgr.category_report())
-        });
+        b.iter(|| black_box(mgr.category_report()));
     });
 
     // 11. Allocation throughput (multiple categories)
@@ -963,9 +956,7 @@ fn bench_terrain_materials(c: &mut Criterion) {
 
     // 1. Layer GPU creation (default)
     group.bench_function("layer_gpu_default", |b| {
-        b.iter(|| {
-            black_box(TerrainLayerGpu::default())
-        });
+        b.iter(|| black_box(TerrainLayerGpu::default()));
     });
 
     // 2. Layer GPU creation (custom)
@@ -1001,9 +992,7 @@ fn bench_terrain_materials(c: &mut Criterion) {
 
     // 5. Terrain material GPU default
     group.bench_function("terrain_material_default", |b| {
-        b.iter(|| {
-            black_box(TerrainMaterialGpu::default())
-        });
+        b.iter(|| black_box(TerrainMaterialGpu::default()));
     });
 
     // 6. Terrain material with layers
@@ -1014,17 +1003,13 @@ fn bench_terrain_materials(c: &mut Criterion) {
             TerrainLayerGpu::new(8, 9, 10, 11, [4.0, 4.0]),
             TerrainLayerGpu::new(12, 13, 14, 15, [8.0, 8.0]),
         ];
-        b.iter(|| {
-            black_box(TerrainMaterialGpu::with_layers(black_box(layers)))
-        });
+        b.iter(|| black_box(TerrainMaterialGpu::with_layers(black_box(layers))));
     });
 
     // 7. Layer access
     group.bench_function("get_layer", |b| {
         let mat = TerrainMaterialGpu::default();
-        b.iter(|| {
-            black_box(mat.get_layer(black_box(2)))
-        });
+        b.iter(|| black_box(mat.get_layer(black_box(2))));
     });
 
     // 8. Splat map setup
@@ -1049,7 +1034,10 @@ fn bench_terrain_materials(c: &mut Criterion) {
     group.bench_function("compute_layer_weight", |b| {
         let splat = [0.3f32, 0.4, 0.2, 0.1];
         b.iter(|| {
-            black_box(TerrainMaterialGpu::compute_layer_weight(black_box(splat), black_box(1)))
+            black_box(TerrainMaterialGpu::compute_layer_weight(
+                black_box(splat),
+                black_box(1),
+            ))
         });
     });
 
@@ -1064,15 +1052,11 @@ fn bench_terrain_materials(c: &mut Criterion) {
 
     // 12. Size constants
     group.bench_function("size_constant_layer", |b| {
-        b.iter(|| {
-            black_box(TerrainLayerGpu::SIZE)
-        });
+        b.iter(|| black_box(TerrainLayerGpu::SIZE));
     });
 
     group.bench_function("size_constant_material", |b| {
-        b.iter(|| {
-            black_box(TerrainMaterialGpu::SIZE)
-        });
+        b.iter(|| black_box(TerrainMaterialGpu::SIZE));
     });
 
     group.finish();
@@ -1083,16 +1067,12 @@ fn bench_skinning_gpu(c: &mut Criterion) {
 
     // 1. Joint palette handle creation
     group.bench_function("handle_creation", |b| {
-        b.iter(|| {
-            black_box(JointPaletteHandle(black_box(42)))
-        });
+        b.iter(|| black_box(JointPaletteHandle(black_box(42))));
     });
 
     // 2. Joint palette default creation
     group.bench_function("palette_default", |b| {
-        b.iter(|| {
-            black_box(JointPalette::default())
-        });
+        b.iter(|| black_box(JointPalette::default()));
     });
 
     // 3. Joint palette from identity (varying joint counts)
@@ -1101,9 +1081,7 @@ fn bench_skinning_gpu(c: &mut Criterion) {
             BenchmarkId::new("palette_from_identity", count),
             &count,
             |b, &count| {
-                b.iter(|| {
-                    black_box(JointPalette::from_identity(black_box(count)))
-                });
+                b.iter(|| black_box(JointPalette::from_identity(black_box(count))));
             },
         );
     }
@@ -1112,10 +1090,7 @@ fn bench_skinning_gpu(c: &mut Criterion) {
     group.bench_function("set_matrix", |b| {
         let mut palette = JointPalette::from_identity(64);
         let matrix: [f32; 16] = [
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            1.0, 2.0, 3.0, 1.0,
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 3.0, 1.0,
         ];
         b.iter(|| {
             palette.set_matrix(black_box(32), black_box(matrix));
@@ -1125,9 +1100,7 @@ fn bench_skinning_gpu(c: &mut Criterion) {
     // 5. Get matrix operation
     group.bench_function("get_matrix", |b| {
         let palette = JointPalette::from_identity(128);
-        b.iter(|| {
-            black_box(palette.get_matrix(black_box(64)))
-        });
+        b.iter(|| black_box(palette.get_matrix(black_box(64))));
     });
 
     // 6. Palette as bytes
@@ -1141,17 +1114,13 @@ fn bench_skinning_gpu(c: &mut Criterion) {
 
     // 7. Manager creation
     group.bench_function("manager_creation", |b| {
-        b.iter(|| {
-            black_box(MockJointPaletteManager::new())
-        });
+        b.iter(|| black_box(MockJointPaletteManager::new()));
     });
 
     // 8. Manager allocate
     group.bench_function("manager_allocate", |b| {
         let mut mgr = MockJointPaletteManager::new();
-        b.iter(|| {
-            black_box(mgr.allocate())
-        });
+        b.iter(|| black_box(mgr.allocate()));
     });
 
     // 9. Manager upload
@@ -1159,9 +1128,7 @@ fn bench_skinning_gpu(c: &mut Criterion) {
         let mut mgr = MockJointPaletteManager::new();
         let handle = mgr.allocate();
         let palette = JointPalette::from_identity(64);
-        b.iter(|| {
-            black_box(mgr.upload(black_box(handle), black_box(palette)))
-        });
+        b.iter(|| black_box(mgr.upload(black_box(handle), black_box(palette))));
     });
 
     // 10. Manager get
@@ -1169,9 +1136,7 @@ fn bench_skinning_gpu(c: &mut Criterion) {
         let mut mgr = MockJointPaletteManager::new();
         let handle = mgr.allocate();
         let _ = mgr.upload(handle, JointPalette::from_identity(64));
-        b.iter(|| {
-            black_box(mgr.get(black_box(handle)))
-        });
+        b.iter(|| black_box(mgr.get(black_box(handle))));
     });
 
     // 11. Manager free
@@ -1186,9 +1151,7 @@ fn bench_skinning_gpu(c: &mut Criterion) {
 
     // 12. Palette size constant
     group.bench_function("palette_size_constant", |b| {
-        b.iter(|| {
-            black_box(JointPalette::SIZE)
-        });
+        b.iter(|| black_box(JointPalette::SIZE));
     });
 
     group.finish();
@@ -1200,48 +1163,36 @@ fn bench_depth_buffer(c: &mut Criterion) {
     // 1. Depth format bytes per pixel
     group.bench_function("format_bytes_per_pixel", |b| {
         let format = DepthFormat::Depth32Float;
-        b.iter(|| {
-            black_box(format.bytes_per_pixel())
-        });
+        b.iter(|| black_box(format.bytes_per_pixel()));
     });
 
     // 2. Format has stencil check
     group.bench_function("format_has_stencil", |b| {
         let format = DepthFormat::Depth24PlusStencil8;
-        b.iter(|| {
-            black_box(format.has_stencil())
-        });
+        b.iter(|| black_box(format.has_stencil()));
     });
 
     // 3. Depth desc creation
     group.bench_function("desc_creation", |b| {
-        b.iter(|| {
-            black_box(DepthDesc::new(black_box(1920), black_box(1080)))
-        });
+        b.iter(|| black_box(DepthDesc::new(black_box(1920), black_box(1080))));
     });
 
     // 4. Desc memory size calculation
     group.bench_function("desc_memory_size", |b| {
         let desc = DepthDesc::new(1920, 1080);
-        b.iter(|| {
-            black_box(desc.memory_size())
-        });
+        b.iter(|| black_box(desc.memory_size()));
     });
 
     // 5. Desc aspect ratio
     group.bench_function("desc_aspect_ratio", |b| {
         let desc = DepthDesc::new(1920, 1080);
-        b.iter(|| {
-            black_box(desc.aspect_ratio())
-        });
+        b.iter(|| black_box(desc.aspect_ratio()));
     });
 
     // 6. Desc with MSAA
     group.bench_function("desc_with_msaa", |b| {
         let desc = DepthDesc::new(1920, 1080);
-        b.iter(|| {
-            black_box(desc.clone().with_msaa(black_box(4)))
-        });
+        b.iter(|| black_box(desc.clone().with_msaa(black_box(4))));
     });
 
     // 7. Depth buffer creation (mock)
@@ -1263,9 +1214,7 @@ fn bench_depth_buffer(c: &mut Criterion) {
     // 9. Buffer memory size query
     group.bench_function("buffer_memory_size", |b| {
         let buffer = MockDepthBuffer::new(DepthDesc::new(1920, 1080));
-        b.iter(|| {
-            black_box(buffer.memory_size())
-        });
+        b.iter(|| black_box(buffer.memory_size()));
     });
 
     // 10. Memory size at various resolutions
@@ -1275,9 +1224,7 @@ fn bench_depth_buffer(c: &mut Criterion) {
             &(width, height),
             |b, &(w, h)| {
                 let desc = DepthDesc::new(w, h);
-                b.iter(|| {
-                    black_box(desc.memory_size())
-                });
+                b.iter(|| black_box(desc.memory_size()));
             },
         );
     }
@@ -1290,9 +1237,7 @@ fn bench_overlay_effects(c: &mut Criterion) {
 
     // 1. Overlay params default
     group.bench_function("params_default", |b| {
-        b.iter(|| {
-            black_box(OverlayParams::default())
-        });
+        b.iter(|| black_box(OverlayParams::default()));
     });
 
     // 2. Set fade
@@ -1336,9 +1281,7 @@ fn bench_overlay_effects(c: &mut Criterion) {
             vignette: 0.5,
             chromatic: 0.02,
         };
-        b.iter(|| {
-            black_box(from.lerp(&to, black_box(0.5)))
-        });
+        b.iter(|| black_box(from.lerp(&to, black_box(0.5))));
     });
 
     // 6. Is active check
@@ -1349,9 +1292,7 @@ fn bench_overlay_effects(c: &mut Criterion) {
             vignette: 0.0,
             chromatic: 0.0,
         };
-        b.iter(|| {
-            black_box(params.is_active())
-        });
+        b.iter(|| black_box(params.is_active()));
     });
 
     // 7. As bytes
@@ -1362,16 +1303,12 @@ fn bench_overlay_effects(c: &mut Criterion) {
             vignette: 0.3,
             chromatic: 0.01,
         };
-        b.iter(|| {
-            black_box(params.as_bytes())
-        });
+        b.iter(|| black_box(params.as_bytes()));
     });
 
     // 8. Size constant
     group.bench_function("size_constant", |b| {
-        b.iter(|| {
-            black_box(OverlayParams::SIZE)
-        });
+        b.iter(|| black_box(OverlayParams::SIZE));
     });
 
     // 9. Animation sequence (multiple lerps)
@@ -1401,44 +1338,32 @@ fn bench_advanced_post_processing(c: &mut Criterion) {
 
     // TAA benchmarks
     group.bench_function("taa_config_default", |b| {
-        b.iter(|| {
-            black_box(TaaConfig::default())
-        });
+        b.iter(|| black_box(TaaConfig::default()));
     });
 
     group.bench_function("taa_halton_jitter", |b| {
         let config = TaaConfig::default();
-        b.iter(|| {
-            black_box(config.halton_jitter(black_box(42), black_box(1920), black_box(1080)))
-        });
+        b.iter(|| black_box(config.halton_jitter(black_box(42), black_box(1920), black_box(1080))));
     });
 
     // Halton sequence directly
     group.bench_function("halton_sequence", |b| {
-        b.iter(|| {
-            black_box(halton_sequence(black_box(256), black_box(2)))
-        });
+        b.iter(|| black_box(halton_sequence(black_box(256), black_box(2))));
     });
 
     // Motion blur benchmarks
     group.bench_function("motion_blur_config_default", |b| {
-        b.iter(|| {
-            black_box(MotionBlurConfig::default())
-        });
+        b.iter(|| black_box(MotionBlurConfig::default()));
     });
 
     // DOF benchmarks
     group.bench_function("dof_config_default", |b| {
-        b.iter(|| {
-            black_box(DofConfig::default())
-        });
+        b.iter(|| black_box(DofConfig::default()));
     });
 
     group.bench_function("dof_calculate_coc", |b| {
         let config = DofConfig::default();
-        b.iter(|| {
-            black_box(config.calculate_coc(black_box(15.0)))
-        });
+        b.iter(|| black_box(config.calculate_coc(black_box(15.0))));
     });
 
     // COC at various depths
@@ -1448,18 +1373,14 @@ fn bench_advanced_post_processing(c: &mut Criterion) {
             &depth,
             |b, &d| {
                 let config = DofConfig::default();
-                b.iter(|| {
-                    black_box(config.calculate_coc(black_box(d)))
-                });
+                b.iter(|| black_box(config.calculate_coc(black_box(d))));
             },
         );
     }
 
     // Color grading benchmarks
     group.bench_function("color_grading_config_default", |b| {
-        b.iter(|| {
-            black_box(ColorGradingConfig::default())
-        });
+        b.iter(|| black_box(ColorGradingConfig::default()));
     });
 
     group.bench_function("color_grading_apply", |b| {
@@ -1471,16 +1392,12 @@ fn bench_advanced_post_processing(c: &mut Criterion) {
             ..Default::default()
         };
         let color = [0.5f32, 0.3, 0.7];
-        b.iter(|| {
-            black_box(config.apply(black_box(color)))
-        });
+        b.iter(|| black_box(config.apply(black_box(color))));
     });
 
     // Combined post-process config
     group.bench_function("post_process_config_default", |b| {
-        b.iter(|| {
-            black_box(PostProcessConfig::default())
-        });
+        b.iter(|| black_box(PostProcessConfig::default()));
     });
 
     // Full post-process frame simulation
@@ -1538,13 +1455,13 @@ fn bench_combined_scenarios(c: &mut Criterion) {
             let _ = mgr.try_allocate(MemoryCategory::Uniforms, 1 * 1024 * 1024);
             let _ = mgr.try_allocate(MemoryCategory::RenderTargets, 32 * 1024 * 1024);
             let pressure = mgr.pressure_level();
-            
+
             // Free
             mgr.free(MemoryCategory::Textures, 64 * 1024 * 1024);
             mgr.free(MemoryCategory::Geometry, 16 * 1024 * 1024);
             mgr.free(MemoryCategory::Uniforms, 1 * 1024 * 1024);
             mgr.free(MemoryCategory::RenderTargets, 32 * 1024 * 1024);
-            
+
             black_box(pressure)
         });
     });
@@ -1554,18 +1471,18 @@ fn bench_combined_scenarios(c: &mut Criterion) {
         b.iter(|| {
             let depth_desc = DepthDesc::new(1920, 1080);
             let depth = MockDepthBuffer::new(depth_desc);
-            
+
             let overlay = OverlayParams {
                 fade: 0.1,
                 letterbox: 0.0,
                 vignette: 0.2,
                 chromatic: 0.005,
             };
-            
+
             let _mem = depth.memory_size();
             let _active = overlay.is_active();
             let _bytes = overlay.as_bytes();
-            
+
             black_box((depth, overlay))
         });
     });
@@ -1575,13 +1492,13 @@ fn bench_combined_scenarios(c: &mut Criterion) {
         b.iter(|| {
             // Depth buffer
             let depth = MockDepthBuffer::new(DepthDesc::new(1920, 1080));
-            
+
             // Terrain
             let terrain = TerrainMaterialGpu::default();
-            
+
             // Skinning
             let palette = JointPalette::from_identity(64);
-            
+
             // Overlay
             let overlay = OverlayParams {
                 fade: 0.0,
@@ -1589,11 +1506,11 @@ fn bench_combined_scenarios(c: &mut Criterion) {
                 vignette: 0.15,
                 chromatic: 0.0,
             };
-            
+
             // Post-processing
             let post = PostProcessConfig::default();
             let jitter = post.taa.halton_jitter(0, 1920, 1080);
-            
+
             black_box((depth, terrain, palette, overlay, jitter))
         });
     });
@@ -1602,7 +1519,7 @@ fn bench_combined_scenarios(c: &mut Criterion) {
     group.bench_function("multi_skeleton_batch_10", |b| {
         let mut mgr = MockJointPaletteManager::new();
         let handles: Vec<_> = (0..10).map(|_| mgr.allocate()).collect();
-        
+
         b.iter(|| {
             for &handle in &handles {
                 let palette = JointPalette::from_identity(64);
@@ -1615,16 +1532,16 @@ fn bench_combined_scenarios(c: &mut Criterion) {
     // 7. Resolution change (resize all)
     group.bench_function("resolution_change", |b| {
         let mut depth = MockDepthBuffer::new(DepthDesc::new(1920, 1080));
-        
+
         b.iter(|| {
             // Resize to 4K
             depth.resize(3840, 2160);
             let mem_4k = depth.memory_size();
-            
+
             // Resize back to 1080p
             depth.resize(1920, 1080);
             let mem_1080p = depth.memory_size();
-            
+
             black_box((mem_4k, mem_1080p))
         });
     });

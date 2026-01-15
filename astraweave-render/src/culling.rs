@@ -148,8 +148,7 @@ impl FrustumPlanes {
 
 /// Indirect draw command structure matching wgpu::DrawIndirect
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-#[derive(Default)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, Default)]
 pub struct DrawIndirectCommand {
     pub vertex_count: u32,
     pub instance_count: u32,
@@ -173,7 +172,6 @@ impl DrawIndirectCommand {
         }
     }
 }
-
 
 /// Batch identifier for grouping instances by mesh+material
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

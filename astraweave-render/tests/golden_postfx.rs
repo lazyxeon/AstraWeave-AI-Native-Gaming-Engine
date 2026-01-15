@@ -83,15 +83,13 @@ fn golden_postfx_compose_matches_cpu() {
         force_fallback_adapter: false,
     }))
     .expect("No adapter");
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("golden-postfx device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("golden-postfx device"),
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .expect("device");
 
     // Source textures (sampled as float from unorm)

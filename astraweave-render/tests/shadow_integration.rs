@@ -1,16 +1,16 @@
 use astraweave_render::Renderer;
+use std::sync::Arc;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
-use std::sync::Arc;
 
 #[test]
 #[ignore = "Requires main thread event loop (fails on Windows/macOS in test runner)"]
 #[allow(deprecated)]
 fn test_shadow_map_initialization() {
     // This test requires a window, so it might fail in headless CI environments.
-    // We'll wrap it in a conditional or try-catch block if possible, 
+    // We'll wrap it in a conditional or try-catch block if possible,
     // but for now let's see if we can even create the renderer.
-    
+
     let event_loop = EventLoop::new().unwrap();
     let window_attributes = Window::default_attributes().with_visible(false);
     let window = Arc::new(event_loop.create_window(window_attributes).unwrap());

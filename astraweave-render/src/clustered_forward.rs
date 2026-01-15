@@ -153,8 +153,11 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: true,
         });
-        
-        config_buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::bytes_of(&config));
+
+        config_buffer
+            .slice(..)
+            .get_mapped_range_mut()
+            .copy_from_slice(bytemuck::bytes_of(&config));
         config_buffer.unmap();
 
         // Create bind group layout
@@ -431,13 +434,12 @@ impl ClusteredForwardRenderer {
                             light,
                             &self.clusters[cluster_idx],
                             view_matrix,
-                        )
-                            && self.clusters[cluster_idx].light_count
-                                < self.max_lights_per_cluster as u32
-                            {
-                                self.light_indices.push(light_idx as u32);
-                                self.clusters[cluster_idx].light_count += 1;
-                            }
+                        ) && self.clusters[cluster_idx].light_count
+                            < self.max_lights_per_cluster as u32
+                        {
+                            self.light_indices.push(light_idx as u32);
+                            self.clusters[cluster_idx].light_count += 1;
+                        }
                     }
                 }
             }

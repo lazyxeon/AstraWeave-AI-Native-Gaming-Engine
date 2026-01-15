@@ -7,8 +7,7 @@ use anyhow::Result;
 use wgpu;
 
 /// MSAA sample count configuration
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MsaaMode {
     /// No anti-aliasing
     Off,
@@ -46,7 +45,6 @@ impl MsaaMode {
         }
     }
 }
-
 
 /// MSAA render target manager
 ///

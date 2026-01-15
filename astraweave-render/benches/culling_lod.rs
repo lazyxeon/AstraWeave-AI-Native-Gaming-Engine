@@ -27,22 +27,32 @@
 #![allow(unused_variables)]
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::hint::black_box;
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use std::hint::black_box;
 
 /// CORRECTNESS: Validate AABB has valid geometry
 #[inline]
 fn assert_aabb_valid(center: [f32; 3], extent: [f32; 3], context: &str) {
     // Center must be finite
     for i in 0..3 {
-        assert!(center[i].is_finite(),
-            "[CORRECTNESS FAILURE] {}: AABB center[{}] is non-finite ({})", context, i, center[i]);
+        assert!(
+            center[i].is_finite(),
+            "[CORRECTNESS FAILURE] {}: AABB center[{}] is non-finite ({})",
+            context,
+            i,
+            center[i]
+        );
     }
     // Extent must be non-negative and finite
     for i in 0..3 {
-        assert!(extent[i] >= 0.0 && extent[i].is_finite(),
-            "[CORRECTNESS FAILURE] {}: AABB extent[{}] invalid ({})", context, i, extent[i]);
+        assert!(
+            extent[i] >= 0.0 && extent[i].is_finite(),
+            "[CORRECTNESS FAILURE] {}: AABB extent[{}] invalid ({})",
+            context,
+            i,
+            extent[i]
+        );
     }
 }
 
@@ -50,19 +60,32 @@ fn assert_aabb_valid(center: [f32; 3], extent: [f32; 3], context: &str) {
 #[inline]
 fn assert_frustum_plane_valid(plane: [f32; 4], context: &str) {
     // Normal should be approximately unit length
-    let normal_len = (plane[0]*plane[0] + plane[1]*plane[1] + plane[2]*plane[2]).sqrt();
-    assert!(normal_len > 0.99 && normal_len < 1.01,
-        "[CORRECTNESS FAILURE] {}: frustum plane normal not normalized (len={})", context, normal_len);
+    let normal_len = (plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]).sqrt();
+    assert!(
+        normal_len > 0.99 && normal_len < 1.01,
+        "[CORRECTNESS FAILURE] {}: frustum plane normal not normalized (len={})",
+        context,
+        normal_len
+    );
     // Distance should be finite
-    assert!(plane[3].is_finite(),
-        "[CORRECTNESS FAILURE] {}: frustum plane distance non-finite ({})", context, plane[3]);
+    assert!(
+        plane[3].is_finite(),
+        "[CORRECTNESS FAILURE] {}: frustum plane distance non-finite ({})",
+        context,
+        plane[3]
+    );
 }
 
 /// CORRECTNESS: Validate culling results are consistent
 #[inline]
 fn assert_culling_result_valid(visible_count: usize, total_count: usize, context: &str) {
-    assert!(visible_count <= total_count,
-        "[CORRECTNESS FAILURE] {}: visible ({}) > total ({})", context, visible_count, total_count);
+    assert!(
+        visible_count <= total_count,
+        "[CORRECTNESS FAILURE] {}: visible ({}) > total ({})",
+        context,
+        visible_count,
+        total_count
+    );
 }
 
 // ============================================================================
@@ -115,10 +138,9 @@ impl InstanceAABB {
         // Transform extent by taking absolute values of transformed basis vectors
         let mut world_extent = [0.0f32; 3];
         for i in 0..3 {
-            world_extent[i] = 
-                local_extent[0] * transform[0][i].abs() +
-                local_extent[1] * transform[1][i].abs() +
-                local_extent[2] * transform[2][i].abs();
+            world_extent[i] = local_extent[0] * transform[0][i].abs()
+                + local_extent[1] * transform[1][i].abs()
+                + local_extent[2] * transform[2][i].abs();
         }
 
         Self {
@@ -150,10 +172,8 @@ impl FrustumPlanes {
     pub fn from_view_proj(vp: &[[f32; 4]; 4]) -> Self {
         // Flatten matrix for easier access
         let m: [f32; 16] = [
-            vp[0][0], vp[0][1], vp[0][2], vp[0][3],
-            vp[1][0], vp[1][1], vp[1][2], vp[1][3],
-            vp[2][0], vp[2][1], vp[2][2], vp[2][3],
-            vp[3][0], vp[3][1], vp[3][2], vp[3][3],
+            vp[0][0], vp[0][1], vp[0][2], vp[0][3], vp[1][0], vp[1][1], vp[1][2], vp[1][3],
+            vp[2][0], vp[2][1], vp[2][2], vp[2][3], vp[3][0], vp[3][1], vp[3][2], vp[3][3],
         ];
 
         let left = Self::normalize_plane([m[3] + m[0], m[7] + m[4], m[11] + m[8], m[15] + m[12]]);
@@ -171,7 +191,12 @@ impl FrustumPlanes {
     fn normalize_plane(plane: [f32; 4]) -> [f32; 4] {
         let len = (plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]).sqrt();
         if len > 0.0 {
-            [plane[0] / len, plane[1] / len, plane[2] / len, plane[3] / len]
+            [
+                plane[0] / len,
+                plane[1] / len,
+                plane[2] / len,
+                plane[3] / len,
+            ]
         } else {
             plane
         }
@@ -180,8 +205,11 @@ impl FrustumPlanes {
     /// Test if AABB intersects frustum (CPU culling)
     pub fn test_aabb(&self, center: [f32; 3], extent: [f32; 3]) -> bool {
         for plane in &self.planes {
-            let dist = plane[0] * center[0] + plane[1] * center[1] + plane[2] * center[2] + plane[3];
-            let radius = extent[0] * plane[0].abs() + extent[1] * plane[1].abs() + extent[2] * plane[2].abs();
+            let dist =
+                plane[0] * center[0] + plane[1] * center[1] + plane[2] * center[2] + plane[3];
+            let radius = extent[0] * plane[0].abs()
+                + extent[1] * plane[1].abs()
+                + extent[2] * plane[2].abs();
             if dist < -radius {
                 return false;
             }
@@ -267,9 +295,15 @@ impl Quadric {
     fn from_plane(a: f64, b: f64, c: f64, d: f64) -> Self {
         Self {
             data: [
-                a * a, a * b, a * c, a * d,
-                b * b, b * c, b * d,
-                c * c, c * d,
+                a * a,
+                a * b,
+                a * c,
+                a * d,
+                b * b,
+                b * c,
+                b * d,
+                c * c,
+                c * d,
                 d * d,
             ],
         }
@@ -400,7 +434,11 @@ impl LODGenerator {
                 e1[0] * e2[1] - e1[1] * e2[0],
             ];
             let len = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
-            let normal = if len > 0.0 { [n[0] / len, n[1] / len, n[2] / len] } else { [0.0, 1.0, 0.0] };
+            let normal = if len > 0.0 {
+                [n[0] / len, n[1] / len, n[2] / len]
+            } else {
+                [0.0, 1.0, 0.0]
+            };
 
             let d = -(normal[0] * p0[0] + normal[1] * p0[1] + normal[2] * p0[2]);
             let quadric = Quadric::from_plane(
@@ -436,7 +474,7 @@ impl LODGenerator {
                 let edge_key = if v1 < v2 { (v1, v2) } else { (v2, v1) };
                 if seen_edges.insert(edge_key) {
                     let combined = quadrics[v1].add(&quadrics[v2]);
-                    
+
                     // Use midpoint as collapse position
                     let p1 = mesh.positions[v1];
                     let p2 = mesh.positions[v2];
@@ -445,9 +483,9 @@ impl LODGenerator {
                         (p1[1] + p2[1]) * 0.5,
                         (p1[2] + p2[2]) * 0.5,
                     ];
-                    
+
                     let error = combined.evaluate(mid[0] as f64, mid[1] as f64, mid[2] as f64);
-                    
+
                     collapses.push(EdgeCollapse {
                         v1,
                         v2,
@@ -462,7 +500,11 @@ impl LODGenerator {
     }
 
     /// Perform mesh simplification
-    pub fn simplify(&self, mesh: &SimplificationMesh, target_vertices: usize) -> SimplificationMesh {
+    pub fn simplify(
+        &self,
+        mesh: &SimplificationMesh,
+        target_vertices: usize,
+    ) -> SimplificationMesh {
         if mesh.vertex_count() <= target_vertices {
             return mesh.clone();
         }
@@ -492,7 +534,8 @@ impl LODGenerator {
         // Rebuild mesh (simplified version - just count remaining)
         let active_count = active_vertices.iter().filter(|&&v| v).count();
         SimplificationMesh {
-            positions: new_positions.into_iter()
+            positions: new_positions
+                .into_iter()
                 .zip(active_vertices.iter())
                 .filter(|(_, &active)| active)
                 .map(|(pos, _)| pos)
@@ -511,20 +554,23 @@ impl LODGenerator {
 fn generate_random_instances(count: usize, visibility_ratio: f32) -> Vec<InstanceAABB> {
     let mut instances = Vec::with_capacity(count);
     let seed = 42u64;
-    
+
     for i in 0..count {
         // Pseudo-random position based on index
-        let hash = (seed.wrapping_mul(i as u64 + 1).wrapping_add(0x9E3779B97F4A7C15)) as f32 / u64::MAX as f32;
-        
+        let hash = (seed
+            .wrapping_mul(i as u64 + 1)
+            .wrapping_add(0x9E3779B97F4A7C15)) as f32
+            / u64::MAX as f32;
+
         // Place some instances inside frustum, some outside based on visibility_ratio
         let range = if hash < visibility_ratio { 10.0 } else { 100.0 };
-        
+
         let x = (hash * 2.0 - 1.0) * range;
         let y = ((hash * 3.7) % 1.0 * 2.0 - 1.0) * range;
         let z = ((hash * 7.3) % 1.0) * -50.0 - 5.0; // Mostly in front of camera
-        
+
         let extent = 1.0 + (hash * 5.0) % 5.0;
-        
+
         instances.push(InstanceAABB::new(
             [x, y, z],
             [extent, extent, extent],
@@ -540,19 +586,19 @@ fn generate_standard_frustum() -> FrustumPlanes {
     let aspect = 16.0 / 9.0;
     let near = 0.1;
     let far = 1000.0;
-    
+
     let f = 1.0 / (fov / 2.0).tan();
-    
+
     let proj = [
         [f / aspect, 0.0, 0.0, 0.0],
         [0.0, f, 0.0, 0.0],
         [0.0, 0.0, (far + near) / (near - far), -1.0],
         [0.0, 0.0, (2.0 * far * near) / (near - far), 0.0],
     ];
-    
+
     // Identity view matrix (camera at origin looking down -Z)
     let view_proj = proj; // For identity view, VP = P
-    
+
     FrustumPlanes::from_view_proj(&view_proj)
 }
 
@@ -560,25 +606,30 @@ fn generate_test_mesh(vertex_count: usize, triangle_count: usize) -> Simplificat
     let mut positions = Vec::with_capacity(vertex_count);
     let mut normals = Vec::with_capacity(vertex_count);
     let mut uvs = Vec::with_capacity(vertex_count);
-    
+
     // Generate vertices on a sphere
     for i in 0..vertex_count {
         let phi = (i as f32 / vertex_count as f32) * std::f32::consts::PI * 2.0;
         let theta = (i as f32 / vertex_count as f32) * std::f32::consts::PI;
-        
+
         let x = theta.sin() * phi.cos();
         let y = theta.cos();
         let z = theta.sin() * phi.sin();
-        
+
         positions.push([x, y, z]);
         normals.push([x, y, z]); // Normal = position for unit sphere
-        uvs.push([phi / (2.0 * std::f32::consts::PI), theta / std::f32::consts::PI]);
+        uvs.push([
+            phi / (2.0 * std::f32::consts::PI),
+            theta / std::f32::consts::PI,
+        ]);
     }
-    
+
     // Generate triangles (simplified - just use sequential indices)
     let actual_tris = triangle_count.min(vertex_count / 3);
-    let indices: Vec<u32> = (0..(actual_tris * 3) as u32).map(|i| i % vertex_count as u32).collect();
-    
+    let indices: Vec<u32> = (0..(actual_tris * 3) as u32)
+        .map(|i| i % vertex_count as u32)
+        .collect();
+
     SimplificationMesh {
         positions,
         normals,
@@ -593,7 +644,7 @@ fn generate_test_mesh(vertex_count: usize, triangle_count: usize) -> Simplificat
 
 fn bench_aabb_construction(c: &mut Criterion) {
     let mut group = c.benchmark_group("AABB Construction");
-    
+
     // Simple AABB creation
     group.bench_function("aabb_new", |b| {
         b.iter(|| {
@@ -604,7 +655,7 @@ fn bench_aabb_construction(c: &mut Criterion) {
             )
         })
     });
-    
+
     // AABB from transform matrix
     let transform: [[f32; 4]; 4] = [
         [1.0, 0.0, 0.0, 0.0],
@@ -612,7 +663,7 @@ fn bench_aabb_construction(c: &mut Criterion) {
         [0.0, 0.0, 1.0, 0.0],
         [5.0, 10.0, -20.0, 1.0],
     ];
-    
+
     group.bench_function("aabb_from_transform_identity", |b| {
         b.iter(|| {
             InstanceAABB::from_transform(
@@ -623,7 +674,7 @@ fn bench_aabb_construction(c: &mut Criterion) {
             )
         })
     });
-    
+
     // Rotated transform
     let rotated: [[f32; 4]; 4] = [
         [0.707, 0.707, 0.0, 0.0],
@@ -631,7 +682,7 @@ fn bench_aabb_construction(c: &mut Criterion) {
         [0.0, 0.0, 1.0, 0.0],
         [5.0, 10.0, -20.0, 1.0],
     ];
-    
+
     group.bench_function("aabb_from_transform_rotated", |b| {
         b.iter(|| {
             InstanceAABB::from_transform(
@@ -642,7 +693,7 @@ fn bench_aabb_construction(c: &mut Criterion) {
             )
         })
     });
-    
+
     // Batch AABB construction
     for count in [100, 1000, 10000] {
         group.throughput(Throughput::Elements(count as u64));
@@ -661,113 +712,102 @@ fn bench_aabb_construction(c: &mut Criterion) {
             })
         });
     }
-    
+
     group.finish();
 }
 
 fn bench_frustum_extraction(c: &mut Criterion) {
     let mut group = c.benchmark_group("Frustum Extraction");
-    
+
     let vp: [[f32; 4]; 4] = [
         [1.3, 0.0, 0.0, 0.0],
         [0.0, 1.73, 0.0, 0.0],
         [0.0, 0.0, -1.001, -1.0],
         [0.0, 0.0, -0.2, 0.0],
     ];
-    
+
     group.bench_function("from_view_proj", |b| {
-        b.iter(|| {
-            FrustumPlanes::from_view_proj(black_box(&vp))
-        })
+        b.iter(|| FrustumPlanes::from_view_proj(black_box(&vp)))
     });
-    
+
     group.finish();
 }
 
 fn bench_aabb_frustum_test(c: &mut Criterion) {
     let mut group = c.benchmark_group("AABB-Frustum Test");
-    
+
     let frustum = generate_standard_frustum();
-    
+
     // Single AABB test - visible
     group.bench_function("single_visible", |b| {
         let aabb = InstanceAABB::new([0.0, 0.0, -10.0], [1.0, 1.0, 1.0], 0);
-        b.iter(|| {
-            frustum.test_aabb(black_box(aabb.center), black_box(aabb.extent))
-        })
+        b.iter(|| frustum.test_aabb(black_box(aabb.center), black_box(aabb.extent)))
     });
-    
+
     // Single AABB test - culled
     group.bench_function("single_culled", |b| {
         let aabb = InstanceAABB::new([100.0, 0.0, -10.0], [1.0, 1.0, 1.0], 0);
-        b.iter(|| {
-            frustum.test_aabb(black_box(aabb.center), black_box(aabb.extent))
-        })
+        b.iter(|| frustum.test_aabb(black_box(aabb.center), black_box(aabb.extent)))
     });
-    
+
     // Single AABB test - edge case (on boundary)
     group.bench_function("single_boundary", |b| {
         let aabb = InstanceAABB::new([8.0, 0.0, -10.0], [2.0, 2.0, 2.0], 0);
-        b.iter(|| {
-            frustum.test_aabb(black_box(aabb.center), black_box(aabb.extent))
-        })
+        b.iter(|| frustum.test_aabb(black_box(aabb.center), black_box(aabb.extent)))
     });
-    
+
     group.finish();
 }
 
 fn bench_cpu_frustum_culling(c: &mut Criterion) {
     let mut group = c.benchmark_group("CPU Frustum Culling");
-    
+
     let frustum = generate_standard_frustum();
-    
+
     // Different instance counts
     for count in [100, 1000, 10000, 50000] {
         group.throughput(Throughput::Elements(count as u64));
-        
+
         // 50% visibility
         let instances_50 = generate_random_instances(count, 0.5);
         group.bench_with_input(
             BenchmarkId::new("50pct_visible", count),
             &instances_50,
-            |b, instances| {
-                b.iter(|| cpu_frustum_cull(black_box(instances), black_box(&frustum)))
-            },
+            |b, instances| b.iter(|| cpu_frustum_cull(black_box(instances), black_box(&frustum))),
         );
-        
+
         // 10% visibility (mostly culled)
         let instances_10 = generate_random_instances(count, 0.1);
         group.bench_with_input(
             BenchmarkId::new("10pct_visible", count),
             &instances_10,
-            |b, instances| {
-                b.iter(|| cpu_frustum_cull(black_box(instances), black_box(&frustum)))
-            },
+            |b, instances| b.iter(|| cpu_frustum_cull(black_box(instances), black_box(&frustum))),
         );
-        
+
         // 90% visibility (mostly visible)
         let instances_90 = generate_random_instances(count, 0.9);
         group.bench_with_input(
             BenchmarkId::new("90pct_visible", count),
             &instances_90,
-            |b, instances| {
-                b.iter(|| cpu_frustum_cull(black_box(instances), black_box(&frustum)))
-            },
+            |b, instances| b.iter(|| cpu_frustum_cull(black_box(instances), black_box(&frustum))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_indirect_commands(c: &mut Criterion) {
     let mut group = c.benchmark_group("Indirect Commands");
-    
+
     // Generate batches
     for batch_count in [10, 50, 100, 500] {
         let batches: Vec<DrawBatch> = (0..batch_count)
             .map(|i| {
                 let mut batch = DrawBatch::new(
-                    BatchId { mesh_id: i as u32, material_id: 0 },
+                    BatchId {
+                        mesh_id: i as u32,
+                        material_id: 0,
+                    },
                     1000,
                     i as u32 * 1000,
                 );
@@ -778,22 +818,20 @@ fn bench_indirect_commands(c: &mut Criterion) {
                 batch
             })
             .collect();
-        
+
         group.bench_with_input(
             BenchmarkId::new("build_commands", batch_count),
             &batches,
-            |b, batches| {
-                b.iter(|| build_indirect_commands(black_box(batches)))
-            },
+            |b, batches| b.iter(|| build_indirect_commands(black_box(batches))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_quadric_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("Quadric Operations");
-    
+
     // Quadric creation from plane
     group.bench_function("from_plane", |b| {
         b.iter(|| {
@@ -805,61 +843,53 @@ fn bench_quadric_operations(c: &mut Criterion) {
             )
         })
     });
-    
+
     // Quadric addition
     let q1 = Quadric::from_plane(0.0, 1.0, 0.0, -1.0);
     let q2 = Quadric::from_plane(1.0, 0.0, 0.0, -2.0);
-    
-    group.bench_function("add", |b| {
-        b.iter(|| {
-            black_box(&q1).add(black_box(&q2))
-        })
-    });
-    
+
+    group.bench_function("add", |b| b.iter(|| black_box(&q1).add(black_box(&q2))));
+
     // Quadric evaluation
     let q = Quadric::from_plane(0.577, 0.577, 0.577, -1.732);
-    
+
     group.bench_function("evaluate", |b| {
-        b.iter(|| {
-            q.evaluate(black_box(1.0), black_box(1.0), black_box(1.0))
-        })
+        b.iter(|| q.evaluate(black_box(1.0), black_box(1.0), black_box(1.0)))
     });
-    
+
     group.finish();
 }
 
 fn bench_vertex_quadrics(c: &mut Criterion) {
     let mut group = c.benchmark_group("Vertex Quadrics");
-    
+
     let config = LODConfig::default();
     let generator = LODGenerator::new(config);
-    
+
     // Different mesh sizes
     for (verts, tris) in [(100, 150), (500, 750), (1000, 1500), (5000, 7500)] {
         let mesh = generate_test_mesh(verts, tris);
-        
+
         group.bench_with_input(
             BenchmarkId::new("compute", format!("{}v_{}t", verts, tris)),
             &mesh,
-            |b, mesh| {
-                b.iter(|| generator.compute_vertex_quadrics(black_box(mesh)))
-            },
+            |b, mesh| b.iter(|| generator.compute_vertex_quadrics(black_box(mesh))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_edge_collapses(c: &mut Criterion) {
     let mut group = c.benchmark_group("Edge Collapses");
-    
+
     let config = LODConfig::default();
     let generator = LODGenerator::new(config);
-    
+
     for (verts, tris) in [(100, 150), (500, 750), (1000, 1500)] {
         let mesh = generate_test_mesh(verts, tris);
         let quadrics = generator.compute_vertex_quadrics(&mesh);
-        
+
         group.bench_with_input(
             BenchmarkId::new("build", format!("{}v_{}t", verts, tris)),
             &(&mesh, &quadrics),
@@ -868,63 +898,57 @@ fn bench_edge_collapses(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_mesh_simplification(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mesh Simplification");
     group.sample_size(50); // Fewer samples for expensive operations
-    
+
     let config = LODConfig::default();
     let generator = LODGenerator::new(config);
-    
+
     // Different mesh sizes and reduction targets
     for (verts, tris) in [(500, 750), (1000, 1500), (2000, 3000)] {
         let mesh = generate_test_mesh(verts, tris);
-        
+
         // 75% reduction
         let target_75 = (verts as f32 * 0.75) as usize;
         group.bench_with_input(
             BenchmarkId::new("75pct", format!("{}v", verts)),
             &(&mesh, target_75),
-            |b, (mesh, target)| {
-                b.iter(|| generator.simplify(black_box(*mesh), black_box(*target)))
-            },
+            |b, (mesh, target)| b.iter(|| generator.simplify(black_box(*mesh), black_box(*target))),
         );
-        
+
         // 50% reduction
         let target_50 = (verts as f32 * 0.50) as usize;
         group.bench_with_input(
             BenchmarkId::new("50pct", format!("{}v", verts)),
             &(&mesh, target_50),
-            |b, (mesh, target)| {
-                b.iter(|| generator.simplify(black_box(*mesh), black_box(*target)))
-            },
+            |b, (mesh, target)| b.iter(|| generator.simplify(black_box(*mesh), black_box(*target))),
         );
-        
+
         // 25% reduction
         let target_25 = (verts as f32 * 0.25) as usize;
         group.bench_with_input(
             BenchmarkId::new("25pct", format!("{}v", verts)),
             &(&mesh, target_25),
-            |b, (mesh, target)| {
-                b.iter(|| generator.simplify(black_box(*mesh), black_box(*target)))
-            },
+            |b, (mesh, target)| b.iter(|| generator.simplify(black_box(*mesh), black_box(*target))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_full_culling_pipeline(c: &mut Criterion) {
     let mut group = c.benchmark_group("Full Culling Pipeline");
-    
+
     let frustum = generate_standard_frustum();
-    
+
     for count in [1000, 5000, 10000] {
         let instances = generate_random_instances(count, 0.5);
-        
+
         group.bench_with_input(
             BenchmarkId::new("cull_and_batch", count),
             &instances,
@@ -932,30 +956,34 @@ fn bench_full_culling_pipeline(c: &mut Criterion) {
                 b.iter(|| {
                     // 1. Cull instances
                     let visible = cpu_frustum_cull(instances, &frustum);
-                    
+
                     // 2. Group into batches (simplified)
                     let batch_count = (visible.len() / 50).max(1);
                     let batches: Vec<DrawBatch> = (0..batch_count)
                         .map(|i| {
                             let mut batch = DrawBatch::new(
-                                BatchId { mesh_id: i as u32, material_id: 0 },
+                                BatchId {
+                                    mesh_id: i as u32,
+                                    material_id: 0,
+                                },
                                 1000,
                                 0,
                             );
-                            batch.instances = visible[i * 50..(i * 50 + 50).min(visible.len())].to_vec();
+                            batch.instances =
+                                visible[i * 50..(i * 50 + 50).min(visible.len())].to_vec();
                             batch
                         })
                         .collect();
-                    
+
                     // 3. Build indirect commands
                     let commands = build_indirect_commands(&batches);
-                    
+
                     black_box((visible.len(), commands))
                 })
             },
         );
     }
-    
+
     group.finish();
 }
 

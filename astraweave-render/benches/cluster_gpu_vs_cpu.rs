@@ -92,9 +92,9 @@ fn bench_cpu_light_culling(c: &mut Criterion) {
 /// Benchmark GPU light culling (MegaLights compute shaders)
 #[cfg(feature = "megalights")]
 fn bench_gpu_light_culling(c: &mut Criterion) {
-    use bytemuck;
     use astraweave_render::clustered_megalights::ClusterBounds;
-    
+    use bytemuck;
+
     // Setup wgpu device (once)
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::PRIMARY,
@@ -149,7 +149,11 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    queue.write_buffer(&cluster_bounds_buffer, 0, bytemuck::cast_slice(&cluster_bounds));
+    queue.write_buffer(
+        &cluster_bounds_buffer,
+        0,
+        bytemuck::cast_slice(&cluster_bounds),
+    );
 
     let light_counts_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Light Counts Buffer"),
@@ -225,10 +229,10 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
     // Test scaling: 100, 250, 500, 1000, 2000 lights
     for light_count in [100, 250, 500, 1000, 2000] {
         let lights = create_test_scene_gpu(light_count);
-        
+
         // Upload lights to GPU
         queue.write_buffer(&light_buffer, 0, bytemuck::cast_slice(&lights));
-        
+
         // Update params
         let params = ClusterParams {
             cluster_dims: [cluster_dims.0, cluster_dims.1, cluster_dims.2],
@@ -239,14 +243,18 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
             _pad3: 0,
         };
         queue.write_buffer(&params_buffer, 0, bytemuck::bytes_of(&params));
-        
+
         let prefix_params = PrefixSumParams {
             element_count: total_clusters,
             workgroup_size: 256,
             _pad1: 0,
             _pad2: 0,
         };
-        queue.write_buffer(&prefix_sum_params_buffer, 0, bytemuck::bytes_of(&prefix_params));
+        queue.write_buffer(
+            &prefix_sum_params_buffer,
+            0,
+            bytemuck::bytes_of(&prefix_params),
+        );
 
         group.bench_with_input(
             BenchmarkId::new("megalights_dispatch", light_count),
@@ -268,7 +276,7 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
                 });
             },
         );
-        
+
         // Benchmark dispatch-only (no sync) - measures command recording overhead
         group.bench_with_input(
             BenchmarkId::new("megalights_dispatch_only", light_count),
@@ -283,7 +291,7 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
                     // Dispatch GPU compute (command recording only)
                     let result = megalights.dispatch(&mut encoder, black_box(count as u32));
                     black_box(result).expect("GPU dispatch failed");
-                    
+
                     // Return encoder without submitting - measures pure dispatch overhead
                     black_box(encoder.finish());
                 });
@@ -297,9 +305,9 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
 /// Benchmark GPU throughput (batched submissions to measure true GPU performance)
 #[cfg(feature = "megalights")]
 fn bench_gpu_throughput(c: &mut Criterion) {
-    use bytemuck;
     use astraweave_render::clustered_megalights::ClusterBounds;
-    
+    use bytemuck;
+
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::PRIMARY,
         ..Default::default()
@@ -351,7 +359,11 @@ fn bench_gpu_throughput(c: &mut Criterion) {
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    queue.write_buffer(&cluster_bounds_buffer, 0, bytemuck::cast_slice(&cluster_bounds));
+    queue.write_buffer(
+        &cluster_bounds_buffer,
+        0,
+        bytemuck::cast_slice(&cluster_bounds),
+    );
 
     let light_counts_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Light Counts Buffer"),
@@ -422,7 +434,7 @@ fn bench_gpu_throughput(c: &mut Criterion) {
     // Upload 1000 lights for throughput test
     let lights = create_test_scene_gpu(1000);
     queue.write_buffer(&light_buffer, 0, bytemuck::cast_slice(&lights));
-    
+
     let params = ClusterParams {
         cluster_dims: [cluster_dims.0, cluster_dims.1, cluster_dims.2],
         _pad1: 0,
@@ -432,14 +444,18 @@ fn bench_gpu_throughput(c: &mut Criterion) {
         _pad3: 0,
     };
     queue.write_buffer(&params_buffer, 0, bytemuck::bytes_of(&params));
-    
+
     let prefix_params = PrefixSumParams {
         element_count: total_clusters,
         workgroup_size: 256,
         _pad1: 0,
         _pad2: 0,
     };
-    queue.write_buffer(&prefix_sum_params_buffer, 0, bytemuck::bytes_of(&prefix_params));
+    queue.write_buffer(
+        &prefix_sum_params_buffer,
+        0,
+        bytemuck::bytes_of(&prefix_params),
+    );
 
     let mut group = c.benchmark_group("gpu_throughput");
 
@@ -452,7 +468,9 @@ fn bench_gpu_throughput(c: &mut Criterion) {
 
             // Record 10 dispatches
             for _ in 0..10 {
-                megalights.dispatch(&mut encoder, 1000).expect("dispatch failed");
+                megalights
+                    .dispatch(&mut encoder, 1000)
+                    .expect("dispatch failed");
             }
 
             queue.submit([encoder.finish()]);
@@ -468,7 +486,9 @@ fn bench_gpu_throughput(c: &mut Criterion) {
             });
 
             for _ in 0..100 {
-                megalights.dispatch(&mut encoder, 1000).expect("dispatch failed");
+                megalights
+                    .dispatch(&mut encoder, 1000)
+                    .expect("dispatch failed");
             }
 
             queue.submit([encoder.finish()]);
@@ -481,7 +501,12 @@ fn bench_gpu_throughput(c: &mut Criterion) {
 
 // Benchmark groups (simplified for criterion compatibility)
 #[cfg(feature = "megalights")]
-criterion_group!(benches, bench_cpu_light_culling, bench_gpu_light_culling, bench_gpu_throughput);
+criterion_group!(
+    benches,
+    bench_cpu_light_culling,
+    bench_gpu_light_culling,
+    bench_gpu_throughput
+);
 
 #[cfg(not(feature = "megalights"))]
 criterion_group!(benches, bench_cpu_light_culling);

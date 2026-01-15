@@ -30,9 +30,13 @@ use std::hint::black_box;
 /// CORRECTNESS: Validate quaternion is normalized
 #[inline]
 fn assert_quaternion_normalized(q: &Quat, context: &str) {
-    let len = (q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w).sqrt();
-    assert!((len - 1.0).abs() < 0.01,
-        "[CORRECTNESS FAILURE] {}: quaternion not normalized (len={})", context, len);
+    let len = (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w).sqrt();
+    assert!(
+        (len - 1.0).abs() < 0.01,
+        "[CORRECTNESS FAILURE] {}: quaternion not normalized (len={})",
+        context,
+        len
+    );
 }
 
 /// CORRECTNESS: Validate transform matrix is finite and valid
@@ -40,9 +44,14 @@ fn assert_quaternion_normalized(q: &Quat, context: &str) {
 fn assert_transform_matrix_valid(mat: &[[f32; 4]; 4], context: &str) {
     for row in 0..4 {
         for col in 0..4 {
-            assert!(mat[row][col].is_finite(),
-                "[CORRECTNESS FAILURE] {}: matrix[{}][{}] non-finite ({})", 
-                context, row, col, mat[row][col]);
+            assert!(
+                mat[row][col].is_finite(),
+                "[CORRECTNESS FAILURE] {}: matrix[{}][{}] non-finite ({})",
+                context,
+                row,
+                col,
+                mat[row][col]
+            );
         }
     }
 }
@@ -50,8 +59,12 @@ fn assert_transform_matrix_valid(mat: &[[f32; 4]; 4], context: &str) {
 /// CORRECTNESS: Validate interpolation parameter is in valid range
 #[inline]
 fn assert_interp_param_valid(t: f32, context: &str) {
-    assert!(t >= 0.0 && t <= 1.0,
-        "[CORRECTNESS FAILURE] {}: interpolation parameter {} out of range [0,1]", context, t);
+    assert!(
+        t >= 0.0 && t <= 1.0,
+        "[CORRECTNESS FAILURE] {}: interpolation parameter {} out of range [0,1]",
+        context,
+        t
+    );
 }
 
 // ============================================================================
@@ -499,11 +512,8 @@ impl AnimationClip {
 
     /// Sample animation at time, returning joint transforms
     fn sample(&self, time: f32, skeleton: &Skeleton) -> Vec<Transform> {
-        let mut transforms: Vec<Transform> = skeleton
-            .joints
-            .iter()
-            .map(|j| j.local_transform)
-            .collect();
+        let mut transforms: Vec<Transform> =
+            skeleton.joints.iter().map(|j| j.local_transform).collect();
 
         let wrapped_time = time % self.duration;
 
@@ -636,16 +646,12 @@ fn bench_transform_operations(c: &mut Criterion) {
     };
 
     group.bench_function("lerp", |b| {
-        b.iter(|| {
-            black_box(t0.lerp(&t1, black_box(0.5)))
-        });
+        b.iter(|| black_box(t0.lerp(&t1, black_box(0.5))));
     });
 
     // Transform to matrix
     group.bench_function("to_matrix", |b| {
-        b.iter(|| {
-            black_box(t0.to_matrix())
-        });
+        b.iter(|| black_box(t0.to_matrix()));
     });
 
     // Quaternion slerp only
@@ -653,9 +659,7 @@ fn bench_transform_operations(c: &mut Criterion) {
     let q1 = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.5);
 
     group.bench_function("quat_slerp", |b| {
-        b.iter(|| {
-            black_box(q0.slerp(q1, black_box(0.5)))
-        });
+        b.iter(|| black_box(q0.slerp(q1, black_box(0.5))));
     });
 
     // Vec3 lerp only
@@ -663,9 +667,7 @@ fn bench_transform_operations(c: &mut Criterion) {
     let v1 = Vec3::new(1.0, 2.0, 3.0);
 
     group.bench_function("vec3_lerp", |b| {
-        b.iter(|| {
-            black_box(v0.lerp(v1, black_box(0.5)))
-        });
+        b.iter(|| black_box(v0.lerp(v1, black_box(0.5))));
     });
 
     group.finish();
@@ -683,18 +685,14 @@ fn bench_matrix_operations(c: &mut Criterion) {
     let m2 = Transform::default_pose().to_matrix();
 
     group.bench_function("multiply", |b| {
-        b.iter(|| {
-            black_box(m1.mul(m2))
-        });
+        b.iter(|| black_box(m1.mul(m2)));
     });
 
     // Quaternion to rotation matrix
     let q = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.5);
 
     group.bench_function("quat_to_rotation", |b| {
-        b.iter(|| {
-            black_box(q.to_rotation_matrix())
-        });
+        b.iter(|| black_box(q.to_rotation_matrix()));
     });
 
     group.finish();
@@ -746,9 +744,7 @@ fn bench_joint_palette_generation(c: &mut Criterion) {
     let transforms = clip.sample(0.5, &skeleton);
 
     group.bench_function("humanoid_20_joints", |b| {
-        b.iter(|| {
-            black_box(JointPalette::from_skeleton(&skeleton, &transforms))
-        });
+        b.iter(|| black_box(JointPalette::from_skeleton(&skeleton, &transforms)));
     });
 
     // Stress test
@@ -763,7 +759,10 @@ fn bench_joint_palette_generation(c: &mut Criterion) {
             &joint_count,
             |b, _| {
                 b.iter(|| {
-                    black_box(JointPalette::from_skeleton(&stress_skeleton, &stress_transforms))
+                    black_box(JointPalette::from_skeleton(
+                        &stress_skeleton,
+                        &stress_transforms,
+                    ))
                 });
             },
         );
@@ -778,11 +777,8 @@ fn bench_skeleton_hierarchy(c: &mut Criterion) {
     // World transform computation (forward kinematics)
     for joint_count in [20, 50, 100, 200] {
         let skeleton = Skeleton::create_stress_skeleton(joint_count);
-        let transforms: Vec<Transform> = skeleton
-            .joints
-            .iter()
-            .map(|j| j.local_transform)
-            .collect();
+        let transforms: Vec<Transform> =
+            skeleton.joints.iter().map(|j| j.local_transform).collect();
 
         group.throughput(Throughput::Elements(joint_count as u64));
         group.bench_with_input(

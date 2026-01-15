@@ -2173,11 +2173,12 @@ mod tests {
     #[test]
     fn test_renderer_lifecycle_headless() {
         pollster::block_on(async {
-            use crate::renderer::Renderer;
             use crate::camera::Camera;
+            use crate::renderer::Renderer;
 
             // Initialize headless renderer
-            let mut renderer = Renderer::new_headless(800, 600).await
+            let mut renderer = Renderer::new_headless(800, 600)
+                .await
                 .expect("Failed to create headless renderer");
 
             // Verify basic state
@@ -2223,19 +2224,12 @@ mod tests {
         pollster::block_on(async {
             use crate::renderer::Renderer;
 
-            let renderer = Renderer::new_headless(800, 600).await
+            let renderer = Renderer::new_headless(800, 600)
+                .await
                 .expect("Failed to create headless renderer");
 
-            let vertices = vec![
-                [0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0],
-            ];
-            let normals = vec![
-                [0.0, 0.0, 1.0],
-                [0.0, 0.0, 1.0],
-                [0.0, 0.0, 1.0],
-            ];
+            let vertices = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+            let normals = vec![[0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]];
             let indices = vec![0, 1, 2];
 
             let mesh = renderer.create_mesh_from_arrays(&vertices, &normals, &indices);
@@ -2249,7 +2243,8 @@ mod tests {
             use crate::renderer::Renderer;
             use crate::types::Instance;
 
-            let mut renderer = Renderer::new_headless(800, 600).await
+            let mut renderer = Renderer::new_headless(800, 600)
+                .await
                 .expect("Failed to create headless renderer");
 
             let instances = vec![
@@ -2270,12 +2265,12 @@ mod tests {
             // Verify GPU-side data
             let gpu_instances = renderer.read_instance_buffer().await;
             assert_eq!(gpu_instances.len(), 2);
-            
+
             // Check first instance position (stored in model matrix column 3)
             assert_eq!(gpu_instances[0].model[3][0], 1.0);
             assert_eq!(gpu_instances[0].model[3][1], 2.0);
             assert_eq!(gpu_instances[0].model[3][2], 3.0);
-            
+
             // Check second instance position
             assert_eq!(gpu_instances[1].model[3][0], -1.0);
             assert_eq!(gpu_instances[1].model[3][1], -2.0);
@@ -2289,7 +2284,8 @@ mod tests {
             use crate::renderer::Renderer;
             use crate::water::WaterRenderer;
 
-            let mut renderer = Renderer::new_headless(800, 600).await
+            let mut renderer = Renderer::new_headless(800, 600)
+                .await
                 .expect("Failed to create headless renderer");
 
             let water = WaterRenderer::new(
@@ -2309,7 +2305,8 @@ mod tests {
         pollster::block_on(async {
             use crate::renderer::Renderer;
 
-            let mut renderer = Renderer::new_headless(800, 600).await
+            let mut renderer = Renderer::new_headless(800, 600)
+                .await
                 .expect("Failed to create headless renderer");
 
             // Use existing CSM tuning API
@@ -2324,12 +2321,15 @@ mod tests {
         pollster::block_on(async {
             use crate::renderer::Renderer;
 
-            let mut renderer = Renderer::new_headless(800, 600).await
+            let mut renderer = Renderer::new_headless(800, 600)
+                .await
                 .expect("Failed to create headless renderer");
 
             // Post-processing is integrated into the render call.
             // We verify that render() doesn't crash in headless mode.
-            renderer.render().expect("Failed to render in headless mode");
+            renderer
+                .render()
+                .expect("Failed to render in headless mode");
         });
     }
 
@@ -2340,7 +2340,8 @@ mod tests {
             #[cfg(feature = "gpu-tests")]
             {
                 use crate::renderer::Renderer;
-                let mut renderer = Renderer::new_headless(800, 600).await
+                let mut renderer = Renderer::new_headless(800, 600)
+                    .await
                     .expect("Failed to create headless renderer");
 
                 renderer.render().expect("Failed to render");

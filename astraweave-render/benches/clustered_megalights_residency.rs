@@ -386,12 +386,7 @@ impl ResidencyManager {
 
 /// Sphere-sphere intersection for light merging
 #[inline]
-pub fn sphere_sphere_intersect(
-    c1: [f32; 3],
-    r1: f32,
-    c2: [f32; 3],
-    r2: f32,
-) -> bool {
+pub fn sphere_sphere_intersect(c1: [f32; 3], r1: f32, c2: [f32; 3], r2: f32) -> bool {
     let dx = c1[0] - c2[0];
     let dy = c1[1] - c2[1];
     let dz = c1[2] - c2[2];
@@ -417,19 +412,17 @@ pub fn cone_sphere_intersect(
     ];
 
     // Distance along cone axis
-    let dist_along = to_sphere[0] * cone_dir[0]
-        + to_sphere[1] * cone_dir[1]
-        + to_sphere[2] * cone_dir[2];
+    let dist_along =
+        to_sphere[0] * cone_dir[0] + to_sphere[1] * cone_dir[1] + to_sphere[2] * cone_dir[2];
 
     if dist_along < -sphere_radius {
         return false; // Behind cone
     }
 
     // Distance from cone axis
-    let dist_from_axis_sq = to_sphere[0] * to_sphere[0]
-        + to_sphere[1] * to_sphere[1]
-        + to_sphere[2] * to_sphere[2]
-        - dist_along * dist_along;
+    let dist_from_axis_sq =
+        to_sphere[0] * to_sphere[0] + to_sphere[1] * to_sphere[1] + to_sphere[2] * to_sphere[2]
+            - dist_along * dist_along;
 
     // Cone radius at this distance
     let sin_angle = (1.0 - cone_angle_cos * cone_angle_cos).sqrt();
@@ -563,17 +556,13 @@ fn bench_prefix_sum(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(size as u64));
 
-        group.bench_with_input(
-            BenchmarkId::new("sequential", size),
-            &input,
-            |b, input| b.iter(|| black_box(prefix_sum_sequential(black_box(input)))),
-        );
+        group.bench_with_input(BenchmarkId::new("sequential", size), &input, |b, input| {
+            b.iter(|| black_box(prefix_sum_sequential(black_box(input))))
+        });
 
-        group.bench_with_input(
-            BenchmarkId::new("blelloch", size),
-            &input,
-            |b, input| b.iter(|| black_box(prefix_sum_blelloch(black_box(input)))),
-        );
+        group.bench_with_input(BenchmarkId::new("blelloch", size), &input, |b, input| {
+            b.iter(|| black_box(prefix_sum_blelloch(black_box(input))))
+        });
     }
 
     group.finish();

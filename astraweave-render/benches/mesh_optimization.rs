@@ -7,8 +7,8 @@ use astraweave_render::vertex_compression::{
     HalfFloatEncoder, OctahedralEncoder, VertexCompressor,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::hint::black_box;
 use glam::{Quat, Vec2, Vec3};
+use std::hint::black_box;
 
 // =============================================================================
 // MISSION-CRITICAL CORRECTNESS ASSERTIONS
@@ -26,15 +26,27 @@ use glam::{Quat, Vec2, Vec3};
 #[inline]
 fn assert_octahedral_roundtrip_valid(original: Vec3, encoded: [i16; 2], context: &str) {
     // Encoded values should be in valid range
-    assert!(encoded[0] >= -32767 && encoded[0] <= 32767,
-        "[CORRECTNESS FAILURE] {}: encoded X out of range {}", context, encoded[0]);
-    assert!(encoded[1] >= -32767 && encoded[1] <= 32767,
-        "[CORRECTNESS FAILURE] {}: encoded Y out of range {}", context, encoded[1]);
+    assert!(
+        encoded[0] >= -32767 && encoded[0] <= 32767,
+        "[CORRECTNESS FAILURE] {}: encoded X out of range {}",
+        context,
+        encoded[0]
+    );
+    assert!(
+        encoded[1] >= -32767 && encoded[1] <= 32767,
+        "[CORRECTNESS FAILURE] {}: encoded Y out of range {}",
+        context,
+        encoded[1]
+    );
     // Decode and verify round-trip
     let decoded = OctahedralEncoder::decode(encoded);
     let dot = original.dot(decoded);
-    assert!(dot > 0.99,
-        "[CORRECTNESS FAILURE] {}: normal round-trip error too large (dot={})", context, dot);
+    assert!(
+        dot > 0.99,
+        "[CORRECTNESS FAILURE] {}: normal round-trip error too large (dot={})",
+        context,
+        dot
+    );
 }
 
 /// CORRECTNESS: Validate half-float UV round-trip preserves values
@@ -44,40 +56,82 @@ fn assert_half_float_roundtrip_valid(original: Vec2, encoded: [u16; 2], context:
     let error_x = (original.x - decoded.x).abs();
     let error_y = (original.y - decoded.y).abs();
     // Half-float precision is ~0.001 for values in [0,1]
-    assert!(error_x < 0.01,
-        "[CORRECTNESS FAILURE] {}: UV X round-trip error {} > 0.01", context, error_x);
-    assert!(error_y < 0.01,
-        "[CORRECTNESS FAILURE] {}: UV Y round-trip error {} > 0.01", context, error_y);
+    assert!(
+        error_x < 0.01,
+        "[CORRECTNESS FAILURE] {}: UV X round-trip error {} > 0.01",
+        context,
+        error_x
+    );
+    assert!(
+        error_y < 0.01,
+        "[CORRECTNESS FAILURE] {}: UV Y round-trip error {} > 0.01",
+        context,
+        error_y
+    );
 }
 
 /// CORRECTNESS: Validate LOD mesh has valid geometry
 #[inline]
-fn assert_lod_mesh_valid(vertex_count: usize, index_count: usize, original_vertices: usize, context: &str) {
+fn assert_lod_mesh_valid(
+    vertex_count: usize,
+    index_count: usize,
+    original_vertices: usize,
+    context: &str,
+) {
     // Must have at least 3 vertices for a triangle
-    assert!(vertex_count >= 3,
-        "[CORRECTNESS FAILURE] {}: LOD mesh has < 3 vertices ({})", context, vertex_count);
+    assert!(
+        vertex_count >= 3,
+        "[CORRECTNESS FAILURE] {}: LOD mesh has < 3 vertices ({})",
+        context,
+        vertex_count
+    );
     // Must have at least 3 indices for a triangle
-    assert!(index_count >= 3,
-        "[CORRECTNESS FAILURE] {}: LOD mesh has < 3 indices ({})", context, index_count);
+    assert!(
+        index_count >= 3,
+        "[CORRECTNESS FAILURE] {}: LOD mesh has < 3 indices ({})",
+        context,
+        index_count
+    );
     // Index count must be divisible by 3 (triangles)
-    assert!(index_count % 3 == 0,
-        "[CORRECTNESS FAILURE] {}: LOD index count {} not divisible by 3", context, index_count);
+    assert!(
+        index_count % 3 == 0,
+        "[CORRECTNESS FAILURE] {}: LOD index count {} not divisible by 3",
+        context,
+        index_count
+    );
     // LOD should have fewer or equal vertices than original
-    assert!(vertex_count <= original_vertices,
-        "[CORRECTNESS FAILURE] {}: LOD has more vertices ({}) than original ({})", 
-        context, vertex_count, original_vertices);
+    assert!(
+        vertex_count <= original_vertices,
+        "[CORRECTNESS FAILURE] {}: LOD has more vertices ({}) than original ({})",
+        context,
+        vertex_count,
+        original_vertices
+    );
 }
 
 /// CORRECTNESS: Validate memory savings ratio is physically valid
 #[inline]
-fn assert_memory_savings_valid(original_bytes: usize, compressed_bytes: usize, savings_ratio: f32, context: &str) {
+fn assert_memory_savings_valid(
+    original_bytes: usize,
+    compressed_bytes: usize,
+    savings_ratio: f32,
+    context: &str,
+) {
     // Savings ratio should be in valid range [0, 1)
-    assert!(savings_ratio >= 0.0 && savings_ratio < 1.0,
-        "[CORRECTNESS FAILURE] {}: savings ratio {} out of valid range [0,1)", context, savings_ratio);
+    assert!(
+        savings_ratio >= 0.0 && savings_ratio < 1.0,
+        "[CORRECTNESS FAILURE] {}: savings ratio {} out of valid range [0,1)",
+        context,
+        savings_ratio
+    );
     // Compressed should be smaller than original
-    assert!(compressed_bytes <= original_bytes,
-        "[CORRECTNESS FAILURE] {}: compressed ({}) larger than original ({})", 
-        context, compressed_bytes, original_bytes);
+    assert!(
+        compressed_bytes <= original_bytes,
+        "[CORRECTNESS FAILURE] {}: compressed ({}) larger than original ({})",
+        context,
+        compressed_bytes,
+        original_bytes
+    );
 }
 
 // ============================================================================
