@@ -343,6 +343,8 @@ pub struct Renderer {
     shadow_pcf_radius_px: f32,
     shadow_depth_bias: f32,
     shadow_slope_scale: f32,
+    /// Whether shadows are enabled for rendering
+    shadows_enabled: bool,
 
     // Albedo (base color) texture and sampler
     albedo_tex: wgpu::Texture,
@@ -2307,6 +2309,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             shadow_pcf_radius_px: 1.0,
             shadow_depth_bias: 0.0006,
             shadow_slope_scale: 0.002,
+            shadows_enabled: true, // Shadows enabled by default
             albedo_tex,
             albedo_view,
             albedo_sampler,
@@ -2794,6 +2797,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
     pub fn set_sky_config(&mut self, cfg: crate::environment::SkyConfig) {
         self.sky.set_config(cfg);
+    }
+
+    /// Check if shadows are enabled
+    pub fn shadows_enabled(&self) -> bool {
+        self.shadows_enabled
+    }
+
+    /// Enable or disable shadow rendering
+    pub fn set_shadows_enabled(&mut self, enabled: bool) {
+        self.shadows_enabled = enabled;
     }
 
     /// Set the water renderer for ocean rendering

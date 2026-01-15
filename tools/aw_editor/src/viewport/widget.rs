@@ -1990,6 +1990,47 @@ impl ViewportWidget {
         anyhow::bail!("astraweave-render feature not enabled")
     }
 
+    /// Check if shadows are enabled
+    #[cfg(feature = "astraweave-render")]
+    pub fn shadows_enabled(&self) -> anyhow::Result<bool> {
+        let renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter() {
+            Ok(adapter.shadows_enabled())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn shadows_enabled(&self) -> anyhow::Result<bool> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
+    /// Enable or disable shadows
+    #[cfg(feature = "astraweave-render")]
+    pub fn set_shadows_enabled(&self, enabled: bool) -> anyhow::Result<()> {
+        let mut renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter_mut() {
+            adapter.set_shadows_enabled(enabled);
+            Ok(())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn set_shadows_enabled(&self, _enabled: bool) -> anyhow::Result<()> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
     /// Toggle entity selection
     pub fn toggle_selection(&mut self, entity: crate::entity_manager::EntityId) {
         if self.selected_entities.contains(&entity) {
