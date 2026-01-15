@@ -449,10 +449,14 @@ impl ViewportWidget {
                 #[cfg(feature = "astraweave-render")]
                 {
                     let (render_mode, render_color) = if let Ok(renderer) = self.renderer.lock() {
-                        if renderer.use_engine_rendering() && renderer.engine_adapter_initialized() {
+                        if renderer.use_engine_rendering() && renderer.engine_adapter_initialized()
+                        {
                             ("🎨 PBR Engine", egui::Color32::from_rgb(80, 200, 120))
                         } else if renderer.engine_adapter_initialized() {
-                            ("🔷 Cube (PBR ready)", egui::Color32::from_rgb(120, 160, 200))
+                            (
+                                "🔷 Cube (PBR ready)",
+                                egui::Color32::from_rgb(120, 160, 200),
+                            )
                         } else {
                             ("🔷 Cube Renderer", egui::Color32::from_rgb(100, 140, 180))
                         }
