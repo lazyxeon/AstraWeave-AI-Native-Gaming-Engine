@@ -388,6 +388,9 @@ struct EditorApp {
     show_console_panel: bool,
     // Phase 10: Confirm dialog for new scene
     show_new_confirm_dialog: bool,
+    // Week 7: Confirm dialog for opening scene when dirty
+    show_open_confirm_dialog: bool,
+    pending_open_path: Option<std::path::PathBuf>,
     // Phase 10: Voxel editing tools
     voxel_editor: voxel_tools::VoxelEditor,
     // Phase 11: Professional Docking System
@@ -561,6 +564,9 @@ impl Default for EditorApp {
             show_console_panel: prefs.show_console_panel,
             // Phase 10: Confirm dialog for new scene
             show_new_confirm_dialog: false,
+            // Week 7: Confirm dialog for opening scene when dirty
+            show_open_confirm_dialog: false,
+            pending_open_path: None,
             // Phase 10: Voxel editing tools
             voxel_editor: voxel_tools::VoxelEditor::new(),
             // Phase 11: Professional Docking System
@@ -823,6 +829,54 @@ impl EditorApp {
         self.scene_state = Some(scene_state::EditorSceneState::new(World::new()));
         self.console_logs.push("New scene created".into());
         self.status = "New scene created".into();
+    }
+
+    /// Week 7: Load scene from path with proper state management
+    fn load_scene_from_path(&mut self, path: &std::path::Path) {
+        let scene_name = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("scene")
+            .to_string();
+
+        self.status = format!("Loading scene {}...", scene_name);
+        self.log(format!("Loading scene: {}...", scene_name));
+
+        match scene_serialization::load_scene(path) {
+            Ok(loaded_world) => {
+                // Clear old scene state and prefab instances to prevent memory leaks
+                self.prefab_manager.clear_instances();
+                self.undo_stack.clear();
+
+                self.scene_state = Some(EditorSceneState::new(loaded_world));
+                self.current_scene_path = Some(path.to_path_buf());
+                self.is_dirty = false;
+
+                info!("Loaded scene: {}", scene_name);
+                self.toast_success(format!("Loaded scene: {}", scene_name));
+                self.log(format!("✅ Loaded scene: {}", scene_name));
+                self.status = format!("Loaded: {}", scene_name);
+
+                // Add to recent files
+                self.recent_files.add_file(path.to_path_buf());
+            }
+            Err(err) => {
+                error!("Failed to load scene: {}", err);
+                self.toast_error(format!("Failed to load: {}", scene_name));
+                self.log(format!("❌ Failed to load scene: {}", err));
+                self.status = format!("Load failed: {}", scene_name);
+            }
+        }
+    }
+
+    /// Week 7: Request to open a scene, shows confirmation if dirty
+    fn request_open_scene(&mut self, path: std::path::PathBuf) {
+        if self.is_dirty {
+            self.pending_open_path = Some(path);
+            self.show_open_confirm_dialog = true;
+        } else {
+            self.load_scene_from_path(&path);
+        }
     }
 
     /// Week 4 Day 5: Validate model file before import
@@ -3199,32 +3253,94 @@ impl eframe::App for EditorApp {
             }
         }
 
-        // Phase 6: Quit confirmation dialog
+        // Week 7: Enhanced Quit confirmation dialog with better UX
         if self.show_quit_dialog {
-            egui::Window::new("Unsaved Changes")
+            // Show modal overlay
+            let screen_rect = ctx.screen_rect();
+            egui::Area::new(egui::Id::new("quit_dialog_overlay"))
+                .order(egui::Order::Background)
+                .fixed_pos(egui::Pos2::ZERO)
+                .show(ctx, |ui| {
+                    ui.painter().rect_filled(
+                        screen_rect,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
+                    );
+                });
+            
+            egui::Window::new("⚠️ Unsaved Changes")
                 .collapsible(false)
                 .resizable(false)
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .min_width(350.0)
                 .show(ctx, |ui| {
-                    ui.label("You have unsaved changes. What would you like to do?");
-                    ui.add_space(10.0);
+                    ui.add_space(8.0);
+                    
+                    // Warning icon and message
                     ui.horizontal(|ui| {
-                        if ui.button("Save & Quit").clicked() {
+                        ui.label(egui::RichText::new("📝").size(24.0));
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            ui.label(egui::RichText::new("You have unsaved changes.").strong());
+                            ui.add_space(4.0);
+                            if let Some(path) = &self.current_scene_path {
+                                ui.label(format!("Scene: {}", path.display()));
+                            } else {
+                                ui.label("Scene: Untitled (never saved)");
+                            }
+                        });
+                    });
+                    
+                    ui.add_space(16.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    
+                    // Action buttons
+                    ui.horizontal(|ui| {
+                        // Save & Quit button (primary action)
+                        let save_btn = egui::Button::new(egui::RichText::new("💾 Save & Quit").strong())
+                            .fill(egui::Color32::from_rgb(45, 125, 45));
+                        if ui.add(save_btn).clicked() {
                             if let Some(world) = self.edit_world() {
                                 let path = self.current_scene_path.clone().unwrap_or_else(|| {
                                     self.content_root.join("scenes/untitled.scene.ron")
                                 });
-                                let _ = scene_serialization::save_scene(world, &path);
+                                if scene_serialization::save_scene(world, &path).is_ok() {
+                                    self.toast_success("Scene saved");
+                                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                                } else {
+                                    self.toast_error("Failed to save scene");
+                                }
+                            } else {
+                                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                             }
+                        }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Quit Without Saving (destructive action)
+                        let quit_btn = egui::Button::new("🚪 Quit Without Saving")
+                            .fill(egui::Color32::from_rgb(165, 45, 45));
+                        if ui.add(quit_btn).clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
-                        if ui.button("Quit Without Saving").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Cancel (safe action)
                         if ui.button("Cancel").clicked() {
                             self.show_quit_dialog = false;
                         }
                     });
+                    
+                    ui.add_space(8.0);
+                    
+                    // Hint text
+                    ui.label(
+                        egui::RichText::new("Press Escape to cancel • Auto-save available in Edit > Preferences")
+                            .weak()
+                            .small()
+                    );
                 });
         }
 
@@ -3435,45 +3551,208 @@ impl eframe::App for EditorApp {
                 });
         }
 
-        // Phase 10: Confirm dialog for new scene when dirty
+        // Week 7: Enhanced New Scene confirmation dialog with better UX
         if self.show_new_confirm_dialog {
-            egui::Window::new("Unsaved Changes")
+            // Show modal overlay
+            let screen_rect = ctx.screen_rect();
+            egui::Area::new(egui::Id::new("new_scene_dialog_overlay"))
+                .order(egui::Order::Background)
+                .fixed_pos(egui::Pos2::ZERO)
+                .show(ctx, |ui| {
+                    ui.painter().rect_filled(
+                        screen_rect,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
+                    );
+                });
+            
+            egui::Window::new("⚠️ Unsaved Changes")
                 .collapsible(false)
                 .resizable(false)
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .min_width(380.0)
                 .show(ctx, |ui| {
-                    ui.label("You have unsaved changes. Create new scene anyway?");
-                    ui.add_space(10.0);
+                    ui.add_space(8.0);
+                    
+                    // Warning icon and message
                     ui.horizontal(|ui| {
-                        if ui.button("Discard Changes").clicked() {
+                        ui.label(egui::RichText::new("📄").size(24.0));
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            ui.label(egui::RichText::new("Create a new scene?").strong());
+                            ui.add_space(4.0);
+                            ui.label("You have unsaved changes that will be lost.");
+                            ui.add_space(4.0);
+                            if let Some(path) = &self.current_scene_path {
+                                ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
+                            } else {
+                                ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
+                            }
+                        });
+                    });
+                    
+                    ui.add_space(16.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    
+                    // Action buttons
+                    ui.horizontal(|ui| {
+                        // Save First button (primary safe action)
+                        let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
+                            .fill(egui::Color32::from_rgb(45, 125, 45));
+                        if ui.add(save_btn).clicked() {
+                            if let Some(world) = self.edit_world() {
+                                let path = self.current_scene_path.clone().unwrap_or_else(|| {
+                                    self.content_root.join("scenes/untitled.scene.ron")
+                                });
+                                if scene_serialization::save_scene(world, &path).is_ok() {
+                                    self.toast_success("Scene saved");
+                                    self.show_new_confirm_dialog = false;
+                                    self.create_new_scene();
+                                } else {
+                                    self.toast_error("Failed to save scene");
+                                }
+                            } else {
+                                self.show_new_confirm_dialog = false;
+                                self.create_new_scene();
+                            }
+                        }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Discard Changes (destructive action)
+                        let discard_btn = egui::Button::new("🗑️ Discard Changes")
+                            .fill(egui::Color32::from_rgb(165, 45, 45));
+                        if ui.add(discard_btn).clicked() {
                             self.show_new_confirm_dialog = false;
                             self.create_new_scene();
                         }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Cancel (safe action)
                         if ui.button("Cancel").clicked() {
                             self.show_new_confirm_dialog = false;
                         }
                     });
+                    
+                    ui.add_space(8.0);
+                    
+                    // Keyboard hint
+                    ui.label(
+                        egui::RichText::new("Press Escape to cancel")
+                            .weak()
+                            .small()
+                    );
                 });
         }
 
-        // Phase 10: Confirm dialog for new scene when dirty
-        if self.show_new_confirm_dialog {
-            egui::Window::new("Unsaved Changes")
+        // Week 7: Enhanced Open Scene confirmation dialog with better UX
+        if self.show_open_confirm_dialog {
+            // Show modal overlay
+            let screen_rect = ctx.screen_rect();
+            egui::Area::new(egui::Id::new("open_scene_dialog_overlay"))
+                .order(egui::Order::Background)
+                .fixed_pos(egui::Pos2::ZERO)
+                .show(ctx, |ui| {
+                    ui.painter().rect_filled(
+                        screen_rect,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
+                    );
+                });
+            
+            let pending_path_display = self.pending_open_path.as_ref()
+                .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+                .unwrap_or_else(|| "selected scene".to_string());
+            
+            egui::Window::new("⚠️ Unsaved Changes")
                 .collapsible(false)
                 .resizable(false)
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .min_width(400.0)
                 .show(ctx, |ui| {
-                    ui.label("You have unsaved changes. Create new scene anyway?");
-                    ui.add_space(10.0);
+                    ui.add_space(8.0);
+                    
+                    // Warning icon and message
                     ui.horizontal(|ui| {
-                        if ui.button("Discard Changes").clicked() {
-                            self.show_new_confirm_dialog = false;
-                            self.create_new_scene();
+                        ui.label(egui::RichText::new("📂").size(24.0));
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            ui.label(egui::RichText::new(format!("Open \"{}\"?", pending_path_display)).strong());
+                            ui.add_space(4.0);
+                            ui.label("You have unsaved changes that will be lost.");
+                            ui.add_space(4.0);
+                            if let Some(path) = &self.current_scene_path {
+                                ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
+                            } else {
+                                ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
+                            }
+                        });
+                    });
+                    
+                    ui.add_space(16.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    
+                    // Action buttons
+                    ui.horizontal(|ui| {
+                        // Save First button (primary safe action)
+                        let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
+                            .fill(egui::Color32::from_rgb(45, 125, 45));
+                        if ui.add(save_btn).clicked() {
+                            if let Some(world) = self.edit_world() {
+                                let save_path = self.current_scene_path.clone().unwrap_or_else(|| {
+                                    self.content_root.join("scenes/untitled.scene.ron")
+                                });
+                                if scene_serialization::save_scene(world, &save_path).is_ok() {
+                                    self.toast_success("Scene saved");
+                                    // Now open the pending scene
+                                    if let Some(open_path) = self.pending_open_path.take() {
+                                        self.load_scene_from_path(&open_path);
+                                    }
+                                    self.show_open_confirm_dialog = false;
+                                } else {
+                                    self.toast_error("Failed to save scene");
+                                }
+                            } else {
+                                // No world to save, just open
+                                if let Some(open_path) = self.pending_open_path.take() {
+                                    self.load_scene_from_path(&open_path);
+                                }
+                                self.show_open_confirm_dialog = false;
+                            }
                         }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Discard & Open (destructive action)
+                        let discard_btn = egui::Button::new("🗑️ Discard & Open")
+                            .fill(egui::Color32::from_rgb(165, 45, 45));
+                        if ui.add(discard_btn).clicked() {
+                            if let Some(open_path) = self.pending_open_path.take() {
+                                self.load_scene_from_path(&open_path);
+                            }
+                            self.show_open_confirm_dialog = false;
+                        }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Cancel (safe action)
                         if ui.button("Cancel").clicked() {
-                            self.show_new_confirm_dialog = false;
+                            self.pending_open_path = None;
+                            self.show_open_confirm_dialog = false;
                         }
                     });
+                    
+                    ui.add_space(8.0);
+                    
+                    // Keyboard hint
+                    ui.label(
+                        egui::RichText::new("Press Escape to cancel")
+                            .weak()
+                            .small()
+                    );
                 });
         }
 
@@ -3553,25 +3832,11 @@ impl eframe::App for EditorApp {
                 }
             }
 
-            // Ctrl+O: Load Scene
+            // Ctrl+O: Load Scene (Week 7: with unsaved changes confirmation)
             if i.modifiers.ctrl && i.key_pressed(egui::Key::O) {
+                // For now, load from default path - TODO: integrate file dialog
                 let path = self.content_root.join("scenes/untitled.scene.ron");
-                match scene_serialization::load_scene(&path) {
-                    Ok(world) => {
-                        self.scene_state = Some(EditorSceneState::new(world));
-                        self.current_scene_path = Some(path.clone());
-                        self.recent_files.add_file(path.clone());
-                        self.status = format!("📂 Loaded scene from {:?}", path);
-                        self.console_logs
-                            .push(format!("✅ Scene loaded: {:?}", path));
-                        self.undo_stack.clear();
-                    }
-                    Err(e) => {
-                        self.status = format!("❌ Scene load failed: {}", e);
-                        self.console_logs
-                            .push(format!("❌ Failed to load scene: {}", e));
-                    }
-                }
+                self.request_open_scene(path);
             }
 
             // Ctrl+C: Copy selected entities
@@ -3849,10 +4114,15 @@ impl eframe::App for EditorApp {
                 };
             }
 
-            // Escape: Close dialogs
+            // Escape: Close dialogs (Week 7: Added open confirm and quit dialogs)
             if i.key_pressed(egui::Key::Escape) {
-                if self.show_new_confirm_dialog {
+                if self.show_quit_dialog {
+                    self.show_quit_dialog = false;
+                } else if self.show_new_confirm_dialog {
                     self.show_new_confirm_dialog = false;
+                } else if self.show_open_confirm_dialog {
+                    self.pending_open_path = None;
+                    self.show_open_confirm_dialog = false;
                 } else if self.show_settings_dialog {
                     self.save_preferences();
                     self.show_settings_dialog = false;
@@ -4059,24 +4329,10 @@ impl eframe::App for EditorApp {
                     }
                 }
 
+                // Week 7: Load Scene with unsaved changes confirmation
                 if ui.button("📂 Load Scene").clicked() {
                     let path = self.content_root.join("scenes/untitled.scene.ron");
-                    match scene_serialization::load_scene(&path) {
-                        Ok(world) => {
-                            self.scene_state = Some(EditorSceneState::new(world));
-                            self.current_scene_path = Some(path.clone());
-                            self.recent_files.add_file(path.clone());
-                            self.status = format!("📂 Loaded scene from {:?}", path);
-                            self.console_logs
-                                .push(format!("✅ Scene loaded: {:?}", path));
-                            self.undo_stack.clear();
-                        }
-                        Err(e) => {
-                            self.status = format!("❌ Scene load failed: {}", e);
-                            self.console_logs
-                                .push(format!("❌ Failed to load scene: {}", e));
-                        }
-                    }
+                    self.request_open_scene(path);
                 }
 
                 ui.separator();
@@ -4195,6 +4451,7 @@ impl eframe::App for EditorApp {
                     }
                 });
 
+                // Week 7: Recent Files menu with unsaved changes confirmation
                 ui.menu_button("📚 Recent Files", |ui| {
                     let recent_files = self.recent_files.get_files().to_vec();
 
@@ -4208,23 +4465,14 @@ impl eframe::App for EditorApp {
                                 .unwrap_or("Unknown");
 
                             if ui.button(file_name).clicked() {
-                                match scene_serialization::load_scene(&path) {
-                                    Ok(world) => {
-                                        self.scene_state = Some(EditorSceneState::new(world));
-                                        self.current_scene_path = Some(path.clone());
-                                        self.recent_files.add_file(path.clone());
-                                        self.status = format!("📂 Loaded scene from {:?}", path);
-                                        self.console_logs
-                                            .push(format!("✅ Scene loaded: {:?}", path));
-                                        self.undo_stack.clear();
-                                        ui.close();
-                                    }
-                                    Err(e) => {
-                                        self.status = format!("❌ Scene load failed: {}", e);
-                                        self.console_logs
-                                            .push(format!("❌ Failed to load scene: {}", e));
-                                    }
+                                // Week 7: Check for unsaved changes before loading
+                                if self.is_dirty {
+                                    self.pending_open_path = Some(path);
+                                    self.show_open_confirm_dialog = true;
+                                } else {
+                                    self.load_scene_from_path(&path);
                                 }
+                                ui.close();
                             }
                         }
 
