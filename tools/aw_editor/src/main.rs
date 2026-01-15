@@ -367,7 +367,10 @@ struct EditorApp {
     // Phase 6: Dirty flag for unsaved changes
     is_dirty: bool,
     show_quit_dialog: bool,
-    // Phase 6: Toast notifications
+    // Phase 6: Toast notifications (Week 6 Day 3-4: Enhanced toast manager)
+    toast_manager: ui::ToastManager,
+    // Legacy toasts field (kept for backward compatibility during migration)
+    #[allow(dead_code)]
     toasts: Vec<Toast>,
     // Phase 7: Help dialog
     show_help_dialog: bool,
@@ -399,6 +402,12 @@ struct EditorApp {
     asset_registry: AssetRegistry,
     /// Last save timestamp
     last_save_time: Option<String>,
+    /// Week 6: Progress manager for long-running operations
+    progress_manager: ui::ProgressManager,
+    /// Week 6 Day 5: Resource usage tracking
+    resource_usage: ui::ResourceUsage,
+    /// Last time resources were sampled
+    last_resource_sample: std::time::Instant,
 }
 
 impl Default for EditorApp {
@@ -533,8 +542,9 @@ impl Default for EditorApp {
             // Phase 6: Dirty flag for unsaved changes
             is_dirty: false,
             show_quit_dialog: false,
-            // Phase 6: Toast notifications
-            toasts: Vec::new(),
+            // Phase 6: Toast notifications (Week 6 Day 3-4: Enhanced toast manager)
+            toast_manager: ui::ToastManager::new(),
+            toasts: Vec::new(), // Legacy, kept for migration
             // Phase 7: Help dialog
             show_help_dialog: false,
             // Phase 8: Viewport settings
@@ -563,6 +573,11 @@ impl Default for EditorApp {
             is_scene_modified: false,
             asset_registry: AssetRegistry::default(),
             last_save_time: None,
+            // Week 6: Progress manager for long-running operations
+            progress_manager: ui::ProgressManager::new(),
+            // Week 6 Day 5: Resource usage tracking
+            resource_usage: ui::ResourceUsage::new(),
+            last_resource_sample: std::time::Instant::now(),
         }
     }
 }
@@ -584,20 +599,171 @@ impl EditorApp {
         }
     }
 
+    // Week 6 Day 3-4: Enhanced toast notification methods
     fn toast(&mut self, message: impl Into<String>, level: ToastLevel) {
-        self.toasts.push(Toast::new(message, level));
+        // Convert to new toast level
+        let new_level = match level {
+            ToastLevel::Info => ui::ToastLevel::Info,
+            ToastLevel::Success => ui::ToastLevel::Success,
+            ToastLevel::Warning => ui::ToastLevel::Warning,
+            ToastLevel::Error => ui::ToastLevel::Error,
+        };
+        self.toast_manager.toast(message, new_level);
     }
 
     fn toast_success(&mut self, message: impl Into<String>) {
-        self.toast(message, ToastLevel::Success);
+        self.toast_manager.success(message);
     }
 
     fn toast_error(&mut self, message: impl Into<String>) {
-        self.toast(message, ToastLevel::Error);
+        self.toast_manager.error(message);
     }
 
     fn toast_info(&mut self, message: impl Into<String>) {
-        self.toast(message, ToastLevel::Info);
+        self.toast_manager.info(message);
+    }
+    
+    fn toast_warning(&mut self, message: impl Into<String>) {
+        self.toast_manager.warning(message);
+    }
+    
+    /// Show success toast with undo action
+    fn toast_success_with_undo(&mut self, message: impl Into<String>) {
+        self.toast_manager.success_with_undo(message);
+    }
+    
+    /// Show error toast with retry action
+    fn toast_error_with_retry(&mut self, message: impl Into<String>) {
+        self.toast_manager.error_with_retry(message);
+    }
+
+    // Week 6: Progress tracking helper methods
+    
+    /// Start a new progress task
+    fn start_progress(&mut self, label: impl Into<String>, category: ui::TaskCategory) -> ui::TaskId {
+        self.progress_manager.start_task(label, category)
+    }
+    
+    /// Start a cancellable progress task
+    fn start_progress_cancellable(&mut self, label: impl Into<String>, category: ui::TaskCategory) -> ui::TaskId {
+        self.progress_manager.start_cancellable_task(label, category)
+    }
+    
+    /// Update progress for a task (0.0 - 1.0)
+    fn update_progress(&mut self, task_id: ui::TaskId, progress: f32, status: impl Into<String>) {
+        self.progress_manager.update(task_id, progress, status);
+    }
+    
+    /// Complete a progress task
+    fn complete_progress(&mut self, task_id: ui::TaskId) {
+        self.progress_manager.complete_task(task_id);
+    }
+    
+    /// Fail a progress task with an error
+    fn fail_progress(&mut self, task_id: ui::TaskId, error: impl Into<String>) {
+        self.progress_manager.fail_task(task_id, error);
+    }
+
+    /// Week 6 Day 5: Sample current resource usage
+    /// 
+    /// This provides rough estimates of memory and GPU usage.
+    /// For precise monitoring, consider using platform-specific APIs.
+    fn sample_resource_usage(&mut self) {
+        // Estimate memory usage from allocator
+        // Note: This is a rough estimate. Real implementation would use:
+        // - sysinfo crate for system memory
+        // - wgpu adapter info for GPU memory
+        
+        // For now, use process-level estimates
+        #[cfg(windows)]
+        {
+            use std::mem::MaybeUninit;
+            
+            // Get process memory info on Windows
+            #[repr(C)]
+            struct ProcessMemoryCounters {
+                cb: u32,
+                page_fault_count: u32,
+                peak_working_set_size: usize,
+                working_set_size: usize,
+                quota_peak_paged_pool_usage: usize,
+                quota_paged_pool_usage: usize,
+                quota_peak_non_paged_pool_usage: usize,
+                quota_non_paged_pool_usage: usize,
+                pagefile_usage: usize,
+                peak_pagefile_usage: usize,
+            }
+            
+            #[link(name = "psapi")]
+            extern "system" {
+                fn GetProcessMemoryInfo(
+                    process: *mut std::ffi::c_void,
+                    counters: *mut ProcessMemoryCounters,
+                    cb: u32,
+                ) -> i32;
+                fn GetCurrentProcess() -> *mut std::ffi::c_void;
+            }
+            
+            #[repr(C)]
+            struct MemoryStatusEx {
+                length: u32,
+                memory_load: u32,
+                total_phys: u64,
+                avail_phys: u64,
+                total_page_file: u64,
+                avail_page_file: u64,
+                total_virtual: u64,
+                avail_virtual: u64,
+                avail_extended_virtual: u64,
+            }
+            
+            #[link(name = "kernel32")]
+            extern "system" {
+                fn GlobalMemoryStatusEx(buffer: *mut MemoryStatusEx) -> i32;
+            }
+            
+            unsafe {
+                // Get process memory
+                let mut counters = MaybeUninit::<ProcessMemoryCounters>::uninit();
+                (*counters.as_mut_ptr()).cb = std::mem::size_of::<ProcessMemoryCounters>() as u32;
+                
+                if GetProcessMemoryInfo(
+                    GetCurrentProcess(),
+                    counters.as_mut_ptr(),
+                    std::mem::size_of::<ProcessMemoryCounters>() as u32,
+                ) != 0
+                {
+                    let counters = counters.assume_init();
+                    self.resource_usage.memory_used = counters.working_set_size as u64;
+                }
+                
+                // Get system memory
+                let mut status = MaybeUninit::<MemoryStatusEx>::uninit();
+                (*status.as_mut_ptr()).length = std::mem::size_of::<MemoryStatusEx>() as u32;
+                
+                if GlobalMemoryStatusEx(status.as_mut_ptr()) != 0 {
+                    let status = status.assume_init();
+                    self.resource_usage.memory_total = status.total_phys;
+                }
+            }
+        }
+        
+        #[cfg(not(windows))]
+        {
+            // Fallback: just use rough estimates
+            // Real implementation would use sysinfo crate
+            self.resource_usage.memory_used = 0;
+            self.resource_usage.memory_total = 0;
+        }
+        
+        // GPU stats would come from wgpu adapter/device
+        // For now, leave as 0 (placeholder)
+        // Real implementation:
+        // - wgpu::Adapter::get_info() for basic info
+        // - Platform-specific APIs for detailed GPU memory
+        self.resource_usage.gpu_memory_used = 0;
+        self.resource_usage.gpu_memory_total = 0;
+        self.resource_usage.gpu_utilization = 0.0;
     }
 
     fn save_preferences(&self) {
@@ -1272,57 +1438,67 @@ impl EditorApp {
         );
     }
 
+    /// Week 6 Day 3-4: Render enhanced toast notifications
     fn render_toasts(&mut self, ctx: &egui::Context) {
-        const TOAST_DURATION: f32 = 4.0;
-        const TOAST_WIDTH: f32 = 300.0;
-        const TOAST_PADDING: f32 = 10.0;
-
-        self.toasts.retain(|t| !t.is_expired(TOAST_DURATION));
-
-        let screen_rect = ctx.screen_rect();
-        let mut y_offset = screen_rect.max.y - TOAST_PADDING;
-
-        for toast in self.toasts.iter().rev() {
-            let age = toast.created.elapsed().as_secs_f32();
-            let alpha = if age < 0.3 {
-                age / 0.3
-            } else if age > TOAST_DURATION - 0.5 {
-                (TOAST_DURATION - age) / 0.5
-            } else {
-                1.0
-            };
-
-            let color = toast.color();
-            let bg_color = egui::Color32::from_rgba_unmultiplied(
-                color.r(),
-                color.g(),
-                color.b(),
-                (200.0 * alpha) as u8,
-            );
-
-            let toast_rect = egui::Rect::from_min_size(
-                egui::pos2(
-                    screen_rect.max.x - TOAST_WIDTH - TOAST_PADDING,
-                    y_offset - 40.0,
-                ),
-                egui::vec2(TOAST_WIDTH, 35.0),
-            );
-
-            let painter = ctx.layer_painter(egui::LayerId::new(
-                egui::Order::Foreground,
-                egui::Id::new("toasts"),
-            ));
-
-            painter.rect_filled(toast_rect, 5.0, bg_color);
-            painter.text(
-                toast_rect.center(),
-                egui::Align2::CENTER_CENTER,
-                &toast.message,
-                egui::FontId::proportional(14.0),
-                egui::Color32::from_rgba_unmultiplied(255, 255, 255, (255.0 * alpha) as u8),
-            );
-
-            y_offset -= 45.0;
+        // Use the new ToastManager for rendering
+        self.toast_manager.show(ctx);
+        
+        // Process any pending toast actions
+        let actions = self.toast_manager.take_pending_actions();
+        
+        // Track state changes for after processing
+        let mut do_undo = false;
+        let mut do_retry = false;
+        let mut retry_toast_id = 0u64;
+        let mut details_to_log = Vec::new();
+        let mut paths_to_open = Vec::new();
+        let mut custom_actions = Vec::new();
+        
+        for (toast_id, action) in actions {
+            match action {
+                ui::ToastAction::Undo => {
+                    do_undo = true;
+                }
+                ui::ToastAction::Retry => {
+                    do_retry = true;
+                    retry_toast_id = toast_id;
+                }
+                ui::ToastAction::ViewDetails(details) => {
+                    details_to_log.push(details);
+                }
+                ui::ToastAction::Open(path) => {
+                    paths_to_open.push(path);
+                }
+                ui::ToastAction::Custom { label, action_id } => {
+                    custom_actions.push((label, action_id));
+                }
+            }
+        }
+        
+        // Process collected actions
+        if do_undo && self.undo_stack.can_undo() {
+            if let Some(state) = self.scene_state.as_mut() {
+                let _ = self.undo_stack.undo(state.world_mut());
+                self.status = "↩️ Undo successful".into();
+                self.toast_manager.info("Undone");
+            }
+        }
+        
+        if do_retry {
+            self.console_logs.push(format!("🔄 Retry requested for toast {}", retry_toast_id));
+        }
+        
+        for details in details_to_log {
+            self.console_logs.push(format!("📋 Details: {}", details));
+        }
+        
+        for path in paths_to_open {
+            self.console_logs.push(format!("📂 Open requested: {}", path));
+            self.status = format!("Open: {}", path);
+        }
+        
+        for (label, action_id) in custom_actions {
+            self.console_logs.push(format!("🎯 Custom action: {} ({})", label, action_id));
         }
     }
 
@@ -4551,13 +4727,22 @@ impl eframe::App for EditorApp {
             .map(|s| s.world().entities().len())
             .unwrap_or(0);
 
-        let bottom_scene_path_str = self.current_scene_path.as_ref().and_then(|p| p.to_str());
+        // Week 6 Day 5: Sample resource usage periodically (every 500ms)
+        if self.last_resource_sample.elapsed() > std::time::Duration::from_millis(500) {
+            self.sample_resource_usage();
+            self.last_resource_sample = std::time::Instant::now();
+        }
+
+        // Clone the path string to avoid borrow conflicts
+        let bottom_scene_path_str: Option<String> = self.current_scene_path.as_ref().and_then(|p| p.to_str()).map(String::from);
+        let bottom_scene_path_ref = bottom_scene_path_str.as_deref();
 
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
             .show(ctx, |ui| {
                 ui.set_min_size(ui.available_size());
-                StatusBar::show(
+                // Week 6 Day 5: Use enhanced status bar with progress and resource usage
+                StatusBar::show_enhanced(
                     ui,
                     &self.editor_mode,
                     &self.current_gizmo_mode,
@@ -4567,7 +4752,9 @@ impl eframe::App for EditorApp {
                     self.current_fps,
                     self.is_dirty,
                     bottom_entity_count,
-                    bottom_scene_path_str,
+                    bottom_scene_path_ref,
+                    &mut self.progress_manager,
+                    &self.resource_usage,
                 );
             });
 
