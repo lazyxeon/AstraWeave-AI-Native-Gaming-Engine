@@ -10,7 +10,7 @@
 
 ## Progress Log
 
-### Session Update (Latest)
+### Session Update (Latest - Week 4 Started)
 
 **Completed Work:**
 - ✅ **Phase 2 Week 1 Day 1-4**: Engine adapter integration (infrastructure)
@@ -22,6 +22,11 @@
   - Added set_material_params API to Renderer/EngineAdapter/Widget
   - Added model_count() and model_names() methods
   - Debug menu with material testing (Red/Green/Blue/White presets)
+- ✅ **Phase 2 Week 2 Day 5**: Material Editing - CONNECTED TO VIEWPORT
+  - Material Editor sliders now sync to 3D viewport in real-time
+  - Added color preview swatch with PBR property display
+  - Added manual "Apply to Viewport" button
+  - Added viewport sync status indicator
 - ✅ **Phase 2 Week 3 Day 1-2**: Directional Light (Time of Day)
   - Added get/set_time_of_day API through full stack
   - Added time presets (Dawn/Noon/Sunset/Midnight) to Debug menu
@@ -34,21 +39,31 @@
   - Toolbar has Grid toggle with type (Infinite/Crosshair)
   - Toolbar has Grid Snap with size controls
   - Toolbar has Angle Snap controls
+- ✅ **Phase 3 Week 4 Day 1-2**: Drag-Drop Import
+  - glTF/GLB drag-drop to viewport (auto-loads model)
+  - .ron scene drag-drop (loads scene file)
+  - Visual drop overlay showing file types being dragged
+  - Toast notifications for import status
+  - Console logging for all import operations
+  - Placeholders for textures, audio, materials (future)
 
 **Commits This Session:**
 1. `f9c1b998` - Asset browser → viewport integration
 2. `62ef4014` - PBR material parameter API and Debug menu
 3. `b5401a38` - Time-of-day lighting controls
 4. `8af5df96` - Shadow toggle to Debug menu
+5. `a494a853` - Progress log documentation update
+6. `ff8e8879` - Material Editor sliders connected to viewport
+7. `6851435b` - Drag-drop file import with visual overlay
 
-**Current Status**: Week 3 Complete (Lighting & Polish)
+**Current Status**: Week 4 Day 2 Complete (Drag-Drop Import)
 - All 274 tests passing
 - Zero-warning policy maintained
 
 **Next Steps**:
-- Week 4: Full Import Workflow (drag-drop import)
-- Week 2 Day 3-4: Texture Loading Pipeline (deferred - requires glTF texture extraction)
-- Week 2 Day 5: Material Editing (roughness/metallic sliders)
+- Week 4 Day 3-4: Texture Compression (KTX2/BC7)
+- Week 4 Day 5: Asset Validation
+- Week 5: Scene Workflow Polish (Multi-select, Prefabs, Statistics)
 
 ---
 
