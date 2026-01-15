@@ -380,6 +380,9 @@ struct EditorApp {
     auto_save_enabled: bool,
     auto_save_interval_secs: f32,
     last_auto_save: std::time::Instant,
+    // Week 7: Enhanced auto-save settings
+    auto_save_keep_count: usize,
+    auto_save_to_separate_dir: bool,
     // Phase 9: Settings dialog
     show_settings_dialog: bool,
     // Phase 9: Panel visibility
@@ -556,6 +559,9 @@ impl Default for EditorApp {
             auto_save_enabled: prefs.auto_save_enabled,
             auto_save_interval_secs: prefs.auto_save_interval_secs,
             last_auto_save: std::time::Instant::now(),
+            // Week 7: Enhanced auto-save settings
+            auto_save_keep_count: prefs.auto_save_keep_count,
+            auto_save_to_separate_dir: prefs.auto_save_to_separate_dir,
             // Phase 9: Settings dialog
             show_settings_dialog: false,
             // Phase 9: Panel visibility
@@ -777,6 +783,9 @@ impl EditorApp {
             show_grid: self.show_grid,
             auto_save_enabled: self.auto_save_enabled,
             auto_save_interval_secs: self.auto_save_interval_secs,
+            // Week 7: Enhanced auto-save settings
+            auto_save_keep_count: self.auto_save_keep_count,
+            auto_save_to_separate_dir: self.auto_save_to_separate_dir,
             show_hierarchy_panel: self.show_hierarchy_panel,
             show_inspector_panel: self.show_inspector_panel,
             show_console_panel: self.show_console_panel,
@@ -806,6 +815,9 @@ impl EditorApp {
             show_grid: self.show_grid,
             auto_save_enabled: self.auto_save_enabled,
             auto_save_interval_secs: self.auto_save_interval_secs,
+            // Week 7: Enhanced auto-save settings
+            auto_save_keep_count: self.auto_save_keep_count,
+            auto_save_to_separate_dir: self.auto_save_to_separate_dir,
             show_hierarchy_panel: self.show_hierarchy_panel,
             show_inspector_panel: self.show_inspector_panel,
             show_console_panel: self.show_console_panel,
@@ -817,6 +829,8 @@ impl EditorApp {
         self.show_grid = prefs.show_grid;
         self.auto_save_enabled = prefs.auto_save_enabled;
         self.auto_save_interval_secs = prefs.auto_save_interval_secs;
+        self.auto_save_keep_count = prefs.auto_save_keep_count;
+        self.auto_save_to_separate_dir = prefs.auto_save_to_separate_dir;
         self.show_hierarchy_panel = prefs.show_hierarchy_panel;
         self.show_inspector_panel = prefs.show_inspector_panel;
         self.show_console_panel = prefs.show_console_panel;
@@ -877,6 +891,147 @@ impl EditorApp {
         } else {
             self.load_scene_from_path(&path);
         }
+    }
+
+    /// Week 7: Enhanced auto-save with timestamped backups in .autosave/ directory
+    fn perform_auto_save(&mut self) {
+        if let Some(world) = self.edit_world() {
+            let auto_save_path = if self.auto_save_to_separate_dir {
+                // Save to .autosave/ directory with timestamp
+                let autosave_dir = self.content_root.join(".autosave");
+                if let Err(e) = fs::create_dir_all(&autosave_dir) {
+                    self.toast_error(format!("Failed to create autosave dir: {}", e));
+                    return;
+                }
+
+                // Generate timestamped filename
+                let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+                let base_name = self
+                    .current_scene_path
+                    .as_ref()
+                    .and_then(|p| p.file_stem())
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("untitled");
+                let filename = format!("{}_{}.autosave.scene.ron", base_name, timestamp);
+                autosave_dir.join(filename)
+            } else {
+                // Save to scene path or default
+                self.current_scene_path
+                    .clone()
+                    .unwrap_or_else(|| self.content_root.join("scenes/autosave.scene.ron"))
+            };
+
+            match scene_serialization::save_scene(world, &auto_save_path) {
+                Ok(()) => {
+                    self.last_auto_save = std::time::Instant::now();
+                    let filename = auto_save_path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy();
+                    self.toast_info(format!("Auto-saved: {}", filename));
+                    self.log(format!("💾 Auto-saved to {}", filename));
+
+                    // Cleanup old auto-saves if using separate directory
+                    if self.auto_save_to_separate_dir {
+                        self.cleanup_old_autosaves();
+                    }
+                }
+                Err(e) => {
+                    self.toast_error(format!("Auto-save failed: {}", e));
+                    self.log(format!("❌ Auto-save failed: {}", e));
+                }
+            }
+        }
+    }
+
+    /// Week 7: Remove old auto-save files, keeping only the most recent N
+    fn cleanup_old_autosaves(&mut self) {
+        let autosave_dir = self.content_root.join(".autosave");
+        if !autosave_dir.exists() {
+            return;
+        }
+
+        // Get the base name of the current scene
+        let base_name = self
+            .current_scene_path
+            .as_ref()
+            .and_then(|p| p.file_stem())
+            .and_then(|s| s.to_str())
+            .unwrap_or("untitled");
+
+        // Collect matching auto-save files
+        let mut autosaves: Vec<_> = match fs::read_dir(&autosave_dir) {
+            Ok(entries) => entries
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| {
+                    p.file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|s| s.starts_with(base_name) && s.ends_with(".autosave.scene.ron"))
+                        .unwrap_or(false)
+                })
+                .collect(),
+            Err(_) => return,
+        };
+
+        // Sort by modification time (newest first)
+        autosaves.sort_by(|a, b| {
+            let a_time = fs::metadata(a).and_then(|m| m.modified()).ok();
+            let b_time = fs::metadata(b).and_then(|m| m.modified()).ok();
+            b_time.cmp(&a_time)
+        });
+
+        // Remove older files beyond keep_count
+        for old_file in autosaves.iter().skip(self.auto_save_keep_count) {
+            if let Err(e) = fs::remove_file(old_file) {
+                self.log(format!(
+                    "⚠️  Failed to remove old autosave {:?}: {}",
+                    old_file.file_name().unwrap_or_default(),
+                    e
+                ));
+            } else {
+                self.log(format!(
+                    "🗑️ Removed old autosave: {:?}",
+                    old_file.file_name().unwrap_or_default()
+                ));
+            }
+        }
+    }
+
+    /// Week 7: Get the most recent auto-save file for crash recovery
+    pub fn get_most_recent_autosave(&self) -> Option<std::path::PathBuf> {
+        let autosave_dir = self.content_root.join(".autosave");
+        if !autosave_dir.exists() {
+            return None;
+        }
+
+        // Collect all auto-save files
+        let mut autosaves: Vec<_> = match fs::read_dir(&autosave_dir) {
+            Ok(entries) => entries
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| {
+                    p.extension()
+                        .and_then(|e| e.to_str())
+                        .map(|s| s == "ron")
+                        .unwrap_or(false)
+                        && p.file_name()
+                            .and_then(|n| n.to_str())
+                            .map(|s| s.contains(".autosave."))
+                            .unwrap_or(false)
+                })
+                .collect(),
+            Err(_) => return None,
+        };
+
+        // Sort by modification time (newest first)
+        autosaves.sort_by(|a, b| {
+            let a_time = fs::metadata(a).and_then(|m| m.modified()).ok();
+            let b_time = fs::metadata(b).and_then(|m| m.modified()).ok();
+            b_time.cmp(&a_time)
+        });
+
+        autosaves.into_iter().next()
     }
 
     /// Week 4 Day 5: Validate model file before import
@@ -3233,24 +3388,12 @@ impl eframe::App for EditorApp {
         );
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
 
-        // Phase 8: Auto-save logic
+        // Week 7: Enhanced Auto-save with timestamped backups
         if self.auto_save_enabled
             && self.is_dirty
             && self.last_auto_save.elapsed().as_secs_f32() > self.auto_save_interval_secs
         {
-            if let Some(world) = self.edit_world() {
-                let path = self
-                    .current_scene_path
-                    .clone()
-                    .unwrap_or_else(|| self.content_root.join("scenes/autosave.scene.ron"));
-                if scene_serialization::save_scene(world, &path).is_ok() {
-                    self.last_auto_save = std::time::Instant::now();
-                    self.toast_info(format!(
-                        "Auto-saved to {:?}",
-                        path.file_name().unwrap_or_default()
-                    ));
-                }
-            }
+            self.perform_auto_save();
         }
 
         // Week 7: Enhanced Quit confirmation dialog with better UX
@@ -3433,6 +3576,32 @@ impl eframe::App for EditorApp {
                                 .speed(10.0),
                         );
                     });
+
+                    // Week 7: New auto-save settings
+                    ui.horizontal(|ui| {
+                        ui.label("Save to .autosave/ folder:");
+                        ui.checkbox(&mut self.auto_save_to_separate_dir, "");
+                    });
+
+                    ui.horizontal(|ui| {
+                        ui.label("Keep recent backups:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.auto_save_keep_count)
+                                .range(1..=10)
+                                .speed(1.0),
+                        );
+                    });
+
+                    // Show most recent auto-save if available
+                    if let Some(recent) = self.get_most_recent_autosave() {
+                        ui.add_space(8.0);
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new("💾 Most recent:").weak());
+                            if let Some(filename) = recent.file_name().and_then(|n| n.to_str()) {
+                                ui.label(egui::RichText::new(filename).weak().small());
+                            }
+                        });
+                    }
 
                     ui.add_space(16.0);
                     ui.heading("Panels");
