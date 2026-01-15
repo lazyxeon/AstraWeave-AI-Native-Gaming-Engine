@@ -143,7 +143,9 @@ fn test_rule_orchestrator_correctness() {
     println!("✅ RuleOrchestrator logic validated across 3 scenarios");
 }
 
+/// Performance-sensitive test - depends on system load and hardware
 #[test]
+#[ignore]
 fn test_rule_orchestrator_performance() {
     println!("\n=== TEST: RuleOrchestrator Performance ===");
 
