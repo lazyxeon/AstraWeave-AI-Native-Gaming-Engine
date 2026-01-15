@@ -394,6 +394,10 @@ struct EditorApp {
     // Week 7: Confirm dialog for opening scene when dirty
     show_open_confirm_dialog: bool,
     pending_open_path: Option<std::path::PathBuf>,
+    // Week 7 Day 5: Crash recovery
+    show_recovery_dialog: bool,
+    recovery_autosave_path: Option<std::path::PathBuf>,
+    lock_file_path: PathBuf,
     // Phase 10: Voxel editing tools
     voxel_editor: voxel_tools::VoxelEditor,
     // Phase 11: Professional Docking System
@@ -573,6 +577,10 @@ impl Default for EditorApp {
             // Week 7: Confirm dialog for opening scene when dirty
             show_open_confirm_dialog: false,
             pending_open_path: None,
+            // Week 7 Day 5: Crash recovery
+            show_recovery_dialog: false,
+            recovery_autosave_path: None,
+            lock_file_path: PathBuf::from(".aw_editor.lock"),
             // Phase 10: Voxel editing tools
             voxel_editor: voxel_tools::VoxelEditor::new(),
             // Phase 11: Professional Docking System
@@ -1032,6 +1040,92 @@ impl EditorApp {
         });
 
         autosaves.into_iter().next()
+    }
+
+    /// Week 7 Day 5: Create lock file to detect crashes
+    fn create_lock_file(&self) {
+        use std::io::Write;
+
+        // Create or overwrite lock file with current session info
+        if let Ok(mut file) = fs::File::create(&self.lock_file_path) {
+            let session_info = format!(
+                "pid={}\nstarted={}\nscene={}\n",
+                std::process::id(),
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                self.current_scene_path
+                    .as_ref()
+                    .and_then(|p| p.to_str())
+                    .unwrap_or("Untitled")
+            );
+            let _ = file.write_all(session_info.as_bytes());
+        }
+    }
+
+    /// Week 7 Day 5: Remove lock file on clean exit
+    fn remove_lock_file(&self) {
+        let _ = fs::remove_file(&self.lock_file_path);
+    }
+
+    /// Week 7 Day 5: Check if previous session crashed
+    fn check_for_crash_recovery(&mut self) {
+        // If lock file exists, previous session may have crashed
+        if self.lock_file_path.exists() {
+            // Check if there's an auto-save to recover
+            if let Some(autosave_path) = self.get_most_recent_autosave() {
+                // Read lock file for session info
+                let session_info = fs::read_to_string(&self.lock_file_path)
+                    .unwrap_or_default();
+
+                self.console_logs.push(format!(
+                    "⚠️  Previous session may have crashed. Found auto-save: {}",
+                    autosave_path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown")
+                ));
+
+                // Log session info if available
+                if !session_info.is_empty() {
+                    for line in session_info.lines().take(3) {
+                        self.console_logs.push(format!("   📋 {}", line));
+                    }
+                }
+
+                self.recovery_autosave_path = Some(autosave_path);
+                self.show_recovery_dialog = true;
+            } else {
+                // Lock file exists but no auto-save - just clean up
+                self.console_logs.push(
+                    "⚠️  Previous session may have crashed (no auto-save found)".to_string()
+                );
+                self.remove_lock_file();
+            }
+        }
+    }
+
+    /// Week 7 Day 5: Load from recovery auto-save
+    fn recover_from_autosave(&mut self) {
+        if let Some(path) = self.recovery_autosave_path.take() {
+            // Load the auto-save file
+            self.load_scene_from_path(&path);
+            self.toast(
+                format!("🔄 Recovered from auto-save: {}",
+                    path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown")
+                ),
+                ToastLevel::Success
+            );
+
+            // Clear the recovery state and create new lock file
+            self.show_recovery_dialog = false;
+            self.remove_lock_file();
+            self.create_lock_file();
+        }
+    }
+
+    /// Week 7 Day 5: Decline recovery and start fresh
+    fn decline_recovery(&mut self) {
+        self.recovery_autosave_path = None;
+        self.show_recovery_dialog = false;
+        self.remove_lock_file();
+        self.create_lock_file();
+        self.console_logs.push("ℹ️  Recovery declined - starting fresh".to_string());
     }
 
     /// Week 4 Day 5: Validate model file before import
@@ -1979,6 +2073,12 @@ impl EditorApp {
         let default_world = astraweave_core::World::new();
         app.scene_state = Some(EditorSceneState::new(default_world));
         app.console_logs.push("✅ Default scene created".into());
+
+        // Week 7 Day 5: Check for crash recovery
+        app.check_for_crash_recovery();
+
+        // Week 7 Day 5: Create lock file for this session
+        app.create_lock_file();
 
         Ok(app)
     }
@@ -3291,9 +3391,16 @@ impl eframe::App for EditorApp {
         style.spacing.window_margin = egui::Margin::same(0);
         ctx.set_style(style);
 
-        if ctx.input(|i| i.viewport().close_requested()) && self.is_dirty {
-            self.show_quit_dialog = true;
-            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+        // Week 7 Day 5: Handle close requests with proper lock file cleanup
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if self.is_dirty {
+                self.show_quit_dialog = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            } else {
+                // Clean exit - remove lock file
+                self.remove_lock_file();
+                // Let the close proceed
+            }
         }
 
         // Week 4: Handle drag-drop file imports
@@ -3450,11 +3557,13 @@ impl eframe::App for EditorApp {
                                 });
                                 if scene_serialization::save_scene(world, &path).is_ok() {
                                     self.toast_success("Scene saved");
+                                    self.remove_lock_file(); // Week 7: Clean exit
                                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                                 } else {
                                     self.toast_error("Failed to save scene");
                                 }
                             } else {
+                                self.remove_lock_file(); // Week 7: Clean exit
                                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                             }
                         }
@@ -3465,6 +3574,7 @@ impl eframe::App for EditorApp {
                         let quit_btn = egui::Button::new("🚪 Quit Without Saving")
                             .fill(egui::Color32::from_rgb(165, 45, 45));
                         if ui.add(quit_btn).clicked() {
+                            self.remove_lock_file(); // Week 7: Clean exit
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                         
@@ -3919,6 +4029,116 @@ impl eframe::App for EditorApp {
                     // Keyboard hint
                     ui.label(
                         egui::RichText::new("Press Escape to cancel")
+                            .weak()
+                            .small()
+                    );
+                });
+        }
+
+        // Week 7 Day 5: Crash recovery dialog
+        if self.show_recovery_dialog {
+            // Show modal overlay
+            let screen_rect = ctx.screen_rect();
+            egui::Area::new(egui::Id::new("recovery_dialog_overlay"))
+                .order(egui::Order::Background)
+                .fixed_pos(egui::Pos2::ZERO)
+                .show(ctx, |ui| {
+                    ui.painter().rect_filled(
+                        screen_rect,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 180),
+                    );
+                });
+            
+            let autosave_name = self.recovery_autosave_path.as_ref()
+                .and_then(|p| p.file_name())
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown")
+                .to_string();
+            
+            egui::Window::new("🔄 Crash Recovery")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .min_width(450.0)
+                .show(ctx, |ui| {
+                    ui.add_space(8.0);
+                    
+                    // Warning icon and message
+                    ui.horizontal(|ui| {
+                        ui.label(egui::RichText::new("⚠️").size(32.0));
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            ui.label(egui::RichText::new("Previous Session Detected").strong().size(16.0));
+                            ui.add_space(4.0);
+                            ui.label("The editor may have closed unexpectedly.");
+                            ui.label("An auto-save backup was found:");
+                        });
+                    });
+                    
+                    ui.add_space(12.0);
+                    
+                    // Auto-save file info box
+                    egui::Frame::new()
+                        .fill(egui::Color32::from_rgb(35, 45, 55))
+                        .corner_radius(4.0)
+                        .inner_margin(8.0)
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                ui.label(egui::RichText::new("💾").size(18.0));
+                                ui.add_space(4.0);
+                                ui.label(egui::RichText::new(&autosave_name).monospace());
+                            });
+                            
+                            // Show file modification time if available
+                            if let Some(path) = &self.recovery_autosave_path {
+                                if let Ok(metadata) = fs::metadata(path) {
+                                    if let Ok(modified) = metadata.modified() {
+                                        if let Ok(duration) = modified.elapsed() {
+                                            let mins_ago = duration.as_secs() / 60;
+                                            let time_str = if mins_ago < 60 {
+                                                format!("{} minutes ago", mins_ago)
+                                            } else if mins_ago < 1440 {
+                                                format!("{} hours ago", mins_ago / 60)
+                                            } else {
+                                                format!("{} days ago", mins_ago / 1440)
+                                            };
+                                            ui.label(egui::RichText::new(format!("Modified: {}", time_str)).weak().small());
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    
+                    ui.add_space(16.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    
+                    // Action buttons
+                    ui.horizontal(|ui| {
+                        // Restore button (primary action)
+                        let restore_btn = egui::Button::new(egui::RichText::new("✅ Restore Auto-Save").strong())
+                            .fill(egui::Color32::from_rgb(45, 125, 45))
+                            .min_size(egui::vec2(150.0, 32.0));
+                        if ui.add(restore_btn).clicked() {
+                            self.recover_from_autosave();
+                        }
+                        
+                        ui.add_space(16.0);
+                        
+                        // Start Fresh button
+                        let fresh_btn = egui::Button::new("🆕 Start Fresh")
+                            .min_size(egui::vec2(120.0, 32.0));
+                        if ui.add(fresh_btn).clicked() {
+                            self.decline_recovery();
+                        }
+                    });
+                    
+                    ui.add_space(12.0);
+                    
+                    // Info text
+                    ui.label(
+                        egui::RichText::new("💡 Tip: Auto-saves are stored in the .autosave/ folder")
                             .weak()
                             .small()
                     );
