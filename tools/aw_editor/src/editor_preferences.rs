@@ -10,11 +10,20 @@ pub struct EditorPreferences {
     pub show_grid: bool,
     pub auto_save_enabled: bool,
     pub auto_save_interval_secs: f32,
+    // Week 7: Enhanced auto-save settings
+    #[serde(default = "default_auto_save_count")]
+    pub auto_save_keep_count: usize,
+    #[serde(default)]
+    pub auto_save_to_separate_dir: bool,
     pub show_hierarchy_panel: bool,
     pub show_inspector_panel: bool,
     pub show_console_panel: bool,
     pub camera: Option<OrbitCamera>,
     pub snapping: Option<SnappingConfig>,
+}
+
+fn default_auto_save_count() -> usize {
+    3
 }
 
 impl Default for EditorPreferences {
@@ -23,6 +32,8 @@ impl Default for EditorPreferences {
             show_grid: true,
             auto_save_enabled: false,
             auto_save_interval_secs: 300.0,
+            auto_save_keep_count: 3,
+            auto_save_to_separate_dir: true,
             show_hierarchy_panel: true,
             show_inspector_panel: true,
             show_console_panel: true,
