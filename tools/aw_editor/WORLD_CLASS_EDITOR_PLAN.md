@@ -80,21 +80,19 @@ The AstraWeave Editor is at **82% production readiness** with a solid architectu
 - FPS counter (top-left, color-coded: green/yellow/red)
 - Rendering mode indicator (bottom-left: PBR Engine / Cube)
 
-#### Day 3-4: Asset Browser → Viewport Integration
+#### Day 3-4: Asset Browser → Viewport Integration ✅ DONE
 Connect "Import Model" action to engine renderer:
 
-```rust
-// In main.rs handle_asset_action()
-AssetAction::ImportModel { path } => {
-    // 1. Create entity in scene
-    // 2. Load mesh via engine adapter (already started)
-    // 3. Track mesh→entity mapping for selection
-}
-```
+**Completed Features**:
+- `AssetAction::LoadToViewport` - New action variant for direct viewport preview
+- 👁️ "Load to Viewport" button in asset browser context menu (no entity created)
+- ➕ "Import to Scene" button now properly loads mesh AND creates entity
+- **Double-click behavior**: Double-clicking any .glb/.gltf model in asset browser loads it to viewport
+- Handler in `main.rs` with proper error handling and console feedback
 
-**Files to modify**:
-- `main.rs` - Complete ImportModel handler
-- `panels/asset_browser.rs` - Add "Load to Viewport" context option
+**Files modified**:
+- `panels/asset_browser.rs` - Added LoadToViewport action, context button, double-click behavior
+- `main.rs` - Added LoadToViewport handler with logging
 
 #### Day 5: Validation & Testing
 - Test loading pine_tree_01_1k.glb from pine_forest assets

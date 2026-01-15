@@ -1491,6 +1491,43 @@ impl EditorApp {
                 }
             }
 
+            AssetAction::LoadToViewport { path } => {
+                // Load model directly to viewport for preview (no entity created)
+                let model_name = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("preview_model")
+                    .to_string();
+
+                #[cfg(feature = "astraweave-render")]
+                if let Some(viewport) = &self.viewport {
+                    match viewport.load_gltf_model(&model_name, &path) {
+                        Ok(()) => {
+                            info!("Loaded '{}' to viewport for preview", model_name);
+                            self.console_logs
+                                .push(format!("👁️ Loaded '{}' to viewport", model_name));
+                            self.status = format!("Viewing: {}", model_name);
+                        }
+                        Err(e) => {
+                            warn!("Failed to load '{}' to viewport: {}", model_name, e);
+                            self.console_logs
+                                .push(format!("⚠️ Failed to load '{}': {}", model_name, e));
+                        }
+                    }
+                } else {
+                    warn!("No viewport available for model preview");
+                    self.console_logs
+                        .push("⚠️ Viewport not available for preview".into());
+                }
+
+                #[cfg(not(feature = "astraweave-render"))]
+                {
+                    warn!("astraweave-render feature not enabled - cannot preview model");
+                    self.console_logs
+                        .push("⚠️ Render feature not enabled - cannot preview model".into());
+                }
+            }
+
             AssetAction::InspectAsset { path } => {
                 // Log for material inspector (future expansion)
                 info!("Inspecting asset: {}", path.display());

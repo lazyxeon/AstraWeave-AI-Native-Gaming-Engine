@@ -214,6 +214,8 @@ impl AssetCategory {
 pub enum AssetAction {
     /// Import a 3D model into the scene as a new entity
     ImportModel { path: PathBuf },
+    /// Load a 3D model directly to viewport for preview (no entity created)
+    LoadToViewport { path: PathBuf },
     /// Apply a texture to the selected entity's material
     ApplyTexture {
         path: PathBuf,
@@ -724,9 +726,15 @@ impl AssetBrowser {
                                 }
                             }
 
-                            if response.double_clicked() && entry.asset_type == AssetType::Directory
-                            {
-                                path_to_navigate = Some(entry.path.clone());
+                            if response.double_clicked() {
+                                if entry.asset_type == AssetType::Directory {
+                                    path_to_navigate = Some(entry.path.clone());
+                                } else if entry.asset_type == AssetType::Model {
+                                    // Double-click on model loads it to viewport
+                                    self.pending_actions.push(AssetAction::LoadToViewport {
+                                        path: entry.path.clone(),
+                                    });
+                                }
                             }
 
                             if response.hovered() {
@@ -863,10 +871,17 @@ impl AssetBrowser {
                                             }
                                         }
 
-                                        if response.double_clicked()
-                                            && entry_asset_type == AssetType::Directory
-                                        {
-                                            path_to_navigate = Some(entry_path.clone());
+                                        if response.double_clicked() {
+                                            if entry_asset_type == AssetType::Directory {
+                                                path_to_navigate = Some(entry_path.clone());
+                                            } else if entry_asset_type == AssetType::Model {
+                                                // Double-click on model loads it to viewport
+                                                self.pending_actions.push(
+                                                    AssetAction::LoadToViewport {
+                                                        path: entry_path.clone(),
+                                                    },
+                                                );
+                                            }
                                         }
 
                                         if response.hovered() {
@@ -949,6 +964,11 @@ impl AssetBrowser {
                     // Context-appropriate action buttons
                     match asset_type {
                         AssetType::Model => {
+                            if ui.button("👁️ Load to Viewport").clicked() {
+                                self.pending_actions.push(AssetAction::LoadToViewport {
+                                    path: selected.clone(),
+                                });
+                            }
                             if ui.button("➕ Import to Scene").clicked() {
                                 self.pending_actions.push(AssetAction::ImportModel {
                                     path: selected.clone(),
