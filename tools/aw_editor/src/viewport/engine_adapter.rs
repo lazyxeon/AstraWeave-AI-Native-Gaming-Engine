@@ -132,6 +132,62 @@ impl EngineRenderAdapter {
     pub fn model_names(&self) -> Vec<String> {
         self.renderer.model_names()
     }
+
+    /// Get current time of day (0.0 - 24.0 game hours)
+    pub fn get_time_of_day(&self) -> f32 {
+        self.renderer.time_of_day().current_time
+    }
+
+    /// Set time of day (0.0 - 24.0 game hours)
+    pub fn set_time_of_day(&mut self, hour: f32) {
+        let time = self.renderer.time_of_day_mut();
+        time.current_time = hour.clamp(0.0, 24.0);
+        tracing::debug!("Time of day set to: {:.1}h", time.current_time);
+    }
+
+    /// Get time scale (1.0 = real time, 60.0 = 1 real minute = 1 game hour)
+    pub fn get_time_scale(&self) -> f32 {
+        self.renderer.time_of_day().time_scale
+    }
+
+    /// Set time scale
+    pub fn set_time_scale(&mut self, scale: f32) {
+        let time = self.renderer.time_of_day_mut();
+        time.time_scale = scale.max(0.0);
+        tracing::debug!("Time scale set to: {:.1}x", time.time_scale);
+    }
+
+    /// Check if it's currently daytime
+    pub fn is_daytime(&self) -> bool {
+        self.renderer.time_of_day().is_day()
+    }
+
+    /// Get current light direction
+    pub fn get_light_direction(&self) -> glam::Vec3 {
+        self.renderer.time_of_day().get_light_direction()
+    }
+
+    /// Get current light color
+    pub fn get_light_color(&self) -> glam::Vec3 {
+        self.renderer.time_of_day().get_light_color()
+    }
+
+    /// Get sun position
+    pub fn get_sun_position(&self) -> glam::Vec3 {
+        self.renderer.time_of_day().get_sun_position()
+    }
+
+    /// Get time-of-day period description
+    pub fn get_time_period(&self) -> &'static str {
+        let time = self.renderer.time_of_day();
+        if time.is_night() {
+            "Night"
+        } else if time.is_twilight() {
+            "Twilight"
+        } else {
+            "Day"
+        }
+    }
 }
 
 #[cfg(not(feature = "astraweave-render"))]

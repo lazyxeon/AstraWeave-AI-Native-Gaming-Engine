@@ -1888,6 +1888,108 @@ impl ViewportWidget {
         anyhow::bail!("astraweave-render feature not enabled")
     }
 
+    /// Get current time of day (0.0 - 24.0 hours)
+    #[cfg(feature = "astraweave-render")]
+    pub fn get_time_of_day(&self) -> anyhow::Result<f32> {
+        let renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter() {
+            Ok(adapter.get_time_of_day())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn get_time_of_day(&self) -> anyhow::Result<f32> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
+    /// Set time of day (0.0 - 24.0 hours)
+    #[cfg(feature = "astraweave-render")]
+    pub fn set_time_of_day(&self, hour: f32) -> anyhow::Result<()> {
+        let mut renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter_mut() {
+            adapter.set_time_of_day(hour);
+            Ok(())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn set_time_of_day(&self, _hour: f32) -> anyhow::Result<()> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
+    /// Get time scale (1.0 = real time)
+    #[cfg(feature = "astraweave-render")]
+    pub fn get_time_scale(&self) -> anyhow::Result<f32> {
+        let renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter() {
+            Ok(adapter.get_time_scale())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn get_time_scale(&self) -> anyhow::Result<f32> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
+    /// Set time scale (1.0 = real time, 60.0 = fast forward)
+    #[cfg(feature = "astraweave-render")]
+    pub fn set_time_scale(&self, scale: f32) -> anyhow::Result<()> {
+        let mut renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter_mut() {
+            adapter.set_time_scale(scale);
+            Ok(())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn set_time_scale(&self, _scale: f32) -> anyhow::Result<()> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
+    /// Get time-of-day period description (Day/Twilight/Night)
+    #[cfg(feature = "astraweave-render")]
+    pub fn get_time_period(&self) -> anyhow::Result<&'static str> {
+        let renderer = self
+            .renderer
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Renderer mutex poisoned"))?;
+
+        if let Some(adapter) = renderer.engine_adapter() {
+            Ok(adapter.get_time_period())
+        } else {
+            anyhow::bail!("Engine adapter not initialized")
+        }
+    }
+
+    #[cfg(not(feature = "astraweave-render"))]
+    pub fn get_time_period(&self) -> anyhow::Result<&'static str> {
+        anyhow::bail!("astraweave-render feature not enabled")
+    }
+
     /// Toggle entity selection
     pub fn toggle_selection(&mut self, entity: crate::entity_manager::EntityId) {
         if self.selected_entities.contains(&entity) {

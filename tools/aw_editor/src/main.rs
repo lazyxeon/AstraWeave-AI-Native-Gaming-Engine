@@ -3298,6 +3298,62 @@ impl eframe::App for EditorApp {
                     }
 
                     ui.separator();
+                    ui.label("☀️ Lighting / Time of Day:");
+
+                    // Time presets row
+                    ui.horizontal(|ui| {
+                        if ui.button("🌅 Dawn (6:00)").clicked() {
+                            if let Some(viewport) = &self.viewport {
+                                if let Err(e) = viewport.set_time_of_day(6.0) {
+                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
+                                } else {
+                                    self.console_logs.push("🌅 Set time to dawn (6:00)".into());
+                                }
+                            }
+                        }
+                        if ui.button("☀️ Noon (12:00)").clicked() {
+                            if let Some(viewport) = &self.viewport {
+                                if let Err(e) = viewport.set_time_of_day(12.0) {
+                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
+                                } else {
+                                    self.console_logs.push("☀️ Set time to noon (12:00)".into());
+                                }
+                            }
+                        }
+                    });
+
+                    ui.horizontal(|ui| {
+                        if ui.button("🌇 Sunset (18:00)").clicked() {
+                            if let Some(viewport) = &self.viewport {
+                                if let Err(e) = viewport.set_time_of_day(18.0) {
+                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
+                                } else {
+                                    self.console_logs.push("🌇 Set time to sunset (18:00)".into());
+                                }
+                            }
+                        }
+                        if ui.button("🌙 Midnight (0:00)").clicked() {
+                            if let Some(viewport) = &self.viewport {
+                                if let Err(e) = viewport.set_time_of_day(0.0) {
+                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
+                                } else {
+                                    self.console_logs.push("🌙 Set time to midnight (0:00)".into());
+                                }
+                            }
+                        }
+                    });
+
+                    // Show current time
+                    if let Some(viewport) = &self.viewport {
+                        if let Ok(time) = viewport.get_time_of_day() {
+                            let period = viewport.get_time_period().unwrap_or("Unknown");
+                            let hours = time.floor() as u32;
+                            let minutes = ((time - time.floor()) * 60.0) as u32;
+                            ui.label(format!("🕐 Current: {:02}:{:02} ({})", hours, minutes, period));
+                        }
+                    }
+
+                    ui.separator();
                     ui.label("📁 Model Discovery:");
 
                     if ui.button("📁 Scan For Models").clicked() {

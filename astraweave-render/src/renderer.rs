@@ -2418,10 +2418,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 for e in evs.iter() {
                     match e {
                         awc::SequencerEvent::CameraKey(k) => Self::apply_camera_key(camera, k),
-                        awc::SequencerEvent::FxTrigger {
-                            name,
-                            params,
-                        } => {
+                        awc::SequencerEvent::FxTrigger { name, params } => {
                             // Minimal FX: support fade-in by instantly clearing letterbox/fade
                             if name == "fade-in" {
                                 let _ = params; // reserved
@@ -2780,6 +2777,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     pub fn tick_environment(&mut self, dt: f32) {
         // Advance time-of-day; derive sky params
         self.sky.update(dt);
+    }
+
+    /// Get immutable reference to time-of-day system
+    pub fn time_of_day(&self) -> &crate::environment::TimeOfDay {
+        self.sky.time_of_day()
     }
 
     pub fn time_of_day_mut(&mut self) -> &mut crate::environment::TimeOfDay {

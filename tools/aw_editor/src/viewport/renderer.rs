@@ -542,6 +542,12 @@ impl ViewportRenderer {
         self.engine_adapter.is_some()
     }
 
+    /// Get immutable reference to engine adapter (if initialized)
+    #[cfg(feature = "astraweave-render")]
+    pub fn engine_adapter(&self) -> Option<&EngineRenderAdapter> {
+        self.engine_adapter.as_ref()
+    }
+
     /// Get mutable reference to engine adapter (if initialized)
     #[cfg(feature = "astraweave-render")]
     pub fn engine_adapter_mut(&mut self) -> Option<&mut EngineRenderAdapter> {
