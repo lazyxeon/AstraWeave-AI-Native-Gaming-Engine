@@ -100,8 +100,13 @@ impl TransparencyManager {
         &self.sorted_cache
     }
 
-    pub fn instances_by_blend_mode(&self, mode: BlendMode) -> impl Iterator<Item = &TransparentInstance> {
-        self.sorted_cache.iter().filter(move |i| i.blend_mode == mode)
+    pub fn instances_by_blend_mode(
+        &self,
+        mode: BlendMode,
+    ) -> impl Iterator<Item = &TransparentInstance> {
+        self.sorted_cache
+            .iter()
+            .filter(move |i| i.blend_mode == mode)
     }
 
     pub fn clear(&mut self) {
@@ -241,7 +246,9 @@ fn bench_blend_mode_filtering(c: &mut Criterion) {
         b.iter(|| {
             let alpha = manager.instances_by_blend_mode(BlendMode::Alpha).count();
             let additive = manager.instances_by_blend_mode(BlendMode::Additive).count();
-            let mult = manager.instances_by_blend_mode(BlendMode::Multiplicative).count();
+            let mult = manager
+                .instances_by_blend_mode(BlendMode::Multiplicative)
+                .count();
             black_box((alpha, additive, mult))
         })
     });
@@ -784,9 +791,8 @@ impl WeatherParticles {
         }
 
         let area = self.particle_area;
-        self.rain_particles.retain(|p| {
-            p.life < p.max_life && (p.position - camera_pos).length() < area * 0.6
-        });
+        self.rain_particles
+            .retain(|p| p.life < p.max_life && (p.position - camera_pos).length() < area * 0.6);
     }
 
     pub fn update_snow(&mut self, delta_time: f32, camera_pos: Vec3) {
@@ -801,9 +807,8 @@ impl WeatherParticles {
         }
 
         let area = self.particle_area;
-        self.snow_particles.retain(|p| {
-            p.life < p.max_life && (p.position - camera_pos).length() < area * 0.6
-        });
+        self.snow_particles
+            .retain(|p| p.life < p.max_life && (p.position - camera_pos).length() < area * 0.6);
     }
 
     pub fn rain_count(&self) -> usize {
@@ -879,31 +884,23 @@ fn bench_weather_particles(c: &mut Criterion) {
         let wind = vec3(1.0, 0.0, 0.5);
         particles.spawn_rain_particles(count, camera_pos, wind);
 
-        group.bench_with_input(
-            BenchmarkId::new("update_rain", count),
-            &count,
-            |b, _| {
-                b.iter(|| {
-                    particles.update_rain(1.0 / 60.0, camera_pos);
-                    black_box(particles.rain_count())
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("update_rain", count), &count, |b, _| {
+            b.iter(|| {
+                particles.update_rain(1.0 / 60.0, camera_pos);
+                black_box(particles.rain_count())
+            })
+        });
 
         // Reset for snow
         let mut snow_particles = WeatherParticles::new(count * 2, 100.0);
         snow_particles.spawn_snow_particles(count, camera_pos, wind);
 
-        group.bench_with_input(
-            BenchmarkId::new("update_snow", count),
-            &count,
-            |b, _| {
-                b.iter(|| {
-                    snow_particles.update_snow(1.0 / 60.0, camera_pos);
-                    black_box(snow_particles.snow_count())
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("update_snow", count), &count, |b, _| {
+            b.iter(|| {
+                snow_particles.update_snow(1.0 / 60.0, camera_pos);
+                black_box(snow_particles.snow_count())
+            })
+        });
     }
 
     group.finish();
@@ -1195,15 +1192,9 @@ criterion_group!(
     bench_weather_particles,
 );
 
-criterion_group!(
-    msaa_benches,
-    bench_msaa,
-);
+criterion_group!(msaa_benches, bench_msaa,);
 
-criterion_group!(
-    combined_benches,
-    bench_full_environment_frame,
-);
+criterion_group!(combined_benches, bench_full_environment_frame,);
 
 criterion_main!(
     transparency_benches,

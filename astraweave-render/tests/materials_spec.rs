@@ -59,15 +59,13 @@ fn parses_materials_and_arrays_and_orders_layers() {
         force_fallback_adapter: false,
     }))
     .expect("adapter");
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("materials-test device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("materials-test device"),
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .expect("device");
 
     let mut mm = astraweave_render::MaterialManager::new();
@@ -147,15 +145,13 @@ fn packs_mra_from_separate_planes_when_missing_mra() {
     let adapter =
         pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
             .expect("adapter");
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("materials-test device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("materials-test device"),
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .expect("device");
 
     let mut mm = astraweave_render::MaterialManager::new();
@@ -209,15 +205,13 @@ fn path_resolution_uses_base_dir_and_normalizes() {
     let adapter =
         pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
             .expect("adapter");
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("materials-test device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("materials-test device"),
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .expect("device");
 
     let mut mm = astraweave_render::MaterialManager::new();

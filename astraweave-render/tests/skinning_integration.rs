@@ -3,8 +3,8 @@
 //! Phase 2 Task 5 (Phase E): Validates that CPU and GPU skinning produce identical results
 
 use astraweave_render::{
-    compute_joint_matrices, skin_vertex_cpu, AnimationChannel, AnimationClip,
-    ChannelData, Interpolation, JointPalette, Skeleton, Transform, MAX_JOINTS,
+    compute_joint_matrices, skin_vertex_cpu, AnimationChannel, AnimationClip, ChannelData,
+    Interpolation, JointPalette, Skeleton, Transform, MAX_JOINTS,
 };
 use glam::{Mat4, Quat, Vec3};
 

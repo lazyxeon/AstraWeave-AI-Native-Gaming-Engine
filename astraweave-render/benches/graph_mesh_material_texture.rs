@@ -20,10 +20,20 @@ use std::hint::black_box;
 /// Mock render graph resource types
 #[derive(Clone)]
 pub enum MockResource {
-    Texture { width: u32, height: u32, format: u32 },
-    View { texture_id: u32 },
-    Buffer { size: u64 },
-    BindGroup { bindings: u32 },
+    Texture {
+        width: u32,
+        height: u32,
+        format: u32,
+    },
+    View {
+        texture_id: u32,
+    },
+    Buffer {
+        size: u64,
+    },
+    BindGroup {
+        bindings: u32,
+    },
 }
 
 /// Mock resource table for graph nodes
@@ -113,7 +123,10 @@ impl MockRenderNode for MockClearNode {
 
     fn execute(&mut self, ctx: &mut MockGraphContext) -> Result<(), &'static str> {
         // Simulate clear operation - verify target exists
-        let _ = ctx.resources.get(&self.target_key).ok_or("target not found")?;
+        let _ = ctx
+            .resources
+            .get(&self.target_key)
+            .ok_or("target not found")?;
         black_box(&self.color);
         Ok(())
     }
@@ -146,8 +159,14 @@ impl MockRenderNode for MockSceneNode {
     }
 
     fn execute(&mut self, ctx: &mut MockGraphContext) -> Result<(), &'static str> {
-        let _ = ctx.resources.get(&self.target_key).ok_or("target not found")?;
-        let _ = ctx.resources.get(&self.depth_key).ok_or("depth not found")?;
+        let _ = ctx
+            .resources
+            .get(&self.target_key)
+            .ok_or("target not found")?;
+        let _ = ctx
+            .resources
+            .get(&self.depth_key)
+            .ok_or("depth not found")?;
         Ok(())
     }
 }
@@ -181,12 +200,17 @@ impl MockRenderNode for MockPostProcessNode {
     }
 
     fn execute(&mut self, ctx: &mut MockGraphContext) -> Result<(), &'static str> {
-        let _ = ctx.resources.get(&self.input_key).ok_or("input not found")?;
+        let _ = ctx
+            .resources
+            .get(&self.input_key)
+            .ok_or("input not found")?;
         black_box(&self.params);
         // Create output resource
         ctx.resources.insert(
             self.output_key.clone(),
-            MockResource::View { texture_id: ctx.frame_index as u32 },
+            MockResource::View {
+                texture_id: ctx.frame_index as u32,
+            },
         );
         Ok(())
     }
@@ -254,7 +278,12 @@ impl MeshVertex {
         tangent: [f32; 4],
         uv: [f32; 2],
     ) -> Self {
-        Self { position, normal, tangent, uv }
+        Self {
+            position,
+            normal,
+            tangent,
+            uv,
+        }
     }
 
     pub const STRIDE: usize = 48; // 12 floats * 4 bytes
@@ -347,7 +376,11 @@ pub fn compute_tangents(mesh: &mut CpuMesh) {
         let n = Vec3::from_array(v[i].normal).normalize_or_zero();
         let t = tan1[i];
         let tangent = (t - n * n.dot(t)).normalize_or_zero();
-        let w = if n.cross(t).dot(tan2[i]) < 0.0 { -1.0 } else { 1.0 };
+        let w = if n.cross(t).dot(tan2[i]) < 0.0 {
+            -1.0
+        } else {
+            1.0
+        };
         v[i].tangent = [tangent.x, tangent.y, tangent.z, w];
     }
 }
@@ -356,10 +389,30 @@ pub fn compute_tangents(mesh: &mut CpuMesh) {
 pub fn generate_quad() -> CpuMesh {
     let mut mesh = CpuMesh::with_capacity(4, 6);
     mesh.vertices = vec![
-        MeshVertex::from_arrays([-0.5, 0.0, -0.5], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]),
-        MeshVertex::from_arrays([0.5, 0.0, -0.5], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [1.0, 0.0]),
-        MeshVertex::from_arrays([0.5, 0.0, 0.5], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [1.0, 1.0]),
-        MeshVertex::from_arrays([-0.5, 0.0, 0.5], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 1.0]),
+        MeshVertex::from_arrays(
+            [-0.5, 0.0, -0.5],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ),
+        MeshVertex::from_arrays(
+            [0.5, 0.0, -0.5],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0],
+        ),
+        MeshVertex::from_arrays(
+            [0.5, 0.0, 0.5],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 1.0],
+        ),
+        MeshVertex::from_arrays(
+            [-0.5, 0.0, 0.5],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0],
+        ),
     ];
     mesh.indices = vec![0, 1, 2, 0, 2, 3];
     mesh
@@ -391,8 +444,12 @@ pub fn generate_grid(size: u32) -> CpuMesh {
         for x in 0..size {
             let i = z * (size + 1) + x;
             mesh.indices.extend_from_slice(&[
-                i, i + 1, i + size + 2,
-                i, i + size + 2, i + size + 1,
+                i,
+                i + 1,
+                i + size + 2,
+                i,
+                i + size + 2,
+                i + size + 1,
             ]);
         }
     }
@@ -503,8 +560,7 @@ impl MaterialLayerDesc {
     }
 
     pub fn to_gpu(&self, layer_idx: u32) -> MaterialGpu {
-        let mut mat = MaterialGpu::neutral(layer_idx)
-            .with_tiling(self.tiling[0], self.tiling[1]);
+        let mut mat = MaterialGpu::neutral(layer_idx).with_tiling(self.tiling[0], self.tiling[1]);
 
         if self.albedo.is_some() {
             mat = mat.with_albedo();
@@ -595,7 +651,7 @@ pub enum TextureUsage {
 impl TextureUsage {
     pub fn format_code(&self) -> u32 {
         match self {
-            Self::Albedo | Self::Emissive => 1, // sRGB
+            Self::Albedo | Self::Emissive => 1,           // sRGB
             Self::Normal | Self::MRA | Self::Height => 0, // Linear
         }
     }
@@ -812,7 +868,10 @@ fn bench_render_graph(c: &mut Criterion) {
     group.bench_function("resource_table_lookup", |b| {
         let mut table = MockResourceTable::new();
         for i in 0..100 {
-            table.insert(format!("resource_{}", i), MockResource::View { texture_id: i });
+            table.insert(
+                format!("resource_{}", i),
+                MockResource::View { texture_id: i },
+            );
         }
         b.iter(|| {
             let r1 = table.get("resource_0").is_some();
@@ -871,7 +930,9 @@ fn bench_render_graph(c: &mut Criterion) {
                 for i in 0..count {
                     ctx.resources.insert(
                         format!("target_{}", i),
-                        MockResource::View { texture_id: i as u32 },
+                        MockResource::View {
+                            texture_id: i as u32,
+                        },
                     );
                 }
                 b.iter(|| {
@@ -885,14 +946,25 @@ fn bench_render_graph(c: &mut Criterion) {
     // Full pipeline simulation
     group.bench_function("full_pipeline_3_passes", |b| {
         let mut graph = MockRenderGraph::new();
-        graph.add_node(MockClearNode::new("shadow_clear", "shadow_map", [1.0, 1.0, 1.0, 1.0]));
+        graph.add_node(MockClearNode::new(
+            "shadow_clear",
+            "shadow_map",
+            [1.0, 1.0, 1.0, 1.0],
+        ));
         graph.add_node(MockSceneNode::new("main_scene", "hdr_target", "depth"));
-        graph.add_node(MockPostProcessNode::new("tonemap", "hdr_target", "ldr_output"));
+        graph.add_node(MockPostProcessNode::new(
+            "tonemap",
+            "hdr_target",
+            "ldr_output",
+        ));
 
         let mut ctx = MockGraphContext::new(0);
-        ctx.resources.insert("shadow_map", MockResource::View { texture_id: 0 });
-        ctx.resources.insert("hdr_target", MockResource::View { texture_id: 1 });
-        ctx.resources.insert("depth", MockResource::View { texture_id: 2 });
+        ctx.resources
+            .insert("shadow_map", MockResource::View { texture_id: 0 });
+        ctx.resources
+            .insert("hdr_target", MockResource::View { texture_id: 1 });
+        ctx.resources
+            .insert("depth", MockResource::View { texture_id: 2 });
 
         b.iter(|| {
             let result = graph.execute(&mut ctx);
@@ -1103,30 +1175,34 @@ fn bench_material_system(c: &mut Criterion) {
     // Batch material conversion
     for count in [10, 50, 100, 500] {
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(
-            BenchmarkId::new("batch_to_gpu", count),
-            &count,
-            |b, &c| {
-                let layers: Vec<MaterialLayerDesc> = (0..c)
-                    .map(|i| MaterialLayerDesc {
-                        key: format!("mat_{}", i),
-                        albedo: Some(format!("albedo_{}.png", i)),
-                        normal: if i % 2 == 0 { Some(format!("normal_{}.png", i)) } else { None },
-                        mra: if i % 3 == 0 { Some(format!("mra_{}.png", i)) } else { None },
-                        tiling: [1.0 + (i as f32) * 0.1, 1.0 + (i as f32) * 0.1],
-                        triplanar_scale: 16.0,
-                    })
-                    .collect();
-                b.iter(|| {
-                    let gpu_mats: Vec<MaterialGpu> = layers
-                        .iter()
-                        .enumerate()
-                        .map(|(i, l)| l.to_gpu(i as u32))
-                        .collect();
-                    black_box(gpu_mats)
+        group.bench_with_input(BenchmarkId::new("batch_to_gpu", count), &count, |b, &c| {
+            let layers: Vec<MaterialLayerDesc> = (0..c)
+                .map(|i| MaterialLayerDesc {
+                    key: format!("mat_{}", i),
+                    albedo: Some(format!("albedo_{}.png", i)),
+                    normal: if i % 2 == 0 {
+                        Some(format!("normal_{}.png", i))
+                    } else {
+                        None
+                    },
+                    mra: if i % 3 == 0 {
+                        Some(format!("mra_{}.png", i))
+                    } else {
+                        None
+                    },
+                    tiling: [1.0 + (i as f32) * 0.1, 1.0 + (i as f32) * 0.1],
+                    triplanar_scale: 16.0,
                 })
-            },
-        );
+                .collect();
+            b.iter(|| {
+                let gpu_mats: Vec<MaterialGpu> = layers
+                    .iter()
+                    .enumerate()
+                    .map(|(i, l)| l.to_gpu(i as u32))
+                    .collect();
+                black_box(gpu_mats)
+            })
+        });
     }
 
     // Load stats summary
@@ -1189,7 +1265,13 @@ fn bench_texture_operations(c: &mut Criterion) {
     });
 
     // Mip level calculation
-    for (width, height) in [(256, 256), (512, 512), (1024, 1024), (2048, 2048), (4096, 4096)] {
+    for (width, height) in [
+        (256, 256),
+        (512, 512),
+        (1024, 1024),
+        (2048, 2048),
+        (4096, 4096),
+    ] {
         group.bench_with_input(
             BenchmarkId::new("calculate_mip_levels", format!("{}x{}", width, height)),
             &(width, height),
@@ -1212,8 +1294,8 @@ fn bench_texture_operations(c: &mut Criterion) {
 
     group.bench_function("texture_desc_full", |b| {
         b.iter(|| {
-            let desc = TextureDesc::new(2048, 2048, TextureUsage::Normal)
-                .with_label("terrain_normal");
+            let desc =
+                TextureDesc::new(2048, 2048, TextureUsage::Normal).with_label("terrain_normal");
             black_box(desc)
         })
     });
@@ -1237,9 +1319,7 @@ fn bench_texture_operations(c: &mut Criterion) {
     group.bench_function("mip_size_chain", |b| {
         let desc = TextureDesc::new(2048, 2048, TextureUsage::Albedo);
         b.iter(|| {
-            let sizes: Vec<(u32, u32)> = (0..desc.mip_levels)
-                .map(|l| desc.mip_size(l))
-                .collect();
+            let sizes: Vec<(u32, u32)> = (0..desc.mip_levels).map(|l| desc.mip_size(l)).collect();
             black_box(sizes)
         })
     });
@@ -1381,9 +1461,12 @@ fn bench_combined_scenarios(c: &mut Criterion) {
 
             // Setup resources
             let mut ctx = MockGraphContext::new(0);
-            ctx.resources.insert("shadow_map", MockResource::View { texture_id: 0 });
-            ctx.resources.insert("hdr", MockResource::View { texture_id: 1 });
-            ctx.resources.insert("depth", MockResource::View { texture_id: 2 });
+            ctx.resources
+                .insert("shadow_map", MockResource::View { texture_id: 0 });
+            ctx.resources
+                .insert("hdr", MockResource::View { texture_id: 1 });
+            ctx.resources
+                .insert("depth", MockResource::View { texture_id: 2 });
 
             black_box((graph, ctx))
         })
@@ -1445,8 +1528,16 @@ fn bench_combined_scenarios(c: &mut Criterion) {
             // Render graph
             let mut graph = MockRenderGraph::new();
             graph.add_node(MockClearNode::new("shadow_clear", "shadow_map", [1.0; 4]));
-            graph.add_node(MockSceneNode::new("gbuffer", "gbuffer_color", "gbuffer_depth"));
-            graph.add_node(MockPostProcessNode::new("ssao", "gbuffer_depth", "ssao_out"));
+            graph.add_node(MockSceneNode::new(
+                "gbuffer",
+                "gbuffer_color",
+                "gbuffer_depth",
+            ));
+            graph.add_node(MockPostProcessNode::new(
+                "ssao",
+                "gbuffer_depth",
+                "ssao_out",
+            ));
             graph.add_node(MockPostProcessNode::new("lighting", "gbuffer_color", "hdr"));
             graph.add_node(MockPostProcessNode::new("bloom", "hdr", "bloom"));
             graph.add_node(MockPostProcessNode::new("tonemap", "bloom", "ldr"));

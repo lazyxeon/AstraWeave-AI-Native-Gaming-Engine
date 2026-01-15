@@ -14,15 +14,13 @@ fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
     }))
     .expect("Failed to find adapter");
 
-    pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("culling_test_device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::downlevel_defaults(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("culling_test_device"),
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::downlevel_defaults(),
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .expect("Failed to create device")
 }
 

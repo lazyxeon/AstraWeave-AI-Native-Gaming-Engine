@@ -116,7 +116,10 @@ impl VxgiRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: true,
         });
-        config_buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::bytes_of(&config));
+        config_buffer
+            .slice(..)
+            .get_mapped_range_mut()
+            .copy_from_slice(bytemuck::bytes_of(&config));
         config_buffer.unmap();
 
         // Create bind group layout

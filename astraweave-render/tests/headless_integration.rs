@@ -16,15 +16,13 @@ fn headless_biome_pack_and_pipeline_compat() {
     // Need at least 5 bind groups (camera, materials, shadow, light, ibl)
     let mut limits = wgpu::Limits::downlevel_webgl2_defaults();
     limits.max_bind_groups = limits.max_bind_groups.max(5);
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("headless-device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: limits,
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("headless-device"),
+        required_features: wgpu::Features::empty(),
+        required_limits: limits,
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .expect("device");
 
     // Build material BGL using integrator’s layout (same as examples)

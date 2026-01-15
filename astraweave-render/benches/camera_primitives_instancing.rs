@@ -1,5 +1,5 @@
 //! Camera, Primitives & Instancing Benchmarks
-//! 
+//!
 //! Comprehensive benchmarks for:
 //! - Camera operations (view/projection matrix, direction calculations)
 //! - CameraController (mouse/keyboard input, update loop)
@@ -8,7 +8,7 @@
 //! - Overlay effects (parameters, updates)
 //! - Effects system (weather particles)
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::{Mat4, Quat, Vec2, Vec3};
 use std::hint::black_box;
 use std::hint::black_box as bb;
@@ -298,10 +298,30 @@ pub fn plane() -> (Vec<Vertex>, Vec<u32>) {
     let n = [0.0, 1.0, 0.0];
     let t = [1.0, 0.0, 0.0, 1.0];
     let v = vec![
-        Vertex { position: [-1.0, 0.0, -1.0], normal: n, tangent: t, uv: [0.0, 0.0] },
-        Vertex { position: [1.0, 0.0, -1.0], normal: n, tangent: t, uv: [1.0, 0.0] },
-        Vertex { position: [1.0, 0.0, 1.0], normal: n, tangent: t, uv: [1.0, 1.0] },
-        Vertex { position: [-1.0, 0.0, 1.0], normal: n, tangent: t, uv: [0.0, 1.0] },
+        Vertex {
+            position: [-1.0, 0.0, -1.0],
+            normal: n,
+            tangent: t,
+            uv: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 0.0, -1.0],
+            normal: n,
+            tangent: t,
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 0.0, 1.0],
+            normal: n,
+            tangent: t,
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 0.0, 1.0],
+            normal: n,
+            tangent: t,
+            uv: [0.0, 1.0],
+        },
     ];
     let i = vec![0, 1, 2, 0, 2, 3];
     (v, i)
@@ -395,7 +415,11 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(position: Vec3, rotation: Quat, scale: Vec3) -> Self {
-        Self { position, rotation, scale }
+        Self {
+            position,
+            rotation,
+            scale,
+        }
     }
 
     pub fn identity() -> Self {
@@ -459,14 +483,20 @@ impl InstanceManager {
     }
 
     pub fn add_instance(&mut self, mesh_id: u64, instance: Instance) {
-        let batch = self.batches.entry(mesh_id).or_insert_with(|| InstanceBatch::new(mesh_id));
+        let batch = self
+            .batches
+            .entry(mesh_id)
+            .or_insert_with(|| InstanceBatch::new(mesh_id));
         batch.add_instance(instance);
         self.total_instances += 1;
     }
 
     pub fn add_instances(&mut self, mesh_id: u64, instances: Vec<Instance>) {
         let count = instances.len();
-        let batch = self.batches.entry(mesh_id).or_insert_with(|| InstanceBatch::new(mesh_id));
+        let batch = self
+            .batches
+            .entry(mesh_id)
+            .or_insert_with(|| InstanceBatch::new(mesh_id));
         for instance in instances {
             batch.add_instance(instance);
         }
@@ -512,7 +542,9 @@ pub struct InstancePatternBuilder {
 
 impl InstancePatternBuilder {
     pub fn new() -> Self {
-        Self { instances: Vec::new() }
+        Self {
+            instances: Vec::new(),
+        }
     }
 
     pub fn grid(mut self, rows: usize, cols: usize, spacing: f32) -> Self {
@@ -536,7 +568,8 @@ impl InstancePatternBuilder {
             let x = angle.cos() * radius;
             let z = angle.sin() * radius;
             let rotation = Quat::from_rotation_y(angle + std::f32::consts::PI);
-            self.instances.push(Instance::new(Vec3::new(x, 0.0, z), rotation, Vec3::ONE));
+            self.instances
+                .push(Instance::new(Vec3::new(x, 0.0, z), rotation, Vec3::ONE));
         }
         self
     }
@@ -578,7 +611,11 @@ pub struct OverlayParams {
 
 impl OverlayParams {
     pub fn new(fade: f32, letterbox: f32) -> Self {
-        Self { fade, letterbox, _pad: [0.0; 2] }
+        Self {
+            fade,
+            letterbox,
+            _pad: [0.0; 2],
+        }
     }
 
     pub fn fade_to_black() -> Self {
@@ -600,35 +637,21 @@ impl OverlayParams {
 
 fn bench_camera_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("camera_operations");
-    
+
     let camera = Camera::default();
 
     // View matrix generation
-    group.bench_function("view_matrix", |b| {
-        b.iter(|| {
-            bb(camera.view_matrix())
-        })
-    });
+    group.bench_function("view_matrix", |b| b.iter(|| bb(camera.view_matrix())));
 
     // Projection matrix generation
-    group.bench_function("proj_matrix", |b| {
-        b.iter(|| {
-            bb(camera.proj_matrix())
-        })
-    });
+    group.bench_function("proj_matrix", |b| b.iter(|| bb(camera.proj_matrix())));
 
     // Combined view-projection
-    group.bench_function("view_projection", |b| {
-        b.iter(|| {
-            bb(camera.vp())
-        })
-    });
+    group.bench_function("view_projection", |b| b.iter(|| bb(camera.vp())));
 
     // Direction calculation
     group.bench_function("direction_calc", |b| {
-        b.iter(|| {
-            bb(Camera::dir(black_box(0.5), black_box(0.3)))
-        })
+        b.iter(|| bb(Camera::dir(black_box(0.5), black_box(0.3))))
     });
 
     // Direction calc - multiple angles
@@ -656,9 +679,7 @@ fn bench_camera_controller(c: &mut Criterion) {
 
     // Controller creation
     group.bench_function("new", |b| {
-        b.iter(|| {
-            bb(CameraController::new(black_box(5.0), black_box(0.01)))
-        })
+        b.iter(|| bb(CameraController::new(black_box(5.0), black_box(0.01))))
     });
 
     // Keyboard processing
@@ -674,56 +695,44 @@ fn bench_camera_controller(c: &mut Criterion) {
     let mut controller = CameraController::new(5.0, 0.01);
     let mut camera = Camera::default();
     controller.process_mouse_button_right(true);
-    
+
     group.bench_function("process_mouse_delta", |b| {
-        b.iter(|| {
-            controller.process_mouse_delta(&mut camera, black_box(Vec2::new(10.0, 5.0)))
-        })
+        b.iter(|| controller.process_mouse_delta(&mut camera, black_box(Vec2::new(10.0, 5.0))))
     });
 
     // Scroll/zoom
     let mut controller = CameraController::new(5.0, 0.01);
     let mut camera = Camera::default();
-    
+
     group.bench_function("process_scroll_freefly", |b| {
-        b.iter(|| {
-            controller.process_scroll(&mut camera, black_box(0.5))
-        })
+        b.iter(|| controller.process_scroll(&mut camera, black_box(0.5)))
     });
 
     controller.toggle_mode(&mut camera);
     group.bench_function("process_scroll_orbit", |b| {
-        b.iter(|| {
-            controller.process_scroll(&mut camera, black_box(0.5))
-        })
+        b.iter(|| controller.process_scroll(&mut camera, black_box(0.5)))
     });
 
     // Mode toggle
     let mut controller = CameraController::new(5.0, 0.01);
     let mut camera = Camera::default();
-    
+
     group.bench_function("toggle_mode", |b| {
-        b.iter(|| {
-            controller.toggle_mode(&mut camera)
-        })
+        b.iter(|| controller.toggle_mode(&mut camera))
     });
 
     // Full update cycle
     let mut controller = CameraController::new(5.0, 0.01);
     let mut camera = Camera::default();
     controller.process_keyboard_w(true);
-    
+
     group.bench_function("update_freefly", |b| {
-        b.iter(|| {
-            controller.update_camera(&mut camera, black_box(0.016))
-        })
+        b.iter(|| controller.update_camera(&mut camera, black_box(0.016)))
     });
 
     controller.toggle_mode(&mut camera);
     group.bench_function("update_orbit", |b| {
-        b.iter(|| {
-            controller.update_camera(&mut camera, black_box(0.016))
-        })
+        b.iter(|| controller.update_camera(&mut camera, black_box(0.016)))
     });
 
     group.finish();
@@ -737,29 +746,17 @@ fn bench_primitive_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("primitive_generation");
 
     // Cube
-    group.bench_function("cube", |b| {
-        b.iter(|| {
-            bb(cube())
-        })
-    });
+    group.bench_function("cube", |b| b.iter(|| bb(cube())));
 
     // Plane
-    group.bench_function("plane", |b| {
-        b.iter(|| {
-            bb(plane())
-        })
-    });
+    group.bench_function("plane", |b| b.iter(|| bb(plane())));
 
     // Sphere - various resolutions
     for &(stacks, slices) in &[(8, 8), (16, 16), (32, 32), (64, 64)] {
         group.bench_with_input(
             BenchmarkId::new("sphere", format!("{}x{}", stacks, slices)),
             &(stacks, slices),
-            |b, &(stacks, slices)| {
-                b.iter(|| {
-                    bb(sphere(stacks, slices, 1.0))
-                })
-            }
+            |b, &(stacks, slices)| b.iter(|| bb(sphere(stacks, slices, 1.0))),
         );
     }
 
@@ -769,9 +766,7 @@ fn bench_primitive_generation(c: &mut Criterion) {
     let (sphere_v, sphere_i) = sphere(16, 16, 1.0);
 
     group.throughput(Throughput::Elements(cube_v.len() as u64));
-    group.bench_function("cube_per_vertex", |b| {
-        b.iter(|| bb(cube()))
-    });
+    group.bench_function("cube_per_vertex", |b| b.iter(|| bb(cube())));
 
     group.throughput(Throughput::Elements(sphere_v.len() as u64));
     group.bench_function("sphere_16x16_per_vertex", |b| {
@@ -789,11 +784,7 @@ fn bench_instance_transforms(c: &mut Criterion) {
     let mut group = c.benchmark_group("instance_transforms");
 
     // Instance creation
-    group.bench_function("new_identity", |b| {
-        b.iter(|| {
-            bb(Instance::identity())
-        })
-    });
+    group.bench_function("new_identity", |b| b.iter(|| bb(Instance::identity())));
 
     group.bench_function("new_positioned", |b| {
         b.iter(|| {
@@ -806,12 +797,12 @@ fn bench_instance_transforms(c: &mut Criterion) {
     });
 
     // to_raw conversion
-    let instance = Instance::new(Vec3::new(1.0, 2.0, 3.0), Quat::from_rotation_y(0.5), Vec3::ONE);
-    group.bench_function("to_raw", |b| {
-        b.iter(|| {
-            bb(instance.to_raw())
-        })
-    });
+    let instance = Instance::new(
+        Vec3::new(1.0, 2.0, 3.0),
+        Quat::from_rotation_y(0.5),
+        Vec3::ONE,
+    );
+    group.bench_function("to_raw", |b| b.iter(|| bb(instance.to_raw())));
 
     // InstanceRaw creation methods
     group.bench_function("raw_from_transform", |b| {
@@ -826,9 +817,7 @@ fn bench_instance_transforms(c: &mut Criterion) {
 
     let matrix = Mat4::from_scale_rotation_translation(Vec3::ONE, Quat::IDENTITY, Vec3::ZERO);
     group.bench_function("raw_from_matrix", |b| {
-        b.iter(|| {
-            bb(InstanceRaw::from_matrix(black_box(matrix)))
-        })
+        b.iter(|| bb(InstanceRaw::from_matrix(black_box(matrix))))
     });
 
     group.finish();
@@ -839,19 +828,13 @@ fn bench_instance_batching(c: &mut Criterion) {
 
     // Batch creation
     group.bench_function("batch_new", |b| {
-        b.iter(|| {
-            bb(InstanceBatch::new(black_box(42)))
-        })
+        b.iter(|| bb(InstanceBatch::new(black_box(42))))
     });
 
     // Add instances to batch
     for count in [10, 100, 1000, 5000] {
         let instances: Vec<Instance> = (0..count)
-            .map(|i| Instance::new(
-                Vec3::new(i as f32, 0.0, 0.0),
-                Quat::IDENTITY,
-                Vec3::ONE,
-            ))
+            .map(|i| Instance::new(Vec3::new(i as f32, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE))
             .collect();
 
         group.throughput(Throughput::Elements(count as u64));
@@ -866,7 +849,7 @@ fn bench_instance_batching(c: &mut Criterion) {
                     }
                     bb(batch.instance_count())
                 })
-            }
+            },
         );
     }
 
@@ -885,11 +868,7 @@ fn bench_instance_batching(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("to_raw_data", count),
             &batch,
-            |b, batch| {
-                b.iter(|| {
-                    bb(batch.to_raw_data())
-                })
-            }
+            |b, batch| b.iter(|| bb(batch.to_raw_data())),
         );
     }
 
@@ -900,19 +879,18 @@ fn bench_instance_manager(c: &mut Criterion) {
     let mut group = c.benchmark_group("instance_manager");
 
     // Manager creation
-    group.bench_function("new", |b| {
-        b.iter(|| {
-            bb(InstanceManager::new())
-        })
-    });
+    group.bench_function("new", |b| b.iter(|| bb(InstanceManager::new())));
 
     // Add instances - different mesh distributions
     for &(mesh_count, instances_per_mesh) in &[(1, 1000), (10, 100), (100, 10), (1000, 1)] {
         let total = mesh_count * instances_per_mesh;
         group.throughput(Throughput::Elements(total as u64));
-        
+
         group.bench_with_input(
-            BenchmarkId::new("add", format!("{}meshes_x_{}", mesh_count, instances_per_mesh)),
+            BenchmarkId::new(
+                "add",
+                format!("{}meshes_x_{}", mesh_count, instances_per_mesh),
+            ),
             &(mesh_count, instances_per_mesh),
             |b, &(mesh_count, instances_per_mesh)| {
                 b.iter(|| {
@@ -921,13 +899,17 @@ fn bench_instance_manager(c: &mut Criterion) {
                         for i in 0..instances_per_mesh {
                             manager.add_instance(
                                 mesh as u64,
-                                Instance::new(Vec3::new(i as f32, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE)
+                                Instance::new(
+                                    Vec3::new(i as f32, 0.0, 0.0),
+                                    Quat::IDENTITY,
+                                    Vec3::ONE,
+                                ),
                             );
                         }
                     }
                     bb(manager.total_instances())
                 })
-            }
+            },
         );
     }
 
@@ -935,7 +917,10 @@ fn bench_instance_manager(c: &mut Criterion) {
     let mut manager = InstanceManager::new();
     for mesh in 0..10 {
         for i in 0..100 {
-            manager.add_instance(mesh, Instance::new(Vec3::new(i as f32, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE));
+            manager.add_instance(
+                mesh,
+                Instance::new(Vec3::new(i as f32, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE),
+            );
         }
     }
 
@@ -953,7 +938,10 @@ fn bench_instance_manager(c: &mut Criterion) {
                 let mut m = InstanceManager::new();
                 for mesh in 0..10 {
                     for i in 0..100 {
-                        m.add_instance(mesh, Instance::new(Vec3::new(i as f32, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE));
+                        m.add_instance(
+                            mesh,
+                            Instance::new(Vec3::new(i as f32, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE),
+                        );
                     }
                 }
                 m
@@ -961,7 +949,7 @@ fn bench_instance_manager(c: &mut Criterion) {
             |mut m| {
                 m.clear();
                 bb(m.total_instances())
-            }
+            },
         )
     });
 
@@ -975,41 +963,29 @@ fn bench_instance_patterns(c: &mut Criterion) {
     for &(rows, cols) in &[(10, 10), (32, 32), (100, 100)] {
         let total = rows * cols;
         group.throughput(Throughput::Elements(total as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("grid", format!("{}x{}", rows, cols)),
             &(rows, cols),
             |b, &(rows, cols)| {
-                b.iter(|| {
-                    bb(InstancePatternBuilder::new()
-                        .grid(rows, cols, 2.0)
-                        .build())
-                })
-            }
+                b.iter(|| bb(InstancePatternBuilder::new().grid(rows, cols, 2.0).build()))
+            },
         );
     }
 
     // Circle pattern
     for &count in &[8, 32, 128, 512] {
         group.throughput(Throughput::Elements(count as u64));
-        
-        group.bench_with_input(
-            BenchmarkId::new("circle", count),
-            &count,
-            |b, &count| {
-                b.iter(|| {
-                    bb(InstancePatternBuilder::new()
-                        .circle(count, 10.0)
-                        .build())
-                })
-            }
-        );
+
+        group.bench_with_input(BenchmarkId::new("circle", count), &count, |b, &count| {
+            b.iter(|| bb(InstancePatternBuilder::new().circle(count, 10.0).build()))
+        });
     }
 
     // Random scatter (with RNG overhead)
     for &count in &[100, 1000, 5000] {
         group.throughput(Throughput::Elements(count as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("random_scatter", count),
             &count,
@@ -1019,7 +995,7 @@ fn bench_instance_patterns(c: &mut Criterion) {
                         .random_scatter(count, 50.0)
                         .build())
                 })
-            }
+            },
         );
     }
 
@@ -1035,33 +1011,21 @@ fn bench_overlay_params(c: &mut Criterion) {
 
     // Parameter creation
     group.bench_function("new", |b| {
-        b.iter(|| {
-            bb(OverlayParams::new(black_box(0.5), black_box(0.1)))
-        })
+        b.iter(|| bb(OverlayParams::new(black_box(0.5), black_box(0.1))))
     });
 
     group.bench_function("fade_to_black", |b| {
-        b.iter(|| {
-            bb(OverlayParams::fade_to_black())
-        })
+        b.iter(|| bb(OverlayParams::fade_to_black()))
     });
 
-    group.bench_function("cinematic", |b| {
-        b.iter(|| {
-            bb(OverlayParams::cinematic())
-        })
-    });
+    group.bench_function("cinematic", |b| b.iter(|| bb(OverlayParams::cinematic())));
 
-    group.bench_function("none", |b| {
-        b.iter(|| {
-            bb(OverlayParams::none())
-        })
-    });
+    group.bench_function("none", |b| b.iter(|| bb(OverlayParams::none())));
 
     // Parameter interpolation (common for transitions)
     let start = OverlayParams::none();
     let end = OverlayParams::fade_to_black();
-    
+
     group.bench_function("interpolate_fade", |b| {
         b.iter(|| {
             let t = black_box(0.5f32);
@@ -1103,9 +1067,7 @@ fn bench_combined_scenarios(c: &mut Criterion) {
     group.bench_function("spawn_wave_32x32_grid", |b| {
         b.iter(|| {
             let (cube_verts, cube_indices) = cube();
-            let instances = InstancePatternBuilder::new()
-                .grid(32, 32, 2.0)
-                .build();
+            let instances = InstancePatternBuilder::new().grid(32, 32, 2.0).build();
             bb((cube_verts.len(), cube_indices.len(), instances.len()))
         })
     });
@@ -1116,14 +1078,14 @@ fn bench_combined_scenarios(c: &mut Criterion) {
             let (cube_v, cube_i) = cube();
             let (plane_v, plane_i) = plane();
             let (sphere_v, sphere_i) = sphere(16, 16, 1.0);
-            
+
             let mut manager = InstanceManager::new();
             manager.add_instances(1, InstancePatternBuilder::new().grid(10, 10, 2.0).build());
             manager.add_instances(2, InstancePatternBuilder::new().circle(16, 20.0).build());
             manager.add_instance(3, Instance::identity()); // ground plane
-            
+
             manager.calculate_draw_call_savings();
-            
+
             bb((
                 cube_v.len() + plane_v.len() + sphere_v.len(),
                 cube_i.len() + plane_i.len() + sphere_i.len(),
@@ -1139,12 +1101,12 @@ fn bench_combined_scenarios(c: &mut Criterion) {
             let instances = InstancePatternBuilder::new()
                 .random_scatter(10000, 500.0)
                 .build();
-            
+
             let mut batch = InstanceBatch::new(1);
             for inst in instances {
                 batch.add_instance(inst);
             }
-            
+
             let raw = batch.to_raw_data();
             bb(raw.len())
         })

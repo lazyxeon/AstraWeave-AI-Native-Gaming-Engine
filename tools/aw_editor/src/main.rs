@@ -1706,18 +1706,111 @@ impl EditorApp {
 
     fn show_material_editor(&mut self, ui: &mut egui::Ui) {
         ui.heading("Material Editor");
-        ui.label("Live material editing with hot reload");
-        ui.add(egui::Slider::new(&mut self.mat_doc.base_color[0], 0.0..=1.0).text("Base R"));
-        ui.add(egui::Slider::new(&mut self.mat_doc.base_color[1], 0.0..=1.0).text("Base G"));
-        ui.add(egui::Slider::new(&mut self.mat_doc.base_color[2], 0.0..=1.0).text("Base B"));
-        ui.add(egui::Slider::new(&mut self.mat_doc.metallic, 0.0..=1.0).text("Metallic"));
-        ui.add(egui::Slider::new(&mut self.mat_doc.roughness, 0.04..=1.0).text("Roughness"));
+        ui.label("Live material editing - synced with 3D viewport");
+
+        // Color sliders with live preview
+        let mut changed = false;
+
+        ui.horizontal(|ui| {
+            ui.label("🎨 Base Color:");
+        });
+
+        if ui.add(egui::Slider::new(&mut self.mat_doc.base_color[0], 0.0..=1.0).text("R")).changed() {
+            changed = true;
+        }
+        if ui.add(egui::Slider::new(&mut self.mat_doc.base_color[1], 0.0..=1.0).text("G")).changed() {
+            changed = true;
+        }
+        if ui.add(egui::Slider::new(&mut self.mat_doc.base_color[2], 0.0..=1.0).text("B")).changed() {
+            changed = true;
+        }
+
+        ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            ui.label("⚙️ PBR Properties:");
+        });
+
+        if ui.add(egui::Slider::new(&mut self.mat_doc.metallic, 0.0..=1.0).text("Metallic")).changed() {
+            changed = true;
+        }
+        if ui.add(egui::Slider::new(&mut self.mat_doc.roughness, 0.04..=1.0).text("Roughness")).changed() {
+            changed = true;
+        }
+
+        // Apply changes to 3D viewport in real-time
+        if changed {
+            if let Some(viewport) = &self.viewport {
+                let base_color = [
+                    self.mat_doc.base_color[0],
+                    self.mat_doc.base_color[1],
+                    self.mat_doc.base_color[2],
+                    1.0, // Alpha
+                ];
+                let _ = viewport.set_material_params(base_color, self.mat_doc.metallic, self.mat_doc.roughness);
+            }
+        }
+
+        // Color preview swatch
+        ui.add_space(8.0);
+        let preview_color = egui::Color32::from_rgb(
+            (self.mat_doc.base_color[0] * 255.0) as u8,
+            (self.mat_doc.base_color[1] * 255.0) as u8,
+            (self.mat_doc.base_color[2] * 255.0) as u8,
+        );
+        ui.horizontal(|ui| {
+            ui.label("Preview:");
+            let (rect, _response) = ui.allocate_exact_size(egui::vec2(40.0, 20.0), egui::Sense::hover());
+            ui.painter().rect_filled(rect, 4.0, preview_color);
+            ui.label(format!(
+                "M:{:.2} R:{:.2}",
+                self.mat_doc.metallic, self.mat_doc.roughness
+            ));
+        });
+
+        ui.add_space(8.0);
+
+        // Manual apply button (in case auto-sync didn't work)
+        ui.horizontal(|ui| {
+            if ui.button("🔄 Apply to Viewport").on_hover_text("Manually apply material to 3D viewport").clicked() {
+                if let Some(viewport) = &self.viewport {
+                    let base_color = [
+                        self.mat_doc.base_color[0],
+                        self.mat_doc.base_color[1],
+                        self.mat_doc.base_color[2],
+                        1.0,
+                    ];
+                    match viewport.set_material_params(base_color, self.mat_doc.metallic, self.mat_doc.roughness) {
+                        Ok(_) => {
+                            self.console_logs.push("🎨 Material applied to viewport".into());
+                        }
+                        Err(e) => {
+                            self.console_logs.push(format!("⚠️ Material error: {}", e));
+                        }
+                    }
+                }
+            }
+
+            // Sync status indicator
+            if self.viewport.is_some() {
+                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), "🔗 Viewport synced");
+            } else {
+                ui.colored_label(egui::Color32::from_rgb(200, 150, 100), "⚠️ No viewport");
+            }
+        });
+
+        ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(4.0);
+
+        // Texture path
         let tex_ref = self.mat_doc.texture_path.get_or_insert(String::new());
         ui.horizontal(|ui| {
-            ui.label("Texture path:");
+            ui.label("📁 Texture:");
             ui.text_edit_singleline(tex_ref);
         });
-        if ui.button("Save & Reload Material").clicked() {
+
+        ui.add_space(8.0);
+        if ui.button("💾 Save & Reload Material").clicked() {
             let _ = fs::create_dir_all("assets");
             match serde_json::to_string_pretty(&self.mat_doc) {
                 Ok(s) => {

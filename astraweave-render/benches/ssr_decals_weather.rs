@@ -5,7 +5,7 @@
 //! that validate algorithmic complexity; actual GPU execution would be 10-100× faster.
 //!
 //! # Categories
-//! 
+//!
 //! ## Screen-Space Reflections (SSR)
 //! - Ray marching: Per-pixel raycast against depth buffer
 //! - Hit detection: Binary search refinement
@@ -23,8 +23,8 @@
 //! - Instance matrix generation: Per-particle transform calculation
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::hint::black_box;
 use std::f32::consts::PI;
+use std::hint::black_box;
 
 // ============================================================================
 // SSR (Screen-Space Reflections) Benchmarks
@@ -416,7 +416,11 @@ impl LcgRng {
 /// Spawn rain particle
 fn spawn_rain_particle(rng: &mut LcgRng) -> WeatherParticle {
     WeatherParticle {
-        pos: [rng.range(-25.0, 25.0), rng.range(8.0, 18.0), rng.range(-25.0, 25.0)],
+        pos: [
+            rng.range(-25.0, 25.0),
+            rng.range(8.0, 18.0),
+            rng.range(-25.0, 25.0),
+        ],
         vel: [0.0, -20.0, 0.0],
         life: rng.range(0.5, 1.5),
         color: [0.7, 0.8, 1.0, 0.9],
@@ -427,7 +431,11 @@ fn spawn_rain_particle(rng: &mut LcgRng) -> WeatherParticle {
 /// Spawn wind particle
 fn spawn_wind_particle(rng: &mut LcgRng) -> WeatherParticle {
     WeatherParticle {
-        pos: [rng.range(-25.0, 25.0), rng.range(0.5, 4.0), rng.range(-25.0, 25.0)],
+        pos: [
+            rng.range(-25.0, 25.0),
+            rng.range(0.5, 4.0),
+            rng.range(-25.0, 25.0),
+        ],
         vel: [5.0, 0.0, 1.0],
         life: rng.range(1.0, 3.0),
         color: [1.0, 1.0, 1.0, 0.3],
@@ -597,12 +605,16 @@ fn bench_decals(c: &mut Criterion) {
             .collect();
 
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(BenchmarkId::new("to_gpu_batch", count), &decals, |b, decals| {
-            b.iter(|| {
-                let gpu_decals: Vec<GpuDecal> = decals.iter().map(|d| d.to_gpu()).collect();
-                black_box(gpu_decals)
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("to_gpu_batch", count),
+            &decals,
+            |b, decals| {
+                b.iter(|| {
+                    let gpu_decals: Vec<GpuDecal> = decals.iter().map(|d| d.to_gpu()).collect();
+                    black_box(gpu_decals)
+                });
+            },
+        );
     }
 
     // Decal fade update
@@ -612,21 +624,17 @@ fn bench_decals(c: &mut Criterion) {
             .collect();
 
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(
-            BenchmarkId::new("fade_update", count),
-            &count,
-            |b, _| {
-                b.iter(|| {
-                    let mut alive_count = 0;
-                    for decal in decals.iter_mut() {
-                        if decal.update(black_box(0.016)) {
-                            alive_count += 1;
-                        }
+        group.bench_with_input(BenchmarkId::new("fade_update", count), &count, |b, _| {
+            b.iter(|| {
+                let mut alive_count = 0;
+                for decal in decals.iter_mut() {
+                    if decal.update(black_box(0.016)) {
+                        alive_count += 1;
                     }
-                    black_box(alive_count)
-                });
-            },
-        );
+                }
+                black_box(alive_count)
+            });
+        });
     }
 
     // Atlas UV lookup
@@ -664,19 +672,15 @@ fn bench_decals(c: &mut Criterion) {
             .collect();
 
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(
-            BenchmarkId::new("full_update", count),
-            &count,
-            |b, _| {
-                b.iter(|| {
-                    // Update fades and remove dead decals
-                    decals.retain_mut(|d| d.update(black_box(0.016)));
-                    // Convert to GPU format
-                    let gpu_decals: Vec<GpuDecal> = decals.iter().map(|d| d.to_gpu()).collect();
-                    black_box(gpu_decals.len())
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("full_update", count), &count, |b, _| {
+            b.iter(|| {
+                // Update fades and remove dead decals
+                decals.retain_mut(|d| d.update(black_box(0.016)));
+                // Convert to GPU format
+                let gpu_decals: Vec<GpuDecal> = decals.iter().map(|d| d.to_gpu()).collect();
+                black_box(gpu_decals.len())
+            });
+        });
     }
 
     group.finish();
@@ -699,14 +703,18 @@ fn bench_weather(c: &mut Criterion) {
     // Batch particle spawning
     for count in [100, 500, 1000, 5000] {
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(BenchmarkId::new("spawn_rain_batch", count), &count, |b, &count| {
-            let mut rng = LcgRng::new(12345);
-            b.iter(|| {
-                let particles: Vec<WeatherParticle> =
-                    (0..count).map(|_| spawn_rain_particle(&mut rng)).collect();
-                black_box(particles)
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("spawn_rain_batch", count),
+            &count,
+            |b, &count| {
+                let mut rng = LcgRng::new(12345);
+                b.iter(|| {
+                    let particles: Vec<WeatherParticle> =
+                        (0..count).map(|_| spawn_rain_particle(&mut rng)).collect();
+                    black_box(particles)
+                });
+            },
+        );
     }
 
     // Particle update
@@ -728,21 +736,17 @@ fn bench_weather(c: &mut Criterion) {
             (0..count).map(|_| spawn_rain_particle(&mut rng)).collect();
 
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(
-            BenchmarkId::new("update_batch", count),
-            &count,
-            |b, _| {
-                b.iter(|| {
-                    let mut alive = 0;
-                    for particle in particles.iter_mut() {
-                        if update_particle(particle, black_box(0.016)) {
-                            alive += 1;
-                        }
+        group.bench_with_input(BenchmarkId::new("update_batch", count), &count, |b, _| {
+            b.iter(|| {
+                let mut alive = 0;
+                for particle in particles.iter_mut() {
+                    if update_particle(particle, black_box(0.016)) {
+                        alive += 1;
                     }
-                    black_box(alive)
-                });
-            },
-        );
+                }
+                black_box(alive)
+            });
+        });
     }
 
     // Instance matrix generation
@@ -809,11 +813,6 @@ fn bench_weather(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_ssr,
-    bench_decals,
-    bench_weather,
-);
+criterion_group!(benches, bench_ssr, bench_decals, bench_weather,);
 
 criterion_main!(benches);

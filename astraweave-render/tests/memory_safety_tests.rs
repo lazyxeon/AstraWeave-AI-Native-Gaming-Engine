@@ -1,5 +1,5 @@
-use astraweave_render::mesh_registry::{MeshKey, MeshRegistry};
 use astraweave_render::mesh::{CpuMesh, MeshVertex};
+use astraweave_render::mesh_registry::{MeshKey, MeshRegistry};
 use glam::{Vec2, Vec3, Vec4};
 use std::sync::Arc;
 
@@ -33,12 +33,7 @@ async fn test_mesh_registry_pruning() {
     let mut registry = MeshRegistry::new();
 
     let cpu_mesh = CpuMesh {
-        vertices: vec![MeshVertex::new(
-            Vec3::ZERO,
-            Vec3::Y,
-            Vec4::ONE,
-            Vec2::ZERO,
-        )],
+        vertices: vec![MeshVertex::new(Vec3::ZERO, Vec3::Y, Vec4::ONE, Vec2::ZERO)],
         indices: vec![0, 0, 0],
     };
     let key = MeshKey("test_mesh".to_string());
@@ -64,7 +59,10 @@ async fn test_mesh_registry_pruning() {
     let pruned = registry.prune();
     assert_eq!(pruned, 1, "Should prune unused mesh");
     assert!(registry.get_gpu(handle).is_none(), "Mesh should be gone");
-    
+
     // Verify map is also cleaned up
-    assert!(registry.get(&key).is_none(), "Key mapping should be removed");
+    assert!(
+        registry.get(&key).is_none(),
+        "Key mapping should be removed"
+    );
 }

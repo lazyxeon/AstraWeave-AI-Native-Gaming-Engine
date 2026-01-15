@@ -10,8 +10,8 @@
 //! algorithmic complexity. Actual GPU execution would be 10-100× faster.
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::hint::black_box;
 use std::f32::consts::PI;
+use std::hint::black_box;
 
 // =============================================================================
 // GPU PARTICLE STRUCTURES
@@ -371,8 +371,7 @@ fn bench_particle_emission(c: &mut Criterion) {
     for count in [100, 500, 1000, 5000] {
         group.throughput(Throughput::Elements(count as u64));
 
-        let mut particles: Vec<GpuParticle> =
-            (0..10000).map(|_| GpuParticle::default()).collect();
+        let mut particles: Vec<GpuParticle> = (0..10000).map(|_| GpuParticle::default()).collect();
         let params = EmitterParams::default();
 
         group.bench_with_input(
@@ -402,14 +401,15 @@ fn bench_particle_sorting(c: &mut Criterion) {
             &count,
             |b, &count| {
                 // Create fresh particles each iteration
-                let mut particles: Vec<GpuParticle> =
-                    (0..count).map(|i| {
+                let mut particles: Vec<GpuParticle> = (0..count)
+                    .map(|i| {
                         let mut p = GpuParticle::default();
                         p.position[0] = rand_lcg(i as u32 * 12345) * 20.0 - 10.0;
                         p.position[1] = rand_lcg(i as u32 * 67890) * 10.0;
                         p.position[2] = rand_lcg(i as u32 * 11111) * 20.0 - 10.0;
                         p
-                    }).collect();
+                    })
+                    .collect();
 
                 b.iter(|| {
                     sort_particles_by_depth(&mut particles, camera_pos);
@@ -442,26 +442,22 @@ fn bench_particle_culling(c: &mut Criterion) {
         let frustum_min = [-20.0f32, -5.0, -30.0];
         let frustum_max = [20.0f32, 40.0, 30.0];
 
-        group.bench_with_input(
-            BenchmarkId::new("frustum_cull", count),
-            &count,
-            |b, _| {
-                b.iter(|| {
-                    let visible_count = particles
-                        .iter()
-                        .filter(|p| {
-                            p.position[0] >= frustum_min[0]
-                                && p.position[0] <= frustum_max[0]
-                                && p.position[1] >= frustum_min[1]
-                                && p.position[1] <= frustum_max[1]
-                                && p.position[2] >= frustum_min[2]
-                                && p.position[2] <= frustum_max[2]
-                        })
-                        .count();
-                    black_box(visible_count)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("frustum_cull", count), &count, |b, _| {
+            b.iter(|| {
+                let visible_count = particles
+                    .iter()
+                    .filter(|p| {
+                        p.position[0] >= frustum_min[0]
+                            && p.position[0] <= frustum_max[0]
+                            && p.position[1] >= frustum_min[1]
+                            && p.position[1] <= frustum_max[1]
+                            && p.position[2] >= frustum_min[2]
+                            && p.position[2] <= frustum_max[2]
+                    })
+                    .count();
+                black_box(visible_count)
+            })
+        });
     }
     group.finish();
 }
