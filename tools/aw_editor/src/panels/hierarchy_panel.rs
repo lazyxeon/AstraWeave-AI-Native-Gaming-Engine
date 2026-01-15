@@ -15,6 +15,12 @@ pub enum HierarchyAction {
     DeleteEntity(Entity),
     DuplicateEntity(Entity),
     FocusEntity(Entity),
+    /// Week 5 Day 3-4: Break prefab connection (make entity standalone)
+    BreakPrefabConnection(Entity),
+    /// Week 5 Day 3-4: Apply prefab overrides to source file
+    ApplyOverridesToPrefab(Entity),
+    /// Week 5 Day 3-4: Revert overrides to original prefab values
+    RevertToOriginalPrefab(Entity),
 }
 
 pub struct HierarchyPanel {
@@ -33,6 +39,9 @@ pub struct HierarchyPanel {
 
     pending_actions: Vec<HierarchyAction>,
     search_filter: String,
+    
+    /// Week 5 Day 3-4: Track which entities are prefab instances
+    prefab_instances: HashSet<Entity>,
 }
 
 impl HierarchyPanel {
@@ -49,6 +58,30 @@ impl HierarchyPanel {
             empty_node_counter: 0,
             pending_actions: Vec::new(),
             search_filter: String::new(),
+            prefab_instances: HashSet::new(),
+        }
+    }
+    
+    /// Week 5 Day 3-4: Mark an entity as a prefab instance
+    pub fn mark_as_prefab_instance(&mut self, entity: Entity) {
+        self.prefab_instances.insert(entity);
+    }
+    
+    /// Week 5 Day 3-4: Unmark an entity as a prefab instance (after breaking connection)
+    pub fn unmark_as_prefab_instance(&mut self, entity: Entity) {
+        self.prefab_instances.remove(&entity);
+    }
+    
+    /// Week 5 Day 3-4: Check if entity is a prefab instance
+    pub fn is_prefab_instance(&self, entity: Entity) -> bool {
+        self.prefab_instances.contains(&entity)
+    }
+    
+    /// Week 5 Day 3-4: Sync prefab instances from prefab manager
+    pub fn sync_prefab_instances(&mut self, prefab_entities: impl Iterator<Item = Entity>) {
+        self.prefab_instances.clear();
+        for entity in prefab_entities {
+            self.prefab_instances.insert(entity);
         }
     }
 
@@ -346,6 +379,31 @@ impl HierarchyPanel {
                     self.pending_actions
                         .push(HierarchyAction::CreatePrefab(entity));
                     ui.close();
+                }
+                
+                // Week 5 Day 3-4: Prefab instance actions (only shown for prefab instances)
+                let is_prefab = self.prefab_instances.contains(&entity);
+                if is_prefab {
+                    ui.separator();
+                    ui.label("📦 Prefab Instance");
+                    
+                    if ui.button("⬆️ Apply Overrides to Prefab").clicked() {
+                        self.pending_actions
+                            .push(HierarchyAction::ApplyOverridesToPrefab(entity));
+                        ui.close();
+                    }
+                    
+                    if ui.button("⬇️ Revert to Original").clicked() {
+                        self.pending_actions
+                            .push(HierarchyAction::RevertToOriginalPrefab(entity));
+                        ui.close();
+                    }
+                    
+                    if ui.button("🔗 Break Prefab Connection").clicked() {
+                        self.pending_actions
+                            .push(HierarchyAction::BreakPrefabConnection(entity));
+                        ui.close();
+                    }
                 }
 
                 ui.separator();

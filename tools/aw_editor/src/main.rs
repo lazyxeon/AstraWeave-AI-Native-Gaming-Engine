@@ -1920,6 +1920,141 @@ impl EditorApp {
         }
     }
 
+    // =========================================================================
+    // Week 5 Day 3-4: Prefab Workflow Enhancements
+    // =========================================================================
+
+    /// Create a prefab from a selected entity
+    fn create_prefab_from_entity(&mut self, entity: Entity) {
+        let Some(scene_state) = self.scene_state.as_ref() else {
+            self.log("❌ No scene loaded".to_string());
+            return;
+        };
+        
+        let world = scene_state.world();
+        let name = world.name(entity)
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("Entity_{}", entity));
+        
+        match self.prefab_manager.create_prefab(world, entity, &name) {
+            Ok(path) => {
+                self.log(format!("✅ Created prefab: {}", path.display()));
+                self.toast_success(format!("Created prefab: {}", name));
+                self.status = format!("Created prefab: {}", name);
+                self.hierarchy_panel.mark_as_prefab_instance(entity);
+            }
+            Err(e) => {
+                self.log(format!("❌ Failed to create prefab: {}", e));
+                self.toast_error(format!("Failed to create prefab: {}", e));
+            }
+        }
+    }
+    
+    /// Apply overrides from an entity instance back to its prefab source file
+    fn apply_overrides_to_prefab(&mut self, entity: Entity) {
+        let Some(scene_state) = self.scene_state.as_ref() else {
+            self.log("❌ No scene loaded".to_string());
+            return;
+        };
+        
+        match self.prefab_manager.apply_overrides_to_prefab(entity, scene_state.world()) {
+            Ok(()) => {
+                self.log(format!("✅ Applied overrides to prefab for entity {}", entity));
+                self.toast_success("Applied overrides to prefab".to_string());
+                self.status = "Applied overrides to prefab".to_string();
+            }
+            Err(e) => {
+                self.log(format!("❌ Failed to apply overrides: {}", e));
+                self.toast_error(format!("Failed to apply overrides: {}", e));
+            }
+        }
+    }
+    
+    /// Revert an entity to match its original prefab values
+    fn revert_to_original_prefab(&mut self, entity: Entity) {
+        let Some(scene_state) = self.scene_state.as_mut() else {
+            self.log("❌ No scene loaded".to_string());
+            return;
+        };
+        
+        match self.prefab_manager.revert_instance_to_prefab(entity, scene_state.world_mut()) {
+            Ok(()) => {
+                scene_state.sync_entity(entity);
+                self.log(format!("✅ Reverted entity {} to original prefab values", entity));
+                self.toast_success("Reverted to original prefab".to_string());
+                self.status = "Reverted to original prefab".to_string();
+            }
+            Err(e) => {
+                self.log(format!("❌ Failed to revert: {}", e));
+                self.toast_error(format!("Failed to revert: {}", e));
+            }
+        }
+    }
+    
+    /// Break the connection between an entity and its prefab source
+    fn break_prefab_connection(&mut self, entity: Entity) {
+        match self.prefab_manager.break_prefab_connection(entity) {
+            Ok(()) => {
+                self.hierarchy_panel.unmark_as_prefab_instance(entity);
+                self.log(format!("✅ Broke prefab connection for entity {}", entity));
+                self.toast_success("Broke prefab connection - entity is now standalone".to_string());
+                self.status = "Prefab connection broken".to_string();
+            }
+            Err(e) => {
+                self.log(format!("❌ Failed to break prefab connection: {}", e));
+                self.toast_error(format!("Failed to break connection: {}", e));
+            }
+        }
+    }
+    
+    /// Sync hierarchy panel's prefab instance tracking with prefab manager
+    fn sync_hierarchy_prefab_instances(&mut self) {
+        let prefab_entities: Vec<_> = self.prefab_manager.get_all_prefab_entities().collect();
+        self.hierarchy_panel.sync_prefab_instances(prefab_entities.into_iter());
+    }
+    
+    /// Process pending hierarchy panel actions
+    fn process_hierarchy_actions(&mut self) {
+        use crate::panels::hierarchy_panel::HierarchyAction;
+        
+        let actions = self.hierarchy_panel.take_pending_actions();
+        for action in actions {
+            match action {
+                HierarchyAction::CreatePrefab(entity) => {
+                    self.create_prefab_from_entity(entity);
+                }
+                HierarchyAction::DeleteEntity(entity) => {
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        scene_state.world_mut().destroy_entity(entity);
+                        scene_state.sync_entity(entity); // Will remove from cache since entity no longer exists
+                        self.log(format!("🗑️ Deleted entity {}", entity));
+                        if self.selected_entity == Some(entity as u64) {
+                            self.selected_entity = None;
+                        }
+                    }
+                }
+                HierarchyAction::DuplicateEntity(entity) => {
+                    // Simple duplication - could be enhanced
+                    self.log(format!("📋 Duplicate entity {} (not yet implemented)", entity));
+                    self.toast_info("Entity duplication coming soon".to_string());
+                }
+                HierarchyAction::FocusEntity(entity) => {
+                    self.selected_entity = Some(entity as u64);
+                    self.log(format!("🔍 Focused on entity {}", entity));
+                }
+                HierarchyAction::BreakPrefabConnection(entity) => {
+                    self.break_prefab_connection(entity);
+                }
+                HierarchyAction::ApplyOverridesToPrefab(entity) => {
+                    self.apply_overrides_to_prefab(entity);
+                }
+                HierarchyAction::RevertToOriginalPrefab(entity) => {
+                    self.revert_to_original_prefab(entity);
+                }
+            }
+        }
+    }
+
     /// Handle asset actions from the asset browser
     fn handle_asset_action(&mut self, action: AssetAction) {
         match action {
@@ -2778,6 +2913,10 @@ impl eframe::App for EditorApp {
 
         // Week 4: Handle drag-drop file imports
         self.handle_dropped_files(ctx);
+
+        // Week 5 Day 3-4: Process hierarchy panel actions and sync prefab instances
+        self.process_hierarchy_actions();
+        self.sync_hierarchy_prefab_instances();
 
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
