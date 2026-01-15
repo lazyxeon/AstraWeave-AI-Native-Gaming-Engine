@@ -3353,6 +3353,24 @@ impl eframe::App for EditorApp {
                         }
                     }
 
+                    // Shadow toggle
+                    ui.horizontal(|ui| {
+                        let shadows_on = self.viewport.as_ref()
+                            .and_then(|v| v.shadows_enabled().ok())
+                            .unwrap_or(true);
+                        let shadow_label = if shadows_on { "🔦 Shadows: ON" } else { "🔦 Shadows: OFF" };
+                        if ui.button(shadow_label).clicked() {
+                            if let Some(viewport) = &self.viewport {
+                                if let Err(e) = viewport.set_shadows_enabled(!shadows_on) {
+                                    self.console_logs.push(format!("⚠️ Shadow error: {}", e));
+                                } else {
+                                    let status = if !shadows_on { "enabled" } else { "disabled" };
+                                    self.console_logs.push(format!("🔦 Shadows {}", status));
+                                }
+                            }
+                        }
+                    });
+
                     ui.separator();
                     ui.label("📁 Model Discovery:");
 

@@ -188,6 +188,17 @@ impl EngineRenderAdapter {
             "Day"
         }
     }
+
+    /// Check if shadows are enabled
+    pub fn shadows_enabled(&self) -> bool {
+        self.renderer.shadows_enabled()
+    }
+
+    /// Enable or disable shadows
+    pub fn set_shadows_enabled(&mut self, enabled: bool) {
+        self.renderer.set_shadows_enabled(enabled);
+        tracing::debug!("Shadows enabled: {}", enabled);
+    }
 }
 
 #[cfg(not(feature = "astraweave-render"))]
