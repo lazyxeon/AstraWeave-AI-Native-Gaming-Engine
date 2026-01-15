@@ -1,9 +1,54 @@
 # AstraWeave Editor: Production Readiness & World-Class Implementation Plan
 
-**Document Version**: 2.0  
+**Document Version**: 2.1  
 **Created**: January 14, 2026  
+**Last Updated**: January 2026  
 **Status**: ACTIVE DEVELOPMENT  
 **Objective**: Transform aw_editor into a fully production-ready, world-class game editor
+
+---
+
+## Progress Log
+
+### Session Update (Latest)
+
+**Completed Work:**
+- ✅ **Phase 2 Week 1 Day 1-4**: Engine adapter integration (infrastructure)
+- ✅ **Phase 2 Week 1 Day 3-4**: Asset Browser → Viewport Integration
+  - Added LoadToViewport action
+  - Double-click model files to load them
+  - Context menu with "Load to Viewport" button
+- ✅ **Phase 2 Week 2 Day 1-2**: Material Inspector → Viewport Sync
+  - Added set_material_params API to Renderer/EngineAdapter/Widget
+  - Added model_count() and model_names() methods
+  - Debug menu with material testing (Red/Green/Blue/White presets)
+- ✅ **Phase 2 Week 3 Day 1-2**: Directional Light (Time of Day)
+  - Added get/set_time_of_day API through full stack
+  - Added time presets (Dawn/Noon/Sunset/Midnight) to Debug menu
+  - Display current time and period (Day/Twilight/Night)
+- ✅ **Phase 2 Week 3 Day 3-4**: Shadow Preview
+  - Added shadows_enabled flag and toggle methods
+  - Shadow ON/OFF button in Debug menu
+- ✅ **Phase 2 Week 3 Day 5**: Viewport Settings UI (ALREADY COMPLETE)
+  - Toolbar has Shading Mode (Lit/Unlit/Wireframe)
+  - Toolbar has Grid toggle with type (Infinite/Crosshair)
+  - Toolbar has Grid Snap with size controls
+  - Toolbar has Angle Snap controls
+
+**Commits This Session:**
+1. `f9c1b998` - Asset browser → viewport integration
+2. `62ef4014` - PBR material parameter API and Debug menu
+3. `b5401a38` - Time-of-day lighting controls
+4. `8af5df96` - Shadow toggle to Debug menu
+
+**Current Status**: Week 3 Complete (Lighting & Polish)
+- All 274 tests passing
+- Zero-warning policy maintained
+
+**Next Steps**:
+- Week 4: Full Import Workflow (drag-drop import)
+- Week 2 Day 3-4: Texture Loading Pipeline (deferred - requires glTF texture extraction)
+- Week 2 Day 5: Material Editing (roughness/metallic sliders)
 
 ---
 
