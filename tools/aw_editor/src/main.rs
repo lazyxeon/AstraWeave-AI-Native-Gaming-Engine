@@ -2935,6 +2935,27 @@ impl eframe::App for EditorApp {
             .as_ref()
             .map(|s| s.world().entities().len())
             .unwrap_or(0);
+        
+        // Week 5 Day 5: Enhanced scene statistics with mesh/texture/performance estimates
+        // Note: These are reasonable estimates until we have real mesh/texture tracking
+        let mesh_count = scene_entity_count; // Assume 1 mesh per entity
+        let avg_triangles_per_mesh = 500; // Reasonable for game models
+        let avg_vertices_per_mesh = 300;
+        let total_triangles = mesh_count * avg_triangles_per_mesh;
+        let total_vertices = mesh_count * avg_vertices_per_mesh;
+        let mesh_memory_kb = (total_vertices * 32 + total_triangles * 12) / 1024; // vertex attrs + indices
+        
+        // Texture estimates (could be replaced with actual tracking later)
+        let texture_count = (scene_entity_count / 5).max(1); // ~1 texture per 5 entities
+        let avg_texture_size_kb = 256; // 512x512 RGBA compressed
+        let texture_memory_kb = texture_count * avg_texture_size_kb;
+        
+        // Material and draw call estimates
+        let material_count = (scene_entity_count / 3).max(1);
+        let unique_shader_count = 3; // Standard PBR, unlit, transparent
+        let estimated_draw_calls = mesh_count; // 1 draw per mesh (no batching assumed)
+        let estimated_state_changes = material_count + unique_shader_count;
+        
         self.scene_stats_panel.update_stats(SceneStats {
             entity_count: scene_entity_count,
             selected_count,
@@ -2942,12 +2963,25 @@ impl eframe::App for EditorApp {
             prefab_count: self.prefab_manager.instance_count(),
             undo_stack_size: self.undo_stack.undo_count(),
             redo_stack_size: self.undo_stack.redo_count(),
-            memory_estimate_kb: scene_entity_count * 2,
+            memory_estimate_kb: scene_entity_count * 2 + mesh_memory_kb + texture_memory_kb,
             scene_path: self
                 .current_scene_path
                 .as_ref()
                 .map(|p| p.display().to_string()),
             is_dirty: self.is_dirty,
+            // Week 5 Day 5: New mesh/texture/performance fields
+            mesh_count,
+            total_triangles,
+            total_vertices,
+            mesh_memory_kb,
+            texture_count,
+            texture_memory_kb,
+            max_texture_resolution: (2048, 2048), // Assume max 2K textures
+            material_count,
+            unique_shader_count,
+            estimated_draw_calls,
+            estimated_state_changes,
+            performance_warning: None, // Calculated by panel
         });
 
         // Phase 7: Dynamic window title with file name and dirty state
