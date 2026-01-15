@@ -265,6 +265,14 @@ impl AssetRegistry {
     }
 }
 
+/// Week 4 Day 5: Asset validation result for import operations
+#[derive(Default)]
+struct AssetValidation {
+    is_valid: bool,
+    warnings: Vec<String>,
+    info: Vec<String>,
+}
+
 struct EditorApp {
     content_root: PathBuf,
     level: LevelDoc,
@@ -633,6 +641,96 @@ impl EditorApp {
         self.status = "New scene created".into();
     }
 
+    /// Week 4 Day 5: Validate model file before import
+    fn validate_model_file(&self, path: &std::path::Path) -> AssetValidation {
+        let mut result = AssetValidation {
+            is_valid: true,
+            warnings: Vec::new(),
+            info: Vec::new(),
+        };
+
+        // Check file exists
+        if !path.exists() {
+            result.is_valid = false;
+            result.warnings.push("File does not exist".to_string());
+            return result;
+        }
+
+        // Get file metadata
+        let metadata = match std::fs::metadata(path) {
+            Ok(m) => m,
+            Err(e) => {
+                result.is_valid = false;
+                result.warnings.push(format!("Cannot read file metadata: {}", e));
+                return result;
+            }
+        };
+
+        let file_size = metadata.len();
+        let file_size_mb = file_size as f64 / (1024.0 * 1024.0);
+
+        // Info: File size
+        result.info.push(format!("File size: {:.2} MB", file_size_mb));
+
+        // Warning: Very large files
+        if file_size_mb > 100.0 {
+            result.warnings.push(format!(
+                "Very large model ({:.1} MB) - may cause slow loading",
+                file_size_mb
+            ));
+        } else if file_size_mb > 50.0 {
+            result.warnings.push(format!(
+                "Large model ({:.1} MB) - consider using LODs",
+                file_size_mb
+            ));
+        }
+
+        // Check extension
+        let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        match extension.to_lowercase().as_str() {
+            "glb" => {
+                result.info.push("Format: GLB (binary glTF)".to_string());
+            }
+            "gltf" => {
+                result.info.push("Format: glTF (JSON)".to_string());
+                // Check for external files
+                if let Some(parent) = path.parent() {
+                    let bin_path = parent.join(format!(
+                        "{}.bin",
+                        path.file_stem().and_then(|s| s.to_str()).unwrap_or("")
+                    ));
+                    if bin_path.exists() {
+                        result.info.push("External .bin file found".to_string());
+                    }
+                }
+            }
+            _ => {
+                result.is_valid = false;
+                result.warnings.push(format!("Unsupported format: .{}", extension));
+            }
+        }
+
+        // Basic GLB header validation for binary files
+        if extension.to_lowercase() == "glb" {
+            if let Ok(file) = std::fs::File::open(path) {
+                use std::io::Read;
+                let mut reader = std::io::BufReader::new(file);
+                let mut magic = [0u8; 4];
+                if reader.read_exact(&mut magic).is_ok() {
+                    // GLB magic number: "glTF" (0x676C5446)
+                    if &magic == b"glTF" {
+                        result.info.push("Valid GLB magic header".to_string());
+                    } else {
+                        result.is_valid = false;
+                        result.warnings.push("Invalid GLB header - file may be corrupted".to_string());
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
     /// Week 4: Handle files dropped onto the editor window
     fn handle_dropped_files(&mut self, ctx: &egui::Context) {
         // Show drop overlay when files are being dragged over
@@ -658,9 +756,29 @@ impl EditorApp {
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown");
 
             match extension.to_lowercase().as_str() {
-                // 3D Models - Load to viewport
+                // 3D Models - Load to viewport with validation
                 "glb" | "gltf" => {
                     self.log(format!("📦 Importing model: {}", file_name));
+                    
+                    // Week 4 Day 5: Validate asset before import
+                    let validation = self.validate_model_file(&path);
+                    for warning in &validation.warnings {
+                        self.log(format!("⚠️ {}", warning));
+                    }
+                    
+                    if !validation.is_valid {
+                        self.toast_error(format!("Invalid model: {}", validation.warnings.first().unwrap_or(&"Unknown error".to_string())));
+                        self.log(format!("❌ Model validation failed: {}", file_name));
+                        continue;
+                    }
+                    
+                    // Log validation stats
+                    if !validation.info.is_empty() {
+                        for info in &validation.info {
+                            self.log(format!("ℹ️ {}", info));
+                        }
+                    }
+                    
                     if let Some(viewport) = &self.viewport {
                         match viewport.load_gltf_model(file_name, &path) {
                             Ok(_) => {
