@@ -783,6 +783,50 @@ impl PrefabManager {
         Ok(())
     }
 
+    /// Week 5 Day 3-4: Break prefab connection - entity becomes standalone
+    ///
+    /// This removes the entity from prefab tracking while keeping its current state.
+    /// The entity becomes a regular scene entity without prefab association.
+    pub fn break_prefab_connection(&mut self, entity: Entity) -> Result<()> {
+        let had_instance = self.find_instance(entity).is_some();
+        if !had_instance {
+            anyhow::bail!("Entity {} is not a prefab instance", entity);
+        }
+        
+        // Remove from tracking
+        self.instances.retain(|inst| {
+            inst.root_entity != entity && !inst.entity_mapping.values().any(|&e| e == entity)
+        });
+        
+        debug!("Broke prefab connection for entity {}", entity);
+        Ok(())
+    }
+    
+    /// Week 5 Day 3-4: Get all entities that are part of prefab instances
+    pub fn get_all_prefab_entities(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.instances.iter().flat_map(|inst| {
+            std::iter::once(inst.root_entity)
+                .chain(inst.entity_mapping.values().copied())
+        })
+    }
+    
+    /// Week 5 Day 3-4: Check if entity has any overrides from its prefab
+    pub fn has_overrides(&self, entity: Entity) -> bool {
+        self.find_instance(entity)
+            .map(|inst| {
+                inst.overrides.get(&entity)
+                    .map(|o| o.has_any_override())
+                    .unwrap_or(false)
+            })
+            .unwrap_or(false)
+    }
+    
+    /// Week 5 Day 3-4: Get specific overrides for an entity
+    pub fn get_entity_overrides(&self, entity: Entity) -> Option<&EntityOverrides> {
+        self.find_instance(entity)
+            .and_then(|inst| inst.overrides.get(&entity))
+    }
+
     /// Clear all tracked prefab instances
     ///
     /// Call this when unloading a scene or starting fresh to prevent memory leaks.
