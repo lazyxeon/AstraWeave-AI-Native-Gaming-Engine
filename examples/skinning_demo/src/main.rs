@@ -15,6 +15,7 @@ use winit::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(clippy::upper_case_acronyms)]
 enum SkinningMode {
     CPU,
     #[allow(dead_code)]

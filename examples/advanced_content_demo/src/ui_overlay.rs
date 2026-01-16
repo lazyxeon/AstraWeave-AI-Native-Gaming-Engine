@@ -31,7 +31,7 @@ pub mod colors {
 
 /// Renders a progress bar for ability cooldowns
 pub fn render_cooldown_bar(ability_name: &str, current: f32, max: f32, width: usize) -> String {
-    let percentage = (current / max).min(1.0).max(0.0);
+    let percentage = (current / max).clamp(0.0, 1.0);
     let filled = (percentage * width as f32) as usize;
     let empty = width.saturating_sub(filled);
 

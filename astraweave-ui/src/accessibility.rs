@@ -11,9 +11,10 @@ use serde::{Deserialize, Serialize};
 pub type Color = (f32, f32, f32);
 
 /// Colorblind mode for health bar and status colors
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ColorblindMode {
     /// Normal color vision
+    #[default]
     None,
     /// Red-green colorblindness (most common, ~6% of males)
     /// Green → Blue
@@ -27,12 +28,6 @@ pub enum ColorblindMode {
     /// High contrast mode for low-vision users
     /// All colors become black/white with high saturation accents
     HighContrast,
-}
-
-impl Default for ColorblindMode {
-    fn default() -> Self {
-        ColorblindMode::None
-    }
 }
 
 impl ColorblindMode {

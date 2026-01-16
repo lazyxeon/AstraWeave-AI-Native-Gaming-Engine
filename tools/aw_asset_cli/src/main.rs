@@ -3,7 +3,6 @@
 use anyhow::{anyhow, Context, Result};
 use asset_signing::KeyStore;
 use astraweave_asset::{AssetDatabase, AssetKind};
-use base64;
 use base64::Engine;
 use clap::{Parser, Subcommand};
 use flate2::write::GzEncoder;
@@ -242,10 +241,10 @@ fn globwalk(root: &str, pat: &str) -> Result<Vec<PathBuf>> {
                 let p = e.into_path();
                 // Create pattern relative to root for matching
                 let relative_path = p.strip_prefix(root).unwrap_or(&p);
-                if glob::Pattern::new(&pattern_str)?.matches_path(relative_path) {
-                    if !v.contains(&p) {
-                        v.push(p);
-                    }
+                if glob::Pattern::new(&pattern_str)?.matches_path(relative_path)
+                    && !v.contains(&p)
+                {
+                    v.push(p);
                 }
             }
         }
@@ -355,7 +354,7 @@ fn process_texture(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf
             .status()?;
         if status.success() {
             // leave .basis or convert later; for now write .basis → .ktx2 not implemented
-            fs::copy(&src, &out)?; // placeholder
+            fs::copy(src, &out)?; // placeholder
             if compress {
                 compress_file(&out, &processed)?;
                 fs::remove_file(&out)?;

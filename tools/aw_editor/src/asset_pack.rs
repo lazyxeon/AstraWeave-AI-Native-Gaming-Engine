@@ -22,6 +22,10 @@ pub const PACK_MAGIC: [u8; 4] = *b"AWPK";
 /// Current pack format version
 pub const PACK_VERSION: u32 = 1;
 
+/// Progress callback type for asset packing operations.
+/// Takes (progress: f32, message: &str) where progress is 0.0..1.0.
+pub type ProgressCallback = Box<dyn Fn(f32, &str) + Send>;
+
 /// Compression method for assets
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum CompressionMethod {
@@ -122,7 +126,7 @@ pub struct AssetPackBuilder {
     /// Assets to pack (source path, archive path)
     assets: Vec<(PathBuf, String)>,
     /// Progress callback
-    progress_callback: Option<Box<dyn Fn(f32, &str) + Send>>,
+    progress_callback: Option<ProgressCallback>,
 }
 
 impl AssetPackBuilder {
@@ -206,16 +210,16 @@ impl AssetPackBuilder {
 
         // Create output file
         let file =
-            File::create(&self.output_path).map_err(|e| PackError::IoError(e.to_string()))?;
+            File::create(&self.output_path).map_err(|e| PackError::Io(e.to_string()))?;
         let mut writer = BufWriter::new(file);
 
         // Write magic and placeholder for manifest offset
         writer
             .write_all(&PACK_MAGIC)
-            .map_err(|e| PackError::IoError(e.to_string()))?;
+            .map_err(|e| PackError::Io(e.to_string()))?;
         writer
             .write_all(&[0u8; 8]) // Placeholder for manifest offset
-            .map_err(|e| PackError::IoError(e.to_string()))?;
+            .map_err(|e| PackError::Io(e.to_string()))?;
 
         let data_start_offset = 12u64; // 4 bytes magic + 8 bytes manifest offset
         let mut current_offset = 0u64;
@@ -232,7 +236,7 @@ impl AssetPackBuilder {
 
             // Read source file
             let data = std::fs::read(source_path).map_err(|e| {
-                PackError::IoError(format!("Failed to read {}: {}", source_path.display(), e))
+                PackError::Io(format!("Failed to read {}: {}", source_path.display(), e))
             })?;
 
             let uncompressed_size = data.len() as u64;
@@ -242,7 +246,7 @@ impl AssetPackBuilder {
             let compressed_data = match self.compression {
                 CompressionMethod::None => data,
                 CompressionMethod::Zstd => zstd::encode_all(&data[..], self.compression_level)
-                    .map_err(|e| PackError::CompressionError(e.to_string()))?,
+                    .map_err(|e| PackError::Compression(e.to_string()))?,
                 CompressionMethod::Lz4 => lz4_flex::compress_prepend_size(&data),
             };
 
@@ -251,7 +255,7 @@ impl AssetPackBuilder {
             // Write data
             writer
                 .write_all(&compressed_data)
-                .map_err(|e| PackError::IoError(e.to_string()))?;
+                .map_err(|e| PackError::Io(e.to_string()))?;
 
             // Add to manifest
             manifest.add_asset(AssetEntry {
@@ -271,23 +275,23 @@ impl AssetPackBuilder {
         // Write manifest at the end
         let manifest_offset = data_start_offset + current_offset;
         let manifest_json =
-            serde_json::to_vec(&manifest).map_err(|e| PackError::IoError(e.to_string()))?;
+            serde_json::to_vec(&manifest).map_err(|e| PackError::Io(e.to_string()))?;
         writer
             .write_all(&manifest_json)
-            .map_err(|e| PackError::IoError(e.to_string()))?;
+            .map_err(|e| PackError::Io(e.to_string()))?;
 
         // Go back and write manifest offset
         use std::io::Seek;
         writer
             .seek(std::io::SeekFrom::Start(4))
-            .map_err(|e| PackError::IoError(e.to_string()))?;
+            .map_err(|e| PackError::Io(e.to_string()))?;
         writer
             .write_all(&manifest_offset.to_le_bytes())
-            .map_err(|e| PackError::IoError(e.to_string()))?;
+            .map_err(|e| PackError::Io(e.to_string()))?;
 
         writer
             .flush()
-            .map_err(|e| PackError::IoError(e.to_string()))?;
+            .map_err(|e| PackError::Io(e.to_string()))?;
 
         if let Some(ref callback) = self.progress_callback {
             callback(1.0, "Pack complete!");
@@ -347,16 +351,16 @@ impl PackResult {
 #[derive(Debug)]
 pub enum PackError {
     NoAssets,
-    IoError(String),
-    CompressionError(String),
+    Io(String),
+    Compression(String),
 }
 
 impl std::fmt::Display for PackError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoAssets => write!(f, "No assets to pack"),
-            Self::IoError(e) => write!(f, "IO error: {}", e),
-            Self::CompressionError(e) => write!(f, "Compression error: {}", e),
+            Self::Io(e) => write!(f, "IO error: {}", e),
+            Self::Compression(e) => write!(f, "Compression error: {}", e),
         }
     }
 }
@@ -458,8 +462,8 @@ mod tests {
     #[test]
     fn test_pack_error_display() {
         assert_eq!(format!("{}", PackError::NoAssets), "No assets to pack");
-        assert_eq!(format!("{}", PackError::IoError("foo".into())), "IO error: foo");
-        assert_eq!(format!("{}", PackError::CompressionError("bar".into())), "Compression error: bar");
+        assert_eq!(format!("{}", PackError::Io("foo".into())), "IO error: foo");
+        assert_eq!(format!("{}", PackError::Compression("bar".into())), "Compression error: bar");
     }
 
     #[test]

@@ -393,27 +393,31 @@ fn movement_system(world: &mut World) {
     // This eliminates the 770µs O(log n) writeback bottleneck
     let query = Query2Mut::<Position, Velocity>::new(world);
 
-    let mut _moved_count = 0;
-
     // Direct mutation - no collect, no writeback, O(1) per entity
-    for (_entity, pos, vel) in query {
-        // Update position with velocity
-        pos.0.x += vel.0.x * 1.0;
-        pos.0.y += vel.0.y * 1.0;
-        pos.0.z += vel.0.z * 1.0;
+    // Note: We use a manual counter because enumerate() would require additional iterator machinery
+    // and we need the final count for profiling metrics
+    #[allow(clippy::explicit_counter_loop)]    #[allow(unused_variables)]    let _moved_count = {
+        let mut count = 0_usize;
+        for (_entity, pos, vel) in query {
+            count += 1;
+            
+            // Update position with velocity
+            pos.0.x += vel.0.x * 1.0;
+            pos.0.y += vel.0.y * 1.0;
+            pos.0.z += vel.0.z * 1.0;
 
-        // Apply bounds wrapping inline
-        if pos.0.x.abs() > 64.0 {
-            pos.0.x = -pos.0.x.signum() * 64.0;
+            // Apply bounds wrapping inline
+            if pos.0.x.abs() > 64.0 {
+                pos.0.x = -pos.0.x.signum() * 64.0;
+            }
+            if pos.0.y.abs() > 64.0 {
+                pos.0.y = -pos.0.y.signum() * 64.0;
+            }
         }
-        if pos.0.y.abs() > 64.0 {
-            pos.0.y = -pos.0.y.signum() * 64.0;
-        }
+        count
+    };
 
-        _moved_count += 1;
-    }
-
-    plot!("Movement.Updates", _moved_count as f64);
+    plot!("Movement.Updates", moved_count as f64);
 
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {

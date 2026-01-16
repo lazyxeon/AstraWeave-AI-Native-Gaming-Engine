@@ -87,7 +87,7 @@ fn compute_tangents(
 
     tangents
         .into_iter()
-        .zip(bitangents.into_iter())
+        .zip(bitangents)
         .zip(normals.iter())
         .map(|((t, b), n)| {
             let t = t.normalize_or_zero();

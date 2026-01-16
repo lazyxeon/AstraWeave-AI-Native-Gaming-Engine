@@ -148,9 +148,6 @@ fn create_save_bundle(
     let ecs_blob = serialize_world_state(world)?;
     let state_hash = calculate_world_hash(world);
 
-    // Use the provided companions directly
-    let companions = companions;
-
     // Create sample inventory
     let inventory = PlayerInventory {
         credits: 1000,
@@ -201,7 +198,7 @@ fn serialize_world_state(world: &World) -> Result<Vec<u8>> {
     let simplified_state = (world.t, world.next_id);
     use bincode::config::standard;
     use bincode::serde::encode_to_vec;
-    Ok(encode_to_vec(&simplified_state, standard()).unwrap_or_default())
+    Ok(encode_to_vec(simplified_state, standard()).unwrap_or_default())
 }
 
 /// Calculate a hash of the world state for quick comparison

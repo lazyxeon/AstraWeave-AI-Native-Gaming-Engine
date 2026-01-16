@@ -337,13 +337,13 @@ impl EvaluationSuite {
 
         // Check if expected actions appear in the plan
         for expected_action in expected {
-            let action_present = steps.iter().any(|s| match (expected_action.as_str(), s) {
-                ("MoveTo", ActionStep::MoveTo { .. }) => true,
-                ("Throw", ActionStep::Throw { .. }) => true,
-                ("CoverFire", ActionStep::CoverFire { .. }) => true,
-                ("Revive", ActionStep::Revive { .. }) => true,
-                _ => false,
-            });
+            let action_present = steps.iter().any(|s| matches!(
+                (expected_action.as_str(), s),
+                ("MoveTo", ActionStep::MoveTo { .. })
+                    | ("Throw", ActionStep::Throw { .. })
+                    | ("CoverFire", ActionStep::CoverFire { .. })
+                    | ("Revive", ActionStep::Revive { .. })
+            ));
 
             if action_present {
                 score += 1.0 / expected.len() as f64;
@@ -365,13 +365,13 @@ impl EvaluationSuite {
         let violations = steps
             .iter()
             .filter(|s| {
-                forbidden.iter().any(|f| match (f.as_str(), s) {
-                    ("MoveTo", ActionStep::MoveTo { .. }) => true,
-                    ("Throw", ActionStep::Throw { .. }) => true,
-                    ("CoverFire", ActionStep::CoverFire { .. }) => true,
-                    ("Revive", ActionStep::Revive { .. }) => true,
-                    _ => false,
-                })
+                forbidden.iter().any(|f| matches!(
+                    (f.as_str(), *s),
+                    ("MoveTo", ActionStep::MoveTo { .. })
+                        | ("Throw", ActionStep::Throw { .. })
+                        | ("CoverFire", ActionStep::CoverFire { .. })
+                        | ("Revive", ActionStep::Revive { .. })
+                ))
             })
             .count();
 
@@ -409,13 +409,13 @@ impl EvaluationSuite {
             }
 
             // Bad: Identical consecutive action types (except MoveTo)
-            let same_type = match (prev, curr) {
-                (ActionStep::MoveTo { .. }, ActionStep::MoveTo { .. }) => true,
-                (ActionStep::Throw { .. }, ActionStep::Throw { .. }) => true,
-                (ActionStep::CoverFire { .. }, ActionStep::CoverFire { .. }) => true,
-                (ActionStep::Revive { .. }, ActionStep::Revive { .. }) => true,
-                _ => false,
-            };
+            let same_type = matches!(
+                (prev, curr),
+                (ActionStep::MoveTo { .. }, ActionStep::MoveTo { .. })
+                    | (ActionStep::Throw { .. }, ActionStep::Throw { .. })
+                    | (ActionStep::CoverFire { .. }, ActionStep::CoverFire { .. })
+                    | (ActionStep::Revive { .. }, ActionStep::Revive { .. })
+            );
 
             if same_type && !matches!(prev, ActionStep::MoveTo { .. }) {
                 coherence_points -= 1;

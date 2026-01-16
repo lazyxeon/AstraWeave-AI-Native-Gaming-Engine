@@ -74,6 +74,7 @@ mod brdf_preview;
 mod clipboard; // Phase 3.4 - Copy/Paste/Duplicate
 mod command; // Phase 2.1 - Undo/Redo system
 mod component_ui; // Phase 2.3 - Component-based inspector
+mod dialogs; // Modal dialog helpers
 mod editor_mode; // Phase 4.2 - Play-in-Editor
 mod editor_preferences; // Phase 9 - Editor preferences persistence
 mod entity_manager;
@@ -2074,6 +2075,582 @@ impl EditorApp {
 }
 
 impl EditorApp {
+    /// Render all modal dialogs (called from update loop)
+    fn show_dialogs(&mut self, ctx: &egui::Context) {
+        self.render_quit_dialog(ctx);
+        self.render_help_dialog(ctx);
+        self.render_settings_dialog(ctx);
+        self.render_new_confirm_dialog(ctx);
+        self.render_open_confirm_dialog(ctx);
+        self.render_recovery_dialog(ctx);
+    }
+
+    /// Render the quit confirmation dialog
+    fn render_quit_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_quit_dialog {
+            return;
+        }
+        
+        dialogs::show_modal_overlay(ctx, "quit_dialog_overlay");
+        egui::Window::new("⚠️ Unsaved Changes")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .min_width(350.0)
+            .show(ctx, |ui| {
+                ui.add_space(8.0);
+                
+                // Warning icon and message
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("📝").size(24.0));
+                    ui.add_space(8.0);
+                    ui.vertical(|ui| {
+                        ui.label(egui::RichText::new("You have unsaved changes.").strong());
+                        ui.add_space(4.0);
+                        if let Some(path) = &self.current_scene_path {
+                            ui.label(format!("Scene: {}", path.display()));
+                        } else {
+                            ui.label("Scene: Untitled (never saved)");
+                        }
+                    });
+                });
+                
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(8.0);
+                
+                // Action buttons
+                let mut do_save_quit = false;
+                let mut do_quit = false;
+                let mut do_cancel = false;
+                
+                ui.horizontal(|ui| {
+                    let save_btn = egui::Button::new(egui::RichText::new("💾 Save & Quit").strong())
+                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                    if ui.add(save_btn).clicked() {
+                        do_save_quit = true;
+                    }
+                    
+                    ui.add_space(8.0);
+                    
+                    let quit_btn = egui::Button::new("🚪 Quit Without Saving")
+                        .fill(egui::Color32::from_rgb(165, 45, 45));
+                    if ui.add(quit_btn).clicked() {
+                        do_quit = true;
+                    }
+                    
+                    ui.add_space(8.0);
+                    
+                    if ui.button("Cancel").clicked() {
+                        do_cancel = true;
+                    }
+                });
+                
+                ui.add_space(8.0);
+                
+                ui.label(
+                    egui::RichText::new("Press Escape to cancel • Auto-save available in Edit > Preferences")
+                        .weak()
+                        .small()
+                );
+                
+                // Process actions after UI
+                if do_save_quit {
+                    if let Some(world) = self.edit_world() {
+                        let path = self.current_scene_path.clone().unwrap_or_else(|| {
+                            self.content_root.join("scenes/untitled.scene.ron")
+                        });
+                        if scene_serialization::save_scene(world, &path).is_ok() {
+                            self.toast_success("Scene saved");
+                            self.remove_lock_file();
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        } else {
+                            self.toast_error("Failed to save scene");
+                        }
+                    } else {
+                        self.remove_lock_file();
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                }
+                
+                if do_quit {
+                    self.remove_lock_file();
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+                
+                if do_cancel {
+                    self.show_quit_dialog = false;
+                }
+            });
+    }
+
+    /// Render the keyboard shortcuts help dialog
+    fn render_help_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_help_dialog {
+            return;
+        }
+        
+        egui::Window::new("Keyboard Shortcuts")
+            .collapsible(false)
+            .resizable(true)
+            .default_width(400.0)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                dialogs::show_shortcuts_grid(ui);
+                
+                ui.add_space(12.0);
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Close").clicked() {
+                            self.show_help_dialog = false;
+                        }
+                    });
+                });
+            });
+    }
+
+    /// Render the settings/preferences dialog
+    fn render_settings_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_settings_dialog {
+            return;
+        }
+        
+        egui::Window::new("Settings")
+            .collapsible(false)
+            .resizable(true)
+            .default_width(450.0)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                self.render_settings_content(ui);
+                
+                ui.add_space(12.0);
+                ui.separator();
+
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Close").clicked() {
+                            self.save_preferences();
+                            self.show_settings_dialog = false;
+                        }
+                    });
+                });
+            });
+    }
+
+    /// Render the settings dialog content sections
+    fn render_settings_content(&mut self, ui: &mut egui::Ui) {
+        ui.heading("General");
+        ui.add_space(8.0);
+
+        ui.horizontal(|ui| {
+            ui.label("Grid Visible:");
+            ui.checkbox(&mut self.show_grid, "");
+        });
+
+        ui.add_space(16.0);
+        ui.heading("Auto-Save");
+        ui.add_space(8.0);
+
+        ui.horizontal(|ui| {
+            ui.label("Enable Auto-Save:");
+            ui.checkbox(&mut self.auto_save_enabled, "");
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Interval (seconds):");
+            ui.add(
+                egui::DragValue::new(&mut self.auto_save_interval_secs)
+                    .range(30.0..=3600.0)
+                    .speed(10.0),
+            );
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Save to .autosave/ folder:");
+            ui.checkbox(&mut self.auto_save_to_separate_dir, "");
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Keep recent backups:");
+            ui.add(
+                egui::DragValue::new(&mut self.auto_save_keep_count)
+                    .range(1..=10)
+                    .speed(1.0),
+            );
+        });
+
+        if let Some(recent) = self.get_most_recent_autosave() {
+            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new("💾 Most recent:").weak());
+                if let Some(filename) = recent.file_name().and_then(|n| n.to_str()) {
+                    ui.label(egui::RichText::new(filename).weak().small());
+                }
+            });
+        }
+
+        ui.add_space(16.0);
+        ui.heading("Panels");
+        ui.add_space(8.0);
+
+        ui.horizontal(|ui| {
+            ui.label("Show Hierarchy:");
+            ui.checkbox(&mut self.show_hierarchy_panel, "");
+        });
+        ui.horizontal(|ui| {
+            ui.label("Show Inspector:");
+            ui.checkbox(&mut self.show_inspector_panel, "");
+        });
+        ui.horizontal(|ui| {
+            ui.label("Show Console:");
+            ui.checkbox(&mut self.show_console_panel, "");
+        });
+
+        ui.add_space(16.0);
+        ui.heading("Snapping");
+        ui.add_space(8.0);
+
+        ui.horizontal(|ui| {
+            ui.label("Grid Snap:");
+            ui.checkbox(&mut self.snapping_config.grid_enabled, "");
+        });
+        ui.horizontal(|ui| {
+            ui.label("Grid Size:");
+            ui.add(
+                egui::DragValue::new(&mut self.snapping_config.grid_size)
+                    .range(0.1..=10.0)
+                    .speed(0.1)
+                    .suffix(" units"),
+            );
+        });
+        ui.horizontal(|ui| {
+            ui.label("Angle Snap:");
+            ui.checkbox(&mut self.snapping_config.angle_enabled, "");
+        });
+        ui.horizontal(|ui| {
+            ui.label("Angle Increment:");
+            ui.add(
+                egui::DragValue::new(&mut self.snapping_config.angle_increment)
+                    .range(1.0..=90.0)
+                    .speed(1.0)
+                    .suffix("°"),
+            );
+        });
+
+        ui.add_space(16.0);
+        ui.collapsing("Keyboard Shortcuts", |ui| {
+            dialogs::show_shortcuts_compact_grid(ui);
+        });
+    }
+
+    /// Render the new scene confirmation dialog
+    fn render_new_confirm_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_new_confirm_dialog {
+            return;
+        }
+        
+        dialogs::show_modal_overlay(ctx, "new_scene_dialog_overlay");
+        
+        egui::Window::new("⚠️ Unsaved Changes")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .min_width(380.0)
+            .show(ctx, |ui| {
+                ui.add_space(8.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("📄").size(24.0));
+                    ui.add_space(8.0);
+                    ui.vertical(|ui| {
+                        ui.label(egui::RichText::new("Create a new scene?").strong());
+                        ui.add_space(4.0);
+                        ui.label("You have unsaved changes that will be lost.");
+                        ui.add_space(4.0);
+                        if let Some(path) = &self.current_scene_path {
+                            ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
+                        } else {
+                            ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
+                        }
+                    });
+                });
+                
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(8.0);
+                
+                let mut do_save = false;
+                let mut do_discard = false;
+                let mut do_cancel = false;
+                
+                ui.horizontal(|ui| {
+                    let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
+                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                    if ui.add(save_btn).clicked() {
+                        do_save = true;
+                    }
+                    
+                    ui.add_space(8.0);
+                    
+                    let discard_btn = egui::Button::new("🗑️ Discard Changes")
+                        .fill(egui::Color32::from_rgb(165, 45, 45));
+                    if ui.add(discard_btn).clicked() {
+                        do_discard = true;
+                    }
+                    
+                    ui.add_space(8.0);
+                    
+                    if ui.button("Cancel").clicked() {
+                        do_cancel = true;
+                    }
+                });
+                
+                ui.add_space(8.0);
+                ui.label(egui::RichText::new("Press Escape to cancel").weak().small());
+                
+                if do_save {
+                    if let Some(world) = self.edit_world() {
+                        let path = self.current_scene_path.clone().unwrap_or_else(|| {
+                            self.content_root.join("scenes/untitled.scene.ron")
+                        });
+                        if scene_serialization::save_scene(world, &path).is_ok() {
+                            self.toast_success("Scene saved");
+                            self.show_new_confirm_dialog = false;
+                            self.create_new_scene();
+                        } else {
+                            self.toast_error("Failed to save scene");
+                        }
+                    } else {
+                        self.show_new_confirm_dialog = false;
+                        self.create_new_scene();
+                    }
+                }
+                
+                if do_discard {
+                    self.show_new_confirm_dialog = false;
+                    self.create_new_scene();
+                }
+                
+                if do_cancel {
+                    self.show_new_confirm_dialog = false;
+                }
+            });
+    }
+
+    /// Render the open scene confirmation dialog
+    fn render_open_confirm_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_open_confirm_dialog {
+            return;
+        }
+        
+        dialogs::show_modal_overlay(ctx, "open_scene_dialog_overlay");
+        
+        let pending_path_display = self.pending_open_path.as_ref()
+            .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+            .unwrap_or_else(|| "selected scene".to_string());
+        
+        egui::Window::new("⚠️ Unsaved Changes")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .min_width(400.0)
+            .show(ctx, |ui| {
+                ui.add_space(8.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("📂").size(24.0));
+                    ui.add_space(8.0);
+                    ui.vertical(|ui| {
+                        ui.label(egui::RichText::new(format!("Open \"{}\"?", pending_path_display)).strong());
+                        ui.add_space(4.0);
+                        ui.label("You have unsaved changes that will be lost.");
+                        ui.add_space(4.0);
+                        if let Some(path) = &self.current_scene_path {
+                            ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
+                        } else {
+                            ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
+                        }
+                    });
+                });
+                
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(8.0);
+                
+                let mut do_save = false;
+                let mut do_discard = false;
+                let mut do_cancel = false;
+                
+                ui.horizontal(|ui| {
+                    let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
+                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                    if ui.add(save_btn).clicked() {
+                        do_save = true;
+                    }
+                    
+                    ui.add_space(8.0);
+                    
+                    let discard_btn = egui::Button::new("🗑️ Discard & Open")
+                        .fill(egui::Color32::from_rgb(165, 45, 45));
+                    if ui.add(discard_btn).clicked() {
+                        do_discard = true;
+                    }
+                    
+                    ui.add_space(8.0);
+                    
+                    if ui.button("Cancel").clicked() {
+                        do_cancel = true;
+                    }
+                });
+                
+                ui.add_space(8.0);
+                ui.label(egui::RichText::new("Press Escape to cancel").weak().small());
+                
+                if do_save {
+                    if let Some(world) = self.edit_world() {
+                        let save_path = self.current_scene_path.clone().unwrap_or_else(|| {
+                            self.content_root.join("scenes/untitled.scene.ron")
+                        });
+                        if scene_serialization::save_scene(world, &save_path).is_ok() {
+                            self.toast_success("Scene saved");
+                            if let Some(open_path) = self.pending_open_path.take() {
+                                self.load_scene_from_path(&open_path);
+                            }
+                            self.show_open_confirm_dialog = false;
+                        } else {
+                            self.toast_error("Failed to save scene");
+                        }
+                    } else {
+                        if let Some(open_path) = self.pending_open_path.take() {
+                            self.load_scene_from_path(&open_path);
+                        }
+                        self.show_open_confirm_dialog = false;
+                    }
+                }
+                
+                if do_discard {
+                    if let Some(open_path) = self.pending_open_path.take() {
+                        self.load_scene_from_path(&open_path);
+                    }
+                    self.show_open_confirm_dialog = false;
+                }
+                
+                if do_cancel {
+                    self.pending_open_path = None;
+                    self.show_open_confirm_dialog = false;
+                }
+            });
+    }
+
+    /// Render the crash recovery dialog
+    fn render_recovery_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_recovery_dialog {
+            return;
+        }
+        
+        dialogs::show_modal_overlay(ctx, "recovery_dialog_overlay");
+        
+        let autosave_name = self.recovery_autosave_path.as_ref()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+        
+        let recovery_path = self.recovery_autosave_path.clone();
+        
+        egui::Window::new("🔄 Crash Recovery")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .min_width(450.0)
+            .show(ctx, |ui| {
+                ui.add_space(8.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("⚠️").size(32.0));
+                    ui.add_space(8.0);
+                    ui.vertical(|ui| {
+                        ui.label(egui::RichText::new("Previous Session Detected").strong().size(16.0));
+                        ui.add_space(4.0);
+                        ui.label("The editor may have closed unexpectedly.");
+                        ui.label("An auto-save backup was found:");
+                    });
+                });
+                
+                ui.add_space(12.0);
+                
+                egui::Frame::new()
+                    .fill(egui::Color32::from_rgb(35, 45, 55))
+                    .corner_radius(4.0)
+                    .inner_margin(8.0)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new("💾").size(18.0));
+                            ui.add_space(4.0);
+                            ui.label(egui::RichText::new(&autosave_name).monospace());
+                        });
+                        
+                        if let Some(path) = &recovery_path {
+                            if let Ok(metadata) = fs::metadata(path) {
+                                if let Ok(modified) = metadata.modified() {
+                                    if let Ok(duration) = modified.elapsed() {
+                                        let mins_ago = duration.as_secs() / 60;
+                                        let time_str = if mins_ago < 60 {
+                                            format!("{} minutes ago", mins_ago)
+                                        } else if mins_ago < 1440 {
+                                            format!("{} hours ago", mins_ago / 60)
+                                        } else {
+                                            format!("{} days ago", mins_ago / 1440)
+                                        };
+                                        ui.label(egui::RichText::new(format!("Modified: {}", time_str)).weak().small());
+                                    }
+                                }
+                            }
+                        }
+                    });
+                
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(8.0);
+                
+                let mut do_restore = false;
+                let mut do_fresh = false;
+                
+                ui.horizontal(|ui| {
+                    let restore_btn = egui::Button::new(egui::RichText::new("✅ Restore Auto-Save").strong())
+                        .fill(egui::Color32::from_rgb(45, 125, 45))
+                        .min_size(egui::vec2(150.0, 32.0));
+                    if ui.add(restore_btn).clicked() {
+                        do_restore = true;
+                    }
+                    
+                    ui.add_space(16.0);
+                    
+                    let fresh_btn = egui::Button::new("🆕 Start Fresh")
+                        .min_size(egui::vec2(120.0, 32.0));
+                    if ui.add(fresh_btn).clicked() {
+                        do_fresh = true;
+                    }
+                });
+                
+                ui.add_space(12.0);
+                
+                ui.label(
+                    egui::RichText::new("💡 Tip: Auto-saves are stored in the .autosave/ folder")
+                        .weak()
+                        .small()
+                );
+                
+                if do_restore {
+                    self.recover_from_autosave();
+                }
+                
+                if do_fresh {
+                    self.decline_recovery();
+                }
+            });
+    }
+
     fn show_status_bar(&mut self, ctx: &egui::Context) {
         // Week 6 Day 5: Sample resource usage periodically (every 500ms)
         if self.last_resource_sample.elapsed() > std::time::Duration::from_millis(500) {
@@ -2708,7 +3285,7 @@ impl EditorApp {
 
                         // Sync selected entity from viewport to app state
                         if let Some(selected) = viewport.selected_entity() {
-                            self.selected_entity = Some(selected as u64);
+                            self.selected_entity = Some(selected);
                         }
 
                         // Sync snapping settings from viewport toolbar to EditorApp
@@ -4363,9 +4940,10 @@ impl MenuActionHandler for EditorApp {
                     let glb_files: Vec<_> = entries
                         .filter_map(|e| e.ok())
                         .filter(|e| {
-                            e.path().extension().map_or(false, |ext| {
-                                ext == "glb" || ext == "gltf"
-                            })
+                            matches!(
+                                e.path().extension().and_then(|ext| ext.to_str()),
+                                Some("glb" | "gltf")
+                            )
                         })
                         .take(8)
                         .collect();
@@ -4392,8 +4970,10 @@ impl MenuActionHandler for EditorApp {
                 PathBuf::from("../../Downloads/pine_forest/pine_tree_01_1k.glb"),
             ];
             possible_paths.iter().find(|p| p.exists()).cloned()
+        } else if path.exists() {
+            Some(path.clone())
         } else {
-            if path.exists() { Some(path.clone()) } else { None }
+            None
         };
         
         if let Some(target) = target_path {
@@ -4642,647 +5222,8 @@ impl eframe::App for EditorApp {
             self.perform_auto_save();
         }
 
-        // Week 7: Enhanced Quit confirmation dialog with better UX
-        if self.show_quit_dialog {
-            // Show modal overlay
-            let screen_rect = ctx.screen_rect();
-            egui::Area::new(egui::Id::new("quit_dialog_overlay"))
-                .order(egui::Order::Background)
-                .fixed_pos(egui::Pos2::ZERO)
-                .show(ctx, |ui| {
-                    ui.painter().rect_filled(
-                        screen_rect,
-                        0.0,
-                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
-                    );
-                });
-            
-            egui::Window::new("⚠️ Unsaved Changes")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .min_width(350.0)
-                .show(ctx, |ui| {
-                    ui.add_space(8.0);
-                    
-                    // Warning icon and message
-                    ui.horizontal(|ui| {
-                        ui.label(egui::RichText::new("📝").size(24.0));
-                        ui.add_space(8.0);
-                        ui.vertical(|ui| {
-                            ui.label(egui::RichText::new("You have unsaved changes.").strong());
-                            ui.add_space(4.0);
-                            if let Some(path) = &self.current_scene_path {
-                                ui.label(format!("Scene: {}", path.display()));
-                            } else {
-                                ui.label("Scene: Untitled (never saved)");
-                            }
-                        });
-                    });
-                    
-                    ui.add_space(16.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-                    
-                    // Action buttons
-                    ui.horizontal(|ui| {
-                        // Save & Quit button (primary action)
-                        let save_btn = egui::Button::new(egui::RichText::new("💾 Save & Quit").strong())
-                            .fill(egui::Color32::from_rgb(45, 125, 45));
-                        if ui.add(save_btn).clicked() {
-                            if let Some(world) = self.edit_world() {
-                                let path = self.current_scene_path.clone().unwrap_or_else(|| {
-                                    self.content_root.join("scenes/untitled.scene.ron")
-                                });
-                                if scene_serialization::save_scene(world, &path).is_ok() {
-                                    self.toast_success("Scene saved");
-                                    self.remove_lock_file(); // Week 7: Clean exit
-                                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                                } else {
-                                    self.toast_error("Failed to save scene");
-                                }
-                            } else {
-                                self.remove_lock_file(); // Week 7: Clean exit
-                                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                            }
-                        }
-                        
-                        ui.add_space(8.0);
-                        
-                        // Quit Without Saving (destructive action)
-                        let quit_btn = egui::Button::new("🚪 Quit Without Saving")
-                            .fill(egui::Color32::from_rgb(165, 45, 45));
-                        if ui.add(quit_btn).clicked() {
-                            self.remove_lock_file(); // Week 7: Clean exit
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                        
-                        ui.add_space(8.0);
-                        
-                        // Cancel (safe action)
-                        if ui.button("Cancel").clicked() {
-                            self.show_quit_dialog = false;
-                        }
-                    });
-                    
-                    ui.add_space(8.0);
-                    
-                    // Hint text
-                    ui.label(
-                        egui::RichText::new("Press Escape to cancel • Auto-save available in Edit > Preferences")
-                            .weak()
-                            .small()
-                    );
-                });
-        }
-
-        // Phase 7: Keyboard shortcuts help dialog
-        if self.show_help_dialog {
-            egui::Window::new("Keyboard Shortcuts")
-                .collapsible(false)
-                .resizable(true)
-                .default_width(400.0)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .show(ctx, |ui| {
-                    ui.heading("File");
-                    ui.label("Ctrl+N          New Scene");
-                    ui.label("Ctrl+Shift+N    New Entity");
-                    ui.label("Ctrl+S          Save Scene");
-                    ui.label("Ctrl+Shift+S    Save As");
-                    ui.label("Ctrl+O          Open Scene");
-                    ui.add_space(8.0);
-
-                    ui.heading("Edit");
-                    ui.label("Ctrl+Z          Undo");
-                    ui.label("Ctrl+Shift+Z    Redo");
-                    ui.label("Ctrl+A          Select All");
-                    ui.label("Ctrl+D          Duplicate");
-                    ui.label("Delete          Delete Selected");
-                    ui.label("Escape          Deselect All");
-                    ui.add_space(8.0);
-
-                    ui.heading("Camera");
-                    ui.label("F               Focus on Selected");
-                    ui.label("Home            Reset Camera");
-                    ui.label("Alt+1           Front View");
-                    ui.label("Alt+3           Right View");
-                    ui.label("Alt+7           Top View");
-                    ui.label("Alt+0           Perspective View");
-                    ui.add_space(8.0);
-
-                    ui.heading("Gizmo");
-                    ui.label("W               Translate Mode");
-                    ui.label("E               Rotate Mode");
-                    ui.label("R               Scale Mode");
-                    ui.add_space(8.0);
-
-                    ui.heading("View");
-                    ui.label("F1              Show This Help");
-                    ui.label("G               Toggle Grid");
-                    ui.label("Escape          Close Dialogs");
-                    ui.add_space(12.0);
-
-                    ui.horizontal(|ui| {
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Close").clicked() {
-                                self.show_help_dialog = false;
-                            }
-                        });
-                    });
-                });
-        }
-
-        // Phase 9: Settings/Preferences dialog
-        if self.show_settings_dialog {
-            egui::Window::new("Settings")
-                .collapsible(false)
-                .resizable(true)
-                .default_width(450.0)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .show(ctx, |ui| {
-                    ui.heading("General");
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Grid Visible:");
-                        ui.checkbox(&mut self.show_grid, "");
-                    });
-
-                    ui.add_space(16.0);
-                    ui.heading("Auto-Save");
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Enable Auto-Save:");
-                        ui.checkbox(&mut self.auto_save_enabled, "");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Interval (seconds):");
-                        ui.add(
-                            egui::DragValue::new(&mut self.auto_save_interval_secs)
-                                .range(30.0..=3600.0)
-                                .speed(10.0),
-                        );
-                    });
-
-                    // Week 7: New auto-save settings
-                    ui.horizontal(|ui| {
-                        ui.label("Save to .autosave/ folder:");
-                        ui.checkbox(&mut self.auto_save_to_separate_dir, "");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Keep recent backups:");
-                        ui.add(
-                            egui::DragValue::new(&mut self.auto_save_keep_count)
-                                .range(1..=10)
-                                .speed(1.0),
-                        );
-                    });
-
-                    // Show most recent auto-save if available
-                    if let Some(recent) = self.get_most_recent_autosave() {
-                        ui.add_space(8.0);
-                        ui.horizontal(|ui| {
-                            ui.label(egui::RichText::new("💾 Most recent:").weak());
-                            if let Some(filename) = recent.file_name().and_then(|n| n.to_str()) {
-                                ui.label(egui::RichText::new(filename).weak().small());
-                            }
-                        });
-                    }
-
-                    ui.add_space(16.0);
-                    ui.heading("Panels");
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Show Hierarchy:");
-                        ui.checkbox(&mut self.show_hierarchy_panel, "");
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Show Inspector:");
-                        ui.checkbox(&mut self.show_inspector_panel, "");
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Show Console:");
-                        ui.checkbox(&mut self.show_console_panel, "");
-                    });
-
-                    ui.add_space(16.0);
-                    ui.heading("Snapping");
-                    ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Grid Snap:");
-                        ui.checkbox(&mut self.snapping_config.grid_enabled, "");
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Grid Size:");
-                        ui.add(
-                            egui::DragValue::new(&mut self.snapping_config.grid_size)
-                                .range(0.1..=10.0)
-                                .speed(0.1)
-                                .suffix(" units"),
-                        );
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Angle Snap:");
-                        ui.checkbox(&mut self.snapping_config.angle_enabled, "");
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("Angle Increment:");
-                        ui.add(
-                            egui::DragValue::new(&mut self.snapping_config.angle_increment)
-                                .range(1.0..=90.0)
-                                .speed(1.0)
-                                .suffix("°"),
-                        );
-                    });
-
-                    ui.add_space(16.0);
-                    ui.collapsing("Keyboard Shortcuts", |ui| {
-                        egui::Grid::new("shortcuts_grid")
-                            .num_columns(2)
-                            .spacing([20.0, 4.0])
-                            .striped(true)
-                            .show(ui, |ui| {
-                                ui.label("Ctrl+S");
-                                ui.label("Save scene");
-                                ui.end_row();
-                                ui.label("Ctrl+Z");
-                                ui.label("Undo");
-                                ui.end_row();
-                                ui.label("Ctrl+Y");
-                                ui.label("Redo");
-                                ui.end_row();
-                                ui.label("Ctrl+C");
-                                ui.label("Copy");
-                                ui.end_row();
-                                ui.label("Ctrl+V");
-                                ui.label("Paste");
-                                ui.end_row();
-                                ui.label("Ctrl+D");
-                                ui.label("Duplicate");
-                                ui.end_row();
-                                ui.label("Delete");
-                                ui.label("Delete entity");
-                                ui.end_row();
-                                ui.label("F5");
-                                ui.label("Play");
-                                ui.end_row();
-                                ui.label("F6");
-                                ui.label("Pause");
-                                ui.end_row();
-                                ui.label("F7");
-                                ui.label("Stop");
-                                ui.end_row();
-                                ui.label("F8");
-                                ui.label("Step frame");
-                                ui.end_row();
-                                ui.label("G");
-                                ui.label("Translate mode");
-                                ui.end_row();
-                                ui.label("R");
-                                ui.label("Rotate mode");
-                                ui.end_row();
-                                ui.label("S");
-                                ui.label("Scale mode");
-                                ui.end_row();
-                                ui.label("Escape");
-                                ui.label("Deselect / cancel");
-                                ui.end_row();
-                            });
-                    });
-
-                    ui.add_space(12.0);
-                    ui.separator();
-
-                    ui.horizontal(|ui| {
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Close").clicked() {
-                                self.save_preferences();
-                                self.show_settings_dialog = false;
-                            }
-                        });
-                    });
-                });
-        }
-
-        // Week 7: Enhanced New Scene confirmation dialog with better UX
-        if self.show_new_confirm_dialog {
-            // Show modal overlay
-            let screen_rect = ctx.screen_rect();
-            egui::Area::new(egui::Id::new("new_scene_dialog_overlay"))
-                .order(egui::Order::Background)
-                .fixed_pos(egui::Pos2::ZERO)
-                .show(ctx, |ui| {
-                    ui.painter().rect_filled(
-                        screen_rect,
-                        0.0,
-                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
-                    );
-                });
-            
-            egui::Window::new("⚠️ Unsaved Changes")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .min_width(380.0)
-                .show(ctx, |ui| {
-                    ui.add_space(8.0);
-                    
-                    // Warning icon and message
-                    ui.horizontal(|ui| {
-                        ui.label(egui::RichText::new("📄").size(24.0));
-                        ui.add_space(8.0);
-                        ui.vertical(|ui| {
-                            ui.label(egui::RichText::new("Create a new scene?").strong());
-                            ui.add_space(4.0);
-                            ui.label("You have unsaved changes that will be lost.");
-                            ui.add_space(4.0);
-                            if let Some(path) = &self.current_scene_path {
-                                ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
-                            } else {
-                                ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
-                            }
-                        });
-                    });
-                    
-                    ui.add_space(16.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-                    
-                    // Action buttons
-                    ui.horizontal(|ui| {
-                        // Save First button (primary safe action)
-                        let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
-                            .fill(egui::Color32::from_rgb(45, 125, 45));
-                        if ui.add(save_btn).clicked() {
-                            if let Some(world) = self.edit_world() {
-                                let path = self.current_scene_path.clone().unwrap_or_else(|| {
-                                    self.content_root.join("scenes/untitled.scene.ron")
-                                });
-                                if scene_serialization::save_scene(world, &path).is_ok() {
-                                    self.toast_success("Scene saved");
-                                    self.show_new_confirm_dialog = false;
-                                    self.create_new_scene();
-                                } else {
-                                    self.toast_error("Failed to save scene");
-                                }
-                            } else {
-                                self.show_new_confirm_dialog = false;
-                                self.create_new_scene();
-                            }
-                        }
-                        
-                        ui.add_space(8.0);
-                        
-                        // Discard Changes (destructive action)
-                        let discard_btn = egui::Button::new("🗑️ Discard Changes")
-                            .fill(egui::Color32::from_rgb(165, 45, 45));
-                        if ui.add(discard_btn).clicked() {
-                            self.show_new_confirm_dialog = false;
-                            self.create_new_scene();
-                        }
-                        
-                        ui.add_space(8.0);
-                        
-                        // Cancel (safe action)
-                        if ui.button("Cancel").clicked() {
-                            self.show_new_confirm_dialog = false;
-                        }
-                    });
-                    
-                    ui.add_space(8.0);
-                    
-                    // Keyboard hint
-                    ui.label(
-                        egui::RichText::new("Press Escape to cancel")
-                            .weak()
-                            .small()
-                    );
-                });
-        }
-
-        // Week 7: Enhanced Open Scene confirmation dialog with better UX
-        if self.show_open_confirm_dialog {
-            // Show modal overlay
-            let screen_rect = ctx.screen_rect();
-            egui::Area::new(egui::Id::new("open_scene_dialog_overlay"))
-                .order(egui::Order::Background)
-                .fixed_pos(egui::Pos2::ZERO)
-                .show(ctx, |ui| {
-                    ui.painter().rect_filled(
-                        screen_rect,
-                        0.0,
-                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
-                    );
-                });
-            
-            let pending_path_display = self.pending_open_path.as_ref()
-                .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
-                .unwrap_or_else(|| "selected scene".to_string());
-            
-            egui::Window::new("⚠️ Unsaved Changes")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .min_width(400.0)
-                .show(ctx, |ui| {
-                    ui.add_space(8.0);
-                    
-                    // Warning icon and message
-                    ui.horizontal(|ui| {
-                        ui.label(egui::RichText::new("📂").size(24.0));
-                        ui.add_space(8.0);
-                        ui.vertical(|ui| {
-                            ui.label(egui::RichText::new(format!("Open \"{}\"?", pending_path_display)).strong());
-                            ui.add_space(4.0);
-                            ui.label("You have unsaved changes that will be lost.");
-                            ui.add_space(4.0);
-                            if let Some(path) = &self.current_scene_path {
-                                ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
-                            } else {
-                                ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
-                            }
-                        });
-                    });
-                    
-                    ui.add_space(16.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-                    
-                    // Action buttons
-                    ui.horizontal(|ui| {
-                        // Save First button (primary safe action)
-                        let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
-                            .fill(egui::Color32::from_rgb(45, 125, 45));
-                        if ui.add(save_btn).clicked() {
-                            if let Some(world) = self.edit_world() {
-                                let save_path = self.current_scene_path.clone().unwrap_or_else(|| {
-                                    self.content_root.join("scenes/untitled.scene.ron")
-                                });
-                                if scene_serialization::save_scene(world, &save_path).is_ok() {
-                                    self.toast_success("Scene saved");
-                                    // Now open the pending scene
-                                    if let Some(open_path) = self.pending_open_path.take() {
-                                        self.load_scene_from_path(&open_path);
-                                    }
-                                    self.show_open_confirm_dialog = false;
-                                } else {
-                                    self.toast_error("Failed to save scene");
-                                }
-                            } else {
-                                // No world to save, just open
-                                if let Some(open_path) = self.pending_open_path.take() {
-                                    self.load_scene_from_path(&open_path);
-                                }
-                                self.show_open_confirm_dialog = false;
-                            }
-                        }
-                        
-                        ui.add_space(8.0);
-                        
-                        // Discard & Open (destructive action)
-                        let discard_btn = egui::Button::new("🗑️ Discard & Open")
-                            .fill(egui::Color32::from_rgb(165, 45, 45));
-                        if ui.add(discard_btn).clicked() {
-                            if let Some(open_path) = self.pending_open_path.take() {
-                                self.load_scene_from_path(&open_path);
-                            }
-                            self.show_open_confirm_dialog = false;
-                        }
-                        
-                        ui.add_space(8.0);
-                        
-                        // Cancel (safe action)
-                        if ui.button("Cancel").clicked() {
-                            self.pending_open_path = None;
-                            self.show_open_confirm_dialog = false;
-                        }
-                    });
-                    
-                    ui.add_space(8.0);
-                    
-                    // Keyboard hint
-                    ui.label(
-                        egui::RichText::new("Press Escape to cancel")
-                            .weak()
-                            .small()
-                    );
-                });
-        }
-
-        // Week 7 Day 5: Crash recovery dialog
-        if self.show_recovery_dialog {
-            // Show modal overlay
-            let screen_rect = ctx.screen_rect();
-            egui::Area::new(egui::Id::new("recovery_dialog_overlay"))
-                .order(egui::Order::Background)
-                .fixed_pos(egui::Pos2::ZERO)
-                .show(ctx, |ui| {
-                    ui.painter().rect_filled(
-                        screen_rect,
-                        0.0,
-                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 180),
-                    );
-                });
-            
-            let autosave_name = self.recovery_autosave_path.as_ref()
-                .and_then(|p| p.file_name())
-                .and_then(|n| n.to_str())
-                .unwrap_or("unknown")
-                .to_string();
-            
-            egui::Window::new("🔄 Crash Recovery")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .min_width(450.0)
-                .show(ctx, |ui| {
-                    ui.add_space(8.0);
-                    
-                    // Warning icon and message
-                    ui.horizontal(|ui| {
-                        ui.label(egui::RichText::new("⚠️").size(32.0));
-                        ui.add_space(8.0);
-                        ui.vertical(|ui| {
-                            ui.label(egui::RichText::new("Previous Session Detected").strong().size(16.0));
-                            ui.add_space(4.0);
-                            ui.label("The editor may have closed unexpectedly.");
-                            ui.label("An auto-save backup was found:");
-                        });
-                    });
-                    
-                    ui.add_space(12.0);
-                    
-                    // Auto-save file info box
-                    egui::Frame::new()
-                        .fill(egui::Color32::from_rgb(35, 45, 55))
-                        .corner_radius(4.0)
-                        .inner_margin(8.0)
-                        .show(ui, |ui| {
-                            ui.horizontal(|ui| {
-                                ui.label(egui::RichText::new("💾").size(18.0));
-                                ui.add_space(4.0);
-                                ui.label(egui::RichText::new(&autosave_name).monospace());
-                            });
-                            
-                            // Show file modification time if available
-                            if let Some(path) = &self.recovery_autosave_path {
-                                if let Ok(metadata) = fs::metadata(path) {
-                                    if let Ok(modified) = metadata.modified() {
-                                        if let Ok(duration) = modified.elapsed() {
-                                            let mins_ago = duration.as_secs() / 60;
-                                            let time_str = if mins_ago < 60 {
-                                                format!("{} minutes ago", mins_ago)
-                                            } else if mins_ago < 1440 {
-                                                format!("{} hours ago", mins_ago / 60)
-                                            } else {
-                                                format!("{} days ago", mins_ago / 1440)
-                                            };
-                                            ui.label(egui::RichText::new(format!("Modified: {}", time_str)).weak().small());
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    
-                    ui.add_space(16.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-                    
-                    // Action buttons
-                    ui.horizontal(|ui| {
-                        // Restore button (primary action)
-                        let restore_btn = egui::Button::new(egui::RichText::new("✅ Restore Auto-Save").strong())
-                            .fill(egui::Color32::from_rgb(45, 125, 45))
-                            .min_size(egui::vec2(150.0, 32.0));
-                        if ui.add(restore_btn).clicked() {
-                            self.recover_from_autosave();
-                        }
-                        
-                        ui.add_space(16.0);
-                        
-                        // Start Fresh button
-                        let fresh_btn = egui::Button::new("🆕 Start Fresh")
-                            .min_size(egui::vec2(120.0, 32.0));
-                        if ui.add(fresh_btn).clicked() {
-                            self.decline_recovery();
-                        }
-                    });
-                    
-                    ui.add_space(12.0);
-                    
-                    // Info text
-                    ui.label(
-                        egui::RichText::new("💡 Tip: Auto-saves are stored in the .autosave/ folder")
-                            .weak()
-                            .small()
-                    );
-                });
-        }
+        // Render modal dialogs
+        self.show_dialogs(ctx);
 
         // Check for close request
         ctx.input(|i| {
@@ -5732,60 +5673,7 @@ impl eframe::App for EditorApp {
         self.world_panel.update();
         self.animation_panel.update(frame_time);
 
-        egui::TopBottomPanel::top("top")
-            .show(ctx, |ui| {
-                ui.set_min_size(ui.available_size());
-                ui.heading("AstraWeave Level & Encounter Editor");
-            ui.separator();
-            MenuBar::show(ui, self);
-            ui.separator();
-
-            ui.horizontal(|ui| {
-                if ui.button("Diff Assets").clicked() {
-                     match std::process::Command::new("git").args(["diff", "assets"]).output() {
-                        Ok(output) => {
-                            let stdout = String::from_utf8_lossy(&output.stdout);
-                            let stderr = String::from_utf8_lossy(&output.stderr);
-                            if stdout.is_empty() && stderr.is_empty() {
-                                self.console_logs.push("No asset changes.".into());
-                            } else {
-                                self.console_logs.push(format!("Asset diff:\n{}", stdout));
-                                if !stderr.is_empty() { self.console_logs.push(format!("Diff stderr: {}", stderr)); }
-                            }
-                        }
-                        Err(e) => self.console_logs.push(format!("Git diff failed: {}", e)),
-                     }
-                }
-            });
-
-            ui.label(&self.status);
-
-            // Show play controls in toolbar
-            ui.separator();
-            self.show_play_controls(ui);
-
-            // Compact performance indicator in header
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let frame_time = self.runtime.stats().frame_time_ms;
-                let fps_color = if self.current_fps >= 55.0 {
-                    egui::Color32::from_rgb(100, 255, 100) // Green
-                } else if self.current_fps >= 30.0 {
-                    egui::Color32::from_rgb(255, 200, 100) // Yellow
-                } else {
-                    egui::Color32::from_rgb(255, 100, 100) // Red
-                };
-
-                ui.label(egui::RichText::new(format!("FPS: {:.0}", self.current_fps))
-                    .color(fps_color)
-                    .strong());
-                ui.separator();
-                ui.label(egui::RichText::new(format!("{:.1}ms", frame_time))
-                    .color(egui::Color32::from_gray(180)));
-                ui.separator();
-                ui.label(egui::RichText::new("⚡")
-                    .color(fps_color));
-            });
-        });
+        self.show_top_panel(ctx);
 
         self.show_status_bar(ctx);
 

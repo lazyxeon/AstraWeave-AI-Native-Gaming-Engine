@@ -79,8 +79,8 @@ fn replay_system(world: &mut World) {
     let mut entities_to_update = Vec::new();
 
     {
-        let mut q = astraweave_ecs::Query::<CReplayState>::new(world);
-        while let Some((entity, replay)) = q.next() {
+        let q = astraweave_ecs::Query::<CReplayState>::new(world);
+        for (entity, replay) in q {
             if replay.is_replaying {
                 entities_to_update.push(entity);
             }
@@ -283,56 +283,56 @@ pub fn serialize_ecs_world(world: &World) -> Result<Vec<u8>> {
 
     // Query for each component type to discover all entities
     {
-        let mut q = Query::<CPos>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CPos>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CHealth>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CHealth>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CTeam>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CTeam>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CAmmo>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CAmmo>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CCooldowns>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CCooldowns>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CDesiredPos>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CDesiredPos>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CAiAgent>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CAiAgent>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CPersona>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CPersona>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
     {
-        let mut q = Query::<CMemory>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CMemory>::new(world);
+        for (entity, _) in q {
             entity_set.insert(entity);
         }
     }
@@ -617,14 +617,14 @@ pub fn calculate_world_hash(world: &World) -> u64 {
     // Collect all entities in sorted order for deterministic hashing
     let mut entity_list = Vec::new();
     {
-        let mut q = Query::<CPos>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CPos>::new(world);
+        for (entity, _) in q {
             entity_list.push(entity);
         }
     }
     {
-        let mut q = Query::<CHealth>::new(world);
-        while let Some((entity, _)) = q.next() {
+        let q = Query::<CHealth>::new(world);
+        for (entity, _) in q {
             if !entity_list.contains(&entity) {
                 entity_list.push(entity);
             }
@@ -747,22 +747,22 @@ mod tests {
         let mut team_count = 0;
 
         {
-            let mut q = Query::<CPos>::new(&new_world);
-            while let Some((_, pos)) = q.next() {
+            let q = Query::<CPos>::new(&new_world);
+            for (_, pos) in q {
                 pos_count += 1;
                 assert!(pos.pos.x == 10 || pos.pos.x == 30);
             }
         }
         {
-            let mut q = Query::<CHealth>::new(&new_world);
-            while let Some((_, health)) = q.next() {
+            let q = Query::<CHealth>::new(&new_world);
+            for (_, health) in q {
                 health_count += 1;
                 assert_eq!(health.hp, 100);
             }
         }
         {
-            let mut q = Query::<CTeam>::new(&new_world);
-            while let Some((_, team)) = q.next() {
+            let q = Query::<CTeam>::new(&new_world);
+            for (_, team) in q {
                 team_count += 1;
                 assert_eq!(team.id, 1);
             }
@@ -1054,8 +1054,8 @@ mod tests {
         deserialize_ecs_world(&blob, &mut new_world).unwrap();
 
         let mut found = false;
-        let mut q = Query::<CAmmo>::new(&new_world);
-        while let Some((_, ammo)) = q.next() {
+        let q = Query::<CAmmo>::new(&new_world);
+        for (_, ammo) in q {
             assert_eq!(ammo.rounds, 42);
             found = true;
         }
@@ -1078,8 +1078,8 @@ mod tests {
         deserialize_ecs_world(&blob, &mut new_world).unwrap();
 
         let mut found = false;
-        let mut q = Query::<CCooldowns>::new(&new_world);
-        while let Some((_, cd)) = q.next() {
+        let q = Query::<CCooldowns>::new(&new_world);
+        for (_, cd) in q {
             assert_eq!(cd.map.len(), 2);
             assert!((cd.map[&CooldownKey::ThrowSmoke] - 1.5).abs() < 0.001);
             found = true;
@@ -1103,8 +1103,8 @@ mod tests {
         deserialize_ecs_world(&blob, &mut new_world).unwrap();
 
         let mut found = false;
-        let mut q = Query::<CDesiredPos>::new(&new_world);
-        while let Some((_, dp)) = q.next() {
+        let q = Query::<CDesiredPos>::new(&new_world);
+        for (_, dp) in q {
             assert_eq!(dp.pos.x, 500);
             assert_eq!(dp.pos.y, 600);
             found = true;

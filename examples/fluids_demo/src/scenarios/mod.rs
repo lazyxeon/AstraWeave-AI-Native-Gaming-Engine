@@ -29,6 +29,7 @@ pub trait FluidScenario {
         queue: &wgpu::Queue,
     );
 
+    #[allow(clippy::too_many_arguments)]
     fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,

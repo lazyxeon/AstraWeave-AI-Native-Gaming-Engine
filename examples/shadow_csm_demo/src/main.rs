@@ -657,7 +657,7 @@ impl App {
                 astraweave_render::shadow_csm::CASCADE_RESOLUTION,
                 astraweave_render::shadow_csm::CASCADE_RESOLUTION
             );
-            println!("");
+            println!();
             println!("🐛 Debug controls:");
             println!("  V = Cycle debug modes (UVs/depth/raw sample)");
             println!("  C = Toggle cascade colors");

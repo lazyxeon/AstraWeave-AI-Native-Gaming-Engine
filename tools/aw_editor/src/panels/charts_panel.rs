@@ -17,6 +17,12 @@ pub struct ChartsPanel {
     spatial_data: Vec<PointCluster>,
 }
 
+impl Default for ChartsPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChartsPanel {
     pub fn new() -> Self {
         let mut panel = Self {

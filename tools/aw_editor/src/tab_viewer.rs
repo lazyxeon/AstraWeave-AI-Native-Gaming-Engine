@@ -2066,7 +2066,7 @@ impl TabViewer for EditorTabViewer {
                         {
                             let orig_x = x;
                             let orig_y = y;
-                            let _orig_rot = rotation;
+                            let _orig_rot_rad = rotation;
                             let orig_sx = scale_x;
                             let orig_sy = scale_y;
 
@@ -3341,7 +3341,7 @@ impl TabViewer for EditorTabViewer {
                 {
                     let orig_x = *x;
                     let orig_y = *y;
-                    let _orig_rot = *rotation;
+                    let _orig_rot_rad = *rotation;
                     let orig_sx = *scale_x;
                     let orig_sy = *scale_y;
 

@@ -757,7 +757,7 @@ impl LlmClient for OllamaChatClient {
                     } else {
                         text = strip_code_fences(&candidate);
                     }
-                } else if let Ok(s) = std::str::from_utf8(&buf.as_bytes()) {
+                } else if let Ok(s) = std::str::from_utf8(buf.as_bytes()) {
                     if let Some(obj) = extract_json_object(s) {
                         if self.early_exit_on_json {
                             let ttfb_ms = first_token_at

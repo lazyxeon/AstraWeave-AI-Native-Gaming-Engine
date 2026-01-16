@@ -164,17 +164,17 @@ impl GameProject {
     /// Load a game project from a TOML file
     pub fn load(path: impl AsRef<Path>) -> Result<Self, GameProjectError> {
         let content = std::fs::read_to_string(path.as_ref())
-            .map_err(|e| GameProjectError::IoError(e.to_string()))?;
+            .map_err(|e| GameProjectError::Io(e.to_string()))?;
 
-        toml::from_str(&content).map_err(|e| GameProjectError::ParseError(e.to_string()))
+        toml::from_str(&content).map_err(|e| GameProjectError::Parse(e.to_string()))
     }
 
     /// Save the game project to a TOML file
     pub fn save(&self, path: impl AsRef<Path>) -> Result<(), GameProjectError> {
         let content = toml::to_string_pretty(self)
-            .map_err(|e| GameProjectError::SerializeError(e.to_string()))?;
+            .map_err(|e| GameProjectError::Serialize(e.to_string()))?;
 
-        std::fs::write(path.as_ref(), content).map_err(|e| GameProjectError::IoError(e.to_string()))
+        std::fs::write(path.as_ref(), content).map_err(|e| GameProjectError::Io(e.to_string()))
     }
 
     /// Create a new game project with default settings
@@ -266,19 +266,19 @@ impl Default for AssetSettings {
 /// Errors that can occur when working with game projects
 #[derive(Debug, Clone)]
 pub enum GameProjectError {
-    IoError(String),
-    ParseError(String),
-    SerializeError(String),
-    ValidationError(Vec<String>),
+    Io(String),
+    Parse(String),
+    Serialize(String),
+    Validation(Vec<String>),
 }
 
 impl std::fmt::Display for GameProjectError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::IoError(e) => write!(f, "IO error: {}", e),
-            Self::ParseError(e) => write!(f, "Parse error: {}", e),
-            Self::SerializeError(e) => write!(f, "Serialize error: {}", e),
-            Self::ValidationError(errors) => write!(f, "Validation errors: {:?}", errors),
+            Self::Io(e) => write!(f, "IO error: {}", e),
+            Self::Parse(e) => write!(f, "Parse error: {}", e),
+            Self::Serialize(e) => write!(f, "Serialize error: {}", e),
+            Self::Validation(errors) => write!(f, "Validation errors: {:?}", errors),
         }
     }
 }

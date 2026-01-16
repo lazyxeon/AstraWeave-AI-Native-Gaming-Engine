@@ -23,7 +23,7 @@ impl App {
     fn new() -> Self {
         let camera = Camera {
             position: vec3(0.0, 10.0, 16.0),
-            yaw: -3.14 / 2.0,
+            yaw: -std::f32::consts::FRAC_PI_2,
             pitch: -0.5,
             fovy: 60f32.to_radians(),
             aspect: 16.0 / 9.0,

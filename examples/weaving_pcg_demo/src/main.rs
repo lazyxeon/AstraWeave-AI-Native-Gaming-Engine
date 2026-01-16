@@ -515,10 +515,10 @@ fn main() -> anyhow::Result<()> {
         }
 
         // Auto-advance to next encounter
-        if demo.current_encounter_idx < demo.encounters.len() {
-            if demo.encounters[demo.current_encounter_idx].completed {
-                demo.next_encounter();
-            }
+        if demo.current_encounter_idx < demo.encounters.len()
+            && demo.encounters[demo.current_encounter_idx].completed
+        {
+            demo.next_encounter();
         }
 
         std::thread::sleep(std::time::Duration::from_millis(1000));

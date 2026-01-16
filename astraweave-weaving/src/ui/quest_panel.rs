@@ -137,7 +137,7 @@ impl QuestPanel {
             output.push_str("╠═══════════════════════════════════════╣\n");
 
             // Objectives
-            for (_idx, obj) in q.objectives.iter().enumerate() {
+            for obj in q.objectives.iter() {
                 let status = if obj.is_complete() { "✓" } else { " " };
                 let desc = obj.description();
                 let desc_display = if desc.len() > 33 {
@@ -192,7 +192,7 @@ impl QuestPanel {
 
         // Completion notification
         if let Some(msg) = &self.notification_message {
-            output.push_str("\n");
+            output.push('\n');
             output.push_str("╔═══════════════════════════════════════╗\n");
             output.push_str(&format!("║ {}{}║\n", msg, " ".repeat(39 - msg.len())));
             output.push_str("╚═══════════════════════════════════════╝\n");

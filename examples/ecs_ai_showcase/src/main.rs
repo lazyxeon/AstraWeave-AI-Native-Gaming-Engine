@@ -144,14 +144,13 @@ fn ai_perception_system(world: &mut World) {
             }
 
             // Check if enemy team
-            let is_enemy = match (
-                world.get::<Team>(agent_entity),
-                world.get::<Team>(other_entity),
-            ) {
-                (Some(Team::Enemy), Some(Team::Player)) => true,
-                (Some(Team::Player), Some(Team::Enemy)) => true,
-                _ => false,
-            };
+            let is_enemy = matches!(
+                (
+                    world.get::<Team>(agent_entity),
+                    world.get::<Team>(other_entity),
+                ),
+                (Some(Team::Enemy), Some(Team::Player)) | (Some(Team::Player), Some(Team::Enemy))
+            );
 
             if !is_enemy {
                 continue;

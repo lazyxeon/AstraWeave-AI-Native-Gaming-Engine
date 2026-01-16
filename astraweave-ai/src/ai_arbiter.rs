@@ -312,14 +312,15 @@ impl AIArbiter {
                 // Return instant GOAP action (first step of plan)
                 self.goap_actions += 1;
                 let plan = self.goap.propose_plan(snap);
+                #[allow(clippy::unnecessary_lazy_evaluations)] // Closure has side effects (warn!, transition_to_bt)
                 plan.steps.first().cloned().unwrap_or_else(|| {
                     warn!("GOAP plan has no steps, falling back to BehaviorTree");
                     self.transition_to_bt();
                     let bt_plan = self.bt.propose_plan(snap);
-                    bt_plan.steps.first().cloned().unwrap_or_else(|| {
+                    bt_plan.steps.first().cloned().unwrap_or(
                         // Ultimate fallback: Wait 1 second
                         ActionStep::Wait { duration: 1.0 }
-                    })
+                    )
                 })
             }
 
@@ -373,7 +374,7 @@ impl AIArbiter {
                     .steps
                     .first()
                     .cloned()
-                    .unwrap_or_else(|| ActionStep::Wait { duration: 1.0 })
+                    .unwrap_or(ActionStep::Wait { duration: 1.0 })
             }
         };
 

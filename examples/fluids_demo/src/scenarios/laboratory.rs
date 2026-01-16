@@ -101,7 +101,7 @@ impl FluidScenario for LaboratoryScenario {
         let mut dynamic_objects = Vec::new();
 
         // We can iterate over buoyancy bodies or all dynamic bodies
-        for (&id, _buoyancy) in &physics.buoyancy_bodies {
+        for &id in physics.buoyancy_bodies.keys() {
             if let Some(transform) = physics.body_transform(id) {
                 let inv_transform = transform.inverse();
 

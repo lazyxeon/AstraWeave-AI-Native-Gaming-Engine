@@ -795,7 +795,7 @@ impl ShowcaseApp {
         // Load placeholder terrain textures for terrain bind group initialization
         // Helper macro to load and create texture
         let load_texture = |path: &str, label: &str| {
-            let img = image::open(path).expect(&format!("Missing {}", path)).to_rgba8();
+            let img = image::open(path).unwrap_or_else(|_| panic!("Missing {}", path)).to_rgba8();
             let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
             let is_normal_or_rough = label.contains("Norm") || label.contains("Rough");
             let format = if is_normal_or_rough {
@@ -947,7 +947,7 @@ impl ShowcaseApp {
         // Create terrain bind group with all textures (diffuse, normal, roughness for grass and rock)
         println!("Starting Texture Load");
         let load_terrain_texture = |path: &str, label: &str| {
-            let img = image::open(path).expect(&format!("Missing {}", path)).to_rgba8();
+            let img = image::open(path).unwrap_or_else(|_| panic!("Missing {}", path)).to_rgba8();
             let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
             
             let is_normal_or_rough = label.contains("Norm") || label.contains("Rough");
@@ -1176,7 +1176,7 @@ impl ShowcaseApp {
             height += (x * 0.2).sin() * (z * 0.15).cos() * 2.0;
             // Layer 3: Mountain Peak (z < -10.0)
             if z < -10.0 {
-                let mountain_factor = (((-z - 10.0) / 20.0).min(1.0)).max(0.0);
+                let mountain_factor = ((-z - 10.0) / 20.0).clamp(0.0, 1.0);
                 height += mountain_factor * 25.0;
             }
             // River Bed carving
@@ -1430,7 +1430,7 @@ impl ShowcaseApp {
     }
 
     fn create_material_from_texture(&mut self, name: &str, path: &str) -> usize {
-        let img = image::open(path).expect(&format!("Missing texture: {}", path)).to_rgba8();
+        let img = image::open(path).unwrap_or_else(|_| panic!("Missing texture: {}", path)).to_rgba8();
         let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some(name),
@@ -1514,14 +1514,14 @@ impl ShowcaseApp {
         let mut height = (x * 0.05).sin() * (z * 0.05).cos() * 6.0;
         height += (x * 0.2).sin() * (z * 0.15).cos() * 2.0;
         if z < -10.0 {
-            let mountain_factor = (((-z - 10.0) / 20.0).min(1.0)).max(0.0);
+            let mountain_factor = ((-z - 10.0) / 20.0).clamp(0.0, 1.0);
             height += mountain_factor * 25.0;
         }
         // River Bed carving - flatten terrain along river path
         let river_path = (x * 0.1).sin() * 20.0; 
         let dist_river = (z - river_path).abs();
         let river_mask = (dist_river / 15.0).clamp(0.0, 1.0);
-        height = height * river_mask;
+        height *= river_mask;
         if dist_river < 5.0 {
             height -= (5.0 - dist_river) * 2.0;
         }
@@ -1910,22 +1910,20 @@ impl ApplicationHandler for App {
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, id: WindowId, event: WindowEvent) {
         if let Some(state) = &mut self.state {
-            if id == state.window.id() {
-                if !state.handle_input(&event) {
-                    match event {
-                        WindowEvent::CloseRequested => event_loop.exit(),
-                        WindowEvent::Resized(physical_size) => state.resize(physical_size),
-                        WindowEvent::RedrawRequested => {
-                            state.update();
-                            match state.render() {
-                                Ok(_) => {}
-                                Err(wgpu::SurfaceError::Lost) => state.resize(winit::dpi::PhysicalSize::new(state.config.width, state.config.height)), // Reconfigure
-                                Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
-                                Err(e) => eprintln!("{:?}", e),
-                            }
+            if id == state.window.id() && !state.handle_input(&event) {
+                match event {
+                    WindowEvent::CloseRequested => event_loop.exit(),
+                    WindowEvent::Resized(physical_size) => state.resize(physical_size),
+                    WindowEvent::RedrawRequested => {
+                        state.update();
+                        match state.render() {
+                            Ok(_) => {}
+                            Err(wgpu::SurfaceError::Lost) => state.resize(winit::dpi::PhysicalSize::new(state.config.width, state.config.height)), // Reconfigure
+                            Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+                            Err(e) => eprintln!("{:?}", e),
                         }
-                        _ => {}
                     }
+                    _ => {}
                 }
             }
         }
