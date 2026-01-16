@@ -810,4 +810,69 @@ mod tests {
         assert!(matches!(panel.status, BuildStatus::Idle));
         assert!(panel.build_logs.is_empty());
     }
+
+    #[test]
+    fn test_build_target_attributes() {
+        let target = BuildTarget::Windows;
+        assert_eq!(target.name(), "Windows (x64)");
+        assert_eq!(target.icon(), "🪟");
+
+        let target = BuildTarget::Linux;
+        assert_eq!(target.name(), "Linux (x64)");
+        assert_eq!(target.icon(), "🐧");
+
+        let target = BuildTarget::MacOS;
+        assert_eq!(target.name(), "macOS (Universal)");
+        assert_eq!(target.icon(), "🍎");
+
+        let target = BuildTarget::Web;
+        assert_eq!(target.name(), "Web (WASM)");
+        assert_eq!(target.icon(), "🌐");
+    }
+
+    #[test]
+    fn test_build_target_all_list() {
+        assert_eq!(BuildTarget::ALL.len(), 4);
+        assert!(BuildTarget::ALL.contains(&BuildTarget::Windows));
+        assert!(BuildTarget::ALL.contains(&BuildTarget::Linux));
+        assert!(BuildTarget::ALL.contains(&BuildTarget::MacOS));
+        assert!(BuildTarget::ALL.contains(&BuildTarget::Web));
+    }
+
+    #[test]
+    fn test_build_profile_attributes() {
+        let profile = BuildProfile::Debug;
+        assert_eq!(profile.name(), "Debug (Fast compile)");
+        
+        let profile = BuildProfile::Release;
+        assert_eq!(profile.name(), "Release (Optimized)");
+    }
+
+    #[test]
+    fn test_build_status_logic() {
+        // Idle
+        let status = BuildStatus::Idle;
+        match status {
+            BuildStatus::Idle => assert!(true),
+            _ => assert!(false, "Status should be Idle"),
+        }
+
+        // Building
+        let status = BuildStatus::Building { progress: 0.5, current_step: "Test".to_string() };
+        if let BuildStatus::Building { progress, current_step } = status {
+            assert_eq!(progress, 0.5);
+            assert_eq!(current_step, "Test");
+        } else {
+            assert!(false, "Status should be Building");
+        }
+
+        // Success
+        let status = BuildStatus::Success { output_path: PathBuf::from("test.exe"), duration_secs: 10.0 };
+        if let BuildStatus::Success { output_path, duration_secs } = status {
+            assert_eq!(output_path, PathBuf::from("test.exe"));
+            assert_eq!(duration_secs, 10.0);
+        } else {
+            assert!(false, "Status should be Success");
+        }
+    }
 }

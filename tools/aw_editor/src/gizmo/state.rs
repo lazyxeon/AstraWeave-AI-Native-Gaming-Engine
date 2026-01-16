@@ -626,4 +626,115 @@ mod tests {
         state.add_constraint(AxisConstraint::X);
         assert_eq!(state.constraint_text(), "YZ");
     }
+
+    #[test]
+    fn test_start_transform_requires_selection() {
+        let mut state = GizmoState::new();
+        state.selected_entity = None; // Explicitly None
+
+        state.start_translate();
+        assert_eq!(state.mode, GizmoMode::Inactive);
+
+        state.start_rotate();
+        assert_eq!(state.mode, GizmoMode::Inactive);
+
+        state.start_scale(false);
+        assert_eq!(state.mode, GizmoMode::Inactive);
+
+        // Now select and verify it works
+        state.selected_entity = Some(123);
+        state.start_translate();
+        assert!(matches!(state.mode, GizmoMode::Translate { .. }));
+    }
+
+    #[test]
+    fn test_cycle_logic_detailed() {
+        let mut state = GizmoState::new();
+        state.selected_entity = Some(1);
+        state.start_translate();
+
+        // Initial: None
+        if let GizmoMode::Translate { constraint } = state.mode {
+            assert_eq!(constraint, AxisConstraint::None);
+        } else {
+            panic!("Wrong mode");
+        }
+
+        // Press X -> X constraint
+        state.add_constraint(AxisConstraint::X);
+        if let GizmoMode::Translate { constraint } = state.mode {
+            assert_eq!(constraint, AxisConstraint::X);
+        } else {
+            panic!("Wrong mode");
+        }
+
+        // Press X again -> YZ plane (exclude X)
+        state.add_constraint(AxisConstraint::X);
+        if let GizmoMode::Translate { constraint } = state.mode {
+            assert_eq!(constraint, AxisConstraint::YZ);
+        } else {
+            panic!("Wrong mode");
+        }
+
+        // Press X again -> None (cycle complete)
+        state.add_constraint(AxisConstraint::X);
+        if let GizmoMode::Translate { constraint } = state.mode {
+            assert_eq!(constraint, AxisConstraint::None);
+        } else {
+            panic!("Wrong mode");
+        }
+
+        // Press Y (switch axis)
+        state.add_constraint(AxisConstraint::Y);
+        if let GizmoMode::Translate { constraint } = state.mode {
+            assert_eq!(constraint, AxisConstraint::Y);
+        }
+    }
+
+    #[test]
+    fn test_decimal_input() {
+        let mut state = GizmoState::new();
+        state.selected_entity = Some(1);
+        state.start_translate();
+
+        state.handle_key(KeyCode::Digit1);
+        state.handle_key(KeyCode::Period);
+        state.handle_key(KeyCode::Digit5);
+
+        assert_eq!(state.parse_numeric_input(), Some(1.5));
+    }
+
+    #[test]
+    fn test_backspace_on_empty() {
+        let mut state = GizmoState::new();
+        state.selected_entity = Some(1);
+        state.start_translate();
+
+        // Should not panic or error
+        state.handle_key(KeyCode::Backspace);
+        assert!(state.numeric_buffer.is_empty());
+
+        state.handle_key(KeyCode::Digit1);
+        assert_eq!(state.numeric_buffer, "1");
+        state.handle_key(KeyCode::Backspace);
+        assert!(state.numeric_buffer.is_empty());
+    }
+
+    #[test]
+    fn test_reset_operation_state() {
+        let mut state = GizmoState::new();
+        state.selected_entity = Some(1);
+        state.start_translate();
+        
+        state.update_mouse(Vec2::new(10.0, 10.0));
+        state.handle_key(KeyCode::Digit5);
+        
+        // Internal helper check
+        state.reset_operation_state();
+        
+        assert!(state.start_mouse.is_none());
+        assert!(state.current_mouse.is_none());
+        assert!(state.numeric_buffer.is_empty());
+        assert!(state.constraint_position.is_none());
+    }
 }

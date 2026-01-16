@@ -21,7 +21,7 @@
 //! ```
 //!
 //! # Usage
-//! ```rust
+//! ```rust, ignore
 //! // In MaterialInspector::new()
 //! let watcher = FileWatcher::new("assets/materials")?;
 //!

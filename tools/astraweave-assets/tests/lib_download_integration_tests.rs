@@ -119,7 +119,6 @@ fn create_model_manifest_with_id(
 // ============================================================================
 
 #[tokio::test]
-#[ignore] // Network-dependent mock test - may be flaky due to timing issues
 async fn test_texture_download_success_mock_api() {
     // Test complete texture download workflow with mocked PolyHaven API
     let temp_dir = TempDir::new().unwrap();
@@ -130,11 +129,9 @@ async fn test_texture_download_success_mock_api() {
 
     let manifest_path = create_texture_manifest(&temp_dir, &cache_dir, &output_dir);
 
-    // Setup mock server
+    // Setup mock server - set env var IMMEDIATELY after getting URL to prevent race
     let mut server = setup_mock_server().await;
     let server_url = server.url();
-
-    // Set environment variable to inject mock base URL into ensure_asset()
     std::env::set_var("POLYHAVEN_BASE_URL", &server_url);
 
     // Mock /files endpoint (texture resolution)
@@ -220,7 +217,6 @@ async fn test_texture_download_success_mock_api() {
 }
 
 #[tokio::test]
-#[ignore] // Network-dependent mock test - may be flaky due to timing issues
 async fn test_hdri_download_success_mock_api() {
     // Test complete HDRI download workflow with mocked API
     let temp_dir = TempDir::new().unwrap();
@@ -231,10 +227,9 @@ async fn test_hdri_download_success_mock_api() {
 
     let manifest_path = create_hdri_manifest(&temp_dir, &cache_dir, &output_dir);
 
+    // Setup mock server - set env var IMMEDIATELY after getting URL to prevent race
     let mut server = setup_mock_server().await;
     let server_url = server.url();
-
-    // Set environment variable
     std::env::set_var("POLYHAVEN_BASE_URL", &server_url);
 
     // Mock /files endpoint (HDRI resolution)

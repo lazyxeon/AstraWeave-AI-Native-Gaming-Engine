@@ -326,4 +326,56 @@ mod tests {
         }
         assert_eq!(panel.frame_times.len(), 120);
     }
+
+    #[test]
+    fn test_push_memory_sample() {
+        let mut panel = ProfilerPanel::new();
+        panel.push_memory_sample(1024);
+        panel.push_memory_sample(2048);
+        assert_eq!(panel.memory_samples.len(), 2);
+        assert_eq!(panel.peak_memory_kb, 2048);
+    }
+
+    #[test]
+    fn test_memory_peak_logic() {
+        let mut panel = ProfilerPanel::new();
+        panel.push_memory_sample(100);
+        assert_eq!(panel.peak_memory_kb, 100);
+        panel.push_memory_sample(50);
+        assert_eq!(panel.peak_memory_kb, 100);
+        panel.push_memory_sample(200);
+        assert_eq!(panel.peak_memory_kb, 200);
+    }
+
+    #[test]
+    fn test_min_max_fps() {
+        let mut panel = ProfilerPanel::new();
+        panel.push_frame_time(100.0); // 10 FPS
+        panel.push_frame_time(10.0);  // 100 FPS
+        
+        let min = panel.min_fps();
+        let max = panel.max_fps();
+        
+        assert!((min - 10.0).abs() < 0.1);
+        assert!((max - 100.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_push_frame_time_zero() {
+        let mut panel = ProfilerPanel::new();
+        panel.push_frame_time(0.0);
+        
+        // Should handle gracefully (infinite FPS technically, but logic handles it)
+        // Checking implementation: if frame_time_ms > 0.0 { ... } else { 0.0 }
+        let last_fps = *panel.fps_samples.back().unwrap();
+        assert_eq!(last_fps, 0.0);
+    }
+
+    #[test]
+    fn test_profiler_defaults() {
+        let panel = ProfilerPanel::default();
+        assert!(panel.show_frame_graph);
+        assert!(panel.show_fps_graph);
+        assert!(!panel.show_memory_graph);
+    }
 }

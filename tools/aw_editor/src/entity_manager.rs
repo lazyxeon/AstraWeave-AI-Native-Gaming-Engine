@@ -528,4 +528,109 @@ mod tests {
         assert!(selection.is_selected(5));
         assert_eq!(selection.primary, Some(2));
     }
+
+    #[test]
+    fn test_material_texture_management() {
+        let mut entity = EditorEntity::new(1, "Test".to_string());
+        let path = PathBuf::from("path/to/texture.png");
+        
+        // Initial state
+        assert!(!entity.material.has_textures());
+        assert!(entity.material.get_texture(MaterialSlot::Albedo).is_none());
+
+        // Set texture
+        entity.set_texture(MaterialSlot::Albedo, path.clone());
+        assert!(entity.material.has_textures());
+        assert_eq!(entity.material.get_texture(MaterialSlot::Albedo), Some(&path));
+
+        // Clear texture
+        entity.material.clear_texture(MaterialSlot::Albedo);
+        assert!(!entity.material.has_textures());
+        assert!(entity.material.get_texture(MaterialSlot::Albedo).is_none());
+    }
+
+    #[test]
+    fn test_entity_transform_getters_setters() {
+        let mut entity = EditorEntity::new(1, "Test".to_string());
+        
+        let pos = Vec3::new(1.0, 2.0, 3.0);
+        let rot = Quat::IDENTITY;
+        let scale = Vec3::splat(2.0);
+
+        entity.set_transform(pos, rot, scale);
+        
+        let (p, r, s) = entity.transform();
+        assert_eq!(p, pos);
+        assert_eq!(r, rot);
+        assert_eq!(s, scale);
+    }
+
+    #[test]
+    fn test_entity_manager_crud() {
+        let mut manager = EntityManager::new();
+        
+        // Create
+        let id1 = manager.create("E1".to_string());
+        let id2 = manager.create("E2".to_string());
+        assert_ne!(id1, id2);
+
+        // Read
+        assert!(manager.get(id1).is_some());
+        assert!(manager.get(id2).is_some());
+        assert!(manager.get(999).is_none());
+
+        // Update
+        manager.update_position(id1, Vec3::new(10.0, 0.0, 0.0));
+        assert_eq!(manager.get(id1).unwrap().position.x, 10.0);
+
+        // Delete
+        let removed = manager.remove(id1);
+        assert!(removed.is_some());
+        assert_eq!(removed.unwrap().id, id1);
+        assert!(manager.get(id1).is_none());
+        assert!(manager.remove(999).is_none());
+    }
+
+    #[test]
+    fn test_entity_manager_clear_reset() {
+        let mut manager = EntityManager::new();
+        let id1 = manager.create("E1".to_string());
+        assert_eq!(id1, 1);
+        
+        manager.clear();
+        assert_eq!(manager.count(), 0);
+        assert!(manager.entities.is_empty());
+        
+        // Next ID should be reset to 1
+        let id2 = manager.create("E2".to_string());
+        assert_eq!(id2, 1); 
+    }
+
+    #[test]
+    fn test_selection_range_invalid() {
+        let mut selection = SelectionSet::new();
+        let all_ids = vec![1, 2, 3];
+        
+        // Try to select range with invalid IDs
+        selection.select_range(1, 99, &all_ids);
+        assert!(selection.is_empty()); // Should do nothing
+
+        selection.select_range(99, 1, &all_ids);
+        assert!(selection.is_empty()); // Should do nothing
+    }
+
+    #[test]
+    fn test_component_handling() {
+        let mut entity = EditorEntity::new(1, "CompEntity".to_string());
+        assert!(entity.components.is_empty());
+
+        let comp_data = serde_json::json!({ "health": 100, "speed": 5.0 });
+        entity.components.insert("Stats".to_string(), comp_data);
+
+        assert_eq!(entity.components.len(), 1);
+        assert!(entity.components.contains_key("Stats"));
+        
+        let stats = entity.components.get("Stats").unwrap();
+        assert_eq!(stats["health"], 100);
+    }
 }

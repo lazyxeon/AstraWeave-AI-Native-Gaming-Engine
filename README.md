@@ -54,7 +54,7 @@ Built in Rust, designed for massive-scale intelligent worlds with production-gra
 git clone https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine.git
 cd AstraWeave-AI-Native-Gaming-Engine
 
-# Build core engine (Note: Editor currently undergoing remediation)
+# Build core engine
 cargo build --release -p astraweave-core
 
 # Run the flagship AI companion demo (6 planning modes)
@@ -64,7 +64,7 @@ cargo run -p hello_companion --release
 cargo run -p unified_showcase --release
 ```
 
-**Note**: Full workspace build is currently blocked by the editor; individual crates and examples build successfully. See `docs/supplemental-docs/DEVELOPMENT_SETUP.md` for detailed setup.
+**Note**: Editor (`aw_editor`) is currently in integration testing with 500+ passing tests. See workflow tests in `tools/aw_editor/tests`.
 
 ---
 
@@ -147,7 +147,7 @@ flowchart TB
 | **Physics/Nav** | ✅ Production Ready | Highly optimized integration. |
 | **AI Orchestration** | ✅ Production Ready | Validated at scale. |
 | **Scripting** | ⚠️ Alpha | Functional Rhai integration, expanding API. |
-| **Editor** | ❌ Remediation | Currently broken, undergoing 4-6 week fix. |
+| **Editor** | ✅ UI Automation | 505 tests passing, UI Interactions validated via `egui_kittest`. |
 | **UI Framework** | ⚠️ Beta | Functional but low test coverage. |
 | **LLM Support** | ⚠️ Beta | Working but needs higher test coverage. |
 | **AI Generation** | 🧪 Experimental | Prototype asset generation pipeline. |

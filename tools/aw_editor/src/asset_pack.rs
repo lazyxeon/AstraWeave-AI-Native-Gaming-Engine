@@ -421,4 +421,82 @@ mod tests {
         assert_eq!(format_bytes(1048576), "1.00 MB");
         assert_eq!(format_bytes(1073741824), "1.00 GB");
     }
+
+    #[test]
+    fn test_compression_extension_hint() {
+        assert_eq!(CompressionMethod::None.extension_hint(), "");
+        assert_eq!(CompressionMethod::Zstd.extension_hint(), ".zst");
+        assert_eq!(CompressionMethod::Lz4.extension_hint(), ".lz4");
+    }
+
+    #[test]
+    fn test_manifest_asset_paths() {
+        let mut manifest = PackManifest::new("Test");
+        manifest.add_asset(AssetEntry {
+            path: "a.txt".into(),
+            offset: 0,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "b.txt".into(),
+            offset: 0,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+
+        let paths = manifest.asset_paths();
+        assert_eq!(paths.len(), 2);
+        assert!(paths.contains(&"a.txt"));
+        assert!(paths.contains(&"b.txt"));
+    }
+
+    #[test]
+    fn test_pack_error_display() {
+        assert_eq!(format!("{}", PackError::NoAssets), "No assets to pack");
+        assert_eq!(format!("{}", PackError::IoError("foo".into())), "IO error: foo");
+        assert_eq!(format!("{}", PackError::CompressionError("bar".into())), "Compression error: bar");
+    }
+
+    #[test]
+    fn test_pack_result_summary() {
+        let res = PackResult {
+            output_path: PathBuf::from("out.pak"),
+            asset_count: 5,
+            total_uncompressed_size: 200,
+            total_compressed_size: 100,
+            compression_ratio: 0.5,
+            duration_secs: 1.5,
+        };
+        let summary = res.summary();
+        assert!(summary.contains("Packed 5 assets"));
+        assert!(summary.contains("50.0% reduction"));
+        assert!(summary.contains("200 bytes"));
+        assert!(summary.contains("1.50s"));
+    }
+
+    #[test]
+    fn test_builder_defaults() {
+        let builder = AssetPackBuilder::new("out.pak", "Proj");
+        assert_eq!(builder.project_name, "Proj");
+        assert_eq!(builder.compression, CompressionMethod::Zstd);
+        assert_eq!(builder.assets.len(), 0);
+    }
+    
+    #[test]
+    fn test_builder_chaining() {
+        let builder = AssetPackBuilder::new("out.pak", "Proj")
+            .with_compression(CompressionMethod::Lz4)
+            .with_compression_level(5)
+            .add_asset("src.txt", "arch.txt");
+            
+        assert_eq!(builder.compression, CompressionMethod::Lz4);
+        assert_eq!(builder.compression_level, 5);
+        assert_eq!(builder.assets.len(), 1);
+        assert_eq!(builder.assets[0].1, "arch.txt");
+    }
 }

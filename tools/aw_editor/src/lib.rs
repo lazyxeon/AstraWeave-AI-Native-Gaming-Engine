@@ -11,6 +11,7 @@ pub mod dock_layout;
 pub mod editor_mode;
 pub mod editor_preferences;
 pub mod entity_manager;
+pub mod file_watcher;
 pub mod game_project;
 pub mod level_doc;
 pub mod panel_type;
@@ -18,6 +19,7 @@ pub mod panels;
 pub mod plugin;
 pub mod polish;
 pub mod prefab;
+pub mod recent_files;
 pub mod runtime;
 pub mod scene_serialization;
 pub mod scene_state;
@@ -25,6 +27,15 @@ pub mod tab_viewer;
 pub mod terrain_integration;
 pub mod ui;
 pub mod viewport;
+
+#[cfg(test)]
+mod tests_game_project;
+#[cfg(test)]
+mod tests_dock_layout;
+#[cfg(test)]
+mod tests_asset_pack;
+#[cfg(test)]
+mod tests_polish;
 
 // Re-export level document types
 pub use level_doc::{

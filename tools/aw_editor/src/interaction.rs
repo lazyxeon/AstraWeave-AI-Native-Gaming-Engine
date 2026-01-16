@@ -227,3 +227,113 @@ pub fn ensure_world_snapshot(state: &mut GizmoState, world: &World) -> Option<Tr
     state.start_transform = Some(snapshot);
     Some(snapshot)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::command::UndoStack;
+    use crate::gizmo::state::{GizmoMode, TransformSnapshot, AxisConstraint};
+    use astraweave_core::{World, Entity, IVec2, Team};
+    use glam::{Vec3, Quat};
+
+    fn create_test_world() -> (World, Entity) {
+        let mut world = World::new();
+        let entity = world.spawn("TestEntity", IVec2::new(0, 0), Team { id: 0 }, 100, 10);
+        (world, entity)
+    }
+
+    #[test]
+    fn test_commit_translate_generates_command() {
+        let (mut world, entity) = create_test_world();
+        let mut undo_stack = UndoStack::new(100);
+        
+        let start_pos = Vec3::new(10.0, 0.0, 10.0);
+        let snapshot = TransformSnapshot {
+            position: start_pos,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        };
+        
+        let mut state = GizmoState::default();
+        state.selected_entity = Some(entity);
+        state.start_transform = Some(snapshot);
+        state.last_mode = GizmoMode::Translate { constraint: AxisConstraint::X };
+        state.mode = GizmoMode::Inactive; 
+        
+        if let Some(pose) = world.pose_mut(entity) {
+            pose.pos = IVec2::new(20, 20);
+        }
+        
+        let meta = commit_active_gizmo(&mut state, &mut world, &mut undo_stack);
+        
+        assert!(meta.is_some());
+        assert_eq!(undo_stack.can_undo(), true);
+        
+        let meta = meta.unwrap();
+        match meta.measurement {
+            GizmoMeasurement::Translate { from, to } => {
+                assert_eq!(from, IVec2::new(10, 10));
+                assert_eq!(to, IVec2::new(20, 20));
+            }
+            _ => panic!("Expected Translate measurement"),
+        }
+        
+        assert!(state.start_transform.is_none());
+    }
+
+    #[test]
+    fn test_commit_no_change_does_not_generate_command() {
+        let (mut world, entity) = create_test_world();
+        let mut undo_stack = UndoStack::new(100);
+        
+        let start_pos = Vec3::ZERO;
+        let snapshot = TransformSnapshot {
+            position: start_pos,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        };
+        
+        let mut state = GizmoState::default();
+        state.selected_entity = Some(entity);
+        state.start_transform = Some(snapshot);
+        state.last_mode = GizmoMode::Translate { constraint: AxisConstraint::X };
+        state.mode = GizmoMode::Inactive; 
+
+        let meta = commit_active_gizmo(&mut state, &mut world, &mut undo_stack);
+        
+        assert!(meta.is_none());
+        assert_eq!(undo_stack.can_undo(), false);
+        assert!(state.start_transform.is_none());
+    }
+
+    #[test]
+    fn test_cancel_gizmo_reverts_transform() {
+        let (mut world, entity) = create_test_world();
+        
+        let start_pos = Vec3::new(5.0, 0.0, 5.0);
+        let snapshot = TransformSnapshot {
+            position: start_pos,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        };
+        
+        let mut state = GizmoState::default();
+        state.selected_entity = Some(entity);
+        state.start_transform = Some(snapshot);
+        state.last_mode = GizmoMode::Translate { constraint: AxisConstraint::X };
+        state.mode = GizmoMode::Translate { constraint: AxisConstraint::X }; 
+        
+        if let Some(pose) = world.pose_mut(entity) {
+            pose.pos = IVec2::new(100, 100);
+        }
+        
+        let meta = cancel_active_gizmo(&mut state, &mut world);
+        
+        assert!(meta.is_some());
+        
+        if let Some(pose) = world.pose(entity) {
+            assert_eq!(pose.pos, IVec2::new(5, 5));
+        }
+    }
+}
+

@@ -134,3 +134,77 @@ pub struct BossCfg {
     pub director_budget_script: String,
     pub phase_script: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use toml;
+
+    #[test]
+    fn test_level_doc_defaults() {
+        let doc = LevelDoc::default();
+        assert_eq!(doc.title, "");
+        assert_eq!(doc.biome, "");
+        assert_eq!(doc.seed, 0);
+        assert!(doc.biome_paints.is_empty());
+    }
+
+    #[test]
+    fn test_serialization_roundtrip() {
+        let mut doc = LevelDoc::default();
+        doc.title = "Test Level".to_string();
+        doc.biome = "Forest".to_string();
+        doc.seed = 12345;
+        doc.sky = Sky {
+            time_of_day: "dawn".to_string(),
+            weather: "fog".to_string(),
+        };
+        doc.obstacles.push(Obstacle {
+            id: "rock_1".to_string(),
+            pos: [1.0, 2.0, 3.0],
+            yaw: 45.0,
+            tags: vec!["solid".to_string()],
+        });
+
+        // TOML serialization
+        let toml_str = toml::to_string(&doc).expect("serialize");
+        let loaded: LevelDoc = toml::from_str(&toml_str).expect("deserialize");
+
+        assert_eq!(loaded.title, "Test Level");
+        assert_eq!(loaded.biome, "Forest");
+        assert_eq!(loaded.seed, 12345);
+        assert_eq!(loaded.sky.time_of_day, "dawn");
+        assert_eq!(loaded.obstacles.len(), 1);
+        assert_eq!(loaded.obstacles[0].id, "rock_1");
+    }
+
+    #[test]
+    fn test_enum_serialization() {
+        let paint = BiomePaint::GrassDense {
+            area: Circle { cx: 10, cz: 20, radius: 5 },
+        };
+        let toml_paint = toml::to_string(&paint).expect("serialize paint");
+        assert!(toml_paint.contains("grass_dense"));
+        assert!(toml_paint.contains("radius = 5"));
+
+        let trigger = Trigger::EnterArea { center: [1.0, 2.0, 3.0], radius: 10.0 };
+        let toml_trigger = toml::to_string(&trigger).expect("serialize trigger");
+        assert!(toml_trigger.contains("enter_area"));
+    }
+
+    #[test]
+    fn test_npcs_structure() {
+        let npc = NpcSpawn {
+            archetype: "Guard".to_string(),
+            count: 3,
+            spawn: Spawn { pos: [0.0, 0.0, 0.0], radius: 10.0 },
+            behavior: "Patrol".to_string(),
+        };
+
+        let mut doc = LevelDoc::default();
+        doc.npcs.push(npc);
+
+        assert_eq!(doc.npcs[0].archetype, "Guard");
+        assert_eq!(doc.npcs[0].count, 3);
+    }
+}
