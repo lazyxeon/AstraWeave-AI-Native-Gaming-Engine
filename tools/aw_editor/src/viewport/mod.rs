@@ -43,7 +43,7 @@ mod physics_renderer;
 mod renderer;
 mod skybox_renderer;
 pub mod terrain_renderer;
-mod toolbar;
+pub mod toolbar;
 mod widget;
 
 // Physics debug types are exported for external configuration

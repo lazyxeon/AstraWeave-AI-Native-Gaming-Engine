@@ -706,4 +706,81 @@ mod tests {
         assert!(!panel.hierarchy.contains_key(&999));
         assert!(!panel.root_entities.contains(&999));
     }
+
+    #[test]
+    fn test_prefab_instance_tracking() {
+        let mut panel = HierarchyPanel::new();
+        panel.mark_as_prefab_instance(1);
+        assert!(panel.is_prefab_instance(1));
+        assert!(!panel.is_prefab_instance(2));
+
+        panel.unmark_as_prefab_instance(1);
+        assert!(!panel.is_prefab_instance(1));
+
+        let prefabs = vec![10, 20, 30];
+        panel.sync_prefab_instances(prefabs.into_iter());
+        assert!(panel.is_prefab_instance(10));
+        assert!(panel.is_prefab_instance(20));
+        assert!(panel.is_prefab_instance(30));
+    }
+
+    #[test]
+    fn test_selection_helpers() {
+        let mut panel = HierarchyPanel::new();
+        
+        // Single selection
+        panel.set_selected(Some(1));
+        assert_eq!(panel.get_selected(), Some(1));
+        assert_eq!(panel.get_all_selected().len(), 1);
+
+        // Clear
+        panel.set_selected(None);
+        assert!(panel.get_selected().is_none());
+        assert!(panel.get_all_selected().is_empty());
+
+        // Multiple
+        panel.set_selected_multiple(&[1, 2, 3]);
+        let selected = panel.get_all_selected();
+        assert_eq!(selected.len(), 3);
+        assert!(selected.contains(&1));
+        assert!(selected.contains(&2));
+        assert!(selected.contains(&3));
+    }
+
+    #[test]
+    fn test_pending_actions() {
+        let mut panel = HierarchyPanel::new();
+        panel.pending_actions.push(HierarchyAction::DeleteEntity(1));
+        panel.pending_actions.push(HierarchyAction::FocusEntity(2));
+
+        let actions = panel.take_pending_actions();
+        assert_eq!(actions.len(), 2);
+        assert_eq!(actions[0], HierarchyAction::DeleteEntity(1));
+        assert!(panel.pending_actions.is_empty());
+    }
+
+    #[test]
+    fn test_get_parent() {
+        let mut panel = HierarchyPanel::new();
+        // 1 -> 2
+        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: vec![2] });
+        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: vec![] });
+        
+        assert_eq!(panel.get_parent(2), Some(1));
+        assert_eq!(panel.get_parent(1), None);
+    }
+
+    #[test]
+    fn test_is_ancestor_recursion() {
+        let mut panel = HierarchyPanel::new();
+        // 1 -> 2 -> 3
+        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: vec![2] });
+        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: vec![3] });
+        panel.hierarchy.insert(3, HierarchyNode { entity: 3, children: vec![] });
+
+        assert!(panel.is_ancestor_of(1, 3));
+        assert!(panel.is_ancestor_of(1, 2));
+        assert!(panel.is_ancestor_of(2, 3));
+        assert!(!panel.is_ancestor_of(3, 1));
+    }
 }

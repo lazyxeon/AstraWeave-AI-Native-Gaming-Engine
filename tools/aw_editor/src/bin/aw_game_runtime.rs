@@ -94,25 +94,48 @@ impl GameApp {
             ..Default::default()
         });
 
-        let surface = instance
-            .create_surface(window.clone())
-            .expect("Failed to create surface");
+        // Week 8: Improved error handling with user-friendly messages
+        let surface = match instance.create_surface(window.clone()) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("❌ Failed to create graphics surface: {}", e);
+                log::error!("   This may indicate a display driver issue.");
+                log::error!("   Please ensure your graphics drivers are up to date.");
+                panic!("Graphics initialization failed: {}", e);
+            }
+        };
 
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        let adapter = match pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
-        }))
-        .expect("Failed to find suitable graphics adapter");
+        })) {
+            Ok(a) => a,
+            Err(e) => {
+                log::error!("❌ No compatible graphics adapter found: {}", e);
+                log::error!("   AstraWeave requires a GPU with Vulkan, DirectX 12, or Metal support.");
+                log::error!("   Please check:");
+                log::error!("   - Graphics drivers are installed and up to date");
+                log::error!("   - Your GPU supports modern graphics APIs");
+                panic!("No compatible GPU found: {}", e);
+            }
+        };
 
-        let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        let (device, queue) = match pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
             label: Some("game_device"),
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::default(),
             memory_hints: wgpu::MemoryHints::Performance,
             trace: wgpu::Trace::Off,
-        }))
-        .expect("Failed to create device");
+        })) {
+            Ok((d, q)) => (d, q),
+            Err(e) => {
+                log::error!("❌ Failed to create graphics device: {}", e);
+                log::error!("   GPU: {}", adapter.get_info().name);
+                log::error!("   This may indicate insufficient GPU resources.");
+                panic!("GPU device creation failed: {}", e);
+            }
+        };
 
         log::info!("🖥️ GPU initialized: {}", adapter.get_info().name);
 
@@ -208,11 +231,16 @@ impl ApplicationHandler for GameApp {
             .with_inner_size(winit::dpi::LogicalSize::new(window_width, window_height))
             .with_resizable(true);
 
-        let window = Arc::new(
-            event_loop
-                .create_window(window_attrs)
-                .expect("Failed to create window"),
-        );
+        // Week 8: Improved error handling for window creation
+        let window = match event_loop.create_window(window_attrs) {
+            Ok(w) => Arc::new(w),
+            Err(e) => {
+                log::error!("❌ Failed to create game window: {}", e);
+                log::error!("   Requested size: {}x{}", window_width, window_height);
+                log::error!("   This may indicate a display configuration issue.");
+                panic!("Window creation failed: {}", e);
+            }
+        };
 
         log::info!("🪟 Created window: {}x{}", window_width, window_height);
 

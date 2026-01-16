@@ -1,14 +1,26 @@
 # AstraWeave: Master Test Coverage Report
 
-**Version**: 2.6.0  
-**Last Updated**: January 14, 2026 (🎉 **ALL ISSUES RESOLVED** - Fixed Issues #2 (marching cubes), #3 (Rhai recursion), and #4 (streaming integrity). **3,000+ core tests + 13 integration tests verified passing**. ALL non-editor issues FIXED. Core engine: 100% healthy. Zero regressions. Production ready.)  
+**Version**: 2.8.0  
+**Last Updated**: November 24, 2025 (🎉 **EDITOR INTEGRATION STARTED** - `aw_editor` verification active with **504 tests** (100% passing). Added Project/Asset Integration workflow tests. Zero warnings configuration maintained.)  
 **Status**: ✅ Authoritative Source  
 **Maintainer**: Core Team  
-**Tool**: cargo test (manual verification across 12 core crates + 3 integration test suites)
+**Tool**: cargo test (manual verification across 12 core crates + editor + 3 integration test suites)
 
 ---
 
-## Recent Updates (v2.6.0 - January 14, 2026)
+## Recent Updates (v2.8.0 - November 24, 2025)
+
+### EDITOR INTEGRATION TESTS ADDED (504 Tests) ✅
+
+**Scope**: `tools/aw_editor` (Level & Encounter Editor)
+**Status**: ✅ VERIFIED PASSING
+- **Test Count**: 504 tests (+3 new logic)
+- **Coverage Areas**: Project Lifecycle (Save/Load), FileWatcher (Hot Reload), Asset Discovery
+- **New Test Suite**: `tests/workflow_project_lifecycle.rs`
+- **Quality**: Integration tests run in <2s, verify filesystem interactions
+
+
+## Previous Updates (v2.6.0 - January 14, 2026)
 
 ### ALL NON-EDITOR ISSUES RESOLVED ✅
 

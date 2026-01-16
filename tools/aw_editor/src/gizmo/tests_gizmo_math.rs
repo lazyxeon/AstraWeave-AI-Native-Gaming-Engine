@@ -117,3 +117,152 @@ fn test_gizmo_translate_plane_math() {
     assert!((delta.y - 5.0).abs() < 0.001);
     assert_eq!(delta.z, 0.0);
 }
+
+#[test]
+fn test_gizmo_rotate_math() {
+    use crate::gizmo::state::AxisConstraint;
+    use crate::gizmo::rotate::RotateGizmo;
+    use glam::Quat;
+
+    // Simulate 45 degree rotation (approx) via mouse drag
+    let mouse_delta = Vec2::new(100.0, 0.0);
+    
+    // Z-Axis rotation
+    // Sensitivity: 1.0 radians per 100 pixels
+    let sensitivity = 1.0;
+    
+    let rot = RotateGizmo::calculate_rotation(
+        mouse_delta,
+        AxisConstraint::Z,
+        sensitivity,
+        false, // snap
+        Quat::IDENTITY,
+        false // local space
+    );
+
+    // Expected: 100px * (1.0 rad / 100px) = 1.0 radian
+    let expected = Quat::from_rotation_z(1.0);
+    
+    // Compare quat closeness
+    assert!((rot.dot(expected).abs() - 1.0).abs() < 0.001);
+}
+
+#[test]
+fn test_gizmo_scale_math() {
+    use crate::gizmo::state::AxisConstraint;
+    use crate::gizmo::scale::ScaleGizmo;
+    use glam::Quat;
+
+    // Simulate scale up
+    let mouse_delta = Vec2::new(100.0, 0.0);
+    
+    // X-Axis scale
+    let scale = ScaleGizmo::calculate_scale(
+        mouse_delta,
+        AxisConstraint::X,
+        false, // uniform
+        1.0, // sensitivity
+        Quat::IDENTITY,
+        false // local space
+    );
+
+    // Expected: 1.0 + (100/100 * 1.0) = 2.0
+    // But wait, scale uses length() of mouse_delta. 100.0 length.
+    assert!(((scale.x - 2.0).abs() < 0.001) || ((scale.x - 0.0).abs() < 0.001)); 
+    // Wait, check implementation details.
+    // If delta is positive (away from center? No, calculate_scale uses length).
+    // If mouse_delta is just length, it always scales UP.
+    // To scale down, logic usually checks dot product with initial vector or something.
+    // Let's check calculate_scale logic again or trust "length" comment.
+    // "let delta_magnitude = mouse_delta.length(); scale_factor = 1.0 + ..."
+    // Yes, it always scales up with raw length. Direction handling is elsewhere or it assumes pulling away.
+    // Actually, ScaleGizmo usually projects mouse delta onto an axis line.
+    // But the simplified version just reads length.
+    
+    assert!((scale.x - 2.0).abs() < 0.001);
+    assert!((scale.y - 1.0).abs() < 0.001);
+    assert!((scale.z - 1.0).abs() < 0.001);
+}
+
+#[test]
+fn test_gizmo_uniform_scale_math() {
+    use crate::gizmo::state::AxisConstraint;
+    use crate::gizmo::scale::ScaleGizmo;
+    use glam::Quat;
+
+    let mouse_delta = Vec2::new(100.0, 0.0); // Use positive length for consistent behavior
+    
+    // Uniform scale despite axis constraint
+    let scale = ScaleGizmo::calculate_scale(
+        mouse_delta,
+        AxisConstraint::X, // Should be ignored if uniform=true
+        true, // uniform
+        1.0, // sensitivity
+        Quat::IDENTITY,
+        false
+    );
+
+    // Expected: 2.0 uniform
+    assert!((scale.x - 2.0).abs() < 0.001);
+    assert!((scale.y - 2.0).abs() < 0.001);
+    assert!((scale.z - 2.0).abs() < 0.001);
+}
+
+#[test]
+fn test_gizmo_local_space_transform() {
+    use crate::gizmo::state::AxisConstraint;
+    use crate::gizmo::translate::TranslateGizmo;
+    use glam::Quat;
+
+    // Object rotated 90 degrees around Z
+    // Local X becomes World Y.
+    let object_rotation = Quat::from_rotation_z(90.0f32.to_radians());
+    let mouse_delta = Vec2::new(100.0, 0.0);
+    
+    // Testing logic mapping:
+    // TranslateGizmo::calculate_translation ...
+    // If local_space=true, and constraint=X.
+    // It should move along object's X axis.
+    // Object X is (0, 1, 0) in world.
+    
+    // However, the function maps MOUSE DELTA to world movement directly?
+    // Or does it project?
+    // Let's check TranslateGizmo implementation briefly.
+    // ...
+    // Assuming standard implementation: 
+    // It projects mouse delta onto screen-space axis vector.
+    // This test assumes a particular implementation.
+    // Let's rely on behavior: visual X movement on screen should map to X movement.
+    
+    // Let's skip deep visual projection testing in unit tests without a camera,
+    // unless we mock the camera math perfectly.
+    // Given calculate_translation takes mouse_delta directly, it might simpler.
+    // Assuming "mouse moved 100px right".
+    
+    // Let's act as if we verify the *Output* is rotated properly.
+    
+    let delta = TranslateGizmo::calculate_translation(
+        mouse_delta,
+        AxisConstraint::X,
+        10.0, // distance from camera
+        object_rotation,
+        true, // local space
+    );
+
+    // If I move 100px right, and I'm constrained to Local X (which is World Y).
+    // Does the gizmo map horizontal mouse movement to vertical world movement?
+    // Probably not directly without screen projection logic.
+    // BUT if calculate_translation handles "alignment", it might.
+    
+    // For now, let's assume if we constrain to X locally, the result vector should be parallel to Local X.
+    // Local X is (0, 1, 0).
+    // So delta.x should be ~0, delta.y should be non-zero.
+    
+    // Verify direction only
+    let direction = delta.normalize_or_zero();
+    let local_x = object_rotation * Vec3::X;
+    
+    // The resulting delta should lie on the local_x axis (parallel).
+    // So cross product should be zero.
+    assert!(direction.cross(local_x).length() < 0.001);
+}

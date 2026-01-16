@@ -46,13 +46,30 @@ impl ConsolePanel {
         }
     }
 
+    pub fn get_counts(logs: &[String]) -> (usize, usize, usize, usize) {
+        let total = logs.len();
+        let warnings = logs.iter().filter(|l| l.contains("⚠️")).count();
+        let errors = logs.iter().filter(|l| l.contains("❌")).count();
+        let infos = total - warnings - errors;
+        (total, infos, warnings, errors)
+    }
+
+    pub fn filter_logs<'a>(&self, logs: &'a [String]) -> Vec<&'a String> {
+        logs.iter()
+            .filter(|log| {
+                self.filter_level.matches(log)
+                    && (self.search_text.is_empty()
+                        || log
+                            .to_lowercase()
+                            .contains(&self.search_text.to_lowercase()))
+            })
+            .collect()
+    }
+
     pub fn show_with_logs(&mut self, ui: &mut Ui, logs: &mut Vec<String>) -> bool {
         let mut cleared = false;
 
-        let total_count = logs.len();
-        let warning_count = logs.iter().filter(|l| l.contains("⚠️")).count();
-        let error_count = logs.iter().filter(|l| l.contains("❌")).count();
-        let info_count = total_count - warning_count - error_count;
+        let (total_count, info_count, warning_count, error_count) = Self::get_counts(logs);
 
         ui.horizontal(|ui| {
             ui.heading("Console");
@@ -122,16 +139,7 @@ impl ConsolePanel {
 
         ui.add_space(4.0);
 
-        let filtered_logs: Vec<&String> = logs
-            .iter()
-            .filter(|log| {
-                self.filter_level.matches(log)
-                    && (self.search_text.is_empty()
-                        || log
-                            .to_lowercase()
-                            .contains(&self.search_text.to_lowercase()))
-            })
-            .collect();
+        let filtered_logs = self.filter_logs(logs);
 
         let scroll_area = egui::ScrollArea::vertical()
             .max_height(200.0)
@@ -217,5 +225,117 @@ mod tests {
         assert_eq!(panel.filter_level, LogLevel::All);
         assert!(panel.search_text.is_empty());
         assert!(panel.auto_scroll);
+    }
+
+    #[test]
+    fn test_log_level_display_names() {
+        assert_eq!(LogLevel::All.name(), "All");
+        assert_eq!(LogLevel::Info.name(), "Info");
+        assert_eq!(LogLevel::Warning.name(), "Warnings");
+        assert_eq!(LogLevel::Error.name(), "Errors");
+    }
+
+    #[test]
+    fn test_log_counting() {
+        let logs = vec![
+            "Info message".to_string(),
+            "⚠️ Warning message".to_string(),
+            "❌ Error message".to_string(),
+            "Another info".to_string(),
+            "❌ Another error".to_string(),
+        ];
+
+        let (total, infos, warnings, errors) = ConsolePanel::get_counts(&logs);
+        assert_eq!(total, 5);
+        assert_eq!(infos, 2);
+        assert_eq!(warnings, 1);
+        assert_eq!(errors, 2);
+    }
+
+    #[test]
+    fn test_filtering_level() {
+        let logs = vec![
+            "Info".to_string(),
+            "⚠️ Warning".to_string(),
+            "❌ Error".to_string(),
+        ];
+
+        let mut panel = ConsolePanel::new();
+
+        // All
+        panel.filter_level = LogLevel::All;
+        assert_eq!(panel.filter_logs(&logs).len(), 3);
+
+        // Info
+        panel.filter_level = LogLevel::Info;
+        let filtered = panel.filter_logs(&logs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], "Info");
+
+        // Warning
+        panel.filter_level = LogLevel::Warning;
+        let filtered = panel.filter_logs(&logs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], "⚠️ Warning");
+
+        // Error
+        panel.filter_level = LogLevel::Error;
+        let filtered = panel.filter_logs(&logs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], "❌ Error");
+    }
+
+    #[test]
+    fn test_filtering_search() {
+        let logs = vec![
+            "Apple".to_string(),
+            "Banana".to_string(),
+            "Cherry".to_string(),
+        ];
+
+        let mut panel = ConsolePanel::new();
+        panel.filter_level = LogLevel::All;
+
+        // Case insensitive match
+        panel.search_text = "an".to_string();
+        let filtered = panel.filter_logs(&logs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], "Banana");
+
+        // No match
+        panel.search_text = "xyz".to_string();
+        assert!(panel.filter_logs(&logs).is_empty());
+
+        // Empty search
+        panel.search_text = "".to_string();
+        assert_eq!(panel.filter_logs(&logs).len(), 3);
+    }
+
+    #[test]
+    fn test_filtering_combined() {
+        let logs = vec![
+            "Info Apple".to_string(),
+            "⚠️ Warning Apple".to_string(),
+            "❌ Error Banana".to_string(),
+        ];
+
+        let mut panel = ConsolePanel::new();
+        
+        // Filter Info + Search "Apple"
+        panel.filter_level = LogLevel::Info;
+        panel.search_text = "Apple".to_string();
+        let filtered = panel.filter_logs(&logs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], "Info Apple");
+
+        // Filter Warning + Search "Apple"
+        panel.filter_level = LogLevel::Warning;
+        let filtered = panel.filter_logs(&logs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0], "⚠️ Warning Apple");
+
+        // Filter Error + Search "Apple" (Mismatch)
+        panel.filter_level = LogLevel::Error;
+        assert!(panel.filter_logs(&logs).is_empty());
     }
 }

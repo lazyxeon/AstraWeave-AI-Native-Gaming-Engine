@@ -30,6 +30,28 @@ use test_asset_generator::generate_test_beep;
 // Setup & Cleanup Helpers
 // ============================================================================
 
+/// Generate unique test directory path to prevent parallel test race conditions
+fn unique_test_dir(test_name: &str) -> String {
+    format!("target/test_assets/audio_error_tests/{}", test_name)
+}
+
+fn setup_error_test_assets_named(test_name: &str) -> Result<String> {
+    let base_dir = unique_test_dir(test_name);
+    fs::create_dir_all(&base_dir)?;
+    fs::create_dir_all(format!("{}/malformed", base_dir))?;
+    fs::create_dir_all(format!("{}/empty_folder", base_dir))?;
+    fs::create_dir_all(format!("{}/corrupted", base_dir))?;
+    Ok(base_dir)
+}
+
+fn cleanup_error_test_assets_named(base_dir: &str) -> Result<()> {
+    if Path::new(base_dir).exists() {
+        // Ignore permission errors during cleanup (Windows file locking)
+        let _ = fs::remove_dir_all(base_dir);
+    }
+    Ok(())
+}
+
 fn setup_error_test_assets() -> Result<()> {
     fs::create_dir_all("tests/assets/error_tests")?;
     fs::create_dir_all("tests/assets/error_tests/malformed")?;
@@ -80,9 +102,8 @@ test_dialogue = { n0 = "test.wav"  # Missing closing brace
 }
 
 #[test]
-#[ignore] // Flaky - test file cleanup may race with parallel tests
 fn test_malformed_toml_voice_bank() -> Result<()> {
-    setup_error_test_assets()?;
+    let test_dir = setup_error_test_assets_named("malformed_voice_bank")?;
 
     // Create malformed VoiceBank TOML (invalid key-value structure)
     let malformed_toml = r#"
@@ -90,13 +111,13 @@ fn test_malformed_toml_voice_bank() -> Result<()> {
 alice = { folder = "speakers/alice", files = ["voice.wav"] }
 "#; // Missing closing bracket for [speakers]
 
-    let toml_path = "tests/assets/error_tests/malformed/bad_voice_bank.toml";
-    let mut file = File::create(toml_path)?;
+    let toml_path = format!("{}/malformed/bad_voice_bank.toml", test_dir);
+    let mut file = File::create(&toml_path)?;
     file.write_all(malformed_toml.as_bytes())?;
     drop(file);
 
     // Attempt to load malformed TOML
-    let result = astraweave_audio::load_voice_bank(toml_path);
+    let result = astraweave_audio::load_voice_bank(&toml_path);
 
     // Should return error
     assert!(
@@ -105,7 +126,7 @@ alice = { folder = "speakers/alice", files = ["voice.wav"] }
         result
     );
 
-    cleanup_error_test_assets()?;
+    cleanup_error_test_assets_named(&test_dir)?;
     Ok(())
 }
 
@@ -422,17 +443,20 @@ fn test_spatial_audio_extreme_distance() -> Result<()> {
 // ============================================================================
 
 #[test]
-#[ignore] // Flaky - depends on generated audio files that may be cleaned up by parallel tests
 fn test_music_instant_crossfade_zero_duration() -> Result<()> {
+    let test_dir = setup_error_test_assets_named("instant_crossfade")?;
+
     let mut engine = AudioEngine::new()?;
 
-    // Generate two test music tracks
-    test_asset_generator::generate_test_music("tests/assets/test_music_instant_1.wav", 2.0, 22050)?;
-    test_asset_generator::generate_test_music("tests/assets/test_music_instant_2.wav", 2.0, 22050)?;
+    // Generate two test music tracks with unique paths
+    let track1_path = format!("{}/test_music_instant_1.wav", test_dir);
+    let track2_path = format!("{}/test_music_instant_2.wav", test_dir);
+    test_asset_generator::generate_test_music(&track1_path, 2.0, 22050)?;
+    test_asset_generator::generate_test_music(&track2_path, 2.0, 22050)?;
 
     // Play first track
     let track1 = MusicTrack {
-        path: "tests/assets/test_music_instant_1.wav".to_string(),
+        path: track1_path.clone(),
         looped: true,
     };
     engine.play_music(track1, 0.0)?;
@@ -440,7 +464,7 @@ fn test_music_instant_crossfade_zero_duration() -> Result<()> {
 
     // Instant crossfade (0.0 seconds) - edge case
     let track2 = MusicTrack {
-        path: "tests/assets/test_music_instant_2.wav".to_string(),
+        path: track2_path.clone(),
         looped: true,
     };
     let result = engine.play_music(track2, 0.0); // Zero crossfade duration
@@ -450,25 +474,29 @@ fn test_music_instant_crossfade_zero_duration() -> Result<()> {
     engine.tick(0.05);
     thread::sleep(Duration::from_millis(100));
 
-    // Cleanup
-    fs::remove_file("tests/assets/test_music_instant_1.wav")?;
-    fs::remove_file("tests/assets/test_music_instant_2.wav")?;
+    // Stop audio before cleanup to release file handles
+    drop(engine);
+    thread::sleep(Duration::from_millis(50));
 
+    cleanup_error_test_assets_named(&test_dir)?;
     Ok(())
 }
 
 #[test]
-#[ignore] // Flaky - depends on generated audio files that may be cleaned up by parallel tests
 fn test_music_very_long_crossfade() -> Result<()> {
+    let test_dir = setup_error_test_assets_named("long_crossfade")?;
+
     let mut engine = AudioEngine::new()?;
 
-    // Generate two test music tracks
-    test_asset_generator::generate_test_music("tests/assets/test_music_long_1.wav", 5.0, 22050)?;
-    test_asset_generator::generate_test_music("tests/assets/test_music_long_2.wav", 5.0, 22050)?;
+    // Generate two test music tracks with unique paths
+    let track1_path = format!("{}/test_music_long_1.wav", test_dir);
+    let track2_path = format!("{}/test_music_long_2.wav", test_dir);
+    test_asset_generator::generate_test_music(&track1_path, 5.0, 22050)?;
+    test_asset_generator::generate_test_music(&track2_path, 5.0, 22050)?;
 
     // Play first track
     let track1 = MusicTrack {
-        path: "tests/assets/test_music_long_1.wav".to_string(),
+        path: track1_path.clone(),
         looped: true,
     };
     engine.play_music(track1, 0.0)?;
@@ -476,7 +504,7 @@ fn test_music_very_long_crossfade() -> Result<()> {
 
     // Very long crossfade (10 seconds, longer than tracks)
     let track2 = MusicTrack {
-        path: "tests/assets/test_music_long_2.wav".to_string(),
+        path: track2_path.clone(),
         looped: true,
     };
     let result = engine.play_music(track2, 10.0); // 10-second crossfade
@@ -488,9 +516,10 @@ fn test_music_very_long_crossfade() -> Result<()> {
         engine.tick(0.1);
     }
 
-    // Cleanup
-    fs::remove_file("tests/assets/test_music_long_1.wav")?;
-    fs::remove_file("tests/assets/test_music_long_2.wav")?;
+    // Stop audio before cleanup to release file handles
+    drop(engine);
+    thread::sleep(Duration::from_millis(50));
 
+    cleanup_error_test_assets_named(&test_dir)?;
     Ok(())
 }

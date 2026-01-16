@@ -202,6 +202,11 @@ impl ToastManager {
         }
     }
 
+    /// Get the number of active toasts
+    pub fn active_count(&self) -> usize {
+        self.toasts.len()
+    }
+
     /// Add a simple toast
     pub fn toast(&mut self, message: impl Into<String>, level: ToastLevel) {
         self.add(Toast::new(message, level));
@@ -540,5 +545,56 @@ mod tests {
 
         manager.error_with_retry("Build failed");
         assert_eq!(manager.count(), 2);
+    }
+
+    #[test]
+    fn test_toast_helpers_explicit() {
+        let mut manager = ToastManager::new();
+        manager.info("Info");
+        manager.warning("Warning");
+        manager.error("Error");
+        
+        assert_eq!(manager.count(), 3);
+        assert_eq!(manager.toasts[0].level, ToastLevel::Info);
+        assert_eq!(manager.toasts[1].level, ToastLevel::Warning);
+        assert_eq!(manager.toasts[2].level, ToastLevel::Error);
+    }
+    
+    #[test]
+    fn test_take_pending_actions() {
+        let mut manager = ToastManager::new();
+        // Since pending_actions are private and mostly set via show(), we might not be able to populate them easily without running show()
+        // But we can check it returns empty initially
+        let actions = manager.take_pending_actions();
+        assert!(actions.is_empty());
+    }
+
+    #[test]
+    fn test_toast_unique_ids() {
+        let t1 = Toast::new("First", ToastLevel::Info);
+        let t2 = Toast::new("Second", ToastLevel::Info);
+        assert_ne!(t1.id, t2.id);
+        assert!(t2.id > t1.id);
+    }
+
+    #[test]
+    fn test_toast_builder_methods() {
+        let t = Toast::new("Msg", ToastLevel::Info)
+            .with_duration(Duration::from_secs(10))
+            .with_group("g1");
+            
+        assert_eq!(t.duration, Duration::from_secs(10));
+        assert_eq!(t.group_key, Some("g1".to_string()));
+    }
+    
+    #[test]
+    fn test_toast_display_helpers() {
+        let mut manager = ToastManager::new();
+        // Just verify show doesn't panic on empty
+        // We can't easily mock Context here without more setup, so we skip show() tests
+        // But we can test checking for empty
+        assert!(!manager.has_toasts());
+        manager.success("msg");
+        assert!(manager.has_toasts());
     }
 }

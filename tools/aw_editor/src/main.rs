@@ -130,6 +130,7 @@ use std::{fs, path::PathBuf};
 use tab_viewer::{EditorDrawContext, EditorTabViewer, EntityInfo};
 use tracing::{debug, error, info, span, warn, Level};
 use ui::StatusBar;
+use ui::{AlignDirection, DistributeDirection, MenuBar, MenuActionHandler};
 use uuid::Uuid;
 use viewport::ViewportWidget; // Phase 1.1
 
@@ -265,23 +266,7 @@ impl AssetRegistry {
     }
 }
 
-/// Week 5 Day 1-2: Alignment direction for multi-select align operations
-#[derive(Clone, Copy, Debug)]
-enum AlignDirection {
-    Left,
-    Right,
-    Top,
-    Bottom,
-    CenterX,
-    CenterZ,
-}
-
-/// Week 5 Day 1-2: Distribution direction for multi-select distribute operations
-#[derive(Clone, Copy, Debug)]
-enum DistributeDirection {
-    X,
-    Z,
-}
+// Removed local definition of DistributeDirection (moved to ui::menu_bar)
 
 /// Week 4 Day 5: Asset validation result for import operations
 #[derive(Default)]
@@ -1454,10 +1439,14 @@ impl EditorApp {
                 return;
             }
             
-            // Sort by the distribution axis
+            // Sort by the distribution axis (use Equal for NaN safety)
             match direction {
-                DistributeDirection::X => positions.sort_by(|a, b| a.1.x.partial_cmp(&b.1.x).unwrap()),
-                DistributeDirection::Z => positions.sort_by(|a, b| a.1.z.partial_cmp(&b.1.z).unwrap()),
+                DistributeDirection::X => positions.sort_by(|a, b| {
+                    a.1.x.partial_cmp(&b.1.x).unwrap_or(std::cmp::Ordering::Equal)
+                }),
+                DistributeDirection::Z => positions.sort_by(|a, b| {
+                    a.1.z.partial_cmp(&b.1.z).unwrap_or(std::cmp::Ordering::Equal)
+                }),
             }
             
             // Calculate spacing
@@ -2085,6 +2074,728 @@ impl EditorApp {
 }
 
 impl EditorApp {
+    fn show_status_bar(&mut self, ctx: &egui::Context) {
+        // Week 6 Day 5: Sample resource usage periodically (every 500ms)
+        if self.last_resource_sample.elapsed() > std::time::Duration::from_millis(500) {
+            self.sample_resource_usage();
+            self.last_resource_sample = std::time::Instant::now();
+        }
+
+        let bottom_entity_count = self
+            .scene_state
+            .as_ref()
+            .map(|s| s.world().entities().len())
+            .unwrap_or(0);
+
+        // Clone the path string to avoid borrow conflicts
+        let bottom_scene_path_str: Option<String> =
+            self.current_scene_path.as_ref().and_then(|p| p.to_str()).map(String::from);
+
+        egui::TopBottomPanel::bottom("status_bar")
+            .min_height(24.0)
+            .show(ctx, |ui| {
+                ui.set_min_size(ui.available_size());
+                // Week 6 Day 5: Use enhanced status bar with progress and resource usage
+                StatusBar::show_enhanced(
+                    ui,
+                    &self.editor_mode,
+                    &self.current_gizmo_mode,
+                    &self.selection_set,
+                    &self.undo_stack,
+                    &self.snapping_config,
+                    self.current_fps,
+                    self.is_dirty,
+                    bottom_entity_count,
+                    bottom_scene_path_str.as_deref(),
+                    &mut self.progress_manager,
+                    &self.resource_usage,
+                );
+            });
+    }
+
+    fn show_legacy_left_panel(&mut self, ctx: &egui::Context) {
+        egui::SidePanel::left("astract_left_panel")
+            .resizable(true)
+            .min_width(250.0)
+            .frame(egui::Frame::NONE.inner_margin(0.0))
+            .show(ctx, |ui| {
+                ui.set_min_size(ui.available_size());
+
+                ui.vertical(|ui| {
+                    ui.set_min_size(ui.available_size());
+
+                    ui.heading("📋 Hierarchy");
+                    ui.add_space(4.0);
+
+                    // Search bar
+                    ui.horizontal(|ui| {
+                        ui.set_min_width(ui.available_width());
+                        ui.label("🔍");
+                        ui.text_edit_singleline(&mut self.level.title);
+                    });
+                    ui.separator();
+
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            ui.set_min_size(ui.available_size());
+                            self.show_scene_hierarchy(ui);
+                        });
+                });
+            });
+    }
+
+    fn show_docking_layout(&mut self, ctx: &egui::Context) {
+        // Phase 11: Professional Docking System
+        // Sync selected entity to tab viewer
+        self.dock_tab_viewer
+            .set_selected_entity(self.selected_entity);
+        self.dock_tab_viewer
+            .set_is_playing(!self.editor_mode.is_editing());
+        self.dock_tab_viewer.begin_frame();
+
+        // Sync entity list for hierarchy panel
+        let entity_list: Vec<EntityInfo> = self
+            .entity_manager
+            .entities()
+            .iter()
+            .map(|(id, entity)| EntityInfo {
+                id: *id,
+                name: entity.name.clone(),
+                components: entity.components.keys().cloned().collect(),
+                entity_type: if entity.components.contains_key("Camera") {
+                    "Camera".to_string()
+                } else if entity.components.contains_key("Light") {
+                    "Light".to_string()
+                } else if entity.components.contains_key("Mesh") {
+                    "Mesh".to_string()
+                } else {
+                    "Entity".to_string()
+                },
+            })
+            .collect();
+        self.dock_tab_viewer.set_entity_list(entity_list);
+
+        // Sync selected entity transform for inspector
+        if let Some(entity_id) = self.selected_entity {
+            if let Some(entity) = self.entity_manager.get(entity_id) {
+                let (pos, rot, scale) = entity.transform();
+                // Convert to 2D-like format: x, y, rotation_z, scale_x, scale_y
+                let angle = rot.to_euler(glam::EulerRot::ZXY).0;
+                self.dock_tab_viewer
+                    .set_selected_transform(Some((pos.x, pos.y, angle, scale.x, scale.y)));
+                let entity_type = if entity.components.contains_key("Camera") {
+                    "Camera".to_string()
+                } else if entity.components.contains_key("Light") {
+                    "Light".to_string()
+                } else if entity.components.contains_key("Mesh") {
+                    "Mesh".to_string()
+                } else {
+                    "Entity".to_string()
+                };
+                self.dock_tab_viewer
+                    .set_selected_entity_info(Some(EntityInfo {
+                        id: entity_id,
+                        name: entity.name.clone(),
+                        components: entity.components.keys().cloned().collect(),
+                        entity_type,
+                    }));
+            } else {
+                self.dock_tab_viewer.set_selected_transform(None);
+                self.dock_tab_viewer.set_selected_entity_info(None);
+            }
+        } else {
+            self.dock_tab_viewer.set_selected_transform(None);
+            self.dock_tab_viewer.set_selected_entity_info(None);
+        }
+
+        // Sync console logs
+        self.dock_tab_viewer
+            .set_console_logs(self.console_logs.clone());
+
+        // Sync runtime stats for profiler panel
+        let runtime_stats = tab_viewer::RuntimeStatsInfo {
+            frame_time_ms: self.runtime.stats().frame_time_ms,
+            fps: self.current_fps,
+            entity_count: self.entity_manager.entities().len(),
+            tick_count: self.runtime.stats().tick_count,
+            is_playing: self.runtime.is_playing(),
+            is_paused: self.runtime.is_paused(),
+            // Subsystem timing (placeholder values - would come from actual profiling)
+            render_time_ms: self.runtime.stats().frame_time_ms * 0.4, // ~40% for render
+            physics_time_ms: self.runtime.stats().frame_time_ms * 0.15, // ~15% for physics
+            ai_time_ms: self.runtime.stats().frame_time_ms * 0.1,     // ~10% for AI
+            script_time_ms: self.runtime.stats().frame_time_ms * 0.05, // ~5% for scripts
+            audio_time_ms: self.runtime.stats().frame_time_ms * 0.02, // ~2% for audio
+            draw_calls: 150 + (self.entity_manager.entities().len() * 2), // Estimate
+            triangles: 50000 + (self.entity_manager.entities().len() * 1000), // Estimate
+            gpu_memory_bytes: 256 * 1024 * 1024,                      // 256 MB placeholder
+        };
+        self.dock_tab_viewer.set_runtime_stats(runtime_stats);
+
+        // Sync scene stats
+        let total_components: usize = self
+            .entity_manager
+            .entities()
+            .values()
+            .map(|e| e.components.len())
+            .sum();
+        let entity_count = self.entity_manager.entities().len();
+        let scene_stats = tab_viewer::SceneStatsInfo {
+            total_entities: entity_count,
+            total_components,
+            prefab_instances: 0, // Would count prefab instances
+            selected_count: self.selection_set.count(),
+            memory_usage_bytes: entity_count * 1024 + total_components * 256, // Rough estimate
+            active_systems: 12, // Typical system count
+            loaded_assets: self.asset_registry.count(),
+            light_count: entity_count / 10, // Estimate ~10% are lights
+            mesh_count: entity_count / 2,   // Estimate ~50% have meshes
+            physics_bodies: entity_count / 4, // Estimate ~25% have physics
+            is_modified: self.is_scene_modified,
+            audio_sources: entity_count / 20, // Estimate ~5% have audio
+            particle_systems: entity_count / 30, // Estimate ~3% are particles
+            camera_count: 1 + (entity_count / 50), // At least 1 camera
+            collider_count: entity_count / 3, // Estimate ~33% have colliders
+            script_count: entity_count / 2,   // Estimate ~50% have scripts
+            ui_element_count: 0,              // Would count UI elements
+            scene_path: self
+                .current_scene_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
+            last_save_time: self.last_save_time.clone(),
+        };
+        self.dock_tab_viewer.set_scene_stats(scene_stats);
+
+        // Sync undo/redo counts
+        self.dock_tab_viewer.set_undo_redo_counts(
+            self.undo_stack.len(),
+            0, // Redo count would come from redo stack
+        );
+
+        // Update frame time history for profiler graph
+        self.dock_tab_viewer
+            .push_frame_time(self.runtime.stats().frame_time_ms);
+
+        // Render the docking layout with EditorDrawContext for viewport integration
+        // We need to carefully structure borrows to avoid conflicts
+        // Use CentralPanel with no frame to render dock in remaining space (after side panels)
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE.inner_margin(0.0))
+            .show(ctx, |ui| {
+                ui.set_min_size(ui.available_size());
+
+                // Get mutable world from scene state
+                let world_opt = self.scene_state.as_mut().map(|s| s.world_mut());
+
+                // Unified context rendering to avoid type-switching issues
+                let mut context = EditorDrawContext::new(&mut self.dock_tab_viewer);
+
+                if let (Some(world), Some(viewport)) = (world_opt, self.viewport.as_mut()) {
+                    context = context
+                        .with_viewport(viewport)
+                        .with_world(world)
+                        .with_entity_manager(&mut self.entity_manager)
+                        .with_undo_stack(&mut self.undo_stack)
+                        .with_prefab_manager(&mut self.prefab_manager);
+                }
+
+                self.dock_layout.show_inside(ui, &mut context);
+            });
+
+        // Check for transform changes and emit events
+        self.dock_tab_viewer.check_transform_changes();
+
+        // Handle panel close events (separate from PanelEvent for backward compatibility)
+        for panel in self.dock_tab_viewer.take_closed_panels() {
+            self.status = format!("Closed {} panel", panel.title());
+        }
+        for panel in self.dock_tab_viewer.take_panels_to_add() {
+            self.dock_layout.add_panel(panel);
+            self.status = format!("Added {} panel", panel.title());
+        }
+        self.dock_tab_viewer.check_transform_changes();
+
+        // Handle panel events from the tab viewer
+        for event in self.dock_tab_viewer.take_events() {
+            match event {
+                tab_viewer::PanelEvent::EntitySelected(entity_id) => {
+                    self.selected_entity = Some(entity_id);
+                    self.selection_set.primary = Some(entity_id);
+                    self.status = format!("Selected entity {}", entity_id);
+                }
+                tab_viewer::PanelEvent::EntityDeselected => {
+                    self.selected_entity = None;
+                    self.selection_set.primary = None;
+                    self.status = "Deselected entity".to_string();
+                }
+                tab_viewer::PanelEvent::TransformPositionChanged { entity_id, x, y } => {
+                    // Update entity transform in scene
+                    self.status =
+                        format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
+                    // TODO: Update actual entity transform in scene graph when available
+                }
+                tab_viewer::PanelEvent::TransformRotationChanged {
+                    entity_id,
+                    rotation,
+                } => {
+                    self.status = format!("Entity {} rotation: {:.1}°", entity_id, rotation);
+                    // TODO: Update actual entity rotation in scene graph when available
+                }
+                tab_viewer::PanelEvent::TransformScaleChanged {
+                    entity_id,
+                    scale_x,
+                    scale_y,
+                } => {
+                    self.status = format!(
+                        "Entity {} scale: ({:.2}, {:.2})",
+                        entity_id, scale_x, scale_y
+                    );
+                    // TODO: Update actual entity scale in scene graph when available
+                }
+                tab_viewer::PanelEvent::CreateEntity => {
+                    // Create a new entity with a unique ID
+                    let new_id = self.next_entity_id;
+                    self.next_entity_id += 1;
+                    let new_entity = tab_viewer::EntityInfo {
+                        id: new_id,
+                        name: format!("Entity_{}", new_id),
+                        entity_type: "Empty".to_string(),
+                        components: vec![],
+                    };
+                    self.dock_tab_viewer.add_entity(new_entity);
+                    self.selected_entity = Some(new_id);
+                    self.selection_set.primary = Some(new_id);
+                    self.status = format!("Created entity {}", new_id);
+                }
+                tab_viewer::PanelEvent::DeleteEntity(entity_id) => {
+                    // Remove entity from list
+                    self.dock_tab_viewer.remove_entity(entity_id);
+                    if self.selected_entity == Some(entity_id) {
+                        self.selected_entity = None;
+                        self.selection_set.primary = None;
+                    }
+                    self.status = format!("Deleted entity {}", entity_id);
+                }
+                tab_viewer::PanelEvent::DuplicateEntity(entity_id) => {
+                    // Find and duplicate the entity
+                    let source_info = self.dock_tab_viewer.find_entity(entity_id).cloned();
+                    if let Some(source) = source_info {
+                        let new_id = self.next_entity_id;
+                        self.next_entity_id += 1;
+                        let new_entity = tab_viewer::EntityInfo {
+                            id: new_id,
+                            name: format!("{}_copy", source.name),
+                            entity_type: source.entity_type.clone(),
+                            components: source.components.clone(),
+                        };
+                        self.dock_tab_viewer.add_entity(new_entity);
+                        self.selected_entity = Some(new_id);
+                        self.selection_set.primary = Some(new_id);
+                        self.status = format!("Duplicated entity {} as {}", entity_id, new_id);
+                    }
+                }
+                tab_viewer::PanelEvent::PanelClosed(panel) => {
+                    self.status = format!("Closed {} panel", panel.title());
+                }
+                tab_viewer::PanelEvent::PanelFocused(panel) => {
+                    self.status = format!("Focused {} panel", panel.title());
+                }
+                tab_viewer::PanelEvent::AddPanel(panel) => {
+                    self.dock_layout.add_panel(panel);
+                    self.status = format!("Added {} panel", panel.title());
+                }
+                tab_viewer::PanelEvent::MaterialChanged {
+                    name,
+                    property,
+                    value,
+                } => {
+                    self.status = format!("Material '{}': {} = {:.2}", name, property, value);
+                }
+                tab_viewer::PanelEvent::AnimationPlayStateChanged { is_playing } => {
+                    if is_playing {
+                        self.status = "Animation playing".to_string();
+                    } else {
+                        self.status = "Animation paused".to_string();
+                    }
+                }
+                tab_viewer::PanelEvent::AnimationFrameChanged { frame } => {
+                    self.status = format!("Animation frame: {}", frame);
+                }
+                tab_viewer::PanelEvent::AnimationKeyframeAdded {
+                    track_index,
+                    frame,
+                    value,
+                } => {
+                    self.status = format!(
+                        "Added keyframe at frame {} (track {}, value {:.2})",
+                        frame, track_index, value
+                    );
+                }
+                tab_viewer::PanelEvent::ThemeChanged(theme) => {
+                    self.status = format!("Theme changed to {:?}", theme);
+                }
+                tab_viewer::PanelEvent::BuildRequested { target, profile } => {
+                    self.status = format!("Build requested: {} ({})", target, profile);
+                }
+                tab_viewer::PanelEvent::ConsoleCleared => {
+                    self.status = "Console cleared".to_string();
+                }
+                tab_viewer::PanelEvent::AssetSelected(asset) => {
+                    self.status = format!("Selected asset: {}", asset);
+                }
+                tab_viewer::PanelEvent::BehaviorNodeSelected(node_id) => {
+                    self.status = format!("Selected behavior node: {}", node_id);
+                }
+                tab_viewer::PanelEvent::GraphNodeSelected(node_id) => {
+                    self.status = format!("Selected graph node: {}", node_id);
+                }
+                tab_viewer::PanelEvent::HierarchySearchChanged(search) => {
+                    self.status = format!("Hierarchy search: {}", search);
+                }
+                tab_viewer::PanelEvent::ConsoleSearchChanged(search) => {
+                    self.status = format!("Console search: {}", search);
+                }
+                tab_viewer::PanelEvent::RefreshSceneStats => {
+                    self.status = "Refreshing scene statistics...".to_string();
+                }
+                tab_viewer::PanelEvent::AddComponent {
+                    entity_id,
+                    component_type,
+                } => {
+                    self.status = format!("Adding {} to entity {}", component_type, entity_id);
+                    // Would add component to entity in actual implementation
+                }
+                tab_viewer::PanelEvent::RemoveComponent {
+                    entity_id,
+                    component_type,
+                } => {
+                    self.status =
+                        format!("Removing {} from entity {}", component_type, entity_id);
+                    // Would remove component from entity in actual implementation
+                }
+                tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
+                    let mode_names = ["Shaded", "Wireframe", "Unlit", "Normals", "UVs"];
+                    self.status = format!(
+                        "Viewport view mode: {}",
+                        mode_names.get(mode).unwrap_or(&"Unknown")
+                    );
+                }
+                tab_viewer::PanelEvent::ViewportGizmoModeChanged(mode) => {
+                    let mode_names = ["Translate", "Rotate", "Scale"];
+                    self.status =
+                        format!("Gizmo mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
+                }
+                tab_viewer::PanelEvent::ViewportGizmoSpaceChanged(space) => {
+                    self.status = format!(
+                        "Gizmo space: {}",
+                        if space == 0 { "Local" } else { "World" }
+                    );
+                }
+                tab_viewer::PanelEvent::ViewportOverlayToggled { overlay, enabled } => {
+                    self.status = format!(
+                        "Viewport overlay '{}': {}",
+                        overlay,
+                        if enabled { "enabled" } else { "disabled" }
+                    );
+                }
+                tab_viewer::PanelEvent::ViewportCameraChanged {
+                    fov,
+                    near,
+                    far,
+                    speed,
+                } => {
+                    self.status = format!(
+                        "Camera: FOV={:.0}°, Clip={:.2}-{:.0}, Speed={:.1}",
+                        fov, near, far, speed
+                    );
+                }
+                tab_viewer::PanelEvent::ViewportFocusOnSelection => {
+                    self.status = "Focusing on selection...".to_string();
+                }
+                tab_viewer::PanelEvent::ViewportResetCamera => {
+                    self.status = "Camera reset to default position".to_string();
+                }
+                tab_viewer::PanelEvent::ViewportCameraPreset(preset) => {
+                    self.status = format!("Camera preset applied: {}", preset);
+                }
+                tab_viewer::PanelEvent::ResetLayout => {
+                    // Reset dock state to default layout
+                    self.dock_layout = DockLayout::from_preset(LayoutPreset::Default);
+                    self.status = "Layout reset to default".to_string();
+                }
+            }
+        }
+    }
+
+
+    fn show_top_panel(&mut self, ctx: &egui::Context) {
+        egui::TopBottomPanel::top("top")
+            .show(ctx, |ui| {
+                ui.set_min_size(ui.available_size());
+                ui.heading("AstraWeave Level & Encounter Editor");
+            ui.separator();
+            MenuBar::show(ui, self);
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                if ui.button("Diff Assets").clicked() {
+                     match std::process::Command::new("git").args(["diff", "assets"]).output() {
+                        Ok(output) => {
+                            let stdout = String::from_utf8_lossy(&output.stdout);
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            if stdout.is_empty() && stderr.is_empty() {
+                                self.console_logs.push("No asset changes.".into());
+                            } else {
+                                self.console_logs.push(format!("Asset diff:\n{}", stdout));
+                                if !stderr.is_empty() { self.console_logs.push(format!("Diff stderr: {}", stderr)); }
+                            }
+                        }
+                        Err(e) => self.console_logs.push(format!("Git diff failed: {}", e)),
+                     }
+                }
+            });
+
+            ui.label(&self.status);
+
+            // Show play controls in toolbar
+            ui.separator();
+            self.show_play_controls(ui);
+
+            // Compact performance indicator in header
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let frame_time = self.runtime.stats().frame_time_ms;
+                let fps_color = if self.current_fps >= 55.0 {
+                    egui::Color32::from_rgb(100, 255, 100) // Green
+                } else if self.current_fps >= 30.0 {
+                    egui::Color32::from_rgb(255, 200, 100) // Yellow
+                } else {
+                    egui::Color32::from_rgb(255, 100, 100) // Red
+                };
+
+                ui.label(egui::RichText::new(format!("FPS: {:.0}", self.current_fps))
+                    .color(fps_color)
+                    .strong());
+                ui.separator();
+                ui.label(egui::RichText::new(format!("{:.1}ms", frame_time))
+                    .color(egui::Color32::from_gray(180)));
+                ui.separator();
+                ui.label(egui::RichText::new("⚡")
+                    .color(fps_color));
+            });
+        });
+    }
+
+    fn show_legacy_central_panel(&mut self, ctx: &egui::Context) {
+        // Legacy layout - original CentralPanel rendering
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE.inner_margin(0.0).fill(egui::Color32::from_rgb(0, 255, 0))) // GREEN for legacy
+            .show(ctx, |ui| {
+                // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
+                if let Some(viewport) = &mut self.viewport {
+                    // Phase 14: Update viewport HUD with selection count
+                    viewport.set_selection_count(self.selection_set.count());
+
+                    // Phase 4: Visual indicator for play mode
+                    let viewport_frame = if !self.editor_mode.is_editing() {
+                        let border_color = if self.editor_mode.is_playing() {
+                            egui::Color32::from_rgb(100, 200, 100)
+                        } else {
+                            egui::Color32::from_rgb(255, 180, 50)
+                        };
+
+                        egui::Frame::NONE
+                            .stroke(egui::Stroke::new(3.0, border_color))
+                            .inner_margin(4.0)
+                    } else {
+                        egui::Frame::NONE
+                    };
+
+                    viewport_frame.show(ui, |ui| {
+                        ui.heading("🎮 3D Viewport");
+                        ui.label(
+                            "Phase 1.1 Complete: Grid rendering active, texture display in progress",
+                        );
+
+                        ui.horizontal(|ui| {
+                            ui.label("⚡ Snapping:");
+
+                            ui.checkbox(&mut self.snapping_config.grid_enabled, "Grid");
+
+                            ui.label("Size:");
+                            let mut grid_size_idx = match self.snapping_config.grid_size {
+                                s if (s - 0.5).abs() < 0.01 => 0,
+                                s if (s - 1.0).abs() < 0.01 => 1,
+                                s if (s - 2.0).abs() < 0.01 => 2,
+                                _ => 1,
+                            };
+
+                            if ui
+                                .add(
+                                    egui::Slider::new(&mut grid_size_idx, 0..=2)
+                                        .show_value(false)
+                                        .custom_formatter(|n, _| match n as usize {
+                                            0 => "0.5".to_string(),
+                                            1 => "1.0".to_string(),
+                                            2 => "2.0".to_string(),
+                                            _ => "1.0".to_string(),
+                                        }),
+                                )
+                                .changed()
+                            {
+                                self.snapping_config.grid_size = match grid_size_idx {
+                                    0 => 0.5,
+                                    1 => 1.0,
+                                    2 => 2.0,
+                                    _ => 1.0,
+                                };
+                            }
+
+                            ui.separator();
+                            ui.checkbox(&mut self.snapping_config.angle_enabled, "Angle");
+                            ui.label(format!("{}°", self.snapping_config.angle_increment));
+
+                            ui.separator();
+
+                            // Engine PBR Rendering toggle
+                            let mut use_pbr = viewport.renderer().lock().map(|r| r.use_engine_rendering()).unwrap_or(false);
+                            if ui.checkbox(&mut use_pbr, "🚀 Engine PBR").on_hover_text("Enable full PBR mesh rendering instead of cube placeholders").changed() {
+                                if let Ok(mut renderer) = viewport.renderer().lock() {
+                                    renderer.set_use_engine_rendering(use_pbr);
+                                }
+                            }
+                        });
+
+                        ui.separator();
+
+                        // Render viewport (takes 70% width, full available height)
+                        let runtime_state = self.runtime.state();
+                        if runtime_state == RuntimeState::Editing && self.scene_state.is_none() {
+                            self.scene_state =
+                                Some(EditorSceneState::new(Self::create_default_world()));
+                        }
+
+                        let mut edited_world = false;
+                        let world_to_render = if runtime_state == RuntimeState::Editing {
+                            self.scene_state.as_mut().map(|state| state.world_mut())
+                        } else {
+                            self.runtime.sim_world_mut()
+                        };
+
+                        if let Some(world) = world_to_render {
+                            if runtime_state == RuntimeState::Editing {
+                                edited_world = true;
+                            }
+                            if let Err(e) = viewport.ui(
+                                ui,
+                                world,
+                                &mut self.entity_manager,
+                                &mut self.undo_stack,
+                                Some(&mut self.prefab_manager),
+                            ) {
+                                self.console_logs.push(format!("❌ Viewport error: {}", e));
+                                warn!("❌ Viewport error: {}", e);
+                            }
+                        } else {
+                            ui.label("⚠️ No world available for rendering");
+                        }
+
+                        if edited_world {
+                            if let Some(scene_state) = self.scene_state.as_mut() {
+                                scene_state.sync_all();
+                            }
+                        }
+
+                        // Sync selected entity from viewport to app state
+                        if let Some(selected) = viewport.selected_entity() {
+                            self.selected_entity = Some(selected as u64);
+                        }
+
+                        // Sync snapping settings from viewport toolbar to EditorApp
+                        self.snapping_config.grid_enabled = viewport.toolbar().snap_enabled;
+                        self.snapping_config.grid_size = viewport.toolbar().snap_size;
+                        self.snapping_config.angle_enabled = viewport.toolbar().angle_snap_enabled;
+                        self.snapping_config.angle_increment = viewport.toolbar().angle_snap_degrees;
+
+                        ui.add_space(10.0);
+                    });
+
+                    ui.separator();
+                }
+
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    // Auto-expand Console when simulation is running (so users see feedback)
+                    let console_open = self.runtime.is_playing() || !self.console_logs.is_empty();
+
+                    let scene_entity_count = self.active_world().map(|w| w.entities().len()).unwrap_or(0);
+                    let scene_hier_header = format!("Scene Hierarchy ({} entities)", scene_entity_count);
+                    ui.collapsing(scene_hier_header, |ui| self.show_scene_hierarchy(ui));
+                    if self.show_inspector_panel {
+                        let inspector_header = if let Some(entity_id) = self.selection_set.primary {
+                            if let Ok(entity) = u32::try_from(entity_id) {
+                                if let Some(world) = self.active_world() {
+                                    let name = world.name(entity)
+                                        .map(|s| s.to_string())
+                                        .unwrap_or_else(|| format!("Entity_{}", entity));
+                                    format!("Inspector - {}", name)
+                                } else {
+                                    "Inspector".to_string()
+                                }
+                            } else {
+                                "Inspector".to_string()
+                            }
+                        } else {
+                            "Inspector (no selection)".to_string()
+                        };
+                        ui.collapsing(inspector_header, |ui| self.show_inspector(ui));
+                    }
+
+                    if self.show_console_panel {
+                        // Console section with auto-expand when active
+                        let console_header = format!("Console ({} messages)", self.console_logs.len());
+                        egui::CollapsingHeader::new(console_header)
+                            .default_open(console_open)
+                            .show(ui, |ui| self.show_console(ui));
+                    }
+
+                    ui.collapsing("Scene Statistics", |ui| {
+                        self.scene_stats_panel.show_inline(ui);
+                    });
+
+                    ui.collapsing("Performance Profiler", |ui| {
+                        self.profiler_panel.show(ui);
+                    });
+
+                    let runtime_state = self.runtime.state();
+                    let tick_count = self.runtime.stats().tick_count;
+                    let profiler_header = match runtime_state {
+                        RuntimeState::Editing => "Profiler [Editing]".to_string(),
+                        RuntimeState::Playing => format!("Profiler [Playing - Tick {}]", tick_count),
+                        RuntimeState::Paused => format!("Profiler [Paused - Tick {}]", tick_count),
+                        RuntimeState::SteppingOneFrame => format!("Profiler [Step - Tick {}]", tick_count),
+                    };
+                    ui.collapsing(profiler_header, |ui| self.show_profiler(ui));
+                    let graph_node_count = self.graph_panel.total_node_count();
+                    let graph_header = format!("Behavior Graph Editor ({} nodes)", graph_node_count);
+                    ui.collapsing(graph_header, |ui| {
+                        self.show_behavior_graph_editor(ui)
+                    });
+                    ui.collapsing("Dialogue Graph Editor", |ui| {
+                        self.show_dialogue_graph_editor(ui)
+                    });
+                    ui.collapsing("Quest Graph Editor", |ui| self.show_quest_graph_editor(ui));
+                    ui.collapsing("Material Editor", |ui| self.show_material_editor(ui));
+                    ui.collapsing("Material Inspector", |ui| {
+                        self.material_inspector.show(ui, ctx)
+                    });
+                    ui.collapsing("Terrain Painter", |ui| self.show_terrain_painter(ui));
+                    ui.collapsing("Navmesh Controls", |ui| self.show_navmesh_controls(ui));
+                    ui.collapsing("Voxel Editor", |ui| self.show_voxel_editor(ui));
+                    ui.collapsing("Asset Inspector", |ui| self.show_asset_inspector(ui));
+                });
+            });
+    }
+
     fn show_scene_hierarchy(&mut self, ui: &mut egui::Ui) {
         ui.heading("Scene Hierarchy");
 
@@ -3383,6 +4094,434 @@ struct MaterialLiveDoc {
     texture_path: Option<String>,
 }
 
+impl MenuActionHandler for EditorApp {
+    fn on_new(&mut self) {
+        if self.is_dirty {
+            self.show_new_confirm_dialog = true;
+        } else {
+            self.create_new_scene();
+        }
+    }
+
+    fn on_open(&mut self) {
+        // simple hardcoded example; integrate rfd/native dialog if desired
+        let p = self.content_root.join("levels/forest_breach.level.toml");
+        if let Ok(s) = fs::read_to_string(&p) {
+            match toml::from_str::<LevelDoc>(&s) {
+                Ok(ld) => {
+                    self.level = ld;
+                    self.status = format!("Opened {:?}", p);
+                    self.console_logs.push(format!("✅ Opened level: {:?}", p));
+                }
+                Err(e) => {
+                    self.status = format!("Open failed: {e}");
+                    self.console_logs
+                        .push(format!("❌ Failed to open level: {}", e));
+                }
+            }
+        } else {
+            self.console_logs
+                .push(format!("❌ File not found: {:?}", p));
+            self.status = "File not found".into();
+        }
+    }
+
+    fn on_save(&mut self) {
+        let dir = self.content_root.join("levels");
+        let _ = fs::create_dir_all(&dir);
+        let p = dir.join(format!(
+            "{}.level.toml",
+            self.level.title.replace(' ', "_").to_lowercase()
+        ));
+        match toml::to_string_pretty(&self.level) {
+            Ok(txt) => {
+                if let Err(e) = fs::write(&p, txt) {
+                    self.status = format!("Save failed: {e}");
+                    self.console_logs.push(format!("❌ Failed to save: {}", e));
+                } else {
+                    // Signal hot-reload to the runtime
+                    let _ = fs::create_dir_all(&self.content_root);
+                    let _ = fs::write(
+                        self.content_root.join("reload.signal"),
+                        Uuid::new_v4().to_string(),
+                    );
+                    self.status = format!("Saved {:?}", p);
+                    self.console_logs.push(format!("✅ Saved level: {:?}", p));
+                }
+            }
+            Err(e) => {
+                self.status = format!("Serialize failed: {e}");
+                self.console_logs
+                    .push(format!("❌ Serialization failed: {}", e));
+            }
+        }
+    }
+
+    fn on_save_json(&mut self) {
+        let dir = self.content_root.join("levels");
+        let _ = fs::create_dir_all(&dir);
+        let p = dir.join(format!(
+            "{}.level.json",
+            self.level.title.replace(' ', "_").to_lowercase()
+        ));
+        match serde_json::to_string_pretty(&self.level) {
+            Ok(txt) => {
+                if let Err(e) = fs::write(&p, txt) {
+                    self.status = format!("Save JSON failed: {e}");
+                    self.console_logs
+                        .push(format!("❌ Failed to save JSON: {}", e));
+                } else {
+                    self.status = format!("Saved JSON {:?}", p);
+                    self.console_logs.push(format!("✅ Saved JSON: {:?}", p));
+                }
+            }
+            Err(e) => {
+                self.status = format!("Serialize JSON failed: {e}");
+                self.console_logs
+                    .push(format!("❌ JSON serialization failed: {}", e));
+            }
+        }
+    }
+
+    fn on_save_scene(&mut self) {
+        if let Some(world) = self.edit_world() {
+            let path = if let Some(p) = &self.current_scene_path {
+                p.clone()
+            } else {
+                let dir = self.content_root.join("scenes");
+                let _ = fs::create_dir_all(&dir);
+                dir.join("untitled.scene.ron")
+            };
+
+            match scene_serialization::save_scene(world, &path) {
+                Ok(()) => {
+                    self.current_scene_path = Some(path.clone());
+                    self.recent_files.add_file(path.clone());
+                    self.is_dirty = false;
+                    self.status = format!("💾 Saved scene to {:?}", path);
+                    self.toast_success(format!("Saved scene: {:?}", path.file_name().unwrap_or_default()));
+                    self.console_logs
+                        .push(format!("✅ Scene saved: {:?}", path));
+                    self.last_auto_save = std::time::Instant::now();
+                }
+                Err(e) => {
+                    self.status = format!("❌ Scene save failed: {}", e);
+                    self.console_logs
+                        .push(format!("❌ Failed to save scene: {}", e));
+                }
+            }
+        } else {
+            self.console_logs.push("⚠️  No world to save".into());
+        }
+    }
+
+    fn on_load_scene(&mut self) {
+        let path = self.content_root.join("scenes/untitled.scene.ron");
+        self.request_open_scene(path);
+    }
+
+    fn on_undo(&mut self) {
+        if let Some(scene_state) = self.scene_state.as_mut() {
+            let world = scene_state.world_mut();
+            if self.undo_stack.can_undo() {
+                if let Err(e) = self.undo_stack.undo(world) {
+                    self.status = format!("❌ Undo failed: {}", e);
+                } else {
+                    self.status = "↩️ Undo".to_string();
+                }
+            }
+        }
+    }
+
+    fn on_redo(&mut self) {
+        if let Some(scene_state) = self.scene_state.as_mut() {
+            let world = scene_state.world_mut();
+            if self.undo_stack.can_redo() {
+                if let Err(e) = self.undo_stack.redo(world) {
+                    self.status = format!("❌ Redo failed: {}", e);
+                } else {
+                    self.status = "↪️ Redo".to_string();
+                }
+            }
+        }
+    }
+
+    fn selection_count(&self) -> usize {
+        self.selection_set.count()
+    }
+
+    fn on_apply_material(&mut self) {
+        self.apply_material_to_selection();
+    }
+
+    fn on_group_selection(&mut self) {
+        self.group_selection();
+    }
+
+    fn on_ungroup_selection(&mut self) {
+        self.ungroup_selection();
+    }
+
+    fn on_align_selection(&mut self, dir: AlignDirection) {
+        self.align_selection(dir);
+    }
+
+    // Recent Files
+    fn get_recent_files(&self) -> Vec<PathBuf> {
+        self.recent_files.get_files().to_vec()
+    }
+
+    fn on_open_recent(&mut self, path: PathBuf) {
+        if self.is_dirty {
+            self.pending_open_path = Some(path);
+            self.show_open_confirm_dialog = true;
+        } else {
+            self.load_scene_from_path(&path);
+        }
+    }
+
+    fn on_clear_recent(&mut self) {
+        self.recent_files.clear();
+    }
+
+    // View
+    fn is_view_hierarchy_open(&self) -> bool { self.show_hierarchy_panel }
+    fn toggle_view_hierarchy(&mut self) { 
+        self.show_hierarchy_panel = !self.show_hierarchy_panel;
+        self.status = format!("Hierarchy panel {}", if self.show_hierarchy_panel {"shown"} else {"hidden"});
+    }
+
+    fn is_view_inspector_open(&self) -> bool { self.show_inspector_panel }
+    fn toggle_view_inspector(&mut self) {
+        self.show_inspector_panel = !self.show_inspector_panel;
+        self.status = format!("Inspector panel {}", if self.show_inspector_panel {"shown"} else {"hidden"});
+    }
+
+    fn is_view_console_open(&self) -> bool { self.show_console_panel }
+    fn toggle_view_console(&mut self) {
+        self.show_console_panel = !self.show_console_panel;
+        self.status = format!("Console panel {}", if self.show_console_panel {"shown"} else {"hidden"});
+    }
+    
+    fn is_grid_visible(&self) -> bool { self.show_grid }
+    fn toggle_grid(&mut self) {
+        self.show_grid = !self.show_grid;
+        self.status = format!("Grid {}", if self.show_grid {"enabled"} else {"disabled"});
+    }
+
+    // Window
+    fn is_docking_enabled(&self) -> bool { self.use_docking }
+    fn toggle_docking(&mut self) {
+        self.use_docking = !self.use_docking;
+         self.status = format!("Switched to {} layout mode", if self.use_docking { "Docking" } else { "Legacy" });
+    }
+
+    fn on_apply_layout_preset(&mut self, preset_name: &str) {
+        let preset = match preset_name {
+            "Default" => LayoutPreset::Default,
+            "Wide" => LayoutPreset::Wide,
+            "Compact" => LayoutPreset::Compact,
+            "Modeling" => LayoutPreset::Modeling,
+            "Animation" => LayoutPreset::Animation,
+            "Debug" => LayoutPreset::Debug,
+            _ => LayoutPreset::Default,
+        };
+        self.dock_layout = DockLayout::from_preset(preset);
+        self.status = format!("Applied {} layout", preset_name);
+    }
+    
+    fn is_dock_panel_visible(&self, panel: PanelType) -> bool {
+        self.dock_layout.has_panel(&panel)
+    }
+    
+    fn toggle_dock_panel(&mut self, panel: PanelType) {
+        if self.dock_layout.has_panel(&panel) {
+            self.dock_layout.remove_panel(&panel);
+             self.status = format!("Closed {} panel", panel.title());
+        } else {
+            self.dock_layout.add_panel(panel);
+             self.status = format!("Opened {} panel", panel.title());
+        }
+    }
+
+    // Settings
+    fn on_open_settings(&mut self) {
+        self.show_settings_dialog = true;
+    }
+
+    // Debug
+    fn on_scan_for_models(&mut self) {
+        let scan_dirs = [
+            ("Local", PathBuf::from("assets/models")),
+            ("Pine Forest", PathBuf::from("../pine_forest")),
+            ("Downloads PF", PathBuf::from("../../Downloads/pine_forest")),
+        ];
+        let mut found_any = false;
+        for (name, dir) in &scan_dirs {
+            if dir.exists() {
+                if let Ok(entries) = std::fs::read_dir(dir) {
+                    let glb_files: Vec<_> = entries
+                        .filter_map(|e| e.ok())
+                        .filter(|e| {
+                            e.path().extension().map_or(false, |ext| {
+                                ext == "glb" || ext == "gltf"
+                            })
+                        })
+                        .take(8)
+                        .collect();
+                    if !glb_files.is_empty() {
+                        found_any = true;
+                        self.console_logs.push(format!("📁 {} ({}):", name, glb_files.len()));
+                        for entry in glb_files {
+                            self.console_logs.push(format!("  • {}", entry.file_name().to_string_lossy()));
+                        }
+                    }
+                }
+            }
+        }
+        if !found_any {
+            self.console_logs.push("⚠️ No glTF/glb models found in any scanned directory".into());
+        }
+    }
+    
+    fn on_load_test_model(&mut self, name: &str, path: PathBuf) {
+        let target_path = if path.to_string_lossy() == "PINE_TREE_AUTO" {
+            let possible_paths = [
+                PathBuf::from("assets/models/pine_tree_01_1k.glb"),
+                PathBuf::from("../pine_forest/pine_tree_01_1k.glb"),
+                PathBuf::from("../../Downloads/pine_forest/pine_tree_01_1k.glb"),
+            ];
+            possible_paths.iter().find(|p| p.exists()).cloned()
+        } else {
+            if path.exists() { Some(path.clone()) } else { None }
+        };
+        
+        if let Some(target) = target_path {
+             if let Some(viewport) = &self.viewport {
+                match viewport.load_gltf_model(name, &target) {
+                    Ok(()) => {
+                        self.toast_success(format!("Model {} loaded!", name));
+                        self.console_logs.push(format!("✅ Loaded model: {:?}", target));
+                    }
+                    Err(e) => {
+                        self.console_logs.push(format!("❌ Model load failed: {}", e));
+                    }
+                }
+            }
+        } else {
+             self.console_logs.push(format!("⚠️ Model not found: {:?}", path));
+        }
+    }
+    
+    fn on_toggle_engine_rendering(&mut self) {
+        if let Some(viewport) = &self.viewport {
+            if let Ok(mut renderer) = viewport.renderer().lock() {
+                let current = renderer.use_engine_rendering();
+                renderer.set_use_engine_rendering(!current);
+                let state = if !current { "enabled" } else { "disabled" };
+                self.console_logs.push(format!("🎨 Engine rendering {}", state));
+                self.status = format!("Engine rendering {}", state);
+            }
+        }
+    }
+    
+    fn on_show_engine_info(&mut self) {
+         if let Some(viewport) = &self.viewport {
+            if let Ok(renderer) = viewport.renderer().lock() {
+                let engine_active = renderer.use_engine_rendering();
+                let adapter_init = renderer.engine_adapter_initialized();
+                self.console_logs.push(format!(
+                    "🎮 Engine Status:\n  - Engine Rendering: {}\n  - Adapter Initialized: {}",
+                    engine_active, adapter_init
+                ));
+            }
+        }
+    }
+    
+    fn on_debug_material(&mut self, name: &str) {
+         if let Some(viewport) = &self.viewport {
+            let res = match name {
+                "Red" => viewport.set_material_params([1.0, 0.2, 0.2, 1.0], 0.0, 0.5),
+                "Green" => viewport.set_material_params([0.2, 0.8, 0.2, 1.0], 0.9, 0.3),
+                "Blue" => viewport.set_material_params([0.2, 0.3, 0.9, 1.0], 0.1, 0.9),
+                "White" => viewport.set_material_params([1.0, 1.0, 1.0, 1.0], 0.0, 0.5),
+                _ => Ok(()),
+            };
+            if let Err(e) = res {
+                 self.console_logs.push(format!("⚠️ Material error: {}", e));
+            } else {
+                 self.console_logs.push(format!("{} material applied", name));
+            }
+        }
+    }
+    
+    fn on_debug_time_set(&mut self, time: f32) {
+         if let Some(viewport) = &self.viewport {
+            if let Err(e) = viewport.set_time_of_day(time) {
+                self.console_logs.push(format!("⚠️ Lighting error: {}", e));
+            } else {
+                self.console_logs.push(format!("Time set to {}", time));
+            }
+        }
+    }
+    
+    fn get_time_of_day(&self) -> f32 {
+         self.viewport.as_ref().and_then(|v| v.get_time_of_day().ok()).unwrap_or(0.0)
+    }
+    
+    fn get_time_period(&self) -> String {
+         self.viewport.as_ref().and_then(|v| v.get_time_period().ok()).unwrap_or("Unknown").to_string()
+    }
+    
+    fn is_shadows_enabled(&self) -> bool {
+        self.viewport.as_ref().and_then(|v| v.shadows_enabled().ok()).unwrap_or(false)
+    }
+    
+    fn set_shadows_enabled(&mut self, enabled: bool) {
+         if let Some(viewport) = &self.viewport {
+             if let Err(e) = viewport.set_shadows_enabled(enabled) {
+                 self.console_logs.push(format!("⚠️ Shadow error: {}", e));
+             } else {
+                 self.console_logs.push(format!("Shadows {}", if enabled { "enabled" } else { "disabled" }));
+             }
+         }
+    }
+    
+    fn on_diff_assets(&mut self) {
+        match std::process::Command::new("git").args(["diff", "assets"]).output() {
+            Ok(output) => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if stdout.is_empty() && stderr.is_empty() {
+                    self.console_logs.push("No asset changes.".into());
+                } else {
+                    self.console_logs.push(format!("Asset diff:\n{}", stdout));
+                     if !stderr.is_empty() { self.console_logs.push(format!("Diff stderr: {}", stderr)); }
+                }
+            }
+            Err(e) => self.console_logs.push(format!("Git diff failed: {}", e)),
+         }
+    }
+    
+    fn on_clear_console(&mut self) {
+        self.console_logs.clear();
+    }
+
+    fn on_distribute_selection(&mut self, dir: DistributeDirection) {
+        self.distribute_selection(dir);
+    }
+
+    fn on_select_all(&mut self) {
+        self.select_all_entities();
+    }
+
+    fn on_deselect_all(&mut self) {
+        self.selection_set.clear();
+        self.selected_entity = None;
+        self.status = "🚫 Deselected all".to_string();
+    }
+}
+
 impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // FORCE zero spacing for all panels to eliminate unclaimed gaps
@@ -4598,720 +5737,12 @@ impl eframe::App for EditorApp {
                 ui.set_min_size(ui.available_size());
                 ui.heading("AstraWeave Level & Encounter Editor");
             ui.separator();
+            MenuBar::show(ui, self);
+            ui.separator();
+
             ui.horizontal(|ui| {
-                if ui.button("New").clicked() {
-                    if self.is_dirty {
-                        self.show_new_confirm_dialog = true;
-                    } else {
-                        self.create_new_scene();
-                    }
-                }
-                if ui.button("Open").clicked() {
-                    // simple hardcoded example; integrate rfd/native dialog if desired
-                    let p = self.content_root.join("levels/forest_breach.level.toml");
-                    if let Ok(s) = fs::read_to_string(&p) {
-                        match toml::from_str::<LevelDoc>(&s) {
-                            Ok(ld) => {
-                                self.level = ld;
-                                self.status = format!("Opened {:?}", p);
-                                self.console_logs.push(format!("✅ Opened level: {:?}", p));
-                            }
-                            Err(e) => {
-                                self.status = format!("Open failed: {e}");
-                                self.console_logs
-                                    .push(format!("❌ Failed to open level: {}", e));
-                            }
-                        }
-                    } else {
-                        self.console_logs
-                            .push(format!("❌ File not found: {:?}", p));
-                        self.status = "File not found".into();
-                    }
-                }
-                if ui.button("Save").clicked() {
-                    let dir = self.content_root.join("levels");
-                    let _ = fs::create_dir_all(&dir);
-                    let p = dir.join(format!(
-                        "{}.level.toml",
-                        self.level.title.replace(' ', "_").to_lowercase()
-                    ));
-                    match toml::to_string_pretty(&self.level) {
-                        Ok(txt) => {
-                            if let Err(e) = fs::write(&p, txt) {
-                                self.status = format!("Save failed: {e}");
-                                self.console_logs.push(format!("❌ Failed to save: {}", e));
-                            } else {
-                                // Signal hot-reload to the runtime
-                                let _ = fs::create_dir_all(&self.content_root);
-                                let _ = fs::write(
-                                    self.content_root.join("reload.signal"),
-                                    Uuid::new_v4().to_string(),
-                                );
-                                self.status = format!("Saved {:?}", p);
-                                self.console_logs.push(format!("✅ Saved level: {:?}", p));
-                            }
-                        }
-                        Err(e) => {
-                            self.status = format!("Serialize failed: {e}");
-                            self.console_logs
-                                .push(format!("❌ Serialization failed: {}", e));
-                        }
-                    }
-                }
-                if ui.button("Save JSON").clicked() {
-                    let dir = self.content_root.join("levels");
-                    let _ = fs::create_dir_all(&dir);
-                    let p = dir.join(format!(
-                        "{}.level.json",
-                        self.level.title.replace(' ', "_").to_lowercase()
-                    ));
-                    match serde_json::to_string_pretty(&self.level) {
-                        Ok(txt) => {
-                            if let Err(e) = fs::write(&p, txt) {
-                                self.status = format!("Save JSON failed: {e}");
-                                self.console_logs
-                                    .push(format!("❌ Failed to save JSON: {}", e));
-                            } else {
-                                self.status = format!("Saved JSON {:?}", p);
-                                self.console_logs.push(format!("✅ Saved JSON: {:?}", p));
-                            }
-                        }
-                        Err(e) => {
-                            self.status = format!("Serialize JSON failed: {e}");
-                            self.console_logs
-                                .push(format!("❌ JSON serialization failed: {}", e));
-                        }
-                    }
-                }
-
-                ui.separator();
-
-                if ui.button("💾 Save Scene").clicked() {
-                    if let Some(world) = self.edit_world() {
-                        let path = if let Some(p) = &self.current_scene_path {
-                            p.clone()
-                        } else {
-                            let dir = self.content_root.join("scenes");
-                            let _ = fs::create_dir_all(&dir);
-                            dir.join("untitled.scene.ron")
-                        };
-
-                        match scene_serialization::save_scene(world, &path) {
-                            Ok(()) => {
-                                self.current_scene_path = Some(path.clone());
-                                self.recent_files.add_file(path.clone());
-                                self.is_dirty = false;
-                                self.status = format!("💾 Saved scene to {:?}", path);
-                                self.toast_success(format!("Saved scene: {:?}", path.file_name().unwrap_or_default()));
-                                self.console_logs
-                                    .push(format!("✅ Scene saved: {:?}", path));
-                                self.last_auto_save = std::time::Instant::now();
-                            }
-                            Err(e) => {
-                                self.status = format!("❌ Scene save failed: {}", e);
-                                self.console_logs
-                                    .push(format!("❌ Failed to save scene: {}", e));
-                            }
-                        }
-                    } else {
-                        self.console_logs.push("⚠️  No world to save".into());
-                    }
-                }
-
-                // Week 7: Load Scene with unsaved changes confirmation
-                if ui.button("📂 Load Scene").clicked() {
-                    let path = self.content_root.join("scenes/untitled.scene.ron");
-                    self.request_open_scene(path);
-                }
-
-                ui.separator();
-
-                // Week 5 Day 1-2: Edit menu with multi-select operations
-                ui.menu_button("✏️ Edit", |ui| {
-                    // Standard edit operations
-                    if ui.button("↩️ Undo (Ctrl+Z)").clicked() {
-                        if let Some(scene_state) = self.scene_state.as_mut() {
-                            let world = scene_state.world_mut();
-                            if self.undo_stack.can_undo() {
-                                if let Err(e) = self.undo_stack.undo(world) {
-                                    self.status = format!("❌ Undo failed: {}", e);
-                                } else {
-                                    self.status = "↩️ Undo".to_string();
-                                }
-                            }
-                        }
-                        ui.close();
-                    }
-                    
-                    if ui.button("↪️ Redo (Ctrl+Y)").clicked() {
-                        if let Some(scene_state) = self.scene_state.as_mut() {
-                            let world = scene_state.world_mut();
-                            if self.undo_stack.can_redo() {
-                                if let Err(e) = self.undo_stack.redo(world) {
-                                    self.status = format!("❌ Redo failed: {}", e);
-                                } else {
-                                    self.status = "↪️ Redo".to_string();
-                                }
-                            }
-                        }
-                        ui.close();
-                    }
-                    
-                    ui.separator();
-                    
-                    // Multi-select operations
-                    let selection_count = self.selection_set.count();
-                    let has_multi_selection = selection_count > 1;
-                    
-                    ui.label(format!("📦 {} selected", selection_count));
-                    ui.separator();
-                    
-                    // Apply material to all selected
-                    if ui.add_enabled(has_multi_selection, egui::Button::new("🎨 Apply Material to All")).clicked() {
-                        self.apply_material_to_selection();
-                        ui.close();
-                    }
-                    
-                    ui.separator();
-                    
-                    // Group operations
-                    if ui.add_enabled(has_multi_selection, egui::Button::new("📁 Group Selection (Ctrl+G)")).clicked() {
-                        self.group_selection();
-                        ui.close();
-                    }
-                    
-                    if ui.button("📂 Ungroup (Ctrl+Shift+G)").clicked() {
-                        self.ungroup_selection();
-                        ui.close();
-                    }
-                    
-                    ui.separator();
-                    
-                    // Alignment tools (Week 5)
-                    ui.label("📐 Align Selection:");
-                    ui.horizontal(|ui| {
-                        if ui.add_enabled(has_multi_selection, egui::Button::new("⬅")).on_hover_text("Align Left").clicked() {
-                            self.align_selection(AlignDirection::Left);
-                        }
-                        if ui.add_enabled(has_multi_selection, egui::Button::new("➡")).on_hover_text("Align Right").clicked() {
-                            self.align_selection(AlignDirection::Right);
-                        }
-                        if ui.add_enabled(has_multi_selection, egui::Button::new("⬆")).on_hover_text("Align Top").clicked() {
-                            self.align_selection(AlignDirection::Top);
-                        }
-                        if ui.add_enabled(has_multi_selection, egui::Button::new("⬇")).on_hover_text("Align Bottom").clicked() {
-                            self.align_selection(AlignDirection::Bottom);
-                        }
-                    });
-                    ui.horizontal(|ui| {
-                        if ui.add_enabled(has_multi_selection, egui::Button::new("⏺ Center X")).on_hover_text("Center horizontally").clicked() {
-                            self.align_selection(AlignDirection::CenterX);
-                        }
-                        if ui.add_enabled(has_multi_selection, egui::Button::new("⏺ Center Z")).on_hover_text("Center vertically").clicked() {
-                            self.align_selection(AlignDirection::CenterZ);
-                        }
-                    });
-                    
-                    ui.separator();
-                    
-                    // Distribute
-                    ui.label("📏 Distribute:");
-                    ui.horizontal(|ui| {
-                        if ui.add_enabled(selection_count >= 3, egui::Button::new("↔ X")).on_hover_text("Distribute evenly along X").clicked() {
-                            self.distribute_selection(DistributeDirection::X);
-                        }
-                        if ui.add_enabled(selection_count >= 3, egui::Button::new("↕ Z")).on_hover_text("Distribute evenly along Z").clicked() {
-                            self.distribute_selection(DistributeDirection::Z);
-                        }
-                    });
-                    
-                    ui.separator();
-                    
-                    // Select all / deselect
-                    if ui.button("📦 Select All (Ctrl+A)").clicked() {
-                        self.select_all_entities();
-                        ui.close();
-                    }
-                    if ui.button("🚫 Deselect All (Esc)").clicked() {
-                        self.selection_set.clear();
-                        self.selected_entity = None;
-                        self.status = "🚫 Deselected all".to_string();
-                        ui.close();
-                    }
-                });
-
-                // Week 7: Recent Files menu with unsaved changes confirmation
-                ui.menu_button("📚 Recent Files", |ui| {
-                    let recent_files = self.recent_files.get_files().to_vec();
-
-                    if recent_files.is_empty() {
-                        ui.label("No recent files");
-                    } else {
-                        for path in recent_files {
-                            let file_name = path
-                                .file_name()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or("Unknown");
-
-                            if ui.button(file_name).clicked() {
-                                // Week 7: Check for unsaved changes before loading
-                                if self.is_dirty {
-                                    self.pending_open_path = Some(path);
-                                    self.show_open_confirm_dialog = true;
-                                } else {
-                                    self.load_scene_from_path(&path);
-                                }
-                                ui.close();
-                            }
-                        }
-
-                        ui.separator();
-
-                        if ui.button("🗑️ Clear Recent Files").clicked() {
-                            self.recent_files.clear();
-                            ui.close();
-                        }
-                    }
-                });
-
-                ui.menu_button("👁 View", |ui| {
-                    if ui.checkbox(&mut self.show_hierarchy_panel, "Hierarchy Panel").changed() {
-                        let state = if self.show_hierarchy_panel { "shown" } else { "hidden" };
-                        self.status = format!("Hierarchy panel {}", state);
-                    }
-                    if ui.checkbox(&mut self.show_inspector_panel, "Inspector Panel").changed() {
-                        let state = if self.show_inspector_panel { "shown" } else { "hidden" };
-                        self.status = format!("Inspector panel {}", state);
-                    }
-                    if ui.checkbox(&mut self.show_console_panel, "Console Panel").changed() {
-                        let state = if self.show_console_panel { "shown" } else { "hidden" };
-                        self.status = format!("Console panel {}", state);
-                    }
-                    ui.separator();
-                    if ui.checkbox(&mut self.show_grid, "Grid").changed() {
-                        let state = if self.show_grid { "enabled" } else { "disabled" };
-                        self.status = format!("Grid {}", state);
-                    }
-                });
-
-                // Window menu for docking layouts
-                ui.menu_button("🪟 Window", |ui| {
-                    // Toggle between legacy and docking UI
-                    if ui.checkbox(&mut self.use_docking, "📐 Use Docking Layout").changed() {
-                        let mode = if self.use_docking { "Docking" } else { "Legacy" };
-                        self.status = format!("Switched to {} layout mode", mode);
-                    }
-
-                    ui.separator();
-                    ui.label("Layout Presets:");
-
-                    if ui.button("📊 Default").clicked() {
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Default);
-                        self.status = "Applied Default layout".to_string();
-                        ui.close();
-                    }
-                    if ui.button("📐 Wide").clicked() {
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Wide);
-                        self.status = "Applied Wide layout".to_string();
-                        ui.close();
-                    }
-                    if ui.button("📦 Compact").clicked() {
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Compact);
-                        self.status = "Applied Compact layout".to_string();
-                        ui.close();
-                    }
-                    if ui.button("🎨 Modeling").clicked() {
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Modeling);
-                        self.status = "Applied Modeling layout".to_string();
-                        ui.close();
-                    }
-                    if ui.button("🎬 Animation").clicked() {
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Animation);
-                        self.status = "Applied Animation layout".to_string();
-                        ui.close();
-                    }
-                    if ui.button("🐛 Debug").clicked() {
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Debug);
-                        self.status = "Applied Debug layout".to_string();
-                        ui.close();
-                    }
-
-                    ui.separator();
-                    ui.label("Panels:");
-
-                    // Show available panels to add
-                    for &panel_type in PanelType::all() {
-                        let is_visible = self.dock_layout.has_panel(&panel_type);
-                        let label = format!("{} {}", panel_type.icon(), panel_type.title());
-                        if ui.selectable_label(is_visible, label).clicked() {
-                            if is_visible {
-                                self.dock_layout.remove_panel(&panel_type);
-                                self.status = format!("Closed {} panel", panel_type.title());
-                            } else {
-                                self.dock_layout.add_panel(panel_type);
-                                self.status = format!("Opened {} panel", panel_type.title());
-                            }
-                        }
-                    }
-                });
-
-                if ui.button("⚙ Settings").clicked() {
-                    self.show_settings_dialog = true;
-                }
-
-                // Debug menu for testing engine features
-                ui.menu_button("🐛 Debug", |ui| {
-                    ui.label("🎨 Viewport Tests:");
-
-                    #[cfg(feature = "astraweave-render")]
-                    {
-                        // Test glTF loading with a sample model
-                        if ui.button("📦 Load Test Model (barrels.glb)").clicked() {
-                            let test_path = PathBuf::from("assets/models/barrels.glb");
-                            if test_path.exists() {
-                                if let Some(viewport) = &self.viewport {
-                                    match viewport.load_gltf_model("test_barrels", &test_path) {
-                                        Ok(()) => {
-                                            self.toast_success("Test model loaded successfully!");
-                                            self.console_logs.push("✅ Loaded test model: barrels.glb".into());
-                                            self.status = "Test model loaded - PBR rendering enabled".into();
-                                        }
-                                        Err(e) => {
-                                            self.toast_error(format!("Model load failed: {}", e));
-                                            self.console_logs.push(format!("❌ Test model failed: {}", e));
-                                            self.status = format!("Model load error: {}", e);
-                                        }
-                                    }
-                                } else {
-                                    self.console_logs.push("⚠️ Viewport not initialized".into());
-                                }
-                            } else {
-                                self.console_logs.push(format!("⚠️ Test model not found: {:?}", test_path));
-                            }
-                            ui.close();
-                        }
-
-                        // Load bed model (another simple test)
-                        if ui.button("🛏️ Load Test Model (bed.glb)").clicked() {
-                            let test_path = PathBuf::from("assets/models/bed.glb");
-                            if test_path.exists() {
-                                if let Some(viewport) = &self.viewport {
-                                    match viewport.load_gltf_model("test_bed", &test_path) {
-                                        Ok(()) => {
-                                            self.toast_success("Bed model loaded!");
-                                            self.console_logs.push("✅ Loaded test model: bed.glb".into());
-                                        }
-                                        Err(e) => {
-                                            self.console_logs.push(format!("❌ bed.glb failed: {}", e));
-                                        }
-                                    }
-                                }
-                            } else {
-                                self.console_logs.push("⚠️ bed.glb not found".into());
-                            }
-                            ui.close();
-                        }
-
-                        // Load pine tree - check local first, then external locations
-                        if ui.button("🌲 Load Pine Tree").clicked() {
-                            // Try multiple possible paths - local first, then external
-                            let possible_paths = [
-                                PathBuf::from("assets/models/pine_tree_01_1k.glb"),  // Local copy
-                                PathBuf::from("../pine_forest/pine_tree_01_1k.glb"),
-                                PathBuf::from("../../Downloads/pine_forest/pine_tree_01_1k.glb"),
-                            ];
-                            let mut loaded = false;
-                            for test_path in &possible_paths {
-                                if test_path.exists() {
-                                    if let Some(viewport) = &self.viewport {
-                                        match viewport.load_gltf_model("pine_tree", test_path) {
-                                            Ok(()) => {
-                                                self.toast_success("Pine tree loaded!");
-                                                self.console_logs.push(format!(
-                                                    "✅ Loaded pine tree from: {:?}",
-                                                    test_path
-                                                ));
-                                                loaded = true;
-                                                break;
-                                            }
-                                            Err(e) => {
-                                                self.console_logs.push(format!(
-                                                    "❌ Pine tree failed: {} (from {:?})",
-                                                    e, test_path
-                                                ));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if !loaded {
-                                self.console_logs.push("⚠️ Pine tree not found in any expected location".into());
-                            }
-                            ui.close();
-                        }
-
-                        // Toggle engine rendering
-                        if ui.button("🔄 Toggle Engine Rendering").clicked() {
-                            if let Some(viewport) = &self.viewport {
-                                if let Ok(mut renderer) = viewport.renderer().lock() {
-                                    let current = renderer.use_engine_rendering();
-                                    renderer.set_use_engine_rendering(!current);
-                                    let state = if !current { "enabled" } else { "disabled" };
-                                    self.console_logs.push(format!("🎨 Engine rendering {}", state));
-                                    self.status = format!("Engine rendering {}", state);
-                                }
-                            }
-                            ui.close();
-                        }
-                    }
-
-                    #[cfg(not(feature = "astraweave-render"))]
-                    {
-                        ui.label("⚠️ astraweave-render feature not enabled");
-                    }
-
-                    ui.separator();
-                    ui.label("📊 Diagnostics:");
-
-                    if ui.button("📋 Show Engine Info").clicked() {
-                        if let Some(viewport) = &self.viewport {
-                            if let Ok(renderer) = viewport.renderer().lock() {
-                                let engine_active = renderer.use_engine_rendering();
-                                let adapter_init = renderer.engine_adapter_initialized();
-                                self.console_logs.push(format!(
-                                    "🎮 Engine Status:\n  - Engine Rendering: {}\n  - Adapter Initialized: {}",
-                                    engine_active, adapter_init
-                                ));
-                            }
-                        }
-                        ui.close();
-                    }
-
-                    ui.separator();
-                    ui.label("🎨 Material Testing:");
-
-                    if ui.button("🔴 Red Material").clicked() {
-                        if let Some(viewport) = &self.viewport {
-                            if let Err(e) = viewport.set_material_params([1.0, 0.2, 0.2, 1.0], 0.0, 0.5) {
-                                self.console_logs.push(format!("⚠️ Material error: {}", e));
-                            } else {
-                                self.console_logs.push("🔴 Applied red material".into());
-                            }
-                        }
-                        ui.close();
-                    }
-
-                    if ui.button("🟢 Green Metallic").clicked() {
-                        if let Some(viewport) = &self.viewport {
-                            if let Err(e) = viewport.set_material_params([0.2, 0.8, 0.2, 1.0], 0.9, 0.3) {
-                                self.console_logs.push(format!("⚠️ Material error: {}", e));
-                            } else {
-                                self.console_logs.push("🟢 Applied green metallic".into());
-                            }
-                        }
-                        ui.close();
-                    }
-
-                    if ui.button("🔵 Blue Rough").clicked() {
-                        if let Some(viewport) = &self.viewport {
-                            if let Err(e) = viewport.set_material_params([0.2, 0.3, 0.9, 1.0], 0.1, 0.9) {
-                                self.console_logs.push(format!("⚠️ Material error: {}", e));
-                            } else {
-                                self.console_logs.push("🔵 Applied blue rough".into());
-                            }
-                        }
-                        ui.close();
-                    }
-
-                    if ui.button("⬜ White Default").clicked() {
-                        if let Some(viewport) = &self.viewport {
-                            if let Err(e) = viewport.set_material_params([1.0, 1.0, 1.0, 1.0], 0.0, 0.5) {
-                                self.console_logs.push(format!("⚠️ Material error: {}", e));
-                            } else {
-                                self.console_logs.push("⬜ Applied white default".into());
-                            }
-                        }
-                        ui.close();
-                    }
-
-                    ui.separator();
-                    ui.label("☀️ Lighting / Time of Day:");
-
-                    // Time presets row
-                    ui.horizontal(|ui| {
-                        if ui.button("🌅 Dawn (6:00)").clicked() {
-                            if let Some(viewport) = &self.viewport {
-                                if let Err(e) = viewport.set_time_of_day(6.0) {
-                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
-                                } else {
-                                    self.console_logs.push("🌅 Set time to dawn (6:00)".into());
-                                }
-                            }
-                        }
-                        if ui.button("☀️ Noon (12:00)").clicked() {
-                            if let Some(viewport) = &self.viewport {
-                                if let Err(e) = viewport.set_time_of_day(12.0) {
-                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
-                                } else {
-                                    self.console_logs.push("☀️ Set time to noon (12:00)".into());
-                                }
-                            }
-                        }
-                    });
-
-                    ui.horizontal(|ui| {
-                        if ui.button("🌇 Sunset (18:00)").clicked() {
-                            if let Some(viewport) = &self.viewport {
-                                if let Err(e) = viewport.set_time_of_day(18.0) {
-                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
-                                } else {
-                                    self.console_logs.push("🌇 Set time to sunset (18:00)".into());
-                                }
-                            }
-                        }
-                        if ui.button("🌙 Midnight (0:00)").clicked() {
-                            if let Some(viewport) = &self.viewport {
-                                if let Err(e) = viewport.set_time_of_day(0.0) {
-                                    self.console_logs.push(format!("⚠️ Lighting error: {}", e));
-                                } else {
-                                    self.console_logs.push("🌙 Set time to midnight (0:00)".into());
-                                }
-                            }
-                        }
-                    });
-
-                    // Show current time
-                    if let Some(viewport) = &self.viewport {
-                        if let Ok(time) = viewport.get_time_of_day() {
-                            let period = viewport.get_time_period().unwrap_or("Unknown");
-                            let hours = time.floor() as u32;
-                            let minutes = ((time - time.floor()) * 60.0) as u32;
-                            ui.label(format!("🕐 Current: {:02}:{:02} ({})", hours, minutes, period));
-                        }
-                    }
-
-                    // Shadow toggle
-                    ui.horizontal(|ui| {
-                        let shadows_on = self.viewport.as_ref()
-                            .and_then(|v| v.shadows_enabled().ok())
-                            .unwrap_or(true);
-                        let shadow_label = if shadows_on { "🔦 Shadows: ON" } else { "🔦 Shadows: OFF" };
-                        if ui.button(shadow_label).clicked() {
-                            if let Some(viewport) = &self.viewport {
-                                if let Err(e) = viewport.set_shadows_enabled(!shadows_on) {
-                                    self.console_logs.push(format!("⚠️ Shadow error: {}", e));
-                                } else {
-                                    let status = if !shadows_on { "enabled" } else { "disabled" };
-                                    self.console_logs.push(format!("🔦 Shadows {}", status));
-                                }
-                            }
-                        }
-                    });
-
-                    ui.separator();
-                    ui.label("📁 Model Discovery:");
-
-                    if ui.button("📁 Scan For Models").clicked() {
-                        let scan_dirs = [
-                            ("Local", PathBuf::from("assets/models")),
-                            ("Pine Forest", PathBuf::from("../pine_forest")),
-                            ("Downloads PF", PathBuf::from("../../Downloads/pine_forest")),
-                        ];
-                        let mut found_any = false;
-                        for (name, dir) in &scan_dirs {
-                            if dir.exists() {
-                                if let Ok(entries) = std::fs::read_dir(dir) {
-                                    let glb_files: Vec<_> = entries
-                                        .filter_map(|e| e.ok())
-                                        .filter(|e| {
-                                            e.path().extension().map_or(false, |ext| {
-                                                ext == "glb" || ext == "gltf"
-                                            })
-                                        })
-                                        .take(8)
-                                        .collect();
-                                    if !glb_files.is_empty() {
-                                        found_any = true;
-                                        self.console_logs.push(format!("📁 {} ({}):", name, glb_files.len()));
-                                        for entry in glb_files {
-                                            self.console_logs.push(format!("  • {}", entry.file_name().to_string_lossy()));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if !found_any {
-                            self.console_logs.push("⚠️ No glTF/glb models found in any scanned directory".into());
-                        }
-                        ui.close();
-                    }
-
-                    if ui.button("🗑️ Clear Console").clicked() {
-                        self.console_logs.clear();
-                        ui.close();
-                    }
-                });
-
-                ui.separator();
-
-                // Phase 4: Play-in-Editor controls
-                ui.horizontal(|ui| {
-                    ui.label("Play:");
-
-                    let play_enabled =
-                        self.editor_mode.is_editing() || self.editor_mode.is_paused();
-                    if ui
-                        .add_enabled(play_enabled, egui::Button::new("▶️ Play (F5)"))
-                        .clicked()
-                    {
-                        self.request_play();
-                    }
-
-                    let pause_enabled = self.editor_mode.is_playing();
-                    if ui
-                        .add_enabled(pause_enabled, egui::Button::new("⏸️ Pause (F6)"))
-                        .clicked()
-                    {
-                        self.request_pause();
-                    }
-
-                    let step_enabled = self.editor_mode.is_paused();
-                    if ui
-                        .add_enabled(step_enabled, egui::Button::new("⏭️ Step (F8)"))
-                        .clicked()
-                    {
-                        self.request_step();
-                    }
-
-                    let stop_enabled = !self.editor_mode.is_editing();
-                    if ui
-                        .add_enabled(stop_enabled, egui::Button::new("⏹️ Stop (F7)"))
-                        .clicked()
-                    {
-                        self.request_stop();
-                    }
-
-                    ui.separator();
-
-                    let status_label = egui::RichText::new(self.editor_mode.status_text())
-                        .color(self.editor_mode.status_color());
-                    ui.label(status_label);
-
-                    if !self.editor_mode.is_editing() {
-                        let stats = self.runtime.stats();
-                        ui.label(format!(
-                            "| tick {} | entities {} | {:.1} ms ({:.0} FPS)",
-                            stats.tick_count, stats.entity_count, stats.frame_time_ms, stats.fps
-                        ));
-                    } else if let Some(world) = self.active_world() {
-                        ui.label(format!("| {} entities", world.entities().len()));
-                    }
-                });
                 if ui.button("Diff Assets").clicked() {
-                    match std::process::Command::new("git")
-                        .args(["diff", "assets"])
-                        .output()
-                    {
+                     match std::process::Command::new("git").args(["diff", "assets"]).output() {
                         Ok(output) => {
                             let stdout = String::from_utf8_lossy(&output.stdout);
                             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -5319,15 +5750,14 @@ impl eframe::App for EditorApp {
                                 self.console_logs.push("No asset changes.".into());
                             } else {
                                 self.console_logs.push(format!("Asset diff:\n{}", stdout));
-                                if !stderr.is_empty() {
-                                    self.console_logs.push(format!("Diff stderr: {}", stderr));
-                                }
+                                if !stderr.is_empty() { self.console_logs.push(format!("Diff stderr: {}", stderr)); }
                             }
                         }
                         Err(e) => self.console_logs.push(format!("Git diff failed: {}", e)),
-                    }
+                     }
                 }
             });
+
             ui.label(&self.status);
 
             // Show play controls in toolbar
@@ -5357,670 +5787,21 @@ impl eframe::App for EditorApp {
             });
         });
 
-        // BOTTOM PANEL - StatusBar (Phase 3.5 & 4) - Moved before SidePanel for standard layout order
-        let bottom_entity_count = self
-            .scene_state
-            .as_ref()
-            .map(|s| s.world().entities().len())
-            .unwrap_or(0);
-
-        // Week 6 Day 5: Sample resource usage periodically (every 500ms)
-        if self.last_resource_sample.elapsed() > std::time::Duration::from_millis(500) {
-            self.sample_resource_usage();
-            self.last_resource_sample = std::time::Instant::now();
-        }
-
-        // Clone the path string to avoid borrow conflicts
-        let bottom_scene_path_str: Option<String> = self.current_scene_path.as_ref().and_then(|p| p.to_str()).map(String::from);
-        let bottom_scene_path_ref = bottom_scene_path_str.as_deref();
-
-        egui::TopBottomPanel::bottom("status_bar")
-            .min_height(24.0)
-            .show(ctx, |ui| {
-                ui.set_min_size(ui.available_size());
-                // Week 6 Day 5: Use enhanced status bar with progress and resource usage
-                StatusBar::show_enhanced(
-                    ui,
-                    &self.editor_mode,
-                    &self.current_gizmo_mode,
-                    &self.selection_set,
-                    &self.undo_stack,
-                    &self.snapping_config,
-                    self.current_fps,
-                    self.is_dirty,
-                    bottom_entity_count,
-                    bottom_scene_path_ref,
-                    &mut self.progress_manager,
-                    &self.resource_usage,
-                );
-            });
+        self.show_status_bar(ctx);
 
         // LEFT PANEL - Only show in legacy mode (pruned for docking)
         if !self.use_docking {
-            egui::SidePanel::left("astract_left_panel")
-                .resizable(true)
-                .min_width(250.0)
-                .frame(egui::Frame::NONE.inner_margin(0.0))
-                .show(ctx, |ui| {
-                    ui.set_min_size(ui.available_size());
-
-                    ui.vertical(|ui| {
-                        ui.set_min_size(ui.available_size());
-
-                        ui.heading("📋 Hierarchy");
-                        ui.add_space(4.0);
-
-                        // Search bar
-                        ui.horizontal(|ui| {
-                            ui.set_min_width(ui.available_width());
-                            ui.label("🔍");
-                            ui.text_edit_singleline(&mut self.level.title);
-                        });
-                        ui.separator();
-
-                        egui::ScrollArea::vertical()
-                            .auto_shrink([false, false])
-                            .show(ui, |ui| {
-                                ui.set_min_size(ui.available_size());
-                                self.show_scene_hierarchy(ui);
-                            });
-                    });
-                });
+            self.show_legacy_left_panel(ctx);
         }
 
         // Performance indicator was moved to header - see show_play_controls
 
         // Render main content area - either docking layout or legacy panels
         if self.use_docking {
-            // Phase 11: Professional Docking System
-            // Sync selected entity to tab viewer
-            self.dock_tab_viewer
-                .set_selected_entity(self.selected_entity);
-            self.dock_tab_viewer
-                .set_is_playing(!self.editor_mode.is_editing());
-            self.dock_tab_viewer.begin_frame();
-
-            // Sync entity list for hierarchy panel
-            let entity_list: Vec<EntityInfo> = self
-                .entity_manager
-                .entities()
-                .iter()
-                .map(|(id, entity)| EntityInfo {
-                    id: *id,
-                    name: entity.name.clone(),
-                    components: entity.components.keys().cloned().collect(),
-                    entity_type: if entity.components.contains_key("Camera") {
-                        "Camera".to_string()
-                    } else if entity.components.contains_key("Light") {
-                        "Light".to_string()
-                    } else if entity.components.contains_key("Mesh") {
-                        "Mesh".to_string()
-                    } else {
-                        "Entity".to_string()
-                    },
-                })
-                .collect();
-            self.dock_tab_viewer.set_entity_list(entity_list);
-
-            // Sync selected entity transform for inspector
-            if let Some(entity_id) = self.selected_entity {
-                if let Some(entity) = self.entity_manager.get(entity_id) {
-                    let (pos, rot, scale) = entity.transform();
-                    // Convert to 2D-like format: x, y, rotation_z, scale_x, scale_y
-                    let angle = rot.to_euler(glam::EulerRot::ZXY).0;
-                    self.dock_tab_viewer
-                        .set_selected_transform(Some((pos.x, pos.y, angle, scale.x, scale.y)));
-                    let entity_type = if entity.components.contains_key("Camera") {
-                        "Camera".to_string()
-                    } else if entity.components.contains_key("Light") {
-                        "Light".to_string()
-                    } else if entity.components.contains_key("Mesh") {
-                        "Mesh".to_string()
-                    } else {
-                        "Entity".to_string()
-                    };
-                    self.dock_tab_viewer
-                        .set_selected_entity_info(Some(EntityInfo {
-                            id: entity_id,
-                            name: entity.name.clone(),
-                            components: entity.components.keys().cloned().collect(),
-                            entity_type,
-                        }));
-                } else {
-                    self.dock_tab_viewer.set_selected_transform(None);
-                    self.dock_tab_viewer.set_selected_entity_info(None);
-                }
-            } else {
-                self.dock_tab_viewer.set_selected_transform(None);
-                self.dock_tab_viewer.set_selected_entity_info(None);
-            }
-
-            // Sync console logs
-            self.dock_tab_viewer
-                .set_console_logs(self.console_logs.clone());
-
-            // Sync runtime stats for profiler panel
-            let runtime_stats = tab_viewer::RuntimeStatsInfo {
-                frame_time_ms: self.runtime.stats().frame_time_ms,
-                fps: self.current_fps,
-                entity_count: self.entity_manager.entities().len(),
-                tick_count: self.runtime.stats().tick_count,
-                is_playing: self.runtime.is_playing(),
-                is_paused: self.runtime.is_paused(),
-                // Subsystem timing (placeholder values - would come from actual profiling)
-                render_time_ms: self.runtime.stats().frame_time_ms * 0.4, // ~40% for render
-                physics_time_ms: self.runtime.stats().frame_time_ms * 0.15, // ~15% for physics
-                ai_time_ms: self.runtime.stats().frame_time_ms * 0.1,     // ~10% for AI
-                script_time_ms: self.runtime.stats().frame_time_ms * 0.05, // ~5% for scripts
-                audio_time_ms: self.runtime.stats().frame_time_ms * 0.02, // ~2% for audio
-                draw_calls: 150 + (self.entity_manager.entities().len() * 2), // Estimate
-                triangles: 50000 + (self.entity_manager.entities().len() * 1000), // Estimate
-                gpu_memory_bytes: 256 * 1024 * 1024,                      // 256 MB placeholder
-            };
-            self.dock_tab_viewer.set_runtime_stats(runtime_stats);
-
-            // Sync scene stats
-            let total_components: usize = self
-                .entity_manager
-                .entities()
-                .values()
-                .map(|e| e.components.len())
-                .sum();
-            let entity_count = self.entity_manager.entities().len();
-            let scene_stats = tab_viewer::SceneStatsInfo {
-                total_entities: entity_count,
-                total_components,
-                prefab_instances: 0, // Would count prefab instances
-                selected_count: self.selection_set.count(),
-                memory_usage_bytes: entity_count * 1024 + total_components * 256, // Rough estimate
-                active_systems: 12, // Typical system count
-                loaded_assets: self.asset_registry.count(),
-                light_count: entity_count / 10, // Estimate ~10% are lights
-                mesh_count: entity_count / 2,   // Estimate ~50% have meshes
-                physics_bodies: entity_count / 4, // Estimate ~25% have physics
-                is_modified: self.is_scene_modified,
-                audio_sources: entity_count / 20, // Estimate ~5% have audio
-                particle_systems: entity_count / 30, // Estimate ~3% are particles
-                camera_count: 1 + (entity_count / 50), // At least 1 camera
-                collider_count: entity_count / 3, // Estimate ~33% have colliders
-                script_count: entity_count / 2,   // Estimate ~50% have scripts
-                ui_element_count: 0,              // Would count UI elements
-                scene_path: self
-                    .current_scene_path
-                    .as_ref()
-                    .map(|p| p.display().to_string()),
-                last_save_time: self.last_save_time.clone(),
-            };
-            self.dock_tab_viewer.set_scene_stats(scene_stats);
-
-            // Sync undo/redo counts
-            self.dock_tab_viewer.set_undo_redo_counts(
-                self.undo_stack.len(),
-                0, // Redo count would come from redo stack
-            );
-
-            // Update frame time history for profiler graph
-            self.dock_tab_viewer
-                .push_frame_time(self.runtime.stats().frame_time_ms);
-
-            // Render the docking layout with EditorDrawContext for viewport integration
-            // We need to carefully structure borrows to avoid conflicts
-            // Use CentralPanel with no frame to render dock in remaining space (after side panels)
-            egui::CentralPanel::default()
-                .frame(egui::Frame::NONE.inner_margin(0.0))
-                .show(ctx, |ui| {
-                    ui.set_min_size(ui.available_size());
-
-                    // Get mutable world from scene state
-                    let world_opt = self.scene_state.as_mut().map(|s| s.world_mut());
-
-                    // Unified context rendering to avoid type-switching issues
-                    let mut context = EditorDrawContext::new(&mut self.dock_tab_viewer);
-
-                    if let (Some(world), Some(viewport)) = (world_opt, self.viewport.as_mut()) {
-                        context = context
-                            .with_viewport(viewport)
-                            .with_world(world)
-                            .with_entity_manager(&mut self.entity_manager)
-                            .with_undo_stack(&mut self.undo_stack)
-                            .with_prefab_manager(&mut self.prefab_manager);
-                    }
-
-                    self.dock_layout.show_inside(ui, &mut context);
-                });
-
-            // Check for transform changes and emit events
-            self.dock_tab_viewer.check_transform_changes();
-
-            // Handle panel close events (separate from PanelEvent for backward compatibility)
-            for panel in self.dock_tab_viewer.take_closed_panels() {
-                self.status = format!("Closed {} panel", panel.title());
-            }
-            for panel in self.dock_tab_viewer.take_panels_to_add() {
-                self.dock_layout.add_panel(panel);
-                self.status = format!("Added {} panel", panel.title());
-            }
-            self.dock_tab_viewer.check_transform_changes();
-
-            // Handle panel events from the tab viewer
-            for event in self.dock_tab_viewer.take_events() {
-                match event {
-                    tab_viewer::PanelEvent::EntitySelected(entity_id) => {
-                        self.selected_entity = Some(entity_id);
-                        self.selection_set.primary = Some(entity_id);
-                        self.status = format!("Selected entity {}", entity_id);
-                    }
-                    tab_viewer::PanelEvent::EntityDeselected => {
-                        self.selected_entity = None;
-                        self.selection_set.primary = None;
-                        self.status = "Deselected entity".to_string();
-                    }
-                    tab_viewer::PanelEvent::TransformPositionChanged { entity_id, x, y } => {
-                        // Update entity transform in scene
-                        self.status =
-                            format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
-                        // TODO: Update actual entity transform in scene graph when available
-                    }
-                    tab_viewer::PanelEvent::TransformRotationChanged {
-                        entity_id,
-                        rotation,
-                    } => {
-                        self.status = format!("Entity {} rotation: {:.1}°", entity_id, rotation);
-                        // TODO: Update actual entity rotation in scene graph when available
-                    }
-                    tab_viewer::PanelEvent::TransformScaleChanged {
-                        entity_id,
-                        scale_x,
-                        scale_y,
-                    } => {
-                        self.status = format!(
-                            "Entity {} scale: ({:.2}, {:.2})",
-                            entity_id, scale_x, scale_y
-                        );
-                        // TODO: Update actual entity scale in scene graph when available
-                    }
-                    tab_viewer::PanelEvent::CreateEntity => {
-                        // Create a new entity with a unique ID
-                        let new_id = self.next_entity_id;
-                        self.next_entity_id += 1;
-                        let new_entity = tab_viewer::EntityInfo {
-                            id: new_id,
-                            name: format!("Entity_{}", new_id),
-                            entity_type: "Empty".to_string(),
-                            components: vec![],
-                        };
-                        self.dock_tab_viewer.add_entity(new_entity);
-                        self.selected_entity = Some(new_id);
-                        self.selection_set.primary = Some(new_id);
-                        self.status = format!("Created entity {}", new_id);
-                    }
-                    tab_viewer::PanelEvent::DeleteEntity(entity_id) => {
-                        // Remove entity from list
-                        self.dock_tab_viewer.remove_entity(entity_id);
-                        if self.selected_entity == Some(entity_id) {
-                            self.selected_entity = None;
-                            self.selection_set.primary = None;
-                        }
-                        self.status = format!("Deleted entity {}", entity_id);
-                    }
-                    tab_viewer::PanelEvent::DuplicateEntity(entity_id) => {
-                        // Find and duplicate the entity
-                        let source_info = self.dock_tab_viewer.find_entity(entity_id).cloned();
-                        if let Some(source) = source_info {
-                            let new_id = self.next_entity_id;
-                            self.next_entity_id += 1;
-                            let new_entity = tab_viewer::EntityInfo {
-                                id: new_id,
-                                name: format!("{}_copy", source.name),
-                                entity_type: source.entity_type.clone(),
-                                components: source.components.clone(),
-                            };
-                            self.dock_tab_viewer.add_entity(new_entity);
-                            self.selected_entity = Some(new_id);
-                            self.selection_set.primary = Some(new_id);
-                            self.status = format!("Duplicated entity {} as {}", entity_id, new_id);
-                        }
-                    }
-                    tab_viewer::PanelEvent::PanelClosed(panel) => {
-                        self.status = format!("Closed {} panel", panel.title());
-                    }
-                    tab_viewer::PanelEvent::PanelFocused(panel) => {
-                        self.status = format!("Focused {} panel", panel.title());
-                    }
-                    tab_viewer::PanelEvent::AddPanel(panel) => {
-                        self.dock_layout.add_panel(panel);
-                        self.status = format!("Added {} panel", panel.title());
-                    }
-                    tab_viewer::PanelEvent::MaterialChanged {
-                        name,
-                        property,
-                        value,
-                    } => {
-                        self.status = format!("Material '{}': {} = {:.2}", name, property, value);
-                    }
-                    tab_viewer::PanelEvent::AnimationPlayStateChanged { is_playing } => {
-                        if is_playing {
-                            self.status = "Animation playing".to_string();
-                        } else {
-                            self.status = "Animation paused".to_string();
-                        }
-                    }
-                    tab_viewer::PanelEvent::AnimationFrameChanged { frame } => {
-                        self.status = format!("Animation frame: {}", frame);
-                    }
-                    tab_viewer::PanelEvent::AnimationKeyframeAdded {
-                        track_index,
-                        frame,
-                        value,
-                    } => {
-                        self.status = format!(
-                            "Added keyframe at frame {} (track {}, value {:.2})",
-                            frame, track_index, value
-                        );
-                    }
-                    tab_viewer::PanelEvent::ThemeChanged(theme) => {
-                        self.status = format!("Theme changed to {:?}", theme);
-                    }
-                    tab_viewer::PanelEvent::BuildRequested { target, profile } => {
-                        self.status = format!("Build requested: {} ({})", target, profile);
-                    }
-                    tab_viewer::PanelEvent::ConsoleCleared => {
-                        self.status = "Console cleared".to_string();
-                    }
-                    tab_viewer::PanelEvent::AssetSelected(asset) => {
-                        self.status = format!("Selected asset: {}", asset);
-                    }
-                    tab_viewer::PanelEvent::BehaviorNodeSelected(node_id) => {
-                        self.status = format!("Selected behavior node: {}", node_id);
-                    }
-                    tab_viewer::PanelEvent::GraphNodeSelected(node_id) => {
-                        self.status = format!("Selected graph node: {}", node_id);
-                    }
-                    tab_viewer::PanelEvent::HierarchySearchChanged(search) => {
-                        self.status = format!("Hierarchy search: {}", search);
-                    }
-                    tab_viewer::PanelEvent::ConsoleSearchChanged(search) => {
-                        self.status = format!("Console search: {}", search);
-                    }
-                    tab_viewer::PanelEvent::RefreshSceneStats => {
-                        self.status = "Refreshing scene statistics...".to_string();
-                    }
-                    tab_viewer::PanelEvent::AddComponent {
-                        entity_id,
-                        component_type,
-                    } => {
-                        self.status = format!("Adding {} to entity {}", component_type, entity_id);
-                        // Would add component to entity in actual implementation
-                    }
-                    tab_viewer::PanelEvent::RemoveComponent {
-                        entity_id,
-                        component_type,
-                    } => {
-                        self.status =
-                            format!("Removing {} from entity {}", component_type, entity_id);
-                        // Would remove component from entity in actual implementation
-                    }
-                    tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
-                        let mode_names = ["Shaded", "Wireframe", "Unlit", "Normals", "UVs"];
-                        self.status = format!(
-                            "Viewport view mode: {}",
-                            mode_names.get(mode).unwrap_or(&"Unknown")
-                        );
-                    }
-                    tab_viewer::PanelEvent::ViewportGizmoModeChanged(mode) => {
-                        let mode_names = ["Translate", "Rotate", "Scale"];
-                        self.status =
-                            format!("Gizmo mode: {}", mode_names.get(mode).unwrap_or(&"Unknown"));
-                    }
-                    tab_viewer::PanelEvent::ViewportGizmoSpaceChanged(space) => {
-                        self.status = format!(
-                            "Gizmo space: {}",
-                            if space == 0 { "Local" } else { "World" }
-                        );
-                    }
-                    tab_viewer::PanelEvent::ViewportOverlayToggled { overlay, enabled } => {
-                        self.status = format!(
-                            "Viewport overlay '{}': {}",
-                            overlay,
-                            if enabled { "enabled" } else { "disabled" }
-                        );
-                    }
-                    tab_viewer::PanelEvent::ViewportCameraChanged {
-                        fov,
-                        near,
-                        far,
-                        speed,
-                    } => {
-                        self.status = format!(
-                            "Camera: FOV={:.0}°, Clip={:.2}-{:.0}, Speed={:.1}",
-                            fov, near, far, speed
-                        );
-                    }
-                    tab_viewer::PanelEvent::ViewportFocusOnSelection => {
-                        self.status = "Focusing on selection...".to_string();
-                    }
-                    tab_viewer::PanelEvent::ViewportResetCamera => {
-                        self.status = "Camera reset to default position".to_string();
-                    }
-                    tab_viewer::PanelEvent::ViewportCameraPreset(preset) => {
-                        self.status = format!("Camera preset applied: {}", preset);
-                    }
-                    tab_viewer::PanelEvent::ResetLayout => {
-                        // Reset dock state to default layout
-                        self.dock_layout = DockLayout::from_preset(LayoutPreset::Default);
-                        self.status = "Layout reset to default".to_string();
-                    }
-                }
-            }
+            self.show_docking_layout(ctx);
         } else {
-            // Legacy layout - original CentralPanel rendering
-            egui::CentralPanel::default()
-                .frame(egui::Frame::NONE.inner_margin(0.0).fill(egui::Color32::from_rgb(0, 255, 0))) // GREEN for legacy
-                .show(ctx, |ui| {
-                // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
-                if let Some(viewport) = &mut self.viewport {
-                    // Phase 14: Update viewport HUD with selection count
-                    viewport.set_selection_count(self.selection_set.count());
-
-                    // Phase 4: Visual indicator for play mode
-                let viewport_frame = if !self.editor_mode.is_editing() {
-                    let border_color = if self.editor_mode.is_playing() {
-                        egui::Color32::from_rgb(100, 200, 100)
-                    } else {
-                        egui::Color32::from_rgb(255, 180, 50)
-                    };
-
-                    egui::Frame::NONE
-                        .stroke(egui::Stroke::new(3.0, border_color))
-                        .inner_margin(4.0)
-                } else {
-                    egui::Frame::NONE
-                };
-
-                viewport_frame.show(ui, |ui| {
-                    ui.heading("🎮 3D Viewport");
-                    ui.label(
-                        "Phase 1.1 Complete: Grid rendering active, texture display in progress",
-                    );
-
-                    ui.horizontal(|ui| {
-                        ui.label("⚡ Snapping:");
-
-                        ui.checkbox(&mut self.snapping_config.grid_enabled, "Grid");
-
-                        ui.label("Size:");
-                        let mut grid_size_idx = match self.snapping_config.grid_size {
-                            s if (s - 0.5).abs() < 0.01 => 0,
-                            s if (s - 1.0).abs() < 0.01 => 1,
-                            s if (s - 2.0).abs() < 0.01 => 2,
-                            _ => 1,
-                        };
-
-                        if ui
-                            .add(
-                                egui::Slider::new(&mut grid_size_idx, 0..=2)
-                                    .show_value(false)
-                                    .custom_formatter(|n, _| match n as usize {
-                                        0 => "0.5".to_string(),
-                                        1 => "1.0".to_string(),
-                                        2 => "2.0".to_string(),
-                                        _ => "1.0".to_string(),
-                                    }),
-                            )
-                            .changed()
-                        {
-                            self.snapping_config.grid_size = match grid_size_idx {
-                                0 => 0.5,
-                                1 => 1.0,
-                                2 => 2.0,
-                                _ => 1.0,
-                            };
-                        }
-
-                        ui.separator();
-                        ui.checkbox(&mut self.snapping_config.angle_enabled, "Angle");
-                        ui.label(format!("{}°", self.snapping_config.angle_increment));
-
-                        ui.separator();
-
-                        // Engine PBR Rendering toggle
-                        let mut use_pbr = viewport.renderer().lock().map(|r| r.use_engine_rendering()).unwrap_or(false);
-                        if ui.checkbox(&mut use_pbr, "🚀 Engine PBR").on_hover_text("Enable full PBR mesh rendering instead of cube placeholders").changed() {
-                            if let Ok(mut renderer) = viewport.renderer().lock() {
-                                renderer.set_use_engine_rendering(use_pbr);
-                            }
-                        }
-                    });
-
-                    ui.separator();
-
-                    // Render viewport (takes 70% width, full available height)
-                    let runtime_state = self.runtime.state();
-                    if runtime_state == RuntimeState::Editing && self.scene_state.is_none() {
-                        self.scene_state =
-                            Some(EditorSceneState::new(Self::create_default_world()));
-                    }
-
-                    let mut edited_world = false;
-                    let world_to_render = if runtime_state == RuntimeState::Editing {
-                        self.scene_state.as_mut().map(|state| state.world_mut())
-                    } else {
-                        self.runtime.sim_world_mut()
-                    };
-
-                    if let Some(world) = world_to_render {
-                        if runtime_state == RuntimeState::Editing {
-                            edited_world = true;
-                        }
-                        if let Err(e) = viewport.ui(
-                            ui,
-                            world,
-                            &mut self.entity_manager,
-                            &mut self.undo_stack,
-                            Some(&mut self.prefab_manager),
-                        ) {
-                            self.console_logs.push(format!("❌ Viewport error: {}", e));
-                            warn!("❌ Viewport error: {}", e);
-                        }
-                    } else {
-                        ui.label("⚠️ No world available for rendering");
-                    }
-
-                    if edited_world {
-                        if let Some(scene_state) = self.scene_state.as_mut() {
-                            scene_state.sync_all();
-                        }
-                    }
-
-                    // Sync selected entity from viewport to app state
-                    if let Some(selected) = viewport.selected_entity() {
-                        self.selected_entity = Some(selected as u64);
-                    }
-
-                    // Sync snapping settings from viewport toolbar to EditorApp
-                    self.snapping_config.grid_enabled = viewport.toolbar().snap_enabled;
-                    self.snapping_config.grid_size = viewport.toolbar().snap_size;
-                    self.snapping_config.angle_enabled = viewport.toolbar().angle_snap_enabled;
-                    self.snapping_config.angle_increment = viewport.toolbar().angle_snap_degrees;
-
-                    ui.add_space(10.0);
-                });
-
-                ui.separator();
-            }
-
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                // Auto-expand Console when simulation is running (so users see feedback)
-                let console_open = self.runtime.is_playing() || !self.console_logs.is_empty();
-
-                let scene_entity_count = self.active_world().map(|w| w.entities().len()).unwrap_or(0);
-                let scene_hier_header = format!("Scene Hierarchy ({} entities)", scene_entity_count);
-                ui.collapsing(scene_hier_header, |ui| self.show_scene_hierarchy(ui));
-                if self.show_inspector_panel {
-                    let inspector_header = if let Some(entity_id) = self.selection_set.primary {
-                        if let Ok(entity) = u32::try_from(entity_id) {
-                            if let Some(world) = self.active_world() {
-                                let name = world.name(entity)
-                                    .map(|s| s.to_string())
-                                    .unwrap_or_else(|| format!("Entity_{}", entity));
-                                format!("Inspector - {}", name)
-                            } else {
-                                "Inspector".to_string()
-                            }
-                        } else {
-                            "Inspector".to_string()
-                        }
-                    } else {
-                        "Inspector (no selection)".to_string()
-                    };
-                    ui.collapsing(inspector_header, |ui| self.show_inspector(ui));
-                }
-
-                if self.show_console_panel {
-                // Console section with auto-expand when active
-                let console_header = format!("Console ({} messages)", self.console_logs.len());
-                egui::CollapsingHeader::new(console_header)
-                    .default_open(console_open)
-                    .show(ui, |ui| self.show_console(ui));
-                }
-
-                ui.collapsing("Scene Statistics", |ui| {
-                    self.scene_stats_panel.show_inline(ui);
-                });
-
-                ui.collapsing("Performance Profiler", |ui| {
-                    self.profiler_panel.show(ui);
-                });
-
-                let runtime_state = self.runtime.state();
-                let tick_count = self.runtime.stats().tick_count;
-                let profiler_header = match runtime_state {
-                    RuntimeState::Editing => "Profiler [Editing]".to_string(),
-                    RuntimeState::Playing => format!("Profiler [Playing - Tick {}]", tick_count),
-                    RuntimeState::Paused => format!("Profiler [Paused - Tick {}]", tick_count),
-                    RuntimeState::SteppingOneFrame => format!("Profiler [Step - Tick {}]", tick_count),
-                };
-                ui.collapsing(profiler_header, |ui| self.show_profiler(ui));
-                let graph_node_count = self.graph_panel.total_node_count();
-                let graph_header = format!("Behavior Graph Editor ({} nodes)", graph_node_count);
-                ui.collapsing(graph_header, |ui| {
-                    self.show_behavior_graph_editor(ui)
-                });
-                ui.collapsing("Dialogue Graph Editor", |ui| {
-                    self.show_dialogue_graph_editor(ui)
-                });
-                ui.collapsing("Quest Graph Editor", |ui| self.show_quest_graph_editor(ui));
-                ui.collapsing("Material Editor", |ui| self.show_material_editor(ui));
-                ui.collapsing("Material Inspector", |ui| {
-                    self.material_inspector.show(ui, ctx)
-                });
-                ui.collapsing("Terrain Painter", |ui| self.show_terrain_painter(ui));
-                ui.collapsing("Navmesh Controls", |ui| self.show_navmesh_controls(ui));
-                ui.collapsing("Voxel Editor", |ui| self.show_voxel_editor(ui));
-                ui.collapsing("Asset Inspector", |ui| self.show_asset_inspector(ui));
-            });
-        });
-        } // End of else block for legacy layout
+            self.show_legacy_central_panel(ctx);
+        }
 
         self.render_toasts(ctx);
 

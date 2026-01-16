@@ -399,3 +399,66 @@ impl PerformanceStats {
         self.frame_time_history.push(frame_time_ms);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_grid_type_cycle() {
+        let grid = GridType::Infinite;
+        assert_eq!(grid.cycle(), GridType::Crosshair);
+        assert_eq!(grid.cycle().cycle(), GridType::None);
+        assert_eq!(grid.cycle().cycle().cycle(), GridType::Infinite);
+    }
+
+    #[test]
+    fn test_grid_type_name() {
+        assert_eq!(GridType::Infinite.name(), "Infinite");
+        assert_eq!(GridType::Crosshair.name(), "Crosshair");
+        assert_eq!(GridType::None.name(), "None");
+    }
+
+    #[test]
+    fn test_shading_mode_values() {
+        assert_eq!(ShadingMode::Lit.to_u32(), 0);
+        assert_eq!(ShadingMode::Unlit.to_u32(), 1);
+        assert_eq!(ShadingMode::Wireframe.to_u32(), 2);
+    }
+
+    #[test]
+    fn test_toolbar_defaults() {
+        let toolbar = ViewportToolbar::default();
+        assert_eq!(toolbar.shading_mode, ShadingMode::Lit);
+        assert!(toolbar.show_grid);
+        assert_eq!(toolbar.grid_type, GridType::Infinite);
+        assert!(!toolbar.snap_enabled);
+        assert_eq!(toolbar.snap_size, 1.0);
+        assert!(toolbar.angle_snap_enabled);
+        assert_eq!(toolbar.angle_snap_degrees, 15.0);
+        assert!(toolbar.show_stats);
+    }
+
+    #[test]
+    fn test_performance_stats_default() {
+        let stats = PerformanceStats::default();
+        assert_eq!(stats.fps, 0.0);
+        assert_eq!(stats.frame_time_history.capacity(), 60);
+    }
+
+    #[test]
+    fn test_performance_stats_push() {
+        let mut stats = PerformanceStats::default();
+        for i in 0..70 {
+            stats.push_frame_time(i as f32);
+        }
+        assert_eq!(stats.frame_time_history.len(), 60);
+        assert_eq!(*stats.frame_time_history.last().unwrap(), 69.0);
+        assert_eq!(stats.frame_time_history[0], 10.0); 
+    }
+    
+    #[test]
+    fn test_grid_type_default() {
+        assert_eq!(GridType::default(), GridType::Infinite);
+    }
+}

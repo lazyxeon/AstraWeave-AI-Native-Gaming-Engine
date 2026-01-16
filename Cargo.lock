@@ -1968,6 +1968,7 @@ dependencies = [
  "egui-wgpu",
  "egui_dock",
  "egui_graphs",
+ "egui_kittest",
  "env_logger",
  "glam 0.30.8",
  "image",
@@ -4026,6 +4027,16 @@ checksum = "e656c6c1c9f88802b010c160fe0523090b0874b09f5fbd3c4b958eab1a189b93"
 dependencies = [
  "egui 0.21.0",
  "rand 0.8.5",
+]
+
+[[package]]
+name = "egui_kittest"
+version = "0.32.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bb00f16e00af09092c117515246732adba4ca4649463bdbc2ab6114a2944765"
+dependencies = [
+ "egui 0.32.3",
+ "kittest",
 ]
 
 [[package]]
@@ -6263,6 +6274,17 @@ name = "khronos_api"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
+
+[[package]]
+name = "kittest"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c1bfc4cb16136b6f00fb85a281e4b53d026401cf5dff9a427c466bde5891f0b"
+dependencies = [
+ "accesskit",
+ "accesskit_consumer",
+ "parking_lot 0.12.5",
+]
 
 [[package]]
 name = "kqueue"

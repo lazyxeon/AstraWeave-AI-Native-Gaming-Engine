@@ -85,4 +85,62 @@ mod tests {
         assert!(prefs.show_inspector_panel);
         assert!(prefs.show_console_panel);
     }
+
+    #[test]
+    fn test_week7_auto_save_defaults() {
+        let prefs = EditorPreferences::default();
+        assert_eq!(prefs.auto_save_keep_count, 3);
+        assert!(prefs.auto_save_to_separate_dir);
+    }
+
+    #[test]
+    fn test_preferences_serialization_roundtrip() {
+        let prefs = EditorPreferences {
+            show_grid: false,
+            auto_save_enabled: true,
+            auto_save_interval_secs: 120.0,
+            auto_save_keep_count: 5,
+            auto_save_to_separate_dir: false,
+            show_hierarchy_panel: false,
+            show_inspector_panel: true,
+            show_console_panel: false,
+            camera: None,
+            snapping: None,
+        };
+        
+        let json = serde_json::to_string(&prefs).expect("serialize");
+        let restored: EditorPreferences = serde_json::from_str(&json).expect("deserialize");
+        
+        assert!(!restored.show_grid);
+        assert!(restored.auto_save_enabled);
+        assert_eq!(restored.auto_save_interval_secs, 120.0);
+        assert_eq!(restored.auto_save_keep_count, 5);
+        assert!(!restored.auto_save_to_separate_dir);
+    }
+
+    #[test]
+    fn test_preferences_deserialize_missing_week7_fields() {
+        // Simulates loading old preferences without Week 7 fields
+        let old_json = r#"{
+            "show_grid": true,
+            "auto_save_enabled": false,
+            "auto_save_interval_secs": 300.0,
+            "show_hierarchy_panel": true,
+            "show_inspector_panel": true,
+            "show_console_panel": true,
+            "camera": null,
+            "snapping": null
+        }"#;
+        
+        let prefs: EditorPreferences = serde_json::from_str(old_json).expect("deserialize");
+        
+        // Should use defaults for missing Week 7 fields
+        assert_eq!(prefs.auto_save_keep_count, 3);
+        assert!(!prefs.auto_save_to_separate_dir); // default is false when missing
+    }
+
+    #[test]
+    fn test_default_auto_save_count_fn() {
+        assert_eq!(default_auto_save_count(), 3);
+    }
 }
