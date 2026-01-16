@@ -101,7 +101,7 @@ impl ChartsTab {
             for (i, value) in self.bar_values.iter_mut().enumerate() {
                 ui.add(
                     Slider::new(value, 0.0..=100.0)
-                        .text(format!("Product {}", ('A' as u8 + i as u8) as char)),
+                        .text(format!("Product {}", (b'A' + i as u8) as char)),
                 );
             }
 
@@ -169,7 +169,7 @@ impl ChartsTab {
                     _ => Color32::LIGHT_BLUE,
                 };
 
-                let cluster = PointCluster::new(&format!("Cluster {}", i + 1), points, color);
+                let cluster = PointCluster::new(format!("Cluster {}", i + 1), points, color);
                 scatter.add_cluster(cluster);
             }
 

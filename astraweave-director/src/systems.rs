@@ -237,8 +237,7 @@ impl DirectorLlmSystem {
                 // budget.spawns is i32; ensure we produce a u32 count safely
                 count: {
                     let max_spawn = 3i32;
-                    let chosen = std::cmp::min(budget.spawns, max_spawn).max(0) as u32;
-                    chosen
+                    std::cmp::min(budget.spawns, max_spawn).max(0) as u32
                 },
                 origin: IVec2 {
                     x: snapshot.player.pos.x - 3,

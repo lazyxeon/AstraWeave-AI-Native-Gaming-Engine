@@ -104,10 +104,12 @@ impl BiomeShowcase {
     /// Create a new biome showcase application
     fn new(args: &Args) -> Result<Self> {
         // Create world configuration
-        let mut world_config = WorldConfig::default();
-        world_config.seed = args.seed;
-        world_config.chunk_size = args.chunk_size;
-        world_config.heightmap_resolution = args.resolution;
+        let mut world_config = WorldConfig {
+            seed: args.seed,
+            chunk_size: args.chunk_size,
+            heightmap_resolution: args.resolution,
+            ..Default::default()
+        };
 
         // Configure structures
         world_config.structures.density = if args.structures { 0.4 } else { 0.0 };

@@ -78,11 +78,10 @@ pub fn anchor_proximity_system(
         if entity
             .anchor
             .is_in_proximity(entity.position, (player_pos.x, player_pos.y, player_pos.z))
+            && distance < closest_distance
         {
-            if distance < closest_distance {
-                closest_distance = distance;
-                closest_id = Some(entity.id);
-            }
+            closest_distance = distance;
+            closest_id = Some(entity.id);
         }
     }
 

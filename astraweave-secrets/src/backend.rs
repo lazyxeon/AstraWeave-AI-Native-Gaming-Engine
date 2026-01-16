@@ -8,6 +8,7 @@ impl SecretValue {
         Self(data)
     }
 
+    #[allow(clippy::should_implement_trait)] // This is not the std::str::FromStr trait
     pub fn from_str(s: &str) -> Self {
         Self(s.as_bytes().to_vec())
     }

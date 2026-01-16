@@ -61,6 +61,7 @@ fn colorblind_mode_from_index(idx: usize) -> Option<String> {
     }
 }
 
+#[allow(deprecated)] // UI crafting uses legacy method; determinism not required for preview
 fn craft_and_push(book: &RecipeBook, recipe_name: &str, inventory: &mut Inventory) -> bool {
     if let Some(it) = book.craft(recipe_name, inventory) {
         inventory.items.push(it.clone());
@@ -162,10 +163,10 @@ pub fn draw_ui(
                     for r in &book.recipes {
                         ui.horizontal(|ui| {
                             ui.label(format!("{} -> {:?}", r.name, r.output_item));
-                            if ui.button("Craft").clicked() {
-                                if craft_and_push(book, &r.name, inventory) {
-                                    out.crafted = Some(r.name.clone());
-                                }
+                            if ui.button("Craft").clicked()
+                                && craft_and_push(book, &r.name, inventory)
+                            {
+                                out.crafted = Some(r.name.clone());
                             }
                         });
                     }

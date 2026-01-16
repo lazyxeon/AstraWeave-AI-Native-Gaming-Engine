@@ -5,7 +5,6 @@ use glam::Vec3;
 use ui_overlay::*;
 
 /// Advanced Content Demo with UI Overlays: Week 5 Day 4 Polish Showcase
-
 fn main() {
     println!("=== AstraWeave Advanced Content Demo (UI Enhanced) ===\n");
     println!("Week 5 Day 4: Polish & UI Integration Showcase\n");

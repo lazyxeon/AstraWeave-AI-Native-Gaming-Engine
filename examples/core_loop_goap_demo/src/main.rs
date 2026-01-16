@@ -335,7 +335,7 @@ impl DemoState {
 
         // Resources
         println!("\nWorld Resources:");
-        for (_i, node) in self.resources.iter().enumerate() {
+        for node in self.resources.iter() {
             println!(
                 "  {:?} at ({}, {}): {} remaining",
                 node.resource_type, node.pos.x, node.pos.y, node.amount

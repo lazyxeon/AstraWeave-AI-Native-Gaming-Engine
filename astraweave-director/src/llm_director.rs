@@ -128,12 +128,12 @@ impl PlayerBehaviorModel {
                     self.preferred_tactics.remove(0);
                 }
             }
-        } else if outcome.effectiveness < 0.3 {
-            if !self.weaknesses.contains(&outcome.counter_strategy) {
-                self.weaknesses.push(outcome.counter_strategy.clone());
-                if self.weaknesses.len() > 3 {
-                    self.weaknesses.remove(0);
-                }
+        } else if outcome.effectiveness < 0.3
+            && !self.weaknesses.contains(&outcome.counter_strategy)
+        {
+            self.weaknesses.push(outcome.counter_strategy.clone());
+            if self.weaknesses.len() > 3 {
+                self.weaknesses.remove(0);
             }
         }
 

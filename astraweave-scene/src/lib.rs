@@ -424,7 +424,7 @@ pub mod ecs {
                 if animator.looping {
                     // Wrap around
                     if animator.time > clip_duration {
-                        animator.time = animator.time % clip_duration;
+                        animator.time %= clip_duration;
                     }
                     if animator.time < 0.0 {
                         animator.time = clip_duration + (animator.time % clip_duration);

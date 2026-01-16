@@ -62,18 +62,22 @@ pub extern "C" fn aw_version() -> AWVersion {
     }
 }
 
+/// Get the version string of the SDK.
+///
+/// # Safety
+///
+/// - `buf` must be a valid pointer to a buffer of at least `len` bytes, or null.
+/// - The buffer must be valid for writes and properly aligned.
 #[no_mangle]
-pub extern "C" fn aw_version_string(buf: *mut u8, len: usize) -> usize {
+pub unsafe extern "C" fn aw_version_string(buf: *mut u8, len: usize) -> usize {
     let s = env!("CARGO_PKG_VERSION");
     let bytes = s.as_bytes();
     let n = bytes.len().min(len.saturating_sub(1));
     if buf.is_null() || len == 0 {
         return bytes.len() + 1;
     }
-    unsafe {
-        std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, n);
-        *buf.add(n) = 0;
-    }
+    std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, n);
+    *buf.add(n) = 0;
     bytes.len() + 1 // required size including NUL
 }
 
@@ -302,8 +306,15 @@ pub extern "C" fn aw_last_error_string(buf: *mut u8, len: usize) -> usize {
     write_cstr(s.as_bytes(), buf, len)
 }
 
+/// Submit an intent JSON to the world for validation and execution.
+///
+/// # Safety
+///
+/// - `_w` must be a valid `AWWorld` handle returned from `aw_world_create`.
+/// - `intent_json` must be a valid pointer to a NUL-terminated UTF-8 string.
+/// - If `cb` is Some, the callback function must be safe to call from Rust.
 #[no_mangle]
-pub extern "C" fn aw_world_submit_intent_json(
+pub unsafe extern "C" fn aw_world_submit_intent_json(
     _w: AWWorld,
     actor_id: u32,
     intent_json: *const c_char,
@@ -313,8 +324,8 @@ pub extern "C" fn aw_world_submit_intent_json(
         set_last_error("null world handle");
         return AW_ERR_NULL;
     }
-    let wrap = unsafe { &mut *(_w.0) };
-    let cstr = unsafe {
+    let wrap = &mut *(_w.0);
+    let cstr = {
         if intent_json.is_null() {
             set_last_error("intent_json is null");
             return AW_ERR_PARAM;
@@ -331,11 +342,9 @@ pub extern "C" fn aw_world_submit_intent_json(
     };
     let mut log = |s: String| {
         if let Some(func) = cb {
-            unsafe {
-                use std::ffi::CString;
-                if let Ok(cs) = CString::new(s) {
-                    func(cs.as_ptr());
-                }
+            use std::ffi::CString;
+            if let Ok(cs) = CString::new(s) {
+                func(cs.as_ptr());
             }
         }
     };
@@ -407,12 +416,15 @@ mod tests {
     #[test]
     fn last_error_is_set_on_intent_parse_error() {
         let w = aw_world_create();
-        let rc = aw_world_submit_intent_json(
-            w,
-            1,
-            std::ffi::CString::new("not json").unwrap().as_ptr(),
-            None,
-        );
+        // Safety: w is a valid world handle, intent_json is valid CString
+        let rc = unsafe {
+            aw_world_submit_intent_json(
+                w,
+                1,
+                std::ffi::CString::new("not json").unwrap().as_ptr(),
+                None,
+            )
+        };
         assert_eq!(rc, AW_ERR_PARSE);
         let mut buf = [0u8; 128];
         let n = aw_last_error_string(buf.as_mut_ptr(), buf.len());
@@ -430,7 +442,8 @@ mod tests {
     #[test]
     fn test_aw_version_string() {
         let mut buf = [0u8; 64];
-        let n = aw_version_string(buf.as_mut_ptr(), buf.len());
+        // Safety: buf is a valid buffer of len bytes
+        let n = unsafe { aw_version_string(buf.as_mut_ptr(), buf.len()) };
         assert!(n > 0);
         let s = std::ffi::CStr::from_bytes_until_nul(&buf)
             .unwrap()
@@ -440,7 +453,8 @@ mod tests {
 
     #[test]
     fn test_aw_version_string_null_buffer() {
-        let n = aw_version_string(std::ptr::null_mut(), 0);
+        // Safety: passing null pointer is explicitly tested for
+        let n = unsafe { aw_version_string(std::ptr::null_mut(), 0) };
         // Should return required size including NUL
         assert!(n > 0);
     }
@@ -448,7 +462,8 @@ mod tests {
     #[test]
     fn test_aw_version_string_small_buffer() {
         let mut buf = [0u8; 3]; // Very small buffer
-        let _n = aw_version_string(buf.as_mut_ptr(), buf.len());
+        // Safety: buf is a valid buffer of len bytes
+        let _n = unsafe { aw_version_string(buf.as_mut_ptr(), buf.len()) };
         // Should truncate but still be valid
         assert_eq!(buf[2], 0); // NUL terminated
     }
@@ -491,19 +506,23 @@ mod tests {
     #[test]
     fn test_aw_world_submit_intent_json_null_world() {
         let null_world = AWWorld(std::ptr::null_mut());
-        let rc = aw_world_submit_intent_json(
-            null_world,
-            1,
-            std::ffi::CString::new("{}").unwrap().as_ptr(),
-            None,
-        );
+        // Safety: testing null world handle error path
+        let rc = unsafe {
+            aw_world_submit_intent_json(
+                null_world,
+                1,
+                std::ffi::CString::new("{}").unwrap().as_ptr(),
+                None,
+            )
+        };
         assert_eq!(rc, AW_ERR_NULL);
     }
 
     #[test]
     fn test_aw_world_submit_intent_json_null_json() {
         let w = aw_world_create();
-        let rc = aw_world_submit_intent_json(w, 1, std::ptr::null(), None);
+        // Safety: testing null json pointer error path
+        let rc = unsafe { aw_world_submit_intent_json(w, 1, std::ptr::null(), None) };
         assert_eq!(rc, AW_ERR_PARAM);
         aw_world_destroy(w);
     }

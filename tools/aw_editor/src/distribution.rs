@@ -328,6 +328,7 @@ impl DistributionBuilder {
     }
 
     fn generate_app_vdf(&self, app_id: u32, depot_id: u32) -> Result<String> {
+        let description = format!("{} v{}", self.config.game_name, self.config.version);
         Ok(format!(
             r#""AppBuild"
 {{
@@ -342,7 +343,7 @@ impl DistributionBuilder {
 "#,
             app_id = app_id,
             depot_id = depot_id,
-            description = format!("{} v{}", self.config.game_name, self.config.version),
+            description = description,
         ))
     }
 

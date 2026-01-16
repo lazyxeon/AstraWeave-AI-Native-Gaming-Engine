@@ -55,6 +55,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     // Craft blade
+    #[allow(deprecated)]
     let mut blade = book
         .craft("Echo Blade", &mut inv)
         .expect("craft echo blade");

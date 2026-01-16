@@ -241,7 +241,7 @@ pub fn script_system(world: &mut World) {
                 if let Some(h) = health_data {
                     scope.push("health", h);
                 }
-                scope.push("delta_time", 0.01667 as f32);
+                scope.push("delta_time", 0.01667_f32);
                 
                 // Inject Physics
                 let physics_proxy = api::PhysicsProxy { ptr: physics_ptr, body_map: body_map.clone() };
@@ -296,22 +296,19 @@ pub fn script_system(world: &mut World) {
 
     if let Some(physics) = world.get_resource::<PhysicsWorld>() {
         while let Ok(event) = physics.collision_recv.try_recv() {
-            match event {
-                CollisionEvent::Started(h1, h2, _) => {
-                    let h1_body = physics.colliders.get(h1).and_then(|c| c.parent());
-                    let h2_body = physics.colliders.get(h2).and_then(|c| c.parent());
+            if let CollisionEvent::Started(h1, h2, _) = event {
+                let h1_body = physics.colliders.get(h1).and_then(|c| c.parent());
+                let h2_body = physics.colliders.get(h2).and_then(|c| c.parent());
 
-                    let id1 = h1_body.and_then(|h| physics.id_of(h));
-                    let id2 = h2_body.and_then(|h| physics.id_of(h));
-                    
-                    if let (Some(bid1), Some(bid2)) = (id1, id2) {
-                        if let (Some(e1), Some(e2)) = (body_to_entity.get(&bid1), body_to_entity.get(&bid2)) {
-                            script_events.push(ScriptEvent::OnCollision { entity: *e1, other: *e2 });
-                            script_events.push(ScriptEvent::OnCollision { entity: *e2, other: *e1 });
-                        }
+                let id1 = h1_body.and_then(|h| physics.id_of(h));
+                let id2 = h2_body.and_then(|h| physics.id_of(h));
+                
+                if let (Some(bid1), Some(bid2)) = (id1, id2) {
+                    if let (Some(e1), Some(e2)) = (body_to_entity.get(&bid1), body_to_entity.get(&bid2)) {
+                        script_events.push(ScriptEvent::OnCollision { entity: *e1, other: *e2 });
+                        script_events.push(ScriptEvent::OnCollision { entity: *e2, other: *e1 });
                     }
                 }
-                _ => {}
             }
         }
     }
@@ -344,7 +341,7 @@ pub fn script_system(world: &mut World) {
              if let Some(h) = health_data {
                  scope.push("health", h);
              }
-             scope.push("delta_time", 0.01667 as f32);
+             scope.push("delta_time", 0.01667_f32);
 
              // Inject Physics
              let physics_proxy = api::PhysicsProxy { ptr: physics_ptr, body_map: body_map.clone() };
@@ -359,7 +356,7 @@ pub fn script_system(world: &mut World) {
              // Call function
              let result: Result<Dynamic, _> = engine.call_fn(&mut scope, &ast, callback, args);
              
-             if let Err(_) = result {
+             if result.is_err() {
                  // Ignore function not found
              }
              
@@ -492,14 +489,9 @@ pub struct CachedScript {
     pub last_modified: SystemTime,
 }
 
+#[derive(Default)]
 pub struct ScriptCache {
     pub scripts: HashMap<String, CachedScript>,
-}
-
-impl Default for ScriptCache {
-    fn default() -> Self {
-        Self { scripts: HashMap::new() }
-    }
 }
 
 #[cfg(test)]

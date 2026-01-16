@@ -58,10 +58,12 @@ fn main() -> Result<()> {
     println!();
 
     // Create world configuration
-    let mut world_config = WorldConfig::default();
-    world_config.seed = args.seed;
-    world_config.chunk_size = args.chunk_size;
-    world_config.heightmap_resolution = args.resolution;
+    let mut world_config = WorldConfig {
+        seed: args.seed,
+        chunk_size: args.chunk_size,
+        heightmap_resolution: args.resolution,
+        ..Default::default()
+    };
 
     // Filter biomes if specified
     if let Some(biome_name) = args.biome {

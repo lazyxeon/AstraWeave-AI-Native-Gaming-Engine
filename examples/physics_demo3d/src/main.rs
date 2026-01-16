@@ -31,7 +31,7 @@ impl PhysicsApp {
     fn new() -> Self {
         let camera = Camera {
             position: vec3(0.0, 8.0, 16.0),
-            yaw: -3.14 / 2.0,
+            yaw: -std::f32::consts::FRAC_PI_2,
             pitch: -0.45,
             fovy: 60f32.to_radians(),
             aspect: 16.0 / 9.0,
@@ -58,14 +58,13 @@ impl PhysicsApp {
 
         let char_id = phys.add_character(vec3(-2.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
 
-        let mut destruct_ids: Vec<u64> = vec![];
-        destruct_ids.push(phys.add_destructible_box(
+        let destruct_ids: Vec<u64> = vec![phys.add_destructible_box(
             vec3(-1.0, 1.0, 2.0),
             vec3(0.4, 0.4, 0.4),
             3.0,
             50.0,
             12.0,
-        ));
+        )];
 
         phys.add_water_aabb(vec3(-2.0, 0.0, -2.0), vec3(2.0, 1.2, 2.0), 1000.0, 0.8);
 

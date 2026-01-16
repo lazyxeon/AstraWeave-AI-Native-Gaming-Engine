@@ -9,7 +9,7 @@
 use crate::echo_currency::{EchoCurrency, Transaction, TransactionReason};
 
 /// Transaction statistics
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TransactionStats {
     pub total_gained: u32,
     pub total_spent: u32,
@@ -22,14 +22,7 @@ pub struct TransactionStats {
 impl TransactionStats {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Self {
-            total_gained: 0,
-            total_spent: 0,
-            net_balance: 0,
-            kill_earnings: 0,
-            repair_spending: 0,
-            ability_spending: 0,
-        }
+        Self::default()
     }
 
     pub fn from_currency(currency: &EchoCurrency) -> Self {

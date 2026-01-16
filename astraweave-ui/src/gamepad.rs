@@ -105,9 +105,9 @@ impl GamepadBindings {
 
 impl GamepadManager {
     /// Create a new gamepad manager
-    pub fn new() -> Result<Self, gilrs::Error> {
+    pub fn new() -> Result<Self, Box<gilrs::Error>> {
         Ok(Self {
-            gilrs: Gilrs::new()?,
+            gilrs: Gilrs::new().map_err(Box::new)?,
             selected_index: 0,
             max_items: 1,
             deadzone: 0.3,

@@ -373,9 +373,9 @@ fn run_single_demo(mode: AIMode) -> Result<AIMetrics> {
     };
 
     {
-        let mut w = app.world.get_resource_mut::<World>().unwrap();
+        let w = app.world.get_resource_mut::<World>().unwrap();
         println!("\n--- Executing Plan @ t={:.2} ---", w.t);
-        if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+        if let Err(e) = validate_and_execute(&mut *w, comp, &plan, &v_cfg, &mut log) {
             println!("⚠️  Execution failed: {}. Continuing...", e);
         }
     }
@@ -445,9 +445,9 @@ fn run_single_demo(mode: AIMode) -> Result<()> {
     };
 
     {
-        let mut w = app.world.get_resource_mut::<World>().unwrap();
+        let w = app.world.get_resource_mut::<World>().unwrap();
         println!("\n--- Executing Plan @ t={:.2} ---", w.t);
-        if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+        if let Err(e) = validate_and_execute(&mut *w, comp, &plan, &v_cfg, &mut log) {
             println!("⚠️  Execution failed: {}. Continuing...", e);
         }
     }

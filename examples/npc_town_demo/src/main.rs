@@ -163,7 +163,7 @@ impl ApplicationHandler for App {
                         }
                         KeyCode::KeyE => {
                             // talk to nearest (merchant or guard). For demo, alternate:
-                            let glue = EngineCommandSink {
+                            let _glue = EngineCommandSink {
                                 phys: &mut self.phys,
                                 audio: &mut self.audio,
                             };
@@ -204,7 +204,7 @@ impl ApplicationHandler for App {
                                 &view_guard,
                                 utter,
                             );
-                            drop(glue);
+                            // glue is dropped automatically at end of scope
                         }
                         _ => {}
                     }

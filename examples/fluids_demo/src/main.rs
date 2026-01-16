@@ -78,6 +78,7 @@ struct State {
     camera_pitch: f32,
     camera_distance: f32,
     keys_pressed: std::collections::HashSet<KeyCode>,
+    #[allow(dead_code)]
     mouse_captured: bool,
 
     // Performance tracking
@@ -632,7 +633,7 @@ impl State {
                 .cloned()
                 .fold(0.0f32, f32::max)
                 .max(0.001);
-        let max_fps = 1.0
+        let _max_fps = 1.0
             / self
                 .frame_times
                 .iter()

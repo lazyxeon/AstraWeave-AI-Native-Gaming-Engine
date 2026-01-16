@@ -3,7 +3,6 @@
 //! Comprehensive showcase of all Astract UI widgets with interactive demos
 
 use astract::prelude::egui::*;
-use eframe;
 
 mod advanced_tab;
 mod animation_tab;

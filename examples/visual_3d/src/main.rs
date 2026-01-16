@@ -128,7 +128,7 @@ impl App {
 
         let camera = Camera {
             position: vec3(0.0, 8.0, 12.0),
-            yaw: -3.14 / 2.0,
+            yaw: -std::f32::consts::FRAC_PI_2,
             pitch: -0.6,
             fovy: 60f32.to_radians(),
             aspect: 16.0 / 9.0,
@@ -185,7 +185,7 @@ impl App {
 
         // Prepare Egui input and UI declaration
         let egui_state = self.egui_state.as_mut().unwrap();
-        let raw_input = egui_state.take_egui_input(&window);
+        let raw_input = egui_state.take_egui_input(window);
         let egui_output = self.egui_ctx.run(raw_input, |ctx| {
             egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
                 ui.horizontal(|ui| {
@@ -549,18 +549,16 @@ impl ApplicationHandler for App {
                 event:
                     KeyEvent {
                         state,
-                        physical_key,
+                        physical_key: PhysicalKey::Code(key_code),
                         ..
                     },
                 ..
             } => {
-                if let PhysicalKey::Code(key_code) = physical_key {
-                    if key_code == KeyCode::Escape {
-                        event_loop.exit();
-                    }
-                    self.camera_controller
-                        .process_keyboard(key_code, state == ElementState::Pressed);
+                if key_code == KeyCode::Escape {
+                    event_loop.exit();
                 }
+                self.camera_controller
+                    .process_keyboard(key_code, state == ElementState::Pressed);
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 self.camera_controller

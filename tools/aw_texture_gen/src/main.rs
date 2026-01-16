@@ -82,7 +82,7 @@ fn main() -> Result<()> {
 }
 
 fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
-    out_dir: &PathBuf,
+    out_dir: &std::path::Path,
     name: &str,
     seed: u32,
     force: bool,
@@ -111,7 +111,7 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
 }
 
 fn synth_mra_if_missing(
-    out_dir: &PathBuf,
+    out_dir: &std::path::Path,
     name: &str,
     ao: f32,
     rough: f32,
@@ -134,7 +134,7 @@ fn synth_mra_if_missing(
     Ok(())
 }
 
-fn synth_emissive_if_missing(out_dir: &PathBuf, name: &str, force: bool) -> Result<()> {
+fn synth_emissive_if_missing(out_dir: &std::path::Path, name: &str, force: bool) -> Result<()> {
     let path = out_dir.join(name);
     if force || !path.exists() {
         let (w, h) = (4u32, 4u32);
@@ -207,7 +207,7 @@ fn synth_grass(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let dirt_factor = (dirt > 0.4) as i32 as f32 * 0.25;
             let gcol = 95.0 + 120.0 * height;
             let ycol = 70.0 + 50.0 * (1.0 - height);
-            let (r, g, b) = if dirt_factor > 0.0 {
+            let                 (r, g, b) = if dirt_factor > 0.0 {
                 let mix = dirt_factor;
                 let gr = gcol * 0.3 + ycol * 0.2;
                 let gg = gcol;
@@ -216,9 +216,9 @@ fn synth_grass(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
                 let dg = 55.0 + 25.0 * height;
                 let db = 35.0 + 15.0 * height;
                 (
-                    ((gr * (1.0 - mix) + dr * mix) as u8).min(255),
-                    ((gg * (1.0 - mix) + dg * mix) as u8).min(255),
-                    ((gb * (1.0 - mix) + db * mix) as u8).min(255),
+                    (gr * (1.0 - mix) + dr * mix) as u8,
+                    (gg * (1.0 - mix) + dg * mix) as u8,
+                    (gb * (1.0 - mix) + db * mix) as u8,
                 )
             } else {
                 (

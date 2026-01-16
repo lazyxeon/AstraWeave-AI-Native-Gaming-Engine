@@ -119,10 +119,9 @@ fn patch(old_manifest: PathBuf, new_manifest: PathBuf, out: PathBuf, name: Strin
         .files
         .iter()
         .filter(|nf| {
-            old.files
+            !old.files
                 .iter()
-                .find(|of| of.rel == nf.rel && of.sha256 == nf.sha256)
-                .is_none()
+                .any(|of| of.rel == nf.rel && of.sha256 == nf.sha256)
         })
         .collect();
 

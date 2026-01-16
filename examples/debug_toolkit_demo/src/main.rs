@@ -227,7 +227,7 @@ impl ApplicationHandler for DemoApp {
         event: WindowEvent,
     ) {
         if let (Some(egui_platform), Some(window)) = (&mut self.egui_platform, &self.window) {
-            let _ = egui_platform.on_window_event(&*window, &event);
+            let _ = egui_platform.on_window_event(window, &event);
         }
 
         match event {
@@ -318,13 +318,13 @@ impl ApplicationHandler for DemoApp {
                             pixels_per_point: window.scale_factor() as f32,
                         };
 
-                        let egui_input = egui_platform.take_egui_input(&*window);
+                        let egui_input = egui_platform.take_egui_input(window);
                         egui_ctx.begin_pass(egui_input);
 
                         egui::Window::new("Debug HUD")
                             .default_pos([10.0, 10.0])
                             .default_width(350.0)
-                            .show(&egui_ctx, |ui| {
+                            .show(egui_ctx, |ui| {
                                 app.hud.ui(ui);
                             });
 

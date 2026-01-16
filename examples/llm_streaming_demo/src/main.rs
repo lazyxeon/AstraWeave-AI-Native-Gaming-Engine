@@ -167,7 +167,7 @@ async fn main() -> Result<()> {
     if blocking_trimmed == streaming_trimmed {
         println!("✅ Response consistency: PERFECT (streaming matches blocking)");
     } else {
-        let similarity = similar_percent(&blocking_trimmed, &streaming_trimmed);
+        let similarity = similar_percent(blocking_trimmed, streaming_trimmed);
         println!(
             "⚠️  Response similarity: {:.1}% (expected ~95-100% with temp=0.7)",
             similarity

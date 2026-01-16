@@ -58,7 +58,7 @@ fn build_all_demos() -> Result<()> {
 
 fn build_demo(name: &str) -> Result<()> {
     let status = Command::new("cargo")
-        .args(&["build", "--release", "--bin", name])
+        .args(["build", "--release", "--bin", name])
         .current_dir("examples")
         .status()?;
 

@@ -1074,37 +1074,46 @@ mod save_tests {
     #[test]
     fn test_save_pretty_printed() {
         let bindings = create_test_bindings();
-        let path = "test_output/pretty.json";
+        let temp_dir = std::env::temp_dir().join("astraweave_input_test_pretty");
+        let _ = fs::create_dir_all(&temp_dir);
+        let path = temp_dir.join("pretty.json");
+        let path_str = path.to_string_lossy();
 
-        save_bindings(path, &bindings).expect("Failed to save");
+        save_bindings(&path_str, &bindings).expect("Failed to save");
 
         // Read raw content
-        let content = fs::read_to_string(path).expect("Failed to read file");
+        let content = fs::read_to_string(&path).expect("Failed to read file");
 
         // Pretty-printed JSON should have newlines
         assert!(content.contains('\n'));
         assert!(content.contains("actions"));
 
         // Cleanup
-        let _ = fs::remove_file(path);
-        let _ = fs::remove_dir("test_output");
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_dir(&temp_dir);
     }
 
     // Save Test 10: Multiple saves to same directory
     #[test]
     fn test_multiple_saves_same_dir() {
         let bindings = create_test_bindings();
+        let temp_dir = std::env::temp_dir().join("astraweave_input_test_multi");
+        let _ = fs::create_dir_all(&temp_dir);
+        
+        let file1 = temp_dir.join("file1.json");
+        let file2 = temp_dir.join("file2.json");
+        let file3 = temp_dir.join("file3.json");
 
-        save_bindings("test_output/file1.json", &bindings).expect("Failed to save file1");
-        save_bindings("test_output/file2.json", &bindings).expect("Failed to save file2");
-        save_bindings("test_output/file3.json", &bindings).expect("Failed to save file3");
+        save_bindings(&file1.to_string_lossy(), &bindings).expect("Failed to save file1");
+        save_bindings(&file2.to_string_lossy(), &bindings).expect("Failed to save file2");
+        save_bindings(&file3.to_string_lossy(), &bindings).expect("Failed to save file3");
 
         // All should exist
-        assert!(std::path::Path::new("test_output/file1.json").exists());
-        assert!(std::path::Path::new("test_output/file2.json").exists());
-        assert!(std::path::Path::new("test_output/file3.json").exists());
+        assert!(file1.exists());
+        assert!(file2.exists());
+        assert!(file3.exists());
 
         // Cleanup
-        let _ = fs::remove_dir_all("test_output");
+        let _ = fs::remove_dir_all(&temp_dir);
     }
 }

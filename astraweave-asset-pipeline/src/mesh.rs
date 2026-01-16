@@ -189,7 +189,7 @@ fn calculate_acmr(indices: &[u32], _vertex_count: usize) -> f32 {
 
     // Simulate a 32-entry FIFO cache (typical GPU vertex cache)
     const CACHE_SIZE: usize = 32;
-    let mut cache = vec![u32::MAX; CACHE_SIZE];
+    let mut cache = [u32::MAX; CACHE_SIZE];
     let mut cache_pos = 0;
     let mut cache_misses = 0;
 

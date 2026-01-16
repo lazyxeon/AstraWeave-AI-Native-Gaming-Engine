@@ -3,6 +3,7 @@ use keyring::Entry;
 
 const SERVICE_NAME: &str = "astraweave.secrets";
 
+#[derive(Default)]
 pub struct KeyringBackend;
 
 impl KeyringBackend {

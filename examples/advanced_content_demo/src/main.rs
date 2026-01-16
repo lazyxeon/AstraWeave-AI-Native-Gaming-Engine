@@ -2,7 +2,6 @@ use astraweave_weaving::*;
 use glam::Vec3;
 
 /// Advanced Content Demo: Week 4 + Week 5 Day 1 Integration Showcase
-
 fn main() {
     println!("=== AstraWeave Advanced Content Demo ===\n");
     println!("Week 4 + Week 5 Day 1 Integration Showcase\n");
@@ -72,12 +71,9 @@ fn demo_scenario_1_escort_quest() {
             }
 
             if time > 5.0 && time < 5.5 && player.can_dash() {
-                match player.use_dash() {
-                    Ok((target_pos, damage)) => {
-                        println!("💨 [t={:.1}s] Dash! Damage: {:.1}", time, damage);
-                        player.position = target_pos;
-                    }
-                    Err(_) => {}
+                if let Ok((target_pos, damage)) = player.use_dash() {
+                    println!("💨 [t={:.1}s] Dash! Damage: {:.1}", time, damage);
+                    player.position = target_pos;
                 }
             }
 
@@ -213,12 +209,9 @@ fn demo_scenario_3_boss_fight() {
             }
 
             if time as u32 % 3 == 0 && time.fract() < delta_time && player.can_dash() {
-                match player.use_dash() {
-                    Ok((_, damage)) => {
-                        println!("💨 [t={:.1}s] Dash attack! Damage: {:.1}", time, damage);
-                        objective.take_damage(damage);
-                    }
-                    Err(_) => {}
+                if let Ok((_, damage)) = player.use_dash() {
+                    println!("💨 [t={:.1}s] Dash attack! Damage: {:.1}", time, damage);
+                    objective.take_damage(damage);
                 }
             }
 
@@ -273,12 +266,9 @@ fn demo_scenario_4_time_trial() {
             objective.update(delta_time);
 
             if player.can_dash() {
-                match player.use_dash() {
-                    Ok((target_pos, _)) => {
-                        println!("💨 [t={:.1}s] Dash!", time);
-                        player.position = target_pos;
-                    }
-                    Err(_) => {}
+                if let Ok((target_pos, _)) = player.use_dash() {
+                    println!("💨 [t={:.1}s] Dash!", time);
+                    player.position = target_pos;
                 }
             }
 
@@ -348,21 +338,19 @@ fn demo_scenario_5_collect_quest() {
         player.update(delta_time);
 
         if let ObjectiveType::Collect { objective } = &mut quest.objectives[0] {
-            if time as u32 % 2 == 0 && collected < 5 {
-                if collected < objective.items.len() {
-                    objective.items[collected].collect();
-                    collected += 1;
-                    println!(
-                        "✨ [t={:.1}s] Collected: {}",
-                        time,
-                        objective.items[collected - 1].item_name
-                    );
+            if time as u32 % 2 == 0 && collected < 5 && collected < objective.items.len() {
+                objective.items[collected].collect();
+                collected += 1;
+                println!(
+                    "✨ [t={:.1}s] Collected: {}",
+                    time,
+                    objective.items[collected - 1].item_name
+                );
 
-                    if collected == 3 && player.can_shield() {
-                        println!("   ⚠️  Ambush!");
-                        player.use_shield().ok();
-                        println!("   🛡️  Shield!");
-                    }
+                if collected == 3 && player.can_shield() {
+                    println!("   ⚠️  Ambush!");
+                    player.use_shield().ok();
+                    println!("   🛡️  Shield!");
                 }
             }
 

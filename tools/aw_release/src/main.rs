@@ -87,7 +87,7 @@ fn create_tag(version: &str) -> Result<()> {
 
     // Create annotated tag
     std::process::Command::new("git")
-        .args(&[
+        .args([
             "tag",
             "-a",
             &format!("v{}", version),
@@ -107,7 +107,7 @@ fn package_release(version: &str) -> Result<()> {
 
     // Build release
     std::process::Command::new("cargo")
-        .args(&["build", "--release"])
+        .args(["build", "--release"])
         .status()?;
 
     // Create package directory

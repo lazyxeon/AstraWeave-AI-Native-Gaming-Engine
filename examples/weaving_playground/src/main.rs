@@ -39,7 +39,7 @@ impl WeavingApp {
     fn new() -> Self {
         let camera = Camera {
             position: vec3(-4.0, 7.0, 12.0),
-            yaw: -3.14 / 2.1,
+            yaw: -std::f32::consts::PI / 2.1,
             pitch: -0.55,
             fovy: 60f32.to_radians(),
             aspect: 16.0 / 9.0,
@@ -60,9 +60,11 @@ impl WeavingApp {
         let tris = generate_island_room();
         let _nav = NavMesh::bake(&tris, 0.5, 55.0);
 
-        let mut terr_cfg = WorldConfig::default();
-        terr_cfg.chunk_size = 128.0;
-        terr_cfg.heightmap_resolution = 64;
+        let terr_cfg = WorldConfig {
+            chunk_size: 128.0,
+            heightmap_resolution: 64,
+            ..Default::default()
+        };
         let terr_renderer = RenderTerrainRenderer::new(terr_cfg.clone());
         
         let budget = WeaveBudget {
@@ -318,7 +320,7 @@ impl ApplicationHandler for WeavingApp {
                 let scroll = match delta {
                     winit::event::MouseScrollDelta::LineDelta(_, y) => y,
                     winit::event::MouseScrollDelta::PixelDelta(p) => {
-                        (p.y as f32 / 120.0) as f32
+                        p.y as f32 / 120.0
                     }
                 };
                 self.cam_ctl.process_scroll(&mut self.camera, scroll);

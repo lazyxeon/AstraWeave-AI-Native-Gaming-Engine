@@ -1048,7 +1048,7 @@ impl ViewportWidget {
                         scale = pose.scale,
                         "Captured World start transform"
                     );
-                } else if let Some(entity) = entity_manager.get(selected_id as u64) {
+                } else if let Some(entity) = entity_manager.get(selected_id) {
                     // Fallback to EntityManager
                     self.gizmo_state.start_transform = Some(TransformSnapshot {
                         position: entity.position,
@@ -1332,7 +1332,7 @@ impl ViewportWidget {
             // Transform cancelled - revert to start_transform (NO undo command created)
             if let Some(snapshot) = &self.gizmo_state.start_transform {
                 if let Some(selected_id) = self.selected_entity() {
-                    if let Some(entity) = entity_manager.get_mut(selected_id as u64) {
+                    if let Some(entity) = entity_manager.get_mut(selected_id) {
                         entity.position = snapshot.position;
                         entity.rotation = snapshot.rotation;
                         entity.scale = snapshot.scale;
