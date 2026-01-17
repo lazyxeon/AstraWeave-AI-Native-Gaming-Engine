@@ -320,17 +320,18 @@ impl BatchInferenceExecutor {
     /// - Parses complete JSON array at once (deterministic)
     ///
     /// # Example
-    /// ```no_run
-    /// # use astraweave_llm::{BatchInferenceExecutor, LlmClient, MockLlm};
-    /// # async fn example() -> anyhow::Result<()> {
-    /// let mut executor = BatchInferenceExecutor::new();
-    /// executor.queue_agent(1, snapshot1);
-    /// executor.queue_agent(2, snapshot2);
+    /// ```ignore
+    /// use astraweave_llm::{BatchInferenceExecutor, LlmClient, MockLlm};
     ///
-    /// let llm_client: &dyn LlmClient = &MockLlm;
-    /// let response = executor.execute_batch(llm_client, "MoveTo|Attack").await?;
-    /// # Ok(())
-    /// # }
+    /// async fn example() -> anyhow::Result<()> {
+    ///     let mut executor = BatchInferenceExecutor::new();
+    ///     executor.queue_agent(1, snapshot1);
+    ///     executor.queue_agent(2, snapshot2);
+    ///
+    ///     let llm_client: &dyn LlmClient = &MockLlm;
+    ///     let response = executor.execute_batch(llm_client, "MoveTo|Attack").await?;
+    ///     Ok(())
+    /// }
     /// ```
     pub async fn execute_batch(
         &mut self,

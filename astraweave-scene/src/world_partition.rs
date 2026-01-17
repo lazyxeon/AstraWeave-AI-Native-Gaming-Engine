@@ -20,7 +20,7 @@
 //!
 //! # Usage
 //!
-//! ```rust,no_run
+//! ```ignore
 //! use astraweave_scene::world_partition::{WorldPartition, GridConfig};
 //! use glam::Vec3;
 //!

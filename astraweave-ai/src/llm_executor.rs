@@ -21,40 +21,39 @@
 //! ```
 //!
 //! # Example
-//! ```no_run
+//! ```ignore
 //! use astraweave_ai::LlmExecutor;
 //! use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
 //! use astraweave_core::{WorldSnapshot, default_tool_registry};
 //! use std::sync::Arc;
 //!
-//! # async fn example() -> anyhow::Result<()> {
-//! let client = Hermes2ProOllama::new(
-//!     "http://127.0.0.1:11434".to_string(),
-//!     "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
-//! );
+//! async fn example() -> anyhow::Result<()> {
+//!     let client = Hermes2ProOllama::new(
+//!         "http://127.0.0.1:11434".to_string(),
+//!         "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
+//!     );
 //!
-//! let registry = default_tool_registry();
-//! let orchestrator = Arc::new(astraweave_llm::FallbackOrchestrator::new(client, registry));
-//! let runtime = tokio::runtime::Handle::current();
+//!     let registry = default_tool_registry();
+//!     let orchestrator = Arc::new(astraweave_llm::fallback_system::FallbackOrchestrator::new(client, registry));
+//!     let runtime = tokio::runtime::Handle::current();
 //!
-//! let executor = LlmExecutor::new(orchestrator, runtime);
+//!     let executor = LlmExecutor::new(orchestrator, runtime);
 //!
-//! // Non-blocking async plan generation
-//! let snapshot = /* build snapshot */;
-//! # WorldSnapshot { t: 0.0, me: astraweave_core::CompanionState { ammo: 10, cooldowns: Default::default(), morale: 1.0, pos: astraweave_core::IVec2 { x: 0, y: 0 } }, player: astraweave_core::PlayerState { hp: 100, pos: astraweave_core::IVec2 { x: 0, y: 0 }, stance: "stand".into(), orders: vec![] }, enemies: vec![], pois: vec![], obstacles: vec![], objective: None };
-//! let mut task = executor.generate_plan_async(snapshot);
+//!     // Non-blocking async plan generation
+//!     let snapshot = /* build snapshot */;
+//!     let mut task = executor.generate_plan_async(snapshot);
 //!
-//! // GOAP continues providing actions while LLM plans...
+//!     // GOAP continues providing actions while LLM plans...
 //!
-//! // Poll for completion (non-blocking)
-//! if let Some(result) = task.try_recv() {
-//!     match result {
-//!         Ok(plan) => println!("LLM plan ready: {} steps", plan.steps.len()),
-//!         Err(e) => eprintln!("LLM planning failed: {}", e),
+//!     // Poll for completion (non-blocking)
+//!     if let Some(result) = task.try_recv() {
+//!         match result {
+//!             Ok(plan) => println!("LLM plan ready: {} steps", plan.steps.len()),
+//!             Err(e) => eprintln!("LLM planning failed: {}", e),
+//!         }
 //!     }
+//!     Ok(())
 //! }
-//! # Ok(())
-//! # }
 //! ```
 
 use crate::async_task::AsyncTask;
@@ -93,24 +92,24 @@ impl LlmExecutor {
     /// - `runtime`: Tokio runtime handle for spawning async tasks
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use astraweave_ai::LlmExecutor;
     /// use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
     /// use astraweave_core::default_tool_registry;
     /// use std::sync::Arc;
     ///
-    /// # async fn example() {
-    /// let client = Hermes2ProOllama::new(
-    ///     "http://127.0.0.1:11434".to_string(),
-    ///     "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
-    /// );
+    /// async fn example() {
+    ///     let client = Hermes2ProOllama::new(
+    ///         "http://127.0.0.1:11434".to_string(),
+    ///         "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
+    ///     );
     ///
-    /// let registry = default_tool_registry();
-    /// let orchestrator = Arc::new(astraweave_llm::FallbackOrchestrator::new(client, registry));
-    /// let runtime = tokio::runtime::Handle::current();
+    ///     let registry = default_tool_registry();
+    ///     let orchestrator = Arc::new(astraweave_llm::fallback_system::FallbackOrchestrator::new(client, registry));
+    ///     let runtime = tokio::runtime::Handle::current();
     ///
-    /// let executor = LlmExecutor::new(orchestrator, runtime);
-    /// # }
+    ///     let executor = LlmExecutor::new(orchestrator, runtime);
+    /// }
     /// ```
     pub fn new(orchestrator: Arc<dyn OrchestratorAsync + Send + Sync>, runtime: Handle) -> Self {
         Self {

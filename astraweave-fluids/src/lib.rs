@@ -1,15 +1,22 @@
+pub mod editor;
 pub mod emitter;
 pub mod lod;
 pub mod profiling;
 pub mod renderer;
 pub mod sdf;
 pub mod serialization;
+pub mod terrain_integration;
 
+pub use editor::FluidEditorConfig;
 pub use emitter::{EmitterShape, FluidDrain, FluidEmitter};
 pub use lod::{FluidLodConfig, FluidLodManager, LodLevel};
 pub use profiling::{FluidProfiler, FluidTimingStats};
 pub use renderer::FluidRenderer;
 pub use serialization::{FluidSnapshot, SnapshotParams};
+pub use terrain_integration::{
+    DetectedWaterBody, LakeConfig, OceanConfig, RiverConfig, TerrainFluidConfig,
+    WaterBodyType, WaterfallConfig, analyze_terrain_for_water,
+};
 
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;

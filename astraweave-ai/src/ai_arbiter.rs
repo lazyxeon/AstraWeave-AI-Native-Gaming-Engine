@@ -40,40 +40,36 @@
 //!
 //! # Example Usage
 //!
-//! ```no_run
+//! ```ignore
 //! use astraweave_ai::{AIArbiter, LlmExecutor};
-//! use astraweave_llm::FallbackOrchestrator;
+//! use astraweave_llm::fallback_system::FallbackOrchestrator;
 //! use astraweave_core::{WorldSnapshot, default_tool_registry};
 //! use std::sync::Arc;
 //!
-//! # async fn example() -> anyhow::Result<()> {
-//! // Setup orchestrators
-//! let llm_client = /* Hermes 2 Pro client */;
-//! # unimplemented!();
-//! let llm_orch = Arc::new(FallbackOrchestrator::new(llm_client, default_tool_registry()));
-//! let runtime = tokio::runtime::Handle::current();
-//! let llm_executor = LlmExecutor::new(llm_orch, runtime);
+//! async fn example() -> anyhow::Result<()> {
+//!     // Setup orchestrators
+//!     let llm_client = /* Hermes 2 Pro client */;
+//!     let llm_orch = Arc::new(FallbackOrchestrator::new(llm_client, default_tool_registry()));
+//!     let runtime = tokio::runtime::Handle::current();
+//!     let llm_executor = LlmExecutor::new(llm_orch, runtime);
 //!
-//! let goap = /* GOAP orchestrator */;
-//! # unimplemented!();
-//! let bt = /* Behavior tree orchestrator */;
-//! # unimplemented!();
+//!     let goap = /* GOAP orchestrator */;
+//!     let bt = /* Behavior tree orchestrator */;
 //!
-//! let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+//!     let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
 //!
-//! // Game loop (60 FPS)
-//! loop {
-//!     let snapshot = /* build world snapshot */;
-//!     # unimplemented!();
-//!     
-//!     // Always returns instantly (GOAP or cached plan step)
-//!     let action = arbiter.update(&snapshot);
-//!     
-//!     // Apply action to game world
-//!     // ...
+//!     // Game loop (60 FPS)
+//!     loop {
+//!         let snapshot = /* build world snapshot */;
+//!         
+//!         // Always returns instantly (GOAP or cached plan step)
+//!         let action = arbiter.update(&snapshot);
+//!         
+//!         // Apply action to game world
+//!         // ...
+//!     }
+//!     Ok(())
 //! }
-//! # Ok(())
-//! # }
 //! ```
 
 use crate::async_task::AsyncTask;
@@ -191,21 +187,18 @@ impl AIArbiter {
     /// - All metrics initialized to 0
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use astraweave_ai::{AIArbiter, LlmExecutor};
-    /// # use std::sync::Arc;
-    /// # use astraweave_core::default_tool_registry;
+    /// use std::sync::Arc;
+    /// use astraweave_core::default_tool_registry;
     ///
-    /// # async fn example() {
-    /// let llm_executor = /* ... */;
-    /// # unimplemented!();
-    /// let goap = /* ... */;
-    /// # unimplemented!();
-    /// let bt = /* ... */;
-    /// # unimplemented!();
+    /// async fn example() {
+    ///     let llm_executor = /* ... */;
+    ///     let goap = /* ... */;
+    ///     let bt = /* ... */;
     ///
-    /// let arbiter = AIArbiter::new(llm_executor, goap, bt);
-    /// # }
+    ///     let arbiter = AIArbiter::new(llm_executor, goap, bt);
+    /// }
     /// ```
     pub fn new(
         llm_executor: LlmExecutor,

@@ -6,6 +6,7 @@
 //! - Advanced erosion simulation (hydraulic, thermal, wind)
 //! - Biome blending with smooth transitions
 //! - Texture splatting and material rules
+//! - Fluid simulation and water body detection
 //! - Real-time preview and regeneration
 //! - Voxel brush tools for sculpting
 
@@ -176,6 +177,186 @@ impl Default for SplatParams {
     }
 }
 
+/// Water body type for fluid placement
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WaterBodyPreset {
+    Custom,
+    CalmLake,
+    MountainStream,
+    RagingRiver,
+    Ocean,
+    Waterfall,
+    SwampWetland,
+}
+
+impl WaterBodyPreset {
+    fn name(&self) -> &'static str {
+        match self {
+            WaterBodyPreset::Custom => "Custom",
+            WaterBodyPreset::CalmLake => "Calm Lake",
+            WaterBodyPreset::MountainStream => "Mountain Stream",
+            WaterBodyPreset::RagingRiver => "Raging River",
+            WaterBodyPreset::Ocean => "Ocean",
+            WaterBodyPreset::Waterfall => "Waterfall",
+            WaterBodyPreset::SwampWetland => "Swamp/Wetland",
+        }
+    }
+    
+    fn all() -> &'static [WaterBodyPreset] {
+        &[
+            WaterBodyPreset::Custom,
+            WaterBodyPreset::CalmLake,
+            WaterBodyPreset::MountainStream,
+            WaterBodyPreset::RagingRiver,
+            WaterBodyPreset::Ocean,
+            WaterBodyPreset::Waterfall,
+            WaterBodyPreset::SwampWetland,
+        ]
+    }
+}
+
+/// Fluid simulation quality preset
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FluidQualityPreset {
+    Performance,
+    Balanced,
+    Quality,
+    Cinematic,
+}
+
+impl FluidQualityPreset {
+    fn name(&self) -> &'static str {
+        match self {
+            FluidQualityPreset::Performance => "Performance",
+            FluidQualityPreset::Balanced => "Balanced",
+            FluidQualityPreset::Quality => "Quality",
+            FluidQualityPreset::Cinematic => "Cinematic",
+        }
+    }
+}
+
+/// Fluid simulation parameters for terrain integration
+#[derive(Debug, Clone)]
+pub struct FluidSimParams {
+    pub enabled: bool,
+    pub quality_preset: FluidQualityPreset,
+    pub water_body_preset: WaterBodyPreset,
+    
+    // Physics
+    pub particle_count: u32,
+    pub smoothing_radius: f32,
+    pub target_density: f32,
+    pub pressure_multiplier: f32,
+    pub viscosity: f32,
+    pub surface_tension: f32,
+    pub gravity: f32,
+    pub solver_iterations: u32,
+    
+    // Flow
+    pub flow_enabled: bool,
+    pub flow_speed: f32,
+    pub flow_direction: [f32; 2],
+    pub turbulence: f32,
+    
+    // Rendering
+    pub water_color: [f32; 4],
+    pub transparency: f32,
+    pub refraction_strength: f32,
+    pub caustics_enabled: bool,
+    pub caustics_intensity: f32,
+    pub foam_enabled: bool,
+    pub foam_threshold: f32,
+    
+    // Thermal
+    pub thermal_enabled: bool,
+    pub thermal_diffusivity: f32,
+    pub buoyancy: f32,
+    
+    // Detection
+    pub auto_detect_water_bodies: bool,
+    pub min_river_flow_threshold: f32,
+    pub lake_depth_threshold: f32,
+    pub waterfall_height_threshold: f32,
+    
+    // Emitters
+    pub emitter_count: u32,
+    pub spawn_rate: f32,
+    pub initial_velocity: f32,
+}
+
+impl Default for FluidSimParams {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            quality_preset: FluidQualityPreset::Balanced,
+            water_body_preset: WaterBodyPreset::CalmLake,
+            
+            // Physics
+            particle_count: 65536,
+            smoothing_radius: 1.0,
+            target_density: 12.0,
+            pressure_multiplier: 300.0,
+            viscosity: 10.0,
+            surface_tension: 0.02,
+            gravity: -9.8,
+            solver_iterations: 4,
+            
+            // Flow
+            flow_enabled: false,
+            flow_speed: 1.0,
+            flow_direction: [1.0, 0.0],
+            turbulence: 0.1,
+            
+            // Rendering
+            water_color: [0.2, 0.5, 0.8, 0.9],
+            transparency: 0.7,
+            refraction_strength: 0.5,
+            caustics_enabled: true,
+            caustics_intensity: 1.0,
+            foam_enabled: true,
+            foam_threshold: 0.3,
+            
+            // Thermal
+            thermal_enabled: false,
+            thermal_diffusivity: 0.1,
+            buoyancy: 0.0002,
+            
+            // Detection
+            auto_detect_water_bodies: true,
+            min_river_flow_threshold: 500.0,
+            lake_depth_threshold: 2.0,
+            waterfall_height_threshold: 5.0,
+            
+            // Emitters
+            emitter_count: 1,
+            spawn_rate: 1000.0,
+            initial_velocity: 0.0,
+        }
+    }
+}
+
+/// Detected water body information for display
+#[derive(Debug, Clone)]
+pub struct DetectedWaterBodyInfo {
+    pub name: String,
+    pub body_type: String,
+    pub center: [f32; 3],
+    pub volume: f32,
+    pub particle_count: u32,
+    pub flow_speed: Option<f32>,
+    pub selected: bool,
+}
+
+/// Statistics for fluid simulation
+#[derive(Default, Clone)]
+pub struct FluidStats {
+    pub active_particles: u32,
+    pub emitter_count: u32,
+    pub detected_bodies: u32,
+    pub simulation_time_ms: f32,
+    pub render_time_ms: f32,
+}
+
 /// Terrain generation and editing panel
 pub struct TerrainPanel {
     /// Terrain generation state
@@ -204,6 +385,12 @@ pub struct TerrainPanel {
     
     /// Texture splatting parameters
     splat_params: SplatParams,
+    
+    /// Fluid simulation parameters
+    fluid_params: FluidSimParams,
+    fluid_stats: FluidStats,
+    detected_water_bodies: Vec<DetectedWaterBodyInfo>,
+    show_fluid_debug: bool,
     
     /// UI state
     auto_regenerate: bool,
@@ -256,6 +443,10 @@ impl Default for TerrainPanel {
             wind_erosion: WindErosionParams::default(),
             biome_blend: BiomeBlendParams::default(),
             splat_params: SplatParams::default(),
+            fluid_params: FluidSimParams::default(),
+            fluid_stats: FluidStats::default(),
+            detected_water_bodies: Vec::new(),
+            show_fluid_debug: false,
             auto_regenerate: false,
             show_advanced: false,
             last_generation_time_ms: 0.0,

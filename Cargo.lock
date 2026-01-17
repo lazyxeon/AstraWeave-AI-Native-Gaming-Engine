@@ -812,6 +812,7 @@ dependencies = [
  "glam 0.30.8",
  "pollster",
  "serde",
+ "serde_json",
  "wgpu",
  "winit",
 ]

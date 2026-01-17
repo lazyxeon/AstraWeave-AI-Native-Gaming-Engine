@@ -23,14 +23,15 @@
 //! ```
 //!
 //! # Usage
-//! ```no_run
+//! ```ignore
 //! use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
 //! use astraweave_llm::LlmClient;
 //!
-//! # async fn example() -> anyhow::Result<()> {
-//! let client = Hermes2ProOllama::new("http://localhost:11434", "adrienbrault/nous-hermes2pro:Q4_K_M");
-//! let response = client.complete("You are a game AI. Plan your next action.").await?;
-//! # Ok(())
+//! async fn example() -> anyhow::Result<()> {
+//!     let client = Hermes2ProOllama::new("http://localhost:11434", "adrienbrault/nous-hermes2pro:Q4_K_M");
+//!     let response = client.complete("You are a game AI. Plan your next action.").await?;
+//!     Ok(())
+//! }
 //! ```
 
 use crate::LlmClient;

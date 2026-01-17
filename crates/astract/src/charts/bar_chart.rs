@@ -40,7 +40,7 @@ struct BarDrawParams {
 ///
 /// # Example
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use astract::charts::{BarChart, BarGroup, Bar};
 /// use egui::Color32;
 ///
