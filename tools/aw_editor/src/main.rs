@@ -4823,6 +4823,16 @@ impl MenuActionHandler for EditorApp {
         }
     }
 
+    fn on_delete(&mut self) {
+        if let Some(scene_state) = self.scene_state.as_mut() {
+            let world = scene_state.world_mut();
+            if let Some(viewport) = &mut self.viewport {
+                viewport.delete_selection(world, &mut self.undo_stack);
+                self.status = "Deleted selection".to_string();
+            }
+        }
+    }
+
     fn selection_count(&self) -> usize {
         self.selection_set.count()
     }

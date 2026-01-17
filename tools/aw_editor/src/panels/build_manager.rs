@@ -852,10 +852,7 @@ mod tests {
     fn test_build_status_logic() {
         // Idle
         let status = BuildStatus::Idle;
-        match status {
-            BuildStatus::Idle => assert!(true),
-            _ => assert!(false, "Status should be Idle"),
-        }
+        assert!(matches!(status, BuildStatus::Idle));
 
         // Building
         let status = BuildStatus::Building { progress: 0.5, current_step: "Test".to_string() };
@@ -863,7 +860,7 @@ mod tests {
             assert_eq!(progress, 0.5);
             assert_eq!(current_step, "Test");
         } else {
-            assert!(false, "Status should be Building");
+            panic!("Status should be Building");
         }
 
         // Success
@@ -872,7 +869,7 @@ mod tests {
             assert_eq!(output_path, PathBuf::from("test.exe"));
             assert_eq!(duration_secs, 10.0);
         } else {
-            assert!(false, "Status should be Success");
+            panic!("Status should be Success");
         }
     }
 }

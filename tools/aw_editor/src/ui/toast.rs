@@ -533,7 +533,7 @@ mod tests {
         let toast = Toast::new("Test", ToastLevel::Info);
         // Very new toast should have progress near 0
         let progress = toast.animation_progress();
-        assert!(progress >= 0.0 && progress <= 1.0);
+        assert!((0.0..=1.0).contains(&progress));
     }
 
     #[test]

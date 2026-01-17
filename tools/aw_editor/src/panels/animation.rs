@@ -871,8 +871,10 @@ mod tests {
 
     #[test]
     fn test_playback_update() {
-        let mut panel = AnimationPanel::default();
-        panel.playback_state = PlaybackState::Playing;
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Playing,
+            ..Default::default()
+        };
         let output = panel.update(0.1);
         assert!(output.is_some());
         assert!(panel.current_time > 0.0);

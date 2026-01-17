@@ -3,7 +3,7 @@
 ///
 /// These tests use mockito to simulate PolyHaven API responses and file downloads
 use astraweave_assets::config::AssetManifest;
-use astraweave_assets::ensure_asset::ensure_asset;
+use astraweave_assets::ensure_asset::{ensure_asset, ensure_asset_with_base_url};
 use mockito::{Server, ServerGuard};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -129,10 +129,9 @@ async fn test_texture_download_success_mock_api() {
 
     let manifest_path = create_texture_manifest(&temp_dir, &cache_dir, &output_dir);
 
-    // Setup mock server - set env var IMMEDIATELY after getting URL to prevent race
+    // Setup mock server - use direct base_url injection to avoid env var races
     let mut server = setup_mock_server().await;
     let server_url = server.url();
-    std::env::set_var("POLYHAVEN_BASE_URL", &server_url);
 
     // Mock /files endpoint (texture resolution)
     // Manifest requests "albedo" and "normal", which map to "Diffuse" and "Normal" PolyHaven names
@@ -194,11 +193,8 @@ async fn test_texture_download_success_mock_api() {
         .create_async()
         .await;
 
-    // Execute download
-    let result = ensure_asset(&manifest_path, "test_texture").await;
-
-    // Cleanup env var
-    std::env::remove_var("POLYHAVEN_BASE_URL");
+    // Use ensure_asset_with_base_url to avoid env var race conditions
+    let result = ensure_asset_with_base_url(&manifest_path, "test_texture", Some(&server_url)).await;
 
     // Assert success
     assert!(
@@ -227,10 +223,9 @@ async fn test_hdri_download_success_mock_api() {
 
     let manifest_path = create_hdri_manifest(&temp_dir, &cache_dir, &output_dir);
 
-    // Setup mock server - set env var IMMEDIATELY after getting URL to prevent race
+    // Setup mock server - use direct base_url injection to avoid env var races
     let mut server = setup_mock_server().await;
     let server_url = server.url();
-    std::env::set_var("POLYHAVEN_BASE_URL", &server_url);
 
     // Mock /files endpoint (HDRI resolution)
     let files_mock = server
@@ -274,10 +269,8 @@ async fn test_hdri_download_success_mock_api() {
         .create_async()
         .await;
 
-    let result = ensure_asset(&manifest_path, "test_hdri").await;
-
-    // Cleanup
-    std::env::remove_var("POLYHAVEN_BASE_URL");
+    // Use ensure_asset_with_base_url to avoid env var race conditions
+    let result = ensure_asset_with_base_url(&manifest_path, "test_hdri", Some(&server_url)).await;
 
     // Assert success
     assert!(
@@ -304,11 +297,9 @@ async fn test_model_download_success_mock_api() {
 
     let manifest_path = create_model_manifest(&temp_dir, &cache_dir, &output_dir);
 
+    // Setup mock server - use direct base_url injection to avoid env var races
     let mut server = setup_mock_server().await;
     let server_url = server.url();
-
-    // Set environment variable
-    std::env::set_var("POLYHAVEN_BASE_URL", &server_url);
 
     // Mock /files endpoint (Model resolution)
     let files_mock = server
@@ -350,10 +341,8 @@ async fn test_model_download_success_mock_api() {
         .create_async()
         .await;
 
-    let result = ensure_asset(&manifest_path, "test_model").await;
-
-    // Cleanup
-    std::env::remove_var("POLYHAVEN_BASE_URL");
+    // Use ensure_asset_with_base_url to avoid env var race conditions
+    let result = ensure_asset_with_base_url(&manifest_path, "test_model", Some(&server_url)).await;
 
     // Assert success
     assert!(

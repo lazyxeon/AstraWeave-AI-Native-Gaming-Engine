@@ -774,7 +774,10 @@ impl DeleteEntitiesCommand {
 
 impl EditorCommand for DeleteEntitiesCommand {
     fn execute(&mut self, world: &mut World) -> Result<()> {
-        self.clipboard_data = Some(ClipboardData::from_entities(world, &self.entities));
+        // Only capture snapshot if we haven't already (preserves original state across Re-Dos)
+        if self.clipboard_data.is_none() {
+            self.clipboard_data = Some(ClipboardData::from_entities(world, &self.entities));
+        }
 
         for &entity in &self.entities {
             world.destroy_entity(entity);
@@ -784,7 +787,30 @@ impl EditorCommand for DeleteEntitiesCommand {
 
     fn undo(&mut self, world: &mut World) -> Result<()> {
         if let Some(clipboard) = &self.clipboard_data {
-            clipboard.spawn_entities(world, IVec2 { x: 0, y: 0 })?;
+            if clipboard.entities.len() != self.entities.len() {
+                anyhow::bail!("DeleteEntitiesCommand: Snapshot count mismatch");
+            }
+
+            for (i, data) in clipboard.entities.iter().enumerate() {
+                let id = self.entities[i];
+                let team = Team { id: data.team_id };
+
+                // Restore with original ID to preserve undo history references
+                // Note: spawn_with_id handles ID allocation if needed
+                world.spawn_with_id(id, &data.name, data.pos, team, data.hp, data.ammo);
+
+                // Restore components that aren't covered by spawn_with_id
+                if let Some(pose) = world.pose_mut(id) {
+                    pose.rotation = data.rotation;
+                    pose.rotation_x = data.rotation_x;
+                    pose.rotation_z = data.rotation_z;
+                    pose.scale = data.scale;
+                }
+
+                if let Some(cooldowns) = world.cooldowns_mut(id) {
+                    cooldowns.map = data.cooldowns.clone();
+                }
+            }
         }
         Ok(())
     }

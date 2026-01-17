@@ -1063,8 +1063,9 @@ impl ViewportWidget {
             }
         }
 
+        let mut clipboard_json = None;
         // Gizmo hotkeys (G/R/S for translate/rotate/scale, X/Y/Z for axis constraints, Enter/Escape)
-        ctx.input(|i| {
+        let returned_json = ctx.input(|i| {
             use winit::keyboard::KeyCode;
 
             // Handle gizmo mode keys first
@@ -1181,13 +1182,16 @@ impl ViewportWidget {
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::C) {
                 // Ctrl+C: Copy selected entities
                 if !self.selected_entities.is_empty() {
-                    self.copy_selection(world);
-                    debug!("📋 Copied {} entities", self.selected_entities.len());
+                    clipboard_json = self.copy_selection(world);
                 }
             }
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::V) {
-                // Ctrl+V: Paste entities
-                self.paste_selection(world, undo_stack);
+                // Ctrl+V: Paste entities - try to get text from Paste event
+                let text = i.events.iter().find_map(|e| match e {
+                    egui::Event::Paste(s) => Some(s.clone()),
+                    _ => None,
+                });
+                self.paste_selection(world, undo_stack, text);
             }
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::D) {
                 // Ctrl+D: Duplicate selected entities
@@ -1314,7 +1318,13 @@ impl ViewportWidget {
                     }
                 }
             }
+            
+            clipboard_json
         });
+
+        if let Some(json) = returned_json {
+             ctx.copy_text(json);
+        }
 
         // Handle gizmo confirm/cancel
         if self.gizmo_state.confirmed {
@@ -2066,21 +2076,29 @@ impl ViewportWidget {
     }
 
     /// Copy selected entities to clipboard
-    fn copy_selection(&mut self, world: &World) {
+    fn copy_selection(&mut self, world: &World) -> Option<String> {
         if self.selected_entities.is_empty() {
-            return;
+            return None;
         }
 
         let entities: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
-        self.clipboard = Some(crate::clipboard::ClipboardData::from_entities(
-            world, &entities,
-        ));
+        let data = crate::clipboard::ClipboardData::from_entities(world, &entities);
+        self.clipboard = Some(data.clone());
         debug!("📋 Copied {} entities to clipboard", entities.len());
+        
+        data.to_json().ok()
     }
 
     /// Paste entities from clipboard
-    fn paste_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
-        if let Some(clipboard) = &self.clipboard {
+    fn paste_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack, clipboard_text: Option<String>) {
+        let clipboard = if let Some(text) = clipboard_text {
+            // Try parsing OS clipboard first
+            crate::clipboard::ClipboardData::from_json(&text).ok().or_else(|| self.clipboard.clone())
+        } else {
+            self.clipboard.clone()
+        };
+
+        if let Some(clipboard) = &clipboard {
             let offset = astraweave_core::IVec2::new(2, 2);
 
             match clipboard.spawn_entities(world, offset) {
@@ -2137,7 +2155,7 @@ impl ViewportWidget {
     }
 
     /// Delete selected entities
-    fn delete_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+    pub fn delete_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
         if self.selected_entities.is_empty() {
             return;
         }

@@ -254,11 +254,13 @@ mod tests {
             scale: Vec3::ONE,
         };
         
-        let mut state = GizmoState::default();
-        state.selected_entity = Some(entity);
-        state.start_transform = Some(snapshot);
-        state.last_mode = GizmoMode::Translate { constraint: AxisConstraint::X };
-        state.mode = GizmoMode::Inactive; 
+        let mut state = GizmoState {
+            selected_entity: Some(entity),
+            start_transform: Some(snapshot),
+            last_mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            mode: GizmoMode::Inactive,
+            ..Default::default()
+        };
         
         if let Some(pose) = world.pose_mut(entity) {
             pose.pos = IVec2::new(20, 20);
@@ -267,7 +269,7 @@ mod tests {
         let meta = commit_active_gizmo(&mut state, &mut world, &mut undo_stack);
         
         assert!(meta.is_some());
-        assert_eq!(undo_stack.can_undo(), true);
+        assert!(undo_stack.can_undo());
         
         let meta = meta.unwrap();
         match meta.measurement {
@@ -293,16 +295,18 @@ mod tests {
             scale: Vec3::ONE,
         };
         
-        let mut state = GizmoState::default();
-        state.selected_entity = Some(entity);
-        state.start_transform = Some(snapshot);
-        state.last_mode = GizmoMode::Translate { constraint: AxisConstraint::X };
-        state.mode = GizmoMode::Inactive; 
+        let mut state = GizmoState {
+            selected_entity: Some(entity),
+            start_transform: Some(snapshot),
+            last_mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            mode: GizmoMode::Inactive,
+            ..Default::default()
+        };
 
         let meta = commit_active_gizmo(&mut state, &mut world, &mut undo_stack);
         
         assert!(meta.is_none());
-        assert_eq!(undo_stack.can_undo(), false);
+        assert!(!undo_stack.can_undo());
         assert!(state.start_transform.is_none());
     }
 
@@ -317,11 +321,13 @@ mod tests {
             scale: Vec3::ONE,
         };
         
-        let mut state = GizmoState::default();
-        state.selected_entity = Some(entity);
-        state.start_transform = Some(snapshot);
-        state.last_mode = GizmoMode::Translate { constraint: AxisConstraint::X };
-        state.mode = GizmoMode::Translate { constraint: AxisConstraint::X }; 
+        let mut state = GizmoState {
+            selected_entity: Some(entity),
+            start_transform: Some(snapshot),
+            last_mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            ..Default::default()
+        }; 
         
         if let Some(pose) = world.pose_mut(entity) {
             pose.pos = IVec2::new(100, 100);

@@ -22,6 +22,7 @@ impl MenuActionHandler for MockHandler {
     
     fn on_undo(&mut self) { self.undo_called = true; }
     fn on_redo(&mut self) {}
+    fn on_delete(&mut self) {}
     
     fn selection_count(&self) -> usize { self.selection_count }
     fn on_apply_material(&mut self) {}

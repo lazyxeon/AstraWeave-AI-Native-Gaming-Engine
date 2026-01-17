@@ -382,14 +382,14 @@ mod tests {
         let test_path = Path::new("test_scenes/aw_editor_test_scene.ron");
 
         let scene = SceneData::from_world(&world);
-        scene.save_to_file(&test_path).unwrap();
+        scene.save_to_file(test_path).unwrap();
 
         // Construct full path for cleanup
         let base = env::current_dir().unwrap();
         let full_path = base.join("content").join(test_path);
         assert!(full_path.exists());
 
-        let loaded_scene = SceneData::load_from_file(&test_path).unwrap();
+        let loaded_scene = SceneData::load_from_file(test_path).unwrap();
         assert_eq!(loaded_scene.entities.len(), 1);
         assert_eq!(loaded_scene.obstacles.len(), 1);
         assert_eq!(loaded_scene.entities[0].name, "Player");
@@ -419,14 +419,14 @@ mod tests {
         // Use relative path within content directory for security validation
         let test_path = Path::new("test_scenes/aw_editor_test_save_load.ron");
 
-        save_scene(&world, &test_path).unwrap();
+        save_scene(&world, test_path).unwrap();
 
         // Construct full path for assertions
         let base = env::current_dir().unwrap();
         let full_path = base.join("content").join(test_path);
         assert!(full_path.exists());
 
-        let loaded_world = load_scene(&test_path).unwrap();
+        let loaded_world = load_scene(test_path).unwrap();
         assert_eq!(loaded_world.entities().len(), 2);
 
         fs::remove_file(&full_path).unwrap();

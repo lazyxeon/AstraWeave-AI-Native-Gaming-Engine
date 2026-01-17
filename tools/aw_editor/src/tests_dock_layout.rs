@@ -77,8 +77,7 @@ mod tests {
         let has_profiler_dbg = tabs2.contains(&PanelType::Profiler);
         
         // If Default doesn't have Profiler by default, this is a good test.
-        if !has_profiler_def && has_profiler_dbg {
-             assert!(true);
-        }
+        // But if it does, we just ensure Debug has it.
+        assert!(has_profiler_dbg);
     }
 }

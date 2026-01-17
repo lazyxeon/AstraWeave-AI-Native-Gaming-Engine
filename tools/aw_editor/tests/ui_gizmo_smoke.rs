@@ -36,7 +36,7 @@ fn translate_drag_records_commit_event() {
 
     // Telemetry events may not fire in all configurations
     let events = telemetry::drain_captured_events();
-    let has_gizmo_start = events.iter().any(|event| matches!(event, EditorTelemetryEvent::GizmoStarted { entity: id, .. } if *id == entity as u32));
+    let has_gizmo_start = events.iter().any(|event| matches!(event, EditorTelemetryEvent::GizmoStarted { entity: id, .. } if *id == entity));
     assert!(has_gizmo_start, "GizmoStarted should be captured");
 
     // GizmoCommitted may not fire in headless mode - relaxed assertion

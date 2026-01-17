@@ -70,8 +70,7 @@ fn test_full_build_pipeline() {
     #[cfg(target_os = "windows")]
     {
         let dist_result = builder.build();
-        if dist_result.is_ok() {
-            let result = dist_result.unwrap();
+        if let Ok(result) = dist_result {
             assert!(result.output_path.exists(), "Distribution not created");
             assert!(result.size_bytes > 0, "Distribution is empty");
         }
