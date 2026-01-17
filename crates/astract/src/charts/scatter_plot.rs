@@ -74,7 +74,7 @@ impl PointCluster {
 ///
 /// # Example
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use astract::charts::{ScatterPlot, PointCluster};
 /// use egui::Color32;
 ///

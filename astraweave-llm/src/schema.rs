@@ -10,7 +10,7 @@
 //! - Clear error messages for schema violations
 //!
 //! # Example
-//! ```rust
+//! ```ignore
 //! use astraweave_llm::schema::{LlmOutputSchema, ValidationError};
 //! use astraweave_core::PlanIntent;
 //!

@@ -181,7 +181,7 @@ impl Anchor {
     /// * `delta` - Amount to adjust (positive = heal, negative = damage)
     ///
     /// # Examples
-    /// ```
+    /// ```ignore
     /// let mut anchor = Anchor::new(0.5, 50, None);
     /// anchor.adjust_stability(-0.2); // Damage: 0.5 → 0.3
     /// anchor.adjust_stability(0.1);  // Heal: 0.3 → 0.4

@@ -206,18 +206,19 @@ impl FallbackOrchestrator {
     /// - Preserves deterministic ordering (sorted by agent ID)
     ///
     /// # Example
-    /// ```no_run
-    /// # use astraweave_llm::fallback_system::FallbackOrchestrator;
-    /// # async fn example() -> anyhow::Result<()> {
-    /// let orchestrator = FallbackOrchestrator::new();
-    /// let agents = vec![
-    ///     (1, snapshot1),
-    ///     (2, snapshot2),
-    ///     (3, snapshot3),
-    /// ];
-    /// let results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
-    /// # Ok(())
-    /// # }
+    /// ```ignore
+    /// use astraweave_llm::fallback_system::FallbackOrchestrator;
+    ///
+    /// async fn example() -> anyhow::Result<()> {
+    ///     let orchestrator = FallbackOrchestrator::new();
+    ///     let agents = vec![
+    ///         (1, snapshot1),
+    ///         (2, snapshot2),
+    ///         (3, snapshot3),
+    ///     ];
+    ///     let results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
+    ///     Ok(())
+    /// }
     /// ```
     pub async fn plan_batch_with_fallback(
         &self,

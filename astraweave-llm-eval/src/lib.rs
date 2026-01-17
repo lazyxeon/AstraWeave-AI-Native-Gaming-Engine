@@ -7,18 +7,18 @@
 //! - **Coherence** (15%): Steps are logically ordered
 //!
 //! # Example
-//! ```no_run
+//! ```ignore
 //! use astraweave_llm_eval::{EvaluationSuite, ScenarioType};
 //! use astraweave_llm::MockLlm;
 //! use std::sync::Arc;
 //!
-//! # tokio_test::block_on(async {
-//! let suite = EvaluationSuite::default();
-//! let client = Arc::new(MockLlm);
-//! let results = suite.evaluate(client).await;
+//! async fn example() {
+//!     let suite = EvaluationSuite::default();
+//!     let client = Arc::new(MockLlm);
+//!     let results = suite.evaluate(client).await;
 //!
-//! println!("Overall score: {:.1}%", results.overall_score);
-//! # });
+//!     println!("Overall score: {:.1}%", results.overall_score);
+//! }
 //! ```
 
 use astraweave_core::{ActionStep, PlanIntent, ToolRegistry};

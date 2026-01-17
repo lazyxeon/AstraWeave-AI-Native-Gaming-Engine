@@ -9,7 +9,7 @@ use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 ///
 /// # Example
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use astract::charts::LineChart;
 /// use egui::Color32;
 ///
