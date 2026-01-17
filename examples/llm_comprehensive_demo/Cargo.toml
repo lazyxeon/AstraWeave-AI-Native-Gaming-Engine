@@ -22,7 +22,7 @@ astraweave-dialogue = { path = "../../astraweave-dialogue" }
 astraweave-ai = { path = "../../astraweave-ai" }
 
 # Async runtime
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 
 # Utilities
 anyhow = "1.0"

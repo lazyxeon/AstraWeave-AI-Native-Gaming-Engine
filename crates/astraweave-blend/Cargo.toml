@@ -23,7 +23,7 @@ sha2 = "0.10"
 hex = "0.4"
 
 # Cache manifest serialization
-ron = "0.11"
+ron = "0.12"
 
 # Temporary file handling
 tempfile = "3"
@@ -45,21 +45,21 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs", "time", 
 tempfile = "3"
 
 # Property-based testing
-proptest = "1.5"
-proptest-derive = "0.5"
+proptest = "1.9"
+proptest-derive = "0.7"
 
 # Snapshot testing
-insta = { version = "1.41", features = ["ron", "json"] }
+insta = { version = "1.46", features = ["ron", "json"] }
 
 # Test assertion utilities
 assert_matches = "1.5"
 pretty_assertions = "1.4"
 
 # Benchmarking
-criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
+criterion = { version = "0.7", features = ["html_reports", "async_tokio"] }
 
 # Fake data generation for testing
-fake = { version = "3", features = ["derive"] }
+fake = { version = "4", features = ["derive"] }
 
 # Additional test utilities
 once_cell = "1.20"
@@ -77,11 +77,11 @@ version = "0.6"
 optional = true
 
 [dependencies.rand]
-version = "0.8"
+version = "0.9"
 optional = true
 
 [dependencies.rand_chacha]
-version = "0.3"
+version = "0.9"
 optional = true
 
 [[bench]]

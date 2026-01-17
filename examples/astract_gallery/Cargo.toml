@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 astract = { path = "../../crates/astract" }
-eframe = "0.32"
+eframe = "0.33"
