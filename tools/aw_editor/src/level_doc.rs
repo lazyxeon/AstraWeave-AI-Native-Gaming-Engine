@@ -151,13 +151,15 @@ mod tests {
 
     #[test]
     fn test_serialization_roundtrip() {
-        let mut doc = LevelDoc::default();
-        doc.title = "Test Level".to_string();
-        doc.biome = "Forest".to_string();
-        doc.seed = 12345;
-        doc.sky = Sky {
-            time_of_day: "dawn".to_string(),
-            weather: "fog".to_string(),
+        let mut doc = LevelDoc {
+            title: "Test Level".to_string(),
+            biome: "Forest".to_string(),
+            seed: 12345,
+            sky: Sky {
+                time_of_day: "dawn".to_string(),
+                weather: "fog".to_string(),
+            },
+            ..Default::default()
         };
         doc.obstacles.push(Obstacle {
             id: "rock_1".to_string(),

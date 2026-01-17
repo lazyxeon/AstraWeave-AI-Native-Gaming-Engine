@@ -29,6 +29,7 @@ pub trait MenuActionHandler {
 
     fn on_undo(&mut self);
     fn on_redo(&mut self);
+    fn on_delete(&mut self);
 
     fn selection_count(&self) -> usize;
     
@@ -119,6 +120,11 @@ impl MenuBar {
                 }
                 if ui.button("↪️ Redo (Ctrl+Y)").clicked() {
                     handler.on_redo();
+                    ui.close();
+                }
+
+                if ui.button("🗑️ Delete (Del)").clicked() {
+                    handler.on_delete();
                     ui.close();
                 }
 

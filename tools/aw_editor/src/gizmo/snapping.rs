@@ -89,8 +89,10 @@ mod tests {
 
     #[test]
     fn test_snap_position_disabled() {
-        let mut config = SnappingConfig::default();
-        config.grid_enabled = false;
+        let config = SnappingConfig {
+            grid_enabled: false,
+            ..Default::default()
+        };
         let pos = Vec3::new(1.7, 2.3, -0.4);
         let snapped = config.snap_position(pos);
         assert_eq!(snapped, pos);
@@ -106,8 +108,10 @@ mod tests {
 
     #[test]
     fn test_snap_angle_disabled() {
-        let mut config = SnappingConfig::default();
-        config.angle_enabled = false;
+        let config = SnappingConfig {
+            angle_enabled: false,
+            ..Default::default()
+        };
         let angle = 23.0_f32.to_radians();
         let snapped = config.snap_angle(angle);
         assert_eq!(snapped, angle);

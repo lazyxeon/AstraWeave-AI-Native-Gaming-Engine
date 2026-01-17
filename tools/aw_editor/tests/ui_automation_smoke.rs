@@ -44,7 +44,7 @@ fn test_toolbar_shading_mode() {
     let toolbar = Arc::new(Mutex::new(ViewportToolbar::default()));
     let toolbar_clone = toolbar.clone();
     
-    let mut harness = Harness::new_ui(move |ui| {
+    let _harness = Harness::new_ui(move |ui| {
         let mut tb = toolbar_clone.lock().unwrap();
         let rect = Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(800.0, 600.0));
         tb.ui(ui, rect);

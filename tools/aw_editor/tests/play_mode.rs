@@ -11,8 +11,8 @@ fn sample_world() -> World {
             &format!("Agent_{i}"),
             IVec2 { x: i * 2, y: i * 3 },
             Team { id: (i % 2) as u8 },
-            100 - (i as i32),
-            10 + i as i32,
+            100 - i,
+            10 + i,
         );
     }
     world
