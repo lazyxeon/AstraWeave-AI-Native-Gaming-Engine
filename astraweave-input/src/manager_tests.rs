@@ -1050,24 +1050,27 @@ mod save_tests {
     // Save Test 8: Overwrite existing file
     #[test]
     fn test_save_overwrite() {
-        let path = "test_output/overwrite.json";
+        let temp_dir = std::env::temp_dir().join("astraweave_input_test_overwrite");
+        let _ = fs::create_dir_all(&temp_dir);
+        let path = temp_dir.join("overwrite.json");
+        let path_str = path.to_string_lossy();
 
         // Save first version
         let bindings1 = create_test_bindings();
-        save_bindings(path, &bindings1).expect("Failed to save first version");
+        save_bindings(&path_str, &bindings1).expect("Failed to save first version");
 
         // Save second version (should overwrite)
         let mut bindings2 = BindingSet::default();
         bindings2.actions.clear();
-        save_bindings(path, &bindings2).expect("Failed to save second version");
+        save_bindings(&path_str, &bindings2).expect("Failed to save second version");
 
         // Load should get second version (empty)
-        let loaded = load_bindings(path).expect("Failed to load overwritten file");
+        let loaded = load_bindings(&path_str).expect("Failed to load overwritten file");
         assert_eq!(loaded.actions.len(), 0);
 
         // Cleanup
-        let _ = fs::remove_file(path);
-        let _ = fs::remove_dir("test_output");
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_dir(&temp_dir);
     }
 
     // Save Test 9: File content is pretty-printed JSON

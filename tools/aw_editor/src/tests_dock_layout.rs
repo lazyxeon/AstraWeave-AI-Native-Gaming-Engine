@@ -73,7 +73,7 @@ mod tests {
         
         // Debug might have Profiler which Default might not?
         // Let's verify defaults.
-        let has_profiler_def = tabs1.contains(&PanelType::Profiler);
+        let _has_profiler_def = tabs1.contains(&PanelType::Profiler);
         let has_profiler_dbg = tabs2.contains(&PanelType::Profiler);
         
         // If Default doesn't have Profiler by default, this is a good test.

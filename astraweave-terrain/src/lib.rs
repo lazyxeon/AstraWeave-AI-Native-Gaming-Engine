@@ -3,8 +3,10 @@
 //! This module provides procedural terrain generation using noise functions,
 //! heightmaps, and biome classification for the AstraWeave engine.
 
+pub mod advanced_erosion; // Production-ready erosion simulation
 pub mod background_loader; // Week 4 Action 14: Async chunk streaming
 pub mod biome;
+pub mod biome_blending; // Production-ready biome blending
 pub mod chunk;
 pub mod climate;
 pub mod erosion;
@@ -22,10 +24,16 @@ pub mod streaming_diagnostics; // Week 4 Action 14: Diagnostics overlay
 pub mod structures;
 pub mod terrain_modifier; // Phase 10: Batched voxel updates
 pub mod terrain_persistence; // Phase 10: Terrain save/load
+pub mod texture_splatting; // Production-ready terrain texture splatting
 pub mod voxel_data;
 
+pub use advanced_erosion::{
+    AdvancedErosionSimulator, ErosionPreset, ErosionStats, HydraulicErosionConfig,
+    ThermalErosionConfig, WindErosionConfig,
+}; // Advanced erosion
 pub use background_loader::{BackgroundChunkLoader, StreamingConfig, StreamingStats}; // Week 4
 pub use biome::{Biome, BiomeConfig, BiomeType};
+pub use biome_blending::{BiomeBlendConfig, BiomeBlender, BiomeWeight, PackedBiomeBlend}; // Biome blending
 pub use chunk::{ChunkId, ChunkManager, TerrainChunk};
 pub use climate::{ClimateConfig, ClimateMap};
 pub use heightmap::{Heightmap, HeightmapConfig};
@@ -53,6 +61,10 @@ pub use structures::{
 pub use terrain_modifier::{
     ModifierStats, NavMeshRegion, TerrainModifier, TerrainModifierConfig, VoxelOp, VoxelOpType,
 }; // Phase 10
+pub use texture_splatting::{
+    SplatConfig, SplatMapGenerator, SplatRule, SplatWeights, TerrainMaterial, TerrainSplatVertex,
+    TriplanarWeights, MAX_SPLAT_LAYERS,
+}; // Texture splatting
 pub use voxel_data::{ChunkCoord, Density, MaterialId, Voxel, VoxelChunk, VoxelGrid, CHUNK_SIZE};
 
 use glam::Vec3;

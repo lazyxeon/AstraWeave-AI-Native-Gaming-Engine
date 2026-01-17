@@ -15,6 +15,7 @@ pub struct ClipboardEntityData {
     pub team_id: u8,
     pub ammo: i32,
     pub cooldowns: HashMap<String, f32>,
+    pub behavior_graph: Option<astraweave_behavior::BehaviorGraph>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -44,6 +45,8 @@ impl ClipboardData {
                 .cooldowns(entity_id)
                 .map(|cd| cd.map.clone())
                 .unwrap_or_default();
+            
+            let behavior_graph = world.behavior_graph(entity_id).cloned();
 
             entities.push(ClipboardEntityData {
                 name,
@@ -56,6 +59,7 @@ impl ClipboardData {
                 team_id: team,
                 ammo: ammo_rounds,
                 cooldowns,
+                behavior_graph,
             });
         }
 
@@ -98,6 +102,10 @@ impl ClipboardData {
 
             if let Some(cooldowns) = world.cooldowns_mut(id) {
                 cooldowns.map = entity_data.cooldowns.clone();
+            }
+
+            if let Some(bg) = &entity_data.behavior_graph {
+                world.set_behavior_graph(id, bg.clone());
             }
 
             spawned.push(id);
@@ -247,5 +255,40 @@ mod tests {
         let json = clipboard.to_json().unwrap();
         let restored = ClipboardData::from_json(&json).unwrap();
         assert_eq!(restored.entities.len(), 0);
+    }
+
+    #[test]
+    fn test_behavior_graph_preservation() {
+        use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+
+        let mut world = World::new();
+        let entity = world.spawn(
+            "AIEntity",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+
+        // Create a simple behavior graph
+        let root = BehaviorNode::Sequence(vec![
+            BehaviorNode::Action("patrol".into()),
+            BehaviorNode::Action("attack".into()),
+        ]);
+        let graph = BehaviorGraph::new(root);
+        world.set_behavior_graph(entity, graph);
+
+        // Copy to clipboard
+        let clipboard = ClipboardData::from_entities(&world, &[entity]);
+        assert!(clipboard.entities[0].behavior_graph.is_some());
+
+        // Spawn from clipboard
+        let spawned = clipboard
+            .spawn_entities(&mut world, IVec2 { x: 10, y: 10 })
+            .unwrap();
+
+        // Verify BehaviorGraph was restored
+        let restored_graph = world.behavior_graph(spawned[0]);
+        assert!(restored_graph.is_some(), "BehaviorGraph should be restored after paste");
     }
 }

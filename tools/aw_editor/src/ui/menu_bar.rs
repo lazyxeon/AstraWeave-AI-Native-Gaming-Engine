@@ -114,6 +114,8 @@ impl MenuBar {
             ui.separator();
 
             ui.menu_button("✏️ Edit", |ui| {
+                let count = handler.selection_count();
+
                 if ui.button("↩️ Undo (Ctrl+Z)").clicked() {
                     handler.on_undo();
                     ui.close();
@@ -123,14 +125,13 @@ impl MenuBar {
                     ui.close();
                 }
 
-                if ui.button("🗑️ Delete (Del)").clicked() {
+                if ui.add_enabled(count > 0, egui::Button::new("🗑️ Delete (Del)")).clicked() {
                     handler.on_delete();
                     ui.close();
                 }
 
                 ui.separator();
 
-                let count = handler.selection_count();
                 ui.label(format!("📦 {} selected", count));
                 ui.separator();
                 

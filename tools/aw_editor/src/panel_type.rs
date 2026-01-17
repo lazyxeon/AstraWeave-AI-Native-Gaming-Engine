@@ -98,6 +98,9 @@ pub enum PanelType {
 
     /// Behavior graph editor for AI logic
     BehaviorGraph,
+
+    /// Terrain generation and editing panel
+    Terrain,
 }
 
 impl PanelType {
@@ -125,6 +128,7 @@ impl PanelType {
             Self::MaterialEditor => "Material Editor",
             Self::EntityPanel => "Entity",
             Self::BehaviorGraph => "Behavior Graph",
+            Self::Terrain => "Terrain",
         }
     }
 
@@ -152,6 +156,7 @@ impl PanelType {
             Self::MaterialEditor => "🧱",
             Self::EntityPanel => "📦",
             Self::BehaviorGraph => "🧠",
+            Self::Terrain => "🏔️",
         }
     }
 
@@ -202,6 +207,7 @@ impl PanelType {
             Self::MaterialEditor,
             Self::EntityPanel,
             Self::BehaviorGraph,
+            Self::Terrain,
         ]
     }
 

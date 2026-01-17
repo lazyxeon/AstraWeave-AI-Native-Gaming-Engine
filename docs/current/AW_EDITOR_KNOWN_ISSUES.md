@@ -1,6 +1,13 @@
-# AW Editor – Current Failure Modes (Nov 17, 2025)
+# AW Editor – Current Failure Modes (Jan 17, 2026)
 
 This note captures the reproducible breakages reported for `tools/aw_editor` and the code-level evidence gathered after inspecting the latest sources.
+
+## Status Update (Jan 17, 2026)
+- ✅ **Delete Command with Undo**: Hierarchy panel and viewport delete now route through `DeleteEntitiesCommand` for full undo/redo support.
+- ✅ **Duplicate Entity**: Hierarchy panel duplicate now uses `ClipboardData` to properly clone all entity properties including BehaviorGraph.
+- ✅ **Transform Panel Events**: Tab viewer transform events (position, rotation, scale) now update the real ECS World via `scene_state.world_mut()`.
+- ✅ **BehaviorGraph Preservation**: Clipboard copy/paste and delete undo now preserve AI behavior graphs.
+- ✅ 429 library tests + 2 integration tests passing, 0 warnings.
 
 ## Status Update (Nov 17, 2025)
 - ✅ Grid toggle + snap slider now directly drive the renderer: disabling the grid skips the GPU pass entirely, and spacing matches the toolbar/snapping configuration.
