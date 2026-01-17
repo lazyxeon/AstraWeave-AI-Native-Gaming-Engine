@@ -1,7 +1,7 @@
 # aw_editor Quick Reference Guide
 
-**Last Updated**: November 8, 2025  
-**Version**: 0.1.0 (Gizmo Integration Complete)
+**Last Updated**: January 17, 2026  
+**Version**: 0.2.0 (Clipboard & Undo System Complete)
 
 ---
 
@@ -35,6 +35,16 @@
 | **Middle Mouse Drag** | Pan | Move focal point in screen space |
 | **Scroll Wheel** | Zoom | Change distance from focal point |
 | **F** | Frame Selected | Center camera on selected entity |
+
+### Editing Commands
+| Key | Action | Description |
+|-----|--------|-------------|
+| **Ctrl+C** | Copy | Copy selected entities to clipboard |
+| **Ctrl+V** | Paste | Paste entities from clipboard |
+| **Ctrl+D** | Duplicate | Duplicate selected entities in-place |
+| **Delete** | Delete | Remove selected entities |
+| **Ctrl+Z** | Undo | Undo last command |
+| **Ctrl+Shift+Z** | Redo | Redo undone command |
 
 ---
 
@@ -190,10 +200,22 @@ assert_eq!(translation.z, 0.0);  // No Z movement
 
 1. **EntityManager entities not rendered**: Only World entities visible (fix planned for next phase)
 2. **No visual gizmo handles**: Keyboard-only workflow (3D arrows/rings coming later)
-3. **No undo/redo**: Escape only works during drag (history system planned)
-4. **Instant camera transitions**: Frame selected (F) jumps instantly (smooth lerp optional)
+3. **Instant camera transitions**: Frame selected (F) jumps instantly (smooth lerp optional)
 
 ---
+
+## ✅ Completed Features
+
+- [x] Undo/redo system (Ctrl+Z / Ctrl+Shift+Z)
+- [x] Multi-selection (Shift+Click, Ctrl+Click)
+- [x] Duplicate (Ctrl+D)
+- [x] Delete (Delete key, menu, multi-entity support)
+- [x] Copy/Paste (Ctrl+C / Ctrl+V) with BehaviorGraph preservation
+- [x] Scene save/load (RON format)
+- [x] Asset browser with drag-and-drop prefabs
+- [x] Prefab system with Apply/Revert
+- [x] Play mode (F5/F6/F7/F8 controls)
+- [x] Behavior graph editor
 
 ## 🚀 Future Features (Roadmap)
 
@@ -201,26 +223,21 @@ assert_eq!(translation.z, 0.0);  // No Z movement
 - [ ] Render EntityManager entities in viewport
 - [ ] Visual gizmo handles (arrow/ring/cube)
 - [ ] Smooth camera transitions
-- [ ] Undo/redo system
 
-### Phase 3: Multi-Entity Editing
-- [ ] Multi-selection (Shift+Click)
+### Phase 3: Advanced Editing
 - [ ] Box selection (drag rectangle)
-- [ ] Duplicate (Ctrl+D)
-- [ ] Delete (Delete key)
-
-### Phase 4: Production Features
-- [ ] Scene save/load (JSON/RON)
-- [ ] Asset browser
-- [ ] Prefab system
-- [ ] Play mode (in-editor testing)
+- [ ] Snapping grid alignment
+- [ ] Local vs World space toggle
 
 ---
 
 ## 📚 Related Documentation
 
 - **Full Implementation Report**: `docs/journey/daily/AW_EDITOR_GIZMO_INTEGRATION_COMPLETE.md`
+- **Delete Command Report**: `docs/journey/daily/EDITOR_DELETE_COMMAND_COMPLETE.md`
 - **Gizmo State API**: `tools/aw_editor/src/gizmo/state.rs`
+- **Clipboard API**: `tools/aw_editor/src/clipboard.rs`
+- **Command System**: `tools/aw_editor/src/command.rs`
 - **EntityManager API**: `tools/aw_editor/src/entity_manager.rs`
 - **Camera Controls**: `tools/aw_editor/src/viewport/camera.rs`
 

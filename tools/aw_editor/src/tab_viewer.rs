@@ -17,6 +17,7 @@ use egui_dock::egui;
 
 use crate::command::UndoStack;
 use crate::entity_manager::EntityManager;
+use crate::panels::TerrainPanel;
 use crate::prefab::PrefabManager;
 use crate::viewport::ViewportWidget;
 use astraweave_core::World;
@@ -765,6 +766,8 @@ pub struct EditorTabViewer {
     scene_modified: bool,
     /// Current scene name
     scene_name: String,
+    /// Terrain generation panel state
+    terrain_panel: TerrainPanel,
 }
 
 impl Default for EditorTabViewer {
@@ -974,6 +977,8 @@ impl EditorTabViewer {
             // Scene state
             scene_modified: false,
             scene_name: "Untitled".to_string(),
+            // Terrain panel
+            terrain_panel: TerrainPanel::new(),
         }
     }
 
@@ -6124,6 +6129,11 @@ impl TabViewer for EditorTabViewer {
                         );
                     }
                 });
+            }
+            PanelType::Terrain => {
+                // Delegate to TerrainPanel implementation
+                use crate::panels::Panel;
+                self.terrain_panel.show(ui);
             }
         }
     }

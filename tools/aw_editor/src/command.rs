@@ -810,6 +810,10 @@ impl EditorCommand for DeleteEntitiesCommand {
                 if let Some(cooldowns) = world.cooldowns_mut(id) {
                     cooldowns.map = data.cooldowns.clone();
                 }
+
+                if let Some(bg) = &data.behavior_graph {
+                    world.set_behavior_graph(id, bg.clone());
+                }
             }
         }
         Ok(())

@@ -2908,27 +2908,46 @@ impl EditorApp {
                 }
                 tab_viewer::PanelEvent::TransformPositionChanged { entity_id, x, y } => {
                     // Update entity transform in scene
-                    self.status =
-                        format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
-                    // TODO: Update actual entity transform in scene graph when available
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        let entity = entity_id as u32;
+                        if let Some(pose) = scene_state.world_mut().pose_mut(entity) {
+                            pose.pos.x = x as i32;
+                            pose.pos.y = y as i32;
+                        }
+                        scene_state.sync_entity(entity);
+                    }
+                    self.status = format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
                 }
                 tab_viewer::PanelEvent::TransformRotationChanged {
                     entity_id,
                     rotation,
                 } => {
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        let entity = entity_id as u32;
+                        if let Some(pose) = scene_state.world_mut().pose_mut(entity) {
+                            pose.rotation = rotation.to_radians();
+                        }
+                        scene_state.sync_entity(entity);
+                    }
                     self.status = format!("Entity {} rotation: {:.1}°", entity_id, rotation);
-                    // TODO: Update actual entity rotation in scene graph when available
                 }
                 tab_viewer::PanelEvent::TransformScaleChanged {
                     entity_id,
                     scale_x,
                     scale_y,
                 } => {
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        let entity = entity_id as u32;
+                        if let Some(pose) = scene_state.world_mut().pose_mut(entity) {
+                            // Use average of x/y for uniform scale (World uses single scale value)
+                            pose.scale = (scale_x + scale_y) / 2.0;
+                        }
+                        scene_state.sync_entity(entity);
+                    }
                     self.status = format!(
                         "Entity {} scale: ({:.2}, {:.2})",
                         entity_id, scale_x, scale_y
                     );
-                    // TODO: Update actual entity scale in scene graph when available
                 }
                 tab_viewer::PanelEvent::CreateEntity => {
                     // Create a new entity with a unique ID
@@ -3798,18 +3817,42 @@ impl EditorApp {
                 }
                 HierarchyAction::DeleteEntity(entity) => {
                     if let Some(scene_state) = self.scene_state.as_mut() {
-                        scene_state.world_mut().destroy_entity(entity);
-                        scene_state.sync_entity(entity); // Will remove from cache since entity no longer exists
-                        self.log(format!("🗑️ Deleted entity {}", entity));
-                        if self.selected_entity == Some(entity as u64) {
-                            self.selected_entity = None;
+                        // Use undo-able command instead of direct deletion
+                        let delete_cmd = command::DeleteEntitiesCommand::new(vec![entity]);
+                        if let Err(e) = self.undo_stack.execute(delete_cmd, scene_state.world_mut()) {
+                            self.log(format!("⚠️ Delete failed: {}", e));
+                        } else {
+                            scene_state.sync_entity(entity);
+                            self.log(format!("🗑️ Deleted entity {}", entity));
+                            if self.selected_entity == Some(entity as u64) {
+                                self.selected_entity = None;
+                            }
                         }
                     }
                 }
                 HierarchyAction::DuplicateEntity(entity) => {
-                    // Simple duplication - could be enhanced
-                    self.log(format!("📋 Duplicate entity {} (not yet implemented)", entity));
-                    self.toast_info("Entity duplication coming soon".to_string());
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        // Use clipboard to duplicate with offset
+                        let clipboard = crate::clipboard::ClipboardData::from_entities(
+                            scene_state.world(),
+                            &[entity],
+                        );
+                        let offset = astraweave_core::IVec2 { x: 1, y: 1 };
+                        match clipboard.spawn_entities(scene_state.world_mut(), offset) {
+                            Ok(spawned) => {
+                                for e in &spawned {
+                                    scene_state.sync_entity(*e);
+                                }
+                                if let Some(&first) = spawned.first() {
+                                    self.selected_entity = Some(first as u64);
+                                }
+                                self.log(format!("📋 Duplicated entity {} → {:?}", entity, spawned));
+                            }
+                            Err(e) => {
+                                self.log(format!("⚠️ Duplicate failed: {}", e));
+                            }
+                        }
+                    }
                 }
                 HierarchyAction::FocusEntity(entity) => {
                     self.selected_entity = Some(entity as u64);

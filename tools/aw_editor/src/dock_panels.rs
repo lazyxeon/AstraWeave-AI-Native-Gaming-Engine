@@ -8,7 +8,7 @@ use crate::panel_type::PanelType;
 use crate::panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, BuildManagerPanel, ChartsPanel,
     ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, ProfilerPanel,
-    SceneStatsPanel, ThemeManagerPanel, TransformPanel, WorldPanel,
+    SceneStatsPanel, TerrainPanel, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
 use astraweave_core::World;
 use egui::Ui;
@@ -49,6 +49,9 @@ pub struct DockPanelContext<'a> {
     // Build/Theme
     pub build_manager_panel: &'a mut BuildManagerPanel,
     pub theme_manager: &'a mut ThemeManagerPanel,
+
+    // Terrain panel
+    pub terrain_panel: &'a mut TerrainPanel,
 
     // World state
     pub world: Option<&'a mut World>,
@@ -134,6 +137,9 @@ impl<'a> DockPanelContext<'a> {
                 ui.separator();
                 ui.label("PBR material editing");
                 ui.label("(Requires material context for full rendering)");
+            }
+            PanelType::Terrain => {
+                self.terrain_panel.show(ui);
             }
         }
     }

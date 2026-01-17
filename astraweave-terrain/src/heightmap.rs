@@ -90,6 +90,31 @@ impl Heightmap {
         &self.data
     }
 
+    /// Get mutable access to raw height data for bulk operations
+    ///
+    /// Note: After modifying data through this method, call `recalculate_bounds()`
+    /// to update min/max height values.
+    pub fn data_mut(&mut self) -> &mut [f32] {
+        &mut self.data
+    }
+
+    /// Recalculate min/max height bounds after bulk data modification
+    pub fn recalculate_bounds(&mut self) {
+        if self.data.is_empty() {
+            self.min_height = 0.0;
+            self.max_height = 0.0;
+            return;
+        }
+
+        self.min_height = f32::MAX;
+        self.max_height = f32::MIN;
+
+        for &h in &self.data {
+            self.min_height = self.min_height.min(h);
+            self.max_height = self.max_height.max(h);
+        }
+    }
+
     /// Get height at a specific grid coordinate
     pub fn get_height(&self, x: u32, z: u32) -> f32 {
         if x >= self.resolution || z >= self.resolution {
