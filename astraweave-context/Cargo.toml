@@ -10,17 +10,17 @@ repository = "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine"
 # Core dependencies
 anyhow = "1.0"
 async-trait = "0.1"
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "1.0", features = ["v4", "serde"] }
+uuid = { version = "1.19", features = ["v4", "serde"] }
 
 # Collections
-indexmap = "2.0"
+indexmap = "2.12"
 smallvec = "1.11"
 
 # Token counting
-tiktoken-rs = "0.7"
+tiktoken-rs = "0.9"
 
 # LLM integration
 astraweave-llm = { path = "../astraweave-llm" }

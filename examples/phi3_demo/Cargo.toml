@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 astraweave-llm = { path = "../../astraweave-llm", features = ["ollama"] }
 astraweave-core = { path = "../../astraweave-core" }
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 anyhow = "1.0"
 serde_json = "1.0"
-colored = "3.0"
+colored = "3.1"
