@@ -980,13 +980,14 @@ fn test_event_reader_multiple_reads() -> Result<()> {
     app = app.run_fixed(1);
 
     // Read events once
-    let evs = app
-        .world
-        .get_resource_mut::<Events<AiPlannedEvent>>()
-        .unwrap();
-    let mut rdr1 = evs.reader();
-    let v1: Vec<_> = rdr1.drain().collect();
-    drop(rdr1); // Drop first reader to release borrow
+    let v1: Vec<_> = {
+        let evs = app
+            .world
+            .get_resource_mut::<Events<AiPlannedEvent>>()
+            .unwrap();
+        let mut rdr1 = evs.reader();
+        rdr1.drain().collect()
+    };
 
     // Read events again (second reader)
     let evs2 = app

@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use anyhow::Result;
 use astraweave_context::{
     ConversationHistory, ContextConfig, Role, OverflowStrategy
@@ -90,7 +92,7 @@ async fn test_token_counting_integration() {
     assert!(tokens > 0);
     
     // "Hello world" is typically 2-3 tokens depending on tokenizer
-    assert!(tokens >= 2 && tokens <= 3); 
+    assert!((2..=3).contains(&tokens)); 
 }
 
 #[tokio::test]

@@ -544,17 +544,17 @@ fn stress_test_archetype_explosion() {
 
     // Validate expected counts (each bit set in ~50% of numbers)
     assert!(
-        pos_count >= 400 && pos_count <= 600,
+        (400..=600).contains(&pos_count),
         "Position count unexpected: {}",
         pos_count
     );
     assert!(
-        vel_count >= 400 && vel_count <= 600,
+        (400..=600).contains(&vel_count),
         "Velocity count unexpected: {}",
         vel_count
     );
     assert!(
-        health_count >= 400 && health_count <= 600,
+        (400..=600).contains(&health_count),
         "Health count unexpected: {}",
         health_count
     );

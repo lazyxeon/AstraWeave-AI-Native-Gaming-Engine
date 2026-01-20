@@ -369,34 +369,25 @@ impl BuildManagerPanel {
         };
 
         // Read output in real-time
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| {
+        let stdout = match child.stdout.take() {
+            Some(stdout) => stdout,
+            None => {
                 let _ = tx.send(BuildMessage::Failed {
                     error: "Failed to capture stdout".to_string(),
                 });
-                anyhow::anyhow!("Failed to capture stdout")
-            })
-            .unwrap_or_else(|e| {
-                // This is inside thread::spawn context, but actually it's before it.
-                // But wait, the unwrap() was there before.
-                // Let's just do it safely.
-                panic!("{}", e); // Better than a raw unwrap
-            });
+                return;
+            }
+        };
 
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| {
+        let stderr = match child.stderr.take() {
+            Some(stderr) => stderr,
+            None => {
                 let _ = tx.send(BuildMessage::Failed {
                     error: "Failed to capture stderr".to_string(),
                 });
-                anyhow::anyhow!("Failed to capture stderr")
-            })
-            .unwrap_or_else(|e| {
-                panic!("{}", e);
-            });
+                return;
+            }
+        };
 
         let tx_stdout = tx.clone();
         thread::spawn(move || {
@@ -776,26 +767,70 @@ impl Panel for BuildManagerPanel {
 mod tests {
     use super::*;
 
+    // ============================================================================
+    // BUILD TARGET TESTS
+    // ============================================================================
+
     #[test]
-    fn test_build_config_default() {
-        let config = BuildConfig::default();
-        assert_eq!(config.target, BuildTarget::Windows);
-        assert_eq!(config.profile, BuildProfile::Release);
-        assert!(config.strip_unused_assets);
-        assert!(config.compress_assets);
+    fn test_build_target_default() {
+        let target: BuildTarget = Default::default();
+        assert_eq!(target, BuildTarget::Windows);
+    }
+
+    #[test]
+    fn test_build_target_names() {
+        assert_eq!(BuildTarget::Windows.name(), "Windows (x64)");
+        assert_eq!(BuildTarget::Linux.name(), "Linux (x64)");
+        assert_eq!(BuildTarget::MacOS.name(), "macOS (Universal)");
+        assert_eq!(BuildTarget::Web.name(), "Web (WASM)");
+    }
+
+    #[test]
+    fn test_build_target_icons() {
+        assert_eq!(BuildTarget::Windows.icon(), "🪟");
+        assert_eq!(BuildTarget::Linux.icon(), "🐧");
+        assert_eq!(BuildTarget::MacOS.icon(), "🍎");
+        assert_eq!(BuildTarget::Web.icon(), "🌐");
     }
 
     #[test]
     fn test_build_target_cargo_flags() {
         assert!(BuildTarget::Windows.cargo_target().is_none());
-        assert_eq!(
-            BuildTarget::Linux.cargo_target(),
-            Some("x86_64-unknown-linux-gnu")
-        );
-        assert_eq!(
-            BuildTarget::Web.cargo_target(),
-            Some("wasm32-unknown-unknown")
-        );
+        assert_eq!(BuildTarget::Linux.cargo_target(), Some("x86_64-unknown-linux-gnu"));
+        assert_eq!(BuildTarget::MacOS.cargo_target(), Some("x86_64-apple-darwin"));
+        assert_eq!(BuildTarget::Web.cargo_target(), Some("wasm32-unknown-unknown"));
+    }
+
+    #[test]
+    fn test_build_target_all_list() {
+        assert_eq!(BuildTarget::ALL.len(), 4);
+        assert!(BuildTarget::ALL.contains(&BuildTarget::Windows));
+        assert!(BuildTarget::ALL.contains(&BuildTarget::Linux));
+        assert!(BuildTarget::ALL.contains(&BuildTarget::MacOS));
+        assert!(BuildTarget::ALL.contains(&BuildTarget::Web));
+    }
+
+    #[test]
+    fn test_build_target_clone() {
+        let target = BuildTarget::Linux;
+        let cloned = target;
+        assert_eq!(target, cloned);
+    }
+
+    // ============================================================================
+    // BUILD PROFILE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_build_profile_default() {
+        let profile: BuildProfile = Default::default();
+        assert_eq!(profile, BuildProfile::Release);
+    }
+
+    #[test]
+    fn test_build_profile_names() {
+        assert_eq!(BuildProfile::Debug.name(), "Debug (Fast compile)");
+        assert_eq!(BuildProfile::Release.name(), "Release (Optimized)");
     }
 
     #[test]
@@ -805,10 +840,224 @@ mod tests {
     }
 
     #[test]
+    fn test_build_profile_clone() {
+        let profile = BuildProfile::Debug;
+        let cloned = profile;
+        assert_eq!(profile, cloned);
+    }
+
+    // ============================================================================
+    // BUILD STATUS TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_build_status_default() {
+        let status: BuildStatus = Default::default();
+        assert!(matches!(status, BuildStatus::Idle));
+    }
+
+    #[test]
+    fn test_build_status_idle() {
+        let status = BuildStatus::Idle;
+        assert!(matches!(status, BuildStatus::Idle));
+    }
+
+    #[test]
+    fn test_build_status_building() {
+        let status = BuildStatus::Building {
+            progress: 0.5,
+            current_step: "Compiling...".to_string(),
+        };
+        if let BuildStatus::Building { progress, current_step } = status {
+            assert_eq!(progress, 0.5);
+            assert_eq!(current_step, "Compiling...");
+        } else {
+            panic!("Expected Building status");
+        }
+    }
+
+    #[test]
+    fn test_build_status_success() {
+        let status = BuildStatus::Success {
+            output_path: PathBuf::from("build/game.exe"),
+            duration_secs: 45.5,
+        };
+        if let BuildStatus::Success { output_path, duration_secs } = status {
+            assert_eq!(output_path, PathBuf::from("build/game.exe"));
+            assert_eq!(duration_secs, 45.5);
+        } else {
+            panic!("Expected Success status");
+        }
+    }
+
+    #[test]
+    fn test_build_status_failed() {
+        let status = BuildStatus::Failed {
+            error_message: "Compilation error".to_string(),
+        };
+        if let BuildStatus::Failed { error_message } = status {
+            assert_eq!(error_message, "Compilation error");
+        } else {
+            panic!("Expected Failed status");
+        }
+    }
+
+    #[test]
+    fn test_build_status_clone() {
+        let status = BuildStatus::Building {
+            progress: 0.75,
+            current_step: "Linking...".to_string(),
+        };
+        let cloned = status.clone();
+        if let BuildStatus::Building { progress, current_step } = cloned {
+            assert_eq!(progress, 0.75);
+            assert_eq!(current_step, "Linking...");
+        }
+    }
+
+    // ============================================================================
+    // BUILD CONFIG TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_build_config_default() {
+        let config = BuildConfig::default();
+        assert_eq!(config.target, BuildTarget::Windows);
+        assert_eq!(config.profile, BuildProfile::Release);
+        assert_eq!(config.project_name, "AstraWeaveGame");
+        assert_eq!(config.output_dir, PathBuf::from("build"));
+        assert!(!config.include_debug_symbols);
+        assert!(config.strip_unused_assets);
+        assert!(config.compress_assets);
+    }
+
+    #[test]
+    fn test_build_config_custom() {
+        let config = BuildConfig {
+            target: BuildTarget::Linux,
+            profile: BuildProfile::Debug,
+            project_name: "MyGame".to_string(),
+            output_dir: PathBuf::from("dist"),
+            include_debug_symbols: true,
+            strip_unused_assets: false,
+            compress_assets: false,
+        };
+        assert_eq!(config.target, BuildTarget::Linux);
+        assert_eq!(config.profile, BuildProfile::Debug);
+        assert_eq!(config.project_name, "MyGame");
+        assert!(config.include_debug_symbols);
+        assert!(!config.strip_unused_assets);
+    }
+
+    #[test]
+    fn test_build_config_clone() {
+        let config = BuildConfig::default();
+        let cloned = config.clone();
+        assert_eq!(cloned.target, BuildTarget::Windows);
+        assert_eq!(cloned.project_name, "AstraWeaveGame");
+    }
+
+    // ============================================================================
+    // BUILD MESSAGE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_build_message_progress() {
+        let msg = BuildMessage::Progress {
+            percent: 0.5,
+            step: "Compiling...".to_string(),
+        };
+        if let BuildMessage::Progress { percent, step } = msg {
+            assert_eq!(percent, 0.5);
+            assert_eq!(step, "Compiling...");
+        } else {
+            panic!("Expected Progress message");
+        }
+    }
+
+    #[test]
+    fn test_build_message_log_line() {
+        let msg = BuildMessage::LogLine("Build started".to_string());
+        if let BuildMessage::LogLine(line) = msg {
+            assert_eq!(line, "Build started");
+        } else {
+            panic!("Expected LogLine message");
+        }
+    }
+
+    #[test]
+    fn test_build_message_complete() {
+        let msg = BuildMessage::Complete {
+            output_path: PathBuf::from("build/out"),
+            duration_secs: 30.0,
+        };
+        if let BuildMessage::Complete { output_path, duration_secs } = msg {
+            assert_eq!(output_path, PathBuf::from("build/out"));
+            assert_eq!(duration_secs, 30.0);
+        } else {
+            panic!("Expected Complete message");
+        }
+    }
+
+    #[test]
+    fn test_build_message_failed() {
+        let msg = BuildMessage::Failed {
+            error: "Link error".to_string(),
+        };
+        if let BuildMessage::Failed { error } = msg {
+            assert_eq!(error, "Link error");
+        } else {
+            panic!("Expected Failed message");
+        }
+    }
+
+    // ============================================================================
+    // BUILD MANAGER PANEL TESTS
+    // ============================================================================
+
+    #[test]
     fn test_build_manager_panel_new() {
         let panel = BuildManagerPanel::new();
         assert!(matches!(panel.status, BuildStatus::Idle));
         assert!(panel.build_logs.is_empty());
+    }
+
+    #[test]
+    fn test_build_manager_panel_default() {
+        let panel = BuildManagerPanel::default();
+        assert!(matches!(panel.status, BuildStatus::Idle));
+    }
+
+    #[test]
+    fn test_build_manager_has_game_project() {
+        let panel = BuildManagerPanel::new();
+        // May or may not have a project depending on environment
+        let _ = panel.has_game_project();
+    }
+
+    #[test]
+    fn test_build_manager_show_advanced_default() {
+        let panel = BuildManagerPanel::new();
+        assert!(!panel.show_advanced);
+    }
+
+    #[test]
+    fn test_build_manager_run_after_build_default() {
+        let panel = BuildManagerPanel::new();
+        assert!(!panel.run_after_build);
+    }
+
+    #[test]
+    fn test_build_manager_cancel_flag_default() {
+        let panel = BuildManagerPanel::new();
+        assert!(!panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[test]
+    fn test_build_manager_config_default() {
+        let panel = BuildManagerPanel::new();
+        // Config should have defaults
+        assert_eq!(panel.config.profile, BuildProfile::Release);
     }
 
     #[test]
@@ -831,15 +1080,6 @@ mod tests {
     }
 
     #[test]
-    fn test_build_target_all_list() {
-        assert_eq!(BuildTarget::ALL.len(), 4);
-        assert!(BuildTarget::ALL.contains(&BuildTarget::Windows));
-        assert!(BuildTarget::ALL.contains(&BuildTarget::Linux));
-        assert!(BuildTarget::ALL.contains(&BuildTarget::MacOS));
-        assert!(BuildTarget::ALL.contains(&BuildTarget::Web));
-    }
-
-    #[test]
     fn test_build_profile_attributes() {
         let profile = BuildProfile::Debug;
         assert_eq!(profile.name(), "Debug (Fast compile)");
@@ -850,11 +1090,9 @@ mod tests {
 
     #[test]
     fn test_build_status_logic() {
-        // Idle
         let status = BuildStatus::Idle;
         assert!(matches!(status, BuildStatus::Idle));
 
-        // Building
         let status = BuildStatus::Building { progress: 0.5, current_step: "Test".to_string() };
         if let BuildStatus::Building { progress, current_step } = status {
             assert_eq!(progress, 0.5);
@@ -863,7 +1101,6 @@ mod tests {
             panic!("Status should be Building");
         }
 
-        // Success
         let status = BuildStatus::Success { output_path: PathBuf::from("test.exe"), duration_secs: 10.0 };
         if let BuildStatus::Success { output_path, duration_secs } = status {
             assert_eq!(output_path, PathBuf::from("test.exe"));
@@ -872,4 +1109,63 @@ mod tests {
             panic!("Status should be Success");
         }
     }
+
+    // ============================================================================
+    // INTEGRATION TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_build_config_for_web() {
+        let config = BuildConfig {
+            target: BuildTarget::Web,
+            profile: BuildProfile::Release,
+            project_name: "WebGame".to_string(),
+            output_dir: PathBuf::from("web_build"),
+            include_debug_symbols: false,
+            strip_unused_assets: true,
+            compress_assets: true,
+        };
+        assert_eq!(config.target.cargo_target(), Some("wasm32-unknown-unknown"));
+        assert_eq!(config.profile.cargo_flag(), Some("--release"));
+    }
+
+    #[test]
+    fn test_build_config_for_debug() {
+        let config = BuildConfig {
+            target: BuildTarget::Windows,
+            profile: BuildProfile::Debug,
+            project_name: "DebugGame".to_string(),
+            output_dir: PathBuf::from("debug_build"),
+            include_debug_symbols: true,
+            strip_unused_assets: false,
+            compress_assets: false,
+        };
+        assert!(config.target.cargo_target().is_none());
+        assert!(config.profile.cargo_flag().is_none());
+        assert!(config.include_debug_symbols);
+    }
+
+    #[test]
+    fn test_all_targets_have_icons() {
+        for target in BuildTarget::ALL {
+            assert!(!target.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_all_targets_have_names() {
+        for target in BuildTarget::ALL {
+            assert!(!target.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_cancel_build() {
+        let mut panel = BuildManagerPanel::new();
+        assert!(!panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
+        panel.cancel_build();
+        assert!(panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(panel.build_logs.iter().any(|log| log.contains("cancellation")));
+    }
 }
+

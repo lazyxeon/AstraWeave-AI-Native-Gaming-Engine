@@ -74,8 +74,7 @@ impl ClusterBounds {
     #[inline]
     pub fn intersects_sphere(&self, center: [f32; 3], radius: f32) -> bool {
         let mut dist_sq = 0.0f32;
-        for i in 0..3 {
-            let v = center[i];
+        for (i, &v) in center.iter().enumerate() {
             if v < self.min_pos[i] {
                 let d = self.min_pos[i] - v;
                 dist_sq += d * d;
@@ -580,8 +579,9 @@ fn bench_light_binning(c: &mut Criterion) {
         (0..count)
             .map(|i| {
                 let t = i as f32 / count as f32;
-                let x = (t * 6.28).cos() * 50.0;
-                let y = (t * 6.28).sin() * 50.0;
+                let angle = t * std::f32::consts::TAU;
+                let x = angle.cos() * 50.0;
+                let y = angle.sin() * 50.0;
                 let z = 100.0 + t * 800.0;
                 GpuLight::new(x, y, z, 10.0 + (i % 5) as f32 * 5.0)
             })
@@ -793,7 +793,7 @@ fn bench_megalights_scaling(c: &mut Criterion) {
     group.sample_size(20);
 
     // GPU dispatch simulation (workgroup calculation only)
-    for cluster_dims in [(16, 9, 24), (32, 18, 48), (64, 36, 96)] {
+    for cluster_dims in [(16u32, 9u32, 24u32), (32u32, 18u32, 48u32), (64u32, 36u32, 96u32)] {
         let total = cluster_dims.0 * cluster_dims.1 * cluster_dims.2;
 
         group.bench_with_input(
@@ -804,9 +804,9 @@ fn bench_megalights_scaling(c: &mut Criterion) {
             &cluster_dims,
             |b, &dims| {
                 b.iter(|| {
-                    let workgroups_x = (dims.0 as u32).div_ceil(64);
-                    let workgroups_y = dims.1 as u32;
-                    let workgroups_z = dims.2 as u32;
+                    let workgroups_x = dims.0.div_ceil(64);
+                    let workgroups_y = dims.1;
+                    let workgroups_z = dims.2;
                     black_box((workgroups_x, workgroups_y, workgroups_z))
                 })
             },
@@ -817,9 +817,10 @@ fn bench_megalights_scaling(c: &mut Criterion) {
         let lights: Vec<GpuLight> = (0..1000)
             .map(|i| {
                 let t = i as f32 / 1000.0;
+                let angle = t * std::f32::consts::TAU;
                 GpuLight::new(
-                    (t * 6.28).cos() * 50.0,
-                    (t * 6.28).sin() * 50.0,
+                    angle.cos() * 50.0,
+                    angle.sin() * 50.0,
                     100.0 + t * 800.0,
                     15.0,
                 )

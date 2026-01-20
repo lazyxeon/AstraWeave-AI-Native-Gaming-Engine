@@ -396,8 +396,10 @@ mod tests {
 
     #[test]
     fn test_biome_blender_height_modification() {
-        let mut config = BiomeBlendConfig::default();
-        config.height_blend_enabled = true;
+        let config = BiomeBlendConfig {
+            height_blend_enabled: true,
+            ..Default::default()
+        };
 
         let blender = BiomeBlender::new(config, 12345);
 

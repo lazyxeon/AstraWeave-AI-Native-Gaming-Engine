@@ -565,19 +565,29 @@ mod tests {
 
     #[test]
     fn test_normal_blend_parsing() {
-        let mut desc = TerrainMaterialDesc::default();
+        let linear = TerrainMaterialDesc {
+            normal_blend_method: "linear".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(linear.normal_blend_to_gpu(), 0);
 
-        desc.normal_blend_method = "linear".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 0);
+        let rnm = TerrainMaterialDesc {
+            normal_blend_method: "rnm".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(rnm.normal_blend_to_gpu(), 1);
 
-        desc.normal_blend_method = "rnm".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 1);
+        let udn = TerrainMaterialDesc {
+            normal_blend_method: "udn".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(udn.normal_blend_to_gpu(), 2);
 
-        desc.normal_blend_method = "udn".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 2);
-
-        desc.normal_blend_method = "invalid".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 1); // Falls back to RNM
+        let invalid = TerrainMaterialDesc {
+            normal_blend_method: "invalid".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(invalid.normal_blend_to_gpu(), 1); // Falls back to RNM
     }
 
     #[test]
@@ -626,19 +636,29 @@ mod tests {
     #[test]
     fn test_blend_mode_edge_cases() {
         // EDGE CASE: Mixed case, empty string, special characters
-        let mut desc = TerrainMaterialDesc::default();
+        let linear = TerrainMaterialDesc {
+            normal_blend_method: "LINEAR".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(linear.normal_blend_to_gpu(), 0);
 
-        desc.normal_blend_method = "LINEAR".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 0);
+        let rnm = TerrainMaterialDesc {
+            normal_blend_method: "RnM".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(rnm.normal_blend_to_gpu(), 1);
 
-        desc.normal_blend_method = "RnM".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 1);
+        let whitespace = TerrainMaterialDesc {
+            normal_blend_method: "  udn  ".to_string(), // With whitespace
+            ..Default::default()
+        };
+        assert_eq!(whitespace.normal_blend_to_gpu(), 1); // Falls back to RNM (no trim)
 
-        desc.normal_blend_method = "  udn  ".to_string(); // With whitespace
-        assert_eq!(desc.normal_blend_to_gpu(), 1); // Falls back to RNM (no trim)
-
-        desc.normal_blend_method = "".to_string();
-        assert_eq!(desc.normal_blend_to_gpu(), 1); // Empty falls back to RNM
+        let empty = TerrainMaterialDesc {
+            normal_blend_method: "".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(empty.normal_blend_to_gpu(), 1); // Empty falls back to RNM
     }
 
     #[test]
@@ -704,28 +724,39 @@ mod tests {
     #[test]
     fn test_extreme_uv_scales() {
         // EDGE CASE: Very large/small UV scales
-        let mut layer = TerrainLayerDesc::default();
-        layer.uv_scale = [1000.0, 0.001]; // Extreme values
-
-        assert_eq!(layer.uv_scale, [1000.0, 0.001]);
+        let extreme = TerrainLayerDesc {
+            uv_scale: [1000.0, 0.001], // Extreme values
+            ..Default::default()
+        };
+        assert_eq!(extreme.uv_scale, [1000.0, 0.001]);
 
         // Negative UV scales (flips texture)
-        layer.uv_scale = [-1.0, -1.0];
-        assert_eq!(layer.uv_scale, [-1.0, -1.0]);
+        let negative = TerrainLayerDesc {
+            uv_scale: [-1.0, -1.0],
+            ..Default::default()
+        };
+        assert_eq!(negative.uv_scale, [-1.0, -1.0]);
     }
 
     #[test]
     fn test_blend_sharpness_extremes() {
         // EDGE CASE: Blend sharpness at extremes
-        let mut layer = TerrainLayerDesc::default();
+        let smooth = TerrainLayerDesc {
+            blend_sharpness: 0.0, // Completely smooth blend
+            ..Default::default()
+        };
+        assert_eq!(smooth.blend_sharpness, 0.0);
 
-        layer.blend_sharpness = 0.0; // Completely smooth blend
-        assert_eq!(layer.blend_sharpness, 0.0);
+        let sharp = TerrainLayerDesc {
+            blend_sharpness: 10.0, // Very sharp blend
+            ..Default::default()
+        };
+        assert_eq!(sharp.blend_sharpness, 10.0);
 
-        layer.blend_sharpness = 10.0; // Very sharp blend
-        assert_eq!(layer.blend_sharpness, 10.0);
-
-        layer.blend_sharpness = -0.5; // Negative (invalid but should not crash)
-        assert_eq!(layer.blend_sharpness, -0.5);
+        let negative = TerrainLayerDesc {
+            blend_sharpness: -0.5, // Negative (invalid but should not crash)
+            ..Default::default()
+        };
+        assert_eq!(negative.blend_sharpness, -0.5);
     }
 }

@@ -189,7 +189,7 @@ async fn test_concurrent_search() {
     for _ in 0..10 {
         let store_clone = store.clone();
         handles.push(task::spawn(async move {
-            let results = store_clone.search(&vec![1.0; 10], 1).unwrap();
+            let results = store_clone.search(&[1.0_f32; 10], 1).unwrap();
             assert_eq!(results.len(), 1);
         }));
     }

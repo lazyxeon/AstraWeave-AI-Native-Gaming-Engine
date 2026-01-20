@@ -2,6 +2,9 @@
 //!
 //! Stress testing for Rhai scripting, map generation, and configuration parsing.
 
+#![allow(dead_code)]
+#![allow(clippy::type_complexity)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;

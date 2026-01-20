@@ -78,11 +78,12 @@ mod tests {
 
     #[test]
     fn test_manual_field_assignment() {
-        let mut telemetry = WeaveTelemetry::default();
-
-        telemetry.est_time_saved_sec = 120.5;
-        telemetry.risk_score = 0.75;
-        telemetry.reward_score = 1.5;
+        let telemetry = WeaveTelemetry {
+            est_time_saved_sec: 120.5,
+            risk_score: 0.75,
+            reward_score: 1.5,
+            ..Default::default()
+        };
 
         assert_eq!(telemetry.est_time_saved_sec, 120.5);
         assert_eq!(telemetry.risk_score, 0.75);

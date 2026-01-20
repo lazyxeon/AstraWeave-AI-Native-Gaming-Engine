@@ -199,7 +199,7 @@ node_start = "audio/intro.wav"
         };
 
         let result = player.speak_current(&dlg, &st)?;
-        assert_eq!(result, false, "Should return false when node has no line");
+        assert!(!result, "Should return false when node has no line");
         Ok(())
     }
 

@@ -1,8 +1,14 @@
-/// Integration tests for polyhaven.rs API client
-/// Target: 100% coverage with HTTP mocking using mockito
+#![allow(
+    clippy::useless_vec,
+    clippy::assertions_on_constants,
+    clippy::bool_assert_comparison
+)]
+
+//! Integration tests for polyhaven.rs API client
+//! Target: 100% coverage with HTTP mocking using mockito
+
 use astraweave_assets::polyhaven::PolyHavenClient;
 use mockito::{Server, ServerGuard};
-use tokio;
 
 /// Helper to create a mock PolyHaven server
 async fn setup_mock_server() -> ServerGuard {

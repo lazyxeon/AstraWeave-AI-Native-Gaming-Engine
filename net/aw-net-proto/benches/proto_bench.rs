@@ -26,12 +26,13 @@ fn assert_encoded_valid(bytes: &[u8]) {
 }
 
 /// Assert that roundtrip preserves data
+#[allow(dead_code)]
 fn assert_roundtrip_valid<T: Serialize + for<'de> Deserialize<'de> + PartialEq + std::fmt::Debug>(
     original: &T,
     codec: Codec,
 ) {
     let encoded = encode_msg(codec, original);
-    let decoded: T = decode_msg(codec, &encoded).expect("Decode should succeed");
+    let _decoded: T = decode_msg(codec, &encoded).expect("Decode should succeed");
     // Note: Can't always assert equality for complex types, just check decode succeeds
 }
 

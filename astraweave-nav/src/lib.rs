@@ -883,7 +883,7 @@ mod tests {
 
         let nav = NavMesh::bake(&tris, 0.5, 70.0);
         assert_eq!(nav.tris.len(), 2);
-        assert!(nav.tris[0].neighbors.len() > 0 || nav.tris[1].neighbors.len() > 0); // Connected
+        assert!(!nav.tris[0].neighbors.is_empty() || !nav.tris[1].neighbors.is_empty()); // Connected
 
         // Path across the square
         let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(1.5, 0.0, 1.5));

@@ -19,6 +19,80 @@ pub enum TrustLevel {
     System,
 }
 
+impl TrustLevel {
+    /// Returns all trust levels.
+    pub fn all() -> &'static [TrustLevel] {
+        &[TrustLevel::User, TrustLevel::Developer, TrustLevel::System]
+    }
+
+    /// Returns the name of this trust level.
+    pub fn name(self) -> &'static str {
+        match self {
+            TrustLevel::User => "User",
+            TrustLevel::Developer => "Developer",
+            TrustLevel::System => "System",
+        }
+    }
+
+    /// Returns an icon/emoji for this trust level.
+    pub fn icon(self) -> &'static str {
+        match self {
+            TrustLevel::User => "👤",
+            TrustLevel::Developer => "🔧",
+            TrustLevel::System => "⚙",
+        }
+    }
+
+    /// Returns a description of this trust level.
+    pub fn description(self) -> &'static str {
+        match self {
+            TrustLevel::User => "User-provided input, untrusted and requires sanitization",
+            TrustLevel::Developer => "Developer-created templates, trusted",
+            TrustLevel::System => "System-generated templates, fully trusted",
+        }
+    }
+
+    /// Returns true if this is the User trust level.
+    pub fn is_user(self) -> bool {
+        matches!(self, TrustLevel::User)
+    }
+
+    /// Returns true if this is the Developer trust level.
+    pub fn is_developer(self) -> bool {
+        matches!(self, TrustLevel::Developer)
+    }
+
+    /// Returns true if this is the System trust level.
+    pub fn is_system(self) -> bool {
+        matches!(self, TrustLevel::System)
+    }
+
+    /// Returns true if this trust level is trusted (Developer or System).
+    pub fn is_trusted(self) -> bool {
+        !self.is_user()
+    }
+
+    /// Returns true if this trust level requires sanitization.
+    pub fn requires_sanitization(self) -> bool {
+        self.is_user()
+    }
+
+    /// Returns the numeric level (0=User, 1=Developer, 2=System).
+    pub fn level(self) -> u8 {
+        match self {
+            TrustLevel::User => 0,
+            TrustLevel::Developer => 1,
+            TrustLevel::System => 2,
+        }
+    }
+}
+
+impl std::fmt::Display for TrustLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 /// Sanitization configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SanitizationConfig {
@@ -49,6 +123,129 @@ impl Default for SanitizationConfig {
             escape_html: true,
             block_injection_patterns: true,
         }
+    }
+}
+
+impl SanitizationConfig {
+    /// Creates a new sanitization config with default values.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Creates a strict sanitization config (more restrictive).
+    pub fn strict() -> Self {
+        Self {
+            max_user_input_length: 1_000,
+            max_variable_name_length: 64,
+            allow_control_chars: false,
+            allow_unicode: false,
+            max_nesting_depth: 5,
+            escape_html: true,
+            block_injection_patterns: true,
+        }
+    }
+
+    /// Creates a permissive sanitization config (less restrictive).
+    pub fn permissive() -> Self {
+        Self {
+            max_user_input_length: 100_000,
+            max_variable_name_length: 256,
+            allow_control_chars: true,
+            allow_unicode: true,
+            max_nesting_depth: 20,
+            escape_html: false,
+            block_injection_patterns: false,
+        }
+    }
+
+    /// Returns true if HTML escaping is enabled.
+    pub fn escapes_html(&self) -> bool {
+        self.escape_html
+    }
+
+    /// Returns true if injection pattern blocking is enabled.
+    pub fn blocks_injection(&self) -> bool {
+        self.block_injection_patterns
+    }
+
+    /// Returns true if control characters are allowed.
+    pub fn allows_control_chars(&self) -> bool {
+        self.allow_control_chars
+    }
+
+    /// Returns true if Unicode is allowed.
+    pub fn allows_unicode(&self) -> bool {
+        self.allow_unicode
+    }
+
+    /// Returns true if this is a strict configuration.
+    pub fn is_strict(&self) -> bool {
+        self.max_user_input_length <= 1_000
+            && !self.allow_control_chars
+            && !self.allow_unicode
+            && self.block_injection_patterns
+    }
+
+    /// Returns true if this is a permissive configuration.
+    pub fn is_permissive(&self) -> bool {
+        self.max_user_input_length >= 100_000
+            && self.allow_control_chars
+            && !self.block_injection_patterns
+    }
+
+    /// Returns a human-readable summary of the configuration.
+    pub fn summary(&self) -> String {
+        let strictness = if self.is_strict() {
+            "strict"
+        } else if self.is_permissive() {
+            "permissive"
+        } else {
+            "default"
+        };
+
+        format!(
+            "{} config: max input {}B, max var name {}B, {}",
+            strictness,
+            self.max_user_input_length,
+            self.max_variable_name_length,
+            if self.block_injection_patterns {
+                "injection blocking ON"
+            } else {
+                "injection blocking OFF"
+            }
+        )
+    }
+
+    /// Returns the maximum input length in a human-readable format.
+    pub fn max_input_display(&self) -> String {
+        if self.max_user_input_length >= 1_000_000 {
+            format!("{}MB", self.max_user_input_length / 1_000_000)
+        } else if self.max_user_input_length >= 1_000 {
+            format!("{}KB", self.max_user_input_length / 1_000)
+        } else {
+            format!("{}B", self.max_user_input_length)
+        }
+    }
+
+    /// Returns the number of enabled security features.
+    pub fn security_feature_count(&self) -> usize {
+        let mut count = 0;
+        if !self.allow_control_chars {
+            count += 1;
+        }
+        if self.escape_html {
+            count += 1;
+        }
+        if self.block_injection_patterns {
+            count += 1;
+        }
+        count
+    }
+}
+
+impl std::fmt::Display for SanitizationConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
     }
 }
 
@@ -317,6 +514,36 @@ impl PromptSanitizer {
     pub fn with_defaults() -> Self {
         Self::new(SanitizationConfig::default())
     }
+
+    /// Creates a sanitizer with strict configuration.
+    pub fn strict() -> Self {
+        Self::new(SanitizationConfig::strict())
+    }
+
+    /// Creates a sanitizer with permissive configuration.
+    pub fn permissive() -> Self {
+        Self::new(SanitizationConfig::permissive())
+    }
+
+    /// Returns a reference to the configuration.
+    pub fn config(&self) -> &SanitizationConfig {
+        &self.config
+    }
+
+    /// Returns true if this sanitizer uses strict configuration.
+    pub fn is_strict(&self) -> bool {
+        self.config.is_strict()
+    }
+
+    /// Returns true if this sanitizer uses permissive configuration.
+    pub fn is_permissive(&self) -> bool {
+        self.config.is_permissive()
+    }
+
+    /// Returns a summary of this sanitizer's configuration.
+    pub fn summary(&self) -> String {
+        self.config.summary()
+    }
     
     /// Sanitize input based on trust level
     pub fn sanitize(&self, input: &str, trust_level: TrustLevel) -> Result<String> {
@@ -347,11 +574,27 @@ impl PromptSanitizer {
     pub fn detect_patterns(&self, input: &str) -> Vec<String> {
         detect_suspicious_patterns(input)
     }
+
+    /// Returns the maximum user input length.
+    pub fn max_input_length(&self) -> usize {
+        self.config.max_user_input_length
+    }
+
+    /// Returns the maximum variable name length.
+    pub fn max_var_name_length(&self) -> usize {
+        self.config.max_variable_name_length
+    }
 }
 
 impl Default for PromptSanitizer {
     fn default() -> Self {
         Self::with_defaults()
+    }
+}
+
+impl std::fmt::Display for PromptSanitizer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PromptSanitizer({})", self.config)
     }
 }
 
@@ -738,5 +981,230 @@ mod tests {
         let result = sanitize_input(input, TrustLevel::User, &config).unwrap();
         assert!(result.contains('\n'));
         assert!(result.contains('\t'));
+    }
+
+    // ===== TrustLevel helper tests =====
+
+    #[test]
+    fn test_trust_level_all() {
+        let all = TrustLevel::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&TrustLevel::User));
+        assert!(all.contains(&TrustLevel::Developer));
+        assert!(all.contains(&TrustLevel::System));
+    }
+
+    #[test]
+    fn test_trust_level_name() {
+        assert_eq!(TrustLevel::User.name(), "User");
+        assert_eq!(TrustLevel::Developer.name(), "Developer");
+        assert_eq!(TrustLevel::System.name(), "System");
+    }
+
+    #[test]
+    fn test_trust_level_icon() {
+        assert_eq!(TrustLevel::User.icon(), "👤");
+        assert_eq!(TrustLevel::Developer.icon(), "🔧");
+        assert_eq!(TrustLevel::System.icon(), "⚙");
+    }
+
+    #[test]
+    fn test_trust_level_description() {
+        assert!(TrustLevel::User.description().contains("untrusted"));
+        assert!(TrustLevel::Developer.description().contains("trusted"));
+        assert!(TrustLevel::System.description().contains("fully trusted"));
+    }
+
+    #[test]
+    fn test_trust_level_type_checks() {
+        assert!(TrustLevel::User.is_user());
+        assert!(!TrustLevel::User.is_developer());
+        assert!(!TrustLevel::User.is_system());
+
+        assert!(!TrustLevel::Developer.is_user());
+        assert!(TrustLevel::Developer.is_developer());
+        assert!(!TrustLevel::Developer.is_system());
+
+        assert!(!TrustLevel::System.is_user());
+        assert!(!TrustLevel::System.is_developer());
+        assert!(TrustLevel::System.is_system());
+    }
+
+    #[test]
+    fn test_trust_level_is_trusted() {
+        assert!(!TrustLevel::User.is_trusted());
+        assert!(TrustLevel::Developer.is_trusted());
+        assert!(TrustLevel::System.is_trusted());
+    }
+
+    #[test]
+    fn test_trust_level_requires_sanitization() {
+        assert!(TrustLevel::User.requires_sanitization());
+        assert!(!TrustLevel::Developer.requires_sanitization());
+        assert!(!TrustLevel::System.requires_sanitization());
+    }
+
+    #[test]
+    fn test_trust_level_numeric_level() {
+        assert_eq!(TrustLevel::User.level(), 0);
+        assert_eq!(TrustLevel::Developer.level(), 1);
+        assert_eq!(TrustLevel::System.level(), 2);
+    }
+
+    #[test]
+    fn test_trust_level_display() {
+        let display = format!("{}", TrustLevel::User);
+        assert!(display.contains("User"));
+        assert!(display.contains("👤"));
+
+        let display = format!("{}", TrustLevel::Developer);
+        assert!(display.contains("Developer"));
+
+        let display = format!("{}", TrustLevel::System);
+        assert!(display.contains("System"));
+    }
+
+    // ===== SanitizationConfig helper tests =====
+
+    #[test]
+    fn test_sanitization_config_new() {
+        let config = SanitizationConfig::new();
+        assert_eq!(config.max_user_input_length, 10_000);
+        assert!(config.block_injection_patterns);
+    }
+
+    #[test]
+    fn test_sanitization_config_strict() {
+        let config = SanitizationConfig::strict();
+        assert_eq!(config.max_user_input_length, 1_000);
+        assert_eq!(config.max_variable_name_length, 64);
+        assert!(!config.allow_unicode);
+        assert!(config.is_strict());
+    }
+
+    #[test]
+    fn test_sanitization_config_permissive() {
+        let config = SanitizationConfig::permissive();
+        assert_eq!(config.max_user_input_length, 100_000);
+        assert!(config.allow_control_chars);
+        assert!(!config.block_injection_patterns);
+        assert!(config.is_permissive());
+    }
+
+    #[test]
+    fn test_sanitization_config_query_methods() {
+        let config = SanitizationConfig::default();
+        assert!(config.escapes_html());
+        assert!(config.blocks_injection());
+        assert!(!config.allows_control_chars());
+        assert!(config.allows_unicode());
+    }
+
+    #[test]
+    fn test_sanitization_config_strictness_checks() {
+        let default = SanitizationConfig::default();
+        assert!(!default.is_strict());
+        assert!(!default.is_permissive());
+
+        let strict = SanitizationConfig::strict();
+        assert!(strict.is_strict());
+        assert!(!strict.is_permissive());
+
+        let permissive = SanitizationConfig::permissive();
+        assert!(!permissive.is_strict());
+        assert!(permissive.is_permissive());
+    }
+
+    #[test]
+    fn test_sanitization_config_summary() {
+        let config = SanitizationConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("default"));
+        assert!(summary.contains("10000"));
+
+        let strict = SanitizationConfig::strict();
+        let summary = strict.summary();
+        assert!(summary.contains("strict"));
+    }
+
+    #[test]
+    fn test_sanitization_config_max_input_display() {
+        let config = SanitizationConfig::default();
+        assert_eq!(config.max_input_display(), "10KB");
+
+        let large = SanitizationConfig {
+            max_user_input_length: 2_000_000,
+            ..Default::default()
+        };
+        assert_eq!(large.max_input_display(), "2MB");
+
+        let small = SanitizationConfig {
+            max_user_input_length: 500,
+            ..Default::default()
+        };
+        assert_eq!(small.max_input_display(), "500B");
+    }
+
+    #[test]
+    fn test_sanitization_config_security_feature_count() {
+        let config = SanitizationConfig::default();
+        // escape_html=true, block_injection=true, allow_control_chars=false (3)
+        assert_eq!(config.security_feature_count(), 3);
+
+        let permissive = SanitizationConfig::permissive();
+        // allow_control_chars=true, escape_html=false, block_injection=false (0)
+        assert_eq!(permissive.security_feature_count(), 0);
+    }
+
+    #[test]
+    fn test_sanitization_config_display() {
+        let config = SanitizationConfig::default();
+        let display = format!("{}", config);
+        assert!(display.contains("config"));
+    }
+
+    // ===== PromptSanitizer helper tests =====
+
+    #[test]
+    fn test_prompt_sanitizer_strict() {
+        let sanitizer = PromptSanitizer::strict();
+        assert!(sanitizer.is_strict());
+        assert!(!sanitizer.is_permissive());
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_permissive() {
+        let sanitizer = PromptSanitizer::permissive();
+        assert!(!sanitizer.is_strict());
+        assert!(sanitizer.is_permissive());
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_config_ref() {
+        let sanitizer = PromptSanitizer::default();
+        let config = sanitizer.config();
+        assert_eq!(config.max_user_input_length, 10_000);
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_summary() {
+        let sanitizer = PromptSanitizer::default();
+        let summary = sanitizer.summary();
+        assert!(summary.contains("default"));
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_max_lengths() {
+        let sanitizer = PromptSanitizer::default();
+        assert_eq!(sanitizer.max_input_length(), 10_000);
+        assert_eq!(sanitizer.max_var_name_length(), 128);
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_display() {
+        let sanitizer = PromptSanitizer::default();
+        let display = format!("{}", sanitizer);
+        assert!(display.contains("PromptSanitizer"));
+        assert!(display.contains("config"));
     }
 }

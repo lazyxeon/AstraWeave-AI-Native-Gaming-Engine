@@ -321,7 +321,7 @@ fn raycast_with_and_without_normal(c: &mut Criterion) {
             );
             if let Some((_, toi)) = result {
                 assert!(
-                    toi >= 0.0 && toi <= 10.0,
+                    (0.0..=10.0).contains(&toi),
                     "[CORRECTNESS FAILURE] without_normal: hit distance {} out of range",
                     toi
                 );

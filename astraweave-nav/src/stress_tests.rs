@@ -39,7 +39,7 @@ fn create_grid_navmesh(width: usize, height: usize) -> Vec<Triangle> {
 /// Create a linear strip of triangles (each sharing an edge with the next)
 /// Creates pairs of triangles forming squares along X axis for proper connectivity
 fn create_linear_strip(count: usize) -> Vec<Triangle> {
-    let pairs = (count + 1) / 2; // Round up to create enough pairs
+    let pairs = count.div_ceil(2);
     let mut tris = Vec::with_capacity(pairs * 2);
 
     for i in 0..pairs {
@@ -141,7 +141,7 @@ fn test_large_navmesh_1000_triangles_baking() {
 
     // Verify adjacency is built (spot check first triangle has neighbors)
     assert!(
-        nav.tris[0].neighbors.len() > 0,
+        !nav.tris[0].neighbors.is_empty(),
         "Grid triangles should have neighbors"
     );
 }
@@ -239,7 +239,7 @@ fn test_sparse_connectivity_linear_strip() {
     let avg_neighbors: f32 =
         nav.tris.iter().map(|t| t.neighbors.len()).sum::<usize>() as f32 / nav.tris.len() as f32;
     assert!(
-        avg_neighbors >= 1.0 && avg_neighbors <= 3.0,
+        (1.0..=3.0).contains(&avg_neighbors),
         "Linear strip should have 1-3 avg neighbors, found {}",
         avg_neighbors
     );

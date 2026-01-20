@@ -4,7 +4,7 @@
 //! Target: 0% → 80%+ coverage for voxel_data.rs
 
 #[cfg(test)]
-mod voxel_data_tests {
+mod tests {
     use crate::voxel_data::*;
     use glam::{IVec3, Vec3};
 
@@ -246,7 +246,7 @@ mod voxel_data_tests {
         assert!(chunk.get_voxel(IVec3::new(0, 0, CHUNK_SIZE)).is_none());
 
         // Set should be ignored for out of bounds
-        let initial_dirty = chunk.is_dirty();
+        let _initial_dirty = chunk.is_dirty();
         chunk.set_voxel(IVec3::new(-1, 0, 0), Voxel::new(1.0, 1));
         chunk.set_voxel(IVec3::new(CHUNK_SIZE, 0, 0), Voxel::new(1.0, 1));
 
@@ -259,13 +259,11 @@ mod voxel_data_tests {
         let mut chunk = VoxelChunk::new(ChunkCoord::new(0, 0, 0));
 
         // Valid boundary positions (0 to CHUNK_SIZE-1)
-        let corners = vec![
-            IVec3::new(0, 0, 0),
+        let corners = [IVec3::new(0, 0, 0),
             IVec3::new(CHUNK_SIZE - 1, 0, 0),
             IVec3::new(0, CHUNK_SIZE - 1, 0),
             IVec3::new(0, 0, CHUNK_SIZE - 1),
-            IVec3::new(CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1),
-        ];
+            IVec3::new(CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1)];
 
         for (i, pos) in corners.iter().enumerate() {
             let voxel = Voxel::new(0.5 + i as f32 * 0.1, i as u16);
@@ -416,7 +414,7 @@ mod voxel_data_tests {
     #[test]
     fn test_material_id_range() {
         // Test that material IDs support full u16 range
-        let voxels = vec![
+        let voxels = [
             Voxel::new(1.0, 0),            // Min
             Voxel::new(1.0, 1),            // Low
             Voxel::new(1.0, 255),          // u8 max

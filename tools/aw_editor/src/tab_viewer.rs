@@ -17,7 +17,12 @@ use egui_dock::egui;
 
 use crate::command::UndoStack;
 use crate::entity_manager::EntityManager;
-use crate::panels::TerrainPanel;
+use crate::panels::{
+    AudioPanel, CinematicsPanel, DialogueEditorPanel, FoliagePanel, InputBindingsPanel,
+    LightingPanel, LocalizationPanel, LodConfigPanel, MaterialEditorPanel, NavigationPanel,
+    NetworkingPanel, ParticleSystemPanel, PcgPanel, PhysicsPanel, PostProcessPanel,
+    ProjectSettingsPanel, SplineEditorPanel, TerrainPanel, UiEditorPanel,
+};
 use crate::prefab::PrefabManager;
 use crate::viewport::ViewportWidget;
 use astraweave_core::World;
@@ -768,6 +773,43 @@ pub struct EditorTabViewer {
     scene_name: String,
     /// Terrain generation panel state
     terrain_panel: TerrainPanel,
+    // === New Phase 8 SOTA Panels ===
+    /// UI Editor panel
+    ui_editor_panel: UiEditorPanel,
+    /// Foliage painting panel
+    foliage_panel: FoliagePanel,
+    /// Spline editor panel
+    spline_editor_panel: SplineEditorPanel,
+    /// LOD configuration panel
+    lod_config_panel: LodConfigPanel,
+    /// Localization panel
+    localization_panel: LocalizationPanel,
+    /// Project settings panel
+    project_settings_panel: ProjectSettingsPanel,
+    /// Audio mixer panel
+    audio_panel: AudioPanel,
+    /// Cinematics timeline panel
+    cinematics_panel: CinematicsPanel,
+    /// Dialogue editor panel
+    dialogue_editor_panel: DialogueEditorPanel,
+    /// Lighting configuration panel
+    lighting_panel: LightingPanel,
+    /// Navigation mesh panel
+    navigation_panel: NavigationPanel,
+    /// Networking configuration panel
+    networking_panel: NetworkingPanel,
+    /// Particle system panel
+    particle_system_panel: ParticleSystemPanel,
+    /// PCG (procedural content generation) panel
+    pcg_panel: PcgPanel,
+    /// Physics settings panel
+    physics_panel: PhysicsPanel,
+    /// Post-processing panel
+    post_process_panel: PostProcessPanel,
+    /// Input bindings panel
+    input_bindings_panel: InputBindingsPanel,
+    /// Material editor panel
+    material_editor_panel: MaterialEditorPanel,
 }
 
 impl Default for EditorTabViewer {
@@ -979,6 +1021,25 @@ impl EditorTabViewer {
             scene_name: "Untitled".to_string(),
             // Terrain panel
             terrain_panel: TerrainPanel::new(),
+            // === New Phase 8 SOTA Panels ===
+            ui_editor_panel: UiEditorPanel::new(),
+            foliage_panel: FoliagePanel::new(),
+            spline_editor_panel: SplineEditorPanel::new(),
+            lod_config_panel: LodConfigPanel::new(),
+            localization_panel: LocalizationPanel::new(),
+            project_settings_panel: ProjectSettingsPanel::new(),
+            audio_panel: AudioPanel::new(),
+            cinematics_panel: CinematicsPanel::new(),
+            dialogue_editor_panel: DialogueEditorPanel::new(),
+            lighting_panel: LightingPanel::new(),
+            navigation_panel: NavigationPanel::new(),
+            networking_panel: NetworkingPanel::new(),
+            particle_system_panel: ParticleSystemPanel::new(),
+            pcg_panel: PcgPanel::new(),
+            physics_panel: PhysicsPanel::new(),
+            post_process_panel: PostProcessPanel::new(),
+            input_bindings_panel: InputBindingsPanel::new(),
+            material_editor_panel: MaterialEditorPanel::new(),
         }
     }
 
@@ -6134,6 +6195,75 @@ impl TabViewer for EditorTabViewer {
                 // Delegate to TerrainPanel implementation
                 use crate::panels::Panel;
                 self.terrain_panel.show(ui);
+            }
+            // === New Phase 8 SOTA Panels ===
+            PanelType::UiEditor => {
+                use crate::panels::Panel;
+                self.ui_editor_panel.show(ui);
+            }
+            PanelType::Foliage => {
+                use crate::panels::Panel;
+                self.foliage_panel.show(ui);
+            }
+            PanelType::SplineEditor => {
+                use crate::panels::Panel;
+                self.spline_editor_panel.show(ui);
+            }
+            PanelType::LodConfig => {
+                use crate::panels::Panel;
+                self.lod_config_panel.show(ui);
+            }
+            PanelType::Localization => {
+                use crate::panels::Panel;
+                self.localization_panel.show(ui);
+            }
+            PanelType::ProjectSettings => {
+                use crate::panels::Panel;
+                self.project_settings_panel.show(ui);
+            }
+            PanelType::Audio => {
+                use crate::panels::Panel;
+                self.audio_panel.show(ui);
+            }
+            PanelType::Cinematics => {
+                use crate::panels::Panel;
+                self.cinematics_panel.show(ui);
+            }
+            PanelType::DialogueEditor => {
+                use crate::panels::Panel;
+                self.dialogue_editor_panel.show(ui);
+            }
+            PanelType::Lighting => {
+                use crate::panels::Panel;
+                self.lighting_panel.show(ui);
+            }
+            PanelType::Navigation => {
+                use crate::panels::Panel;
+                self.navigation_panel.show(ui);
+            }
+            PanelType::Networking => {
+                use crate::panels::Panel;
+                self.networking_panel.show(ui);
+            }
+            PanelType::ParticleSystem => {
+                use crate::panels::Panel;
+                self.particle_system_panel.show(ui);
+            }
+            PanelType::Pcg => {
+                use crate::panels::Panel;
+                self.pcg_panel.show(ui);
+            }
+            PanelType::Physics => {
+                use crate::panels::Panel;
+                self.physics_panel.show(ui);
+            }
+            PanelType::PostProcess => {
+                use crate::panels::Panel;
+                self.post_process_panel.show(ui);
+            }
+            PanelType::InputBindings => {
+                use crate::panels::Panel;
+                self.input_bindings_panel.show(ui);
             }
         }
     }

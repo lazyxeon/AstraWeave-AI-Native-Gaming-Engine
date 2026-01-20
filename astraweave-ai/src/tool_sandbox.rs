@@ -861,6 +861,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn test_tool_verb_clone_and_copy() {
         // Test Clone and Copy derives
         let verb1 = ToolVerb::MoveTo;

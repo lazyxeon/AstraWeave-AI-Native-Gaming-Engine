@@ -1486,21 +1486,6 @@ mod tests {
 
     #[test]
     fn test_shader_constant_consistency() {
-        // Verify shader constants are defined
-        assert!(!SKY_WGSL.is_empty(), "Sky shader should not be empty");
-        assert!(
-            !IRRADIANCE_WGSL.is_empty(),
-            "Irradiance shader should not be empty"
-        );
-        assert!(
-            !SPECULAR_PREFILTER_WGSL.is_empty(),
-            "Specular prefilter shader should not be empty"
-        );
-        assert!(
-            !BRDF_LUT_WGSL.is_empty(),
-            "BRDF LUT shader should not be empty"
-        );
-
         // Check for key shader patterns
         assert!(
             SPECULAR_PREFILTER_WGSL.contains("PrefilterParams"),

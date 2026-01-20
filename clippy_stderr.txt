@@ -1,0 +1,9 @@
+    Checking aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+    Checking astraweave-assets v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\astraweave-assets)
+    Checking astraweave-net v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net)
+    Checking astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+    Checking astraweave-audio v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio)
+    Checking astraweave-dialogue v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-dialogue)
+    Checking astraweave-prompts v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+    Checking astraweave-ai v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 55.12s

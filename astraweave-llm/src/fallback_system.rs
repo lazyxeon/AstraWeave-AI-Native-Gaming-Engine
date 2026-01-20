@@ -1080,7 +1080,7 @@ mod tests {
         assert!(results.contains_key(&3));
 
         // All should succeed at SimplifiedLlm tier
-        for (_, result) in &results {
+        for result in results.values() {
             assert_eq!(result.tier, FallbackTier::SimplifiedLlm);
             assert!(!result.plan.steps.is_empty());
         }
@@ -1118,7 +1118,7 @@ mod tests {
 
         // All should use same tier
         for results in &all_results {
-            for (_, result) in results {
+            for result in results.values() {
                 assert_eq!(result.tier, FallbackTier::SimplifiedLlm);
             }
         }
@@ -1163,7 +1163,7 @@ mod tests {
         assert_eq!(results.len(), 2);
 
         // Should fall back to heuristic for both
-        for (_, result) in &results {
+        for result in results.values() {
             assert_eq!(result.tier, FallbackTier::Heuristic);
             assert!(!result.plan.steps.is_empty());
         }
@@ -1288,8 +1288,10 @@ mod tests {
 
     #[test]
     fn test_fallback_metrics_clone() {
-        let mut metrics = FallbackMetrics::default();
-        metrics.total_requests = 10;
+        let mut metrics = FallbackMetrics {
+            total_requests: 10,
+            ..Default::default()
+        };
         metrics.tier_successes.insert("heuristic".to_string(), 5);
 
         let cloned = metrics.clone();
@@ -1643,7 +1645,7 @@ mod tests {
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
         assert_eq!(result.tier, FallbackTier::Heuristic);
-        assert!(result.attempts.iter().any(|a| a.error.as_ref().map_or(false, |e| e.contains("circuit breaker"))));
+        assert!(result.attempts.iter().any(|a| a.error.as_ref().is_some_and(|e| e.contains("circuit breaker"))));
     }
 
     #[tokio::test]

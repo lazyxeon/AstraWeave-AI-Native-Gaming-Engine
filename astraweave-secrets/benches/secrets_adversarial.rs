@@ -2,6 +2,12 @@
 //!
 //! Stress testing for secret management, keyring operations, and encryption.
 
+#![allow(
+    dead_code,
+    unused_variables,
+    clippy::unnecessary_get_then_check
+)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;

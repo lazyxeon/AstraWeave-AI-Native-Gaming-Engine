@@ -938,7 +938,7 @@ mod tests {
         assert_eq!(result.result.unwrap(), 42);
         assert_eq!(result.state, CircuitState::Closed);
         // CircuitBreakerResult has: result, state, execution_time
-        assert!(result.execution_time.as_nanos() >= 0);
+        // (execution_time is always >= 0 by definition)
     }
 
     #[tokio::test]

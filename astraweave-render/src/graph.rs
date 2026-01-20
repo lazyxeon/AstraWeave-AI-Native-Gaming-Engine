@@ -310,7 +310,7 @@ mod tests {
         g.add_node(c);
         let mut dummy = 0u32;
         let mut ctx = GraphContext::new(&mut dummy);
-        let _ = g.execute(&mut ctx).unwrap();
+        g.execute(&mut ctx).unwrap();
         // We can't access nodes after moved; instead, ensure no errors and linear execution returns Ok
         // Additional ordering validation can be done by having nodes append to a shared log in ctx.user
     }

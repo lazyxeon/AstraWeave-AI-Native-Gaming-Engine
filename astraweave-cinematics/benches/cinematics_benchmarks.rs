@@ -5,7 +5,8 @@
 //!
 //! v5.36 - January 2026
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 
 // Re-implement the types here to avoid dependency issues
 // (cinematics crate is simple enough to inline)

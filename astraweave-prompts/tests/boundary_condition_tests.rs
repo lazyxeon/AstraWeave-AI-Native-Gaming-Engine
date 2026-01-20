@@ -7,6 +7,7 @@
 //! - variable name validation boundaries
 
 #![cfg(test)]
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::sanitize::{
     sanitize_input, sanitize_variable_name, truncate_input, validate_safe_charset, TrustLevel,
@@ -28,7 +29,7 @@ fn test_sanitize_input_exact_max_length_ok() {
     // Avoid triggering injection-pattern safeguards (e.g., 100+ consecutive identical chars).
     // Use a repeating, high-entropy base string and truncate to exactly max length.
     let base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
-    let repeat_count = (cfg.max_user_input_length + base.len() - 1) / base.len();
+    let repeat_count = cfg.max_user_input_length.div_ceil(base.len());
     let s: String = base.repeat(repeat_count).chars().take(cfg.max_user_input_length).collect();
     let out = sanitize_input(&s, TrustLevel::User, &cfg).expect("exact max length should pass");
     assert_eq!(out.len(), cfg.max_user_input_length);
@@ -77,7 +78,7 @@ fn test_sanitize_input_unicode_filtered_when_disallowed() {
     let input = "日本語🎮ABC";
     let out = sanitize_input(input, TrustLevel::User, &cfg).expect("unicode filtering should not error");
     assert!(out.contains("ABC"));
-    assert!(out.chars().all(|c| c.is_ascii()), "output should be ASCII-only");
+    assert!(out.is_ascii(), "output should be ASCII-only");
 }
 
 #[test]

@@ -3,6 +3,8 @@
 //! Tests malicious inputs, race conditions, concurrency issues,
 //! stress testing, and other adversarial scenarios.
 
+#![allow(dead_code, clippy::clone_on_copy, clippy::unnecessary_cast, clippy::useless_vec)]
+
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};

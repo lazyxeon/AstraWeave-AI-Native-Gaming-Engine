@@ -597,6 +597,7 @@ impl MultiAgentContextManager {
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
     use crate::Role;
@@ -753,7 +754,7 @@ mod tests {
         let important = window.get_important_messages(0.5);
 
         // Should have at least the preserved message
-        assert!(important.len() >= 1);
+        assert!(!important.is_empty());
 
         // The preserved message should have high attention
         let has_preserved = important

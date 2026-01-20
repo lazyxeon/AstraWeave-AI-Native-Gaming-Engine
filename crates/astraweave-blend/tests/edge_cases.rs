@@ -530,6 +530,7 @@ fn version_minor_overflow_comparison() {
 // ============================================================================
 
 #[test]
+#[allow(clippy::clone_on_copy)]
 fn version_clone_equality() {
     let v1 = BlenderVersion::new(4, 1, 0);
     let v2 = v1.clone();

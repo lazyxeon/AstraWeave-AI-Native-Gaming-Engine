@@ -704,6 +704,7 @@ impl AdvancedErosionSimulator {
         h00 * (1.0 - u) * (1.0 - v) + h10 * u * (1.0 - v) + h01 * (1.0 - u) * v + h11 * u * v
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn deposit_sediment(
         &self,
         heightmap: &mut Heightmap,

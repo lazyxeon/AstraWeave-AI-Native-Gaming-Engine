@@ -348,6 +348,8 @@ impl Default for MenuManager {
 }
 
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
 

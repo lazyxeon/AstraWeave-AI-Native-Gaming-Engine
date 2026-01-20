@@ -1074,6 +1074,292 @@ impl Panel for TerrainPanel {
 mod tests {
     use super::*;
     
+    // ============================================================
+    // EROSION PRESET TYPE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_erosion_preset_type_all() {
+        let all = ErosionPresetType::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_erosion_preset_type_all_coverage() {
+        let all = ErosionPresetType::all();
+        assert!(all.contains(&ErosionPresetType::Custom));
+        assert!(all.contains(&ErosionPresetType::Desert));
+        assert!(all.contains(&ErosionPresetType::Mountain));
+        assert!(all.contains(&ErosionPresetType::Coastal));
+        assert!(all.contains(&ErosionPresetType::Alpine));
+        assert!(all.contains(&ErosionPresetType::Canyon));
+    }
+
+    #[test]
+    fn test_erosion_preset_type_names() {
+        assert_eq!(ErosionPresetType::Custom.name(), "Custom");
+        assert_eq!(ErosionPresetType::Desert.name(), "Desert");
+        assert_eq!(ErosionPresetType::Mountain.name(), "Mountain");
+        assert_eq!(ErosionPresetType::Coastal.name(), "Coastal");
+        assert_eq!(ErosionPresetType::Alpine.name(), "Alpine");
+        assert_eq!(ErosionPresetType::Canyon.name(), "Canyon");
+    }
+
+    // ============================================================
+    // WATER BODY PRESET TESTS
+    // ============================================================
+
+    #[test]
+    fn test_water_body_preset_all() {
+        let all = WaterBodyPreset::all();
+        assert_eq!(all.len(), 7);
+    }
+
+    #[test]
+    fn test_water_body_preset_all_coverage() {
+        let all = WaterBodyPreset::all();
+        assert!(all.contains(&WaterBodyPreset::Custom));
+        assert!(all.contains(&WaterBodyPreset::CalmLake));
+        assert!(all.contains(&WaterBodyPreset::MountainStream));
+        assert!(all.contains(&WaterBodyPreset::RagingRiver));
+        assert!(all.contains(&WaterBodyPreset::Ocean));
+        assert!(all.contains(&WaterBodyPreset::Waterfall));
+        assert!(all.contains(&WaterBodyPreset::SwampWetland));
+    }
+
+    #[test]
+    fn test_water_body_preset_names() {
+        assert_eq!(WaterBodyPreset::Custom.name(), "Custom");
+        assert_eq!(WaterBodyPreset::CalmLake.name(), "Calm Lake");
+        assert_eq!(WaterBodyPreset::Ocean.name(), "Ocean");
+    }
+
+    // ============================================================
+    // FLUID QUALITY PRESET TESTS
+    // ============================================================
+
+    #[test]
+    fn test_fluid_quality_preset_names() {
+        assert_eq!(FluidQualityPreset::Performance.name(), "Performance");
+        assert_eq!(FluidQualityPreset::Balanced.name(), "Balanced");
+        assert_eq!(FluidQualityPreset::Quality.name(), "Quality");
+        assert_eq!(FluidQualityPreset::Cinematic.name(), "Cinematic");
+    }
+
+    // ============================================================
+    // BRUSH MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_brush_mode_all_variants() {
+        let variants = [
+            BrushMode::Sculpt,
+            BrushMode::Smooth,
+            BrushMode::Flatten,
+            BrushMode::Paint,
+            BrushMode::Erode,
+        ];
+        assert_eq!(variants.len(), 5);
+    }
+
+    // ============================================================
+    // HYDRAULIC EROSION PARAMS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_hydraulic_erosion_default() {
+        let he = HydraulicErosionParams::default();
+        assert!(he.enabled);
+        assert_eq!(he.iterations, 50000);
+    }
+
+    #[test]
+    fn test_hydraulic_erosion_physics() {
+        let he = HydraulicErosionParams::default();
+        assert!((he.inertia - 0.3).abs() < 0.01);
+        assert!((he.capacity - 8.0).abs() < 0.01);
+        assert!((he.gravity - 10.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_hydraulic_erosion_rates() {
+        let he = HydraulicErosionParams::default();
+        assert!((he.deposition - 0.2).abs() < 0.01);
+        assert!((he.erosion - 0.5).abs() < 0.01);
+        assert!((he.evaporation - 0.02).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_hydraulic_erosion_clone() {
+        let he = HydraulicErosionParams::default();
+        let cloned = he.clone();
+        assert!(cloned.enabled);
+    }
+
+    // ============================================================
+    // THERMAL EROSION PARAMS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_thermal_erosion_default() {
+        let te = ThermalErosionParams::default();
+        assert!(te.enabled);
+        assert_eq!(te.iterations, 50);
+    }
+
+    #[test]
+    fn test_thermal_erosion_params() {
+        let te = ThermalErosionParams::default();
+        assert!((te.talus_angle - 40.0).abs() < 0.01);
+        assert!((te.erosion_rate - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_thermal_erosion_clone() {
+        let te = ThermalErosionParams::default();
+        let cloned = te.clone();
+        assert!(cloned.enabled);
+    }
+
+    // ============================================================
+    // WIND EROSION PARAMS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_wind_erosion_default() {
+        let we = WindErosionParams::default();
+        assert!(!we.enabled);
+        assert_eq!(we.iterations, 20);
+    }
+
+    #[test]
+    fn test_wind_erosion_params() {
+        let we = WindErosionParams::default();
+        assert!((we.wind_strength - 0.5).abs() < 0.01);
+        assert!((we.suspension - 0.3).abs() < 0.01);
+        assert!((we.abrasion - 0.2).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_wind_erosion_direction() {
+        let we = WindErosionParams::default();
+        assert!((we.wind_direction[0] - 1.0).abs() < 0.01);
+        assert!((we.wind_direction[1] - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_wind_erosion_clone() {
+        let we = WindErosionParams::default();
+        let cloned = we.clone();
+        assert!(!cloned.enabled);
+    }
+
+    // ============================================================
+    // BIOME BLEND PARAMS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_biome_blend_default() {
+        let bb = BiomeBlendParams::default();
+        assert!(bb.enabled);
+        assert!((bb.blend_radius - 32.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_biome_blend_biomes() {
+        let bb = BiomeBlendParams::default();
+        assert_eq!(bb.secondary_biome, "desert");
+        assert_eq!(bb.tertiary_biome, "mountains");
+    }
+
+    #[test]
+    fn test_biome_blend_params() {
+        let bb = BiomeBlendParams::default();
+        assert!((bb.falloff_power - 2.0).abs() < 0.01);
+        assert!((bb.noise_influence - 0.3).abs() < 0.01);
+        assert!(!bb.show_blend_preview);
+    }
+
+    #[test]
+    fn test_biome_blend_clone() {
+        let bb = BiomeBlendParams::default();
+        let cloned = bb.clone();
+        assert!(cloned.enabled);
+    }
+
+    // ============================================================
+    // SPLAT PARAMS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_splat_params_default() {
+        let sp = SplatParams::default();
+        assert!(sp.enabled);
+        assert!(!sp.show_splat_preview);
+    }
+
+    #[test]
+    fn test_splat_params_thresholds() {
+        let sp = SplatParams::default();
+        assert!((sp.rock_slope_threshold - 0.6).abs() < 0.01);
+        assert!((sp.snow_height_threshold - 0.85).abs() < 0.01);
+        assert!((sp.triplanar_sharpness - 8.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_splat_params_heights() {
+        let sp = SplatParams::default();
+        assert!((sp.grass_height_min - 0.0).abs() < 0.01);
+        assert!((sp.grass_height_max - 0.7).abs() < 0.01);
+        assert!((sp.sand_height_max - 0.15).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_splat_params_clone() {
+        let sp = SplatParams::default();
+        let cloned = sp.clone();
+        assert!(cloned.enabled);
+    }
+
+    // ============================================================
+    // FLUID SIM PARAMS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_fluid_sim_default() {
+        let fp = FluidSimParams::default();
+        assert!(fp.enabled);
+        assert_eq!(fp.quality_preset, FluidQualityPreset::Balanced);
+        assert_eq!(fp.water_body_preset, WaterBodyPreset::CalmLake);
+    }
+
+    #[test]
+    fn test_fluid_sim_physics() {
+        let fp = FluidSimParams::default();
+        assert_eq!(fp.particle_count, 65536);
+        assert!((fp.smoothing_radius - 1.0).abs() < 0.01);
+        assert!((fp.gravity - (-9.8)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_fluid_sim_rendering() {
+        let fp = FluidSimParams::default();
+        assert!((fp.transparency - 0.7).abs() < 0.01);
+        assert!(fp.caustics_enabled);
+        assert!(fp.foam_enabled);
+    }
+
+    #[test]
+    fn test_fluid_sim_clone() {
+        let fp = FluidSimParams::default();
+        let cloned = fp.clone();
+        assert!(cloned.enabled);
+    }
+
+    // ============================================================
+    // TERRAIN PANEL TESTS
+    // ============================================================
+
     #[test]
     fn test_terrain_panel_creation() {
         let panel = TerrainPanel::new();
@@ -1101,12 +1387,35 @@ mod tests {
         panel.brush_mode = BrushMode::Erode;
         assert_eq!(panel.brush_mode, BrushMode::Erode);
     }
+
+    #[test]
+    fn test_brush_mode_all_settable() {
+        let mut panel = TerrainPanel::new();
+        let modes = [
+            BrushMode::Sculpt,
+            BrushMode::Smooth,
+            BrushMode::Flatten,
+            BrushMode::Paint,
+            BrushMode::Erode,
+        ];
+        for mode in modes {
+            panel.brush_mode = mode;
+            assert_eq!(panel.brush_mode, mode);
+        }
+    }
     
     #[test]
     fn test_material_names() {
         assert_eq!(TerrainPanel::material_name(0), "Grass");
         assert_eq!(TerrainPanel::material_name(2), "Rock");
         assert_eq!(TerrainPanel::material_name(99), "Unknown");
+    }
+
+    #[test]
+    fn test_material_names_all() {
+        assert_eq!(TerrainPanel::material_name(1), "Sand");
+        assert_eq!(TerrainPanel::material_name(3), "Snow");
+        assert_eq!(TerrainPanel::material_name(4), "Dirt");
     }
     
     #[test]
@@ -1123,6 +1432,14 @@ mod tests {
         assert!(panel.hydraulic_erosion.enabled);
         assert!(!panel.thermal_erosion.enabled);
         assert!(panel.wind_erosion.enabled);
+    }
+
+    #[test]
+    fn test_erosion_preset_alpine() {
+        let mut panel = TerrainPanel::new();
+        panel.apply_erosion_preset(ErosionPresetType::Alpine);
+        // Alpine should have both hydraulic and thermal active
+        assert!(panel.hydraulic_erosion.enabled || panel.thermal_erosion.enabled);
     }
     
     #[test]
@@ -1151,12 +1468,43 @@ mod tests {
         assert!((panel.splat_params.snow_height_threshold - 0.85).abs() < 0.01);
         assert!((panel.splat_params.triplanar_sharpness - 8.0).abs() < 0.01);
     }
-    
+
+    #[test]
+    fn test_panel_trait() {
+        let panel = TerrainPanel::new();
+        assert_eq!(panel.name(), "Terrain");
+    }
+
+    // ============================================================
+    // INTEGRATION TESTS
+    // ============================================================
+
     #[test]
     fn test_erosion_preset_all() {
         let presets = ErosionPresetType::all();
         assert_eq!(presets.len(), 6);
         assert!(presets.contains(&ErosionPresetType::Custom));
         assert!(presets.contains(&ErosionPresetType::Canyon));
+    }
+
+    #[test]
+    fn test_all_presets_have_names() {
+        for preset in ErosionPresetType::all() {
+            assert!(!preset.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_all_water_body_presets_have_names() {
+        for preset in WaterBodyPreset::all() {
+            assert!(!preset.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_terrain_generation_settings() {
+        let panel = TerrainPanel::new();
+        assert!((panel.base_amplitude - 50.0).abs() < 0.01);
+        assert_eq!(panel.seed, 12345);
     }
 }

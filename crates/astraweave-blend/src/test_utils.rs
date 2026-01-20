@@ -109,10 +109,11 @@ impl MockBlenderInstallation {
     }
 
     /// Converts to a real BlenderInstallation struct.
+    #[allow(clippy::clone_on_copy)]
     pub fn to_installation(&self) -> BlenderInstallation {
         BlenderInstallation {
             executable_path: self.executable_path.clone(),
-            version: self.version.clone(),
+            version: self.version,
             discovery_method: crate::discovery::DiscoveryMethod::UserConfigured,
             install_dir: self.executable_path.parent().unwrap_or(Path::new("/")).to_path_buf(),
         }
@@ -143,7 +144,7 @@ impl TestFixture {
     /// Creates a new test fixture.
     pub fn new() -> BlendResult<Self> {
         let temp_dir = TempDir::new()
-            .map_err(|e| BlendError::IoError(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create temp dir: {}", e))))?;
+            .map_err(|e| BlendError::IoError(std::io::Error::other(format!("Failed to create temp dir: {}", e))))?;
 
         let source_dir = temp_dir.path().join("source");
         let output_dir = temp_dir.path().join("output");
@@ -791,7 +792,7 @@ where
 /// Benchmark helper that runs a function N times and returns statistics.
 pub fn benchmark_fn<F>(name: &str, iterations: usize, f: F) -> BenchmarkResult
 where
-    F: Fn() -> (),
+    F: Fn(),
 {
     let mut durations = Vec::with_capacity(iterations);
 

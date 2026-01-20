@@ -438,8 +438,7 @@ impl SplatMapGenerator {
     ) -> Vec<SplatWeights> {
         let mut splat_map = Vec::with_capacity(heights.len());
 
-        for i in 0..heights.len() {
-            let height = heights[i];
+        for (i, &height) in heights.iter().enumerate() {
             let normal = normals.get(i).copied().unwrap_or(Vec3::Y);
             let weights = self.calculate_weights(height, normal);
             splat_map.push(weights);

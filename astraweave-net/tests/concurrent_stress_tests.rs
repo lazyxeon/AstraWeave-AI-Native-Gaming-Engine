@@ -53,6 +53,7 @@ fn test_concurrent_diff_apply_and_serialize_no_panic() {
     });
 
     let mut handles = Vec::new();
+    #[allow(clippy::clone_on_copy)]
     for t in 0..8 {
         let base = base.clone();
         let head = head.clone();

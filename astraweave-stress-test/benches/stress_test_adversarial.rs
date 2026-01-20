@@ -236,10 +236,9 @@ impl WorkQueue {
     }
 
     fn dequeue(&mut self) -> Option<WorkUnit> {
-        self.pending.pop_front().map(|work| {
+        self.pending.pop_front().inspect(|work| {
             self.processed += 1;
             self.total_wait_time += work.created_at.elapsed();
-            work
         })
     }
 
@@ -785,7 +784,7 @@ fn bench_stress_patterns(c: &mut Criterion) {
 
             for i in 0..500 {
                 value = gen.random_walk(value, 5.0);
-                let size = (value as usize).max(64).min(4096);
+                let size = (value as usize).clamp(64, 4096);
 
                 if gen.burst_pattern(i) {
                     // Burst: multiple allocations and queue operations

@@ -161,8 +161,8 @@ fn test_rule_orchestrator_negative_enemy_position() {
 
     // Verify smoke throw position is midpoint
     if let ActionStep::Throw { x, y, .. } = &plan.steps[0] {
-        assert_eq!(*x, (0 + -5) / 2); // -2 (rounds toward zero)
-        assert_eq!(*y, (0 + -3) / 2); // -1
+        assert_eq!(*x, -5 / 2); // -2 (rounds toward zero)
+        assert_eq!(*y, -3 / 2); // -1
     } else {
         panic!("Expected Throw action");
     }
@@ -346,24 +346,24 @@ fn test_plan_id_uniqueness() {
 fn test_utility_plan_id_format() {
     let utility = UtilityOrchestrator;
     let mut snap = make_snap_with_enemy(IVec2 { x: 5, y: 0 }, BTreeMap::new());
-    snap.t = 3.14;
+    snap.t = 3.25;
 
     let plan = utility.propose_plan(&snap);
 
     // Plan ID should follow util-{timestamp} format
-    assert_eq!(plan.plan_id, "util-3140"); // 3.14 * 1000 = 3140
+    assert_eq!(plan.plan_id, "util-3250"); // 3.25 * 1000 = 3250
 }
 
 #[test]
 fn test_goap_plan_id_format() {
     let goap = GoapOrchestrator;
     let mut snap = make_snap_with_enemy(IVec2 { x: 5, y: 0 }, BTreeMap::new());
-    snap.t = 2.718;
+    snap.t = 2.75;
 
     let plan = goap.propose_plan(&snap);
 
     // Plan ID should follow goap-{timestamp} format
-    assert_eq!(plan.plan_id, "goap-2718"); // 2.718 * 1000 = 2718
+    assert_eq!(plan.plan_id, "goap-2750"); // 2.75 * 1000 = 2750
 }
 
 // ========== Integration Tests ==========

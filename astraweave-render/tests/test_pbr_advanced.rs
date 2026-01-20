@@ -287,8 +287,8 @@ fn test_sss_energy_conservation() {
     let sss_profile = (0.7 * wrap_forward + 0.3 * wrap_back) / std::f32::consts::PI;
 
     // Both should be within reasonable bounds (0 to ~0.5 for this angle)
-    assert!(lambertian >= 0.0 && lambertian <= 1.0);
-    assert!(sss_profile >= 0.0 && sss_profile <= 1.0);
+    assert!((0.0..=1.0).contains(&lambertian));
+    assert!((0.0..=1.0).contains(&sss_profile));
 }
 
 // ============================================================================
@@ -345,7 +345,7 @@ fn test_sheen_energy_conservation() {
     let diffuse_reduction = 1.0 - sheen_max;
 
     // Diffuse should be attenuated by sheen intensity
-    assert!(diffuse_reduction >= 0.0 && diffuse_reduction <= 1.0);
+    assert!((0.0..=1.0).contains(&diffuse_reduction));
     assert!(
         (diffuse_reduction - 0.2).abs() < EPSILON,
         "Sheen max 0.8 should reduce diffuse to 0.2"
@@ -452,11 +452,13 @@ fn test_material_size_and_alignment() {
 
 #[test]
 fn test_feature_flag_combinations() {
-    let mut mat = MaterialGpuExtended::default();
+    let mut mat = MaterialGpuExtended {
+        clearcoat_strength: 1.0,
+        anisotropy_strength: 0.5,
+        ..Default::default()
+    };
 
     // Enable clearcoat + anisotropy (car paint with brushed finish)
-    mat.clearcoat_strength = 1.0;
-    mat.anisotropy_strength = 0.5;
     mat.enable_feature(MATERIAL_FLAG_CLEARCOAT);
     mat.enable_feature(MATERIAL_FLAG_ANISOTROPY);
 
@@ -473,10 +475,12 @@ fn test_feature_flag_combinations() {
 #[test]
 fn test_multi_lobe_energy_conservation() {
     // Material with clearcoat + sheen should still conserve energy
-    let mut mat = MaterialGpuExtended::default();
-    mat.clearcoat_strength = 1.0;
-    mat.sheen_color = [0.5, 0.5, 0.5];
-    mat.metallic_factor = 0.0;
+    let mut mat = MaterialGpuExtended {
+        clearcoat_strength: 1.0,
+        sheen_color: [0.5, 0.5, 0.5],
+        metallic_factor: 0.0,
+        ..Default::default()
+    };
     mat.enable_feature(MATERIAL_FLAG_CLEARCOAT);
     mat.enable_feature(MATERIAL_FLAG_SHEEN);
 

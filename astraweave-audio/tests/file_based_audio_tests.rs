@@ -130,14 +130,14 @@ fn test_multiple_3d_files() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
     // Create 4 spatial emitters in cardinal directions
-    let positions = vec![
+    let positions = [
         (1, vec3(5.0, 0.0, 0.0)),  // Right
         (2, vec3(-5.0, 0.0, 0.0)), // Left
         (3, vec3(0.0, 0.0, 5.0)),  // Forward
         (4, vec3(0.0, 0.0, -5.0)), // Behind
     ];
 
-    let files = vec![
+    let files = [
         "tests/assets/test_beep_200hz.wav",
         "tests/assets/test_beep_440hz.wav",
         "tests/assets/test_beep_1000hz.wav",
@@ -394,7 +394,7 @@ fn test_stress_20_file_based_3d_sounds() -> Result<()> {
 
     let mut engine = AudioEngine::new()?;
 
-    let files = vec![
+    let files = [
         "tests/assets/test_beep_200hz.wav",
         "tests/assets/test_beep_440hz.wav",
         "tests/assets/test_beep_1000hz.wav",
@@ -523,7 +523,7 @@ fn test_rapid_music_changes() -> Result<()> {
 
     let mut engine = AudioEngine::new()?;
 
-    let tracks = vec![
+    let tracks = [
         "tests/assets/test_music_2sec.wav",
         "tests/assets/test_music_5sec.wav",
     ];

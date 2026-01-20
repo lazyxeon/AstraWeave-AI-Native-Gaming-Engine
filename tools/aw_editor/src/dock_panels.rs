@@ -6,9 +6,13 @@
 
 use crate::panel_type::PanelType;
 use crate::panels::{
-    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, BuildManagerPanel, ChartsPanel,
-    ConsolePanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, ProfilerPanel,
-    SceneStatsPanel, TerrainPanel, ThemeManagerPanel, TransformPanel, WorldPanel,
+    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, AudioPanel, BuildManagerPanel,
+    ChartsPanel, CinematicsPanel, ConsolePanel, DialogueEditorPanel, EntityPanel, FoliagePanel,
+    GraphPanel, HierarchyPanel, InputBindingsPanel, LightingPanel, LocalizationPanel,
+    LodConfigPanel, MaterialEditorPanel, NavigationPanel, NetworkingPanel, Panel,
+    ParticleSystemPanel, PcgPanel, PerformancePanel, PhysicsPanel, PostProcessPanel,
+    ProfilerPanel, ProjectSettingsPanel, SceneStatsPanel, SplineEditorPanel, TerrainPanel,
+    ThemeManagerPanel, TransformPanel, UiEditorPanel, WorldPanel,
 };
 use astraweave_core::World;
 use egui::Ui;
@@ -52,6 +56,26 @@ pub struct DockPanelContext<'a> {
 
     // Terrain panel
     pub terrain_panel: &'a mut TerrainPanel,
+
+    // === New Phase 8 SOTA Panels ===
+    pub ui_editor_panel: &'a mut UiEditorPanel,
+    pub foliage_panel: &'a mut FoliagePanel,
+    pub spline_editor_panel: &'a mut SplineEditorPanel,
+    pub lod_config_panel: &'a mut LodConfigPanel,
+    pub localization_panel: &'a mut LocalizationPanel,
+    pub project_settings_panel: &'a mut ProjectSettingsPanel,
+    pub audio_panel: &'a mut AudioPanel,
+    pub cinematics_panel: &'a mut CinematicsPanel,
+    pub dialogue_editor_panel: &'a mut DialogueEditorPanel,
+    pub lighting_panel: &'a mut LightingPanel,
+    pub navigation_panel: &'a mut NavigationPanel,
+    pub networking_panel: &'a mut NetworkingPanel,
+    pub particle_system_panel: &'a mut ParticleSystemPanel,
+    pub pcg_panel: &'a mut PcgPanel,
+    pub physics_panel: &'a mut PhysicsPanel,
+    pub post_process_panel: &'a mut PostProcessPanel,
+    pub input_bindings_panel: &'a mut InputBindingsPanel,
+    pub material_editor_panel: &'a mut MaterialEditorPanel,
 
     // World state
     pub world: Option<&'a mut World>,
@@ -133,13 +157,62 @@ impl<'a> DockPanelContext<'a> {
                 ui.label("(Requires additional context for full rendering)");
             }
             PanelType::MaterialEditor => {
-                ui.heading("🎨 Material Editor");
-                ui.separator();
-                ui.label("PBR material editing");
-                ui.label("(Requires material context for full rendering)");
+                self.material_editor_panel.show(ui);
             }
             PanelType::Terrain => {
                 self.terrain_panel.show(ui);
+            }
+            // === New Phase 8 SOTA Panels ===
+            PanelType::UiEditor => {
+                self.ui_editor_panel.show(ui);
+            }
+            PanelType::Foliage => {
+                self.foliage_panel.show(ui);
+            }
+            PanelType::SplineEditor => {
+                self.spline_editor_panel.show(ui);
+            }
+            PanelType::LodConfig => {
+                self.lod_config_panel.show(ui);
+            }
+            PanelType::Localization => {
+                self.localization_panel.show(ui);
+            }
+            PanelType::ProjectSettings => {
+                self.project_settings_panel.show(ui);
+            }
+            PanelType::Audio => {
+                self.audio_panel.show(ui);
+            }
+            PanelType::Cinematics => {
+                self.cinematics_panel.show(ui);
+            }
+            PanelType::DialogueEditor => {
+                self.dialogue_editor_panel.show(ui);
+            }
+            PanelType::Lighting => {
+                self.lighting_panel.show(ui);
+            }
+            PanelType::Navigation => {
+                self.navigation_panel.show(ui);
+            }
+            PanelType::Networking => {
+                self.networking_panel.show(ui);
+            }
+            PanelType::ParticleSystem => {
+                self.particle_system_panel.show(ui);
+            }
+            PanelType::Pcg => {
+                self.pcg_panel.show(ui);
+            }
+            PanelType::Physics => {
+                self.physics_panel.show(ui);
+            }
+            PanelType::PostProcess => {
+                self.post_process_panel.show(ui);
+            }
+            PanelType::InputBindings => {
+                self.input_bindings_panel.show(ui);
             }
         }
     }
@@ -426,6 +499,92 @@ impl<'a> TabViewer for ContextualTabViewer<'a> {
                 PanelType::BehaviorGraph,
                 PanelType::Charts,
                 PanelType::MaterialEditor,
+                PanelType::UiEditor,
+                PanelType::SplineEditor,
+                PanelType::DialogueEditor,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
+                    self.panels_to_add.push(panel);
+                    ui.close();
+                }
+            }
+        });
+
+        ui.collapsing("Environment & Rendering", |ui| {
+            for panel in [
+                PanelType::Terrain,
+                PanelType::Foliage,
+                PanelType::Lighting,
+                PanelType::PostProcess,
+                PanelType::ParticleSystem,
+                PanelType::Cinematics,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
+                    self.panels_to_add.push(panel);
+                    ui.close();
+                }
+            }
+        });
+
+        ui.collapsing("AI & Navigation", |ui| {
+            for panel in [
+                PanelType::Navigation,
+                PanelType::Pcg,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
+                    self.panels_to_add.push(panel);
+                    ui.close();
+                }
+            }
+        });
+
+        ui.collapsing("Audio & Physics", |ui| {
+            for panel in [
+                PanelType::Audio,
+                PanelType::Physics,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
+                    self.panels_to_add.push(panel);
+                    ui.close();
+                }
+            }
+        });
+
+        ui.collapsing("Configuration", |ui| {
+            for panel in [
+                PanelType::ProjectSettings,
+                PanelType::LodConfig,
+                PanelType::Localization,
+                PanelType::InputBindings,
+                PanelType::Networking,
+            ] {
+                if ui
+                    .button(format!("{} {}", panel.icon(), panel.title()))
+                    .clicked()
+                {
+                    self.panels_to_add.push(panel);
+                    ui.close();
+                }
+            }
+        });
+
+        ui.collapsing("Build & Tools", |ui| {
+            for panel in [
+                PanelType::BuildManager,
+                PanelType::ThemeManager,
+                PanelType::AdvancedWidgets,
             ] {
                 if ui
                     .button(format!("{} {}", panel.icon(), panel.title()))

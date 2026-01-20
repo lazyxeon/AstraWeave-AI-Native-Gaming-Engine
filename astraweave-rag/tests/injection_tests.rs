@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::injection::{InjectionConfig, InjectionContext, InjectionEngine};
 use astraweave_rag::InjectionStrategy;
@@ -241,7 +243,7 @@ fn test_injection_conversation_history_relevance() {
     let result = engine.inject(&context, &memories).unwrap();
 
     // Cat memory should rank higher due to conversation history
-    if result.injected_memories.len() >= 1 {
+    if !result.injected_memories.is_empty() {
         assert_eq!(result.injected_memories[0].id, "1");
     }
 }
@@ -340,7 +342,7 @@ fn test_injection_no_category_preference() {
     let result = engine.inject(&context, &memories).unwrap();
 
     // Both should be injected when relevance threshold is met
-    assert!(result.injected_memories.len() >= 1);
+    assert!(!result.injected_memories.is_empty());
 }
 
 #[test]

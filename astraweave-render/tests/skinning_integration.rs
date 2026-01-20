@@ -123,8 +123,8 @@ fn test_joint_palette_conversion() {
     assert_eq!(palette.joint_count, 3);
 
     // Verify matrices are preserved
-    for i in 0..3 {
-        let original = matrices[i].to_cols_array_2d();
+    for (i, original_matrix) in matrices.iter().enumerate().take(3) {
+        let original = original_matrix.to_cols_array_2d();
         let gpu = palette.joints[i].matrix;
 
         for row in 0..4 {

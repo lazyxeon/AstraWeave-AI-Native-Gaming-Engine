@@ -459,7 +459,7 @@ mod tests {
         // All scales should be in range [0.8, 1.2]
         for instance in &instances {
             let scale = instance.scale.x; // Uniform scale
-            assert!(scale >= 0.8 && scale <= 1.2);
+            assert!((0.8..=1.2).contains(&scale));
         }
     }
 

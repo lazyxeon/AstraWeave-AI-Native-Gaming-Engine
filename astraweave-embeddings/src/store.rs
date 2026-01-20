@@ -825,9 +825,11 @@ mod tests {
 
     #[test]
     fn test_metrics_clone() {
-        let mut metrics = VectorStoreMetrics::default();
-        metrics.total_vectors = 100;
-        metrics.total_searches = 50;
+        let metrics = VectorStoreMetrics {
+            total_vectors: 100,
+            total_searches: 50,
+            ..Default::default()
+        };
         
         let cloned = metrics.clone();
         assert_eq!(cloned.total_vectors, 100);

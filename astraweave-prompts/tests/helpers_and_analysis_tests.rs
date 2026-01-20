@@ -1,5 +1,5 @@
-/// Tests for Helper Functions, Validators, Formatters, and Analyzers
-/// Coverage for astraweave-prompts helpers and optimization modules
+//! Tests for Helper Functions, Validators, Formatters, and Analyzers
+//! Coverage for astraweave-prompts helpers and optimization modules
 
 use astraweave_prompts::{
     PromptContext, PromptTemplate, TemplateEngine, ContextValue,
@@ -312,7 +312,7 @@ fn test_analyzer_estimate_tokens() {
     let tokens = PromptAnalyzer::estimate_tokens(prompt);
     
     // Should be around 3-4 tokens (5 words * 0.75)
-    assert!(tokens >= 3 && tokens <= 4);
+    assert!((3..=4).contains(&tokens));
 }
 
 #[test]

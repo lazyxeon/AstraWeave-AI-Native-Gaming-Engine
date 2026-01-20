@@ -42,15 +42,15 @@ fn assert_quaternion_normalized(q: &Quat, context: &str) {
 /// CORRECTNESS: Validate transform matrix is finite and valid
 #[inline]
 fn assert_transform_matrix_valid(mat: &[[f32; 4]; 4], context: &str) {
-    for row in 0..4 {
-        for col in 0..4 {
+    for (row, row_vals) in mat.iter().enumerate().take(4) {
+        for (col, value) in row_vals.iter().enumerate().take(4) {
             assert!(
-                mat[row][col].is_finite(),
+                value.is_finite(),
                 "[CORRECTNESS FAILURE] {}: matrix[{}][{}] non-finite ({})",
                 context,
                 row,
                 col,
-                mat[row][col]
+                value
             );
         }
     }
@@ -60,7 +60,7 @@ fn assert_transform_matrix_valid(mat: &[[f32; 4]; 4], context: &str) {
 #[inline]
 fn assert_interp_param_valid(t: f32, context: &str) {
     assert!(
-        t >= 0.0 && t <= 1.0,
+        (0.0..=1.0).contains(&t),
         "[CORRECTNESS FAILURE] {}: interpolation parameter {} out of range [0,1]",
         context,
         t
@@ -268,9 +268,9 @@ impl Mat4 {
     fn mul(self, other: Self) -> Self {
         let mut result = [[0.0f32; 4]; 4];
 
-        for i in 0..4 {
-            for j in 0..4 {
-                result[i][j] = self.cols[0][j] * other.cols[i][0]
+        for (i, row) in result.iter_mut().enumerate().take(4) {
+            for (j, cell) in row.iter_mut().enumerate().take(4) {
+                *cell = self.cols[0][j] * other.cols[i][0]
                     + self.cols[1][j] * other.cols[i][1]
                     + self.cols[2][j] * other.cols[i][2]
                     + self.cols[3][j] * other.cols[i][3];
@@ -298,7 +298,7 @@ impl Transform {
         }
     }
 
-    fn to_matrix(&self) -> Mat4 {
+    fn to_matrix(self) -> Mat4 {
         Mat4::from_trs(self.translation, self.rotation, self.scale)
     }
 
@@ -582,8 +582,7 @@ impl JointPalette {
 
         // Compute final skinning matrices (capped at 128 joints)
         let joint_count = skeleton.joints.len().min(128);
-        for i in 0..joint_count {
-            let joint = &skeleton.joints[i];
+        for (i, joint) in skeleton.joints.iter().take(joint_count).enumerate() {
             let skinning_matrix = world_transforms[i].mul(joint.inverse_bind_matrix);
             palette.matrices[i] = [
                 skinning_matrix.cols[0][0],
@@ -880,8 +879,8 @@ fn bench_full_animation_frame(c: &mut Criterion) {
             |b, &count| {
                 b.iter(|| {
                     let mut palettes = Vec::with_capacity(count);
-                    for i in 0..count {
-                        let transforms = clip.sample(times[i], &skeleton);
+                    for &t in times.iter().take(count) {
+                        let transforms = clip.sample(t, &skeleton);
                         let palette = JointPalette::from_skeleton(&skeleton, &transforms);
                         palettes.push(palette);
                     }

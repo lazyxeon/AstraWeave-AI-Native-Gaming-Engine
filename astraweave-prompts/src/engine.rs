@@ -46,6 +46,70 @@ impl Default for EngineConfig {
     }
 }
 
+impl EngineConfig {
+    /// Creates a new engine config with default values.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Creates a production-ready configuration with secure defaults.
+    pub fn production() -> Self {
+        Self {
+            max_template_size: 512 * 1024, // 512KB
+            enable_caching: true,
+            sanitization: SanitizationConfig::default(),
+            default_trust_level: TrustLevel::Developer,
+        }
+    }
+
+    /// Creates a development configuration with relaxed limits.
+    pub fn development() -> Self {
+        Self {
+            max_template_size: 10 * 1024 * 1024, // 10MB
+            enable_caching: false,
+            sanitization: SanitizationConfig::permissive(),
+            default_trust_level: TrustLevel::Developer,
+        }
+    }
+
+    /// Returns true if caching is enabled.
+    pub fn caching_enabled(&self) -> bool {
+        self.enable_caching
+    }
+
+    /// Returns true if this uses a strict sanitization config.
+    pub fn is_strict(&self) -> bool {
+        self.sanitization.is_strict()
+    }
+
+    /// Returns the maximum template size in a human-readable format.
+    pub fn max_size_display(&self) -> String {
+        if self.max_template_size >= 1024 * 1024 {
+            format!("{}MB", self.max_template_size / (1024 * 1024))
+        } else if self.max_template_size >= 1024 {
+            format!("{}KB", self.max_template_size / 1024)
+        } else {
+            format!("{}B", self.max_template_size)
+        }
+    }
+
+    /// Returns a human-readable summary of the configuration.
+    pub fn summary(&self) -> String {
+        format!(
+            "max_size={}, caching={}, trust={}",
+            self.max_size_display(),
+            if self.enable_caching { "on" } else { "off" },
+            self.default_trust_level.name()
+        )
+    }
+}
+
+impl std::fmt::Display for EngineConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EngineConfig({})", self.summary())
+    }
+}
+
 impl PromptEngine {
     /// Create a new prompt engine
     pub fn new(config: EngineConfig) -> Self {
@@ -132,6 +196,46 @@ impl PromptEngine {
     pub fn sanitize_value(&self, value: &str, trust_level: TrustLevel) -> Result<String> {
         self.sanitizer.sanitize(value, trust_level)
     }
+
+    /// Get reference to the engine configuration.
+    pub fn config(&self) -> &EngineConfig {
+        &self.config
+    }
+
+    /// Returns the number of registered templates.
+    pub fn template_count(&self) -> usize {
+        self.registry.get_templates().len()
+    }
+
+    /// Returns true if a template with the given name is registered.
+    pub fn has_template(&self, name: &str) -> bool {
+        self.registry.get_template(name).is_some()
+    }
+
+    /// Returns true if caching is enabled.
+    pub fn caching_enabled(&self) -> bool {
+        self.config.enable_caching
+    }
+
+    /// Returns the maximum template size.
+    pub fn max_template_size(&self) -> usize {
+        self.config.max_template_size
+    }
+
+    /// Returns a summary of the engine state.
+    pub fn summary(&self) -> String {
+        format!(
+            "PromptEngine: {} templates, {}",
+            self.template_count(),
+            self.config.summary()
+        )
+    }
+}
+
+impl std::fmt::Display for PromptEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
 }
 
 /// Public TemplateEngine expected by consumers
@@ -212,6 +316,41 @@ impl TemplateEngine {
     /// Sanitize a value for use in templates
     pub fn sanitize_value(&self, value: &str, trust_level: TrustLevel) -> Result<String> {
         self.inner.sanitize_value(value, trust_level)
+    }
+
+    /// Returns the number of registered templates.
+    pub fn template_count(&self) -> usize {
+        self.inner.template_count()
+    }
+
+    /// Returns true if a template with the given name is registered.
+    pub fn has_template(&self, name: &str) -> bool {
+        self.inner.has_template(name)
+    }
+
+    /// Returns true if caching is enabled.
+    pub fn caching_enabled(&self) -> bool {
+        self.inner.caching_enabled()
+    }
+
+    /// Returns the maximum template size.
+    pub fn max_template_size(&self) -> usize {
+        self.inner.max_template_size()
+    }
+
+    /// Returns a summary of the engine state.
+    pub fn summary(&self) -> String {
+        format!(
+            "TemplateEngine: {} templates, caching={}",
+            self.template_count(),
+            if self.caching_enabled() { "on" } else { "off" }
+        )
+    }
+}
+
+impl std::fmt::Display for TemplateEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
     }
 }
 
@@ -536,5 +675,175 @@ mod tests {
             TrustLevel::User,
         );
         assert!(result.is_ok());
+    }
+
+    // ===== EngineConfig helper tests =====
+
+    #[test]
+    fn test_engine_config_new() {
+        let config = EngineConfig::new();
+        assert_eq!(config.max_template_size, 1024 * 1024);
+        assert!(config.enable_caching);
+    }
+
+    #[test]
+    fn test_engine_config_production() {
+        let config = EngineConfig::production();
+        assert_eq!(config.max_template_size, 512 * 1024);
+        assert!(config.enable_caching);
+    }
+
+    #[test]
+    fn test_engine_config_development() {
+        let config = EngineConfig::development();
+        assert_eq!(config.max_template_size, 10 * 1024 * 1024);
+        assert!(!config.enable_caching);
+    }
+
+    #[test]
+    fn test_engine_config_caching_enabled() {
+        let config = EngineConfig::default();
+        assert!(config.caching_enabled());
+
+        let dev = EngineConfig::development();
+        assert!(!dev.caching_enabled());
+    }
+
+    #[test]
+    fn test_engine_config_is_strict() {
+        let config = EngineConfig {
+            sanitization: SanitizationConfig::strict(),
+            ..Default::default()
+        };
+        assert!(config.is_strict());
+    }
+
+    #[test]
+    fn test_engine_config_max_size_display() {
+        let config = EngineConfig::default();
+        assert_eq!(config.max_size_display(), "1MB");
+
+        let small = EngineConfig {
+            max_template_size: 512 * 1024,
+            ..Default::default()
+        };
+        assert_eq!(small.max_size_display(), "512KB");
+    }
+
+    #[test]
+    fn test_engine_config_summary() {
+        let config = EngineConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("1MB"));
+        assert!(summary.contains("caching=on"));
+    }
+
+    #[test]
+    fn test_engine_config_display() {
+        let config = EngineConfig::default();
+        let display = format!("{}", config);
+        assert!(display.contains("EngineConfig"));
+    }
+
+    // ===== PromptEngine helper tests =====
+
+    #[test]
+    fn test_prompt_engine_config_ref() {
+        let engine = PromptEngine::new(EngineConfig::default());
+        assert_eq!(engine.config().max_template_size, 1024 * 1024);
+    }
+
+    #[test]
+    fn test_prompt_engine_template_count() {
+        let mut engine = PromptEngine::new(EngineConfig::default());
+        assert_eq!(engine.template_count(), 0);
+
+        engine.register_template("test".to_string(), "Hello".to_string()).unwrap();
+        assert_eq!(engine.template_count(), 1);
+    }
+
+    #[test]
+    fn test_prompt_engine_has_template() {
+        let mut engine = PromptEngine::new(EngineConfig::default());
+        assert!(!engine.has_template("test"));
+
+        engine.register_template("test".to_string(), "Hello".to_string()).unwrap();
+        assert!(engine.has_template("test"));
+    }
+
+    #[test]
+    fn test_prompt_engine_caching_enabled() {
+        let engine = PromptEngine::new(EngineConfig::default());
+        assert!(engine.caching_enabled());
+    }
+
+    #[test]
+    fn test_prompt_engine_max_template_size() {
+        let engine = PromptEngine::new(EngineConfig::default());
+        assert_eq!(engine.max_template_size(), 1024 * 1024);
+    }
+
+    #[test]
+    fn test_prompt_engine_summary() {
+        let engine = PromptEngine::new(EngineConfig::default());
+        let summary = engine.summary();
+        assert!(summary.contains("PromptEngine"));
+        assert!(summary.contains("0 templates"));
+    }
+
+    #[test]
+    fn test_prompt_engine_display() {
+        let engine = PromptEngine::new(EngineConfig::default());
+        let display = format!("{}", engine);
+        assert!(display.contains("PromptEngine"));
+    }
+
+    // ===== TemplateEngine helper tests =====
+
+    #[test]
+    fn test_template_engine_template_count() {
+        let mut engine = TemplateEngine::new();
+        let initial_count = engine.template_count();
+
+        let template = PromptTemplate::new("test", "Hello");
+        engine.register_template("test", template).unwrap();
+        assert_eq!(engine.template_count(), initial_count + 1);
+    }
+
+    #[test]
+    fn test_template_engine_has_template() {
+        let mut engine = TemplateEngine::new();
+        assert!(!engine.has_template("my_template"));
+
+        let template = PromptTemplate::new("my_template", "Hello");
+        engine.register_template("my_template", template).unwrap();
+        assert!(engine.has_template("my_template"));
+    }
+
+    #[test]
+    fn test_template_engine_caching_enabled() {
+        let engine = TemplateEngine::new();
+        assert!(engine.caching_enabled());
+    }
+
+    #[test]
+    fn test_template_engine_max_template_size() {
+        let engine = TemplateEngine::new();
+        assert_eq!(engine.max_template_size(), 1024 * 1024);
+    }
+
+    #[test]
+    fn test_template_engine_summary() {
+        let engine = TemplateEngine::new();
+        let summary = engine.summary();
+        assert!(summary.contains("TemplateEngine"));
+        assert!(summary.contains("caching=on"));
+    }
+
+    #[test]
+    fn test_template_engine_display() {
+        let engine = TemplateEngine::new();
+        let display = format!("{}", engine);
+        assert!(display.contains("TemplateEngine"));
     }
 }

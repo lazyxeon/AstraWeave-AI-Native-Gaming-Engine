@@ -2,6 +2,8 @@
 //!
 //! Stress testing for sandboxing, anti-cheat, content filtering, and validation.
 
+#![allow(dead_code, unused_imports, clippy::upper_case_acronyms, clippy::useless_vec)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{HashMap, HashSet};
 use std::hint::black_box as std_black_box;

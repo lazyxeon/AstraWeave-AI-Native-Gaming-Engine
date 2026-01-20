@@ -896,8 +896,8 @@ mod config_tests {
     fn test_proptest_basic() {
         // Simple sanity check that proptest works
         proptest!(|(x in 0..100i32, y in 0..100i32)| {
-            prop_assert!(x >= 0 && x < 100);
-            prop_assert!(y >= 0 && y < 100);
+            prop_assert!((0..100).contains(&x));
+            prop_assert!((0..100).contains(&y));
         });
     }
 

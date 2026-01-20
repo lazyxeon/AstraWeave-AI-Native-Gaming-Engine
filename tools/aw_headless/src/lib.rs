@@ -221,7 +221,7 @@ mod tests {
                 let r = srgb_encode_u8(u);
                 let g = srgb_encode_u8(v);
                 let idx = ((y * w + x) * 4) as usize;
-                exp[idx + 0] = r;
+                exp[idx] = r;
                 exp[idx + 1] = g;
                 exp[idx + 2] = 0;
                 exp[idx + 3] = 255;

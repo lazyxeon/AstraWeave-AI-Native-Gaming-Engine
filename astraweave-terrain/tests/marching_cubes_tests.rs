@@ -51,17 +51,17 @@ fn test_all_256_marching_cubes_lookup_tables() {
             let v3 = triangles[i + 2];
             
             assert!(
-                v1 >= 0 && v1 <= 11,
+                (0..=11).contains(&v1),
                 "Config {} triangle {} has invalid edge index: {}",
                 config, tri_count, v1
             );
             assert!(
-                v2 >= 0 && v2 <= 11,
+                (0..=11).contains(&v2),
                 "Config {} triangle {} has invalid edge index: {}",
                 config, tri_count, v2
             );
             assert!(
-                v3 >= 0 && v3 <= 11,
+                (0..=11).contains(&v3),
                 "Config {} triangle {} has invalid edge index: {}",
                 config, tri_count, v3
             );
@@ -86,7 +86,7 @@ fn test_all_256_marching_cubes_lookup_tables() {
         
         // Marching cubes can produce 1-5 triangles per cell
         assert!(
-            tri_count >= 1 && tri_count <= 5,
+            (1..=5).contains(&tri_count),
             "Config {} has invalid triangle count: {}",
             config, tri_count
         );
@@ -141,6 +141,7 @@ fn create_chunk_for_config(config: u8) -> VoxelChunk {
 /// 
 /// Note: Relaxed thresholds to accommodate dual contouring mesh generation,
 /// which may produce small triangles and normals that are nearly normalized.
+#[allow(dead_code)]
 fn validate_mesh_geometry(mesh: &ChunkMesh) -> bool {
     for (tri_idx, tri) in mesh.indices.chunks_exact(3).enumerate() {
         let v0 = &mesh.vertices[tri[0] as usize];
@@ -228,6 +229,7 @@ fn test_sphere_mesh_watertight() {
 }
 
 /// Check if a mesh is watertight (every edge shared by exactly 2 triangles)
+#[allow(dead_code)]
 fn is_mesh_watertight(mesh: &ChunkMesh) -> bool {
     let mut edge_counts: HashMap<(u32, u32), usize> = HashMap::new();
 
@@ -420,7 +422,7 @@ fn test_single_voxel_lookup_tables() {
         // Count triangles
         let tri_count = count_triangles(triangles);
         assert!(
-            tri_count >= 1 && tri_count <= 5,
+            (1..=5).contains(&tri_count),
             "Config {} has invalid triangle count: {}",
             config, tri_count
         );

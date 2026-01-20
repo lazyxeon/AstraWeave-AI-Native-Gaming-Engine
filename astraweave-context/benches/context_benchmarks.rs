@@ -162,12 +162,11 @@ fn bench_get_recent_messages(c: &mut Criterion) {
                         max_tokens: 10000,
                         ..Default::default()
                     };
-                    let history = ConversationHistory::new(config);
 
                     // Pre-populate with messages (sync operation)
                     // Note: We can't use add_message here as it's async
                     // This benchmark focuses on the get operation
-                    history
+                    ConversationHistory::new(config)
                 },
                 |history| {
                     // Benchmark the retrieval (sync operation)

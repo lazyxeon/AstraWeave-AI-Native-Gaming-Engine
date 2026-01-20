@@ -9,9 +9,10 @@
 //! - Streaming: cell entity management, spatial queries
 //! - Partitioned Scene: entity tracking, cell queries
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::{Mat4, Quat, Vec3, Vec4};
 use std::collections::HashMap;
+use std::hint::black_box;
 
 // ============================================================================
 // MOCK TYPES (avoiding full crate dependencies for benchmark isolation)
@@ -83,6 +84,12 @@ impl Scene {
             }
         }
         walk(&self.root, Mat4::IDENTITY, f);
+    }
+}
+
+impl Default for Scene {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -616,7 +623,7 @@ fn bench_transform_operations(c: &mut Criterion) {
         b.iter(|| {
             let mut result = Mat4::IDENTITY;
             for t in &transforms {
-                result = result * t.matrix();
+                result *= t.matrix();
             }
             black_box(result)
         })

@@ -2,6 +2,8 @@
 //!
 //! Tests handling of corrupted save files, partial corruption, and checksum validation.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_core::ecs_components::*;
 use astraweave_core::IVec2;
 use astraweave_ecs::{Query, World};
@@ -61,7 +63,7 @@ fn test_corrupted_file_detection_invalid_magic() {
 #[test]
 fn test_corrupted_file_detection_invalid_payload() {
     // Test corruption in the payload data
-    let temp_dir = tempdir().expect("create temp dir");
+    let _temp_dir = tempdir().expect("create temp dir");
 
     // Create a valid serialized world
     let mut world = World::new();
@@ -272,8 +274,8 @@ fn test_corruption_at_end() {
     // Corrupt last few bytes
     let mut corrupted_blob = blob.clone();
     let len = corrupted_blob.len();
-    for i in (len.saturating_sub(5))..len {
-        corrupted_blob[i] = 0xAA;
+    for byte in corrupted_blob.iter_mut().skip(len.saturating_sub(5)) {
+        *byte = 0xAA;
     }
 
     let mut world2 = World::new();

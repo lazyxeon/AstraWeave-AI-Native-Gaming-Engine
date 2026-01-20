@@ -175,5 +175,5 @@ fn test_ibl_bind_group_creation() {
 #[cfg(not(feature = "ibl"))]
 fn test_ibl_disabled() {
     // When IBL feature is disabled, this test ensures the crate still compiles
-    assert!(true, "IBL feature disabled, test passes trivially");
+    eprintln!("IBL feature disabled; runtime IBL validation is skipped.");
 }

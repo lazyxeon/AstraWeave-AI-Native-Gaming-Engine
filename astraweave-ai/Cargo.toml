@@ -34,6 +34,7 @@ ai-goap = []
 ai-bt = []
 # Advanced GOAP planner with learning, risk-awareness, and multi-goal support
 planner_advanced = []
+rag = []
 profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
 veilweaver_slice = ["dep:astraweave-behavior", "dep:astraweave-observability"]
 

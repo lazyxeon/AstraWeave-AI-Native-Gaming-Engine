@@ -1036,7 +1036,7 @@ fn bench_mesh_operations(c: &mut Criterion) {
                 for i in 0..count {
                     let t = i as f32 / count as f32;
                     mesh.vertices.push(MeshVertex::from_arrays(
-                        [t * 10.0, (t * 3.14).sin(), t * 5.0],
+                        [t * 10.0, (t * std::f32::consts::PI).sin(), t * 5.0],
                         [0.0, 1.0, 0.0],
                         [1.0, 0.0, 0.0, 1.0],
                         [t, t],
@@ -1512,7 +1512,7 @@ fn bench_combined_scenarios(c: &mut Criterion) {
             let mut atlas = TextureAtlas::new(4096, 4096, 8);
             let mut descs = Vec::with_capacity(24);
 
-            for i in 0..24 {
+            for _ in 0..24 {
                 atlas.allocate(512, 512);
                 descs.push(TextureDesc::new(512, 512, TextureUsage::Albedo));
             }

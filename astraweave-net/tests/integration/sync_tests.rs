@@ -732,11 +732,11 @@ async fn test_rapid_state_changes_synchronized() {
         .await;
 
     // Perform rapid changes
-    for i in 0..10 {
+    for i in 0i32..10 {
         let plan = PlanIntent {
             plan_id: format!("rapid_{}", i),
             steps: vec![ActionStep::MoveTo {
-                x: (i % 10) as i32,
+                x: i % 10,
                 y: 0,
                 speed: None,
             }],

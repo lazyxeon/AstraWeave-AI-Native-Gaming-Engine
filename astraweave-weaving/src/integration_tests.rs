@@ -3,6 +3,8 @@
 // Cross-system integration tests for Veilweaver
 // Tests enemy AI + anchor system + combat + spawner interactions
 
+#![allow(clippy::useless_vec)]
+
 use crate::{
     Anchor, AnchorVfxState, CombatEvent, CombatSystem, Enemy, EnemyBehavior, EnemySpawner,
     EnemyState, Killer,

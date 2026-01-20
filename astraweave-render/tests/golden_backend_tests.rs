@@ -232,7 +232,7 @@ mod tests {
             let bytes_per_pixel = 4u64;
             let row_bytes = width as u64 * bytes_per_pixel;
             let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as u64;
-            let padded_row = ((row_bytes + align - 1) / align) * align;
+            let padded_row = row_bytes.div_ceil(align) * align;
 
             let read_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("golden-readback"),
@@ -341,7 +341,7 @@ mod tests {
                 let bytes_per_pixel = 4u64;
                 let row_bytes = width as u64 * bytes_per_pixel;
                 let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as u64;
-                let padded_row = ((row_bytes + align - 1) / align) * align;
+                let padded_row = row_bytes.div_ceil(align) * align;
 
                 let read_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                     label: None,

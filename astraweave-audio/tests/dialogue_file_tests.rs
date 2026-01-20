@@ -368,7 +368,7 @@ fn test_voice_bank_multiple_speakers() -> Result<()> {
     };
 
     // Play Alice's line
-    let mut state = astraweave_gameplay::dialogue::DialogueState::new(&dialogue);
+    let state = astraweave_gameplay::dialogue::DialogueState::new(&dialogue);
     let mut player = DialoguePlayer {
         audio: &mut audio_engine,
         bank: &bank,
@@ -590,7 +590,7 @@ fn test_tts_generates_temporary_file() -> Result<()> {
     // Check that TTS generated a file in the folder
     let entries: Vec<_> = fs::read_dir("tests/assets/speakers/tts_speaker2")?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "wav"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "wav"))
         .collect();
 
     assert!(!entries.is_empty(), "TTS should generate .wav file");
@@ -741,7 +741,7 @@ fn test_comprehensive_dialogue_pipeline() -> Result<()> {
         ],
     };
 
-    let mut state = astraweave_gameplay::dialogue::DialogueState::new(&dialogue);
+    let state = astraweave_gameplay::dialogue::DialogueState::new(&dialogue);
 
     // Test first node only (multi-node traversal requires choice system)
     let mut player = DialoguePlayer {

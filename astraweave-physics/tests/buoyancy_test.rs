@@ -4,9 +4,11 @@ use glam::Vec3;
 #[test]
 fn buoyancy_prevents_indefinite_sinking() {
     // Create world with water level at y=0
-    let mut config = PhysicsConfig::default();
-    config.water_level = 0.0;
-    config.fluid_density = 1000.0; // Water density in kg/m³
+    let config = PhysicsConfig {
+        water_level: 0.0,
+        fluid_density: 1000.0, // Water density in kg/m³
+        ..Default::default()
+    };
 
     let mut world = PhysicsWorld::from_config(config);
 
@@ -62,9 +64,11 @@ fn buoyancy_prevents_indefinite_sinking() {
 #[test]
 fn buoyancy_only_applies_below_water() {
     // Create world with water level at y=0
-    let mut config = PhysicsConfig::default();
-    config.water_level = 0.0;
-    config.fluid_density = 1000.0;
+    let config = PhysicsConfig {
+        water_level: 0.0,
+        fluid_density: 1000.0,
+        ..Default::default()
+    };
 
     let mut world = PhysicsWorld::from_config(config);
 

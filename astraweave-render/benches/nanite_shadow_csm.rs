@@ -143,8 +143,8 @@ impl HiZLevel {
 
     /// Downsample from previous level (max operation for depth)
     fn downsample_from(prev: &HiZLevel) -> Self {
-        let width = (prev.width + 1) / 2;
-        let height = (prev.height + 1) / 2;
+        let width = prev.width.div_ceil(2);
+        let height = prev.height.div_ceil(2);
         let mut data = Vec::with_capacity((width * height) as usize);
 
         for y in 0..height {
@@ -303,17 +303,17 @@ fn cull_meshlets(
         }
 
         // Stage 3: Occlusion culling (if enabled)
-        if camera.enable_occlusion != 0 {
-            if occlusion_cull_meshlet(
+        if camera.enable_occlusion != 0
+            && occlusion_cull_meshlet(
                 meshlet,
                 view_proj,
                 hiz,
                 camera.screen_width,
                 camera.screen_height,
-            ) {
-                stats.occlusion_culled += 1;
-                continue;
-            }
+            )
+        {
+            stats.occlusion_culled += 1;
+            continue;
         }
 
         visible.push(i as u32);
@@ -332,7 +332,9 @@ fn cull_meshlets(
 struct ShadowCascade {
     near: f32,
     far: f32,
+    #[allow(dead_code)]
     view_matrix: Mat4,
+    #[allow(dead_code)]
     proj_matrix: Mat4,
     view_proj_matrix: Mat4,
     atlas_offset: Vec4,
@@ -522,7 +524,7 @@ fn pcf_sample(
             let sample_u = uv.0 + x as f32 * texel_size;
             let sample_v = uv.1 + y as f32 * texel_size;
 
-            if sample_u >= 0.0 && sample_u <= 1.0 && sample_v >= 0.0 && sample_v <= 1.0 {
+            if (0.0..=1.0).contains(&sample_u) && (0.0..=1.0).contains(&sample_v) {
                 let sample_depth = shadow_map.sample(sample_u, sample_v);
                 if depth - bias <= sample_depth {
                     shadow += 1.0;

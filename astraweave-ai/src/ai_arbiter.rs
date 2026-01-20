@@ -685,6 +685,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn test_mode_clone() {
         let mode1 = AIControlMode::ExecutingLLM { step_index: 42 };
         let mode2 = mode1.clone();

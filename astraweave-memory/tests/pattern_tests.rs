@@ -5,7 +5,7 @@ use astraweave_memory::episode::{
     Observation, PlayerAction,
 };
 use astraweave_memory::{
-    MemoryStorage, PatternDetector, PlaystylePattern, PreferenceProfile, ProfileBuilder,
+    MemoryStorage, PatternDetector, PlaystylePattern, ProfileBuilder,
 };
 
 fn create_combat_episode(
@@ -114,7 +114,7 @@ fn test_pattern_detection_from_storage() {
     let patterns = detector.detect_playstyle_patterns(&storage).unwrap();
 
     // Should detect both aggressive and cautious patterns
-    assert!(patterns.len() >= 1);
+    assert!(!patterns.is_empty());
     assert!(patterns
         .iter()
         .any(|p| p.pattern == PlaystylePattern::Aggressive));
@@ -158,7 +158,7 @@ fn test_social_pattern_detection() {
         .any(|p| p.pattern == PlaystylePattern::Social));
 
     // May also detect analytical (many observations per episode)
-    assert!(patterns.len() >= 1);
+    assert!(!patterns.is_empty());
 }
 
 #[test]
@@ -280,7 +280,7 @@ fn test_preference_profile_building() {
 
     // Store diverse episodes
     for i in 0..15 {
-        let category = if i < 10 {
+        let _category = if i < 10 {
             EpisodeCategory::Combat
         } else {
             EpisodeCategory::Dialogue

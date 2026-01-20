@@ -77,7 +77,7 @@ mod gltf_tests {
         let (mesh, _) = load_first_mesh_and_material(&bytes).expect("Failed to load mesh");
 
         // Just validate consistency, not specific counts
-        assert!(mesh.positions.len() > 0, "Mesh should have vertices");
+        assert!(!mesh.positions.is_empty(), "Mesh should have vertices");
         assert_eq!(
             mesh.normals.len(),
             mesh.positions.len(),
@@ -102,7 +102,7 @@ mod gltf_tests {
         let bytes = fs::read(&path).expect("Failed to read cube.gltf");
         let (mesh, _) = load_first_mesh_and_material(&bytes).expect("Failed to load mesh");
 
-        assert!(mesh.indices.len() > 0, "Mesh should have indices");
+        assert!(!mesh.indices.is_empty(), "Mesh should have indices");
         assert_eq!(
             mesh.indices.len() % 3,
             0,
@@ -343,8 +343,8 @@ mod gltf_tests {
         // Character GLBs might have skinning or other unsupported features
         match result {
             Ok(mesh) => {
-                assert!(mesh.positions.len() > 0, "Character should have vertices");
-                assert!(mesh.indices.len() > 0, "Character should have indices");
+                assert!(!mesh.positions.is_empty(), "Character should have vertices");
+                assert!(!mesh.indices.is_empty(), "Character should have indices");
                 eprintln!(
                     "Successfully loaded character-a.glb with {} vertices",
                     mesh.positions.len()
@@ -407,7 +407,8 @@ mod gltf_tests {
             let path = real_asset_path(asset);
             if path.exists() {
                 attempted += 1;
-                let bytes = fs::read(&path).expect(&format!("Failed to read {}", asset));
+                let bytes = fs::read(&path)
+                    .unwrap_or_else(|e| panic!("Failed to read {}: {e}", asset));
                 match load_first_mesh_from_glb_bytes(&bytes) {
                     Ok(mesh) => {
                         eprintln!(

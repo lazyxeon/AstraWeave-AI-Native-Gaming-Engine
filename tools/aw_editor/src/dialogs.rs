@@ -53,6 +53,48 @@ pub const KEYBOARD_SHORTCUTS: &[(&str, &str, &str)] = &[
     ("View", "G", "Toggle Grid"),
 ];
 
+/// Get the total number of keyboard shortcuts
+pub fn shortcut_count() -> usize {
+    KEYBOARD_SHORTCUTS.len()
+}
+
+/// Get all unique categories
+pub fn shortcut_categories() -> Vec<&'static str> {
+    let mut categories: Vec<&'static str> = KEYBOARD_SHORTCUTS
+        .iter()
+        .map(|(cat, _, _)| *cat)
+        .collect();
+    categories.dedup();
+    categories
+}
+
+/// Get shortcuts for a specific category
+pub fn shortcuts_for_category(category: &str) -> Vec<(&'static str, &'static str)> {
+    KEYBOARD_SHORTCUTS
+        .iter()
+        .filter(|(cat, _, _)| *cat == category)
+        .map(|(_, shortcut, desc)| (*shortcut, *desc))
+        .collect()
+}
+
+/// Find a shortcut by its key combination
+pub fn find_shortcut(shortcut: &str) -> Option<(&'static str, &'static str)> {
+    KEYBOARD_SHORTCUTS
+        .iter()
+        .find(|(_, s, _)| *s == shortcut)
+        .map(|(cat, _, desc)| (*cat, *desc))
+}
+
+/// Search shortcuts by description (case-insensitive)
+pub fn search_shortcuts(query: &str) -> Vec<(&'static str, &'static str, &'static str)> {
+    let query_lower = query.to_lowercase();
+    KEYBOARD_SHORTCUTS
+        .iter()
+        .filter(|(_, _, desc)| desc.to_lowercase().contains(&query_lower))
+        .copied()
+        .collect()
+}
+
 /// Render keyboard shortcuts as a grid
 pub fn show_shortcuts_grid(ui: &mut egui::Ui) {
     let mut current_category = "";
@@ -87,4 +129,86 @@ pub fn show_shortcuts_compact_grid(ui: &mut egui::Ui) {
                 ui.end_row();
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_shortcut_count() {
+        assert_eq!(shortcut_count(), 28);
+    }
+
+    #[test]
+    fn test_shortcut_categories() {
+        let categories = shortcut_categories();
+        assert!(!categories.is_empty());
+        assert!(categories.contains(&"File"));
+        assert!(categories.contains(&"Edit"));
+    }
+
+    #[test]
+    fn test_shortcuts_for_category_file() {
+        let shortcuts = shortcuts_for_category("File");
+        assert!(!shortcuts.is_empty());
+        assert!(shortcuts.iter().any(|(s, _)| *s == "Ctrl+N"));
+    }
+
+    #[test]
+    fn test_shortcuts_for_category_edit() {
+        let shortcuts = shortcuts_for_category("Edit");
+        assert!(!shortcuts.is_empty());
+        assert!(shortcuts.iter().any(|(s, _)| *s == "Ctrl+Z"));
+    }
+
+    #[test]
+    fn test_shortcuts_for_category_empty() {
+        let shortcuts = shortcuts_for_category("NonExistent");
+        assert!(shortcuts.is_empty());
+    }
+
+    #[test]
+    fn test_find_shortcut_existing() {
+        let result = find_shortcut("Ctrl+S");
+        assert!(result.is_some());
+        let (category, desc) = result.unwrap();
+        assert_eq!(category, "File");
+        assert_eq!(desc, "Save Scene");
+    }
+
+    #[test]
+    fn test_find_shortcut_not_found() {
+        let result = find_shortcut("Ctrl+K");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_search_shortcuts() {
+        let results = search_shortcuts("save");
+        assert!(!results.is_empty());
+        assert!(results.iter().any(|(_, _, desc)| desc.to_lowercase().contains("save")));
+    }
+
+    #[test]
+    fn test_search_shortcuts_case_insensitive() {
+        let results = search_shortcuts("UNDO");
+        assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn test_search_shortcuts_no_results() {
+        let results = search_shortcuts("xyznonexistent");
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_keyboard_shortcuts_constant() {
+        assert!(!KEYBOARD_SHORTCUTS.is_empty());
+        for (cat, shortcut, desc) in KEYBOARD_SHORTCUTS {
+            assert!(!cat.is_empty());
+            assert!(!shortcut.is_empty());
+            assert!(!desc.is_empty());
+        }
+    }
 }

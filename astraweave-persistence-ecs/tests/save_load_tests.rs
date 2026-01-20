@@ -3,6 +3,9 @@
 //! Tests roundtrip validation, large world serialization, concurrent access,
 //! and partial world saving/loading.
 
+#![allow(clippy::field_reassign_with_default)]
+#![allow(unused_mut)]
+
 use astraweave_core::ecs_components::*;
 use astraweave_core::IVec2;
 use astraweave_ecs::{Query, World};
@@ -55,8 +58,8 @@ fn test_save_load_roundtrip_basic() {
     let mut ammo_count = 0;
 
     {
-        let mut q = Query::<CPos>::new(&world2);
-        while let Some((_, pos)) = q.next() {
+        let q = Query::<CPos>::new(&world2);
+        for (_, pos) in q {
             pos_count += 1;
             assert!(
                 (pos.pos.x == 10 && pos.pos.y == 20) || (pos.pos.x == 30 && pos.pos.y == 40),
@@ -65,22 +68,22 @@ fn test_save_load_roundtrip_basic() {
         }
     }
     {
-        let mut q = Query::<CHealth>::new(&world2);
-        while let Some((_, health)) = q.next() {
+        let q = Query::<CHealth>::new(&world2);
+        for (_, health) in q {
             health_count += 1;
             assert!(health.hp == 100 || health.hp == 50, "health value mismatch");
         }
     }
     {
-        let mut q = Query::<CTeam>::new(&world2);
-        while let Some((_, team)) = q.next() {
+        let q = Query::<CTeam>::new(&world2);
+        for (_, team) in q {
             team_count += 1;
             assert_eq!(team.id, 1, "team id mismatch");
         }
     }
     {
-        let mut q = Query::<CAmmo>::new(&world2);
-        while let Some((_, ammo)) = q.next() {
+        let q = Query::<CAmmo>::new(&world2);
+        for (_, ammo) in q {
             ammo_count += 1;
             assert_eq!(ammo.rounds, 120, "ammo count mismatch");
         }
@@ -134,8 +137,8 @@ fn test_save_load_roundtrip_all_components() {
     // Verify all components were restored
     let mut entity_count = 0;
     {
-        let mut q = Query::<CPos>::new(&world2);
-        while let Some((e, pos)) = q.next() {
+        let q = Query::<CPos>::new(&world2);
+        for (e, pos) in q {
             entity_count += 1;
             assert_eq!(pos.pos.x, 5);
             assert_eq!(pos.pos.y, 10);
@@ -193,8 +196,8 @@ fn test_save_load_entity_ids_preserved_semantically() {
     // Verify the same number of entities exist with correct data
     let mut entities_by_pos = HashMap::new();
     {
-        let mut q = Query::<CPos>::new(&world2);
-        while let Some((e, pos)) = q.next() {
+        let q = Query::<CPos>::new(&world2);
+        for (e, pos) in q {
             entities_by_pos.insert((pos.pos.x, pos.pos.y), e);
         }
     }
@@ -242,15 +245,15 @@ fn test_large_world_1000_entities() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32 * 2,
+                    x: i,
+                    y: i * 2,
                 },
             },
         );
         world.insert(
             e,
             CHealth {
-                hp: 50 + (i % 100) as i32,
+                hp: 50 + (i % 100),
             },
         );
         world.insert(e, CTeam { id: (i % 4) as u8 });
@@ -314,8 +317,8 @@ fn test_large_world_10000_entities() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32 * 2,
+                    x: i,
+                    y: i * 2,
                 },
             },
         );
@@ -462,8 +465,8 @@ fn test_partial_world_saving() {
 
     // Copy only player entities
     {
-        let mut q = Query::<CTeam>::new(&world);
-        while let Some((entity, team)) = q.next() {
+        let q = Query::<CTeam>::new(&world);
+        for (entity, team) in q {
             if team.id == 0 {
                 // Player team
                 let new_entity = filtered_world.spawn();
@@ -487,8 +490,8 @@ fn test_partial_world_saving() {
 
     let mut count = 0;
     {
-        let mut q = Query::<CTeam>::new(&world2);
-        while let Some((_, team)) = q.next() {
+        let q = Query::<CTeam>::new(&world2);
+        for (_, team) in q {
             count += 1;
             assert_eq!(team.id, 0, "should only have player team entities");
         }

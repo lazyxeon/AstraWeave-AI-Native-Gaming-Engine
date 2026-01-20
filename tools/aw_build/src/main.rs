@@ -303,10 +303,9 @@ mod tests {
             .files
             .iter()
             .filter(|nf| {
-                m1.files
+                !m1.files
                     .iter()
-                    .find(|of| of.rel == nf.rel && of.sha256 == nf.sha256)
-                    .is_none()
+                    .any(|of| of.rel == nf.rel && of.sha256 == nf.sha256)
             })
             .collect();
 

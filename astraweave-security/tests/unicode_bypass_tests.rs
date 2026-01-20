@@ -446,7 +446,7 @@ fn test_nfkc_normalization_needed() {
     let normal = "http://evil.com";
     
     assert_ne!(fullwidth, normal);
-    assert!(fullwidth.chars().any(|c| !c.is_ascii()));
+    assert!(!fullwidth.is_ascii());
 }
 
 #[test]

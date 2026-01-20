@@ -1,0 +1,807 @@
+    Blocking waiting for file lock on build directory
+   Compiling aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+warning: unused variable: `good_id`
+    --> tools\aw_editor\src\entity_manager.rs:1240:13
+     |
+1240 |         let good_id = manager.create("Good".to_string());
+     |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_good_id`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `id`
+    --> tools\aw_editor\src\entity_manager.rs:1277:13
+     |
+1277 |         let id = manager.create("".to_string());
+     |             ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: `aw_editor` (lib test) generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 29s
+     Running unittests src\main.rs (target\debug\deps\adaptive_boss-f3746eeec58a1be9.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\advanced_content_demo-3d6c21ff3ebe5652.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main_ui_enhanced.rs (target\debug\deps\advanced_content_demo_ui-27e9996b84c65f61.exe)
+
+running 5 tests
+test ui_overlay::tests::test_play_audio_effect ... ok
+test ui_overlay::tests::test_render_cooldown_bar ... ok
+test ui_overlay::tests::test_render_notification ... ok
+test ui_overlay::tests::test_render_particle_effect ... ok
+test ui_overlay::tests::test_render_echo_hud ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\asset_signing-8421779c842e6f16.exe)
+
+running 5 tests
+test keystore::tests::test_key_persistence ... ignored, Requires OS keyring access and may be flaky in CI
+test keystore::tests::test_keystore_sign_verify ... ok
+test keystore::tests::test_keystore_tamper_detection ... ok
+test tests::roundtrip_sign_verify ... ok
+test keystore::tests::test_export_import_public_key ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src\lib.rs (target\debug\deps\astract-e61056d29e2a846f.exe)
+
+running 120 tests
+test advanced::color_picker::tests::test_color_picker_default ... ok
+test advanced::color_picker::tests::test_color_picker_set_color ... ok
+test advanced::color_picker::tests::test_hex_conversion ... ok
+test advanced::color_picker::tests::test_hsv_to_rgb_blue ... ok
+test advanced::color_picker::tests::test_hsv_to_rgb_green ... ok
+test advanced::color_picker::tests::test_hex_parsing ... ok
+test advanced::color_picker::tests::test_hex_parsing_errors ... ok
+test advanced::color_picker::tests::test_hsv_to_rgb_red ... ok
+test advanced::color_picker::tests::test_rgb_to_hsv_green ... ok
+test advanced::color_picker::tests::test_rgb_to_hsv_red ... ok
+test advanced::color_picker::tests::test_rgb_to_hsv_blue ... ok
+test advanced::range_slider::tests::test_clamping ... ok
+test advanced::range_slider::tests::test_format_value_integer_step ... ok
+test advanced::range_slider::tests::test_format_value_decimal_step ... ok
+test advanced::range_slider::tests::test_invalid_range - should panic ... ok
+test advanced::range_slider::tests::test_range_slider_creation ... ok
+test advanced::range_slider::tests::test_min_max_constraint ... ok
+test advanced::range_slider::tests::test_set_values ... ok
+test advanced::range_slider::tests::test_range_size ... ok
+test advanced::tests::test_range_slider_creation ... ok
+test advanced::range_slider::tests::test_step_rounding ... ok
+test advanced::tests::test_tree_view_creation ... ok
+test advanced::tests::test_color_picker_creation ... ok
+test advanced::tree_view::tests::test_add_child_node ... ok
+test advanced::tree_view::tests::test_expand_collapse ... ok
+test advanced::tree_view::tests::test_add_root_node ... ok
+test advanced::tree_view::tests::test_clear ... ok
+test advanced::tree_view::tests::test_selection ... ok
+test advanced::tree_view::tests::test_tree_node_has_children ... ok
+test advanced::tree_view::tests::test_tree_node_with_icon ... ok
+test advanced::tree_view::tests::test_tree_node_with_data ... ok
+test advanced::tree_view::tests::test_tree_view_creation ... ok
+test animation::controller::tests::test_add_animation ... ok
+test animation::controller::tests::test_animation_completion ... ok
+test animation::controller::tests::test_clear_animations ... ok
+test animation::controller::tests::test_completion_callback ... ok
+test animation::controller::tests::test_multiple_animations ... ok
+test animation::controller::tests::test_controller_creation ... ok
+test animation::controller::tests::test_remove_animation ... ok
+test animation::easing::tests::test_bounce_out ... ok
+test animation::easing::tests::test_easing_bounds ... ok
+test animation::easing::tests::test_cubic_in ... ok
+test animation::easing::tests::test_easing_clamping ... ok
+test animation::easing::tests::test_elastic_out ... ok
+test animation::easing::tests::test_expo_in ... ok
+test animation::easing::tests::test_linear ... ok
+test animation::easing::tests::test_quad_in ... ok
+test animation::easing::tests::test_quad_out ... ok
+test animation::easing::tests::test_sine_in ... ok
+test animation::spring::tests::test_spring_bouncy_overshoots ... ok
+test animation::spring::tests::test_spring_converges_to_target ... ok
+test animation::spring::tests::test_spring_creation ... ok
+test animation::spring::tests::test_spring_params_bouncy ... ok
+test animation::spring::tests::test_spring_is_settled ... ok
+test animation::spring::tests::test_spring_params_default ... ok
+test animation::spring::tests::test_spring_params_smooth ... ok
+test animation::spring::tests::test_spring_reset ... ok
+test animation::spring::tests::test_spring_set_target ... ok
+test animation::tests::test_animation_state_transitions ... ok
+test animation::tween::tests::test_animatable_color32 ... ok
+test animation::tween::tests::test_animatable_vec2 ... ok
+test animation::tween::tests::test_animatable_f32 ... ok
+test animation::tween::tests::test_tween_creation ... ok
+test animation::tween::tests::test_tween_pause_resume ... ok
+test animation::tween::tests::test_tween_play ... ok
+test animation::tween::tests::test_tween_restart ... ok
+test animation::tween::tests::test_tween_stop ... ok
+test animation::tween::tests::test_tween_update ... ok
+test charts::bar_chart::tests::test_bar_chart_creation ... ok
+test charts::line_chart::tests::test_clear ... ok
+test charts::bar_chart::tests::test_max_value_grouped ... ok
+test charts::line_chart::tests::test_bounds_calculation ... ok
+test charts::bar_chart::tests::test_max_value_stacked ... ok
+test charts::scatter_plot::tests::test_point_shapes ... ok
+test charts::line_chart::tests::test_line_chart_creation ... ok
+test charts::scatter_plot::tests::test_cluster_bounds ... ok
+test charts::scatter_plot::tests::test_scatter_plot_creation ... ok
+test charts::tests::test_data_series_bounds ... ok
+test charts::tests::test_data_series_empty_bounds ... ok
+test charts::tests::test_nice_bounds ... ok
+test charts::tests::test_transform_point ... ok
+test graph::force_directed::tests::test_attractive_force_increases_with_distance ... ok
+test graph::force_directed::tests::test_attractive_force_zero_at_rest ... ok
+test graph::force_directed::tests::test_layout_empty_nodes ... ok
+test graph::force_directed::tests::test_layout_single_node ... ok
+test graph::force_directed::tests::test_force_directed_params_default ... ok
+test graph::node_graph::tests::test_graph_add_edge ... ok
+test graph::node_graph::tests::test_graph_add_node ... ok
+test graph::node_graph::tests::test_node_position ... ok
+test graph::node_graph::tests::test_node_rect ... ok
+test graph::force_directed::tests::test_repulsive_force_decreases_with_distance ... ok
+test graph::force_directed::tests::test_layout_convergence ... ok
+test graph::node_graph::tests::test_graph_clear ... ok
+test graph::node_graph::tests::test_node_creation ... ok
+test graph::node_graph::tests::test_node_with_ports ... ok
+test graph::node_graph::tests::test_port_type_colors ... ok
+test graph::tests::test_graph_edge_creation ... ok
+test graph::force_directed::tests::test_layout_three_nodes_triangle ... ok
+test graph::node_graph::tests::test_port_position ... ok
+test graph::tests::test_graph_node_creation ... ok
+test graph::tests::test_node_graph_creation ... ok
+test component::tests::test_stateless_component ... ok
+test component::tests::test_component_trait ... ok
+test hooks::tests::test_state_setter ... ok
+test hooks::tests::test_use_effect ... ok
+test tests::test_prelude_exports ... ok
+test tests::test_rsx_button_tag ... ok
+test hooks::tests::test_use_state ... ok
+test hooks::tests::test_use_memo ... ok
+test tests::test_rsx_hstack ... ok
+test widgets::performance_budget::tests::test_category_getters ... ok
+test widgets::performance_budget::tests::test_color_coding_green ... ok
+test widgets::performance_budget::tests::test_widget_history ... ok
+test widgets::performance_budget::tests::test_frame_budget_calculations ... ok
+test tests::test_rsx_label_tag ... ok
+test widgets::performance_budget::tests::test_over_budget_detection ... ok
+test tests::test_rsx_button_with_callback ... ok
+test tests::test_rsx_complex_tree ... ok
+test tests::test_rsx_vstack ... ok
+test tests::test_rsx_nested_children ... ok
+
+test result: ok. 120 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src\lib.rs (target\debug\deps\astract_macro-9872b5ea10052245.exe)
+
+running 7 tests
+test parser::tests::test_parse_tag_with_closing ... ok
+test parser::tests::test_parse_self_closing_tag ... ok
+test codegen::tests::test_unknown_tag_error ... ok
+test codegen::tests::test_generate_button ... ok
+test codegen::tests::test_generate_label ... ok
+test parser::tests::test_mismatched_tags - should panic ... ok
+test parser::tests::test_parse_multiple_attributes ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\astract_gallery-1b7e92b255ab978a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\astraweave_ai-d42a567fdce32e70.exe)
+
+running 163 tests
+test ai_arbiter::tests::test_action_step_clone ... ok
+test ai_arbiter::tests::test_companion_state_high_morale ... ok
+test ai_arbiter::tests::test_companion_state_negative_morale ... ok
+test ai_arbiter::tests::test_enemy_state_dead ... ok
+test ai_arbiter::tests::test_action_step_wait_boundary ... ok
+test ai_arbiter::tests::test_companion_state_zero_ammo ... ok
+test ai_arbiter::tests::test_arbiter_initial_mode_is_goap ... ok
+test ai_arbiter::tests::test_create_test_snapshot_values ... ok
+test ai_arbiter::tests::test_enemy_state_negative_hp ... ok
+test ai_arbiter::tests::test_mock_bt_always_returns_scan ... ok
+test ai_arbiter::tests::test_mock_goap_failure ... ok
+test ai_arbiter::tests::test_mock_goap_success ... ok
+test ai_arbiter::tests::test_maybe_request_llm_skips_when_executing_llm ... ok
+test ai_arbiter::tests::test_executing_llm_without_plan_falls_back_to_goap ... ok
+test ai_arbiter::tests::test_invalid_step_index_falls_back_to_goap ... ok
+test ai_arbiter::tests::test_mode_clone ... ok
+test ai_arbiter::tests::test_mode_debug ... ok
+test ai_arbiter::tests::test_mode_display ... ok
+test ai_arbiter::tests::test_mode_equality ... ok
+test ai_arbiter::tests::test_plan_intent_empty_steps ... ok
+test ai_arbiter::tests::test_plan_intent_many_steps ... ok
+test ai_arbiter::tests::test_plan_intent_single_step ... ok
+test ai_arbiter::tests::test_player_state_many_orders ... ok
+test ai_arbiter::tests::test_player_state_zero_hp ... ok
+test ai_arbiter::tests::test_transition_to_bt_clears_task_and_plan ... ok
+test ai_arbiter::tests::test_transition_to_goap_clears_plan ... ok
+test ai_arbiter::tests::test_update_goap_fallback_when_empty_plan ... ok
+test ai_arbiter::tests::test_update_goap_mode_returns_goap_action ... ok
+test ai_arbiter::tests::test_world_snapshot_edge_cases ... ok
+test ai_arbiter::tests::test_update_executing_llm_returns_plan_steps_sequentially ... ok
+test async_task::tests::test_async_task_complete ... ok
+test async_task::tests::test_async_task_block_on ... ok
+test async_task::tests::test_async_task_abort_on_drop ... ok
+test async_task::tests::test_async_task_pending ... ok
+test async_task::tests::test_async_task_elapsed ... ok
+test ai_arbiter::tests::test_poll_llm_result_failure_stays_in_goap ... ok
+test ai_arbiter::tests::test_with_llm_cooldown_configures_cooldown ... ok
+test ai_arbiter::tests::test_metrics_track_all_counters ... ok
+test ai_arbiter::tests::test_poll_llm_result_success_transitions_to_executing_llm ... ok
+test ai_arbiter::tests::test_maybe_request_llm_respects_cooldown ... ok
+test core_loop::tests::test_controller_clone ... ok
+test async_task::tests::test_async_task_with_error ... ok
+test core_loop::tests::test_dispatch_bt_mode_without_feature ... ok
+test core_loop::tests::test_controller_default ... ok
+test core_loop::tests::test_controller_with_custom_policy ... ok
+test core_loop::tests::test_dispatch_rule_mode ... ok
+test core_loop::tests::test_dispatch_goap_mode_without_feature ... ok
+test core_loop::tests::test_dispatch_rule_mode_no_enemies ... ok
+test core_loop::tests::test_planner_mode_equality ... ok
+test ecs_ai_plugin::tests::test_ai_planned_event_contents ... ok
+test ecs_ai_plugin::tests::ai_plugin_sets_desired_position_for_companion ... ok
+test ecs_ai_plugin::tests::test_ai_component_queries ... ok
+test ecs_ai_plugin::tests::test_ai_planning_failed_event_reason ... ok
+test ecs_ai_plugin::tests::test_ai_plugin_setup ... ok
+test ecs_ai_plugin::tests::test_build_app_with_ai_timestep ... ok
+test ecs_ai_plugin::tests::test_build_app_with_ai_systems ... ok
+test ecs_ai_plugin::tests::test_ai_plugin_name ... ok
+test ecs_ai_plugin::tests::test_ai_planning_system_execution ... ok
+test ecs_ai_plugin::tests::test_ai_planning_no_enemies ... ok
+test ecs_ai_plugin::tests::test_ecs_only_snapshot_cooldowns_conversion ... ok
+test ecs_ai_plugin::tests::test_build_app_with_legacy_world ... ok
+test ecs_ai_plugin::tests::test_ecs_only_snapshot_enemy_filtering ... ok
+test ecs_ai_plugin::tests::test_ecs_only_snapshot_multiple_allies ... ok
+test ecs_ai_plugin::tests::test_map_legacy_empty_positions ... ok
+test ecs_ai_plugin::tests::test_map_legacy_companion_to_ecs_fallback ... ok
+test ecs_ai_plugin::tests::test_map_legacy_manhattan_distance ... ok
+test ecs_ai_plugin::tests::test_map_legacy_no_companions ... ok
+test ecs_ai_plugin::tests::test_map_legacy_team_filtering ... ok
+test ecs_ai_plugin::tests::test_map_legacy_with_entity_bridge ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_empty_world ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_initializes_events ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_missing_components ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_no_legacy_world ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_no_companion_in_legacy ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_legacy_no_moveto_action ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_legacy_happy_path_with_moveto ... ok
+test ecs_ai_plugin::tests::test_sys_ai_planning_no_player_in_legacy ... ok
+test llm_executor::tests::test_llm_executor_async_completion ... ok
+test async_task::tests::test_async_task_timeout ... ok
+test llm_executor::tests::test_llm_executor_clone_snapshot_independence ... ok
+test llm_executor::tests::test_llm_executor_sync_failure_handling ... ok
+test llm_executor::tests::test_llm_executor_default_timeout_when_env_invalid ... ok
+test llm_executor::tests::test_llm_executor_failure_handling ... ok
+test orchestrator::tests::async_trait_adapter_returns_same_plan ... ok
+test orchestrator::tests::goap_async_adapter_matches_sync ... ok
+test orchestrator::tests::goap_moves_then_covers ... ok
+test orchestrator::tests::goap_next_action_covers_when_close ... ok
+test orchestrator::tests::goap_next_action_moves_when_far ... ok
+test orchestrator::tests::goap_next_action_waits_with_no_enemies ... ok
+test orchestrator::tests::goap_propose_plan_matches_next_action_logic ... ok
+test orchestrator::tests::llm_orchestrator_disallowed_tools_fallbacks_empty ... ok
+test orchestrator::tests::llm_orchestrator_enforces_minimum_timeout ... ok
+test orchestrator::tests::llm_orchestrator_name_returns_correct_value ... ok
+test orchestrator::tests::llm_orchestrator_respects_timeout_env_var ... ok
+test orchestrator::tests::llm_orchestrator_uses_budget_when_env_missing ... ok
+test orchestrator::tests::llm_orchestrator_uses_default_registry_when_none ... ok
+test orchestrator::tests::make_system_orchestrator_returns_utility_when_llm_disabled ... ok
+test orchestrator::tests::make_system_orchestrator_uses_default_config_when_none ... ok
+test orchestrator::tests::llm_orchestrator_with_mock_produces_plan ... ok
+test orchestrator::tests::orchestrator_name_trait_defaults ... ok
+test orchestrator::tests::rule_orchestrator_advances_when_cooldown_not_ready ... ok
+test orchestrator::tests::rule_orchestrator_async_adapter_matches_sync ... ok
+test orchestrator::tests::rule_orchestrator_calculates_midpoint_correctly ... ok
+test orchestrator::tests::rule_orchestrator_move_direction_correctness ... ok
+test orchestrator::tests::rule_orchestrator_plan_id_format ... ok
+test orchestrator::tests::rule_orchestrator_returns_empty_plan_with_no_enemies ... ok
+test orchestrator::tests::rule_orchestrator_throws_smoke_when_cooldown_ready ... ok
+test orchestrator::tests::system_orchestrator_config_clone_works ... ok
+test orchestrator::tests::system_orchestrator_config_debug_output ... ok
+test orchestrator::tests::system_orchestrator_config_default_parses_env ... ok
+test orchestrator::tests::system_orchestrator_config_handles_empty_env_vars ... ok
+test orchestrator::tests::system_orchestrator_config_respects_ollama_model_env ... ok
+test orchestrator::tests::system_orchestrator_config_respects_ollama_url_env ... ok
+test orchestrator::tests::utility_adds_cover_fire_when_close ... ok
+test orchestrator::tests::system_orchestrator_config_respects_use_llm_env ... ok
+test orchestrator::tests::utility_async_adapter_matches_sync ... ok
+test orchestrator::tests::utility_calculates_midpoint_correctly ... ok
+test orchestrator::tests::utility_no_cover_fire_when_far ... ok
+test orchestrator::tests::utility_prefers_advance_when_smoke_on_cooldown ... ok
+test orchestrator::tests::utility_prefers_smoke_when_ready ... ok
+test orchestrator::tests::utility_returns_empty_plan_with_no_enemies ... ok
+test orchestrator::tests::utility_scores_candidates_deterministically ... ok
+test tool_sandbox::tests::error_taxonomy_works ... ok
+test tool_sandbox::tests::test_cooldown_blocking ... ok
+test tool_sandbox::tests::test_cover_fire_insufficient_ammo ... ok
+test tool_sandbox::tests::test_cover_fire_no_line_of_sight ... ok
+test tool_sandbox::tests::test_cover_fire_success_with_ammo_and_los ... ok
+test tool_sandbox::tests::test_has_line_of_sight_blocked_midpoint ... ok
+test tool_sandbox::tests::test_has_line_of_sight_diagonal_line ... ok
+test tool_sandbox::tests::test_has_line_of_sight_horizontal_line ... ok
+test tool_sandbox::tests::test_has_line_of_sight_same_position ... ok
+test tool_sandbox::tests::test_has_line_of_sight_vertical_line ... ok
+test tool_sandbox::tests::test_hide_always_valid ... ok
+test tool_sandbox::tests::test_interact_always_valid ... ok
+test tool_sandbox::tests::test_move_to_none_target ... ok
+test tool_sandbox::tests::test_rally_always_valid ... ok
+test tool_sandbox::tests::test_revive_low_morale ... ok
+test tool_sandbox::tests::test_revive_none_target ... ok
+test tool_sandbox::tests::test_revive_target_too_far ... ok
+test tool_sandbox::tests::test_stay_and_wander_always_valid ... ok
+test tool_sandbox::tests::test_tool_error_clone ... ok
+test tool_sandbox::tests::test_tool_error_debug ... ok
+test tool_sandbox::tests::test_tool_error_partial_eq ... ok
+test tool_sandbox::tests::test_tool_verb_clone_and_copy ... ok
+test tool_sandbox::tests::test_tool_verb_debug ... ok
+test tool_sandbox::tests::test_tool_verb_hash ... ok
+test tool_sandbox::tests::test_tool_verb_partial_eq ... ok
+test tool_sandbox::tests::test_use_item_always_valid ... ok
+test tool_sandbox::tests::test_validate_line_of_sight_none_target ... ok
+test tool_sandbox::tests::test_validation_category_all_variants ... ok
+test tool_sandbox::tests::test_validation_category_hash ... ok
+test tool_sandbox::tests::test_validation_category_partial_eq ... ok
+test tool_sandbox::tests::test_validation_context_builders ... ok
+test tool_sandbox::tests::test_validation_context_default ... ok
+test tool_sandbox::tests::validate_move_to_no_path ... ok
+test tool_sandbox::tests::validate_throw_insufficient_ammo ... ok
+test tool_sandbox::tests::validate_move_to_physics_blocked ... ok
+test llm_executor::tests::test_llm_executor_respects_timeout_env_var ... ok
+test llm_executor::tests::test_llm_executor_sync_blocks ... ok
+test llm_executor::tests::test_llm_executor_async_poll_before_completion ... ok
+test llm_executor::tests::test_llm_executor_zero_delay_orchestrator ... ok
+test llm_executor::tests::test_llm_executor_multiple_concurrent_tasks ... ok
+test llm_executor::tests::test_llm_executor_async_returns_immediately ... ok
+
+test result: ok. 163 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.80s
+
+     Running tests\ai_arbiter_implementation_tests.rs (target\debug\deps\ai_arbiter_implementation_tests-730b044eab5ed76d.exe)
+
+running 13 tests
+test test_executing_llm_without_plan_falls_back_to_goap ... ok
+test test_maybe_request_llm_skips_when_executing_llm ... ok
+test test_invalid_step_index_falls_back_to_goap ... ok
+test test_transition_to_bt_clears_task_and_plan ... ok
+test test_transition_to_goap_clears_plan ... ok
+test test_update_goap_fallback_when_empty_plan ... ok
+test test_update_executing_llm_returns_plan_steps_sequentially ... ok
+test test_update_goap_mode_returns_goap_action ... ok
+test test_poll_llm_result_failure_stays_in_goap ... ok
+test test_maybe_request_llm_respects_cooldown ... ok
+test test_metrics_track_all_counters ... ok
+test test_poll_llm_result_success_transitions_to_executing_llm ... ok
+test test_with_llm_cooldown_configures_cooldown ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests\arbiter_comprehensive_tests.rs (target\debug\deps\arbiter_comprehensive_tests-d62f81926f469e7d.exe)
+
+running 25 tests
+test test_control_mode_equality ... ok
+test test_arbiter_starts_in_goap_mode ... ok
+test test_arbiter_no_active_task_initially ... ok
+test test_arbiter_no_current_plan_initially ... ok
+test test_control_mode_display_formatting ... ok
+test test_current_plan_returns_plan_in_executing_llm_mode ... ok
+test test_goap_mode_returns_instant_action ... ok
+test test_goap_mode_increments_goap_actions_metric ... ok
+test test_current_plan_returns_none_in_goap_mode ... ok
+test test_llm_request_increments_requests_metric ... ok
+test test_manual_transition_increments_metrics ... ok
+test test_manual_transition_stores_plan ... ok
+test test_manual_transition_to_llm_sets_mode ... ok
+test test_metrics_persist_across_updates ... ok
+test test_metrics_returns_all_six_values ... ok
+test test_llm_request_respects_cooldown ... ok
+test test_with_llm_cooldown_sets_cooldown ... ok
+test test_zero_cooldown_allows_immediate_requests ... ok
+test test_llm_success_increments_success_metric ... ok
+test test_executing_llm_returns_plan_steps_sequentially ... ok
+test test_plan_exhaustion_increments_mode_transitions ... ok
+test test_llm_task_completion_transitions_to_executing_llm ... ok
+test test_executing_llm_increments_steps_executed_metric ... ok
+test test_plan_exhaustion_transitions_back_to_goap ... ok
+test test_llm_success_increments_mode_transitions_metric ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+     Running tests\arbiter_tests.rs (target\debug\deps\arbiter_tests-7177acdcd89bd914.exe)
+
+running 10 tests
+test arbiter_integration_tests::test_arbiter_starts_in_goap_mode ... ok
+test arbiter_integration_tests::test_empty_goap_plan_fallback ... ok
+test arbiter_integration_tests::test_goap_returns_instant_actions ... ok
+test arbiter_integration_tests::test_mode_display_formatting ... ok
+test arbiter_integration_tests::test_concurrent_updates ... ok
+test arbiter_integration_tests::test_plan_execution_and_exhaustion ... ok
+test arbiter_integration_tests::test_metrics_accuracy ... ok
+test arbiter_integration_tests::test_llm_request_spawned_after_cooldown ... ok
+test arbiter_integration_tests::test_llm_failure_fallback ... ok
+test arbiter_integration_tests::test_cooldown_prevents_redundant_requests ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests\async_task_comprehensive_tests.rs (target\debug\deps\async_task_comprehensive_tests-bdb900e40a837a98.exe)
+
+running 15 tests
+test test_async_task_await_result_on_completed ... ok
+test test_async_task_await_result_consumes ... ok
+test test_async_task_elapsed_precision ... ok
+test test_async_task_error_result ... ok
+test test_async_task_multiple_try_recv_consumes_result ... ok
+test test_async_task_is_finished_after_timeout ... ok
+test test_async_task_is_finished_lifecycle ... ok
+test test_async_task_panic_propagation ... ok
+test test_async_task_zero_timeout ... ok
+test test_async_task_abort_stops_execution ... ok
+test test_async_task_concurrent_spawns ... ok
+test test_async_task_large_timeout ... ok
+test test_async_task_timeout_race_condition ... ok
+test test_async_task_drop_aborts_inflight ... ok
+test test_async_task_concurrent_try_recv ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests\core_loop_goap_integration.rs (target\debug\deps\core_loop_goap_integration-85ffd3320d5d5bec.exe)
+
+running 1 test
+test test_goap_mode_feature_gate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\core_loop_policy_switch.rs (target\debug\deps\core_loop_policy_switch-35162575a64c7e80.exe)
+
+running 2 tests
+test test_switch_preserves_policy ... ok
+test test_switch_rule_to_rule ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\core_loop_rule_integration.rs (target\debug\deps\core_loop_rule_integration-db0734cf8a9a7839.exe)
+
+running 5 tests
+test test_rule_mode_no_enemies ... ok
+test test_rule_mode_reproducibility ... ok
+test test_rule_mode_deterministic_planning ... ok
+test test_rule_mode_golden_trace ... ok
+test test_rule_mode_multi_tick_determinism ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cross_module_integration.rs (target\debug\deps\cross_module_integration-06a68ff307f0a207.exe)
+
+running 9 tests
+test test_ai_planning_with_navmesh ... ok
+test test_ecs_to_perception_pipeline ... ok
+test test_navmesh_pathfinding_integration ... ok
+test test_full_loop_determinism ... ok
+test test_physics_to_ecs_feedback_loop ... ok
+test test_planning_to_physics_pipeline ... ok
+test test_multi_agent_full_pipeline ... ok
+test test_perception_to_planning_pipeline ... ok
+test test_60fps_budget_multi_system ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\determinism_tests.rs (target\debug\deps\determinism_tests-696ebf5b4d7418e1.exe)
+
+running 5 tests
+test test_memory_stability_marathon ... ignored
+test test_error_recovery ... ok
+test test_deterministic_planning ... ok
+test test_concurrent_planning ... ok
+test test_planning_stability ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 10.00s
+
+     Running tests\ecs_integration_tests.rs (target\debug\deps\ecs_integration_tests-3c79475f140dc7a8.exe)
+
+running 26 tests
+test test_event_AiPlannedEvent_published ... ok
+test test_event_AiPlanningFailedEvent_published ... ok
+test test_event_resource_persistence ... ok
+test test_multi_agent_100_agents ... ok
+test ecs_integration_test_suite_summary ... ok
+test test_event_accumulation_across_ticks ... ok
+test test_event_reader_multiple_reads ... ok
+test test_multi_agent_all_companions_get_plans ... ok
+test test_multi_agent_different_ammo ... ok
+test test_multi_agent_event_count ... ok
+test test_multi_agent_sequential_ticks ... ok
+test test_multi_agent_sparse_distribution ... ok
+test test_multi_agent_determinism ... ok
+test test_multi_agent_mixed_teams_ignored ... ok
+test test_multi_agent_no_interference ... ok
+test test_multi_agent_spread_positions ... ok
+test test_snapshot_companion_state_accuracy ... ok
+test test_snapshot_cooldowns_preserved ... ok
+test test_snapshot_multiple_teams ... ok
+test test_snapshot_player_state_accuracy ... ok
+test test_snapshot_ammo_zero_edge_case ... ok
+test test_snapshot_empty_enemies ... ok
+test test_snapshot_timestamp ... ok
+test test_snapshot_filters_by_perception_range ... ok
+test test_snapshot_with_objective ... ok
+test test_snapshot_with_multiple_enemies ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.69s
+
+     Running tests\edge_case_tests.rs (target\debug\deps\edge_case_tests-97cb8d723a841a9e.exe)
+
+running 31 tests
+test edge_circular_arrangement ... ok
+test edge_all_entities_same_position ... ok
+test edge_duplicate_entity_ids ... ok
+test edge_empty_snapshot_all_arrays ... ok
+test edge_infinite_cooldowns ... ok
+test edge_goap_all_preconditions_fail ... ok
+test edge_min_i32_coordinates ... ok
+test edge_morale_above_one ... ok
+test edge_diagonal_positions ... ok
+test edge_empty_strings ... ok
+test edge_cooldown_decay_edge ... ok
+test edge_future_timestamp ... ok
+test edge_nan_cooldowns ... ok
+test edge_negative_ammo ... ok
+test edge_linear_arrangement ... ok
+test edge_max_i32_coordinates ... ok
+test edge_negative_coordinates ... ok
+test edge_negative_morale ... ok
+test edge_orchestrator_switching_same_snapshot ... ok
+test edge_rule_with_only_pois_no_enemies ... ok
+test edge_rapid_time_progression ... ok
+test edge_suite_summary ... ok
+test edge_time_going_backwards ... ok
+test edge_utility_all_zero_scores ... ok
+test edge_very_old_timestamp ... ok
+test edge_very_close_entities ... ok
+test edge_very_small_time_delta ... ok
+test edge_very_large_entity_ids ... ok
+test edge_very_far_entities ... ok
+test edge_zero_health ... ok
+test edge_zero_cooldowns ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\goap_hierarchical_planning.rs (target\debug\deps\goap_hierarchical_planning-8487ca85b6c3d801.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\goap_learning_integration.rs (target\debug\deps\goap_learning_integration-6fd6f958a513448b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\goap_vs_rule_comparison.rs (target\debug\deps\goap_vs_rule_comparison-888b9e6c2ed72c36.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\integration_tests.rs (target\debug\deps\integration_tests-ea1778d037923023.exe)
+
+running 5 tests
+test test_multi_agent_coordination ... ok
+test test_perception_planning_pipeline ... ok
+test test_boss_ai_stress ... ok
+test test_ai_loop_memory_efficiency ... ok
+test test_full_ai_loop_60fps ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s
+
+     Running tests\llm_fallback.rs (target\debug\deps\llm_fallback-2f35e39d167d8f89.exe)
+
+running 1 test
+test test_llm_orchestrator_fallback_to_empty_on_error ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\nan_infinity_tests.rs (target\debug\deps\nan_infinity_tests-9b849e8c68f5abc5.exe)
+
+running 33 tests
+test test_all_planner_modes_with_nan_inputs ... ok
+test test_alternating_valid_invalid_dispatch ... ok
+test test_dispatch_planner_with_infinity_timestamp ... ok
+test test_dispatch_planner_all_nan_floats ... ok
+test test_dispatch_planner_mixed_nan_infinity ... ok
+test test_dispatch_planner_all_infinity_floats ... ok
+test test_dispatch_planner_with_infinity_morale ... ok
+test test_dispatch_planner_with_infinity_cooldown ... ok
+test test_dispatch_planner_with_max_float_cooldown ... ok
+test test_dispatch_planner_with_max_float_morale ... ok
+test test_dispatch_planner_with_max_float_timestamp ... ok
+test test_dispatch_planner_with_min_float_morale ... ok
+test test_dispatch_planner_with_min_float_timestamp ... ok
+test test_dispatch_planner_with_multiple_nan_cooldowns ... ok
+test test_dispatch_planner_with_nan_cooldown ... ok
+test test_dispatch_planner_with_nan_morale ... ok
+test test_dispatch_planner_with_nan_timestamp ... ok
+test test_dispatch_planner_with_neg_infinity_cooldown ... ok
+test test_dispatch_planner_with_neg_infinity_morale ... ok
+test test_dispatch_planner_with_neg_infinity_timestamp ... ok
+test test_dispatch_planner_with_negative_cooldown ... ok
+test test_dispatch_planner_with_negative_morale ... ok
+test test_dispatch_planner_with_negative_timestamp ... ok
+test test_dispatch_planner_with_negative_zero_morale ... ok
+test test_dispatch_planner_with_subnormal_morale ... ok
+test test_dispatch_planner_with_zero_cooldown ... ok
+test test_dispatch_planner_with_zero_morale ... ok
+test test_repeated_dispatch_with_nan ... ok
+test test_rule_orchestrator_with_infinity_morale ... ok
+test test_rule_orchestrator_with_infinity_timestamp ... ok
+test test_rule_orchestrator_with_nan_morale ... ok
+test test_rule_orchestrator_with_nan_timestamp ... ok
+test test_rule_planner_with_extreme_values ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\orchestrator_additional_tests.rs (target\debug\deps\orchestrator_additional_tests-67943b4ceda0720f.exe)
+
+running 23 tests
+test test_goap_next_action_in_range ... ok
+test test_goap_next_action_negative_coords ... ok
+test test_goap_orchestrator_async_plan ... ok
+test test_goap_plan_id_format ... ok
+test test_all_orchestrators_async_consistency ... ok
+test test_all_orchestrators_consistency ... ok
+test test_goap_next_action_no_enemies ... ok
+test test_goap_next_action_out_of_range ... ok
+test test_goap_propose_plan_out_of_range ... ok
+test test_goap_propose_plan_in_range ... ok
+test test_goap_propose_plan_no_enemies ... ok
+test test_orchestrator_async_default_name ... ok
+test test_plan_id_uniqueness ... ok
+test test_rule_orchestrator_async_plan ... ok
+test test_rule_orchestrator_negative_enemy_position ... ok
+test test_rule_orchestrator_no_enemies ... ok
+test test_utility_orchestrator_close_enemy ... ok
+test test_utility_orchestrator_far_enemy ... ok
+test test_utility_plan_id_format ... ok
+test test_rule_orchestrator_smoke_on_cooldown ... ok
+test test_utility_orchestrator_async_plan ... ok
+test test_utility_orchestrator_no_enemies ... ok
+test test_utility_orchestrator_smoke_on_cooldown ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
+
+     Running tests\orchestrator_extended_tests.rs (target\debug\deps\orchestrator_extended_tests-aca290d00b606372.exe)
+
+running 12 tests
+test test_goap_cost_optimization ... ok
+test config_tests::test_plan_id_uniqueness_by_time ... ok
+test test_rule_orchestrator_multiple_enemies ... ok
+test test_rule_orchestrator_edge_positions ... ok
+test test_utility_morale_effect ... ok
+test test_utility_scoring_attack ... ok
+test config_tests::test_orchestrator_type_names ... ok
+test test_goap_no_valid_plan ... ok
+test test_rule_orchestrator_no_enemies ... ok
+test test_utility_scoring_defend ... ok
+test test_utility_distance_weighting ... ok
+test test_goap_state_transitions ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\orchestrator_tool_tests.rs (target\debug\deps\orchestrator_tool_tests-d66cd17480bba8be.exe)
+
+running 54 tests
+test test_goap_orchestrator_async_plan ... ok
+test test_goap_orchestrator_boundary_distance ... ok
+test test_goap_orchestrator_next_action_move ... ok
+test test_goap_orchestrator_async_name ... ok
+test test_goap_orchestrator_manhattan_distance ... ok
+test test_goap_orchestrator_next_action_cover_fire ... ok
+test test_goap_orchestrator_next_action_wait ... ok
+test test_goap_orchestrator_propose_plan_cover_fire ... ok
+test test_goap_orchestrator_propose_plan_no_enemies ... ok
+test test_goap_orchestrator_propose_plan_move ... ok
+test test_rule_orchestrator_async_name ... ok
+test test_rule_orchestrator_negative_enemy_pos ... ok
+test test_rule_orchestrator_no_enemies ... ok
+test test_rule_orchestrator_smoke_logic ... ok
+test test_rule_orchestrator_enemy_at_origin ... ok
+test test_rule_orchestrator_plan_id_generation ... ok
+test test_rule_orchestrator_async_plan ... ok
+test test_rule_orchestrator_smoke_on_cooldown ... ok
+test test_rule_orchestrator_smoke_cooldown_zero ... ok
+test test_tool_error_invalid_target_display ... ok
+test test_tool_error_no_line_of_sight_display ... ok
+test test_tool_error_cooldown_display ... ok
+test test_tool_error_insufficient_resource_display ... ok
+test test_tool_error_no_path_display ... ok
+test test_tool_error_unknown_display ... ok
+test test_tool_error_physics_blocked_display ... ok
+test test_tool_error_out_of_bounds_display ... ok
+test test_utility_orchestrator_advance_candidate ... ok
+test test_utility_orchestrator_async_name ... ok
+test test_utility_orchestrator_async_plan ... ok
+test test_utility_orchestrator_candidate_sorting ... ok
+test test_utility_orchestrator_no_cover_fire_when_far ... ok
+test test_utility_orchestrator_no_enemies ... ok
+test test_validate_cover_fire_no_line_of_sight ... ok
+test test_utility_orchestrator_cover_fire_when_close ... ok
+test test_utility_orchestrator_equal_scores ... ok
+test test_utility_orchestrator_smoke_candidate ... ok
+test test_validate_cover_fire_insufficient_ammo ... ok
+test test_validate_move_to_cooldown ... ok
+test test_validate_revive_success ... ok
+test test_validate_move_to_no_nav_no_physics ... ok
+test test_validate_revive_low_morale ... ok
+test test_validate_stay_no_checks ... ok
+test test_validate_throw_insufficient_ammo ... ok
+test test_validate_tool_action_no_target_pos ... ok
+test test_validate_wander_no_checks ... ok
+test test_validation_context_multiple_with_nav_calls ... ok
+test test_validation_context_with_nav ... ok
+test test_validate_throw_no_line_of_sight ... ok
+test test_validate_throw_success ... ok
+test test_validate_revive_target_too_far ... ok
+test test_validation_context_default ... ok
+test test_validation_context_chained_builders ... ok
+test test_validation_context_with_physics ... ok
+
+test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\perception_tests.rs (target\debug\deps\perception_tests-b093c7234d256d46.exe)
+
+running 6 tests
+test test_snapshot_accuracy ... ok
+test test_snapshot_size_scaling ... ok
+test test_snapshot_immutability ... ok
+test test_snapshot_throughput ... ok
+test test_snapshot_cloning ... ok
+test test_perception_stress ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running tests\plan_snapshot.rs (target\debug\deps\plan_snapshot-ba31a648978cae95.exe)
+
+running 3 tests
+test snapshot_utility_advances_when_smoke_blocked ... ok
+test snapshot_goap_independent_moves_and_covers ... ok
+test snapshot_rule_prefers_smoke_when_ready ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests\planner_tests.rs (target\debug\deps\planner_tests-68d4d0389c74e9f5.exe)
+
+running 6 tests
+test test_plan_consistency ... ok
+test test_planner_mode_switching ... ok
+test test_rule_orchestrator_performance ... ok
+test test_rule_orchestrator_correctness ... ok
+test test_multi_agent_planning_scalability ... FAILED
+test test_planning_under_load ... ok
+
+failures:
+
+---- test_multi_agent_planning_scalability stdout ----
+
+=== TEST: Multi-Agent Planning Scalability (676 agents) ===
+   100 agents: 0.451 ms total, 4.506 ┬╡s/agent
+   500 agents: 2.059 ms total, 4.119 ┬╡s/agent
+   676 agents: 17.882 ms total, 26.453 ┬╡s/agent
+
+thread 'test_multi_agent_planning_scalability' panicked at astraweave-ai\tests\planner_tests.rs:281:13:
+676 agents should plan in <10ms, got 17.882ms
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    test_multi_agent_planning_scalability
+
+test result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s
+
+error: test failed, to rerun pass `-p astraweave-ai --test planner_tests`

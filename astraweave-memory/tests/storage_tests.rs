@@ -546,7 +546,7 @@ fn test_multiple_episode_storage() {
 
     // Query important episodes
     let important = storage.query_important(0.8, 10).unwrap();
-    assert!(important.len() >= 1); // At least exploration episode
+    assert!(!important.is_empty()); // At least exploration episode
 }
 
 #[test]

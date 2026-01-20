@@ -20,6 +20,77 @@ pub enum ComponentEdit {
     },
 }
 
+impl ComponentEdit {
+    /// Get the entity this edit applies to
+    pub fn entity(&self) -> Entity {
+        match self {
+            ComponentEdit::Health { entity, .. } => *entity,
+            ComponentEdit::Team { entity, .. } => *entity,
+            ComponentEdit::Ammo { entity, .. } => *entity,
+        }
+    }
+
+    /// Get the component type this edit applies to
+    pub fn component_type(&self) -> ComponentType {
+        match self {
+            ComponentEdit::Health { .. } => ComponentType::Health,
+            ComponentEdit::Team { .. } => ComponentType::Team,
+            ComponentEdit::Ammo { .. } => ComponentType::Ammo,
+        }
+    }
+
+    /// Get a human-readable name for this edit
+    pub fn name(&self) -> &'static str {
+        match self {
+            ComponentEdit::Health { .. } => "Health Edit",
+            ComponentEdit::Team { .. } => "Team Edit",
+            ComponentEdit::Ammo { .. } => "Ammo Edit",
+        }
+    }
+
+    /// Get description of the change
+    pub fn description(&self) -> String {
+        match self {
+            ComponentEdit::Health { old_hp, new_hp, .. } => {
+                format!("HP: {} → {}", old_hp, new_hp)
+            }
+            ComponentEdit::Team { old_id, new_id, .. } => {
+                format!("Team: {} → {}", old_id, new_id)
+            }
+            ComponentEdit::Ammo { old_rounds, new_rounds, .. } => {
+                format!("Ammo: {} → {}", old_rounds, new_rounds)
+            }
+        }
+    }
+
+    /// Check if this is a health edit
+    pub fn is_health(&self) -> bool {
+        matches!(self, ComponentEdit::Health { .. })
+    }
+
+    /// Check if this is a team edit
+    pub fn is_team(&self) -> bool {
+        matches!(self, ComponentEdit::Team { .. })
+    }
+
+    /// Check if this is an ammo edit
+    pub fn is_ammo(&self) -> bool {
+        matches!(self, ComponentEdit::Ammo { .. })
+    }
+}
+
+impl std::fmt::Display for ComponentEdit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.name(), self.description())
+    }
+}
+
+impl std::fmt::Display for ComponentType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 pub trait InspectorUI {
     fn ui(&mut self, ui: &mut Ui, label: &str) -> bool;
     fn component_name() -> &'static str
@@ -238,6 +309,36 @@ impl ComponentType {
             ComponentType::Team => "Team",
             ComponentType::Ammo => "Ammo",
         }
+    }
+
+    /// Get icon for this component type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ComponentType::Pose => "📍",
+            ComponentType::Health => "❤️",
+            ComponentType::Team => "👥",
+            ComponentType::Ammo => "🔫",
+        }
+    }
+
+    /// Get description for this component type
+    pub fn description(&self) -> &'static str {
+        match self {
+            ComponentType::Pose => "Position, rotation, and scale transform",
+            ComponentType::Health => "Entity health points",
+            ComponentType::Team => "Team affiliation (player, companion, enemy)",
+            ComponentType::Ammo => "Ammunition count",
+        }
+    }
+
+    /// Check if this is a transform component
+    pub fn is_transform(&self) -> bool {
+        matches!(self, ComponentType::Pose)
+    }
+
+    /// Check if this is a gameplay component
+    pub fn is_gameplay(&self) -> bool {
+        matches!(self, ComponentType::Health | ComponentType::Team | ComponentType::Ammo)
     }
 
     pub fn has_component(&self, world: &World, entity: Entity) -> bool {
@@ -524,5 +625,116 @@ mod tests {
         } else {
             panic!("Expected Ammo variant");
         }
+    }
+
+    // ====================================================================
+    // ComponentType New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_component_type_icon_not_empty() {
+        for ct in ComponentType::all() {
+            assert!(!ct.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_component_type_description_not_empty() {
+        for ct in ComponentType::all() {
+            assert!(!ct.description().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_component_type_is_transform() {
+        assert!(ComponentType::Pose.is_transform());
+        assert!(!ComponentType::Health.is_transform());
+        assert!(!ComponentType::Team.is_transform());
+        assert!(!ComponentType::Ammo.is_transform());
+    }
+
+    #[test]
+    fn test_component_type_is_gameplay() {
+        assert!(!ComponentType::Pose.is_gameplay());
+        assert!(ComponentType::Health.is_gameplay());
+        assert!(ComponentType::Team.is_gameplay());
+        assert!(ComponentType::Ammo.is_gameplay());
+    }
+
+    #[test]
+    fn test_component_type_display() {
+        assert_eq!(format!("{}", ComponentType::Pose), "Pose");
+        assert_eq!(format!("{}", ComponentType::Health), "Health");
+    }
+
+    // ====================================================================
+    // ComponentEdit New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_component_edit_entity() {
+        let edit = ComponentEdit::Health {
+            entity: 42,
+            old_hp: 100,
+            new_hp: 50,
+        };
+        assert_eq!(edit.entity(), 42);
+    }
+
+    #[test]
+    fn test_component_edit_component_type() {
+        let health = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let team = ComponentEdit::Team { entity: 1, old_id: 0, new_id: 1 };
+        let ammo = ComponentEdit::Ammo { entity: 1, old_rounds: 30, new_rounds: 15 };
+
+        assert!(matches!(health.component_type(), ComponentType::Health));
+        assert!(matches!(team.component_type(), ComponentType::Team));
+        assert!(matches!(ammo.component_type(), ComponentType::Ammo));
+    }
+
+    #[test]
+    fn test_component_edit_name() {
+        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        assert_eq!(edit.name(), "Health Edit");
+    }
+
+    #[test]
+    fn test_component_edit_description() {
+        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let desc = edit.description();
+        assert!(desc.contains("100"));
+        assert!(desc.contains("50"));
+    }
+
+    #[test]
+    fn test_component_edit_is_health() {
+        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        assert!(edit.is_health());
+        assert!(!edit.is_team());
+        assert!(!edit.is_ammo());
+    }
+
+    #[test]
+    fn test_component_edit_is_team() {
+        let edit = ComponentEdit::Team { entity: 1, old_id: 0, new_id: 1 };
+        assert!(edit.is_team());
+        assert!(!edit.is_health());
+        assert!(!edit.is_ammo());
+    }
+
+    #[test]
+    fn test_component_edit_is_ammo() {
+        let edit = ComponentEdit::Ammo { entity: 1, old_rounds: 30, new_rounds: 15 };
+        assert!(edit.is_ammo());
+        assert!(!edit.is_health());
+        assert!(!edit.is_team());
+    }
+
+    #[test]
+    fn test_component_edit_display() {
+        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let display = format!("{}", edit);
+        assert!(display.contains("Health Edit"));
+        assert!(display.contains("100"));
     }
 }

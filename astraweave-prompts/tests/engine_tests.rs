@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_prompts::engine::{TemplateEngine, EngineConfig, PromptEngine};
 use astraweave_prompts::template::PromptTemplate;
 use astraweave_prompts::context::PromptContext;

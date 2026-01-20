@@ -14,7 +14,7 @@
 
 use astraweave_quests::{
     Quest, QuestStep,
-    CQuestGenerator, CActiveQuest, QuestState, ChoiceRecord,
+    CQuestGenerator,
     TerrainFeatureType, TerrainQuestContext, TerrainQuestTrigger,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
@@ -313,8 +313,8 @@ fn bench_component_operations(c: &mut Criterion) {
     group.bench_function("can_generate_quest", |b| {
         let current_time = 1000000u64;
         b.iter(|| {
-            let result = black_box(&generator).can_generate_quest(black_box(current_time));
-            result
+            
+            black_box(&generator).can_generate_quest(black_box(current_time))
         })
     });
     
@@ -432,12 +432,12 @@ fn bench_terrain_quests(c: &mut Criterion) {
     group.bench_function("should_trigger_check", |b| {
         let mut rng = rand::rng();
         b.iter(|| {
-            let result = black_box(&trigger).should_trigger(
+            
+            black_box(&trigger).should_trigger(
                 black_box(&context),
                 black_box(15),
                 &mut rng,
-            );
-            result
+            )
         })
     });
     

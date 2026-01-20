@@ -1130,28 +1130,224 @@ mod tests {
     use super::*;
     use std::env;
 
+    // ============================================================================
+    // TEXTURE TYPE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_texture_type_from_filename_normal() {
+        assert_eq!(TextureType::from_filename("brick_normal.png"), TextureType::Normal);
+        assert_eq!(TextureType::from_filename("wall_n.png"), TextureType::Normal);
+        assert_eq!(TextureType::from_filename("floor_nrm.png"), TextureType::Normal);
+        assert_eq!(TextureType::from_filename("tile_nor.png"), TextureType::Normal);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_albedo() {
+        assert_eq!(TextureType::from_filename("brick_albedo.png"), TextureType::Albedo);
+        assert_eq!(TextureType::from_filename("wall_diffuse.png"), TextureType::Albedo);
+        assert_eq!(TextureType::from_filename("floor_basecolor.png"), TextureType::Albedo);
+        assert_eq!(TextureType::from_filename("tile_color.png"), TextureType::Albedo);
+        assert_eq!(TextureType::from_filename("wood_d.png"), TextureType::Albedo);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_orm_mra() {
+        assert_eq!(TextureType::from_filename("brick_orm.png"), TextureType::ORM);
+        assert_eq!(TextureType::from_filename("wall_mra.png"), TextureType::MRA);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_roughness() {
+        assert_eq!(TextureType::from_filename("brick_r.png"), TextureType::Roughness);
+        assert_eq!(TextureType::from_filename("wall_rough.png"), TextureType::Roughness);
+        assert_eq!(TextureType::from_filename("floor_roughness.png"), TextureType::Roughness);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_metallic() {
+        assert_eq!(TextureType::from_filename("brick_m.png"), TextureType::Metallic);
+        assert_eq!(TextureType::from_filename("wall_metal.png"), TextureType::Metallic);
+        assert_eq!(TextureType::from_filename("floor_metallic.png"), TextureType::Metallic);
+        assert_eq!(TextureType::from_filename("tile_metalness.png"), TextureType::Metallic);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_ao() {
+        assert_eq!(TextureType::from_filename("brick_ao.png"), TextureType::AO);
+        assert_eq!(TextureType::from_filename("wall_occlusion.png"), TextureType::AO);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_emission() {
+        assert_eq!(TextureType::from_filename("brick_e.png"), TextureType::Emission);
+        assert_eq!(TextureType::from_filename("wall_emit.png"), TextureType::Emission);
+        assert_eq!(TextureType::from_filename("floor_emission.png"), TextureType::Emission);
+        assert_eq!(TextureType::from_filename("tile_emissive.png"), TextureType::Emission);
+        assert_eq!(TextureType::from_filename("neon_glow.png"), TextureType::Emission);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_height() {
+        assert_eq!(TextureType::from_filename("brick_h.png"), TextureType::Height);
+        assert_eq!(TextureType::from_filename("wall_height.png"), TextureType::Height);
+        assert_eq!(TextureType::from_filename("floor_disp.png"), TextureType::Height);
+        assert_eq!(TextureType::from_filename("tile_displacement.png"), TextureType::Height);
+        assert_eq!(TextureType::from_filename("stone_bump.png"), TextureType::Height);
+    }
+
+    #[test]
+    fn test_texture_type_from_filename_unknown() {
+        assert_eq!(TextureType::from_filename("texture.png"), TextureType::Unknown);
+        assert_eq!(TextureType::from_filename("random.jpg"), TextureType::Unknown);
+    }
+
+    #[test]
+    fn test_texture_type_case_insensitive() {
+        assert_eq!(TextureType::from_filename("Brick_NORMAL.PNG"), TextureType::Normal);
+        assert_eq!(TextureType::from_filename("Wall_ALBEDO.jpg"), TextureType::Albedo);
+    }
+
+    #[test]
+    fn test_texture_type_icons() {
+        assert_eq!(TextureType::Albedo.icon(), "🎨");
+        assert_eq!(TextureType::Normal.icon(), "🔵");
+        assert_eq!(TextureType::ORM.icon(), "🔶");
+        assert_eq!(TextureType::MRA.icon(), "🔷");
+        assert_eq!(TextureType::Roughness.icon(), "◽");
+        assert_eq!(TextureType::Metallic.icon(), "⬜");
+        assert_eq!(TextureType::AO.icon(), "⬛");
+        assert_eq!(TextureType::Emission.icon(), "✨");
+        assert_eq!(TextureType::Height.icon(), "📐");
+        assert_eq!(TextureType::Unknown.icon(), "❓");
+    }
+
+    #[test]
+    fn test_texture_type_labels() {
+        assert_eq!(TextureType::Albedo.label(), "Albedo");
+        assert_eq!(TextureType::Normal.label(), "Normal");
+        assert_eq!(TextureType::ORM.label(), "ORM");
+        assert_eq!(TextureType::MRA.label(), "MRA");
+        assert_eq!(TextureType::Roughness.label(), "Rough");
+        assert_eq!(TextureType::Metallic.label(), "Metal");
+        assert_eq!(TextureType::AO.label(), "AO");
+        assert_eq!(TextureType::Emission.label(), "Emit");
+        assert_eq!(TextureType::Height.label(), "Height");
+        assert_eq!(TextureType::Unknown.label(), "???");
+    }
+
+    #[test]
+    fn test_texture_type_colors_are_unique() {
+        let colors = [
+            TextureType::Albedo.color(),
+            TextureType::Normal.color(),
+            TextureType::ORM.color(),
+            TextureType::MRA.color(),
+            TextureType::AO.color(),
+            TextureType::Emission.color(),
+        ];
+        // At least some should be different (not all can be unique with 10 types)
+        assert!(colors.iter().any(|c| *c != colors[0]));
+    }
+
+    // ============================================================================
+    // ASSET CATEGORY TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_asset_category_matches_all() {
+        let cat = AssetCategory::All;
+        assert!(cat.matches(&AssetType::Model));
+        assert!(cat.matches(&AssetType::Texture));
+        assert!(cat.matches(&AssetType::Scene));
+        assert!(cat.matches(&AssetType::Material));
+        assert!(cat.matches(&AssetType::Audio));
+        assert!(cat.matches(&AssetType::Config));
+        assert!(cat.matches(&AssetType::Prefab));
+    }
+
+    #[test]
+    fn test_asset_category_matches_specific() {
+        assert!(AssetCategory::Models.matches(&AssetType::Model));
+        assert!(!AssetCategory::Models.matches(&AssetType::Texture));
+
+        assert!(AssetCategory::Textures.matches(&AssetType::Texture));
+        assert!(!AssetCategory::Textures.matches(&AssetType::Model));
+
+        assert!(AssetCategory::Audio.matches(&AssetType::Audio));
+        assert!(!AssetCategory::Audio.matches(&AssetType::Scene));
+    }
+
+    #[test]
+    fn test_asset_category_icons() {
+        assert_eq!(AssetCategory::All.icon(), "📦");
+        assert_eq!(AssetCategory::Models.icon(), "🎭");
+        assert_eq!(AssetCategory::Textures.icon(), "🖼️");
+        assert_eq!(AssetCategory::Materials.icon(), "💎");
+        assert_eq!(AssetCategory::Prefabs.icon(), "💾");
+        assert_eq!(AssetCategory::Scenes.icon(), "🌍");
+        assert_eq!(AssetCategory::Audio.icon(), "🔊");
+        assert_eq!(AssetCategory::Configs.icon(), "⚙️");
+    }
+
+    #[test]
+    fn test_asset_category_labels() {
+        assert_eq!(AssetCategory::All.label(), "All");
+        assert_eq!(AssetCategory::Models.label(), "Models");
+        assert_eq!(AssetCategory::Textures.label(), "Textures");
+        assert_eq!(AssetCategory::Materials.label(), "Materials");
+        assert_eq!(AssetCategory::Prefabs.label(), "Prefabs");
+        assert_eq!(AssetCategory::Scenes.label(), "Scenes");
+        assert_eq!(AssetCategory::Audio.label(), "Audio");
+        assert_eq!(AssetCategory::Configs.label(), "Configs");
+    }
+
+    // ============================================================================
+    // ASSET TYPE TESTS
+    // ============================================================================
+
     #[test]
     fn test_asset_type_from_path() {
-        assert_eq!(
-            AssetType::from_path(Path::new("test.glb")),
-            AssetType::Model
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("texture.png")),
-            AssetType::Texture
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("scene.ron")),
-            AssetType::Scene
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("config.toml")),
-            AssetType::Config
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("unknown.xyz")),
-            AssetType::Unknown
-        );
+        assert_eq!(AssetType::from_path(Path::new("test.glb")), AssetType::Model);
+        assert_eq!(AssetType::from_path(Path::new("texture.png")), AssetType::Texture);
+        assert_eq!(AssetType::from_path(Path::new("scene.ron")), AssetType::Scene);
+        assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
+        assert_eq!(AssetType::from_path(Path::new("unknown.xyz")), AssetType::Unknown);
+    }
+
+    #[test]
+    fn test_asset_type_from_path_models() {
+        assert_eq!(AssetType::from_path(Path::new("model.glb")), AssetType::Model);
+        assert_eq!(AssetType::from_path(Path::new("model.gltf")), AssetType::Model);
+        assert_eq!(AssetType::from_path(Path::new("model.obj")), AssetType::Model);
+        assert_eq!(AssetType::from_path(Path::new("model.fbx")), AssetType::Model);
+    }
+
+    #[test]
+    fn test_asset_type_from_path_textures() {
+        assert_eq!(AssetType::from_path(Path::new("tex.png")), AssetType::Texture);
+        assert_eq!(AssetType::from_path(Path::new("tex.jpg")), AssetType::Texture);
+        assert_eq!(AssetType::from_path(Path::new("tex.jpeg")), AssetType::Texture);
+        assert_eq!(AssetType::from_path(Path::new("tex.ktx2")), AssetType::Texture);
+        assert_eq!(AssetType::from_path(Path::new("tex.dds")), AssetType::Texture);
+    }
+
+    #[test]
+    fn test_asset_type_from_path_audio() {
+        assert_eq!(AssetType::from_path(Path::new("sound.wav")), AssetType::Audio);
+        assert_eq!(AssetType::from_path(Path::new("music.ogg")), AssetType::Audio);
+        assert_eq!(AssetType::from_path(Path::new("track.mp3")), AssetType::Audio);
+    }
+
+    #[test]
+    fn test_asset_type_from_path_configs() {
+        assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
+        assert_eq!(AssetType::from_path(Path::new("settings.json")), AssetType::Config);
+    }
+
+    #[test]
+    fn test_asset_type_from_path_prefab() {
+        assert_eq!(AssetType::from_path(Path::new("entity.prefab.ron")), AssetType::Prefab);
     }
 
     #[test]
@@ -1160,30 +1356,30 @@ mod tests {
         assert_eq!(AssetType::Texture.icon(), "🖼️");
         assert_eq!(AssetType::Scene.icon(), "🌍");
         assert_eq!(AssetType::Directory.icon(), "📁");
+        assert_eq!(AssetType::Material.icon(), "💎");
+        assert_eq!(AssetType::Audio.icon(), "🔊");
+        assert_eq!(AssetType::Config.icon(), "⚙️");
+        assert_eq!(AssetType::Prefab.icon(), "💾");
+        assert_eq!(AssetType::Unknown.icon(), "📄");
     }
 
     #[test]
-    fn test_asset_browser_creation() {
-        let temp_dir = env::temp_dir();
-        let browser = AssetBrowser::new(temp_dir.clone());
-        assert_eq!(browser.root_path, temp_dir);
-        assert_eq!(browser.current_path, temp_dir);
+    fn test_asset_type_color() {
+        // Each type should have a color
+        let _ = AssetType::Model.color();
+        let _ = AssetType::Texture.color();
+        let _ = AssetType::Scene.color();
+        let _ = AssetType::Material.color();
+        let _ = AssetType::Audio.color();
+        let _ = AssetType::Config.color();
+        let _ = AssetType::Prefab.color();
+        let _ = AssetType::Directory.color();
+        let _ = AssetType::Unknown.color();
     }
 
-    #[test]
-    fn test_asset_browser_navigation() {
-        let temp_dir = env::temp_dir();
-        let mut browser = AssetBrowser::new(temp_dir.clone());
-
-        // Navigate up - may or may not change path depending on temp_dir location
-        // On some systems, temp_dir might be at a drive root where navigate_up has no effect
-        browser.navigate_up();
-        // Just verify navigate_up doesn't panic
-
-        // Navigate back to temp_dir
-        browser.navigate_to(temp_dir.clone());
-        assert_eq!(browser.current_path, temp_dir);
-    }
+    // ============================================================================
+    // ASSET ENTRY TESTS
+    // ============================================================================
 
     #[test]
     fn test_asset_entry_format_size() {
@@ -1195,25 +1391,170 @@ mod tests {
             size: 1024,
         };
         assert_eq!(entry.format_size(), "1.0 KB");
+    }
 
-        let entry_large = AssetEntry {
+    #[test]
+    fn test_asset_entry_format_size_mb() {
+        let entry = AssetEntry {
             path: PathBuf::from("large.glb"),
             name: "large.glb".to_string(),
             asset_type: AssetType::Model,
             texture_type: None,
             size: 1024 * 1024,
         };
-        assert_eq!(entry_large.format_size(), "1.0 MB");
+        assert_eq!(entry.format_size(), "1.0 MB");
+    }
+
+    #[test]
+    fn test_asset_entry_format_size_directory() {
+        let entry = AssetEntry {
+            path: PathBuf::from("folder"),
+            name: "folder".to_string(),
+            asset_type: AssetType::Directory,
+            texture_type: None,
+            size: 0,
+        };
+        assert_eq!(entry.format_size(), "");
+    }
+
+    #[test]
+    fn test_asset_entry_format_size_bytes() {
+        let entry = AssetEntry {
+            path: PathBuf::from("tiny.txt"),
+            name: "tiny.txt".to_string(),
+            asset_type: AssetType::Unknown,
+            texture_type: None,
+            size: 512,
+        };
+        assert_eq!(entry.format_size(), "0.5 KB");
+    }
+
+    #[test]
+    fn test_asset_entry_format_size_large() {
+        let entry = AssetEntry {
+            path: PathBuf::from("huge.glb"),
+            name: "huge.glb".to_string(),
+            asset_type: AssetType::Model,
+            texture_type: None,
+            size: 10 * 1024 * 1024,
+        };
+        assert_eq!(entry.format_size(), "10.0 MB");
+    }
+
+    #[test]
+    fn test_asset_entry_texture_type_for_textures() {
+        let entry = AssetEntry {
+            path: PathBuf::from("brick_normal.png"),
+            name: "brick_normal.png".to_string(),
+            asset_type: AssetType::Texture,
+            texture_type: Some(TextureType::Normal),
+            size: 1024,
+        };
+        assert_eq!(entry.texture_type, Some(TextureType::Normal));
+    }
+
+    #[test]
+    fn test_asset_entry_no_texture_type_for_models() {
+        let entry = AssetEntry {
+            path: PathBuf::from("model.glb"),
+            name: "model.glb".to_string(),
+            asset_type: AssetType::Model,
+            texture_type: None,
+            size: 1024,
+        };
+        assert!(entry.texture_type.is_none());
+    }
+
+    // ============================================================================
+    // VIEW MODE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_view_mode_list() {
+        let mode = ViewMode::List;
+        assert_eq!(mode, ViewMode::List);
+    }
+
+    #[test]
+    fn test_view_mode_grid() {
+        let mode = ViewMode::Grid;
+        assert_eq!(mode, ViewMode::Grid);
+    }
+
+    #[test]
+    fn test_view_mode_comparison() {
+        assert_ne!(ViewMode::List, ViewMode::Grid);
+    }
+
+    // ============================================================================
+    // ASSET BROWSER TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_asset_browser_creation() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir.clone());
+        assert_eq!(browser.root_path, temp_dir);
+        assert_eq!(browser.current_path, temp_dir);
+    }
+
+    #[test]
+    fn test_asset_browser_default_view_mode() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert_eq!(browser.view_mode, ViewMode::Grid);
+    }
+
+    #[test]
+    fn test_asset_browser_default_category() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert_eq!(browser.category_filter, AssetCategory::All);
+    }
+
+    #[test]
+    fn test_asset_browser_default_texture_filter() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert!(browser.texture_type_filter.is_none());
+    }
+
+    #[test]
+    fn test_asset_browser_default_show_hidden() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert!(!browser.show_hidden);
+    }
+
+    #[test]
+    fn test_asset_browser_default_texture_badges() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert!(browser.show_texture_badges);
+    }
+
+    #[test]
+    fn test_asset_browser_navigation() {
+        let temp_dir = env::temp_dir();
+        let mut browser = AssetBrowser::new(temp_dir.clone());
+        browser.navigate_up();
+        browser.navigate_to(temp_dir.clone());
+        assert_eq!(browser.current_path, temp_dir);
+    }
+
+    #[test]
+    fn test_asset_browser_selected_asset_initially_none() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert!(browser.selected_asset().is_none());
     }
 
     #[test]
     fn test_asset_browser_filter() {
         let temp_dir = env::temp_dir();
         let mut browser = AssetBrowser::new(temp_dir);
-
         browser.filter_type = Some(AssetType::Model);
         assert_eq!(browser.filter_type, Some(AssetType::Model));
-
         browser.filter_type = None;
         assert_eq!(browser.filter_type, None);
     }
@@ -1222,8 +1563,127 @@ mod tests {
     fn test_asset_browser_search() {
         let temp_dir = env::temp_dir();
         let mut browser = AssetBrowser::new(temp_dir);
-
         browser.search_query = "test".to_string();
         assert_eq!(browser.search_query, "test");
     }
+
+    #[test]
+    fn test_asset_browser_get_current_directory() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir.clone());
+        assert_eq!(browser.get_current_directory(), temp_dir.as_path());
+    }
+
+    #[test]
+    fn test_asset_browser_take_pending_actions() {
+        let temp_dir = env::temp_dir();
+        let mut browser = AssetBrowser::new(temp_dir);
+        let actions = browser.take_pending_actions();
+        assert!(actions.is_empty());
+    }
+
+    #[test]
+    fn test_asset_browser_take_dragged_prefab() {
+        let temp_dir = env::temp_dir();
+        let mut browser = AssetBrowser::new(temp_dir);
+        let prefab = browser.take_dragged_prefab();
+        assert!(prefab.is_none());
+    }
+
+    #[test]
+    fn test_asset_browser_thumbnail_cache_size() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert_eq!(browser.max_cache_size, 100);
+    }
+
+    #[test]
+    fn test_asset_browser_thumbnail_size() {
+        let temp_dir = env::temp_dir();
+        let browser = AssetBrowser::new(temp_dir);
+        assert_eq!(browser.thumbnail_size, 80.0);
+    }
+
+    // ============================================================================
+    // ASSET ACTION TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_asset_action_import_model() {
+        let action = AssetAction::ImportModel { path: PathBuf::from("model.glb") };
+        match action {
+            AssetAction::ImportModel { path } => assert_eq!(path, PathBuf::from("model.glb")),
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_apply_texture() {
+        let action = AssetAction::ApplyTexture { 
+            path: PathBuf::from("tex.png"),
+            texture_type: TextureType::Normal,
+        };
+        match action {
+            AssetAction::ApplyTexture { path, texture_type } => {
+                assert_eq!(path, PathBuf::from("tex.png"));
+                assert_eq!(texture_type, TextureType::Normal);
+            }
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_load_scene() {
+        let action = AssetAction::LoadScene { path: PathBuf::from("level.ron") };
+        match action {
+            AssetAction::LoadScene { path } => assert_eq!(path, PathBuf::from("level.ron")),
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_spawn_prefab() {
+        let action = AssetAction::SpawnPrefab { path: PathBuf::from("entity.prefab.ron") };
+        match action {
+            AssetAction::SpawnPrefab { path } => assert_eq!(path, PathBuf::from("entity.prefab.ron")),
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_apply_material() {
+        let action = AssetAction::ApplyMaterial { path: PathBuf::from("metal.mat") };
+        match action {
+            AssetAction::ApplyMaterial { path } => assert_eq!(path, PathBuf::from("metal.mat")),
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_open_external() {
+        let action = AssetAction::OpenExternal { path: PathBuf::from("/assets") };
+        match action {
+            AssetAction::OpenExternal { path } => assert_eq!(path, PathBuf::from("/assets")),
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_inspect_asset() {
+        let action = AssetAction::InspectAsset { path: PathBuf::from("item.glb") };
+        match action {
+            AssetAction::InspectAsset { path } => assert_eq!(path, PathBuf::from("item.glb")),
+            _ => panic!("Wrong action type"),
+        }
+    }
+
+    #[test]
+    fn test_asset_action_load_to_viewport() {
+        let action = AssetAction::LoadToViewport { path: PathBuf::from("preview.glb") };
+        match action {
+            AssetAction::LoadToViewport { path } => assert_eq!(path, PathBuf::from("preview.glb")),
+            _ => panic!("Wrong action type"),
+        }
+    }
 }
+

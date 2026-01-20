@@ -350,8 +350,10 @@ mod tests {
 
     #[test]
     fn test_tick_disabled_emitter() {
-        let mut emitter = FluidEmitter::default();
-        emitter.enabled = false;
+        let mut emitter = FluidEmitter {
+            enabled: false,
+            ..Default::default()
+        };
         
         let (positions, velocities, colors) = emitter.tick(1.0);
         
@@ -362,8 +364,10 @@ mod tests {
 
     #[test]
     fn test_tick_zero_dt() {
-        let mut emitter = FluidEmitter::default();
-        emitter.rate = 100.0;
+        let mut emitter = FluidEmitter {
+            rate: 100.0,
+            ..Default::default()
+        };
         
         let (positions, velocities, colors) = emitter.tick(0.0);
         
@@ -428,9 +432,11 @@ mod tests {
 
     #[test]
     fn test_tick_colors_match_emitter() {
-        let mut emitter = FluidEmitter::default();
-        emitter.color = [1.0, 0.0, 0.0, 1.0]; // Red
-        emitter.rate = 100.0;
+        let mut emitter = FluidEmitter {
+            color: [1.0, 0.0, 0.0, 1.0], // Red
+            rate: 100.0,
+            ..Default::default()
+        };
         
         let (_, _, colors) = emitter.tick(0.1);
         
@@ -486,11 +492,13 @@ mod tests {
 
     #[test]
     fn test_emitter_shape_box() {
-        let mut emitter = FluidEmitter::default();
-        emitter.shape = EmitterShape::Box {
-            half_extents: [2.0, 3.0, 4.0],
+        let mut emitter = FluidEmitter {
+            shape: EmitterShape::Box {
+                half_extents: [2.0, 3.0, 4.0],
+            },
+            rate: 100.0,
+            ..Default::default()
         };
-        emitter.rate = 100.0;
         
         let (positions, _, _) = emitter.tick(0.1);
         
@@ -540,7 +548,7 @@ mod tests {
         
         // Each position should match one of the mesh vertices
         for pos in &positions {
-            let matches = vertices.iter().any(|v| *v == *pos);
+            let matches = vertices.contains(pos);
             assert!(matches, "Position {:?} doesn't match any vertex", pos);
         }
     }
@@ -641,14 +649,16 @@ mod tests {
 
     #[test]
     fn test_emitter_custom_transform() {
-        let mut emitter = FluidEmitter::default();
-        emitter.transform = [
-            [2.0, 0.0, 0.0, 0.0],
-            [0.0, 2.0, 0.0, 0.0],
-            [0.0, 0.0, 2.0, 0.0],
-            [100.0, 200.0, 300.0, 1.0],
-        ];
-        emitter.rate = 100.0;
+        let mut emitter = FluidEmitter {
+            transform: [
+                [2.0, 0.0, 0.0, 0.0],
+                [0.0, 2.0, 0.0, 0.0],
+                [0.0, 0.0, 2.0, 0.0],
+                [100.0, 200.0, 300.0, 1.0],
+            ],
+            rate: 100.0,
+            ..Default::default()
+        };
         
         let (positions, _, _) = emitter.tick(0.1);
         
@@ -664,10 +674,12 @@ mod tests {
 
     #[test]
     fn test_emitter_custom_velocity() {
-        let mut emitter = FluidEmitter::default();
-        emitter.velocity = [10.0, 20.0, 30.0];
-        emitter.jitter = 0.0; // Disable jitter for predictable test
-        emitter.rate = 10.0;
+        let mut emitter = FluidEmitter {
+            velocity: [10.0, 20.0, 30.0],
+            jitter: 0.0, // Disable jitter for predictable test
+            rate: 10.0,
+            ..Default::default()
+        };
         
         let (_, velocities, _) = emitter.tick(0.1);
         
@@ -684,9 +696,11 @@ mod tests {
 
     #[test]
     fn test_emitter_with_jitter() {
-        let mut emitter = FluidEmitter::default();
-        emitter.jitter = 1.0; // High jitter
-        emitter.rate = 100.0;
+        let mut emitter = FluidEmitter {
+            jitter: 1.0, // High jitter
+            rate: 100.0,
+            ..Default::default()
+        };
         
         let (_, velocities, _) = emitter.tick(0.1);
         

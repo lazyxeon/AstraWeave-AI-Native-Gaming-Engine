@@ -1365,8 +1365,7 @@ mod tests {
             manager.start().await.unwrap();
             // Manager will be dropped here
         }
-        // If we get here, drop worked correctly
-        assert!(true);
+        // If we get here, drop worked correctly - test passed
     }
 
     #[test]

@@ -269,8 +269,10 @@ mod tests {
         // Should adapt immediately on first check
         assert!(state.should_adapt(1000, 500));
 
-        let mut state = CDirectorState::default();
-        state.last_adaptation_time = 1000;
+        let state = CDirectorState {
+            last_adaptation_time: 1000,
+            ..Default::default()
+        };
 
         // Should not adapt before interval
         assert!(!state.should_adapt(1200, 500));

@@ -310,7 +310,7 @@ mod tests {
 
         // 2 despawned events + 1 cell unloaded event.
         assert_eq!(ps.events.len(), 6);
-        assert!(ps.cell_entities.get(&coord).is_none());
+        assert!(!ps.cell_entities.contains_key(&coord));
         for e in &spawned_entities {
             assert!(ps.get_entity_cell(*e).is_none());
         }

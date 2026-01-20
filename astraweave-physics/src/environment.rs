@@ -974,7 +974,7 @@ mod tests {
 
         // Heights should differ due to wave motion
         assert!(
-            (height1 - height2).abs() > 0.01 || true, // Wave may be at same phase
+            (height1 - height2).abs() > 0.01,
             "Wave should cause surface height variation"
         );
     }

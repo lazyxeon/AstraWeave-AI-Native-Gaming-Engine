@@ -3,8 +3,6 @@
 //! Validates that GPU resources (buffers, textures, pipelines) are properly
 //! cleaned up and don't leak across renderer creation/destruction cycles.
 
-use pollster;
-
 #[test]
 fn test_headless_device_creation() {
     // Verify headless device can be created for testing

@@ -8,8 +8,18 @@
 //! - Concurrent evaluation scenarios
 //! - Memory pressure during scoring
 
+#![allow(
+    dead_code,
+    unused_imports,
+    deprecated,
+    clippy::type_complexity,
+    clippy::needless_range_loop,
+    clippy::or_fun_call,
+    clippy::unwrap_or_default
+)]
+
 use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+    criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;

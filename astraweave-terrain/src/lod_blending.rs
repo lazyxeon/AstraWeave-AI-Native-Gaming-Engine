@@ -495,7 +495,7 @@ mod tests {
         let hash = blender.build_spatial_hash(&vertices);
 
         // Should have 2 cells
-        assert!(hash.len() >= 1);
+        assert!(!hash.is_empty());
     }
 
     #[test]

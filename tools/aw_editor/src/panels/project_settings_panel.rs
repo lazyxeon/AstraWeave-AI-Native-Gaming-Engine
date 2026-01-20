@@ -1,0 +1,1878 @@
+//! Project Settings Panel for the editor
+//!
+//! Provides centralized project configuration:
+//! - Engine settings (rendering, physics, audio)
+//! - Build settings (platforms, packaging)
+//! - Input configuration
+//! - Quality levels
+//! - Tags and layers
+//! - Version control integration
+
+use egui::{Color32, RichText, Ui};
+
+use crate::panels::Panel;
+
+/// Target platform
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TargetPlatform {
+    Windows,
+    Linux,
+    MacOS,
+    Android,
+    Ios,
+    WebAssembly,
+    PlayStation,
+    Xbox,
+    NintendoSwitch,
+}
+
+impl TargetPlatform {
+    pub fn icon(&self) -> &'static str {
+        match self {
+            TargetPlatform::Windows => "🪟",
+            TargetPlatform::Linux => "🐧",
+            TargetPlatform::MacOS => "🍎",
+            TargetPlatform::Android => "🤖",
+            TargetPlatform::Ios => "📱",
+            TargetPlatform::WebAssembly => "🌐",
+            TargetPlatform::PlayStation => "🎮",
+            TargetPlatform::Xbox => "🎮",
+            TargetPlatform::NintendoSwitch => "🎮",
+        }
+    }
+}
+
+/// Quality level preset
+#[derive(Debug, Clone)]
+pub struct QualityLevel {
+    pub name: String,
+    pub shadow_resolution: u32,
+    pub shadow_cascades: u32,
+    pub texture_quality: TextureQuality,
+    pub antialiasing: AntialiasingMode,
+    pub vsync: bool,
+    pub max_fps: u32,
+    pub lod_bias: f32,
+    pub particle_density: f32,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum TextureQuality {
+    Low,
+    Medium,
+    #[default]
+    High,
+    Ultra,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum AntialiasingMode {
+    None,
+    Fxaa,
+    #[default]
+    Smaa,
+    Taa,
+    Msaa2x,
+    Msaa4x,
+    Msaa8x,
+}
+
+impl Default for QualityLevel {
+    fn default() -> Self {
+        Self {
+            name: "Medium".to_string(),
+            shadow_resolution: 2048,
+            shadow_cascades: 4,
+            texture_quality: TextureQuality::High,
+            antialiasing: AntialiasingMode::Smaa,
+            vsync: true,
+            max_fps: 60,
+            lod_bias: 1.0,
+            particle_density: 1.0,
+        }
+    }
+}
+
+/// Physics settings
+#[derive(Debug, Clone)]
+pub struct PhysicsSettings {
+    pub gravity: [f32; 3],
+    pub fixed_timestep: f32,
+    pub max_substeps: u32,
+    pub broadphase: BroadphaseType,
+    pub default_friction: f32,
+    pub default_restitution: f32,
+    pub sleep_threshold: f32,
+    pub enable_ccd: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum BroadphaseType {
+    #[default]
+    Sap,
+    DynamicAabb,
+    Quadtree,
+}
+
+impl Default for PhysicsSettings {
+    fn default() -> Self {
+        Self {
+            gravity: [0.0, -9.81, 0.0],
+            fixed_timestep: 1.0 / 60.0,
+            max_substeps: 4,
+            broadphase: BroadphaseType::Sap,
+            default_friction: 0.5,
+            default_restitution: 0.3,
+            sleep_threshold: 0.1,
+            enable_ccd: true,
+        }
+    }
+}
+
+/// Audio settings
+#[derive(Debug, Clone)]
+pub struct AudioSettings {
+    pub master_volume: f32,
+    pub music_volume: f32,
+    pub sfx_volume: f32,
+    pub voice_volume: f32,
+    pub ambient_volume: f32,
+    pub max_simultaneous_sounds: u32,
+    pub doppler_factor: f32,
+    pub audio_backend: AudioBackend,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum AudioBackend {
+    #[default]
+    Auto,
+    Wasapi,
+    CoreAudio,
+    Alsa,
+    PulseAudio,
+}
+
+impl Default for AudioSettings {
+    fn default() -> Self {
+        Self {
+            master_volume: 1.0,
+            music_volume: 0.8,
+            sfx_volume: 1.0,
+            voice_volume: 1.0,
+            ambient_volume: 0.7,
+            max_simultaneous_sounds: 64,
+            doppler_factor: 1.0,
+            audio_backend: AudioBackend::Auto,
+        }
+    }
+}
+
+/// Rendering settings
+#[derive(Debug, Clone)]
+pub struct RenderingSettings {
+    pub renderer_backend: RendererBackend,
+    pub hdr_enabled: bool,
+    pub bloom_enabled: bool,
+    pub bloom_intensity: f32,
+    pub tonemapping: TonemappingMode,
+    pub ambient_occlusion: AoMode,
+    pub global_illumination: GiMode,
+    pub reflection_mode: ReflectionMode,
+    pub shadow_mode: ShadowMode,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum RendererBackend {
+    #[default]
+    Auto,
+    Vulkan,
+    DirectX12,
+    Metal,
+    OpenGL,
+    WebGpu,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum TonemappingMode {
+    None,
+    Reinhard,
+    #[default]
+    Aces,
+    AgX,
+    Filmic,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum AoMode {
+    None,
+    Ssao,
+    #[default]
+    Hbao,
+    Gtao,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum GiMode {
+    #[default]
+    None,
+    ScreenSpace,
+    Lumen,
+    PathTraced,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ReflectionMode {
+    None,
+    #[default]
+    ScreenSpace,
+    Raytraced,
+    Hybrid,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ShadowMode {
+    None,
+    HardShadows,
+    #[default]
+    SoftShadows,
+    Raytraced,
+}
+
+impl Default for RenderingSettings {
+    fn default() -> Self {
+        Self {
+            renderer_backend: RendererBackend::Auto,
+            hdr_enabled: true,
+            bloom_enabled: true,
+            bloom_intensity: 0.5,
+            tonemapping: TonemappingMode::Aces,
+            ambient_occlusion: AoMode::Hbao,
+            global_illumination: GiMode::ScreenSpace,
+            reflection_mode: ReflectionMode::ScreenSpace,
+            shadow_mode: ShadowMode::SoftShadows,
+        }
+    }
+}
+
+/// Input action
+#[derive(Debug, Clone)]
+pub struct InputAction {
+    pub name: String,
+    pub primary_key: String,
+    pub secondary_key: String,
+    pub gamepad_button: String,
+    pub dead_zone: f32,
+}
+
+impl Default for InputAction {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            primary_key: String::new(),
+            secondary_key: String::new(),
+            gamepad_button: String::new(),
+            dead_zone: 0.1,
+        }
+    }
+}
+
+/// Layer definition
+#[derive(Debug, Clone)]
+pub struct Layer {
+    pub id: u32,
+    pub name: String,
+    pub collides_with: Vec<u32>,
+}
+
+/// Tag definition
+#[derive(Debug, Clone)]
+pub struct Tag {
+    pub id: u32,
+    pub name: String,
+    pub color: Color32,
+}
+
+/// Build configuration
+#[derive(Debug, Clone)]
+pub struct BuildConfig {
+    pub platform: TargetPlatform,
+    pub enabled: bool,
+    pub development_build: bool,
+    pub compression: CompressionMode,
+    pub icon_path: String,
+    pub app_name: String,
+    pub version: String,
+    pub company: String,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum CompressionMode {
+    None,
+    #[default]
+    Fast,
+    Best,
+}
+
+impl Default for BuildConfig {
+    fn default() -> Self {
+        Self {
+            platform: TargetPlatform::Windows,
+            enabled: true,
+            development_build: true,
+            compression: CompressionMode::Fast,
+            icon_path: String::new(),
+            app_name: "My Game".to_string(),
+            version: "1.0.0".to_string(),
+            company: "My Company".to_string(),
+        }
+    }
+}
+
+/// Panel tabs
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SettingsTab {
+    #[default]
+    Project,
+    Rendering,
+    Physics,
+    Audio,
+    Input,
+    Quality,
+    TagsLayers,
+    Build,
+}
+
+/// Main Project Settings Panel
+pub struct ProjectSettingsPanel {
+    active_tab: SettingsTab,
+
+    // Project
+    project_name: String,
+    project_version: String,
+    company_name: String,
+    default_scene: String,
+
+    // Settings
+    rendering_settings: RenderingSettings,
+    physics_settings: PhysicsSettings,
+    audio_settings: AudioSettings,
+
+    // Quality levels
+    quality_levels: Vec<QualityLevel>,
+    selected_quality: usize,
+
+    // Input
+    input_actions: Vec<InputAction>,
+    selected_action: Option<usize>,
+
+    // Tags and layers
+    tags: Vec<Tag>,
+    layers: Vec<Layer>,
+    next_tag_id: u32,
+    next_layer_id: u32,
+
+    // Build
+    build_configs: Vec<BuildConfig>,
+    selected_build: usize,
+}
+
+impl Default for ProjectSettingsPanel {
+    fn default() -> Self {
+        let mut panel = Self {
+            active_tab: SettingsTab::Project,
+
+            project_name: "AstraWeave Project".to_string(),
+            project_version: "0.1.0".to_string(),
+            company_name: "AstraWeave Studios".to_string(),
+            default_scene: "scenes/main.scene".to_string(),
+
+            rendering_settings: RenderingSettings::default(),
+            physics_settings: PhysicsSettings::default(),
+            audio_settings: AudioSettings::default(),
+
+            quality_levels: Vec::new(),
+            selected_quality: 0,
+
+            input_actions: Vec::new(),
+            selected_action: None,
+
+            tags: Vec::new(),
+            layers: Vec::new(),
+            next_tag_id: 1,
+            next_layer_id: 1,
+
+            build_configs: Vec::new(),
+            selected_build: 0,
+        };
+
+        panel.create_sample_data();
+        panel
+    }
+}
+
+impl ProjectSettingsPanel {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn create_sample_data(&mut self) {
+        // Quality levels
+        self.quality_levels = vec![
+            QualityLevel {
+                name: "Low".to_string(),
+                shadow_resolution: 512,
+                shadow_cascades: 2,
+                texture_quality: TextureQuality::Low,
+                antialiasing: AntialiasingMode::None,
+                vsync: false,
+                max_fps: 30,
+                lod_bias: 0.5,
+                particle_density: 0.25,
+            },
+            QualityLevel {
+                name: "Medium".to_string(),
+                shadow_resolution: 1024,
+                shadow_cascades: 3,
+                texture_quality: TextureQuality::Medium,
+                antialiasing: AntialiasingMode::Fxaa,
+                vsync: true,
+                max_fps: 60,
+                lod_bias: 1.0,
+                particle_density: 0.5,
+            },
+            QualityLevel {
+                name: "High".to_string(),
+                shadow_resolution: 2048,
+                shadow_cascades: 4,
+                texture_quality: TextureQuality::High,
+                antialiasing: AntialiasingMode::Smaa,
+                vsync: true,
+                max_fps: 60,
+                lod_bias: 1.5,
+                particle_density: 1.0,
+            },
+            QualityLevel {
+                name: "Ultra".to_string(),
+                shadow_resolution: 4096,
+                shadow_cascades: 4,
+                texture_quality: TextureQuality::Ultra,
+                antialiasing: AntialiasingMode::Taa,
+                vsync: false,
+                max_fps: 0, // Unlimited
+                lod_bias: 2.0,
+                particle_density: 1.5,
+            },
+        ];
+
+        // Input actions
+        self.input_actions = vec![
+            InputAction { name: "MoveForward".to_string(), primary_key: "W".to_string(), secondary_key: "Up".to_string(), gamepad_button: "LeftStick-Y+".to_string(), dead_zone: 0.1 },
+            InputAction { name: "MoveBackward".to_string(), primary_key: "S".to_string(), secondary_key: "Down".to_string(), gamepad_button: "LeftStick-Y-".to_string(), dead_zone: 0.1 },
+            InputAction { name: "MoveLeft".to_string(), primary_key: "A".to_string(), secondary_key: "Left".to_string(), gamepad_button: "LeftStick-X-".to_string(), dead_zone: 0.1 },
+            InputAction { name: "MoveRight".to_string(), primary_key: "D".to_string(), secondary_key: "Right".to_string(), gamepad_button: "LeftStick-X+".to_string(), dead_zone: 0.1 },
+            InputAction { name: "Jump".to_string(), primary_key: "Space".to_string(), secondary_key: "".to_string(), gamepad_button: "A".to_string(), dead_zone: 0.0 },
+            InputAction { name: "Attack".to_string(), primary_key: "Mouse1".to_string(), secondary_key: "".to_string(), gamepad_button: "RightTrigger".to_string(), dead_zone: 0.2 },
+            InputAction { name: "Interact".to_string(), primary_key: "E".to_string(), secondary_key: "".to_string(), gamepad_button: "X".to_string(), dead_zone: 0.0 },
+        ];
+
+        // Tags
+        self.tags = vec![
+            Tag { id: self.next_tag_id(), name: "Player".to_string(), color: Color32::from_rgb(50, 200, 50) },
+            Tag { id: self.next_tag_id(), name: "Enemy".to_string(), color: Color32::from_rgb(200, 50, 50) },
+            Tag { id: self.next_tag_id(), name: "NPC".to_string(), color: Color32::from_rgb(50, 100, 200) },
+            Tag { id: self.next_tag_id(), name: "Collectible".to_string(), color: Color32::from_rgb(200, 200, 50) },
+            Tag { id: self.next_tag_id(), name: "Interactable".to_string(), color: Color32::from_rgb(150, 100, 200) },
+        ];
+
+        // Layers
+        self.layers = vec![
+            Layer { id: self.next_layer_id(), name: "Default".to_string(), collides_with: vec![1, 2, 3, 4, 5] },
+            Layer { id: self.next_layer_id(), name: "Player".to_string(), collides_with: vec![1, 2, 3, 5] },
+            Layer { id: self.next_layer_id(), name: "Enemy".to_string(), collides_with: vec![1, 2, 3, 5] },
+            Layer { id: self.next_layer_id(), name: "Trigger".to_string(), collides_with: vec![2, 3] },
+            Layer { id: self.next_layer_id(), name: "Projectile".to_string(), collides_with: vec![1, 2, 3] },
+        ];
+
+        // Build configs
+        self.build_configs = vec![
+            BuildConfig { platform: TargetPlatform::Windows, enabled: true, development_build: true, ..Default::default() },
+            BuildConfig { platform: TargetPlatform::Linux, enabled: true, development_build: true, ..Default::default() },
+            BuildConfig { platform: TargetPlatform::MacOS, enabled: false, ..Default::default() },
+            BuildConfig { platform: TargetPlatform::WebAssembly, enabled: true, development_build: false, ..Default::default() },
+        ];
+    }
+
+    fn next_tag_id(&mut self) -> u32 {
+        let id = self.next_tag_id;
+        self.next_tag_id += 1;
+        id
+    }
+
+    fn next_layer_id(&mut self) -> u32 {
+        let id = self.next_layer_id;
+        self.next_layer_id += 1;
+        id
+    }
+
+    fn show_tab_bar(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            let tabs = [
+                (SettingsTab::Project, "📋 Project"),
+                (SettingsTab::Rendering, "🎨 Rendering"),
+                (SettingsTab::Physics, "🧪 Physics"),
+                (SettingsTab::Audio, "🔊 Audio"),
+                (SettingsTab::Input, "🎮 Input"),
+                (SettingsTab::Quality, "⭐ Quality"),
+                (SettingsTab::TagsLayers, "🏷️ Tags/Layers"),
+                (SettingsTab::Build, "📦 Build"),
+            ];
+
+            for (tab, label) in tabs {
+                let is_selected = self.active_tab == tab;
+                let button = egui::Button::new(label).fill(if is_selected {
+                    Color32::from_rgb(60, 100, 160)
+                } else {
+                    Color32::from_rgb(50, 50, 55)
+                });
+
+                if ui.add(button).clicked() {
+                    self.active_tab = tab;
+                }
+            }
+        });
+
+        ui.separator();
+    }
+
+    fn show_project_tab(&mut self, ui: &mut Ui) {
+        ui.heading("📋 Project Settings");
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("📁 Project Info").strong());
+
+            egui::Grid::new("project_info")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Project Name:");
+                    ui.text_edit_singleline(&mut self.project_name);
+                    ui.end_row();
+
+                    ui.label("Version:");
+                    ui.text_edit_singleline(&mut self.project_version);
+                    ui.end_row();
+
+                    ui.label("Company:");
+                    ui.text_edit_singleline(&mut self.company_name);
+                    ui.end_row();
+
+                    ui.label("Default Scene:");
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(&mut self.default_scene);
+                        if ui.button("📂").clicked() {}
+                    });
+                    ui.end_row();
+                });
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("🔧 Engine Settings").strong());
+
+            egui::Grid::new("engine_settings")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Renderer Backend:");
+                    egui::ComboBox::from_id_salt("renderer_backend")
+                        .selected_text(format!("{:?}", self.rendering_settings.renderer_backend))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::Auto, "Auto");
+                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::Vulkan, "Vulkan");
+                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::DirectX12, "DirectX 12");
+                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::Metal, "Metal");
+                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::OpenGL, "OpenGL");
+                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::WebGpu, "WebGPU");
+                        });
+                    ui.end_row();
+
+                    ui.label("Audio Backend:");
+                    egui::ComboBox::from_id_salt("audio_backend")
+                        .selected_text(format!("{:?}", self.audio_settings.audio_backend))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::Auto, "Auto");
+                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::Wasapi, "WASAPI");
+                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::CoreAudio, "Core Audio");
+                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::Alsa, "ALSA");
+                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::PulseAudio, "PulseAudio");
+                        });
+                    ui.end_row();
+                });
+        });
+    }
+
+    fn show_rendering_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🎨 Rendering Settings");
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("🔆 HDR & Post-Processing").strong());
+
+            egui::Grid::new("hdr_settings")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("HDR:");
+                    ui.checkbox(&mut self.rendering_settings.hdr_enabled, "Enabled");
+                    ui.end_row();
+
+                    ui.label("Bloom:");
+                    ui.checkbox(&mut self.rendering_settings.bloom_enabled, "Enabled");
+                    ui.end_row();
+
+                    if self.rendering_settings.bloom_enabled {
+                        ui.label("Bloom Intensity:");
+                        ui.add(egui::Slider::new(&mut self.rendering_settings.bloom_intensity, 0.0..=2.0));
+                        ui.end_row();
+                    }
+
+                    ui.label("Tonemapping:");
+                    egui::ComboBox::from_id_salt("tonemapping")
+                        .selected_text(format!("{:?}", self.rendering_settings.tonemapping))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::None, "None");
+                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::Reinhard, "Reinhard");
+                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::Aces, "ACES");
+                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::AgX, "AgX");
+                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::Filmic, "Filmic");
+                        });
+                    ui.end_row();
+                });
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("💡 Lighting").strong());
+
+            egui::Grid::new("lighting_settings")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Ambient Occlusion:");
+                    egui::ComboBox::from_id_salt("ao_mode")
+                        .selected_text(format!("{:?}", self.rendering_settings.ambient_occlusion))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::None, "None");
+                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::Ssao, "SSAO");
+                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::Hbao, "HBAO+");
+                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::Gtao, "GTAO");
+                        });
+                    ui.end_row();
+
+                    ui.label("Global Illumination:");
+                    egui::ComboBox::from_id_salt("gi_mode")
+                        .selected_text(format!("{:?}", self.rendering_settings.global_illumination))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::None, "None");
+                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::ScreenSpace, "Screen Space");
+                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::Lumen, "Lumen");
+                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::PathTraced, "Path Traced");
+                        });
+                    ui.end_row();
+
+                    ui.label("Reflections:");
+                    egui::ComboBox::from_id_salt("reflection_mode")
+                        .selected_text(format!("{:?}", self.rendering_settings.reflection_mode))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::None, "None");
+                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::ScreenSpace, "Screen Space");
+                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::Raytraced, "Ray Traced");
+                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::Hybrid, "Hybrid");
+                        });
+                    ui.end_row();
+
+                    ui.label("Shadows:");
+                    egui::ComboBox::from_id_salt("shadow_mode")
+                        .selected_text(format!("{:?}", self.rendering_settings.shadow_mode))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::None, "None");
+                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::HardShadows, "Hard");
+                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::SoftShadows, "Soft");
+                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::Raytraced, "Ray Traced");
+                        });
+                    ui.end_row();
+                });
+        });
+    }
+
+    fn show_physics_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🧪 Physics Settings");
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("🌍 World").strong());
+
+            egui::Grid::new("physics_world")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Gravity X:");
+                    ui.add(egui::DragValue::new(&mut self.physics_settings.gravity[0]).speed(0.1));
+                    ui.end_row();
+
+                    ui.label("Gravity Y:");
+                    ui.add(egui::DragValue::new(&mut self.physics_settings.gravity[1]).speed(0.1));
+                    ui.end_row();
+
+                    ui.label("Gravity Z:");
+                    ui.add(egui::DragValue::new(&mut self.physics_settings.gravity[2]).speed(0.1));
+                    ui.end_row();
+
+                    ui.label("Fixed Timestep:");
+                    ui.add(egui::DragValue::new(&mut self.physics_settings.fixed_timestep).speed(0.001).suffix("s"));
+                    ui.end_row();
+
+                    ui.label("Max Substeps:");
+                    ui.add(egui::Slider::new(&mut self.physics_settings.max_substeps, 1..=16));
+                    ui.end_row();
+
+                    ui.label("Broadphase:");
+                    egui::ComboBox::from_id_salt("broadphase")
+                        .selected_text(format!("{:?}", self.physics_settings.broadphase))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.physics_settings.broadphase, BroadphaseType::Sap, "SAP");
+                            ui.selectable_value(&mut self.physics_settings.broadphase, BroadphaseType::DynamicAabb, "Dynamic AABB");
+                            ui.selectable_value(&mut self.physics_settings.broadphase, BroadphaseType::Quadtree, "Quadtree");
+                        });
+                    ui.end_row();
+                });
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("📏 Defaults").strong());
+
+            egui::Grid::new("physics_defaults")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Default Friction:");
+                    ui.add(egui::Slider::new(&mut self.physics_settings.default_friction, 0.0..=1.0));
+                    ui.end_row();
+
+                    ui.label("Default Restitution:");
+                    ui.add(egui::Slider::new(&mut self.physics_settings.default_restitution, 0.0..=1.0));
+                    ui.end_row();
+
+                    ui.label("Sleep Threshold:");
+                    ui.add(egui::DragValue::new(&mut self.physics_settings.sleep_threshold).speed(0.01));
+                    ui.end_row();
+
+                    ui.label("CCD:");
+                    ui.checkbox(&mut self.physics_settings.enable_ccd, "Enable Continuous Collision Detection");
+                    ui.end_row();
+                });
+        });
+    }
+
+    fn show_audio_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🔊 Audio Settings");
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("🎚️ Volume").strong());
+
+            egui::Grid::new("audio_volumes")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Master Volume:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.master_volume, 0.0..=1.0));
+                    ui.end_row();
+
+                    ui.label("Music Volume:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.music_volume, 0.0..=1.0));
+                    ui.end_row();
+
+                    ui.label("SFX Volume:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.sfx_volume, 0.0..=1.0));
+                    ui.end_row();
+
+                    ui.label("Voice Volume:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.voice_volume, 0.0..=1.0));
+                    ui.end_row();
+
+                    ui.label("Ambient Volume:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.ambient_volume, 0.0..=1.0));
+                    ui.end_row();
+                });
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("⚙️ Settings").strong());
+
+            egui::Grid::new("audio_settings")
+                .num_columns(2)
+                .spacing([10.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Max Simultaneous:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.max_simultaneous_sounds, 16..=256));
+                    ui.end_row();
+
+                    ui.label("Doppler Factor:");
+                    ui.add(egui::Slider::new(&mut self.audio_settings.doppler_factor, 0.0..=2.0));
+                    ui.end_row();
+                });
+        });
+    }
+
+    fn show_input_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🎮 Input Settings");
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("📋 Actions").strong());
+                if ui.button("+ Add Action").clicked() {
+                    self.input_actions.push(InputAction {
+                        name: format!("NewAction{}", self.input_actions.len()),
+                        ..Default::default()
+                    });
+                }
+            });
+
+            egui::ScrollArea::vertical()
+                .max_height(300.0)
+                .show(ui, |ui| {
+                    egui::Grid::new("input_actions")
+                        .num_columns(5)
+                        .spacing([10.0, 4.0])
+                        .striped(true)
+                        .show(ui, |ui| {
+                            // Header
+                            ui.label(RichText::new("Action").strong());
+                            ui.label(RichText::new("Primary Key").strong());
+                            ui.label(RichText::new("Secondary").strong());
+                            ui.label(RichText::new("Gamepad").strong());
+                            ui.label(RichText::new("Dead Zone").strong());
+                            ui.end_row();
+
+                            for action in &mut self.input_actions {
+                                ui.text_edit_singleline(&mut action.name);
+                                ui.text_edit_singleline(&mut action.primary_key);
+                                ui.text_edit_singleline(&mut action.secondary_key);
+                                ui.text_edit_singleline(&mut action.gamepad_button);
+                                ui.add(egui::DragValue::new(&mut action.dead_zone).speed(0.01).range(0.0..=1.0));
+                                ui.end_row();
+                            }
+                        });
+                });
+        });
+    }
+
+    fn show_quality_tab(&mut self, ui: &mut Ui) {
+        ui.heading("⭐ Quality Levels");
+        ui.add_space(10.0);
+
+        ui.horizontal(|ui| {
+            // Quality level selector
+            for (i, level) in self.quality_levels.iter().enumerate() {
+                let is_selected = self.selected_quality == i;
+                let button = egui::Button::new(&level.name).fill(if is_selected {
+                    Color32::from_rgb(60, 100, 160)
+                } else {
+                    Color32::from_rgb(50, 50, 55)
+                });
+
+                if ui.add(button).clicked() {
+                    self.selected_quality = i;
+                }
+            }
+
+            if ui.button("+ Add Level").clicked() {
+                self.quality_levels.push(QualityLevel {
+                    name: format!("Custom {}", self.quality_levels.len()),
+                    ..Default::default()
+                });
+            }
+        });
+
+        ui.add_space(10.0);
+
+        if let Some(level) = self.quality_levels.get_mut(self.selected_quality) {
+            ui.group(|ui| {
+                egui::Grid::new("quality_settings")
+                    .num_columns(2)
+                    .spacing([10.0, 4.0])
+                    .show(ui, |ui| {
+                        ui.label("Name:");
+                        ui.text_edit_singleline(&mut level.name);
+                        ui.end_row();
+
+                        ui.label("Shadow Resolution:");
+                        egui::ComboBox::from_id_salt("shadow_res")
+                            .selected_text(format!("{}", level.shadow_resolution))
+                            .show_ui(ui, |ui| {
+                                for res in [256, 512, 1024, 2048, 4096, 8192] {
+                                    ui.selectable_value(&mut level.shadow_resolution, res, format!("{}", res));
+                                }
+                            });
+                        ui.end_row();
+
+                        ui.label("Shadow Cascades:");
+                        ui.add(egui::Slider::new(&mut level.shadow_cascades, 1..=6));
+                        ui.end_row();
+
+                        ui.label("Texture Quality:");
+                        egui::ComboBox::from_id_salt("tex_quality")
+                            .selected_text(format!("{:?}", level.texture_quality))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut level.texture_quality, TextureQuality::Low, "Low");
+                                ui.selectable_value(&mut level.texture_quality, TextureQuality::Medium, "Medium");
+                                ui.selectable_value(&mut level.texture_quality, TextureQuality::High, "High");
+                                ui.selectable_value(&mut level.texture_quality, TextureQuality::Ultra, "Ultra");
+                            });
+                        ui.end_row();
+
+                        ui.label("Antialiasing:");
+                        egui::ComboBox::from_id_salt("aa_mode")
+                            .selected_text(format!("{:?}", level.antialiasing))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::None, "None");
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Fxaa, "FXAA");
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Smaa, "SMAA");
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Taa, "TAA");
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Msaa2x, "MSAA 2x");
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Msaa4x, "MSAA 4x");
+                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Msaa8x, "MSAA 8x");
+                            });
+                        ui.end_row();
+
+                        ui.label("VSync:");
+                        ui.checkbox(&mut level.vsync, "");
+                        ui.end_row();
+
+                        ui.label("Max FPS:");
+                        ui.add(egui::DragValue::new(&mut level.max_fps).speed(1).suffix(" (0=unlimited)"));
+                        ui.end_row();
+
+                        ui.label("LOD Bias:");
+                        ui.add(egui::Slider::new(&mut level.lod_bias, 0.5..=2.0));
+                        ui.end_row();
+
+                        ui.label("Particle Density:");
+                        ui.add(egui::Slider::new(&mut level.particle_density, 0.0..=2.0));
+                        ui.end_row();
+                    });
+            });
+        }
+    }
+
+    fn show_tags_layers_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🏷️ Tags & Layers");
+        ui.add_space(10.0);
+
+        ui.columns(2, |cols| {
+            // Tags
+            cols[0].group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("🏷️ Tags").strong());
+                    if ui.button("+ Add").clicked() {
+                        let id = self.next_tag_id();
+                        self.tags.push(Tag {
+                            id,
+                            name: format!("Tag{}", id),
+                            color: Color32::GRAY,
+                        });
+                    }
+                });
+
+                egui::ScrollArea::vertical()
+                    .max_height(200.0)
+                    .show(ui, |ui| {
+                        for tag in &mut self.tags {
+                            ui.horizontal(|ui| {
+                                ui.color_edit_button_srgba(&mut tag.color);
+                                ui.text_edit_singleline(&mut tag.name);
+                                if ui.button("🗑️").clicked() {
+                                    // Remove tag
+                                }
+                            });
+                        }
+                    });
+            });
+
+            // Layers
+            cols[1].group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("📂 Layers").strong());
+                    if ui.button("+ Add").clicked() {
+                        let id = self.next_layer_id();
+                        self.layers.push(Layer {
+                            id,
+                            name: format!("Layer{}", id),
+                            collides_with: Vec::new(),
+                        });
+                    }
+                });
+
+                egui::ScrollArea::vertical()
+                    .max_height(200.0)
+                    .show(ui, |ui| {
+                        for layer in &mut self.layers {
+                            ui.horizontal(|ui| {
+                                ui.label(format!("[{}]", layer.id));
+                                ui.text_edit_singleline(&mut layer.name);
+                                if ui.button("🗑️").clicked() {
+                                    // Remove layer
+                                }
+                            });
+                        }
+                    });
+            });
+        });
+    }
+
+    fn show_build_tab(&mut self, ui: &mut Ui) {
+        ui.heading("📦 Build Settings");
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("🎯 Target Platforms").strong());
+
+            for config in &mut self.build_configs {
+                ui.horizontal(|ui| {
+                    ui.checkbox(&mut config.enabled, "");
+                    ui.label(format!("{} {:?}", config.platform.icon(), config.platform));
+                    ui.checkbox(&mut config.development_build, "Development");
+                });
+            }
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label(RichText::new("📝 Application Info").strong());
+
+            if let Some(config) = self.build_configs.get_mut(self.selected_build) {
+                egui::Grid::new("build_info")
+                    .num_columns(2)
+                    .spacing([10.0, 4.0])
+                    .show(ui, |ui| {
+                        ui.label("App Name:");
+                        ui.text_edit_singleline(&mut config.app_name);
+                        ui.end_row();
+
+                        ui.label("Version:");
+                        ui.text_edit_singleline(&mut config.version);
+                        ui.end_row();
+
+                        ui.label("Company:");
+                        ui.text_edit_singleline(&mut config.company);
+                        ui.end_row();
+
+                        ui.label("Icon:");
+                        ui.horizontal(|ui| {
+                            ui.text_edit_singleline(&mut config.icon_path);
+                            if ui.button("📂").clicked() {}
+                        });
+                        ui.end_row();
+
+                        ui.label("Compression:");
+                        egui::ComboBox::from_id_salt("compression")
+                            .selected_text(format!("{:?}", config.compression))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut config.compression, CompressionMode::None, "None");
+                                ui.selectable_value(&mut config.compression, CompressionMode::Fast, "Fast");
+                                ui.selectable_value(&mut config.compression, CompressionMode::Best, "Best");
+                            });
+                        ui.end_row();
+                    });
+            }
+        });
+
+        ui.add_space(10.0);
+
+        ui.horizontal(|ui| {
+            ui.button("🔨 Build").clicked();
+            ui.button("🔨 Build and Run").clicked();
+            if ui.button("📁 Open Build Folder").clicked() {}
+        });
+    }
+
+    // Getters for testing
+    pub fn quality_level_count(&self) -> usize {
+        self.quality_levels.len()
+    }
+
+    pub fn input_action_count(&self) -> usize {
+        self.input_actions.len()
+    }
+
+    pub fn tag_count(&self) -> usize {
+        self.tags.len()
+    }
+
+    pub fn layer_count(&self) -> usize {
+        self.layers.len()
+    }
+
+    pub fn set_project_name(&mut self, name: &str) {
+        self.project_name = name.to_string();
+    }
+}
+
+impl Panel for ProjectSettingsPanel {
+    fn name(&self) -> &'static str {
+        "Project Settings"
+    }
+
+    fn show(&mut self, ui: &mut Ui) {
+        self.show_tab_bar(ui);
+
+        match self.active_tab {
+            SettingsTab::Project => self.show_project_tab(ui),
+            SettingsTab::Rendering => self.show_rendering_tab(ui),
+            SettingsTab::Physics => self.show_physics_tab(ui),
+            SettingsTab::Audio => self.show_audio_tab(ui),
+            SettingsTab::Input => self.show_input_tab(ui),
+            SettingsTab::Quality => self.show_quality_tab(ui),
+            SettingsTab::TagsLayers => self.show_tags_layers_tab(ui),
+            SettingsTab::Build => self.show_build_tab(ui),
+        }
+    }
+
+    fn update(&mut self) {
+        // No specific update logic needed
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ============================================================
+    // TARGET PLATFORM TESTS
+    // ============================================================
+
+    #[test]
+    fn test_target_platform_all_variants() {
+        let variants = [
+            TargetPlatform::Windows,
+            TargetPlatform::Linux,
+            TargetPlatform::MacOS,
+            TargetPlatform::Android,
+            TargetPlatform::Ios,
+            TargetPlatform::WebAssembly,
+            TargetPlatform::PlayStation,
+            TargetPlatform::Xbox,
+            TargetPlatform::NintendoSwitch,
+        ];
+        assert_eq!(variants.len(), 9);
+    }
+
+    #[test]
+    fn test_platform_icons() {
+        assert_eq!(TargetPlatform::Windows.icon(), "🪟");
+        assert_eq!(TargetPlatform::Linux.icon(), "🐧");
+    }
+
+    #[test]
+    fn test_platform_icon_all() {
+        assert_eq!(TargetPlatform::Windows.icon(), "🪟");
+        assert_eq!(TargetPlatform::Linux.icon(), "🐧");
+        assert_eq!(TargetPlatform::MacOS.icon(), "🍎");
+        assert_eq!(TargetPlatform::Android.icon(), "🤖");
+        assert_eq!(TargetPlatform::Ios.icon(), "📱");
+        assert_eq!(TargetPlatform::WebAssembly.icon(), "🌐");
+        assert_eq!(TargetPlatform::PlayStation.icon(), "🎮");
+        assert_eq!(TargetPlatform::Xbox.icon(), "🎮");
+        assert_eq!(TargetPlatform::NintendoSwitch.icon(), "🎮");
+    }
+
+    #[test]
+    fn test_target_platform_clone() {
+        let platform = TargetPlatform::Linux;
+        let cloned = platform;
+        assert_eq!(cloned, TargetPlatform::Linux);
+    }
+
+    // ============================================================
+    // TEXTURE QUALITY TESTS
+    // ============================================================
+
+    #[test]
+    fn test_texture_quality_default() {
+        let quality = TextureQuality::default();
+        assert_eq!(quality, TextureQuality::High);
+    }
+
+    #[test]
+    fn test_texture_quality_all_variants() {
+        let variants = [
+            TextureQuality::Low,
+            TextureQuality::Medium,
+            TextureQuality::High,
+            TextureQuality::Ultra,
+        ];
+        assert_eq!(variants.len(), 4);
+    }
+
+    #[test]
+    fn test_texture_quality_clone() {
+        let quality = TextureQuality::Ultra;
+        let cloned = quality;
+        assert_eq!(cloned, TextureQuality::Ultra);
+    }
+
+    // ============================================================
+    // ANTIALIASING MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_antialiasing_mode_default() {
+        let aa = AntialiasingMode::default();
+        assert_eq!(aa, AntialiasingMode::Smaa);
+    }
+
+    #[test]
+    fn test_antialiasing_mode_all_variants() {
+        let variants = [
+            AntialiasingMode::None,
+            AntialiasingMode::Fxaa,
+            AntialiasingMode::Smaa,
+            AntialiasingMode::Taa,
+            AntialiasingMode::Msaa2x,
+            AntialiasingMode::Msaa4x,
+            AntialiasingMode::Msaa8x,
+        ];
+        assert_eq!(variants.len(), 7);
+    }
+
+    #[test]
+    fn test_antialiasing_mode_clone() {
+        let aa = AntialiasingMode::Taa;
+        let cloned = aa;
+        assert_eq!(cloned, AntialiasingMode::Taa);
+    }
+
+    // ============================================================
+    // QUALITY LEVEL TESTS
+    // ============================================================
+
+    #[test]
+    fn test_quality_level_default() {
+        let level = QualityLevel::default();
+        assert_eq!(level.name, "Medium");
+        assert_eq!(level.shadow_resolution, 2048);
+        assert_eq!(level.shadow_cascades, 4);
+        assert_eq!(level.texture_quality, TextureQuality::High);
+        assert_eq!(level.antialiasing, AntialiasingMode::Smaa);
+        assert!(level.vsync);
+        assert_eq!(level.max_fps, 60);
+        assert_eq!(level.lod_bias, 1.0);
+        assert_eq!(level.particle_density, 1.0);
+    }
+
+    #[test]
+    fn test_quality_level_custom() {
+        let level = QualityLevel {
+            name: "Custom".to_string(),
+            shadow_resolution: 4096,
+            shadow_cascades: 6,
+            texture_quality: TextureQuality::Ultra,
+            antialiasing: AntialiasingMode::Msaa8x,
+            vsync: false,
+            max_fps: 144,
+            lod_bias: 2.0,
+            particle_density: 1.5,
+        };
+        assert_eq!(level.name, "Custom");
+        assert_eq!(level.shadow_resolution, 4096);
+        assert_eq!(level.max_fps, 144);
+    }
+
+    #[test]
+    fn test_quality_level_clone() {
+        let level = QualityLevel::default();
+        let cloned = level.clone();
+        assert_eq!(cloned.name, "Medium");
+        assert_eq!(cloned.shadow_resolution, 2048);
+    }
+
+    // ============================================================
+    // BROADPHASE TYPE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_broadphase_type_default() {
+        let bp = BroadphaseType::default();
+        assert_eq!(bp, BroadphaseType::Sap);
+    }
+
+    #[test]
+    fn test_broadphase_type_all_variants() {
+        let variants = [
+            BroadphaseType::Sap,
+            BroadphaseType::DynamicAabb,
+            BroadphaseType::Quadtree,
+        ];
+        assert_eq!(variants.len(), 3);
+    }
+
+    // ============================================================
+    // PHYSICS SETTINGS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_default_physics() {
+        let settings = PhysicsSettings::default();
+        assert_eq!(settings.gravity[1], -9.81);
+    }
+
+    #[test]
+    fn test_physics_settings_default_full() {
+        let settings = PhysicsSettings::default();
+        assert_eq!(settings.gravity, [0.0, -9.81, 0.0]);
+        assert!((settings.fixed_timestep - 1.0 / 60.0).abs() < 0.0001);
+        assert_eq!(settings.max_substeps, 4);
+        assert_eq!(settings.broadphase, BroadphaseType::Sap);
+        assert_eq!(settings.default_friction, 0.5);
+        assert_eq!(settings.default_restitution, 0.3);
+        assert_eq!(settings.sleep_threshold, 0.1);
+        assert!(settings.enable_ccd);
+    }
+
+    #[test]
+    fn test_physics_settings_custom() {
+        let settings = PhysicsSettings {
+            gravity: [0.0, -15.0, 0.0],
+            fixed_timestep: 1.0 / 120.0,
+            max_substeps: 8,
+            broadphase: BroadphaseType::DynamicAabb,
+            default_friction: 0.8,
+            default_restitution: 0.6,
+            sleep_threshold: 0.05,
+            enable_ccd: false,
+        };
+        assert_eq!(settings.gravity[1], -15.0);
+        assert_eq!(settings.max_substeps, 8);
+        assert!(!settings.enable_ccd);
+    }
+
+    #[test]
+    fn test_physics_settings_clone() {
+        let settings = PhysicsSettings::default();
+        let cloned = settings.clone();
+        assert_eq!(cloned.gravity, [0.0, -9.81, 0.0]);
+    }
+
+    // ============================================================
+    // AUDIO BACKEND TESTS
+    // ============================================================
+
+    #[test]
+    fn test_audio_backend_default() {
+        let backend = AudioBackend::default();
+        assert_eq!(backend, AudioBackend::Auto);
+    }
+
+    #[test]
+    fn test_audio_backend_all_variants() {
+        let variants = [
+            AudioBackend::Auto,
+            AudioBackend::Wasapi,
+            AudioBackend::CoreAudio,
+            AudioBackend::Alsa,
+            AudioBackend::PulseAudio,
+        ];
+        assert_eq!(variants.len(), 5);
+    }
+
+    // ============================================================
+    // AUDIO SETTINGS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_audio_settings_default() {
+        let settings = AudioSettings::default();
+        assert_eq!(settings.master_volume, 1.0);
+        assert_eq!(settings.music_volume, 0.8);
+        assert_eq!(settings.sfx_volume, 1.0);
+        assert_eq!(settings.voice_volume, 1.0);
+        assert_eq!(settings.ambient_volume, 0.7);
+        assert_eq!(settings.max_simultaneous_sounds, 64);
+        assert_eq!(settings.doppler_factor, 1.0);
+        assert_eq!(settings.audio_backend, AudioBackend::Auto);
+    }
+
+    #[test]
+    fn test_audio_settings_custom() {
+        let settings = AudioSettings {
+            master_volume: 0.5,
+            music_volume: 0.3,
+            sfx_volume: 0.8,
+            voice_volume: 1.0,
+            ambient_volume: 0.4,
+            max_simultaneous_sounds: 128,
+            doppler_factor: 0.5,
+            audio_backend: AudioBackend::Wasapi,
+        };
+        assert_eq!(settings.master_volume, 0.5);
+        assert_eq!(settings.max_simultaneous_sounds, 128);
+        assert_eq!(settings.audio_backend, AudioBackend::Wasapi);
+    }
+
+    #[test]
+    fn test_audio_settings_clone() {
+        let settings = AudioSettings::default();
+        let cloned = settings.clone();
+        assert_eq!(cloned.master_volume, 1.0);
+    }
+
+    // ============================================================
+    // RENDERER BACKEND TESTS
+    // ============================================================
+
+    #[test]
+    fn test_renderer_backend_default() {
+        let backend = RendererBackend::default();
+        assert_eq!(backend, RendererBackend::Auto);
+    }
+
+    #[test]
+    fn test_renderer_backend_all_variants() {
+        let variants = [
+            RendererBackend::Auto,
+            RendererBackend::Vulkan,
+            RendererBackend::DirectX12,
+            RendererBackend::Metal,
+            RendererBackend::OpenGL,
+            RendererBackend::WebGpu,
+        ];
+        assert_eq!(variants.len(), 6);
+    }
+
+    // ============================================================
+    // TONEMAPPING MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_tonemapping_mode_default() {
+        let mode = TonemappingMode::default();
+        assert_eq!(mode, TonemappingMode::Aces);
+    }
+
+    #[test]
+    fn test_tonemapping_mode_all_variants() {
+        let variants = [
+            TonemappingMode::None,
+            TonemappingMode::Reinhard,
+            TonemappingMode::Aces,
+            TonemappingMode::AgX,
+            TonemappingMode::Filmic,
+        ];
+        assert_eq!(variants.len(), 5);
+    }
+
+    // ============================================================
+    // AO MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_ao_mode_default() {
+        let mode = AoMode::default();
+        assert_eq!(mode, AoMode::Hbao);
+    }
+
+    #[test]
+    fn test_ao_mode_all_variants() {
+        let variants = [
+            AoMode::None,
+            AoMode::Ssao,
+            AoMode::Hbao,
+            AoMode::Gtao,
+        ];
+        assert_eq!(variants.len(), 4);
+    }
+
+    // ============================================================
+    // GI MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_gi_mode_default() {
+        let mode = GiMode::default();
+        assert_eq!(mode, GiMode::None);
+    }
+
+    #[test]
+    fn test_gi_mode_all_variants() {
+        let variants = [
+            GiMode::None,
+            GiMode::ScreenSpace,
+            GiMode::Lumen,
+            GiMode::PathTraced,
+        ];
+        assert_eq!(variants.len(), 4);
+    }
+
+    // ============================================================
+    // REFLECTION MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_reflection_mode_default() {
+        let mode = ReflectionMode::default();
+        assert_eq!(mode, ReflectionMode::ScreenSpace);
+    }
+
+    #[test]
+    fn test_reflection_mode_all_variants() {
+        let variants = [
+            ReflectionMode::None,
+            ReflectionMode::ScreenSpace,
+            ReflectionMode::Raytraced,
+            ReflectionMode::Hybrid,
+        ];
+        assert_eq!(variants.len(), 4);
+    }
+
+    // ============================================================
+    // SHADOW MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_shadow_mode_default() {
+        let mode = ShadowMode::default();
+        assert_eq!(mode, ShadowMode::SoftShadows);
+    }
+
+    #[test]
+    fn test_shadow_mode_all_variants() {
+        let variants = [
+            ShadowMode::None,
+            ShadowMode::HardShadows,
+            ShadowMode::SoftShadows,
+            ShadowMode::Raytraced,
+        ];
+        assert_eq!(variants.len(), 4);
+    }
+
+    // ============================================================
+    // RENDERING SETTINGS TESTS
+    // ============================================================
+
+    #[test]
+    fn test_rendering_settings_default() {
+        let settings = RenderingSettings::default();
+        assert_eq!(settings.renderer_backend, RendererBackend::Auto);
+        assert!(settings.hdr_enabled);
+        assert!(settings.bloom_enabled);
+        assert_eq!(settings.bloom_intensity, 0.5);
+        assert_eq!(settings.tonemapping, TonemappingMode::Aces);
+        assert_eq!(settings.ambient_occlusion, AoMode::Hbao);
+        assert_eq!(settings.global_illumination, GiMode::ScreenSpace);
+        assert_eq!(settings.reflection_mode, ReflectionMode::ScreenSpace);
+        assert_eq!(settings.shadow_mode, ShadowMode::SoftShadows);
+    }
+
+    #[test]
+    fn test_rendering_settings_clone() {
+        let settings = RenderingSettings::default();
+        let cloned = settings.clone();
+        assert_eq!(cloned.renderer_backend, RendererBackend::Auto);
+        assert!(cloned.hdr_enabled);
+    }
+
+    // ============================================================
+    // INPUT ACTION TESTS
+    // ============================================================
+
+    #[test]
+    fn test_input_action_default() {
+        let action = InputAction::default();
+        assert!(action.name.is_empty());
+        assert!(action.primary_key.is_empty());
+        assert!(action.secondary_key.is_empty());
+        assert!(action.gamepad_button.is_empty());
+        assert_eq!(action.dead_zone, 0.1);
+    }
+
+    #[test]
+    fn test_input_action_custom() {
+        let action = InputAction {
+            name: "Jump".to_string(),
+            primary_key: "Space".to_string(),
+            secondary_key: "W".to_string(),
+            gamepad_button: "A".to_string(),
+            dead_zone: 0.0,
+        };
+        assert_eq!(action.name, "Jump");
+        assert_eq!(action.primary_key, "Space");
+        assert_eq!(action.dead_zone, 0.0);
+    }
+
+    #[test]
+    fn test_input_action_clone() {
+        let action = InputAction {
+            name: "Attack".to_string(),
+            ..Default::default()
+        };
+        let cloned = action.clone();
+        assert_eq!(cloned.name, "Attack");
+    }
+
+    // ============================================================
+    // LAYER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_layer_creation() {
+        let layer = Layer {
+            id: 1,
+            name: "Player".to_string(),
+            collides_with: vec![1, 2, 3],
+        };
+        assert_eq!(layer.id, 1);
+        assert_eq!(layer.name, "Player");
+        assert_eq!(layer.collides_with.len(), 3);
+    }
+
+    #[test]
+    fn test_layer_clone() {
+        let layer = Layer {
+            id: 5,
+            name: "Environment".to_string(),
+            collides_with: vec![1, 2],
+        };
+        let cloned = layer.clone();
+        assert_eq!(cloned.id, 5);
+        assert_eq!(cloned.name, "Environment");
+    }
+
+    // ============================================================
+    // TAG TESTS
+    // ============================================================
+
+    #[test]
+    fn test_tag_creation() {
+        let tag = Tag {
+            id: 1,
+            name: "Enemy".to_string(),
+            color: Color32::RED,
+        };
+        assert_eq!(tag.id, 1);
+        assert_eq!(tag.name, "Enemy");
+        assert_eq!(tag.color, Color32::RED);
+    }
+
+    #[test]
+    fn test_tag_clone() {
+        let tag = Tag {
+            id: 3,
+            name: "Collectible".to_string(),
+            color: Color32::YELLOW,
+        };
+        let cloned = tag.clone();
+        assert_eq!(cloned.id, 3);
+        assert_eq!(cloned.name, "Collectible");
+    }
+
+    // ============================================================
+    // COMPRESSION MODE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_compression_mode_default() {
+        let mode = CompressionMode::default();
+        assert_eq!(mode, CompressionMode::Fast);
+    }
+
+    #[test]
+    fn test_compression_mode_all_variants() {
+        let variants = [
+            CompressionMode::None,
+            CompressionMode::Fast,
+            CompressionMode::Best,
+        ];
+        assert_eq!(variants.len(), 3);
+    }
+
+    // ============================================================
+    // BUILD CONFIG TESTS
+    // ============================================================
+
+    #[test]
+    fn test_build_config_default() {
+        let config = BuildConfig::default();
+        assert_eq!(config.platform, TargetPlatform::Windows);
+        assert!(config.enabled);
+        assert!(config.development_build);
+        assert_eq!(config.compression, CompressionMode::Fast);
+        assert!(config.icon_path.is_empty());
+        assert_eq!(config.app_name, "My Game");
+        assert_eq!(config.version, "1.0.0");
+        assert_eq!(config.company, "My Company");
+    }
+
+    #[test]
+    fn test_build_config_custom() {
+        let config = BuildConfig {
+            platform: TargetPlatform::Linux,
+            enabled: false,
+            development_build: false,
+            compression: CompressionMode::Best,
+            icon_path: "icons/game.png".to_string(),
+            app_name: "My Awesome Game".to_string(),
+            version: "2.0.0".to_string(),
+            company: "Awesome Studios".to_string(),
+        };
+        assert_eq!(config.platform, TargetPlatform::Linux);
+        assert!(!config.enabled);
+        assert_eq!(config.compression, CompressionMode::Best);
+    }
+
+    #[test]
+    fn test_build_config_clone() {
+        let config = BuildConfig::default();
+        let cloned = config.clone();
+        assert_eq!(cloned.platform, TargetPlatform::Windows);
+        assert_eq!(cloned.app_name, "My Game");
+    }
+
+    // ============================================================
+    // SETTINGS TAB TESTS
+    // ============================================================
+
+    #[test]
+    fn test_settings_tab_default() {
+        let tab = SettingsTab::default();
+        assert_eq!(tab, SettingsTab::Project);
+    }
+
+    #[test]
+    fn test_settings_tab_all_variants() {
+        let variants = [
+            SettingsTab::Project,
+            SettingsTab::Rendering,
+            SettingsTab::Physics,
+            SettingsTab::Audio,
+            SettingsTab::Input,
+            SettingsTab::Quality,
+            SettingsTab::TagsLayers,
+            SettingsTab::Build,
+        ];
+        assert_eq!(variants.len(), 8);
+    }
+
+    #[test]
+    fn test_settings_tab_clone() {
+        let tab = SettingsTab::Physics;
+        let cloned = tab;
+        assert_eq!(cloned, SettingsTab::Physics);
+    }
+
+    // ============================================================
+    // PROJECT SETTINGS PANEL TESTS
+    // ============================================================
+
+    #[test]
+    fn test_project_settings_creation() {
+        let panel = ProjectSettingsPanel::new();
+        assert!(panel.quality_level_count() >= 4);
+    }
+
+    #[test]
+    fn test_project_settings_default() {
+        let panel = ProjectSettingsPanel::default();
+        assert!(panel.quality_level_count() >= 4);
+        assert!(panel.input_action_count() >= 7);
+        assert!(panel.tag_count() >= 5);
+        assert!(panel.layer_count() >= 5);
+    }
+
+    #[test]
+    fn test_input_actions() {
+        let panel = ProjectSettingsPanel::new();
+        assert!(panel.input_action_count() >= 7);
+    }
+
+    #[test]
+    fn test_tags() {
+        let panel = ProjectSettingsPanel::new();
+        assert!(panel.tag_count() >= 5);
+    }
+
+    #[test]
+    fn test_layers() {
+        let panel = ProjectSettingsPanel::new();
+        assert!(panel.layer_count() >= 5);
+    }
+
+    #[test]
+    fn test_set_project_name() {
+        let mut panel = ProjectSettingsPanel::new();
+        panel.set_project_name("Test Project");
+        assert_eq!(panel.project_name, "Test Project");
+    }
+
+    #[test]
+    fn test_panel_trait() {
+        let panel = ProjectSettingsPanel::new();
+        assert_eq!(panel.name(), "Project Settings");
+    }
+
+    #[test]
+    fn test_set_empty_project_name() {
+        let mut panel = ProjectSettingsPanel::new();
+        panel.set_project_name("");
+        assert_eq!(panel.project_name, "");
+    }
+
+    #[test]
+    fn test_set_long_project_name() {
+        let mut panel = ProjectSettingsPanel::new();
+        let long_name = "A Very Long Project Name That Goes On And On For Testing Purposes";
+        panel.set_project_name(long_name);
+        assert_eq!(panel.project_name, long_name);
+    }
+
+    // ============================================================
+    // SAMPLE DATA TESTS
+    // ============================================================
+
+    #[test]
+    fn test_sample_quality_levels() {
+        let panel = ProjectSettingsPanel::new();
+        // Should have Low, Medium, High, Ultra
+        assert_eq!(panel.quality_level_count(), 4);
+    }
+
+    #[test]
+    fn test_sample_input_actions() {
+        let panel = ProjectSettingsPanel::new();
+        // Should have movement, jump, attack, interact
+        assert!(panel.input_action_count() >= 7);
+    }
+
+    #[test]
+    fn test_sample_tags() {
+        let panel = ProjectSettingsPanel::new();
+        // Should have Player, Enemy, NPC, Collectible, Interactable
+        assert_eq!(panel.tag_count(), 5);
+    }
+
+    #[test]
+    fn test_sample_layers() {
+        let panel = ProjectSettingsPanel::new();
+        // Should have Default, Player, Enemy, Trigger, Projectile
+        assert_eq!(panel.layer_count(), 5);
+    }
+}

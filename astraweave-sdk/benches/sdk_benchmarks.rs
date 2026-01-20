@@ -18,7 +18,7 @@ use astraweave_sdk::{
     aw_world_tick,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box as std_black_box;
+use std::hint::black_box;
 
 // ============================================================================
 // Benchmark 1: Version Query Operations
@@ -31,15 +31,15 @@ fn bench_version_operations(c: &mut Criterion) {
     group.bench_function("aw_version", |b| {
         b.iter(|| {
             let version = aw_version();
-            std_black_box(version)
+            black_box(version)
         })
     });
 
     // Benchmark: Version string size query (buffer size detection)
     group.bench_function("aw_version_string_size", |b| {
         b.iter(|| {
-            let size = aw_version_string(std::ptr::null_mut(), 0);
-            std_black_box(size)
+            let size = unsafe { aw_version_string(std::ptr::null_mut(), 0) };
+            black_box(size)
         })
     });
 
@@ -47,9 +47,9 @@ fn bench_version_operations(c: &mut Criterion) {
     group.bench_function("aw_version_string_copy", |b| {
         let mut buffer = vec![0u8; 32];
         b.iter(|| {
-            let size = aw_version_string(buffer.as_mut_ptr(), buffer.len());
-            std_black_box(size);
-            std_black_box(buffer[0])
+            let size = unsafe { aw_version_string(buffer.as_mut_ptr(), buffer.len()) };
+            black_box(size);
+            black_box(buffer[0])
         })
     });
 
@@ -68,7 +68,7 @@ fn bench_world_lifecycle(c: &mut Criterion) {
         b.iter(|| {
             let world = aw_world_create();
             aw_world_destroy(world);
-            std_black_box(world)
+            black_box(world)
         })
     });
 
@@ -76,11 +76,12 @@ fn bench_world_lifecycle(c: &mut Criterion) {
     group.bench_function("world_create_only", |b| {
         b.iter_with_large_drop(|| {
             let world = aw_world_create();
-            std_black_box(world)
+            black_box(world)
         })
     });
 
     // Benchmark: World destruction overhead
+    #[allow(clippy::redundant_closure)]
     group.bench_function("world_destroy", |b| {
         b.iter_batched(
             || aw_world_create(),
@@ -141,7 +142,7 @@ fn bench_json_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let size = aw_world_snapshot_json(world, std::ptr::null_mut(), 0);
-            std_black_box(size)
+            black_box(size)
         });
 
         aw_world_destroy(world);
@@ -154,8 +155,8 @@ fn bench_json_serialization(c: &mut Criterion) {
 
         b.iter(|| {
             let size = aw_world_snapshot_json(world, buffer.as_mut_ptr(), buffer.len());
-            std_black_box(size);
-            std_black_box(buffer[0])
+            black_box(size);
+            black_box(buffer[0])
         });
 
         aw_world_destroy(world);
@@ -169,7 +170,7 @@ fn bench_json_serialization(c: &mut Criterion) {
         b.iter(|| {
             aw_world_tick(world, 0.016);
             let size = aw_world_snapshot_json(world, buffer.as_mut_ptr(), buffer.len());
-            std_black_box(size)
+            black_box(size)
         });
 
         aw_world_destroy(world);
@@ -189,7 +190,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
     group.bench_function("cstring_creation", |b| {
         b.iter(|| {
             let s = std::ffi::CString::new("test_string").unwrap();
-            std_black_box(s.as_ptr())
+            black_box(s.as_ptr())
         })
     });
 
@@ -197,7 +198,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
     group.bench_function("cstring_with_format", |b| {
         b.iter(|| {
             let s = std::ffi::CString::new(format!("Entity_{}", 123)).unwrap();
-            std_black_box(s.as_ptr())
+            black_box(s.as_ptr())
         })
     });
 
@@ -208,7 +209,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
 
         b.iter(|| {
             let s = unsafe { std::ffi::CStr::from_ptr(ptr) };
-            std_black_box(s.to_string_lossy())
+            black_box(s.to_string_lossy())
         })
     });
 
@@ -226,15 +227,15 @@ fn bench_ffi_overhead(c: &mut Criterion) {
     group.bench_function("minimal_ffi_call", |b| {
         b.iter(|| {
             let v = aw_version();
-            std_black_box(v)
+            black_box(v)
         })
     });
 
     // Benchmark: FFI with pointer argument
     group.bench_function("ffi_with_ptr_arg", |b| {
         b.iter(|| {
-            let size = aw_version_string(std::ptr::null_mut(), 0);
-            std_black_box(size)
+            let size = unsafe { aw_version_string(std::ptr::null_mut(), 0) };
+            black_box(size)
         })
     });
 
@@ -242,9 +243,9 @@ fn bench_ffi_overhead(c: &mut Criterion) {
     group.bench_function("ffi_with_marshalling", |b| {
         let mut buffer = vec![0u8; 32];
         b.iter(|| {
-            let size = aw_version_string(buffer.as_mut_ptr(), buffer.len());
-            std_black_box(size);
-            std_black_box(buffer[0])
+            let size = unsafe { aw_version_string(buffer.as_mut_ptr(), buffer.len()) };
+            black_box(size);
+            black_box(buffer[0])
         })
     });
 

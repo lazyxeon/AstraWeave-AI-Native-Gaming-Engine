@@ -535,6 +535,12 @@ impl InstanceManager {
     }
 }
 
+impl Default for InstanceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Instance pattern builder
 pub struct InstancePatternBuilder {
     instances: Vec<Instance>,
@@ -593,6 +599,12 @@ impl InstancePatternBuilder {
 
     pub fn build(self) -> Vec<Instance> {
         self.instances
+    }
+}
+
+impl Default for InstancePatternBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -761,9 +773,9 @@ fn bench_primitive_generation(c: &mut Criterion) {
     }
 
     // Measure vertex/index counts
-    let (cube_v, cube_i) = cube();
-    let (plane_v, plane_i) = plane();
-    let (sphere_v, sphere_i) = sphere(16, 16, 1.0);
+    let (cube_v, _cube_i) = cube();
+    let (_plane_v, _plane_i) = plane();
+    let (sphere_v, _sphere_i) = sphere(16, 16, 1.0);
 
     group.throughput(Throughput::Elements(cube_v.len() as u64));
     group.bench_function("cube_per_vertex", |b| b.iter(|| bb(cube())));

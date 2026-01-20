@@ -410,8 +410,8 @@ mod tests {
 
     #[test]
     fn test_context_value_number() {
-        let value = ContextValue::Number(3.14);
-        assert!(value.to_string().contains("3.14"));
+        let value = ContextValue::Number(4.56);
+        assert!(value.to_string().contains("4.56"));
     }
 
     #[test]
@@ -540,8 +540,8 @@ mod tests {
 
     #[test]
     fn test_from_f64() {
-        let value: ContextValue = 3.14f64.into();
-        assert!(matches!(value, ContextValue::Number(n) if (n - 3.14).abs() < 0.01));
+        let value: ContextValue = 1.23f64.into();
+        assert!(matches!(value, ContextValue::Number(n) if (n - 1.23).abs() < 0.01));
     }
 
     #[test]

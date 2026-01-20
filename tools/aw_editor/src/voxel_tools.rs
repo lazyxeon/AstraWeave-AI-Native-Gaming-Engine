@@ -18,6 +18,46 @@ pub enum BrushShape {
     Cylinder,
 }
 
+impl BrushShape {
+    /// Get all brush shape variants
+    pub fn all() -> &'static [Self] {
+        &[Self::Sphere, Self::Cube, Self::Cylinder]
+    }
+
+    /// Get human-readable name
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Sphere => "Sphere",
+            Self::Cube => "Cube",
+            Self::Cylinder => "Cylinder",
+        }
+    }
+
+    /// Get icon for this shape
+    pub fn icon(&self) -> &str {
+        match self {
+            Self::Sphere => "⚫",
+            Self::Cube => "⬛",
+            Self::Cylinder => "🔘",
+        }
+    }
+
+    /// Get keyboard shortcut
+    pub fn shortcut(&self) -> &str {
+        match self {
+            Self::Sphere => "1",
+            Self::Cube => "2",
+            Self::Cylinder => "3",
+        }
+    }
+}
+
+impl std::fmt::Display for BrushShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 /// Brush mode (add or remove voxels)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BrushMode {
@@ -27,6 +67,47 @@ pub enum BrushMode {
     Remove,
     /// Paint material without changing density
     Paint,
+}
+
+impl BrushMode {
+    /// Get all brush mode variants
+    pub fn all() -> &'static [Self] {
+        &[Self::Add, Self::Remove, Self::Paint]
+    }
+
+    /// Get human-readable name
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Add => "Add",
+            Self::Remove => "Remove",
+            Self::Paint => "Paint",
+        }
+    }
+
+    /// Get icon for this mode
+    pub fn icon(&self) -> &str {
+        match self {
+            Self::Add => "➕",
+            Self::Remove => "➖",
+            Self::Paint => "🎨",
+        }
+    }
+
+    /// Check if this mode modifies density
+    pub fn modifies_density(&self) -> bool {
+        matches!(self, Self::Add | Self::Remove)
+    }
+
+    /// Check if this mode modifies material
+    pub fn modifies_material(&self) -> bool {
+        matches!(self, Self::Add | Self::Paint)
+    }
+}
+
+impl std::fmt::Display for BrushMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 /// Brush configuration
@@ -56,6 +137,48 @@ impl Default for BrushConfig {
             material: 1,
             smooth: true,
         }
+    }
+}
+
+impl BrushConfig {
+    /// Get approximate volume affected by the brush
+    pub fn approximate_volume(&self) -> f32 {
+        match self.shape {
+            BrushShape::Sphere => (4.0 / 3.0) * std::f32::consts::PI * self.radius.powi(3),
+            BrushShape::Cube => (2.0 * self.radius).powi(3),
+            BrushShape::Cylinder => std::f32::consts::PI * self.radius.powi(2) * (2.0 * self.radius),
+        }
+    }
+
+    /// Get effective strength with falloff consideration
+    pub fn effective_strength(&self) -> f32 {
+        if self.smooth {
+            self.strength * 0.5 // Average falloff effect
+        } else {
+            self.strength
+        }
+    }
+
+    /// Check if the brush is configured for additive operations
+    pub fn is_additive(&self) -> bool {
+        matches!(self.mode, BrushMode::Add)
+    }
+
+    /// Check if the brush is configured for subtractive operations
+    pub fn is_subtractive(&self) -> bool {
+        matches!(self.mode, BrushMode::Remove)
+    }
+
+    /// Generate a summary of the brush configuration
+    pub fn summary(&self) -> String {
+        format!(
+            "{} {} r={:.1} s={:.0}%{}",
+            self.shape.icon(),
+            self.mode.name(),
+            self.radius,
+            self.strength * 100.0,
+            if self.smooth { " (smooth)" } else { "" }
+        )
     }
 }
 
@@ -298,6 +421,74 @@ impl VoxelEditor {
     pub fn is_preview_mode(&self) -> bool {
         self.preview_mode
     }
+
+    /// Get the number of undo operations available
+    pub fn undo_count(&self) -> usize {
+        self.undo_stack.len()
+    }
+
+    /// Get the number of redo operations available
+    pub fn redo_count(&self) -> usize {
+        self.redo_stack.len()
+    }
+
+    /// Get maximum undo history size
+    pub fn max_history(&self) -> usize {
+        self.max_undo_history
+    }
+
+    /// Check if undo history is at capacity
+    pub fn is_history_full(&self) -> bool {
+        self.undo_stack.len() >= self.max_undo_history
+    }
+
+    /// Get total number of voxel edits in history
+    pub fn total_edits_in_history(&self) -> usize {
+        self.undo_stack.iter().map(|op| op.after.len()).sum::<usize>()
+            + self.redo_stack.iter().map(|op| op.after.len()).sum::<usize>()
+    }
+
+    /// Get editor statistics
+    pub fn stats(&self) -> VoxelEditorStats {
+        VoxelEditorStats {
+            undo_available: self.undo_stack.len(),
+            redo_available: self.redo_stack.len(),
+            max_history: self.max_undo_history,
+            total_edits: self.total_edits_in_history(),
+            preview_mode: self.preview_mode,
+        }
+    }
+}
+
+/// Statistics for the voxel editor
+#[derive(Debug, Clone)]
+pub struct VoxelEditorStats {
+    /// Number of undo operations available
+    pub undo_available: usize,
+    /// Number of redo operations available
+    pub redo_available: usize,
+    /// Maximum history size
+    pub max_history: usize,
+    /// Total edits in history
+    pub total_edits: usize,
+    /// Whether in preview mode
+    pub preview_mode: bool,
+}
+
+impl VoxelEditorStats {
+    /// Check if any history is available
+    pub fn has_history(&self) -> bool {
+        self.undo_available > 0 || self.redo_available > 0
+    }
+
+    /// Get history usage percentage
+    pub fn history_usage_percent(&self) -> f32 {
+        if self.max_history == 0 {
+            0.0
+        } else {
+            (self.undo_available as f32 / self.max_history as f32) * 100.0
+        }
+    }
 }
 
 impl Default for VoxelEditor {
@@ -429,5 +620,215 @@ mod tests {
 
         let hit = raycaster.raycast(&grid, origin, direction);
         assert!(hit.is_some());
+    }
+
+    // ====================================================================
+    // BrushShape New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_brush_shape_all() {
+        let all = BrushShape::all();
+        assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_brush_shape_name() {
+        assert_eq!(BrushShape::Sphere.name(), "Sphere");
+        assert_eq!(BrushShape::Cube.name(), "Cube");
+        assert_eq!(BrushShape::Cylinder.name(), "Cylinder");
+    }
+
+    #[test]
+    fn test_brush_shape_icon_not_empty() {
+        for shape in BrushShape::all() {
+            assert!(!shape.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_brush_shape_shortcut() {
+        assert_eq!(BrushShape::Sphere.shortcut(), "1");
+        assert_eq!(BrushShape::Cube.shortcut(), "2");
+        assert_eq!(BrushShape::Cylinder.shortcut(), "3");
+    }
+
+    #[test]
+    fn test_brush_shape_display() {
+        assert_eq!(format!("{}", BrushShape::Sphere), "Sphere");
+    }
+
+    // ====================================================================
+    // BrushMode New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_brush_mode_all() {
+        let all = BrushMode::all();
+        assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_brush_mode_name() {
+        assert_eq!(BrushMode::Add.name(), "Add");
+        assert_eq!(BrushMode::Remove.name(), "Remove");
+        assert_eq!(BrushMode::Paint.name(), "Paint");
+    }
+
+    #[test]
+    fn test_brush_mode_icon_not_empty() {
+        for mode in BrushMode::all() {
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_brush_mode_modifies_density() {
+        assert!(BrushMode::Add.modifies_density());
+        assert!(BrushMode::Remove.modifies_density());
+        assert!(!BrushMode::Paint.modifies_density());
+    }
+
+    #[test]
+    fn test_brush_mode_modifies_material() {
+        assert!(BrushMode::Add.modifies_material());
+        assert!(!BrushMode::Remove.modifies_material());
+        assert!(BrushMode::Paint.modifies_material());
+    }
+
+    #[test]
+    fn test_brush_mode_display() {
+        assert_eq!(format!("{}", BrushMode::Add), "Add");
+    }
+
+    // ====================================================================
+    // BrushConfig New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_brush_config_approximate_volume() {
+        let sphere = BrushConfig {
+            shape: BrushShape::Sphere,
+            radius: 5.0,
+            ..Default::default()
+        };
+        assert!(sphere.approximate_volume() > 0.0);
+
+        let cube = BrushConfig {
+            shape: BrushShape::Cube,
+            radius: 5.0,
+            ..Default::default()
+        };
+        assert!(cube.approximate_volume() > sphere.approximate_volume());
+    }
+
+    #[test]
+    fn test_brush_config_effective_strength() {
+        let smooth = BrushConfig {
+            smooth: true,
+            strength: 1.0,
+            ..Default::default()
+        };
+        assert!(smooth.effective_strength() < 1.0);
+
+        let hard = BrushConfig {
+            smooth: false,
+            strength: 1.0,
+            ..Default::default()
+        };
+        assert!((hard.effective_strength() - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_brush_config_is_additive() {
+        let add = BrushConfig {
+            mode: BrushMode::Add,
+            ..Default::default()
+        };
+        assert!(add.is_additive());
+        assert!(!add.is_subtractive());
+    }
+
+    #[test]
+    fn test_brush_config_is_subtractive() {
+        let remove = BrushConfig {
+            mode: BrushMode::Remove,
+            ..Default::default()
+        };
+        assert!(remove.is_subtractive());
+        assert!(!remove.is_additive());
+    }
+
+    #[test]
+    fn test_brush_config_summary() {
+        let config = BrushConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("Add"));
+        assert!(summary.contains("5.0"));
+    }
+
+    // ====================================================================
+    // VoxelEditor Stats Tests
+    // ====================================================================
+
+    #[test]
+    fn test_voxel_editor_undo_redo_count() {
+        let editor = VoxelEditor::new();
+        assert_eq!(editor.undo_count(), 0);
+        assert_eq!(editor.redo_count(), 0);
+    }
+
+    #[test]
+    fn test_voxel_editor_max_history() {
+        let editor = VoxelEditor::new();
+        assert_eq!(editor.max_history(), 100);
+    }
+
+    #[test]
+    fn test_voxel_editor_is_history_full() {
+        let editor = VoxelEditor::new();
+        assert!(!editor.is_history_full());
+    }
+
+    #[test]
+    fn test_voxel_editor_stats() {
+        let editor = VoxelEditor::new();
+        let stats = editor.stats();
+        assert_eq!(stats.undo_available, 0);
+        assert_eq!(stats.redo_available, 0);
+        assert!(!stats.preview_mode);
+    }
+
+    #[test]
+    fn test_voxel_editor_stats_has_history() {
+        let stats = VoxelEditorStats {
+            undo_available: 0,
+            redo_available: 0,
+            max_history: 100,
+            total_edits: 0,
+            preview_mode: false,
+        };
+        assert!(!stats.has_history());
+
+        let stats_with_history = VoxelEditorStats {
+            undo_available: 5,
+            redo_available: 0,
+            max_history: 100,
+            total_edits: 10,
+            preview_mode: false,
+        };
+        assert!(stats_with_history.has_history());
+    }
+
+    #[test]
+    fn test_voxel_editor_stats_history_usage_percent() {
+        let stats = VoxelEditorStats {
+            undo_available: 50,
+            redo_available: 0,
+            max_history: 100,
+            total_edits: 50,
+            preview_mode: false,
+        };
+        assert!((stats.history_usage_percent() - 50.0).abs() < 0.1);
     }
 }

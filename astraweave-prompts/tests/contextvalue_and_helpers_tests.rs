@@ -1,5 +1,5 @@
-/// Additional Coverage Tests for Context Value Conversions and Helpers
-/// These tests cover From implementations, helpers, and library functionality
+//! Additional Coverage Tests for Context Value Conversions and Helpers
+//! These tests cover From implementations, helpers, and library functionality
 
 use astraweave_prompts::{
     ContextValue, PromptContext, PromptTemplate, TemplateEngine,
@@ -474,7 +474,7 @@ fn test_large_number_of_variables() {
     
     let template = PromptTemplate::new("large", &template_str);
     // Should extract at least some variables (the regex extraction may not catch all)
-    assert!(template.variables.len() > 0, "Expected at least some variables to be extracted");
+    assert!(!template.variables.is_empty(), "Expected at least some variables to be extracted");
     assert!(template.variables.len() <= 100, "Should not extract more than the defined variables");
 }
 

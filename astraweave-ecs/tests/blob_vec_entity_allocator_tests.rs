@@ -93,8 +93,8 @@ fn test_blob_vec_push_triggers_realloc() {
 
     // Push elements to trigger multiple reallocations
     unsafe {
-        for i in 0..100 {
-            blob.push(i as i32);
+        for i in 0i32..100 {
+            blob.push(i);
         }
     }
 
@@ -103,8 +103,8 @@ fn test_blob_vec_push_triggers_realloc() {
     // Verify all elements
     unsafe {
         let slice = blob.as_slice::<i32>();
-        for i in 0..100 {
-            assert_eq!(slice[i], i as i32);
+        for (i, &val) in slice.iter().enumerate() {
+            assert_eq!(val, i as i32);
         }
     }
 }
@@ -264,7 +264,7 @@ fn test_entity_free_list_reuse_order() {
     let e6 = allocator.spawn();
 
     // Verify IDs are reused (exact order may vary by implementation)
-    let reused_ids = vec![e4.id(), e5.id(), e6.id()];
+    let reused_ids = [e4.id(), e5.id(), e6.id()];
     assert!(reused_ids.contains(&0)); // IDs 0, 1, 2 should all be reused
     assert!(reused_ids.contains(&1));
     assert!(reused_ids.contains(&2));

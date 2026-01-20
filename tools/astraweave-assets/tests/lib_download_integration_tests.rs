@@ -8,7 +8,6 @@ use mockito::{Server, ServerGuard};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
-use tokio;
 
 /// Helper to create a mock PolyHaven server
 async fn setup_mock_server() -> ServerGuard {

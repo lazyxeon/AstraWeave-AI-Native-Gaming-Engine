@@ -470,7 +470,7 @@ mod input_manager_tests {
     #[test]
     fn test_stress_empty_and_refill() {
         let mut bindings = BindingSet::default();
-        assert!(bindings.actions.len() > 0);
+        assert!(!bindings.actions.is_empty());
 
         // Empty all bindings
         bindings.actions.clear();
@@ -838,7 +838,7 @@ mod input_manager_tests {
     #[test]
     fn test_edge_action_enum_completeness() {
         // Verify we can reference all 23 Action enum variants
-        let actions = vec![
+        let actions = [
             Action::MoveForward,
             Action::MoveBackward,
             Action::MoveLeft,
@@ -904,7 +904,7 @@ mod input_manager_tests {
         bindings.actions.clear();
 
         // Clone should be unaffected
-        assert!(clone.actions.len() > 0);
+        assert!(!clone.actions.is_empty());
         assert_eq!(bindings.actions.len(), 0);
     }
 }

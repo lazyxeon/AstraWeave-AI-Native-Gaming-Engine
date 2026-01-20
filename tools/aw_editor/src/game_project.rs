@@ -200,6 +200,57 @@ impl GameProject {
         }
     }
 
+    /// Get the game name
+    pub fn name(&self) -> &str {
+        &self.project.name
+    }
+
+    /// Get the game version
+    pub fn version(&self) -> &str {
+        &self.project.version
+    }
+
+    /// Check if the project has an icon configured
+    pub fn has_icon(&self) -> bool {
+        self.project.icon.is_some()
+    }
+
+    /// Check if the project has a unique identifier
+    pub fn has_identifier(&self) -> bool {
+        self.project.identifier.is_some()
+    }
+
+    /// Get the number of enabled features
+    pub fn feature_count(&self) -> usize {
+        self.build.features.len()
+    }
+
+    /// Get a summary of the project
+    pub fn summary(&self) -> String {
+        format!(
+            "{} v{} ({})",
+            self.project.name,
+            self.project.version,
+            self.build.default_target
+        )
+    }
+
+    /// Check if project targets a specific platform
+    pub fn targets_platform(&self, platform: &str) -> bool {
+        self.build.default_target == platform
+    }
+
+    /// Check if project has platform-specific config
+    pub fn has_platform_config(&self, platform: &str) -> bool {
+        match platform {
+            "windows" => self.platforms.windows.is_some(),
+            "linux" => self.platforms.linux.is_some(),
+            "macos" => self.platforms.macos.is_some(),
+            "web" => self.platforms.web.is_some(),
+            _ => false,
+        }
+    }
+
     /// Find game.toml in the current directory or parent directories
     pub fn find_project_file() -> Option<PathBuf> {
         let mut current = std::env::current_dir().ok()?;
@@ -263,6 +314,32 @@ impl Default for AssetSettings {
     }
 }
 
+impl AssetSettings {
+    /// Get total pattern count (include + exclude)
+    pub fn pattern_count(&self) -> usize {
+        self.include.len() + self.exclude.len()
+    }
+
+    /// Check if compression is enabled with high level (>= 10)
+    pub fn has_high_compression(&self) -> bool {
+        self.compress && self.compression_level >= 10
+    }
+
+    /// Check if there are any exclude patterns
+    pub fn has_excludes(&self) -> bool {
+        !self.exclude.is_empty()
+    }
+
+    /// Get compression summary
+    pub fn compression_summary(&self) -> String {
+        if self.compress {
+            format!("Enabled (level {})", self.compression_level)
+        } else {
+            "Disabled".to_string()
+        }
+    }
+}
+
 /// Errors that can occur when working with game projects
 #[derive(Debug, Clone)]
 pub enum GameProjectError {
@@ -284,6 +361,43 @@ impl std::fmt::Display for GameProjectError {
 }
 
 impl std::error::Error for GameProjectError {}
+
+impl GameProjectError {
+    /// Get the error category
+    pub fn category(&self) -> &'static str {
+        match self {
+            Self::Io(_) => "IO",
+            Self::Parse(_) => "Parse",
+            Self::Serialize(_) => "Serialize",
+            Self::Validation(_) => "Validation",
+        }
+    }
+
+    /// Check if this is an IO error
+    pub fn is_io(&self) -> bool {
+        matches!(self, Self::Io(_))
+    }
+
+    /// Check if this is a parse error
+    pub fn is_parse(&self) -> bool {
+        matches!(self, Self::Parse(_))
+    }
+
+    /// Check if this is a validation error
+    pub fn is_validation(&self) -> bool {
+        matches!(self, Self::Validation(_))
+    }
+
+    /// Get the error message
+    pub fn message(&self) -> String {
+        match self {
+            Self::Io(e) => e.clone(),
+            Self::Parse(e) => e.clone(),
+            Self::Serialize(e) => e.clone(),
+            Self::Validation(errors) => errors.join(", "),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -337,5 +451,147 @@ mod tests {
         assert!(settings.compress);
         assert_eq!(settings.compression_level, 3);
         assert!(!settings.include.is_empty());
+    }
+
+    // ====================================================================
+    // GameProject New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_game_project_name() {
+        let project = GameProject::new("Test Game", "main.scene");
+        assert_eq!(project.name(), "Test Game");
+    }
+
+    #[test]
+    fn test_game_project_version() {
+        let project = GameProject::new("Test Game", "main.scene");
+        assert_eq!(project.version(), "0.1.0");
+    }
+
+    #[test]
+    fn test_game_project_has_icon() {
+        let project = GameProject::default();
+        assert!(!project.has_icon());
+    }
+
+    #[test]
+    fn test_game_project_has_identifier() {
+        let project = GameProject::default();
+        assert!(!project.has_identifier());
+    }
+
+    #[test]
+    fn test_game_project_feature_count() {
+        let project = GameProject::default();
+        assert_eq!(project.feature_count(), 0);
+    }
+
+    #[test]
+    fn test_game_project_summary() {
+        let project = GameProject::new("My Game", "main.scene");
+        let summary = project.summary();
+        assert!(summary.contains("My Game"));
+        assert!(summary.contains("0.1.0"));
+    }
+
+    #[test]
+    fn test_game_project_targets_platform() {
+        let project = GameProject::default();
+        assert!(project.targets_platform("windows"));
+        assert!(!project.targets_platform("linux"));
+    }
+
+    #[test]
+    fn test_game_project_has_platform_config() {
+        let project = GameProject::default();
+        assert!(!project.has_platform_config("windows"));
+        assert!(!project.has_platform_config("unknown"));
+    }
+
+    // ====================================================================
+    // AssetSettings New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_asset_settings_pattern_count() {
+        let settings = AssetSettings::default();
+        assert!(settings.pattern_count() >= 3);
+    }
+
+    #[test]
+    fn test_asset_settings_has_high_compression() {
+        let mut settings = AssetSettings::default();
+        assert!(!settings.has_high_compression());
+        settings.compression_level = 15;
+        assert!(settings.has_high_compression());
+    }
+
+    #[test]
+    fn test_asset_settings_has_excludes() {
+        let mut settings = AssetSettings::default();
+        assert!(!settings.has_excludes());
+        settings.exclude.push("*.tmp".to_string());
+        assert!(settings.has_excludes());
+    }
+
+    #[test]
+    fn test_asset_settings_compression_summary() {
+        let settings = AssetSettings::default();
+        let summary = settings.compression_summary();
+        assert!(summary.contains("Enabled"));
+        assert!(summary.contains("3"));
+    }
+
+    #[test]
+    fn test_asset_settings_compression_summary_disabled() {
+        let settings = AssetSettings {
+            compress: false,
+            ..Default::default()
+        };
+        assert_eq!(settings.compression_summary(), "Disabled");
+    }
+
+    // ====================================================================
+    // GameProjectError New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_game_project_error_category() {
+        let io_err = GameProjectError::Io("test".to_string());
+        assert_eq!(io_err.category(), "IO");
+
+        let parse_err = GameProjectError::Parse("test".to_string());
+        assert_eq!(parse_err.category(), "Parse");
+    }
+
+    #[test]
+    fn test_game_project_error_is_io() {
+        let err = GameProjectError::Io("test".to_string());
+        assert!(err.is_io());
+        assert!(!err.is_parse());
+    }
+
+    #[test]
+    fn test_game_project_error_is_parse() {
+        let err = GameProjectError::Parse("test".to_string());
+        assert!(err.is_parse());
+        assert!(!err.is_io());
+    }
+
+    #[test]
+    fn test_game_project_error_is_validation() {
+        let err = GameProjectError::Validation(vec!["error".to_string()]);
+        assert!(err.is_validation());
+    }
+
+    #[test]
+    fn test_game_project_error_message() {
+        let err = GameProjectError::Io("file not found".to_string());
+        assert_eq!(err.message(), "file not found");
+
+        let val_err = GameProjectError::Validation(vec!["a".to_string(), "b".to_string()]);
+        assert!(val_err.message().contains("a"));
+        assert!(val_err.message().contains("b"));
     }
 }

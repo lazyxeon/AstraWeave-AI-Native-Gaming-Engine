@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use astraweave_embeddings::{Memory, MemoryCategory, MockEmbeddingClient, SearchResult, StoredVector};
 use astraweave_llm::MockLlm;
 use astraweave_rag::{

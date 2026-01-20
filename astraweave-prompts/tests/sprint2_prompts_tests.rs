@@ -177,7 +177,7 @@ fn test_set_variable_types() {
     
     ctx.set("string".to_string(), "text".into());
     ctx.set("number".to_string(), 42.0.into()); // f64
-    ctx.set("float".to_string(), 3.14.into());
+    ctx.set("float".to_string(), 1.234.into());
     ctx.set("bool".to_string(), true.into());
     
     let array = vec![
@@ -192,7 +192,7 @@ fn test_set_variable_types() {
     
     assert!(result.contains("text"));
     assert!(result.contains("42"));
-    assert!(result.contains("3.14"));
+    assert!(result.contains("1.234"), "Expected '1.234' in result: {result}");
     assert!(result.contains("true"));
     assert!(result.contains("1"));
 }

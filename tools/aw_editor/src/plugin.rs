@@ -124,6 +124,38 @@ impl std::fmt::Display for PluginError {
 
 impl std::error::Error for PluginError {}
 
+impl PluginError {
+    /// Returns true if this is a fatal error that prevents plugin operation.
+    pub fn is_fatal(&self) -> bool {
+        matches!(
+            self,
+            Self::InitFailed(_) | Self::IncompatibleVersion { .. } | Self::MissingDependency(_)
+        )
+    }
+
+    /// Returns an icon representing this error type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::InitFailed(_) => "🚫",
+            Self::ConfigError(_) => "⚙️",
+            Self::MissingDependency(_) => "📦",
+            Self::IncompatibleVersion { .. } => "🔢",
+            Self::Other(_) => "⚠️",
+        }
+    }
+
+    /// Returns a short error category name.
+    pub fn category(&self) -> &'static str {
+        match self {
+            Self::InitFailed(_) => "Initialization",
+            Self::ConfigError(_) => "Configuration",
+            Self::MissingDependency(_) => "Dependency",
+            Self::IncompatibleVersion { .. } => "Version",
+            Self::Other(_) => "Other",
+        }
+    }
+}
+
 /// Trait that all editor plugins must implement
 pub trait EditorPlugin: Send + Sync {
     /// Get plugin metadata
@@ -199,6 +231,54 @@ pub enum PluginState {
     Error,
     /// Plugin is disabled by user
     Disabled,
+}
+
+impl PluginState {
+    /// Returns all plugin states.
+    pub fn all() -> &'static [Self] {
+        &[Self::Loaded, Self::Active, Self::Error, Self::Disabled]
+    }
+
+    /// Returns the display name for this state.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Loaded => "Loaded",
+            Self::Active => "Active",
+            Self::Error => "Error",
+            Self::Disabled => "Disabled",
+        }
+    }
+
+    /// Returns the icon for this state.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Loaded => "📦",
+            Self::Active => "✅",
+            Self::Error => "❌",
+            Self::Disabled => "⏸",
+        }
+    }
+
+    /// Returns true if the plugin is operational.
+    pub fn is_operational(&self) -> bool {
+        matches!(self, Self::Active)
+    }
+
+    /// Returns true if the plugin has an error.
+    pub fn is_error(&self) -> bool {
+        matches!(self, Self::Error)
+    }
+
+    /// Returns true if the plugin is disabled.
+    pub fn is_disabled(&self) -> bool {
+        matches!(self, Self::Disabled)
+    }
+}
+
+impl std::fmt::Display for PluginState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 /// Entry for a loaded plugin
@@ -449,6 +529,102 @@ impl PluginManager {
 
         // Editor version must be >= required version
         actual >= req
+    }
+
+    /// Returns the total number of registered plugins.
+    pub fn plugin_count(&self) -> usize {
+        self.plugins.len()
+    }
+
+    /// Returns the number of active plugins.
+    pub fn active_count(&self) -> usize {
+        self.plugins.values().filter(|e| e.state == PluginState::Active).count()
+    }
+
+    /// Returns the number of plugins with errors.
+    pub fn error_count(&self) -> usize {
+        self.plugins.values().filter(|e| e.state == PluginState::Error).count()
+    }
+
+    /// Returns the number of disabled plugins.
+    pub fn disabled_count(&self) -> usize {
+        self.plugins.values().filter(|e| e.state == PluginState::Disabled).count()
+    }
+
+    /// Returns true if there are any plugins with errors.
+    pub fn has_errors(&self) -> bool {
+        self.error_count() > 0
+    }
+
+    /// Returns true if all plugins are healthy (no errors).
+    pub fn is_healthy(&self) -> bool {
+        !self.has_errors()
+    }
+
+    /// Returns the number of plugins with panels.
+    pub fn panels_count(&self) -> usize {
+        self.plugins.values().filter(|e| e.plugin.has_panel()).count()
+    }
+
+    /// Returns plugin IDs by state.
+    pub fn plugins_by_state(&self, state: PluginState) -> Vec<&str> {
+        self.plugins
+            .iter()
+            .filter(|(_, e)| e.state == state)
+            .map(|(id, _)| id.as_str())
+            .collect()
+    }
+}
+
+/// Statistics about the plugin manager.
+#[derive(Debug, Clone, Default)]
+pub struct PluginManagerStats {
+    /// Total number of plugins.
+    pub total: usize,
+    /// Number of active plugins.
+    pub active: usize,
+    /// Number of plugins with errors.
+    pub errors: usize,
+    /// Number of disabled plugins.
+    pub disabled: usize,
+    /// Number of loaded (not yet initialized) plugins.
+    pub loaded: usize,
+    /// Number of plugins with panels.
+    pub with_panels: usize,
+}
+
+impl PluginManagerStats {
+    /// Returns the health percentage (active / total * 100).
+    pub fn health_percentage(&self) -> f32 {
+        if self.total == 0 {
+            100.0
+        } else {
+            (self.active as f32 / self.total as f32) * 100.0
+        }
+    }
+
+    /// Returns true if there are no plugins.
+    pub fn is_empty(&self) -> bool {
+        self.total == 0
+    }
+
+    /// Returns true if all plugins are active.
+    pub fn all_active(&self) -> bool {
+        self.total > 0 && self.active == self.total
+    }
+}
+
+impl PluginManager {
+    /// Returns statistics about the plugin manager.
+    pub fn stats(&self) -> PluginManagerStats {
+        PluginManagerStats {
+            total: self.plugins.len(),
+            active: self.active_count(),
+            errors: self.error_count(),
+            disabled: self.disabled_count(),
+            loaded: self.plugins.values().filter(|e| e.state == PluginState::Loaded).count(),
+            with_panels: self.panels_count(),
+        }
     }
 }
 
@@ -815,5 +991,174 @@ mod tests {
             result,
             Err(PluginError::IncompatibleVersion { .. })
         ));
+    }
+
+    // ====================================================================
+    // PluginState New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_plugin_state_all() {
+        let all = PluginState::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_plugin_state_name() {
+        assert_eq!(PluginState::Loaded.name(), "Loaded");
+        assert_eq!(PluginState::Active.name(), "Active");
+        assert_eq!(PluginState::Error.name(), "Error");
+        assert_eq!(PluginState::Disabled.name(), "Disabled");
+    }
+
+    #[test]
+    fn test_plugin_state_icon_not_empty() {
+        for state in PluginState::all() {
+            assert!(!state.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_plugin_state_is_operational() {
+        assert!(!PluginState::Loaded.is_operational());
+        assert!(PluginState::Active.is_operational());
+        assert!(!PluginState::Error.is_operational());
+        assert!(!PluginState::Disabled.is_operational());
+    }
+
+    #[test]
+    fn test_plugin_state_is_error() {
+        assert!(PluginState::Error.is_error());
+        assert!(!PluginState::Active.is_error());
+    }
+
+    #[test]
+    fn test_plugin_state_is_disabled() {
+        assert!(PluginState::Disabled.is_disabled());
+        assert!(!PluginState::Active.is_disabled());
+    }
+
+    #[test]
+    fn test_plugin_state_display() {
+        assert_eq!(format!("{}", PluginState::Active), "Active");
+    }
+
+    // ====================================================================
+    // PluginError New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_plugin_error_is_fatal() {
+        assert!(PluginError::InitFailed("test".into()).is_fatal());
+        assert!(PluginError::MissingDependency("dep".into()).is_fatal());
+        assert!(PluginError::IncompatibleVersion {
+            required: "2.0".into(),
+            actual: "1.0".into(),
+        }.is_fatal());
+        assert!(!PluginError::ConfigError("cfg".into()).is_fatal());
+        assert!(!PluginError::Other("other".into()).is_fatal());
+    }
+
+    #[test]
+    fn test_plugin_error_icon_not_empty() {
+        let errors = [
+            PluginError::InitFailed("test".into()),
+            PluginError::ConfigError("cfg".into()),
+            PluginError::MissingDependency("dep".into()),
+            PluginError::IncompatibleVersion { required: "2.0".into(), actual: "1.0".into() },
+            PluginError::Other("other".into()),
+        ];
+        for err in &errors {
+            assert!(!err.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_plugin_error_category() {
+        assert_eq!(PluginError::InitFailed("test".into()).category(), "Initialization");
+        assert_eq!(PluginError::ConfigError("cfg".into()).category(), "Configuration");
+        assert_eq!(PluginError::MissingDependency("dep".into()).category(), "Dependency");
+    }
+
+    // ====================================================================
+    // PluginManager Stats Tests
+    // ====================================================================
+
+    #[test]
+    fn test_plugin_manager_plugin_count() {
+        let mut manager = PluginManager::new("plugins", "1.0.0");
+        assert_eq!(manager.plugin_count(), 0);
+
+        manager.register(Box::new(ExamplePlugin::new())).unwrap();
+        assert_eq!(manager.plugin_count(), 1);
+    }
+
+    #[test]
+    fn test_plugin_manager_is_healthy() {
+        let mut manager = PluginManager::new("plugins", "1.0.0");
+        assert!(manager.is_healthy());
+
+        manager.register(Box::new(ExamplePlugin::new())).unwrap();
+        assert!(manager.is_healthy());
+    }
+
+    #[test]
+    fn test_plugin_manager_panels_count() {
+        let mut manager = PluginManager::new("plugins", "1.0.0");
+        manager.register(Box::new(ExamplePlugin::new())).unwrap();
+
+        assert_eq!(manager.panels_count(), 1);
+    }
+
+    #[test]
+    fn test_plugin_manager_plugins_by_state() {
+        let mut manager = PluginManager::new("plugins", "1.0.0");
+        manager.register(Box::new(ExamplePlugin::new())).unwrap();
+
+        let loaded = manager.plugins_by_state(PluginState::Loaded);
+        assert_eq!(loaded.len(), 1);
+
+        let active = manager.plugins_by_state(PluginState::Active);
+        assert_eq!(active.len(), 0);
+    }
+
+    #[test]
+    fn test_plugin_manager_stats() {
+        let mut manager = PluginManager::new("plugins", "1.0.0");
+        manager.register(Box::new(ExamplePlugin::new())).unwrap();
+
+        let stats = manager.stats();
+        assert_eq!(stats.total, 1);
+        assert_eq!(stats.loaded, 1);
+        assert_eq!(stats.active, 0);
+        assert_eq!(stats.with_panels, 1);
+    }
+
+    #[test]
+    fn test_plugin_manager_stats_health_percentage() {
+        let stats = PluginManagerStats {
+            total: 10,
+            active: 8,
+            errors: 1,
+            disabled: 1,
+            loaded: 0,
+            with_panels: 5,
+        };
+
+        assert!((stats.health_percentage() - 80.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_plugin_manager_stats_all_active() {
+        let stats = PluginManagerStats {
+            total: 3,
+            active: 3,
+            errors: 0,
+            disabled: 0,
+            loaded: 0,
+            with_panels: 2,
+        };
+
+        assert!(stats.all_active());
     }
 }

@@ -1,5 +1,7 @@
-/// Tests for template loading and library management
-/// Covers file operations, directory scanning, and metadata parsing
+//! Tests for template loading and library management
+//! Covers file operations, directory scanning, and metadata parsing
+
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
     PromptLoader, PromptLibrary, PromptTemplate, TemplateLibrary, TemplateCollection,

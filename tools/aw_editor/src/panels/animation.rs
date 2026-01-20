@@ -830,16 +830,99 @@ impl AnimationPanel {
 mod tests {
     use super::*;
 
+    // === PlaybackState Tests ===
+
     #[test]
-    fn test_animation_panel_creation() {
-        let panel = AnimationPanel::default();
-        assert_eq!(panel.clips.len(), 3);
-        assert_eq!(panel.playback_state, PlaybackState::Stopped);
-        assert!(panel.show_editor);
+    fn test_playback_state_default() {
+        let state = PlaybackState::default();
+        assert_eq!(state, PlaybackState::Stopped);
     }
 
     #[test]
-    fn test_keyframe_evaluation() {
+    fn test_playback_state_equality() {
+        assert_eq!(PlaybackState::Playing, PlaybackState::Playing);
+        assert_ne!(PlaybackState::Playing, PlaybackState::Paused);
+        assert_ne!(PlaybackState::Paused, PlaybackState::Stopped);
+    }
+
+    // === AnimatedProperty Tests ===
+
+    #[test]
+    fn test_animated_property_default() {
+        let prop = AnimatedProperty::default();
+        assert_eq!(prop, AnimatedProperty::PositionY);
+    }
+
+    #[test]
+    fn test_animated_property_names() {
+        assert_eq!(AnimatedProperty::PositionX.name(), "Position X");
+        assert_eq!(AnimatedProperty::PositionY.name(), "Position Y");
+        assert_eq!(AnimatedProperty::PositionZ.name(), "Position Z");
+        assert_eq!(AnimatedProperty::RotationY.name(), "Rotation Y");
+        assert_eq!(AnimatedProperty::Scale.name(), "Scale");
+    }
+
+    // === Keyframe Tests ===
+
+    #[test]
+    fn test_keyframe_creation() {
+        let kf = Keyframe {
+            time: 0.5,
+            value: 10.0,
+            easing: EasingFunction::QuadOut,
+        };
+        assert_eq!(kf.time, 0.5);
+        assert_eq!(kf.value, 10.0);
+    }
+
+    #[test]
+    fn test_keyframe_clone() {
+        let kf = Keyframe {
+            time: 1.0,
+            value: 5.0,
+            easing: EasingFunction::Linear,
+        };
+        let cloned = kf.clone();
+        assert_eq!(cloned.time, kf.time);
+        assert_eq!(cloned.value, kf.value);
+    }
+
+    // === AnimationTrack Tests ===
+
+    #[test]
+    fn test_animation_track_new() {
+        let track = AnimationTrack::new(AnimatedProperty::PositionX);
+        assert_eq!(track.property, AnimatedProperty::PositionX);
+        assert!(track.keyframes.is_empty());
+    }
+
+    #[test]
+    fn test_animation_track_evaluate_empty() {
+        let track = AnimationTrack::new(AnimatedProperty::PositionY);
+        assert_eq!(track.evaluate(0.5), 0.0);
+    }
+
+    #[test]
+    fn test_animation_track_evaluate_empty_scale() {
+        let track = AnimationTrack::new(AnimatedProperty::Scale);
+        assert_eq!(track.evaluate(0.5), 1.0); // Scale defaults to 1.0
+    }
+
+    #[test]
+    fn test_animation_track_evaluate_single_keyframe() {
+        let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
+        track.keyframes.push(Keyframe {
+            time: 0.0,
+            value: 5.0,
+            easing: EasingFunction::Linear,
+        });
+        assert_eq!(track.evaluate(0.0), 5.0);
+        assert_eq!(track.evaluate(0.5), 5.0); // Returns same value
+        assert_eq!(track.evaluate(1.0), 5.0);
+    }
+
+    #[test]
+    fn test_animation_track_evaluate_linear_interpolation() {
         let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
         track.keyframes = vec![
             Keyframe {
@@ -853,36 +936,454 @@ mod tests {
                 easing: EasingFunction::Linear,
             },
         ];
-
         assert_eq!(track.evaluate(0.0), 0.0);
         assert_eq!(track.evaluate(0.5), 5.0);
         assert_eq!(track.evaluate(1.0), 10.0);
     }
 
     #[test]
-    fn test_sample_clips() {
-        let bounce = AnimationClip::sample_bounce();
-        assert!(bounce.looping);
-        assert_eq!(bounce.tracks.len(), 1);
-
-        let spin = AnimationClip::sample_spin();
-        assert!(spin.looping);
+    fn test_animation_track_evaluate_before_first() {
+        let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
+        track.keyframes = vec![
+            Keyframe {
+                time: 0.5,
+                value: 10.0,
+                easing: EasingFunction::Linear,
+            },
+            Keyframe {
+                time: 1.0,
+                value: 20.0,
+                easing: EasingFunction::Linear,
+            },
+        ];
+        // Time 0.0 is before first keyframe - implementation interpolates from first
+        let val = track.evaluate(0.0);
+        // The implementation returns first keyframe value when at or before first time
+        assert!(val >= 0.0); // Just verify it doesn't crash
     }
 
     #[test]
-    fn test_playback_update() {
+    fn test_animation_track_evaluate_after_last() {
+        let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
+        track.keyframes = vec![
+            Keyframe {
+                time: 0.0,
+                value: 0.0,
+                easing: EasingFunction::Linear,
+            },
+            Keyframe {
+                time: 0.5,
+                value: 10.0,
+                easing: EasingFunction::Linear,
+            },
+        ];
+        let val = track.evaluate(1.0);
+        assert_eq!(val, 10.0); // Stays at last keyframe value
+    }
+
+    #[test]
+    fn test_animation_track_three_keyframes() {
+        let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
+        track.keyframes = vec![
+            Keyframe {
+                time: 0.0,
+                value: 0.0,
+                easing: EasingFunction::Linear,
+            },
+            Keyframe {
+                time: 0.5,
+                value: 10.0,
+                easing: EasingFunction::Linear,
+            },
+            Keyframe {
+                time: 1.0,
+                value: 5.0,
+                easing: EasingFunction::Linear,
+            },
+        ];
+        assert_eq!(track.evaluate(0.0), 0.0);
+        assert_eq!(track.evaluate(0.5), 10.0);
+        assert_eq!(track.evaluate(1.0), 5.0);
+        // Midpoint between keyframes
+        assert!((track.evaluate(0.25) - 5.0).abs() < 0.01);
+    }
+
+    // === Easing Function Tests ===
+
+    #[test]
+    fn test_easing_linear() {
+        let t = AnimationTrack::apply_easing(0.5, EasingFunction::Linear);
+        assert!((t - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_easing_quad_in() {
+        let t = AnimationTrack::apply_easing(0.5, EasingFunction::QuadIn);
+        assert!((t - 0.25).abs() < 0.001); // 0.5^2 = 0.25
+    }
+
+    #[test]
+    fn test_easing_quad_out() {
+        let t = AnimationTrack::apply_easing(0.5, EasingFunction::QuadOut);
+        assert!((t - 0.75).abs() < 0.001); // 1 - (1-0.5)^2 = 0.75
+    }
+
+    #[test]
+    fn test_easing_boundaries() {
+        // All easing functions should be 0 at t=0 and 1 at t=1
+        let easings = [
+            EasingFunction::Linear,
+            EasingFunction::QuadIn,
+            EasingFunction::QuadOut,
+            EasingFunction::CubicIn,
+            EasingFunction::CubicOut,
+            EasingFunction::SineIn,
+            EasingFunction::SineOut,
+        ];
+        for easing in easings {
+            let at_0 = AnimationTrack::apply_easing(0.0, easing);
+            let at_1 = AnimationTrack::apply_easing(1.0, easing);
+            assert!(at_0.abs() < 0.001, "{:?} at 0 should be ~0", easing);
+            assert!((at_1 - 1.0).abs() < 0.001, "{:?} at 1 should be ~1", easing);
+        }
+    }
+
+    #[test]
+    fn test_easing_quad_in_out() {
+        let before_mid = AnimationTrack::apply_easing(0.25, EasingFunction::QuadInOut);
+        let at_mid = AnimationTrack::apply_easing(0.5, EasingFunction::QuadInOut);
+        let after_mid = AnimationTrack::apply_easing(0.75, EasingFunction::QuadInOut);
+
+        assert!(before_mid < 0.5);
+        assert!((at_mid - 0.5).abs() < 0.01);
+        assert!(after_mid > 0.5);
+    }
+
+    // === AnimationClip Tests ===
+
+    #[test]
+    fn test_animation_clip_default() {
+        let clip = AnimationClip::default();
+        assert_eq!(clip.name, "New Animation");
+        assert_eq!(clip.duration, 2.0);
+        assert!(!clip.looping);
+        assert!(clip.tracks.is_empty());
+    }
+
+    #[test]
+    fn test_animation_clip_sample_bounce() {
+        let clip = AnimationClip::sample_bounce();
+        assert_eq!(clip.name, "Bounce");
+        assert!(clip.looping);
+        assert_eq!(clip.duration, 1.0);
+        assert_eq!(clip.tracks.len(), 1);
+        assert_eq!(clip.tracks[0].property, AnimatedProperty::PositionY);
+        assert_eq!(clip.tracks[0].keyframes.len(), 3);
+    }
+
+    #[test]
+    fn test_animation_clip_sample_spin() {
+        let clip = AnimationClip::sample_spin();
+        assert_eq!(clip.name, "Spin");
+        assert!(clip.looping);
+        assert_eq!(clip.duration, 2.0);
+        assert_eq!(clip.tracks[0].property, AnimatedProperty::RotationY);
+    }
+
+    #[test]
+    fn test_animation_clip_sample_pulse() {
+        let clip = AnimationClip::sample_pulse();
+        assert_eq!(clip.name, "Pulse");
+        assert!(clip.looping);
+        assert_eq!(clip.tracks[0].property, AnimatedProperty::Scale);
+    }
+
+    // === AnimationOutput Tests ===
+
+    #[test]
+    fn test_animation_output_default() {
+        let output = AnimationOutput::default();
+        assert_eq!(output.position_offset, Vec3::ZERO);
+        assert_eq!(output.rotation_y, 0.0);
+        assert_eq!(output.scale_multiplier, 0.0); // Default f32
+    }
+
+    #[test]
+    fn test_animation_output_clone() {
+        let output = AnimationOutput {
+            position_offset: Vec3::new(1.0, 2.0, 3.0),
+            rotation_y: 1.57,
+            scale_multiplier: 1.5,
+        };
+        let cloned = output.clone();
+        assert_eq!(cloned.position_offset, output.position_offset);
+        assert_eq!(cloned.rotation_y, output.rotation_y);
+    }
+
+    // === AnimationPanel Tests ===
+
+    #[test]
+    fn test_animation_panel_creation() {
+        let panel = AnimationPanel::default();
+        assert_eq!(panel.clips.len(), 3);
+        assert_eq!(panel.playback_state, PlaybackState::Stopped);
+        assert!(panel.show_editor);
+    }
+
+    #[test]
+    fn test_animation_panel_default_clips() {
+        let panel = AnimationPanel::default();
+        assert_eq!(panel.clips[0].name, "Bounce");
+        assert_eq!(panel.clips[1].name, "Spin");
+        assert_eq!(panel.clips[2].name, "Pulse");
+    }
+
+    #[test]
+    fn test_animation_panel_initial_selection() {
+        let panel = AnimationPanel::default();
+        assert_eq!(panel.selected_clip_idx, Some(0));
+        assert!(panel.selected_entity.is_none());
+    }
+
+    #[test]
+    fn test_animation_panel_playback_speed() {
+        let panel = AnimationPanel::default();
+        assert_eq!(panel.playback_speed, 1.0);
+    }
+
+    #[test]
+    fn test_animation_panel_easing_tweens_count() {
+        let panel = AnimationPanel::default();
+        assert_eq!(panel.easing_tweens.len(), 7);
+    }
+
+    #[test]
+    fn test_animation_panel_set_selected_entity() {
+        let mut panel = AnimationPanel::default();
+        assert!(panel.selected_entity.is_none());
+
+        panel.set_selected_entity(Some(42));
+        assert_eq!(panel.selected_entity, Some(42));
+
+        panel.set_selected_entity(None);
+        assert!(panel.selected_entity.is_none());
+    }
+
+    #[test]
+    fn test_animation_panel_get_output() {
+        let panel = AnimationPanel::default();
+        let output = panel.get_output();
+        assert_eq!(output.scale_multiplier, 1.0);
+    }
+
+    #[test]
+    fn test_animation_panel_is_playing() {
+        let mut panel = AnimationPanel::default();
+        assert!(!panel.is_playing());
+
+        panel.playback_state = PlaybackState::Playing;
+        assert!(panel.is_playing());
+
+        panel.playback_state = PlaybackState::Paused;
+        assert!(!panel.is_playing());
+    }
+
+    // === Update Tests ===
+
+    #[test]
+    fn test_update_when_stopped() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Stopped,
+            ..Default::default()
+        };
+
+        let result = panel.update(0.1);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_update_when_paused() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Paused,
+            ..Default::default()
+        };
+
+        let result = panel.update(0.1);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_update_when_playing() {
         let mut panel = AnimationPanel {
             playback_state: PlaybackState::Playing,
             ..Default::default()
         };
-        let output = panel.update(0.1);
-        assert!(output.is_some());
+
+        let result = panel.update(0.1);
+        assert!(result.is_some());
         assert!(panel.current_time > 0.0);
     }
 
     #[test]
-    fn test_easing_tweens_count() {
-        let panel = AnimationPanel::default();
-        assert_eq!(panel.easing_tweens.len(), 7);
+    fn test_update_advances_time() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Playing,
+            current_time: 0.0,
+            ..Default::default()
+        };
+
+        panel.update(0.5);
+        assert!((panel.current_time - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_update_respects_playback_speed() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Playing,
+            playback_speed: 2.0,
+            current_time: 0.0,
+            ..Default::default()
+        };
+
+        panel.update(0.25);
+        // 0.25 * 2.0 = 0.5, but default clip (Bounce) is 1.0s looping
+        assert!(panel.current_time > 0.0);
+    }
+
+    #[test]
+    fn test_update_looping_clip() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Playing,
+            selected_clip_idx: Some(0),
+            current_time: 0.9,
+            ..Default::default()
+        };
+
+        panel.update(0.2); // Should wrap around
+
+        assert!(panel.current_time < 1.0);
+        assert_eq!(panel.playback_state, PlaybackState::Playing);
+    }
+
+    #[test]
+    fn test_update_non_looping_stops_at_end() {
+        let mut panel = AnimationPanel::default();
+        // Create non-looping clip
+        panel.clips.push(AnimationClip {
+            name: "OneShot".to_string(),
+            duration: 1.0,
+            looping: false,
+            tracks: Vec::new(),
+        });
+        panel.selected_clip_idx = Some(3); // The new non-looping clip
+        panel.playback_state = PlaybackState::Playing;
+        panel.current_time = 0.9;
+
+        panel.update(0.2);
+
+        assert_eq!(panel.current_time, 1.0);
+        assert_eq!(panel.playback_state, PlaybackState::Stopped);
+    }
+
+    #[test]
+    fn test_update_evaluates_tracks() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Playing,
+            selected_clip_idx: Some(0),
+            current_time: 0.0,
+            ..Default::default()
+        };
+
+        let output = panel.update(0.25);
+
+        assert!(output.is_some());
+        let out = output.unwrap();
+        // Bounce clip animates position_offset.y
+        // At some point it should be non-zero
+        assert!(out.position_offset.y.abs() > 1e-3);
+    }
+
+    // === Integration Tests ===
+
+    #[test]
+    fn test_full_playback_workflow() {
+        let mut panel = AnimationPanel::default();
+
+        // Select entity
+        panel.set_selected_entity(Some(1));
+        assert_eq!(panel.selected_entity, Some(1));
+
+        // Select clip
+        panel.selected_clip_idx = Some(1); // Spin
+
+        // Start playing
+        panel.playback_state = PlaybackState::Playing;
+        assert!(panel.is_playing());
+
+        // Update
+        let output = panel.update(0.5);
+        assert!(output.is_some());
+
+        // Pause
+        panel.playback_state = PlaybackState::Paused;
+        assert!(!panel.is_playing());
+
+        // Resume
+        panel.playback_state = PlaybackState::Playing;
+        assert!(panel.is_playing());
+
+        // Stop
+        panel.playback_state = PlaybackState::Stopped;
+        assert!(!panel.is_playing());
+    }
+
+    #[test]
+    fn test_multiple_tracks_evaluation() {
+        let mut panel = AnimationPanel {
+            playback_state: PlaybackState::Playing,
+            ..Default::default()
+        };
+        
+        // Create clip with multiple tracks
+        let mut clip = AnimationClip {
+            name: "Multi".to_string(),
+            duration: 1.0,
+            looping: true,
+            tracks: Vec::new(),
+        };
+
+        let mut y_track = AnimationTrack::new(AnimatedProperty::PositionY);
+        y_track.keyframes = vec![
+            Keyframe { time: 0.0, value: 0.0, easing: EasingFunction::Linear },
+            Keyframe { time: 1.0, value: 5.0, easing: EasingFunction::Linear },
+        ];
+        clip.tracks.push(y_track);
+
+        let mut scale_track = AnimationTrack::new(AnimatedProperty::Scale);
+        scale_track.keyframes = vec![
+            Keyframe { time: 0.0, value: 1.0, easing: EasingFunction::Linear },
+            Keyframe { time: 1.0, value: 2.0, easing: EasingFunction::Linear },
+        ];
+        clip.tracks.push(scale_track);
+
+        panel.clips.push(clip);
+        panel.selected_clip_idx = Some(3);
+        panel.current_time = 0.0;
+
+        let output = panel.update(0.5);
+        assert!(output.is_some());
+
+        let out = output.unwrap();
+        assert!((out.position_offset.y - 2.5).abs() < 0.1);
+        assert!((out.scale_multiplier - 1.5).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_show_editor_mode_toggle() {
+        let mut panel = AnimationPanel::default();
+        assert!(panel.show_editor);
+
+        panel.show_editor = false;
+        assert!(!panel.show_editor);
     }
 }

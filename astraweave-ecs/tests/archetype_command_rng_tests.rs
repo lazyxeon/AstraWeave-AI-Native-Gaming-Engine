@@ -335,7 +335,7 @@ fn test_rng_gen_range_inclusive() {
     // Test inclusive range [0..=10]
     for _ in 0..50 {
         let val = rng.gen_range(0..=10);
-        assert!(val >= 0 && val <= 10, "Value should be in range [0, 10]");
+        assert!((0..=10).contains(&val), "Value should be in range [0, 10]");
     }
 }
 
@@ -349,7 +349,7 @@ fn test_rng_gen_range_float() {
     for _ in 0..50 {
         let val = rng.gen_range(0.0..1.0);
         assert!(
-            val >= 0.0 && val < 1.0,
+            (0.0..1.0).contains(&val),
             "Value should be in range [0.0, 1.0)"
         );
     }
@@ -358,7 +358,7 @@ fn test_rng_gen_range_float() {
     for _ in 0..50 {
         let val = rng.gen_range(-10.0..10.0);
         assert!(
-            val >= -10.0 && val < 10.0,
+            (-10.0..10.0).contains(&val),
             "Value should be in range [-10.0, 10.0)"
         );
     }

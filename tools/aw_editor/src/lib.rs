@@ -1,6 +1,8 @@
 // Library exports for aw_editor (enables benchmarks and testing)
 #![allow(dead_code)] // Suppress dead code warnings for benchmark-only exports
 
+extern crate self as aw_editor_lib;
+
 pub mod asset_pack;
 pub mod behavior_graph;
 pub mod clipboard;

@@ -2,6 +2,10 @@
 //!
 //! Stress testing for Tracy profiling macros, zone overhead, and instrumentation.
 
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(clippy::type_complexity)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;
@@ -561,10 +565,8 @@ fn bench_memory_profiling(c: &mut Criterion) {
                     live.insert(event.ptr, event.size);
                     current_size += event.size;
                     peak_size = peak_size.max(current_size);
-                } else {
-                    if let Some(size) = live.remove(&event.ptr) {
-                        current_size -= size;
-                    }
+                } else if let Some(size) = live.remove(&event.ptr) {
+                    current_size -= size;
                 }
             }
             

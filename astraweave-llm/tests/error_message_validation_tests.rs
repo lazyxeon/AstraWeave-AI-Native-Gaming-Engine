@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 fn assert_message_sane(msg: &str) {
     assert!(
         msg.len() >= 10,

@@ -9,13 +9,15 @@
 //!
 //! Run with: `cargo bench -p astraweave-net`
 
+#![allow(clippy::clone_on_copy)]
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::BTreeSet;
 
 use astraweave_core::IVec2;
 use astraweave_net::{
     apply_delta, diff_snapshots, filter_snapshot_for_viewer, Delta, EntityDelta, EntityState,
-    FovInterest, FullInterest, Interest, RadiusTeamInterest, Snapshot,
+    FovInterest, FullInterest, RadiusTeamInterest, Snapshot,
 };
 
 // ============================================================================
@@ -23,15 +25,18 @@ use astraweave_net::{
 // ============================================================================
 
 /// Assert that a snapshot is valid
+#[allow(dead_code)]
 fn assert_snapshot_valid(snapshot: &Snapshot) {
     assert!(snapshot.tick > 0 || snapshot.seq == 0, "Snapshot should have valid tick");
     // Entities should be well-formed
     for entity in &snapshot.entities {
-        assert!(entity.hp >= 0 || entity.hp < 0, "HP should be valid"); // Always true, just checks access
+        // Access check - just verify entity data is accessible
+        let _ = entity.hp;
     }
 }
 
 /// Assert that a delta is valid
+#[allow(dead_code)]
 fn assert_delta_valid(delta: &Delta, base_tick: u64, head_tick: u64) {
     assert_eq!(delta.base_tick, base_tick, "Delta base_tick should match");
     assert_eq!(delta.tick, head_tick, "Delta tick should match");
@@ -138,6 +143,7 @@ fn create_viewer(team: u8) -> EntityState {
 }
 
 /// Create obstacles set for LOS tests
+#[allow(dead_code)]
 fn create_obstacles(count: usize) -> BTreeSet<(i32, i32)> {
     let mut obstacles = BTreeSet::new();
     for i in 0..count {
@@ -603,7 +609,6 @@ fn bench_hash_computation(c: &mut Criterion) {
                         e.ammo.hash(&mut hasher);
                     }
                     let hash = hasher.finish();
-                    assert!(hash != 0 || hash == 0); // Just to use the value
                     black_box(hash)
                 })
             },

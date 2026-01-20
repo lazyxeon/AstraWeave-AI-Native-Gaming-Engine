@@ -218,6 +218,7 @@ fn bench_particle_operations(c: &mut Criterion) {
     });
 
     // Test 5: Boundary collision
+    #[allow(clippy::needless_range_loop)]
     group.bench_function("boundary_collision_10000", |bencher| {
         let mut particles = generate_particles(10000, [10.0, 10.0, 10.0]);
         let bounds = [10.0f32, 10.0, 10.0];

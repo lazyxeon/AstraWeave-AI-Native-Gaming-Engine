@@ -177,6 +177,132 @@ impl SceneData {
         debug!("📂 Loaded scene from {:?}", safe_path);
         Ok(scene)
     }
+
+    /// Validate scene data integrity and consistency.
+    ///
+    /// Checks for:
+    /// - Duplicate entity IDs
+    /// - Invalid/missing component data
+    /// - Referential integrity
+    ///
+    /// Returns a list of validation issues (empty = valid).
+    pub fn validate(&self) -> Vec<SceneValidationIssue> {
+        let mut issues = Vec::new();
+
+        // Check for duplicate entity IDs
+        let mut seen_ids = std::collections::HashSet::new();
+        for entity in &self.entities {
+            if !seen_ids.insert(entity.id) {
+                issues.push(SceneValidationIssue::Error(format!(
+                    "Duplicate entity ID: {}",
+                    entity.id
+                )));
+            }
+        }
+
+        // Validate entity data
+        for (i, entity) in self.entities.iter().enumerate() {
+            // Name validation
+            if entity.name.is_empty() {
+                issues.push(SceneValidationIssue::Warning(format!(
+                    "Entity {} (ID {}) has empty name",
+                    i, entity.id
+                )));
+            }
+
+            // Scale validation
+            if entity.scale <= 0.0 {
+                issues.push(SceneValidationIssue::Error(format!(
+                    "Entity '{}' (ID {}) has invalid scale: {}",
+                    entity.name, entity.id, entity.scale
+                )));
+            }
+
+            // HP sanity check
+            if entity.hp < 0 {
+                issues.push(SceneValidationIssue::Warning(format!(
+                    "Entity '{}' (ID {}) has negative HP: {}",
+                    entity.name, entity.id, entity.hp
+                )));
+            }
+
+            // Ammo sanity check
+            if entity.ammo < 0 {
+                issues.push(SceneValidationIssue::Warning(format!(
+                    "Entity '{}' (ID {}) has negative ammo: {}",
+                    entity.name, entity.id, entity.ammo
+                )));
+            }
+        }
+
+        // Check next_entity_id consistency
+        let max_id = self.entities.iter().map(|e| e.id).max().unwrap_or(0);
+        if self.next_entity_id <= max_id {
+            issues.push(SceneValidationIssue::Error(format!(
+                "next_entity_id ({}) is not greater than max existing ID ({})",
+                self.next_entity_id, max_id
+            )));
+        }
+
+        issues
+    }
+
+    /// Check if scene data is valid (no errors).
+    pub fn is_valid(&self) -> bool {
+        self.validate()
+            .iter()
+            .all(|issue| !matches!(issue, SceneValidationIssue::Error(_)))
+    }
+
+    /// Get statistics about the scene.
+    pub fn stats(&self) -> SceneStats {
+        SceneStats {
+            entity_count: self.entities.len(),
+            obstacle_count: self.obstacles.len(),
+            has_behavior_graphs: self.entities.iter().any(|e| e.behavior_graph.is_some()),
+            total_cooldowns: self
+                .entities
+                .iter()
+                .map(|e| e.cooldowns.len())
+                .sum(),
+        }
+    }
+}
+
+/// Scene validation issue types.
+#[derive(Debug, Clone)]
+pub enum SceneValidationIssue {
+    /// Critical issue that must be fixed
+    Error(String),
+    /// Non-critical issue that should be reviewed
+    Warning(String),
+}
+
+impl SceneValidationIssue {
+    /// Check if this is an error (critical issue).
+    pub fn is_error(&self) -> bool {
+        matches!(self, SceneValidationIssue::Error(_))
+    }
+
+    /// Get the message text.
+    pub fn message(&self) -> &str {
+        match self {
+            SceneValidationIssue::Error(msg) | SceneValidationIssue::Warning(msg) => msg,
+        }
+    }
+}
+
+/// Scene statistics for quick overview.
+#[derive(Debug, Clone)]
+pub struct SceneStats {
+    /// Number of entities in the scene
+    pub entity_count: usize,
+    /// Number of obstacles
+    pub obstacle_count: usize,
+    /// Whether any entity has behavior graphs
+    pub has_behavior_graphs: bool,
+    /// Total number of cooldown entries across all entities
+    pub total_cooldowns: usize,
 }
 
 pub fn save_scene(world: &World, path: &Path) -> Result<()> {
@@ -566,5 +692,244 @@ mod tests {
         
         let err = result.unwrap_err();
         assert!(err.to_string().contains("Invalid scene path"));
+    }
+
+    // ====================================================================
+    // SceneValidationIssue Tests
+    // ====================================================================
+
+    #[test]
+    fn test_scene_validation_issue_error() {
+        let issue = SceneValidationIssue::Error("Test error".to_string());
+        assert!(issue.is_error());
+        assert_eq!(issue.message(), "Test error");
+    }
+
+    #[test]
+    fn test_scene_validation_issue_warning() {
+        let issue = SceneValidationIssue::Warning("Test warning".to_string());
+        assert!(!issue.is_error());
+        assert_eq!(issue.message(), "Test warning");
+    }
+
+    // ====================================================================
+    // SceneData Validation Tests
+    // ====================================================================
+
+    #[test]
+    fn test_scene_validate_empty_valid() {
+        let scene = SceneData {
+            version: 1,
+            time: 0.0,
+            next_entity_id: 1,
+            entities: vec![],
+            obstacles: vec![],
+        };
+
+        let issues = scene.validate();
+        assert!(issues.is_empty());
+        assert!(scene.is_valid());
+    }
+
+    #[test]
+    fn test_scene_validate_duplicate_ids() {
+        let scene = SceneData {
+            version: 1,
+            time: 0.0,
+            next_entity_id: 5,
+            entities: vec![
+                EntityData {
+                    id: 1,
+                    name: "E1".to_string(),
+                    pos: IVec2 { x: 0, y: 0 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 0,
+                    ammo: 30,
+                    cooldowns: std::collections::HashMap::new(),
+                    behavior_graph: None,
+                },
+                EntityData {
+                    id: 1, // Duplicate!
+                    name: "E2".to_string(),
+                    pos: IVec2 { x: 5, y: 5 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 50,
+                    team_id: 1,
+                    ammo: 15,
+                    cooldowns: std::collections::HashMap::new(),
+                    behavior_graph: None,
+                },
+            ],
+            obstacles: vec![],
+        };
+
+        let issues = scene.validate();
+        assert!(!issues.is_empty());
+        assert!(issues.iter().any(|i| i.is_error() && i.message().contains("Duplicate")));
+        assert!(!scene.is_valid());
+    }
+
+    #[test]
+    fn test_scene_validate_invalid_scale() {
+        let scene = SceneData {
+            version: 1,
+            time: 0.0,
+            next_entity_id: 5,
+            entities: vec![EntityData {
+                id: 1,
+                name: "BadScale".to_string(),
+                pos: IVec2 { x: 0, y: 0 },
+                rotation: 0.0,
+                rotation_x: 0.0,
+                rotation_z: 0.0,
+                scale: 0.0, // Invalid!
+                hp: 100,
+                team_id: 0,
+                ammo: 30,
+                cooldowns: std::collections::HashMap::new(),
+                behavior_graph: None,
+            }],
+            obstacles: vec![],
+        };
+
+        let issues = scene.validate();
+        assert!(issues.iter().any(|i| i.is_error() && i.message().contains("scale")));
+        assert!(!scene.is_valid());
+    }
+
+    #[test]
+    fn test_scene_validate_negative_hp_warning() {
+        let scene = SceneData {
+            version: 1,
+            time: 0.0,
+            next_entity_id: 5,
+            entities: vec![EntityData {
+                id: 1,
+                name: "NegativeHP".to_string(),
+                pos: IVec2 { x: 0, y: 0 },
+                rotation: 0.0,
+                rotation_x: 0.0,
+                rotation_z: 0.0,
+                scale: 1.0,
+                hp: -50, // Warning
+                team_id: 0,
+                ammo: 30,
+                cooldowns: std::collections::HashMap::new(),
+                behavior_graph: None,
+            }],
+            obstacles: vec![],
+        };
+
+        let issues = scene.validate();
+        assert!(issues.iter().any(|i| !i.is_error() && i.message().contains("HP")));
+        assert!(scene.is_valid()); // Warnings don't invalidate
+    }
+
+    #[test]
+    fn test_scene_validate_next_entity_id_consistency() {
+        let scene = SceneData {
+            version: 1,
+            time: 0.0,
+            next_entity_id: 5, // Less than max ID!
+            entities: vec![EntityData {
+                id: 10, // Max ID is 10
+                name: "Entity".to_string(),
+                pos: IVec2 { x: 0, y: 0 },
+                rotation: 0.0,
+                rotation_x: 0.0,
+                rotation_z: 0.0,
+                scale: 1.0,
+                hp: 100,
+                team_id: 0,
+                ammo: 30,
+                cooldowns: std::collections::HashMap::new(),
+                behavior_graph: None,
+            }],
+            obstacles: vec![],
+        };
+
+        let issues = scene.validate();
+        assert!(issues.iter().any(|i| i.is_error() && i.message().contains("next_entity_id")));
+        assert!(!scene.is_valid());
+    }
+
+    // ====================================================================
+    // SceneStats Tests
+    // ====================================================================
+
+    #[test]
+    fn test_scene_stats_empty() {
+        let scene = SceneData {
+            version: 1,
+            time: 0.0,
+            next_entity_id: 1,
+            entities: vec![],
+            obstacles: vec![],
+        };
+
+        let stats = scene.stats();
+        assert_eq!(stats.entity_count, 0);
+        assert_eq!(stats.obstacle_count, 0);
+        assert!(!stats.has_behavior_graphs);
+        assert_eq!(stats.total_cooldowns, 0);
+    }
+
+    #[test]
+    fn test_scene_stats_populated() {
+        use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+
+        let mut cooldowns = std::collections::HashMap::new();
+        cooldowns.insert("fire".to_string(), 1.5);
+        cooldowns.insert("jump".to_string(), 0.5);
+
+        let scene = SceneData {
+            version: 1,
+            time: 100.0,
+            next_entity_id: 5,
+            entities: vec![
+                EntityData {
+                    id: 1,
+                    name: "E1".to_string(),
+                    pos: IVec2 { x: 0, y: 0 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 0,
+                    ammo: 30,
+                    cooldowns: cooldowns.clone(),
+                    behavior_graph: Some(BehaviorGraph::new(BehaviorNode::Action("test".into()))),
+                },
+                EntityData {
+                    id: 2,
+                    name: "E2".to_string(),
+                    pos: IVec2 { x: 5, y: 5 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 50,
+                    team_id: 1,
+                    ammo: 15,
+                    cooldowns: std::collections::HashMap::new(),
+                    behavior_graph: None,
+                },
+            ],
+            obstacles: vec![(3, 3)],
+        };
+
+        let stats = scene.stats();
+        assert_eq!(stats.entity_count, 2);
+        assert_eq!(stats.obstacle_count, 1);
+        assert!(stats.has_behavior_graphs);
+        assert_eq!(stats.total_cooldowns, 2);
     }
 }

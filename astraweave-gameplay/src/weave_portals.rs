@@ -176,7 +176,7 @@ mod tests {
         let (p0, p1) = edge.unwrap();
 
         // Should find the two shared vertices
-        let shared_verts = vec![Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)];
+        let shared_verts = [Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)];
         assert!(shared_verts.contains(&p0) || shared_verts.contains(&p1));
     }
 
@@ -349,6 +349,6 @@ mod tests {
 
         // Portals should exist between adjacent triangles
         // The exact number depends on how bake() builds adjacency
-        assert!(pg.portals.len() >= 1 || nav.tris.is_empty());
+        assert!(!pg.portals.is_empty() || nav.tris.is_empty());
     }
 }

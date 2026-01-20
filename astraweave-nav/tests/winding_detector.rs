@@ -331,8 +331,8 @@ fn detect_downward_triangles() {
 
     println!("\n=== END ANALYSIS ===\n");
 
-    // This test always "passes" - it's just for reporting
-    assert!(true);
+    // This test is primarily for reporting; assert something non-constant to satisfy clippy.
+    assert!(angle_rad.is_finite());
 }
 
 fn check_triangle(name: &str, tri: Triangle) {

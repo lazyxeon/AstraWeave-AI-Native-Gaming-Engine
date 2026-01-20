@@ -3,6 +3,11 @@
 //! Tests path traversal prevention, symlink handling, resource exhaustion,
 //! command injection, and other security-critical scenarios.
 
+#![allow(
+    clippy::assertions_on_constants,
+    clippy::useless_vec
+)]
+
 use std::path::PathBuf;
 use std::time::Duration;
 use std::fs;
@@ -95,7 +100,7 @@ fn path_traversal_detection_basic() {
 #[test]
 fn normalize_path_removes_parent_refs() {
     // Test path normalization logic
-    fn normalize_path(path: &PathBuf) -> PathBuf {
+    fn normalize_path(path: &std::path::Path) -> PathBuf {
         use std::path::Component;
         
         let mut components = Vec::new();

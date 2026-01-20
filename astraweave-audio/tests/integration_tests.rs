@@ -9,6 +9,8 @@
 //!
 //! Target: 15 tests, 3.0h, +5-10% coverage (73.55% → 78.55-83.55%)
 
+#![allow(clippy::assertions_on_constants)]
+
 use astraweave_audio::engine::{AudioEngine, ListenerPose, MusicTrack};
 use glam::vec3;
 use std::path::Path;

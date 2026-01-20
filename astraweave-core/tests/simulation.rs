@@ -21,15 +21,13 @@ fn test_capture_and_replay_minimal() {
     world.obstacles.insert((1, 2));
     world.obstacles.insert((2, 3));
     let path = "test.snap";
-    capture_replay::capture_state(5, path, &world).expect(&format!(
-        "failed to capture state (seed: {}, path: {})",
-        5, path
-    ));
+    capture_replay::capture_state(5, path, &world).unwrap_or_else(|e| {
+        panic!("failed to capture state (seed: 5, path: {}): {e}", path)
+    });
     let cfg = SimConfig { dt: 0.016 };
-    let w2 = capture_replay::replay_state(path, 3, &cfg).expect(&format!(
-        "failed to replay state (seed: {}, path: {})",
-        3, path
-    ));
+    let w2 = capture_replay::replay_state(path, 3, &cfg).unwrap_or_else(|e| {
+        panic!("failed to replay state (seed: 3, path: {}): {e}", path)
+    });
     // Basic invariants: replay doesn't drop obstacles order-independently
     assert!(
         w2.obstacles.contains(&(1, 2)),

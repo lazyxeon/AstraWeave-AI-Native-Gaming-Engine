@@ -53,6 +53,81 @@ impl BrdfPreview {
         Self::default()
     }
 
+    /// Check if preview needs re-rendering
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    /// Check if texture is cached
+    pub fn has_texture(&self) -> bool {
+        self.texture_handle.is_some()
+    }
+
+    /// Get preview resolution
+    pub fn resolution(&self) -> usize {
+        self.resolution
+    }
+
+    /// Get pixel count
+    pub fn pixel_count(&self) -> usize {
+        self.resolution * self.resolution
+    }
+
+    /// Check if material is metallic (metallic > 0.5)
+    pub fn is_metallic(&self) -> bool {
+        self.metallic > 0.5
+    }
+
+    /// Check if material is rough (roughness > 0.5)
+    pub fn is_rough(&self) -> bool {
+        self.roughness > 0.5
+    }
+
+    /// Get albedo as hex color string
+    pub fn albedo_hex(&self) -> String {
+        format!(
+            "#{:02X}{:02X}{:02X}",
+            (self.albedo[0] * 255.0) as u8,
+            (self.albedo[1] * 255.0) as u8,
+            (self.albedo[2] * 255.0) as u8
+        )
+    }
+
+    /// Get light color as hex string
+    pub fn light_color_hex(&self) -> String {
+        format!(
+            "#{:02X}{:02X}{:02X}",
+            (self.light_color[0] * 255.0) as u8,
+            (self.light_color[1] * 255.0) as u8,
+            (self.light_color[2] * 255.0) as u8
+        )
+    }
+
+    /// Get material summary string
+    pub fn material_summary(&self) -> String {
+        format!(
+            "Metallic: {:.0}%, Roughness: {:.0}%",
+            self.metallic * 100.0,
+            self.roughness * 100.0
+        )
+    }
+
+    /// Get lighting summary string
+    pub fn lighting_summary(&self) -> String {
+        format!(
+            "Intensity: {:.1}, Dir: ({:.2}, {:.2}, {:.2})",
+            self.light_intensity,
+            self.light_direction.x,
+            self.light_direction.y,
+            self.light_direction.z
+        )
+    }
+
+    /// Force re-render on next frame
+    pub fn invalidate(&mut self) {
+        self.dirty = true;
+    }
+
     /// Update material parameters
     pub fn set_material(&mut self, albedo: [f32; 3], metallic: f32, roughness: f32) {
         self.albedo = albedo;
@@ -323,5 +398,108 @@ impl BrdfPreview {
                 self.light_direction.x, self.light_direction.y, self.light_direction.z
             ));
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_brdf_preview_default() {
+        let preview = BrdfPreview::default();
+        assert_eq!(preview.resolution, 256);
+        assert!((preview.metallic - 0.0).abs() < 0.01);
+        assert!((preview.roughness - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_brdf_preview_new() {
+        let preview = BrdfPreview::new();
+        assert!(preview.is_dirty());
+        assert!(!preview.has_texture());
+    }
+
+    #[test]
+    fn test_brdf_preview_resolution() {
+        let preview = BrdfPreview::new();
+        assert_eq!(preview.resolution(), 256);
+    }
+
+    #[test]
+    fn test_brdf_preview_pixel_count() {
+        let preview = BrdfPreview::new();
+        assert_eq!(preview.pixel_count(), 256 * 256);
+    }
+
+    #[test]
+    fn test_brdf_preview_is_metallic() {
+        let mut preview = BrdfPreview::new();
+        assert!(!preview.is_metallic());
+        preview.metallic = 0.8;
+        assert!(preview.is_metallic());
+    }
+
+    #[test]
+    fn test_brdf_preview_is_rough() {
+        let mut preview = BrdfPreview::new();
+        assert!(!preview.is_rough());
+        preview.roughness = 0.8;
+        assert!(preview.is_rough());
+    }
+
+    #[test]
+    fn test_brdf_preview_albedo_hex() {
+        let mut preview = BrdfPreview::new();
+        preview.albedo = [1.0, 0.0, 0.0];
+        assert_eq!(preview.albedo_hex(), "#FF0000");
+    }
+
+    #[test]
+    fn test_brdf_preview_light_color_hex() {
+        let preview = BrdfPreview::new();
+        assert_eq!(preview.light_color_hex(), "#FFFFFF");
+    }
+
+    #[test]
+    fn test_brdf_preview_material_summary() {
+        let preview = BrdfPreview::new();
+        let summary = preview.material_summary();
+        assert!(summary.contains("Metallic"));
+        assert!(summary.contains("Roughness"));
+    }
+
+    #[test]
+    fn test_brdf_preview_lighting_summary() {
+        let preview = BrdfPreview::new();
+        let summary = preview.lighting_summary();
+        assert!(summary.contains("Intensity"));
+        assert!(summary.contains("Dir"));
+    }
+
+    #[test]
+    fn test_brdf_preview_invalidate() {
+        let mut preview = BrdfPreview::new();
+        preview.dirty = false;
+        preview.invalidate();
+        assert!(preview.is_dirty());
+    }
+
+    #[test]
+    fn test_brdf_preview_set_material() {
+        let mut preview = BrdfPreview::new();
+        preview.dirty = false;
+        preview.set_material([1.0, 0.0, 0.0], 0.9, 0.1);
+        assert!(preview.is_dirty());
+        assert!((preview.metallic - 0.9).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_brdf_preview_set_lighting() {
+        let mut preview = BrdfPreview::new();
+        preview.dirty = false;
+        preview.set_lighting(Vec3::new(1.0, 0.0, 0.0), 2.0, [1.0, 0.5, 0.0]);
+        assert!(preview.is_dirty());
+        assert!((preview.light_intensity - 2.0).abs() < 0.01);
     }
 }

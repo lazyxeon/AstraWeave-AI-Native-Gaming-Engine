@@ -3,6 +3,8 @@
 //! These tests use proptest to verify invariants and find edge cases
 //! that would be difficult to discover with hand-written tests.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use proptest::prelude::*;
 
 use astraweave_prompts::sanitize::{

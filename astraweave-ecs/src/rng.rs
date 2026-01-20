@@ -316,7 +316,7 @@ mod tests {
 
             assert_eq!(val1, val2, "gen_range should be deterministic");
             assert!(
-                val1 >= 10 && val1 < 100,
+                (10..100).contains(&val1),
                 "Value should be in range [10, 100)"
             );
         }
@@ -496,14 +496,14 @@ mod tests {
         // Test integer range
         for _ in 0..100 {
             let val = rng.gen_range(0..10);
-            assert!(val >= 0 && val < 10, "Value should be in range [0, 10)");
+            assert!((0..10).contains(&val), "Value should be in range [0, 10)");
         }
 
         // Test float range
         for _ in 0..100 {
             let val = rng.gen_range(0.0..1.0);
             assert!(
-                val >= 0.0 && val < 1.0,
+                (0.0..1.0).contains(&val),
                 "Value should be in range [0.0, 1.0)"
             );
         }
@@ -569,8 +569,8 @@ mod tests {
         let val3 = RngCore::next_u64(&mut rng3);
         assert_eq!(val1, val3, "gen_u64 wrapper should match RngCore::next_u64");
 
-        // Verify range (u64::MAX is valid)
-        assert!(val1 <= u64::MAX, "gen_u64 should produce valid u64 values");
+        // u64::MAX is always valid for gen_u64 (trivially true)
+        let _ = val1; // Use the value to avoid unused warning
     }
 
     #[test]

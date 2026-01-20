@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Adversarial Observability Benchmarks
 //!
 //! Stress testing for tracing, metrics collection, and crash reporting.
@@ -477,8 +479,8 @@ fn bench_logging(c: &mut Criterion) {
                 
                 LogEntry {
                     level: LogLevel::Info,
-                    message: format!("Request completed successfully"),
-                    target: format!("astraweave::http::handler"),
+                    message: "Request completed successfully".to_string(),
+                    target: "astraweave::http::handler".to_string(),
                     timestamp: 1700000000 + i as u64,
                     fields,
                 }
@@ -529,7 +531,7 @@ fn bench_logging(c: &mut Criterion) {
             })
             .collect();
         
-        let patterns = vec!["astraweave::ai", "astraweave::render", "astraweave::physics"];
+        let patterns = ["astraweave::ai", "astraweave::render", "astraweave::physics"];
         
         bencher.iter(|| {
             let matched: Vec<&LogEntry> = entries
@@ -648,7 +650,7 @@ fn bench_crash_reporting(c: &mut Criterion) {
                     backtrace: (0..20)
                         .map(|j| StackFrame {
                             function: format!("func_{}", j),
-                            file: Some(format!("file.rs")),
+                            file: Some("file.rs".to_string()),
                             line: Some(j as u32),
                             module: "test".to_string(),
                         })

@@ -260,7 +260,7 @@ mod tests {
                 .get(&crate::cooldowns::CooldownKey::from("throw:smoke"))
                 .unwrap();
         });
-        assert!(val <= 0.02 && val >= 0.009);
+        assert!((0.009..=0.02).contains(&val));
     }
 
     #[test]

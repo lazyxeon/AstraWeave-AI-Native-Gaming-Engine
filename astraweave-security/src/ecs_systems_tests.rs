@@ -2,6 +2,7 @@
 // Tests for input_validation_system, telemetry_collection_system, and anomaly_detection_system
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod ecs_systems_tests {
     use super::super::*;
     use astraweave_ecs::World;

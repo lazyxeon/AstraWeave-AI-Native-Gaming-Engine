@@ -685,17 +685,22 @@ mod tests {
         splits[0] = near;
         splits[CASCADE_COUNT] = far;
 
-        for i in 1..CASCADE_COUNT {
+        for (i, split) in splits
+            .iter_mut()
+            .enumerate()
+            .take(CASCADE_COUNT)
+            .skip(1)
+        {
             let i_f = i as f32;
             let n_f = CASCADE_COUNT as f32;
             let log_split = near * (far / near).powf(i_f / n_f);
             let uniform_split = near + (far - near) * (i_f / n_f);
-            splits[i] = lambda * log_split + (1.0 - lambda) * uniform_split;
+            *split = lambda * log_split + (1.0 - lambda) * uniform_split;
         }
 
         // Verify splits are monotonically increasing
-        for i in 0..CASCADE_COUNT {
-            assert!(splits[i] < splits[i + 1]);
+        for pair in splits.windows(2) {
+            assert!(pair[0] < pair[1]);
         }
 
         // Verify first and last splits
@@ -713,7 +718,7 @@ mod tests {
             Vec4::new(0.5, 0.5, 0.5, 0.5), // Bottom-right
         ];
 
-        for (_i, offset) in cascades.iter().enumerate() {
+        for offset in &cascades {
             // All scales should be 0.5 (half atlas)
             assert_eq!(offset.z, 0.5);
             assert_eq!(offset.w, 0.5);

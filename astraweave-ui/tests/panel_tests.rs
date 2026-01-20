@@ -1,6 +1,9 @@
-/// Panel system tests
-///
-/// Tests panel visibility, state, and UI flags
+//! Panel system tests
+//!
+//! Tests panel visibility, state, and UI flags
+
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_ui::{Accessibility, UiFlags};
 
 // ===== Panel Visibility Tests =====

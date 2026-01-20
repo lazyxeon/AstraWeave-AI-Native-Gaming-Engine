@@ -61,6 +61,8 @@ impl ResourceNode {
 mod tests {
     use super::*;
     use glam::vec3;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
     fn create_test_inventory() -> Inventory {
         Inventory {
@@ -136,7 +138,9 @@ mod tests {
     fn test_tick_with_resources_available() {
         let mut node = create_test_node();
 
-        node.tick(1.0);
+        let mut rng = StdRng::seed_from_u64(12345);
+
+        node.tick_seeded(1.0, &mut rng);
 
         assert_eq!(
             node.amount, 10,
@@ -151,7 +155,9 @@ mod tests {
         node.amount = 0;
         node.timer = 30.0;
 
-        node.tick(5.0);
+        let mut rng = StdRng::seed_from_u64(12345);
+
+        node.tick_seeded(5.0, &mut rng);
 
         assert_eq!(node.timer, 25.0, "Timer should count down");
         assert_eq!(node.amount, 0, "Should still be depleted");

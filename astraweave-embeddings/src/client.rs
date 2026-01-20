@@ -591,7 +591,7 @@ mod tests {
         let texts = vec!["Normalize me", "Test vector", "Unit length validation"];
 
         for text in texts {
-            let embedding = client.embed(&text).await.unwrap();
+            let embedding = client.embed(text).await.unwrap();
 
             // Calculate magnitude
             let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();

@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use anyhow::Result;
 /// Phase 7: Comprehensive Integration Tests
 ///
@@ -341,6 +343,10 @@ fn test_phase7_enhanced_prompts() {
         "Minimal prompt should be shorter"
     );
 }
+
+// ============================================================================
+// Test 7: Metrics Export (if metrics feature enabled)
+// ============================================================================
 
 // ============================================================================
 // Test 7: Metrics Export (if metrics feature enabled)

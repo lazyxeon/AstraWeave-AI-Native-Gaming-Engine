@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 fn assert_message_sane(msg: &str) {
     assert!(
         msg.len() >= 10,

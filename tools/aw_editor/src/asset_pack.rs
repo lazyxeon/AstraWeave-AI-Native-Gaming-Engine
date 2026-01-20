@@ -47,6 +47,49 @@ impl CompressionMethod {
             CompressionMethod::Lz4 => ".lz4",
         }
     }
+
+    /// Returns all compression methods.
+    pub fn all() -> &'static [Self] {
+        &[Self::None, Self::Zstd, Self::Lz4]
+    }
+
+    /// Returns the display name for this method.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::None => "None",
+            Self::Zstd => "Zstandard",
+            Self::Lz4 => "LZ4",
+        }
+    }
+
+    /// Returns a short description of this compression method.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::None => "No compression (fastest, largest files)",
+            Self::Zstd => "Excellent compression ratio (default, recommended)",
+            Self::Lz4 => "Fast decompression (good for real-time loading)",
+        }
+    }
+
+    /// Returns true if this method performs compression.
+    pub fn is_compressed(&self) -> bool {
+        !matches!(self, Self::None)
+    }
+
+    /// Returns the recommended compression level for this method.
+    pub fn recommended_level(&self) -> i32 {
+        match self {
+            Self::None => 0,
+            Self::Zstd => 3,  // Good balance of speed/ratio
+            Self::Lz4 => 1,   // LZ4 doesn't have many levels
+        }
+    }
+}
+
+impl std::fmt::Display for CompressionMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 /// An entry in the asset pack manifest
@@ -110,6 +153,123 @@ impl PackManifest {
     /// List all asset paths
     pub fn asset_paths(&self) -> Vec<&str> {
         self.assets.keys().map(|s| s.as_str()).collect()
+    }
+
+    /// Returns true if the manifest is empty.
+    pub fn is_empty(&self) -> bool {
+        self.assets.is_empty()
+    }
+
+    /// Returns the total uncompressed size of all assets.
+    pub fn total_uncompressed_size(&self) -> u64 {
+        self.assets.values().map(|e| e.uncompressed_size).sum()
+    }
+
+    /// Returns the total compressed size of all assets.
+    pub fn total_compressed_size(&self) -> u64 {
+        self.assets.values().map(|e| e.compressed_size).sum()
+    }
+
+    /// Returns the compression ratio (compressed/uncompressed).
+    pub fn compression_ratio(&self) -> f64 {
+        let uncompressed = self.total_uncompressed_size();
+        if uncompressed == 0 {
+            1.0
+        } else {
+            self.total_compressed_size() as f64 / uncompressed as f64
+        }
+    }
+
+    /// Returns assets matching a path pattern (case-insensitive contains).
+    pub fn find_by_pattern(&self, pattern: &str) -> Vec<&str> {
+        let pattern_lower = pattern.to_lowercase();
+        self.assets
+            .keys()
+            .filter(|k| k.to_lowercase().contains(&pattern_lower))
+            .map(|s| s.as_str())
+            .collect()
+    }
+
+    /// Returns assets by extension.
+    pub fn assets_by_extension(&self, ext: &str) -> Vec<&str> {
+        let ext_lower = ext.to_lowercase();
+        let ext_with_dot = if ext_lower.starts_with('.') {
+            ext_lower
+        } else {
+            format!(".{}", ext_lower)
+        };
+        self.assets
+            .keys()
+            .filter(|k| k.to_lowercase().ends_with(&ext_with_dot))
+            .map(|s| s.as_str())
+            .collect()
+    }
+}
+
+/// Statistics about a pack manifest.
+#[derive(Debug, Clone, Default)]
+pub struct PackManifestStats {
+    /// Total number of assets.
+    pub asset_count: usize,
+    /// Total uncompressed size in bytes.
+    pub total_uncompressed: u64,
+    /// Total compressed size in bytes.
+    pub total_compressed: u64,
+    /// Compression ratio (compressed/uncompressed).
+    pub compression_ratio: f64,
+    /// Number of unique extensions.
+    pub unique_extensions: usize,
+    /// Largest asset size (uncompressed).
+    pub largest_asset_size: u64,
+}
+
+impl PackManifestStats {
+    /// Returns the space saved in bytes.
+    pub fn space_saved(&self) -> u64 {
+        self.total_uncompressed.saturating_sub(self.total_compressed)
+    }
+
+    /// Returns the space saved as a percentage.
+    pub fn space_saved_percent(&self) -> f64 {
+        if self.total_uncompressed == 0 {
+            0.0
+        } else {
+            (1.0 - self.compression_ratio) * 100.0
+        }
+    }
+
+    /// Returns true if the pack is empty.
+    pub fn is_empty(&self) -> bool {
+        self.asset_count == 0
+    }
+}
+
+impl PackManifest {
+    /// Returns statistics about this manifest.
+    pub fn stats(&self) -> PackManifestStats {
+        let mut extensions: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut largest = 0u64;
+
+        for entry in self.assets.values() {
+            if let Some(ext) = std::path::Path::new(&entry.path)
+                .extension()
+                .and_then(|e| e.to_str())
+            {
+                extensions.insert(ext.to_lowercase());
+            }
+            if entry.uncompressed_size > largest {
+                largest = entry.uncompressed_size;
+            }
+        }
+
+        PackManifestStats {
+            asset_count: self.assets.len(),
+            total_uncompressed: self.total_uncompressed_size(),
+            total_compressed: self.total_compressed_size(),
+            compression_ratio: self.compression_ratio(),
+            unique_extensions: extensions.len(),
+            largest_asset_size: largest,
+        }
     }
 }
 
@@ -502,5 +662,219 @@ mod tests {
         assert_eq!(builder.compression_level, 5);
         assert_eq!(builder.assets.len(), 1);
         assert_eq!(builder.assets[0].1, "arch.txt");
+    }
+
+    // ====================================================================
+    // CompressionMethod New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_compression_method_all() {
+        let all = CompressionMethod::all();
+        assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_compression_method_name() {
+        assert_eq!(CompressionMethod::None.name(), "None");
+        assert_eq!(CompressionMethod::Zstd.name(), "Zstandard");
+        assert_eq!(CompressionMethod::Lz4.name(), "LZ4");
+    }
+
+    #[test]
+    fn test_compression_method_description_not_empty() {
+        for method in CompressionMethod::all() {
+            assert!(!method.description().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_compression_method_is_compressed() {
+        assert!(!CompressionMethod::None.is_compressed());
+        assert!(CompressionMethod::Zstd.is_compressed());
+        assert!(CompressionMethod::Lz4.is_compressed());
+    }
+
+    #[test]
+    fn test_compression_method_recommended_level() {
+        assert_eq!(CompressionMethod::None.recommended_level(), 0);
+        assert!(CompressionMethod::Zstd.recommended_level() > 0);
+        assert!(CompressionMethod::Lz4.recommended_level() > 0);
+    }
+
+    #[test]
+    fn test_compression_method_display() {
+        assert_eq!(format!("{}", CompressionMethod::Zstd), "Zstandard");
+    }
+
+    // ====================================================================
+    // PackManifest New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_manifest_is_empty() {
+        let manifest = PackManifest::new("Test");
+        assert!(manifest.is_empty());
+    }
+
+    #[test]
+    fn test_manifest_total_sizes() {
+        let mut manifest = PackManifest::new("Test");
+        manifest.add_asset(AssetEntry {
+            path: "a.txt".into(),
+            offset: 0,
+            compressed_size: 50,
+            uncompressed_size: 100,
+            compression: CompressionMethod::Zstd,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "b.txt".into(),
+            offset: 50,
+            compressed_size: 30,
+            uncompressed_size: 100,
+            compression: CompressionMethod::Zstd,
+            checksum: 0,
+        });
+
+        assert_eq!(manifest.total_uncompressed_size(), 200);
+        assert_eq!(manifest.total_compressed_size(), 80);
+    }
+
+    #[test]
+    fn test_manifest_compression_ratio() {
+        let mut manifest = PackManifest::new("Test");
+        manifest.add_asset(AssetEntry {
+            path: "a.txt".into(),
+            offset: 0,
+            compressed_size: 50,
+            uncompressed_size: 100,
+            compression: CompressionMethod::Zstd,
+            checksum: 0,
+        });
+
+        assert!((manifest.compression_ratio() - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_manifest_find_by_pattern() {
+        let mut manifest = PackManifest::new("Test");
+        manifest.add_asset(AssetEntry {
+            path: "textures/hero.png".into(),
+            offset: 0,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "sounds/hero.wav".into(),
+            offset: 10,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "models/enemy.obj".into(),
+            offset: 20,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+
+        let results = manifest.find_by_pattern("hero");
+        assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn test_manifest_assets_by_extension() {
+        let mut manifest = PackManifest::new("Test");
+        manifest.add_asset(AssetEntry {
+            path: "a.png".into(),
+            offset: 0,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "b.png".into(),
+            offset: 10,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "c.wav".into(),
+            offset: 20,
+            compressed_size: 10,
+            uncompressed_size: 10,
+            compression: CompressionMethod::None,
+            checksum: 0,
+        });
+
+        let pngs = manifest.assets_by_extension("png");
+        assert_eq!(pngs.len(), 2);
+
+        let wavs = manifest.assets_by_extension(".wav");
+        assert_eq!(wavs.len(), 1);
+    }
+
+    // ====================================================================
+    // PackManifestStats Tests
+    // ====================================================================
+
+    #[test]
+    fn test_manifest_stats_empty() {
+        let manifest = PackManifest::new("Test");
+        let stats = manifest.stats();
+        assert!(stats.is_empty());
+        assert_eq!(stats.asset_count, 0);
+    }
+
+    #[test]
+    fn test_manifest_stats_populated() {
+        let mut manifest = PackManifest::new("Test");
+        manifest.add_asset(AssetEntry {
+            path: "a.png".into(),
+            offset: 0,
+            compressed_size: 50,
+            uncompressed_size: 100,
+            compression: CompressionMethod::Zstd,
+            checksum: 0,
+        });
+        manifest.add_asset(AssetEntry {
+            path: "b.wav".into(),
+            offset: 50,
+            compressed_size: 100,
+            uncompressed_size: 200,
+            compression: CompressionMethod::Zstd,
+            checksum: 0,
+        });
+
+        let stats = manifest.stats();
+        assert_eq!(stats.asset_count, 2);
+        assert_eq!(stats.total_uncompressed, 300);
+        assert_eq!(stats.total_compressed, 150);
+        assert_eq!(stats.unique_extensions, 2);
+        assert_eq!(stats.largest_asset_size, 200);
+    }
+
+    #[test]
+    fn test_manifest_stats_space_saved() {
+        let stats = PackManifestStats {
+            asset_count: 1,
+            total_uncompressed: 100,
+            total_compressed: 50,
+            compression_ratio: 0.5,
+            unique_extensions: 1,
+            largest_asset_size: 100,
+        };
+
+        assert_eq!(stats.space_saved(), 50);
+        assert!((stats.space_saved_percent() - 50.0).abs() < 0.1);
     }
 }

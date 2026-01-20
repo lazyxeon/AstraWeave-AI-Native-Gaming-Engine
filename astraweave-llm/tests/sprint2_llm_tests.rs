@@ -2,8 +2,6 @@ use anyhow::Result;
 use astraweave_llm::{LlmClient, MockLlm};
 use futures_util::StreamExt;
 use std::pin::Pin;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 // Mock client that supports streaming
 struct MockStreamingClient {
@@ -30,7 +28,7 @@ impl LlmClient for MockStreamingClient {
     ) -> Result<Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>> {
         let chunks = self.chunks.clone();
         let stream = futures_util::stream::iter(chunks)
-            .map(|chunk| Ok(chunk));
+            .map(Ok);
         Ok(Box::pin(stream))
     }
 }

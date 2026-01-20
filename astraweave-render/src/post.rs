@@ -858,40 +858,64 @@ mod tests {
 
     #[test]
     fn bloom_config_validate_threshold() {
-        let mut config = BloomConfig::default();
-        config.threshold = 11.0; // Above max
+        let config = BloomConfig {
+            threshold: 11.0, // Above max
+            ..Default::default()
+        };
         assert!(config.validate().is_err());
 
-        config.threshold = -1.0; // Below min
+        let config = BloomConfig {
+            threshold: -1.0, // Below min
+            ..Default::default()
+        };
         assert!(config.validate().is_err());
 
-        config.threshold = 2.5; // Valid
+        let config = BloomConfig {
+            threshold: 2.5, // Valid
+            ..Default::default()
+        };
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn bloom_config_validate_intensity() {
-        let mut config = BloomConfig::default();
-        config.intensity = 1.5; // Above max
+        let config = BloomConfig {
+            intensity: 1.5, // Above max
+            ..Default::default()
+        };
         assert!(config.validate().is_err());
 
-        config.intensity = -0.1; // Below min
+        let config = BloomConfig {
+            intensity: -0.1, // Below min
+            ..Default::default()
+        };
         assert!(config.validate().is_err());
 
-        config.intensity = 0.15; // Valid
+        let config = BloomConfig {
+            intensity: 0.15, // Valid
+            ..Default::default()
+        };
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn bloom_config_validate_mip_count() {
-        let mut config = BloomConfig::default();
-        config.mip_count = 0; // Below min
+        let config = BloomConfig {
+            mip_count: 0, // Below min
+            ..Default::default()
+        };
         assert!(config.validate().is_err());
 
-        config.mip_count = 9; // Above max
+        let config = BloomConfig {
+            mip_count: 9, // Above max
+            ..Default::default()
+        };
         assert!(config.validate().is_err());
 
-        config.mip_count = 6; // Valid
+        let config = BloomConfig {
+            mip_count: 6, // Valid
+            ..Default::default()
+        };
         assert!(config.validate().is_ok());
     }
 

@@ -151,18 +151,18 @@ fn golden_postfx_compose_matches_cpu() {
             let v = y as f32 / (h as f32 - 1.0);
             let idx = ((y * w + x) * 4) as usize;
             // hdr rgb in [0,1] encoded into unorm
-            hdr_bytes[idx + 0] = (u * 255.0).round().clamp(0.0, 255.0) as u8;
+            hdr_bytes[idx] = (u * 255.0).round().clamp(0.0, 255.0) as u8;
             hdr_bytes[idx + 1] = (v * 255.0).round().clamp(0.0, 255.0) as u8;
             hdr_bytes[idx + 2] = (0.25f32 * 255.0f32).round() as u8;
             hdr_bytes[idx + 3] = 255;
             // ao in red channel
             let ao_lin = ((u + v) * 0.5).clamp(0.0, 1.0);
-            ao_bytes[idx + 0] = (ao_lin * 255.0).round() as u8;
+            ao_bytes[idx] = (ao_lin * 255.0).round() as u8;
             ao_bytes[idx + 1] = 0;
             ao_bytes[idx + 2] = 0;
             ao_bytes[idx + 3] = 255;
             // gi constant color
-            gi_bytes[idx + 0] = (0.10f32 * 255.0f32).round() as u8;
+            gi_bytes[idx] = (0.10f32 * 255.0f32).round() as u8;
             gi_bytes[idx + 1] = (0.05f32 * 255.0f32).round() as u8;
             gi_bytes[idx + 2] = 0;
             gi_bytes[idx + 3] = 255;
@@ -323,7 +323,7 @@ fn golden_postfx_compose_matches_cpu() {
     let bytes_pp = 4u64;
     let row_bytes = w as u64 * bytes_pp;
     let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as u64;
-    let padded = ((row_bytes + align - 1) / align) * align;
+    let padded = row_bytes.div_ceil(align) * align;
     let buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("read"),
         size: padded * h as u64,
@@ -359,7 +359,7 @@ fn golden_postfx_compose_matches_cpu() {
     let mut img = vec![0u8; (w * h * 4) as usize];
     for y in 0..h as usize {
         let src = y as u64 * padded;
-        let dst = y as usize * w as usize * 4;
+        let dst = y * w as usize * 4;
         img[dst..dst + (w as usize * 4)]
             .copy_from_slice(&data[src as usize..(src + row_bytes) as usize]);
     }
@@ -382,7 +382,7 @@ fn golden_postfx_compose_matches_cpu() {
             ];
             let mapped = aces_tonemap(comp);
             let idx = ((y * w + x) * 4) as usize;
-            exp[idx + 0] = srgb_encode_u8(mapped[0]);
+            exp[idx] = srgb_encode_u8(mapped[0]);
             exp[idx + 1] = srgb_encode_u8(mapped[1]);
             exp[idx + 2] = srgb_encode_u8(mapped[2]);
             exp[idx + 3] = 255;

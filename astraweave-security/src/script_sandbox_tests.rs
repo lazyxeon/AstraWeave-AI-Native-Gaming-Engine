@@ -4,6 +4,7 @@
 //! Tests timeouts, resource limits, security isolation, and edge cases.
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod script_sandbox_tests {
     use crate::{execute_script_sandboxed, ExecutionLimits, ScriptSandbox};
     use std::collections::HashMap;

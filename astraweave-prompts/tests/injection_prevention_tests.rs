@@ -11,6 +11,7 @@
 //! - Multi-turn escalation attacks
 
 #![cfg(test)]
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
     sanitize::{

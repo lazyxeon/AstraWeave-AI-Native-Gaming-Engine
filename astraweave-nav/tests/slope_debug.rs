@@ -1,6 +1,5 @@
 // Debug test for slope_exactly_at_max_threshold geometry
 
-use astraweave_nav::Triangle;
 use glam::Vec3;
 
 #[test]

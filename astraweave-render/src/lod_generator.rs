@@ -453,7 +453,7 @@ mod tests {
         let simplified = generator.simplify(&cube, 4);
         let reduction = generator.calculate_reduction(&cube, &simplified);
 
-        assert!(reduction >= 0.0 && reduction <= 1.0);
+        assert!((0.0..=1.0).contains(&reduction));
         // Any reduction is valid (algorithm may be conservative on simple geometry)
         println!("Achieved reduction: {:.1}%", reduction * 100.0);
     }
@@ -512,7 +512,7 @@ mod tests {
         let lods = generator.generate_lods(&mesh);
 
         // Should generate LODs (algorithm may be conservative)
-        assert!(lods.len() > 0);
+        assert!(!lods.is_empty());
         for lod in &lods {
             // Each LOD should maintain mesh integrity
             assert_eq!(lod.indices.len() % 3, 0);

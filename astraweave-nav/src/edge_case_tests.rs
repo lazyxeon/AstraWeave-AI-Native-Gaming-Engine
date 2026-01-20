@@ -74,7 +74,7 @@ fn test_negative_max_slope() {
     // Negative slope likely filters all triangles (no triangle can have negative angle with Y)
     // Should not crash
     assert!(
-        nav.tris.len() == 0 || nav.max_slope_deg == -45.0,
+        nav.tris.is_empty() || nav.max_slope_deg == -45.0,
         "Negative slope should filter triangles or be preserved"
     );
 }
@@ -166,11 +166,11 @@ fn test_exactly_one_shared_vertex() {
 
     // Check adjacency: should NOT be neighbors (need 2 shared vertices for edge)
     assert!(
-        nav.tris[0].neighbors.is_empty() || nav.tris[0].neighbors.len() == 0,
+        nav.tris[0].neighbors.is_empty(),
         "Triangles sharing 1 vertex should not be neighbors"
     );
     assert!(
-        nav.tris[1].neighbors.is_empty() || nav.tris[1].neighbors.len() == 0,
+        nav.tris[1].neighbors.is_empty(),
         "Triangles sharing 1 vertex should not be neighbors"
     );
 }
@@ -371,6 +371,7 @@ fn test_concave_navmesh_l_shape() {
 }
 
 #[test]
+#[allow(clippy::vec_init_then_push)]
 fn test_navmesh_with_hole_donut() {
     // Square navmesh with square hole in the middle (donut topology)
     // Outer square: 4×4, inner hole: 2×2 centered
@@ -491,6 +492,7 @@ fn test_navmesh_with_hole_donut() {
 
 #[test]
 #[ignore] // TODO: Complex geometry - needs proper edge-connected triangulation
+#[allow(clippy::vec_init_then_push)]
 fn test_narrow_passage_bottleneck() {
     // Simple connected path: left area -> narrow passage -> right area
     // All triangles share edges to form a continuous path
@@ -709,7 +711,7 @@ fn test_triangles_with_shared_vertices_but_not_edges() {
     // Check adjacency: none should be neighbors (only 1 shared vertex each)
     for tri in &nav.tris {
         assert!(
-            tri.neighbors.len() == 0,
+            tri.neighbors.is_empty(),
             "Triangles sharing only 1 vertex should not be neighbors"
         );
     }

@@ -9,6 +9,12 @@
 //!
 //! Run with: `cargo bench -p astraweave-persistence-player`
 
+#![allow(
+    unused_imports,
+    unused_mut,
+    clippy::field_reassign_with_default
+)]
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 

@@ -4,6 +4,7 @@
 //! Tests banned pattern detection, length limits, content filtering, and edge cases.
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod llm_validation_tests {
     use crate::{sanitize_llm_prompt, LLMValidator};
 

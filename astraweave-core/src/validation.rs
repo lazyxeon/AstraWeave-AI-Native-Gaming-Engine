@@ -375,6 +375,85 @@ fn fill_rect_obs(obs: &mut std::collections::HashSet<(i32, i32)>, r: Rect) {
     }
 }
 
+fn draw_line_obs(obs: &mut std::collections::HashSet<(i32, i32)>, a: IVec2, b: IVec2) {
+    let mut x = a.x;
+    let mut y = a.y;
+    let dx = (b.x - a.x).signum();
+    let dy = (b.y - a.y).signum();
+    while x != b.x || y != b.y {
+        obs.insert((x, y));
+        if x != b.x {
+            x += dx;
+        }
+        if y != b.y {
+            y += dy;
+        }
+    }
+    obs.insert((b.x, b.y));
+}
+
+// Execute a DirectorPlan with crude budgets (you can move this into a Director crate too)
+pub fn apply_director_plan(
+    w: &mut World,
+    budget: &mut crate::DirectorBudget,
+    plan: &DirectorPlan,
+    log: &mut impl FnMut(String),
+) {
+    for (i, op) in plan.ops.iter().enumerate() {
+        match op {
+            DirectorOp::Fortify { rect } => {
+                if budget.terrain_edits <= 0 {
+                    log(format!("  [op{}] Fortify SKIPPED (budget)", i));
+                    continue;
+                }
+                fill_rect_obs(&mut w.obstacles, *rect);
+                budget.terrain_edits -= 1;
+                log(format!(
+                    "  [op{}] Fortify rect=({},{}..{},{}))",
+                    i, rect.x0, rect.y0, rect.x1, rect.y1
+                ));
+            }
+            DirectorOp::Collapse { a, b } => {
+                if budget.terrain_edits <= 0 {
+                    log(format!("  [op{}] Collapse SKIPPED (budget)", i));
+                    continue;
+                }
+                draw_line_obs(&mut w.obstacles, *a, *b);
+                budget.terrain_edits -= 1;
+                log(format!(
+                    "  [op{}] Collapse line=({},{})→({},{})",
+                    i, a.x, a.y, b.x, b.y
+                ));
+            }
+            DirectorOp::SpawnWave {
+                archetype,
+                count,
+                origin,
+            } => {
+                if budget.spawns <= 0 {
+                    log(format!("  [op{}] SpawnWave SKIPPED (budget)", i));
+                    continue;
+                }
+                for k in 0..*count {
+                    let off = IVec2 {
+                        x: origin.x + (k as i32 % 3) - 1,
+                        y: origin.y + (k as i32 / 3),
+                    };
+                    let id = w.spawn(
+                        &format!("{}{}", archetype, k),
+                        off,
+                        crate::Team { id: 2 },
+                        40,
+                        0,
+                    );
+                    log(format!("  [op{}] Spawned {} at {:?}", i, id, off));
+                }
+                budget.spawns -= 1;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1577,7 +1656,7 @@ mod tests {
         let mut captured_log = String::new();
         let mut log = |s: String| {
             captured_log.push_str(&s);
-            captured_log.push_str("\n");
+            captured_log.push('\n');
         };
         apply_director_plan(&mut w, &mut budget, &plan, &mut log);
 
@@ -1592,83 +1671,5 @@ mod tests {
             "Log should show budget skip"
         );
         assert_eq!(budget.terrain_edits, 0, "Budget should remain zero");
-    }
-}
-fn draw_line_obs(obs: &mut std::collections::HashSet<(i32, i32)>, a: IVec2, b: IVec2) {
-    let mut x = a.x;
-    let mut y = a.y;
-    let dx = (b.x - a.x).signum();
-    let dy = (b.y - a.y).signum();
-    while x != b.x || y != b.y {
-        obs.insert((x, y));
-        if x != b.x {
-            x += dx;
-        }
-        if y != b.y {
-            y += dy;
-        }
-    }
-    obs.insert((b.x, b.y));
-}
-
-// Execute a DirectorPlan with crude budgets (you can move this into a Director crate too)
-pub fn apply_director_plan(
-    w: &mut World,
-    budget: &mut crate::DirectorBudget,
-    plan: &DirectorPlan,
-    log: &mut impl FnMut(String),
-) {
-    for (i, op) in plan.ops.iter().enumerate() {
-        match op {
-            DirectorOp::Fortify { rect } => {
-                if budget.terrain_edits <= 0 {
-                    log(format!("  [op{}] Fortify SKIPPED (budget)", i));
-                    continue;
-                }
-                fill_rect_obs(&mut w.obstacles, *rect);
-                budget.terrain_edits -= 1;
-                log(format!(
-                    "  [op{}] Fortify rect=({},{}..{},{}))",
-                    i, rect.x0, rect.y0, rect.x1, rect.y1
-                ));
-            }
-            DirectorOp::Collapse { a, b } => {
-                if budget.terrain_edits <= 0 {
-                    log(format!("  [op{}] Collapse SKIPPED (budget)", i));
-                    continue;
-                }
-                draw_line_obs(&mut w.obstacles, *a, *b);
-                budget.terrain_edits -= 1;
-                log(format!(
-                    "  [op{}] Collapse line=({},{})→({},{})",
-                    i, a.x, a.y, b.x, b.y
-                ));
-            }
-            DirectorOp::SpawnWave {
-                archetype,
-                count,
-                origin,
-            } => {
-                if budget.spawns <= 0 {
-                    log(format!("  [op{}] SpawnWave SKIPPED (budget)", i));
-                    continue;
-                }
-                for k in 0..*count {
-                    let off = IVec2 {
-                        x: origin.x + (k as i32 % 3) - 1,
-                        y: origin.y + (k as i32 / 3),
-                    };
-                    let id = w.spawn(
-                        &format!("{}{}", archetype, k),
-                        off,
-                        crate::Team { id: 2 },
-                        40,
-                        0,
-                    );
-                    log(format!("  [op{}] Spawned {} at {:?}", i, id, off));
-                }
-                budget.spawns -= 1;
-            }
-        }
     }
 }

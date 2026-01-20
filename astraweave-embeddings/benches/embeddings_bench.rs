@@ -343,7 +343,10 @@ fn bench_distance_calculations(c: &mut Criterion) {
                     } else {
                         1.0 - (dot_product / (norm_a * norm_b))
                     };
-                    assert!(distance >= 0.0 && distance <= 2.0, "Cosine distance should be in [0, 2]");
+                    assert!(
+                        (0.0_f32..=2.0_f32).contains(&distance),
+                        "Cosine distance should be in [0, 2]"
+                    );
                     black_box(distance)
                 })
             },
@@ -392,7 +395,10 @@ fn bench_distance_calculations(c: &mut Criterion) {
                 b.iter(|| {
                     let result: f32 = a.iter().zip(b_vec.iter()).map(|(x, y)| x * y).sum();
                     // Dot product of unit vectors should be in [-1, 1]
-                    assert!(result >= -1.1 && result <= 1.1, "Dot product of unit vectors should be in [-1, 1]");
+                    assert!(
+                        (-1.1_f32..=1.1_f32).contains(&result),
+                        "Dot product of unit vectors should be in [-1, 1]"
+                    );
                     black_box(result)
                 })
             },
