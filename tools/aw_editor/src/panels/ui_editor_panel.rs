@@ -13,7 +13,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// UI widget type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum WidgetType {
     #[default]
     Panel,
@@ -31,7 +31,31 @@ pub enum WidgetType {
     VerticalLayout,
 }
 
+impl std::fmt::Display for WidgetType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl WidgetType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            WidgetType::Panel => "Panel",
+            WidgetType::Button => "Button",
+            WidgetType::Label => "Label",
+            WidgetType::Image => "Image",
+            WidgetType::Slider => "Slider",
+            WidgetType::ProgressBar => "Progress Bar",
+            WidgetType::Toggle => "Toggle",
+            WidgetType::Dropdown => "Dropdown",
+            WidgetType::TextField => "Text Field",
+            WidgetType::ScrollView => "Scroll View",
+            WidgetType::Grid => "Grid",
+            WidgetType::HorizontalLayout => "Horizontal Layout",
+            WidgetType::VerticalLayout => "Vertical Layout",
+        }
+    }
+
     pub fn all() -> &'static [WidgetType] {
         &[
             WidgetType::Panel,
@@ -70,7 +94,7 @@ impl WidgetType {
 }
 
 /// Anchor preset for UI positioning
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AnchorPreset {
     #[default]
     TopLeft,
@@ -85,6 +109,65 @@ pub enum AnchorPreset {
     StretchHorizontal,
     StretchVertical,
     StretchFull,
+}
+
+impl std::fmt::Display for AnchorPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AnchorPreset {
+    pub fn all() -> &'static [AnchorPreset] {
+        &[
+            AnchorPreset::TopLeft,
+            AnchorPreset::TopCenter,
+            AnchorPreset::TopRight,
+            AnchorPreset::MiddleLeft,
+            AnchorPreset::MiddleCenter,
+            AnchorPreset::MiddleRight,
+            AnchorPreset::BottomLeft,
+            AnchorPreset::BottomCenter,
+            AnchorPreset::BottomRight,
+            AnchorPreset::StretchHorizontal,
+            AnchorPreset::StretchVertical,
+            AnchorPreset::StretchFull,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AnchorPreset::TopLeft => "Top Left",
+            AnchorPreset::TopCenter => "Top Center",
+            AnchorPreset::TopRight => "Top Right",
+            AnchorPreset::MiddleLeft => "Middle Left",
+            AnchorPreset::MiddleCenter => "Middle Center",
+            AnchorPreset::MiddleRight => "Middle Right",
+            AnchorPreset::BottomLeft => "Bottom Left",
+            AnchorPreset::BottomCenter => "Bottom Center",
+            AnchorPreset::BottomRight => "Bottom Right",
+            AnchorPreset::StretchHorizontal => "Stretch Horizontal",
+            AnchorPreset::StretchVertical => "Stretch Vertical",
+            AnchorPreset::StretchFull => "Stretch Full",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AnchorPreset::TopLeft => "↖️",
+            AnchorPreset::TopCenter => "⬆️",
+            AnchorPreset::TopRight => "↗️",
+            AnchorPreset::MiddleLeft => "⬅️",
+            AnchorPreset::MiddleCenter => "⏺️",
+            AnchorPreset::MiddleRight => "➡️",
+            AnchorPreset::BottomLeft => "↙️",
+            AnchorPreset::BottomCenter => "⬇️",
+            AnchorPreset::BottomRight => "↘️",
+            AnchorPreset::StretchHorizontal => "↔️",
+            AnchorPreset::StretchVertical => "↕️",
+            AnchorPreset::StretchFull => "⛶",
+        }
+    }
 }
 
 /// UI widget definition
@@ -201,6 +284,38 @@ pub enum ScaleMode {
     ConstantPhysicalSize,
 }
 
+impl std::fmt::Display for ScaleMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ScaleMode {
+    pub fn all() -> &'static [ScaleMode] {
+        &[
+            ScaleMode::ConstantPixelSize,
+            ScaleMode::ScaleWithScreenSize,
+            ScaleMode::ConstantPhysicalSize,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ScaleMode::ConstantPixelSize => "Constant Pixel Size",
+            ScaleMode::ScaleWithScreenSize => "Scale With Screen Size",
+            ScaleMode::ConstantPhysicalSize => "Constant Physical Size",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ScaleMode::ConstantPixelSize => "📏",
+            ScaleMode::ScaleWithScreenSize => "📱",
+            ScaleMode::ConstantPhysicalSize => "📐",
+        }
+    }
+}
+
 impl Default for UiCanvas {
     fn default() -> Self {
         Self {
@@ -292,7 +407,7 @@ pub struct UiAnimation {
     pub keyframes: Vec<UiKeyframe>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum EasingType {
     #[default]
     Linear,
@@ -304,12 +419,88 @@ pub enum EasingType {
     Back,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for EasingType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl EasingType {
+    pub fn all() -> &'static [EasingType] {
+        &[
+            EasingType::Linear,
+            EasingType::EaseIn,
+            EasingType::EaseOut,
+            EasingType::EaseInOut,
+            EasingType::Bounce,
+            EasingType::Elastic,
+            EasingType::Back,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            EasingType::Linear => "Linear",
+            EasingType::EaseIn => "Ease In",
+            EasingType::EaseOut => "Ease Out",
+            EasingType::EaseInOut => "Ease In-Out",
+            EasingType::Bounce => "Bounce",
+            EasingType::Elastic => "Elastic",
+            EasingType::Back => "Back",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            EasingType::Linear => "—",
+            EasingType::EaseIn => "↗",
+            EasingType::EaseOut => "↘",
+            EasingType::EaseInOut => "⤴",
+            EasingType::Bounce => "⤾",
+            EasingType::Elastic => "〰️",
+            EasingType::Back => "↶",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AnimLoopMode {
     #[default]
     Once,
     Loop,
     PingPong,
+}
+
+impl std::fmt::Display for AnimLoopMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AnimLoopMode {
+    pub fn all() -> &'static [AnimLoopMode] {
+        &[
+            AnimLoopMode::Once,
+            AnimLoopMode::Loop,
+            AnimLoopMode::PingPong,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AnimLoopMode::Once => "Once",
+            AnimLoopMode::Loop => "Loop",
+            AnimLoopMode::PingPong => "Ping Pong",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AnimLoopMode::Once => "1️⃣",
+            AnimLoopMode::Loop => "🔄",
+            AnimLoopMode::PingPong => "↔",
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -398,7 +589,7 @@ impl UiPreset {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum UiEditorTab {
     #[default]
     Hierarchy,
@@ -408,6 +599,50 @@ pub enum UiEditorTab {
     Animation,
     Presets,
     Preview,
+}
+
+impl std::fmt::Display for UiEditorTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl UiEditorTab {
+    pub fn all() -> &'static [UiEditorTab] {
+        &[
+            UiEditorTab::Hierarchy,
+            UiEditorTab::Canvas,
+            UiEditorTab::Widget,
+            UiEditorTab::Style,
+            UiEditorTab::Animation,
+            UiEditorTab::Presets,
+            UiEditorTab::Preview,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            UiEditorTab::Hierarchy => "Hierarchy",
+            UiEditorTab::Canvas => "Canvas",
+            UiEditorTab::Widget => "Widget",
+            UiEditorTab::Style => "Style",
+            UiEditorTab::Animation => "Animation",
+            UiEditorTab::Presets => "Presets",
+            UiEditorTab::Preview => "Preview",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            UiEditorTab::Hierarchy => "🌳",
+            UiEditorTab::Canvas => "🖼️",
+            UiEditorTab::Widget => "🧩",
+            UiEditorTab::Style => "🎨",
+            UiEditorTab::Animation => "🎬",
+            UiEditorTab::Presets => "📋",
+            UiEditorTab::Preview => "👁️",
+        }
+    }
 }
 
 /// Main UI Editor Panel
@@ -1413,6 +1648,350 @@ mod tests {
     fn test_builtin_presets() {
         let presets = UiPreset::builtin_presets();
         assert!(presets.len() >= 8);
+    }
+
+    // ============================================================
+    // Session 5: Enum Enhancement Tests
+    // ============================================================
+
+    // WidgetType tests (8 tests)
+    #[test]
+    fn test_widget_type_display() {
+        assert!(format!("{}", WidgetType::Panel).contains("Panel"));
+        assert!(format!("{}", WidgetType::Button).contains("Button"));
+        assert!(format!("{}", WidgetType::Label).contains("Label"));
+        assert!(format!("{}", WidgetType::Slider).contains("Slider"));
+    }
+
+    #[test]
+    fn test_widget_type_name() {
+        assert_eq!(WidgetType::Panel.name(), "Panel");
+        assert_eq!(WidgetType::Button.name(), "Button");
+        assert_eq!(WidgetType::ProgressBar.name(), "Progress Bar");
+        assert_eq!(WidgetType::TextField.name(), "Text Field");
+    }
+
+    #[test]
+    fn test_widget_type_icon_present() {
+        assert!(!WidgetType::Panel.icon().is_empty());
+        assert!(!WidgetType::Button.icon().is_empty());
+        assert!(!WidgetType::Image.icon().is_empty());
+        assert!(!WidgetType::Grid.icon().is_empty());
+    }
+
+    #[test]
+    fn test_widget_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for widget in WidgetType::all() {
+            assert!(set.insert(*widget));
+        }
+        assert_eq!(set.len(), 13);
+    }
+
+    #[test]
+    fn test_widget_type_default_value() {
+        assert_eq!(WidgetType::default(), WidgetType::Panel);
+    }
+
+    #[test]
+    fn test_widget_type_all_unique() {
+        let all = WidgetType::all();
+        for (i, widget1) in all.iter().enumerate() {
+            for (j, widget2) in all.iter().enumerate() {
+                if i != j {
+                    assert_ne!(widget1, widget2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_widget_type_all_have_names() {
+        for widget in WidgetType::all() {
+            assert!(!widget.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_widget_type_all_have_icons() {
+        for widget in WidgetType::all() {
+            assert!(!widget.icon().is_empty());
+        }
+    }
+
+    // AnchorPreset tests (8 tests)
+    #[test]
+    fn test_anchor_preset_display() {
+        assert!(format!("{}", AnchorPreset::TopLeft).contains("Top Left"));
+        assert!(format!("{}", AnchorPreset::MiddleCenter).contains("Middle Center"));
+        assert!(format!("{}", AnchorPreset::BottomRight).contains("Bottom Right"));
+        assert!(format!("{}", AnchorPreset::StretchFull).contains("Stretch Full"));
+    }
+
+    #[test]
+    fn test_anchor_preset_name() {
+        assert_eq!(AnchorPreset::TopLeft.name(), "Top Left");
+        assert_eq!(AnchorPreset::MiddleCenter.name(), "Middle Center");
+        assert_eq!(AnchorPreset::BottomRight.name(), "Bottom Right");
+        assert_eq!(AnchorPreset::StretchHorizontal.name(), "Stretch Horizontal");
+    }
+
+    #[test]
+    fn test_anchor_preset_icon_present() {
+        assert!(!AnchorPreset::TopLeft.icon().is_empty());
+        assert!(!AnchorPreset::MiddleCenter.icon().is_empty());
+        assert!(!AnchorPreset::BottomRight.icon().is_empty());
+        assert!(!AnchorPreset::StretchFull.icon().is_empty());
+    }
+
+    #[test]
+    fn test_anchor_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for anchor in AnchorPreset::all() {
+            assert!(set.insert(*anchor));
+        }
+        assert_eq!(set.len(), 12);
+    }
+
+    #[test]
+    fn test_anchor_preset_default_value() {
+        assert_eq!(AnchorPreset::default(), AnchorPreset::TopLeft);
+    }
+
+    #[test]
+    fn test_anchor_preset_all_count() {
+        assert_eq!(AnchorPreset::all().len(), 12);
+    }
+
+    #[test]
+    fn test_anchor_preset_all_have_names() {
+        for anchor in AnchorPreset::all() {
+            assert!(!anchor.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_anchor_preset_all_have_icons() {
+        for anchor in AnchorPreset::all() {
+            assert!(!anchor.icon().is_empty());
+        }
+    }
+
+    // ScaleMode tests (7 tests)
+    #[test]
+    fn test_scale_mode_display() {
+        assert!(format!("{}", ScaleMode::ConstantPixelSize).contains("Constant Pixel Size"));
+        assert!(format!("{}", ScaleMode::ScaleWithScreenSize).contains("Scale With Screen Size"));
+        assert!(format!("{}", ScaleMode::ConstantPhysicalSize).contains("Constant Physical Size"));
+    }
+
+    #[test]
+    fn test_scale_mode_name() {
+        assert_eq!(ScaleMode::ConstantPixelSize.name(), "Constant Pixel Size");
+        assert_eq!(ScaleMode::ScaleWithScreenSize.name(), "Scale With Screen Size");
+        assert_eq!(ScaleMode::ConstantPhysicalSize.name(), "Constant Physical Size");
+    }
+
+    #[test]
+    fn test_scale_mode_icon_present() {
+        assert!(!ScaleMode::ConstantPixelSize.icon().is_empty());
+        assert!(!ScaleMode::ScaleWithScreenSize.icon().is_empty());
+        assert!(!ScaleMode::ConstantPhysicalSize.icon().is_empty());
+    }
+
+    #[test]
+    fn test_scale_mode_default_value() {
+        assert_eq!(ScaleMode::default(), ScaleMode::ConstantPixelSize);
+    }
+
+    #[test]
+    fn test_scale_mode_all_count() {
+        assert_eq!(ScaleMode::all().len(), 3);
+    }
+
+    #[test]
+    fn test_scale_mode_all_have_names() {
+        for mode in ScaleMode::all() {
+            assert!(!mode.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_scale_mode_all_have_icons() {
+        for mode in ScaleMode::all() {
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    // EasingType tests (8 tests)
+    #[test]
+    fn test_easing_type_display() {
+        assert!(format!("{}", EasingType::Linear).contains("Linear"));
+        assert!(format!("{}", EasingType::EaseIn).contains("Ease In"));
+        assert!(format!("{}", EasingType::EaseOut).contains("Ease Out"));
+        assert!(format!("{}", EasingType::Bounce).contains("Bounce"));
+    }
+
+    #[test]
+    fn test_easing_type_name() {
+        assert_eq!(EasingType::Linear.name(), "Linear");
+        assert_eq!(EasingType::EaseInOut.name(), "Ease In-Out");
+        assert_eq!(EasingType::Elastic.name(), "Elastic");
+        assert_eq!(EasingType::Back.name(), "Back");
+    }
+
+    #[test]
+    fn test_easing_type_icon_present() {
+        assert!(!EasingType::Linear.icon().is_empty());
+        assert!(!EasingType::EaseIn.icon().is_empty());
+        assert!(!EasingType::Bounce.icon().is_empty());
+        assert!(!EasingType::Elastic.icon().is_empty());
+    }
+
+    #[test]
+    fn test_easing_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for easing in EasingType::all() {
+            assert!(set.insert(*easing));
+        }
+        assert_eq!(set.len(), 7);
+    }
+
+    #[test]
+    fn test_easing_type_default_value() {
+        assert_eq!(EasingType::default(), EasingType::Linear);
+    }
+
+    #[test]
+    fn test_easing_type_all_count() {
+        assert_eq!(EasingType::all().len(), 7);
+    }
+
+    #[test]
+    fn test_easing_type_all_have_names() {
+        for easing in EasingType::all() {
+            assert!(!easing.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_easing_type_all_have_icons() {
+        for easing in EasingType::all() {
+            assert!(!easing.icon().is_empty());
+        }
+    }
+
+    // AnimLoopMode tests (7 tests)
+    #[test]
+    fn test_anim_loop_mode_display() {
+        assert!(format!("{}", AnimLoopMode::Once).contains("Once"));
+        assert!(format!("{}", AnimLoopMode::Loop).contains("Loop"));
+        assert!(format!("{}", AnimLoopMode::PingPong).contains("Ping Pong"));
+    }
+
+    #[test]
+    fn test_anim_loop_mode_name() {
+        assert_eq!(AnimLoopMode::Once.name(), "Once");
+        assert_eq!(AnimLoopMode::Loop.name(), "Loop");
+        assert_eq!(AnimLoopMode::PingPong.name(), "Ping Pong");
+    }
+
+    #[test]
+    fn test_anim_loop_mode_icon_present() {
+        assert!(!AnimLoopMode::Once.icon().is_empty());
+        assert!(!AnimLoopMode::Loop.icon().is_empty());
+        assert!(!AnimLoopMode::PingPong.icon().is_empty());
+    }
+
+    #[test]
+    fn test_anim_loop_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in AnimLoopMode::all() {
+            assert!(set.insert(*mode));
+        }
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn test_anim_loop_mode_default_value() {
+        assert_eq!(AnimLoopMode::default(), AnimLoopMode::Once);
+    }
+
+    #[test]
+    fn test_anim_loop_mode_all_have_names() {
+        for mode in AnimLoopMode::all() {
+            assert!(!mode.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_anim_loop_mode_all_have_icons() {
+        for mode in AnimLoopMode::all() {
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    // UiEditorTab tests (8 tests)
+    #[test]
+    fn test_ui_editor_tab_display() {
+        assert!(format!("{}", UiEditorTab::Hierarchy).contains("Hierarchy"));
+        assert!(format!("{}", UiEditorTab::Canvas).contains("Canvas"));
+        assert!(format!("{}", UiEditorTab::Widget).contains("Widget"));
+        assert!(format!("{}", UiEditorTab::Preview).contains("Preview"));
+    }
+
+    #[test]
+    fn test_ui_editor_tab_name() {
+        assert_eq!(UiEditorTab::Hierarchy.name(), "Hierarchy");
+        assert_eq!(UiEditorTab::Canvas.name(), "Canvas");
+        assert_eq!(UiEditorTab::Animation.name(), "Animation");
+        assert_eq!(UiEditorTab::Presets.name(), "Presets");
+    }
+
+    #[test]
+    fn test_ui_editor_tab_icon_present() {
+        assert!(!UiEditorTab::Hierarchy.icon().is_empty());
+        assert!(!UiEditorTab::Widget.icon().is_empty());
+        assert!(!UiEditorTab::Style.icon().is_empty());
+        assert!(!UiEditorTab::Preview.icon().is_empty());
+    }
+
+    #[test]
+    fn test_ui_editor_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in UiEditorTab::all() {
+            assert!(set.insert(*tab));
+        }
+        assert_eq!(set.len(), 7);
+    }
+
+    #[test]
+    fn test_ui_editor_tab_default_value() {
+        assert_eq!(UiEditorTab::default(), UiEditorTab::Hierarchy);
+    }
+
+    #[test]
+    fn test_ui_editor_tab_all_count() {
+        assert_eq!(UiEditorTab::all().len(), 7);
+    }
+
+    #[test]
+    fn test_ui_editor_tab_all_have_names() {
+        for tab in UiEditorTab::all() {
+            assert!(!tab.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_ui_editor_tab_all_have_icons() {
+        for tab in UiEditorTab::all() {
+            assert!(!tab.icon().is_empty());
+        }
     }
 
     #[test]

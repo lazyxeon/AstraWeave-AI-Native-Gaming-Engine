@@ -12,7 +12,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Emitter shape type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum EmitterShape {
     #[default]
     Point,
@@ -23,6 +23,12 @@ pub enum EmitterShape {
     Circle,
     Edge,
     Mesh,
+}
+
+impl std::fmt::Display for EmitterShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl EmitterShape {
@@ -39,6 +45,19 @@ impl EmitterShape {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            EmitterShape::Point => "Point",
+            EmitterShape::Sphere => "Sphere",
+            EmitterShape::Hemisphere => "Hemisphere",
+            EmitterShape::Cone => "Cone",
+            EmitterShape::Box => "Box",
+            EmitterShape::Circle => "Circle",
+            EmitterShape::Edge => "Edge",
+            EmitterShape::Mesh => "Mesh",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             EmitterShape::Point => "•",
@@ -51,18 +70,49 @@ impl EmitterShape {
             EmitterShape::Mesh => "🔺",
         }
     }
+
+    /// Returns true if this shape is volumetric (3D)
+    pub fn is_volumetric(&self) -> bool {
+        matches!(self, EmitterShape::Sphere | EmitterShape::Hemisphere | EmitterShape::Cone | EmitterShape::Box)
+    }
 }
 
 /// Simulation space
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SimulationSpace {
     #[default]
     Local,
     World,
 }
 
+impl std::fmt::Display for SimulationSpace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl SimulationSpace {
+    pub fn all() -> &'static [SimulationSpace] {
+        &[SimulationSpace::Local, SimulationSpace::World]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            SimulationSpace::Local => "Local",
+            SimulationSpace::World => "World",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SimulationSpace::Local => "📍",
+            SimulationSpace::World => "🌍",
+        }
+    }
+}
+
 /// Particle blend mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ParticleBlendMode {
     #[default]
     Alpha,
@@ -71,8 +121,48 @@ pub enum ParticleBlendMode {
     Premultiply,
 }
 
+impl std::fmt::Display for ParticleBlendMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ParticleBlendMode {
+    pub fn all() -> &'static [ParticleBlendMode] {
+        &[
+            ParticleBlendMode::Alpha,
+            ParticleBlendMode::Additive,
+            ParticleBlendMode::Multiply,
+            ParticleBlendMode::Premultiply,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParticleBlendMode::Alpha => "Alpha",
+            ParticleBlendMode::Additive => "Additive",
+            ParticleBlendMode::Multiply => "Multiply",
+            ParticleBlendMode::Premultiply => "Premultiply",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ParticleBlendMode::Alpha => "🔲",
+            ParticleBlendMode::Additive => "✨",
+            ParticleBlendMode::Multiply => "✖️",
+            ParticleBlendMode::Premultiply => "🔳",
+        }
+    }
+
+    /// Returns true if this blend mode uses additive blending
+    pub fn is_additive(&self) -> bool {
+        matches!(self, ParticleBlendMode::Additive)
+    }
+}
+
 /// Particle render mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ParticleRenderMode {
     #[default]
     Billboard,
@@ -83,8 +173,54 @@ pub enum ParticleRenderMode {
     Trail,
 }
 
+impl std::fmt::Display for ParticleRenderMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ParticleRenderMode {
+    pub fn all() -> &'static [ParticleRenderMode] {
+        &[
+            ParticleRenderMode::Billboard,
+            ParticleRenderMode::StretchedBillboard,
+            ParticleRenderMode::HorizontalBillboard,
+            ParticleRenderMode::VerticalBillboard,
+            ParticleRenderMode::Mesh,
+            ParticleRenderMode::Trail,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParticleRenderMode::Billboard => "Billboard",
+            ParticleRenderMode::StretchedBillboard => "Stretched Billboard",
+            ParticleRenderMode::HorizontalBillboard => "Horizontal Billboard",
+            ParticleRenderMode::VerticalBillboard => "Vertical Billboard",
+            ParticleRenderMode::Mesh => "Mesh",
+            ParticleRenderMode::Trail => "Trail",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ParticleRenderMode::Billboard => "📄",
+            ParticleRenderMode::StretchedBillboard => "📏",
+            ParticleRenderMode::HorizontalBillboard => "➡️",
+            ParticleRenderMode::VerticalBillboard => "⬆️",
+            ParticleRenderMode::Mesh => "🔷",
+            ParticleRenderMode::Trail => "〰️",
+        }
+    }
+
+    /// Returns true if this render mode is a billboard type
+    pub fn is_billboard(&self) -> bool {
+        matches!(self, ParticleRenderMode::Billboard | ParticleRenderMode::StretchedBillboard | ParticleRenderMode::HorizontalBillboard | ParticleRenderMode::VerticalBillboard)
+    }
+}
+
 /// Value over lifetime curve type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum CurveType {
     #[default]
     Constant,
@@ -96,8 +232,57 @@ pub enum CurveType {
     Curve,
 }
 
+impl std::fmt::Display for CurveType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl CurveType {
+    pub fn all() -> &'static [CurveType] {
+        &[
+            CurveType::Constant,
+            CurveType::Linear,
+            CurveType::EaseIn,
+            CurveType::EaseOut,
+            CurveType::EaseInOut,
+            CurveType::Random,
+            CurveType::Curve,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            CurveType::Constant => "Constant",
+            CurveType::Linear => "Linear",
+            CurveType::EaseIn => "Ease In",
+            CurveType::EaseOut => "Ease Out",
+            CurveType::EaseInOut => "Ease In Out",
+            CurveType::Random => "Random",
+            CurveType::Curve => "Curve",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            CurveType::Constant => "➖",
+            CurveType::Linear => "📈",
+            CurveType::EaseIn => "⤴️",
+            CurveType::EaseOut => "⤵️",
+            CurveType::EaseInOut => "〰️",
+            CurveType::Random => "🎲",
+            CurveType::Curve => "✏️",
+        }
+    }
+
+    /// Returns true if this curve type is an easing function
+    pub fn is_easing(&self) -> bool {
+        matches!(self, CurveType::EaseIn | CurveType::EaseOut | CurveType::EaseInOut)
+    }
+}
+
 /// Range value (min-max)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RangeValue {
     pub min: f32,
     pub max: f32,
@@ -152,7 +337,7 @@ pub struct EmitterModule {
 }
 
 /// Module types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ModuleType {
     Velocity { direction: [f32; 3], speed: RangeValue },
     Force { force: [f32; 3], space: SimulationSpace },
@@ -166,14 +351,132 @@ pub enum ModuleType {
     Rotation { speed: RangeValue, random_start: bool },
 }
 
+impl std::fmt::Display for ModuleType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ModuleType {
+    /// Returns all module types with default values for demonstration
+    pub fn all_variants() -> &'static [&'static str] {
+        &[
+            "Velocity",
+            "Force",
+            "Gravity",
+            "Noise",
+            "Collision",
+            "SubEmitter",
+            "TextureAnimation",
+            "Trail",
+            "Light",
+            "Rotation",
+        ]
+    }
+
+    /// Returns the name of the module type
+    pub fn name(&self) -> &'static str {
+        match self {
+            ModuleType::Velocity { .. } => "Velocity",
+            ModuleType::Force { .. } => "Force",
+            ModuleType::Gravity { .. } => "Gravity",
+            ModuleType::Noise { .. } => "Noise",
+            ModuleType::Collision { .. } => "Collision",
+            ModuleType::SubEmitter { .. } => "Sub Emitter",
+            ModuleType::TextureAnimation { .. } => "Texture Animation",
+            ModuleType::Trail { .. } => "Trail",
+            ModuleType::Light { .. } => "Light",
+            ModuleType::Rotation { .. } => "Rotation",
+        }
+    }
+
+    /// Returns the icon for the module type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ModuleType::Velocity { .. } => "➡️",
+            ModuleType::Force { .. } => "💨",
+            ModuleType::Gravity { .. } => "⬇️",
+            ModuleType::Noise { .. } => "🌊",
+            ModuleType::Collision { .. } => "💥",
+            ModuleType::SubEmitter { .. } => "🎇",
+            ModuleType::TextureAnimation { .. } => "🎬",
+            ModuleType::Trail { .. } => "✨",
+            ModuleType::Light { .. } => "💡",
+            ModuleType::Rotation { .. } => "🔄",
+        }
+    }
+
+    /// Returns true if this is a physics-related module
+    pub fn is_physics(&self) -> bool {
+        matches!(
+            self,
+            ModuleType::Velocity { .. }
+                | ModuleType::Force { .. }
+                | ModuleType::Gravity { .. }
+                | ModuleType::Collision { .. }
+                | ModuleType::Rotation { .. }
+        )
+    }
+
+    /// Returns true if this is a visual-related module
+    pub fn is_visual(&self) -> bool {
+        matches!(
+            self,
+            ModuleType::TextureAnimation { .. }
+                | ModuleType::Trail { .. }
+                | ModuleType::Light { .. }
+        )
+    }
+
+    /// Returns true if this module spawns sub-effects
+    pub fn is_spawner(&self) -> bool {
+        matches!(self, ModuleType::SubEmitter { .. })
+    }
+}
+
 /// Sub-emitter trigger event
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SubEmitterEvent {
     #[default]
     Birth,
     Death,
     Collision,
     Trigger,
+}
+
+impl std::fmt::Display for SubEmitterEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl SubEmitterEvent {
+    pub fn all() -> &'static [SubEmitterEvent] {
+        &[
+            SubEmitterEvent::Birth,
+            SubEmitterEvent::Death,
+            SubEmitterEvent::Collision,
+            SubEmitterEvent::Trigger,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            SubEmitterEvent::Birth => "Birth",
+            SubEmitterEvent::Death => "Death",
+            SubEmitterEvent::Collision => "Collision",
+            SubEmitterEvent::Trigger => "Trigger",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SubEmitterEvent::Birth => "🌟",
+            SubEmitterEvent::Death => "💀",
+            SubEmitterEvent::Collision => "💥",
+            SubEmitterEvent::Trigger => "⚡",
+        }
+    }
 }
 
 /// Particle system configuration
@@ -250,13 +553,53 @@ impl Default for EmissionBurst {
 }
 
 /// Sort mode for particles
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SortMode {
     #[default]
     None,
     ByDistance,
     OldestFirst,
     YoungestFirst,
+}
+
+impl std::fmt::Display for SortMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl SortMode {
+    pub fn all() -> &'static [SortMode] {
+        &[
+            SortMode::None,
+            SortMode::ByDistance,
+            SortMode::OldestFirst,
+            SortMode::YoungestFirst,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            SortMode::None => "None",
+            SortMode::ByDistance => "By Distance",
+            SortMode::OldestFirst => "Oldest First",
+            SortMode::YoungestFirst => "Youngest First",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SortMode::None => "➖",
+            SortMode::ByDistance => "📏",
+            SortMode::OldestFirst => "⏪",
+            SortMode::YoungestFirst => "⏩",
+        }
+    }
+
+    /// Returns true if this mode applies sorting
+    pub fn is_sorted(&self) -> bool {
+        !matches!(self, SortMode::None)
+    }
 }
 
 impl Default for ParticleSystem {
@@ -347,7 +690,7 @@ pub struct ParticleStats {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ParticleTab {
     #[default]
     Emitter,
@@ -358,6 +701,53 @@ pub enum ParticleTab {
     Modules,
     Presets,
     Stats,
+}
+
+impl std::fmt::Display for ParticleTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ParticleTab {
+    pub fn all() -> &'static [ParticleTab] {
+        &[
+            ParticleTab::Emitter,
+            ParticleTab::Shape,
+            ParticleTab::Particles,
+            ParticleTab::Lifetime,
+            ParticleTab::Rendering,
+            ParticleTab::Modules,
+            ParticleTab::Presets,
+            ParticleTab::Stats,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParticleTab::Emitter => "Emitter",
+            ParticleTab::Shape => "Shape",
+            ParticleTab::Particles => "Particles",
+            ParticleTab::Lifetime => "Lifetime",
+            ParticleTab::Rendering => "Rendering",
+            ParticleTab::Modules => "Modules",
+            ParticleTab::Presets => "Presets",
+            ParticleTab::Stats => "Stats",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ParticleTab::Emitter => "💨",
+            ParticleTab::Shape => "▲",
+            ParticleTab::Particles => "✨",
+            ParticleTab::Lifetime => "⌛",
+            ParticleTab::Rendering => "🎨",
+            ParticleTab::Modules => "🔧",
+            ParticleTab::Presets => "💾",
+            ParticleTab::Stats => "📊",
+        }
+    }
 }
 
 /// Main Particle System Panel
@@ -1508,5 +1898,483 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = ParticleSystemPanel::new();
         assert_eq!(panel.name(), "Particle System");
+    }
+
+    // ========== EmitterShape Tests ==========
+
+    #[test]
+    fn test_emitter_shape_display() {
+        for shape in EmitterShape::all() {
+            let display = format!("{}", shape);
+            assert!(display.contains(shape.name()));
+        }
+    }
+
+    #[test]
+    fn test_emitter_shape_all_variants() {
+        let all = EmitterShape::all();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&EmitterShape::Point));
+        assert!(all.contains(&EmitterShape::Mesh));
+    }
+
+    #[test]
+    fn test_emitter_shape_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<EmitterShape> = EmitterShape::all().iter().copied().collect();
+        assert_eq!(set.len(), 8);
+    }
+
+    #[test]
+    fn test_emitter_shape_is_volumetric() {
+        assert!(!EmitterShape::Point.is_volumetric());
+        assert!(EmitterShape::Sphere.is_volumetric());
+        assert!(EmitterShape::Hemisphere.is_volumetric());
+        assert!(EmitterShape::Cone.is_volumetric());
+        assert!(EmitterShape::Box.is_volumetric());
+        assert!(!EmitterShape::Circle.is_volumetric());
+        assert!(!EmitterShape::Edge.is_volumetric());
+        assert!(!EmitterShape::Mesh.is_volumetric());
+    }
+
+    // ========== SimulationSpace Tests ==========
+
+    #[test]
+    fn test_simulation_space_display() {
+        for space in SimulationSpace::all() {
+            let display = format!("{}", space);
+            assert!(display.contains(space.name()));
+        }
+    }
+
+    #[test]
+    fn test_simulation_space_all_variants() {
+        let all = SimulationSpace::all();
+        assert_eq!(all.len(), 2);
+        assert!(all.contains(&SimulationSpace::Local));
+        assert!(all.contains(&SimulationSpace::World));
+    }
+
+    #[test]
+    fn test_simulation_space_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<SimulationSpace> = SimulationSpace::all().iter().copied().collect();
+        assert_eq!(set.len(), 2);
+    }
+
+    // ========== ParticleBlendMode Tests ==========
+
+    #[test]
+    fn test_particle_blend_mode_display() {
+        for mode in ParticleBlendMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_particle_blend_mode_all_variants() {
+        let all = ParticleBlendMode::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&ParticleBlendMode::Alpha));
+        assert!(all.contains(&ParticleBlendMode::Additive));
+    }
+
+    #[test]
+    fn test_particle_blend_mode_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<ParticleBlendMode> = ParticleBlendMode::all().iter().copied().collect();
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_particle_blend_mode_is_additive() {
+        assert!(!ParticleBlendMode::Alpha.is_additive());
+        assert!(ParticleBlendMode::Additive.is_additive());
+        assert!(!ParticleBlendMode::Multiply.is_additive());
+        assert!(!ParticleBlendMode::Premultiply.is_additive());
+    }
+
+    // ========== ParticleRenderMode Tests ==========
+
+    #[test]
+    fn test_particle_render_mode_display() {
+        for mode in ParticleRenderMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_particle_render_mode_all_variants() {
+        let all = ParticleRenderMode::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&ParticleRenderMode::Billboard));
+        assert!(all.contains(&ParticleRenderMode::Trail));
+    }
+
+    #[test]
+    fn test_particle_render_mode_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<ParticleRenderMode> = ParticleRenderMode::all().iter().copied().collect();
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_particle_render_mode_is_billboard() {
+        assert!(ParticleRenderMode::Billboard.is_billboard());
+        assert!(ParticleRenderMode::StretchedBillboard.is_billboard());
+        assert!(ParticleRenderMode::HorizontalBillboard.is_billboard());
+        assert!(ParticleRenderMode::VerticalBillboard.is_billboard());
+        assert!(!ParticleRenderMode::Mesh.is_billboard());
+        assert!(!ParticleRenderMode::Trail.is_billboard());
+    }
+
+    // ========== CurveType Tests ==========
+
+    #[test]
+    fn test_curve_type_display() {
+        for curve in CurveType::all() {
+            let display = format!("{}", curve);
+            assert!(display.contains(curve.name()));
+        }
+    }
+
+    #[test]
+    fn test_curve_type_all_variants() {
+        let all = CurveType::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&CurveType::Constant));
+        assert!(all.contains(&CurveType::Curve));
+    }
+
+    #[test]
+    fn test_curve_type_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<CurveType> = CurveType::all().iter().copied().collect();
+        assert_eq!(set.len(), 7);
+    }
+
+    #[test]
+    fn test_curve_type_is_easing() {
+        assert!(!CurveType::Constant.is_easing());
+        assert!(!CurveType::Linear.is_easing());
+        assert!(CurveType::EaseIn.is_easing());
+        assert!(CurveType::EaseOut.is_easing());
+        assert!(CurveType::EaseInOut.is_easing());
+        assert!(!CurveType::Random.is_easing());
+        assert!(!CurveType::Curve.is_easing());
+    }
+
+    // ========== SubEmitterEvent Tests ==========
+
+    #[test]
+    fn test_sub_emitter_event_display() {
+        for event in SubEmitterEvent::all() {
+            let display = format!("{}", event);
+            assert!(display.contains(event.name()));
+        }
+    }
+
+    #[test]
+    fn test_sub_emitter_event_all_variants() {
+        let all = SubEmitterEvent::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&SubEmitterEvent::Birth));
+        assert!(all.contains(&SubEmitterEvent::Death));
+        assert!(all.contains(&SubEmitterEvent::Collision));
+        assert!(all.contains(&SubEmitterEvent::Trigger));
+    }
+
+    #[test]
+    fn test_sub_emitter_event_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<SubEmitterEvent> = SubEmitterEvent::all().iter().copied().collect();
+        assert_eq!(set.len(), 4);
+    }
+
+    // ========== SortMode Tests ==========
+
+    #[test]
+    fn test_sort_mode_display() {
+        for mode in SortMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_sort_mode_all_variants() {
+        let all = SortMode::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&SortMode::None));
+        assert!(all.contains(&SortMode::YoungestFirst));
+    }
+
+    #[test]
+    fn test_sort_mode_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<SortMode> = SortMode::all().iter().copied().collect();
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_sort_mode_is_sorted() {
+        assert!(!SortMode::None.is_sorted());
+        assert!(SortMode::ByDistance.is_sorted());
+        assert!(SortMode::OldestFirst.is_sorted());
+        assert!(SortMode::YoungestFirst.is_sorted());
+    }
+
+    // ========== ParticleTab Tests ==========
+
+    #[test]
+    fn test_particle_tab_display() {
+        for tab in ParticleTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+        }
+    }
+
+    #[test]
+    fn test_particle_tab_all_variants() {
+        let all = ParticleTab::all();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&ParticleTab::Emitter));
+        assert!(all.contains(&ParticleTab::Stats));
+    }
+
+    #[test]
+    fn test_particle_tab_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<ParticleTab> = ParticleTab::all().iter().copied().collect();
+        assert_eq!(set.len(), 8);
+    }
+
+    #[test]
+    fn test_particle_tab_default() {
+        assert_eq!(ParticleTab::default(), ParticleTab::Emitter);
+    }
+
+    // ========== ModuleType Tests ==========
+
+    #[test]
+    fn test_module_type_display() {
+        let velocity = ModuleType::Velocity {
+            direction: [1.0, 0.0, 0.0],
+            speed: RangeValue::constant(5.0),
+        };
+        let display = format!("{}", velocity);
+        assert!(display.contains(velocity.name()));
+    }
+
+    #[test]
+    fn test_module_type_all_variants() {
+        let all = ModuleType::all_variants();
+        assert_eq!(all.len(), 10);
+        assert!(all.contains(&"Velocity"));
+        assert!(all.contains(&"Force"));
+        assert!(all.contains(&"Gravity"));
+        assert!(all.contains(&"Noise"));
+        assert!(all.contains(&"Collision"));
+        assert!(all.contains(&"SubEmitter"));
+        assert!(all.contains(&"TextureAnimation"));
+        assert!(all.contains(&"Trail"));
+        assert!(all.contains(&"Light"));
+        assert!(all.contains(&"Rotation"));
+    }
+
+    #[test]
+    fn test_module_type_names() {
+        let gravity = ModuleType::Gravity { multiplier: 1.0 };
+        assert_eq!(gravity.name(), "Gravity");
+
+        let sub_emitter = ModuleType::SubEmitter {
+            event: SubEmitterEvent::Birth,
+            emitter_id: 1,
+        };
+        assert_eq!(sub_emitter.name(), "Sub Emitter");
+
+        let tex_anim = ModuleType::TextureAnimation {
+            tiles_x: 4,
+            tiles_y: 4,
+            fps: 30.0,
+        };
+        assert_eq!(tex_anim.name(), "Texture Animation");
+    }
+
+    #[test]
+    fn test_module_type_icons() {
+        let velocity = ModuleType::Velocity {
+            direction: [1.0, 0.0, 0.0],
+            speed: RangeValue::constant(5.0),
+        };
+        assert_eq!(velocity.icon(), "➡️");
+
+        let light = ModuleType::Light {
+            color: [1.0, 1.0, 1.0],
+            intensity: RangeValue::constant(1.0),
+            range: RangeValue::constant(10.0),
+        };
+        assert_eq!(light.icon(), "💡");
+
+        let trail = ModuleType::Trail {
+            width: RangeValue::constant(0.1),
+            lifetime: 1.0,
+            min_vertex_distance: 0.1,
+        };
+        assert_eq!(trail.icon(), "✨");
+    }
+
+    #[test]
+    fn test_module_type_is_physics() {
+        // Physics-related modules
+        let velocity = ModuleType::Velocity {
+            direction: [1.0, 0.0, 0.0],
+            speed: RangeValue::constant(5.0),
+        };
+        assert!(velocity.is_physics());
+
+        let force = ModuleType::Force {
+            force: [0.0, 1.0, 0.0],
+            space: SimulationSpace::World,
+        };
+        assert!(force.is_physics());
+
+        let gravity = ModuleType::Gravity { multiplier: 1.0 };
+        assert!(gravity.is_physics());
+
+        let collision = ModuleType::Collision {
+            bounce: 0.5,
+            lifetime_loss: 0.1,
+            radius_scale: 1.0,
+        };
+        assert!(collision.is_physics());
+
+        let rotation = ModuleType::Rotation {
+            speed: RangeValue::constant(90.0),
+            random_start: false,
+        };
+        assert!(rotation.is_physics());
+
+        // Non-physics modules
+        let light = ModuleType::Light {
+            color: [1.0, 1.0, 1.0],
+            intensity: RangeValue::constant(1.0),
+            range: RangeValue::constant(10.0),
+        };
+        assert!(!light.is_physics());
+    }
+
+    #[test]
+    fn test_module_type_is_visual() {
+        // Visual-related modules
+        let tex_anim = ModuleType::TextureAnimation {
+            tiles_x: 4,
+            tiles_y: 4,
+            fps: 30.0,
+        };
+        assert!(tex_anim.is_visual());
+
+        let trail = ModuleType::Trail {
+            width: RangeValue::constant(0.1),
+            lifetime: 1.0,
+            min_vertex_distance: 0.1,
+        };
+        assert!(trail.is_visual());
+
+        let light = ModuleType::Light {
+            color: [1.0, 1.0, 1.0],
+            intensity: RangeValue::constant(1.0),
+            range: RangeValue::constant(10.0),
+        };
+        assert!(light.is_visual());
+
+        // Non-visual modules
+        let gravity = ModuleType::Gravity { multiplier: 1.0 };
+        assert!(!gravity.is_visual());
+    }
+
+    #[test]
+    fn test_module_type_is_spawner() {
+        let sub_emitter = ModuleType::SubEmitter {
+            event: SubEmitterEvent::Death,
+            emitter_id: 2,
+        };
+        assert!(sub_emitter.is_spawner());
+
+        let velocity = ModuleType::Velocity {
+            direction: [1.0, 0.0, 0.0],
+            speed: RangeValue::constant(5.0),
+        };
+        assert!(!velocity.is_spawner());
+
+        let gravity = ModuleType::Gravity { multiplier: 1.0 };
+        assert!(!gravity.is_spawner());
+    }
+
+    #[test]
+    fn test_module_type_display_all_variants() {
+        // Test that all variant types can be displayed
+        let modules: Vec<ModuleType> = vec![
+            ModuleType::Velocity {
+                direction: [1.0, 0.0, 0.0],
+                speed: RangeValue::constant(5.0),
+            },
+            ModuleType::Force {
+                force: [0.0, 1.0, 0.0],
+                space: SimulationSpace::World,
+            },
+            ModuleType::Gravity { multiplier: 9.8 },
+            ModuleType::Noise {
+                strength: 1.0,
+                frequency: 2.0,
+                scroll_speed: 0.5,
+            },
+            ModuleType::Collision {
+                bounce: 0.5,
+                lifetime_loss: 0.1,
+                radius_scale: 1.0,
+            },
+            ModuleType::SubEmitter {
+                event: SubEmitterEvent::Birth,
+                emitter_id: 1,
+            },
+            ModuleType::TextureAnimation {
+                tiles_x: 4,
+                tiles_y: 4,
+                fps: 30.0,
+            },
+            ModuleType::Trail {
+                width: RangeValue::constant(0.1),
+                lifetime: 1.0,
+                min_vertex_distance: 0.1,
+            },
+            ModuleType::Light {
+                color: [1.0, 1.0, 1.0],
+                intensity: RangeValue::constant(1.0),
+                range: RangeValue::constant(10.0),
+            },
+            ModuleType::Rotation {
+                speed: RangeValue::constant(90.0),
+                random_start: true,
+            },
+        ];
+
+        for module in &modules {
+            let display = format!("{}", module);
+            assert!(display.contains(module.name()));
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_module_type_partial_eq() {
+        let g1 = ModuleType::Gravity { multiplier: 1.0 };
+        let g2 = ModuleType::Gravity { multiplier: 1.0 };
+        let g3 = ModuleType::Gravity { multiplier: 2.0 };
+
+        assert_eq!(g1, g2);
+        assert_ne!(g1, g3);
     }
 }

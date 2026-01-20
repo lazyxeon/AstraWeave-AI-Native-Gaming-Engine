@@ -13,7 +13,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Track type for cinematics
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum TrackType {
     #[default]
     Camera,
@@ -24,7 +24,24 @@ pub enum TrackType {
     Event,
 }
 
+impl std::fmt::Display for TrackType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl TrackType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            TrackType::Camera => "Camera",
+            TrackType::Animation => "Animation",
+            TrackType::Audio => "Audio",
+            TrackType::Fx => "VFX",
+            TrackType::Dialogue => "Dialogue",
+            TrackType::Event => "Event",
+        }
+    }
+
     pub fn all() -> &'static [TrackType] {
         &[
             TrackType::Camera,
@@ -60,7 +77,7 @@ impl TrackType {
 }
 
 /// Camera interpolation mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum CameraInterpolation {
     #[default]
     Linear,
@@ -70,7 +87,27 @@ pub enum CameraInterpolation {
     Step,
 }
 
+impl std::fmt::Display for CameraInterpolation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 impl CameraInterpolation {
+    pub fn name(&self) -> &'static str {
+        match self {
+            CameraInterpolation::Linear => "Linear",
+            CameraInterpolation::CatmullRom => "Catmull-Rom",
+            CameraInterpolation::Bezier => "Bezier",
+            CameraInterpolation::Hermite => "Hermite",
+            CameraInterpolation::Step => "Step",
+        }
+    }
+
+    pub fn is_smooth(&self) -> bool {
+        !matches!(self, CameraInterpolation::Step)
+    }
+
     pub fn all() -> &'static [CameraInterpolation] {
         &[
             CameraInterpolation::Linear,
@@ -83,13 +120,43 @@ impl CameraInterpolation {
 }
 
 /// Playback state
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum PlaybackState {
     #[default]
     Stopped,
     Playing,
     Paused,
     Recording,
+}
+
+impl std::fmt::Display for PlaybackState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PlaybackState {
+    pub fn name(&self) -> &'static str {
+        match self {
+            PlaybackState::Stopped => "Stopped",
+            PlaybackState::Playing => "Playing",
+            PlaybackState::Paused => "Paused",
+            PlaybackState::Recording => "Recording",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PlaybackState::Stopped => "⏹️",
+            PlaybackState::Playing => "▶️",
+            PlaybackState::Paused => "⏸️",
+            PlaybackState::Recording => "⏺️",
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        matches!(self, PlaybackState::Playing | PlaybackState::Recording)
+    }
 }
 
 /// Playback speed
@@ -101,6 +168,12 @@ pub enum PlaybackSpeed {
     Normal,
     Double,
     Quadruple,
+}
+
+impl std::fmt::Display for PlaybackSpeed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.display())
+    }
 }
 
 impl PlaybackSpeed {
@@ -205,6 +278,25 @@ pub enum ClipData {
     Event { event_name: String, payload: String },
 }
 
+impl std::fmt::Display for ClipData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl ClipData {
+    pub fn name(&self) -> &'static str {
+        match self {
+            ClipData::Camera { .. } => "Camera",
+            ClipData::Animation { .. } => "Animation",
+            ClipData::Audio { .. } => "Audio",
+            ClipData::Fx { .. } => "VFX",
+            ClipData::Dialogue { .. } => "Dialogue",
+            ClipData::Event { .. } => "Event",
+        }
+    }
+}
+
 impl Default for ClipData {
     fn default() -> Self {
         ClipData::Camera { keyframes: Vec::new() }
@@ -246,7 +338,7 @@ pub struct TimelineMarker {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum CinematicsTab {
     #[default]
     Timeline,
@@ -255,6 +347,47 @@ pub enum CinematicsTab {
     Clips,
     Preview,
     Export,
+}
+
+impl std::fmt::Display for CinematicsTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl CinematicsTab {
+    pub fn all() -> &'static [CinematicsTab] {
+        &[
+            CinematicsTab::Timeline,
+            CinematicsTab::Camera,
+            CinematicsTab::Tracks,
+            CinematicsTab::Clips,
+            CinematicsTab::Preview,
+            CinematicsTab::Export,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            CinematicsTab::Timeline => "Timeline",
+            CinematicsTab::Camera => "Camera",
+            CinematicsTab::Tracks => "Tracks",
+            CinematicsTab::Clips => "Clips",
+            CinematicsTab::Preview => "Preview",
+            CinematicsTab::Export => "Export",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            CinematicsTab::Timeline => "📅",
+            CinematicsTab::Camera => "📷",
+            CinematicsTab::Tracks => "🎬",
+            CinematicsTab::Clips => "🎞️",
+            CinematicsTab::Preview => "👁️",
+            CinematicsTab::Export => "💾",
+        }
+    }
 }
 
 /// Main Cinematics Panel
@@ -1321,5 +1454,341 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = CinematicsPanel::new();
         assert_eq!(panel.name(), "Cinematics");
+    }
+
+    // ============================================================
+    // ROUND 10 ENUM TESTS
+    // ============================================================
+
+    // TrackType tests (6 tests)
+    #[test]
+    fn test_track_type_display() {
+        assert_eq!(format!("{}", TrackType::Camera), "📷 Camera");
+        assert_eq!(format!("{}", TrackType::Animation), "🎬 Animation");
+        assert_eq!(format!("{}", TrackType::Audio), "🔊 Audio");
+        assert_eq!(format!("{}", TrackType::Fx), "✨ VFX");
+        assert_eq!(format!("{}", TrackType::Dialogue), "💬 Dialogue");
+        assert_eq!(format!("{}", TrackType::Event), "⚡ Event");
+    }
+
+    #[test]
+    fn test_track_type_all() {
+        let all = TrackType::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&TrackType::Camera));
+        assert!(all.contains(&TrackType::Event));
+    }
+
+    #[test]
+    fn test_track_type_name() {
+        assert_eq!(TrackType::Camera.name(), "Camera");
+        assert_eq!(TrackType::Fx.name(), "VFX");
+    }
+
+    #[test]
+    fn test_track_type_icon() {
+        assert_eq!(TrackType::Camera.icon(), "📷");
+        assert_eq!(TrackType::Animation.icon(), "🎬");
+    }
+
+    #[test]
+    fn test_track_type_color() {
+        use egui::Color32;
+        let color = TrackType::Camera.color();
+        assert!(color != Color32::BLACK);
+    }
+
+    #[test]
+    fn test_track_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for t in TrackType::all() {
+            assert!(set.insert(*t));
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    // CameraInterpolation tests (6 tests)
+    #[test]
+    fn test_camera_interpolation_display() {
+        assert_eq!(format!("{}", CameraInterpolation::Linear), "Linear");
+        assert_eq!(format!("{}", CameraInterpolation::CatmullRom), "Catmull-Rom");
+        assert_eq!(format!("{}", CameraInterpolation::Bezier), "Bezier");
+        assert_eq!(format!("{}", CameraInterpolation::Hermite), "Hermite");
+        assert_eq!(format!("{}", CameraInterpolation::Step), "Step");
+    }
+
+    #[test]
+    fn test_camera_interpolation_all() {
+        let all = CameraInterpolation::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&CameraInterpolation::Linear));
+        assert!(all.contains(&CameraInterpolation::Step));
+    }
+
+    #[test]
+    fn test_camera_interpolation_name() {
+        assert_eq!(CameraInterpolation::Linear.name(), "Linear");
+        assert_eq!(CameraInterpolation::CatmullRom.name(), "Catmull-Rom");
+    }
+
+    #[test]
+    fn test_camera_interpolation_is_smooth() {
+        assert!(CameraInterpolation::Linear.is_smooth());
+        assert!(CameraInterpolation::CatmullRom.is_smooth());
+        assert!(CameraInterpolation::Bezier.is_smooth());
+        assert!(!CameraInterpolation::Step.is_smooth());
+    }
+
+    #[test]
+    fn test_camera_interpolation_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for c in CameraInterpolation::all() {
+            assert!(set.insert(*c));
+        }
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_camera_interpolation_smooth_types() {
+        let smooth_types: Vec<_> = CameraInterpolation::all()
+            .iter()
+            .filter(|c| c.is_smooth())
+            .collect();
+        assert_eq!(smooth_types.len(), 4);
+    }
+
+    // PlaybackState tests (7 tests)
+    #[test]
+    fn test_playback_state_display() {
+        assert_eq!(format!("{}", PlaybackState::Stopped), "⏹️ Stopped");
+        assert_eq!(format!("{}", PlaybackState::Playing), "▶️ Playing");
+        assert_eq!(format!("{}", PlaybackState::Paused), "⏸️ Paused");
+        assert_eq!(format!("{}", PlaybackState::Recording), "⏺️ Recording");
+    }
+
+    #[test]
+    fn test_playback_state_name() {
+        assert_eq!(PlaybackState::Stopped.name(), "Stopped");
+        assert_eq!(PlaybackState::Playing.name(), "Playing");
+        assert_eq!(PlaybackState::Paused.name(), "Paused");
+        assert_eq!(PlaybackState::Recording.name(), "Recording");
+    }
+
+    #[test]
+    fn test_playback_state_icon() {
+        assert_eq!(PlaybackState::Stopped.icon(), "⏹️");
+        assert_eq!(PlaybackState::Playing.icon(), "▶️");
+        assert_eq!(PlaybackState::Paused.icon(), "⏸️");
+        assert_eq!(PlaybackState::Recording.icon(), "⏺️");
+    }
+
+    #[test]
+    fn test_playback_state_is_running() {
+        assert!(!PlaybackState::Stopped.is_running());
+        assert!(PlaybackState::Playing.is_running());
+        assert!(!PlaybackState::Paused.is_running());
+        assert!(PlaybackState::Recording.is_running());
+    }
+
+    #[test]
+    fn test_playback_state_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(PlaybackState::Stopped);
+        set.insert(PlaybackState::Playing);
+        set.insert(PlaybackState::Paused);
+        set.insert(PlaybackState::Recording);
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_playback_state_running_states() {
+        let running: Vec<_> = [
+            PlaybackState::Stopped,
+            PlaybackState::Playing,
+            PlaybackState::Paused,
+            PlaybackState::Recording,
+        ]
+        .iter()
+        .filter(|s| s.is_running())
+        .collect();
+        assert_eq!(running.len(), 2);
+    }
+
+    #[test]
+    fn test_playback_state_default() {
+        assert_eq!(PlaybackState::default(), PlaybackState::Stopped);
+    }
+
+    // PlaybackSpeed tests (7 tests)
+    #[test]
+    fn test_playback_speed_display() {
+        assert_eq!(format!("{}", PlaybackSpeed::Quarter), "0.25×");
+        assert_eq!(format!("{}", PlaybackSpeed::Half), "0.5×");
+        assert_eq!(format!("{}", PlaybackSpeed::Normal), "1×");
+        assert_eq!(format!("{}", PlaybackSpeed::Double), "2×");
+        assert_eq!(format!("{}", PlaybackSpeed::Quadruple), "4×");
+    }
+
+    #[test]
+    fn test_playback_speed_all() {
+        let all = PlaybackSpeed::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&PlaybackSpeed::Normal));
+    }
+
+    #[test]
+    fn test_playback_speed_multiplier() {
+        assert_eq!(PlaybackSpeed::Quarter.multiplier(), 0.25);
+        assert_eq!(PlaybackSpeed::Half.multiplier(), 0.5);
+        assert_eq!(PlaybackSpeed::Normal.multiplier(), 1.0);
+        assert_eq!(PlaybackSpeed::Double.multiplier(), 2.0);
+        assert_eq!(PlaybackSpeed::Quadruple.multiplier(), 4.0);
+    }
+
+    #[test]
+    fn test_playback_speed_display_method() {
+        assert_eq!(PlaybackSpeed::Quarter.display(), "0.25×");
+        assert_eq!(PlaybackSpeed::Normal.display(), "1×");
+    }
+
+    #[test]
+    fn test_playback_speed_default() {
+        assert_eq!(PlaybackSpeed::default(), PlaybackSpeed::Normal);
+    }
+
+    #[test]
+    fn test_playback_speed_ordering() {
+        assert!(PlaybackSpeed::Quarter.multiplier() < PlaybackSpeed::Half.multiplier());
+        assert!(PlaybackSpeed::Normal.multiplier() < PlaybackSpeed::Double.multiplier());
+    }
+
+    #[test]
+    fn test_playback_speed_range() {
+        let min = PlaybackSpeed::Quarter.multiplier();
+        let max = PlaybackSpeed::Quadruple.multiplier();
+        assert_eq!(min, 0.25);
+        assert_eq!(max, 4.0);
+        assert_eq!(max / min, 16.0);
+    }
+
+    // ClipData tests (6 tests)
+    #[test]
+    fn test_clip_data_display() {
+        assert_eq!(format!("{}", ClipData::Camera { keyframes: Vec::new() }), "Camera");
+        assert_eq!(format!("{}", ClipData::Animation { target_id: 1, clip_name: "test".to_string() }), "Animation");
+        assert_eq!(format!("{}", ClipData::Audio { file: "test.wav".to_string(), volume: 1.0, fade_in: 0.0, fade_out: 0.0 }), "Audio");
+        assert_eq!(format!("{}", ClipData::Fx { effect_name: "fire".to_string(), params: "{}".to_string() }), "VFX");
+        assert_eq!(format!("{}", ClipData::Dialogue { speaker: "NPC".to_string(), text: "Hello".to_string(), duration: 2.0 }), "Dialogue");
+        assert_eq!(format!("{}", ClipData::Event { event_name: "trigger".to_string(), payload: "{}".to_string() }), "Event");
+    }
+
+    #[test]
+    fn test_clip_data_name() {
+        assert_eq!(ClipData::Camera { keyframes: Vec::new() }.name(), "Camera");
+        assert_eq!(ClipData::Animation { target_id: 1, clip_name: "walk".to_string() }.name(), "Animation");
+        assert_eq!(ClipData::Audio { file: "music.mp3".to_string(), volume: 0.8, fade_in: 1.0, fade_out: 1.0 }.name(), "Audio");
+        assert_eq!(ClipData::Fx { effect_name: "explosion".to_string(), params: "{}".to_string() }.name(), "VFX");
+        assert_eq!(ClipData::Dialogue { speaker: "Hero".to_string(), text: "..".to_string(), duration: 1.0 }.name(), "Dialogue");
+        assert_eq!(ClipData::Event { event_name: "spawn".to_string(), payload: "{}".to_string() }.name(), "Event");
+    }
+
+    #[test]
+    fn test_clip_data_default() {
+        let default = ClipData::default();
+        assert_eq!(default.name(), "Camera");
+    }
+
+    #[test]
+    fn test_clip_data_camera_variant() {
+        let clip = ClipData::Camera { keyframes: vec![CameraKeyframe::default()] };
+        assert_eq!(clip.name(), "Camera");
+        if let ClipData::Camera { keyframes } = clip {
+            assert_eq!(keyframes.len(), 1);
+        } else {
+            panic!("Expected Camera variant");
+        }
+    }
+
+    #[test]
+    fn test_clip_data_audio_variant() {
+        let clip = ClipData::Audio {
+            file: "bgm.ogg".to_string(),
+            volume: 0.7,
+            fade_in: 2.0,
+            fade_out: 3.0,
+        };
+        assert_eq!(clip.name(), "Audio");
+        if let ClipData::Audio { file, volume, fade_in, fade_out } = clip {
+            assert_eq!(file, "bgm.ogg");
+            assert_eq!(volume, 0.7);
+            assert_eq!(fade_in, 2.0);
+            assert_eq!(fade_out, 3.0);
+        } else {
+            panic!("Expected Audio variant");
+        }
+    }
+
+    #[test]
+    fn test_clip_data_all_variants() {
+        let variants = vec![
+            ClipData::Camera { keyframes: Vec::new() },
+            ClipData::Animation { target_id: 1, clip_name: String::new() },
+            ClipData::Audio { file: String::new(), volume: 1.0, fade_in: 0.0, fade_out: 0.0 },
+            ClipData::Fx { effect_name: String::new(), params: String::new() },
+            ClipData::Dialogue { speaker: String::new(), text: String::new(), duration: 0.0 },
+            ClipData::Event { event_name: String::new(), payload: String::new() },
+        ];
+        assert_eq!(variants.len(), 6);
+    }
+
+    // CinematicsTab tests (6 tests)
+    #[test]
+    fn test_cinematics_tab_display() {
+        assert_eq!(format!("{}", CinematicsTab::Timeline), "📅 Timeline");
+        assert_eq!(format!("{}", CinematicsTab::Camera), "📷 Camera");
+        assert_eq!(format!("{}", CinematicsTab::Tracks), "🎬 Tracks");
+        assert_eq!(format!("{}", CinematicsTab::Clips), "🎞️ Clips");
+        assert_eq!(format!("{}", CinematicsTab::Preview), "👁️ Preview");
+        assert_eq!(format!("{}", CinematicsTab::Export), "💾 Export");
+    }
+
+    #[test]
+    fn test_cinematics_tab_all() {
+        let all = CinematicsTab::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&CinematicsTab::Timeline));
+        assert!(all.contains(&CinematicsTab::Export));
+    }
+
+    #[test]
+    fn test_cinematics_tab_name() {
+        assert_eq!(CinematicsTab::Timeline.name(), "Timeline");
+        assert_eq!(CinematicsTab::Camera.name(), "Camera");
+        assert_eq!(CinematicsTab::Export.name(), "Export");
+    }
+
+    #[test]
+    fn test_cinematics_tab_icon() {
+        assert_eq!(CinematicsTab::Timeline.icon(), "📅");
+        assert_eq!(CinematicsTab::Camera.icon(), "📷");
+        assert_eq!(CinematicsTab::Preview.icon(), "👁️");
+    }
+
+    #[test]
+    fn test_cinematics_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in CinematicsTab::all() {
+            assert!(set.insert(*tab));
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_cinematics_tab_default() {
+        assert_eq!(CinematicsTab::default(), CinematicsTab::Timeline);
     }
 }

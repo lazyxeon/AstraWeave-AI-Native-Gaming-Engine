@@ -12,7 +12,7 @@
 //! - Camera bookmarks
 
 /// Grid display type for viewport
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum GridType {
     /// Infinite ground plane grid with distance fading
     #[default]
@@ -26,6 +26,11 @@ pub enum GridType {
 }
 
 impl GridType {
+    /// Get all grid types
+    pub fn all() -> &'static [GridType] {
+        &[GridType::Infinite, GridType::Crosshair, GridType::None]
+    }
+
     /// Cycle to next grid type
     pub fn cycle(&self) -> Self {
         match self {
@@ -42,6 +47,26 @@ impl GridType {
             GridType::Crosshair => "Crosshair",
             GridType::None => "None",
         }
+    }
+
+    /// Get icon for this grid type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            GridType::Infinite => "⊞",
+            GridType::Crosshair => "✛",
+            GridType::None => "⊠",
+        }
+    }
+
+    /// Check if grid is visible with this type
+    pub fn is_visible(&self) -> bool {
+        !matches!(self, GridType::None)
+    }
+}
+
+impl std::fmt::Display for GridType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -326,7 +351,7 @@ impl ViewportToolbar {
 }
 
 /// Shading mode for viewport rendering
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ShadingMode {
     /// Full lighting with shadows
     Lit,
@@ -339,12 +364,60 @@ pub enum ShadingMode {
 }
 
 impl ShadingMode {
+    /// Get all shading modes
+    pub fn all() -> &'static [ShadingMode] {
+        &[ShadingMode::Lit, ShadingMode::Unlit, ShadingMode::Wireframe]
+    }
+
+    /// Display name for UI
+    pub fn name(&self) -> &'static str {
+        match self {
+            ShadingMode::Lit => "Lit",
+            ShadingMode::Unlit => "Unlit",
+            ShadingMode::Wireframe => "Wireframe",
+        }
+    }
+
+    /// Get icon for this shading mode
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ShadingMode::Lit => "💡",
+            ShadingMode::Unlit => "🎨",
+            ShadingMode::Wireframe => "🕸",
+        }
+    }
+
+    /// Check if lighting is enabled
+    pub fn has_lighting(&self) -> bool {
+        matches!(self, ShadingMode::Lit)
+    }
+
+    /// Check if this mode shows wireframe
+    pub fn is_wireframe(&self) -> bool {
+        matches!(self, ShadingMode::Wireframe)
+    }
+
+    /// Cycle to next shading mode
+    pub fn cycle(&self) -> Self {
+        match self {
+            ShadingMode::Lit => ShadingMode::Unlit,
+            ShadingMode::Unlit => ShadingMode::Wireframe,
+            ShadingMode::Wireframe => ShadingMode::Lit,
+        }
+    }
+
     pub fn to_u32(self) -> u32 {
         match self {
             ShadingMode::Lit => 0,
             ShadingMode::Unlit => 1,
             ShadingMode::Wireframe => 2,
         }
+    }
+}
+
+impl std::fmt::Display for ShadingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -460,5 +533,108 @@ mod tests {
     #[test]
     fn test_grid_type_default() {
         assert_eq!(GridType::default(), GridType::Infinite);
+    }
+
+    // === GridType Display and helper tests ===
+
+    #[test]
+    fn test_grid_type_all() {
+        let all = GridType::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&GridType::Infinite));
+        assert!(all.contains(&GridType::Crosshair));
+        assert!(all.contains(&GridType::None));
+    }
+
+    #[test]
+    fn test_grid_type_display() {
+        assert_eq!(format!("{}", GridType::Infinite), "⊞ Infinite");
+        assert_eq!(format!("{}", GridType::Crosshair), "✛ Crosshair");
+        assert_eq!(format!("{}", GridType::None), "⊠ None");
+    }
+
+    #[test]
+    fn test_grid_type_icon() {
+        assert_eq!(GridType::Infinite.icon(), "⊞");
+        assert_eq!(GridType::Crosshair.icon(), "✛");
+        assert_eq!(GridType::None.icon(), "⊠");
+    }
+
+    #[test]
+    fn test_grid_type_is_visible() {
+        assert!(GridType::Infinite.is_visible());
+        assert!(GridType::Crosshair.is_visible());
+        assert!(!GridType::None.is_visible());
+    }
+
+    #[test]
+    fn test_grid_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(GridType::Infinite);
+        set.insert(GridType::Crosshair);
+        assert_eq!(set.len(), 2);
+    }
+
+    // === ShadingMode Display and helper tests ===
+
+    #[test]
+    fn test_shading_mode_all() {
+        let all = ShadingMode::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&ShadingMode::Lit));
+        assert!(all.contains(&ShadingMode::Unlit));
+        assert!(all.contains(&ShadingMode::Wireframe));
+    }
+
+    #[test]
+    fn test_shading_mode_display() {
+        assert_eq!(format!("{}", ShadingMode::Lit), "💡 Lit");
+        assert_eq!(format!("{}", ShadingMode::Unlit), "🎨 Unlit");
+        assert_eq!(format!("{}", ShadingMode::Wireframe), "🕸 Wireframe");
+    }
+
+    #[test]
+    fn test_shading_mode_name() {
+        assert_eq!(ShadingMode::Lit.name(), "Lit");
+        assert_eq!(ShadingMode::Unlit.name(), "Unlit");
+        assert_eq!(ShadingMode::Wireframe.name(), "Wireframe");
+    }
+
+    #[test]
+    fn test_shading_mode_icon() {
+        assert_eq!(ShadingMode::Lit.icon(), "💡");
+        assert_eq!(ShadingMode::Unlit.icon(), "🎨");
+        assert_eq!(ShadingMode::Wireframe.icon(), "🕸");
+    }
+
+    #[test]
+    fn test_shading_mode_has_lighting() {
+        assert!(ShadingMode::Lit.has_lighting());
+        assert!(!ShadingMode::Unlit.has_lighting());
+        assert!(!ShadingMode::Wireframe.has_lighting());
+    }
+
+    #[test]
+    fn test_shading_mode_is_wireframe() {
+        assert!(!ShadingMode::Lit.is_wireframe());
+        assert!(!ShadingMode::Unlit.is_wireframe());
+        assert!(ShadingMode::Wireframe.is_wireframe());
+    }
+
+    #[test]
+    fn test_shading_mode_cycle() {
+        assert_eq!(ShadingMode::Lit.cycle(), ShadingMode::Unlit);
+        assert_eq!(ShadingMode::Unlit.cycle(), ShadingMode::Wireframe);
+        assert_eq!(ShadingMode::Wireframe.cycle(), ShadingMode::Lit);
+    }
+
+    #[test]
+    fn test_shading_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ShadingMode::Lit);
+        set.insert(ShadingMode::Wireframe);
+        assert_eq!(set.len(), 2);
     }
 }

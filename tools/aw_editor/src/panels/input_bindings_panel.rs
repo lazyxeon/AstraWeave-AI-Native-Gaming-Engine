@@ -15,13 +15,19 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Input device type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum InputDevice {
     #[default]
     Keyboard,
     Mouse,
     Gamepad,
     All,
+}
+
+impl std::fmt::Display for InputDevice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl InputDevice {
@@ -34,6 +40,15 @@ impl InputDevice {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            InputDevice::Keyboard => "Keyboard",
+            InputDevice::Mouse => "Mouse",
+            InputDevice::Gamepad => "Gamepad",
+            InputDevice::All => "All Devices",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             InputDevice::Keyboard => "⌨️",
@@ -42,10 +57,14 @@ impl InputDevice {
             InputDevice::All => "🔧",
         }
     }
+
+    pub fn is_physical(&self) -> bool {
+        !matches!(self, InputDevice::All)
+    }
 }
 
 /// Action category for grouping
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ActionCategory {
     #[default]
     Movement,
@@ -55,6 +74,12 @@ pub enum ActionCategory {
     Camera,
     Vehicle,
     Debug,
+}
+
+impl std::fmt::Display for ActionCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl ActionCategory {
@@ -70,6 +95,18 @@ impl ActionCategory {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            ActionCategory::Movement => "Movement",
+            ActionCategory::Combat => "Combat",
+            ActionCategory::Interaction => "Interaction",
+            ActionCategory::UI => "UI",
+            ActionCategory::Camera => "Camera",
+            ActionCategory::Vehicle => "Vehicle",
+            ActionCategory::Debug => "Debug",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             ActionCategory::Movement => "🚶",
@@ -81,10 +118,14 @@ impl ActionCategory {
             ActionCategory::Debug => "🐛",
         }
     }
+
+    pub fn is_gameplay(&self) -> bool {
+        matches!(self, ActionCategory::Movement | ActionCategory::Combat | ActionCategory::Interaction | ActionCategory::Vehicle)
+    }
 }
 
 /// Binding preset
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BindingPreset {
     #[default]
     Default,
@@ -94,6 +135,12 @@ pub enum BindingPreset {
     Racing,
     LeftHanded,
     Custom,
+}
+
+impl std::fmt::Display for BindingPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl BindingPreset {
@@ -107,6 +154,34 @@ impl BindingPreset {
             BindingPreset::LeftHanded,
             BindingPreset::Custom,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            BindingPreset::Default => "Default",
+            BindingPreset::FPS => "FPS",
+            BindingPreset::ThirdPerson => "Third Person",
+            BindingPreset::RTS => "RTS",
+            BindingPreset::Racing => "Racing",
+            BindingPreset::LeftHanded => "Left Handed",
+            BindingPreset::Custom => "Custom",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BindingPreset::Default => "⚙️",
+            BindingPreset::FPS => "🔫",
+            BindingPreset::ThirdPerson => "🎮",
+            BindingPreset::RTS => "🗺️",
+            BindingPreset::Racing => "🏎️",
+            BindingPreset::LeftHanded => "🫲",
+            BindingPreset::Custom => "✏️",
+        }
+    }
+
+    pub fn is_built_in(&self) -> bool {
+        !matches!(self, BindingPreset::Custom)
     }
 }
 
@@ -129,6 +204,12 @@ pub enum GamepadButton {
     DPadDown,
     DPadLeft,
     DPadRight,
+}
+
+impl std::fmt::Display for GamepadButton {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "🎮 {}", self.display_name())
+    }
 }
 
 impl GamepadButton {
@@ -173,12 +254,25 @@ impl GamepadButton {
             GamepadButton::DPadRight => "D-Right",
         }
     }
+
+    pub fn is_face_button(&self) -> bool {
+        matches!(self, GamepadButton::South | GamepadButton::East | GamepadButton::West | GamepadButton::North)
+    }
+
+    pub fn is_shoulder(&self) -> bool {
+        matches!(self, GamepadButton::L1 | GamepadButton::R1 | GamepadButton::L2 | GamepadButton::R2)
+    }
+
+    pub fn is_dpad(&self) -> bool {
+        matches!(self, GamepadButton::DPadUp | GamepadButton::DPadDown | GamepadButton::DPadLeft | GamepadButton::DPadRight)
+    }
 }
 
 /// Common keyboard key representation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum KeyboardKey {
     // Letters
+    #[default]
     A, B, C, D, E, F, G, H, I, J, K, L, M,
     N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     // Numbers
@@ -195,7 +289,108 @@ pub enum KeyboardKey {
     Insert, Delete, Home, End, PageUp, PageDown,
 }
 
+impl std::fmt::Display for KeyboardKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "⌨️ {}", self.name())
+    }
+}
+
 impl KeyboardKey {
+    /// Returns all keyboard keys
+    pub fn all() -> &'static [KeyboardKey] {
+        &[
+            // Letters
+            KeyboardKey::A, KeyboardKey::B, KeyboardKey::C, KeyboardKey::D,
+            KeyboardKey::E, KeyboardKey::F, KeyboardKey::G, KeyboardKey::H,
+            KeyboardKey::I, KeyboardKey::J, KeyboardKey::K, KeyboardKey::L,
+            KeyboardKey::M, KeyboardKey::N, KeyboardKey::O, KeyboardKey::P,
+            KeyboardKey::Q, KeyboardKey::R, KeyboardKey::S, KeyboardKey::T,
+            KeyboardKey::U, KeyboardKey::V, KeyboardKey::W, KeyboardKey::X,
+            KeyboardKey::Y, KeyboardKey::Z,
+            // Numbers
+            KeyboardKey::Key1, KeyboardKey::Key2, KeyboardKey::Key3,
+            KeyboardKey::Key4, KeyboardKey::Key5, KeyboardKey::Key6,
+            KeyboardKey::Key7, KeyboardKey::Key8, KeyboardKey::Key9,
+            KeyboardKey::Key0,
+            // Function keys
+            KeyboardKey::F1, KeyboardKey::F2, KeyboardKey::F3, KeyboardKey::F4,
+            KeyboardKey::F5, KeyboardKey::F6, KeyboardKey::F7, KeyboardKey::F8,
+            KeyboardKey::F9, KeyboardKey::F10, KeyboardKey::F11, KeyboardKey::F12,
+            // Modifiers
+            KeyboardKey::ShiftLeft, KeyboardKey::ShiftRight,
+            KeyboardKey::CtrlLeft, KeyboardKey::CtrlRight,
+            KeyboardKey::AltLeft, KeyboardKey::AltRight,
+            // Special
+            KeyboardKey::Space, KeyboardKey::Enter, KeyboardKey::Escape,
+            KeyboardKey::Tab, KeyboardKey::Backspace,
+            // Arrow keys
+            KeyboardKey::ArrowUp, KeyboardKey::ArrowDown,
+            KeyboardKey::ArrowLeft, KeyboardKey::ArrowRight,
+            // Other
+            KeyboardKey::Insert, KeyboardKey::Delete, KeyboardKey::Home,
+            KeyboardKey::End, KeyboardKey::PageUp, KeyboardKey::PageDown,
+        ]
+    }
+
+    /// Returns the name of this key
+    pub fn name(&self) -> &'static str {
+        self.display_name()
+    }
+
+    /// Returns true if this is a letter key (A-Z)
+    pub fn is_letter(&self) -> bool {
+        matches!(
+            self,
+            KeyboardKey::A | KeyboardKey::B | KeyboardKey::C | KeyboardKey::D
+                | KeyboardKey::E | KeyboardKey::F | KeyboardKey::G | KeyboardKey::H
+                | KeyboardKey::I | KeyboardKey::J | KeyboardKey::K | KeyboardKey::L
+                | KeyboardKey::M | KeyboardKey::N | KeyboardKey::O | KeyboardKey::P
+                | KeyboardKey::Q | KeyboardKey::R | KeyboardKey::S | KeyboardKey::T
+                | KeyboardKey::U | KeyboardKey::V | KeyboardKey::W | KeyboardKey::X
+                | KeyboardKey::Y | KeyboardKey::Z
+        )
+    }
+
+    /// Returns true if this is a number key (0-9)
+    pub fn is_number(&self) -> bool {
+        matches!(
+            self,
+            KeyboardKey::Key0 | KeyboardKey::Key1 | KeyboardKey::Key2
+                | KeyboardKey::Key3 | KeyboardKey::Key4 | KeyboardKey::Key5
+                | KeyboardKey::Key6 | KeyboardKey::Key7 | KeyboardKey::Key8
+                | KeyboardKey::Key9
+        )
+    }
+
+    /// Returns true if this is a function key (F1-F12)
+    pub fn is_function(&self) -> bool {
+        matches!(
+            self,
+            KeyboardKey::F1 | KeyboardKey::F2 | KeyboardKey::F3 | KeyboardKey::F4
+                | KeyboardKey::F5 | KeyboardKey::F6 | KeyboardKey::F7 | KeyboardKey::F8
+                | KeyboardKey::F9 | KeyboardKey::F10 | KeyboardKey::F11 | KeyboardKey::F12
+        )
+    }
+
+    /// Returns true if this is a modifier key (Shift, Ctrl, Alt)
+    pub fn is_modifier(&self) -> bool {
+        matches!(
+            self,
+            KeyboardKey::ShiftLeft | KeyboardKey::ShiftRight
+                | KeyboardKey::CtrlLeft | KeyboardKey::CtrlRight
+                | KeyboardKey::AltLeft | KeyboardKey::AltRight
+        )
+    }
+
+    /// Returns true if this is an arrow key
+    pub fn is_arrow(&self) -> bool {
+        matches!(
+            self,
+            KeyboardKey::ArrowUp | KeyboardKey::ArrowDown
+                | KeyboardKey::ArrowLeft | KeyboardKey::ArrowRight
+        )
+    }
+
     pub fn display_name(&self) -> &'static str {
         match self {
             KeyboardKey::A => "A", KeyboardKey::B => "B", KeyboardKey::C => "C",
@@ -240,6 +435,12 @@ pub enum MouseButton {
     Forward,
 }
 
+impl std::fmt::Display for MouseButton {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "🖱️ {}", self.display_name())
+    }
+}
+
 impl MouseButton {
     pub fn all() -> &'static [MouseButton] {
         &[
@@ -259,6 +460,10 @@ impl MouseButton {
             MouseButton::Back => "Mouse 4",
             MouseButton::Forward => "Mouse 5",
         }
+    }
+
+    pub fn is_primary(&self) -> bool {
+        matches!(self, MouseButton::Left | MouseButton::Right)
     }
 }
 
@@ -326,7 +531,7 @@ pub struct BindingConflict {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum InputTab {
     #[default]
     Actions,
@@ -334,6 +539,44 @@ pub enum InputTab {
     Gamepad,
     Testing,
     Presets,
+}
+
+impl std::fmt::Display for InputTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl InputTab {
+    pub fn all() -> &'static [InputTab] {
+        &[
+            InputTab::Actions,
+            InputTab::Axes,
+            InputTab::Gamepad,
+            InputTab::Testing,
+            InputTab::Presets,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            InputTab::Actions => "Actions",
+            InputTab::Axes => "Axes",
+            InputTab::Gamepad => "Gamepad",
+            InputTab::Testing => "Testing",
+            InputTab::Presets => "Presets",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            InputTab::Actions => "⚡",
+            InputTab::Axes => "↔️",
+            InputTab::Gamepad => "🎮",
+            InputTab::Testing => "🧪",
+            InputTab::Presets => "📋",
+        }
+    }
 }
 
 /// Main Input Bindings Panel
@@ -414,12 +657,83 @@ impl Default for InputBindingsPanel {
 }
 
 /// What input we're waiting for
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum InputTarget {
     KeyboardPrimary(usize),
     KeyboardSecondary(usize),
     MouseButton(usize),
     GamepadButton(usize),
+}
+
+impl std::fmt::Display for InputTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl InputTarget {
+    /// Returns all target type variant names
+    pub fn all_variants() -> &'static [&'static str] {
+        &[
+            "KeyboardPrimary",
+            "KeyboardSecondary",
+            "MouseButton",
+            "GamepadButton",
+        ]
+    }
+
+    /// Returns the name of this input target type
+    pub fn name(&self) -> &'static str {
+        match self {
+            InputTarget::KeyboardPrimary(_) => "Primary Key",
+            InputTarget::KeyboardSecondary(_) => "Secondary Key",
+            InputTarget::MouseButton(_) => "Mouse Button",
+            InputTarget::GamepadButton(_) => "Gamepad Button",
+        }
+    }
+
+    /// Returns the icon for this input target type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            InputTarget::KeyboardPrimary(_) => "⌨️",
+            InputTarget::KeyboardSecondary(_) => "⌨️",
+            InputTarget::MouseButton(_) => "🖱️",
+            InputTarget::GamepadButton(_) => "🎮",
+        }
+    }
+
+    /// Returns the action index this target refers to
+    pub fn action_index(&self) -> usize {
+        match self {
+            InputTarget::KeyboardPrimary(i) => *i,
+            InputTarget::KeyboardSecondary(i) => *i,
+            InputTarget::MouseButton(i) => *i,
+            InputTarget::GamepadButton(i) => *i,
+        }
+    }
+
+    /// Returns true if this is a keyboard target
+    pub fn is_keyboard(&self) -> bool {
+        matches!(
+            self,
+            InputTarget::KeyboardPrimary(_) | InputTarget::KeyboardSecondary(_)
+        )
+    }
+
+    /// Returns true if this is a mouse target
+    pub fn is_mouse(&self) -> bool {
+        matches!(self, InputTarget::MouseButton(_))
+    }
+
+    /// Returns true if this is a gamepad target
+    pub fn is_gamepad(&self) -> bool {
+        matches!(self, InputTarget::GamepadButton(_))
+    }
+
+    /// Returns true if this is a primary binding
+    pub fn is_primary(&self) -> bool {
+        matches!(self, InputTarget::KeyboardPrimary(_))
+    }
 }
 
 impl InputBindingsPanel {
@@ -1350,5 +1664,425 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = InputBindingsPanel::new();
         assert_eq!(panel.name(), "Input Bindings");
+    }
+
+    // === InputDevice Display and Hash Tests ===
+
+    #[test]
+    fn test_input_device_display() {
+        for device in InputDevice::all() {
+            let display = format!("{}", device);
+            assert!(display.contains(device.name()));
+        }
+    }
+
+    #[test]
+    fn test_input_device_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for device in InputDevice::all() {
+            set.insert(*device);
+        }
+        assert_eq!(set.len(), InputDevice::all().len());
+    }
+
+    #[test]
+    fn test_input_device_all() {
+        let all = InputDevice::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&InputDevice::Keyboard));
+        assert!(all.contains(&InputDevice::Mouse));
+        assert!(all.contains(&InputDevice::Gamepad));
+        assert!(all.contains(&InputDevice::All));
+    }
+
+    #[test]
+    fn test_input_device_is_physical() {
+        assert!(InputDevice::Keyboard.is_physical());
+        assert!(InputDevice::Mouse.is_physical());
+        assert!(InputDevice::Gamepad.is_physical());
+        assert!(!InputDevice::All.is_physical());
+    }
+
+    // === ActionCategory Display and Hash Tests ===
+
+    #[test]
+    fn test_action_category_display() {
+        for cat in ActionCategory::all() {
+            let display = format!("{}", cat);
+            assert!(display.contains(cat.name()));
+        }
+    }
+
+    #[test]
+    fn test_action_category_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for cat in ActionCategory::all() {
+            set.insert(*cat);
+        }
+        assert_eq!(set.len(), ActionCategory::all().len());
+    }
+
+    #[test]
+    fn test_action_category_all() {
+        let all = ActionCategory::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&ActionCategory::Movement));
+        assert!(all.contains(&ActionCategory::Combat));
+        assert!(all.contains(&ActionCategory::Debug));
+    }
+
+    #[test]
+    fn test_action_category_is_gameplay() {
+        assert!(ActionCategory::Movement.is_gameplay());
+        assert!(ActionCategory::Combat.is_gameplay());
+        assert!(ActionCategory::Vehicle.is_gameplay());
+        assert!(!ActionCategory::UI.is_gameplay());
+        assert!(!ActionCategory::Camera.is_gameplay());
+        assert!(!ActionCategory::Debug.is_gameplay());
+    }
+
+    // === BindingPreset Display and Hash Tests ===
+
+    #[test]
+    fn test_binding_preset_display() {
+        for preset in BindingPreset::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()));
+        }
+    }
+
+    #[test]
+    fn test_binding_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in BindingPreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), BindingPreset::all().len());
+    }
+
+    #[test]
+    fn test_binding_preset_all() {
+        let all = BindingPreset::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&BindingPreset::Default));
+        assert!(all.contains(&BindingPreset::FPS));
+        assert!(all.contains(&BindingPreset::Custom));
+    }
+
+    #[test]
+    fn test_binding_preset_is_built_in() {
+        assert!(BindingPreset::Default.is_built_in());
+        assert!(BindingPreset::FPS.is_built_in());
+        assert!(BindingPreset::LeftHanded.is_built_in());
+        assert!(!BindingPreset::Custom.is_built_in());
+    }
+
+    // === GamepadButton Display and Hash Tests ===
+
+    #[test]
+    fn test_gamepad_button_display() {
+        for btn in GamepadButton::all() {
+            let display = format!("{}", btn);
+            assert!(display.contains(btn.display_name()));
+        }
+    }
+
+    #[test]
+    fn test_gamepad_button_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for btn in GamepadButton::all() {
+            set.insert(*btn);
+        }
+        assert_eq!(set.len(), GamepadButton::all().len());
+    }
+
+    #[test]
+    fn test_gamepad_button_all() {
+        let all = GamepadButton::all();
+        assert_eq!(all.len(), 16);
+        assert!(all.contains(&GamepadButton::South));
+        assert!(all.contains(&GamepadButton::Start));
+    }
+
+    #[test]
+    fn test_gamepad_button_is_face_button() {
+        assert!(GamepadButton::South.is_face_button());
+        assert!(GamepadButton::East.is_face_button());
+        assert!(GamepadButton::West.is_face_button());
+        assert!(GamepadButton::North.is_face_button());
+        assert!(!GamepadButton::L1.is_face_button());
+        assert!(!GamepadButton::DPadUp.is_face_button());
+    }
+
+    #[test]
+    fn test_gamepad_button_is_shoulder() {
+        assert!(GamepadButton::L1.is_shoulder());
+        assert!(GamepadButton::R1.is_shoulder());
+        assert!(GamepadButton::L2.is_shoulder());
+        assert!(GamepadButton::R2.is_shoulder());
+        assert!(!GamepadButton::South.is_shoulder());
+    }
+
+    #[test]
+    fn test_gamepad_button_is_dpad() {
+        assert!(GamepadButton::DPadUp.is_dpad());
+        assert!(GamepadButton::DPadDown.is_dpad());
+        assert!(GamepadButton::DPadLeft.is_dpad());
+        assert!(GamepadButton::DPadRight.is_dpad());
+        assert!(!GamepadButton::Start.is_dpad());
+    }
+
+    // === MouseButton Display and Hash Tests ===
+
+    #[test]
+    fn test_mouse_button_display() {
+        for btn in MouseButton::all() {
+            let display = format!("{}", btn);
+            assert!(display.contains(btn.display_name()));
+        }
+    }
+
+    #[test]
+    fn test_mouse_button_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for btn in MouseButton::all() {
+            set.insert(*btn);
+        }
+        assert_eq!(set.len(), MouseButton::all().len());
+    }
+
+    #[test]
+    fn test_mouse_button_all() {
+        let all = MouseButton::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&MouseButton::Left));
+        assert!(all.contains(&MouseButton::Right));
+        assert!(all.contains(&MouseButton::Forward));
+    }
+
+    #[test]
+    fn test_mouse_button_is_primary() {
+        assert!(MouseButton::Left.is_primary());
+        assert!(MouseButton::Right.is_primary());
+        assert!(!MouseButton::Middle.is_primary());
+        assert!(!MouseButton::Back.is_primary());
+    }
+
+    // === InputTab Display and Hash Tests ===
+
+    #[test]
+    fn test_input_tab_display() {
+        for tab in InputTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+        }
+    }
+
+    #[test]
+    fn test_input_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in InputTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), InputTab::all().len());
+    }
+
+    #[test]
+    fn test_input_tab_all() {
+        let all = InputTab::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&InputTab::Actions));
+        assert!(all.contains(&InputTab::Axes));
+        assert!(all.contains(&InputTab::Gamepad));
+        assert!(all.contains(&InputTab::Testing));
+        assert!(all.contains(&InputTab::Presets));
+    }
+
+    // === KeyboardKey Display and Helper Tests ===
+
+    #[test]
+    fn test_keyboard_key_display() {
+        for key in KeyboardKey::all() {
+            let display = format!("{}", key);
+            assert!(display.contains(key.name()));
+        }
+    }
+
+    #[test]
+    fn test_keyboard_key_all() {
+        let all = KeyboardKey::all();
+        assert_eq!(all.len(), 69); // 26 letters + 10 numbers + 12 F-keys + 6 modifiers + 5 special + 4 arrows + 6 other
+    }
+
+    #[test]
+    fn test_keyboard_key_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for key in KeyboardKey::all() {
+            set.insert(*key);
+        }
+        assert_eq!(set.len(), KeyboardKey::all().len());
+    }
+
+    #[test]
+    fn test_keyboard_key_is_letter() {
+        assert!(KeyboardKey::A.is_letter());
+        assert!(KeyboardKey::Z.is_letter());
+        assert!(KeyboardKey::M.is_letter());
+        assert!(!KeyboardKey::Key1.is_letter());
+        assert!(!KeyboardKey::F1.is_letter());
+        assert!(!KeyboardKey::Space.is_letter());
+    }
+
+    #[test]
+    fn test_keyboard_key_is_number() {
+        assert!(KeyboardKey::Key0.is_number());
+        assert!(KeyboardKey::Key5.is_number());
+        assert!(KeyboardKey::Key9.is_number());
+        assert!(!KeyboardKey::A.is_number());
+        assert!(!KeyboardKey::F1.is_number());
+    }
+
+    #[test]
+    fn test_keyboard_key_is_function() {
+        assert!(KeyboardKey::F1.is_function());
+        assert!(KeyboardKey::F12.is_function());
+        assert!(KeyboardKey::F6.is_function());
+        assert!(!KeyboardKey::A.is_function());
+        assert!(!KeyboardKey::Key1.is_function());
+    }
+
+    #[test]
+    fn test_keyboard_key_is_modifier() {
+        assert!(KeyboardKey::ShiftLeft.is_modifier());
+        assert!(KeyboardKey::CtrlRight.is_modifier());
+        assert!(KeyboardKey::AltLeft.is_modifier());
+        assert!(!KeyboardKey::A.is_modifier());
+        assert!(!KeyboardKey::Space.is_modifier());
+    }
+
+    #[test]
+    fn test_keyboard_key_is_arrow() {
+        assert!(KeyboardKey::ArrowUp.is_arrow());
+        assert!(KeyboardKey::ArrowDown.is_arrow());
+        assert!(KeyboardKey::ArrowLeft.is_arrow());
+        assert!(KeyboardKey::ArrowRight.is_arrow());
+        assert!(!KeyboardKey::W.is_arrow());
+    }
+
+    #[test]
+    fn test_keyboard_key_name() {
+        assert_eq!(KeyboardKey::Space.name(), "Space");
+        assert_eq!(KeyboardKey::Enter.name(), "Enter");
+        assert_eq!(KeyboardKey::ArrowUp.name(), "↑");
+    }
+
+    // === InputTarget Display and Helper Tests ===
+
+    #[test]
+    fn test_input_target_display() {
+        let target = InputTarget::KeyboardPrimary(0);
+        let display = format!("{}", target);
+        assert!(display.contains(target.name()));
+    }
+
+    #[test]
+    fn test_input_target_all_variants() {
+        let all = InputTarget::all_variants();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&"KeyboardPrimary"));
+        assert!(all.contains(&"KeyboardSecondary"));
+        assert!(all.contains(&"MouseButton"));
+        assert!(all.contains(&"GamepadButton"));
+    }
+
+    #[test]
+    fn test_input_target_names() {
+        let kb_primary = InputTarget::KeyboardPrimary(0);
+        assert_eq!(kb_primary.name(), "Primary Key");
+
+        let kb_secondary = InputTarget::KeyboardSecondary(1);
+        assert_eq!(kb_secondary.name(), "Secondary Key");
+
+        let mouse = InputTarget::MouseButton(2);
+        assert_eq!(mouse.name(), "Mouse Button");
+
+        let gamepad = InputTarget::GamepadButton(3);
+        assert_eq!(gamepad.name(), "Gamepad Button");
+    }
+
+    #[test]
+    fn test_input_target_icons() {
+        let kb = InputTarget::KeyboardPrimary(0);
+        assert_eq!(kb.icon(), "⌨️");
+
+        let mouse = InputTarget::MouseButton(0);
+        assert_eq!(mouse.icon(), "🖱️");
+
+        let gamepad = InputTarget::GamepadButton(0);
+        assert_eq!(gamepad.icon(), "🎮");
+    }
+
+    #[test]
+    fn test_input_target_action_index() {
+        assert_eq!(InputTarget::KeyboardPrimary(5).action_index(), 5);
+        assert_eq!(InputTarget::KeyboardSecondary(10).action_index(), 10);
+        assert_eq!(InputTarget::MouseButton(3).action_index(), 3);
+        assert_eq!(InputTarget::GamepadButton(7).action_index(), 7);
+    }
+
+    #[test]
+    fn test_input_target_is_keyboard() {
+        assert!(InputTarget::KeyboardPrimary(0).is_keyboard());
+        assert!(InputTarget::KeyboardSecondary(0).is_keyboard());
+        assert!(!InputTarget::MouseButton(0).is_keyboard());
+        assert!(!InputTarget::GamepadButton(0).is_keyboard());
+    }
+
+    #[test]
+    fn test_input_target_is_mouse() {
+        assert!(InputTarget::MouseButton(0).is_mouse());
+        assert!(!InputTarget::KeyboardPrimary(0).is_mouse());
+        assert!(!InputTarget::GamepadButton(0).is_mouse());
+    }
+
+    #[test]
+    fn test_input_target_is_gamepad() {
+        assert!(InputTarget::GamepadButton(0).is_gamepad());
+        assert!(!InputTarget::KeyboardPrimary(0).is_gamepad());
+        assert!(!InputTarget::MouseButton(0).is_gamepad());
+    }
+
+    #[test]
+    fn test_input_target_is_primary() {
+        assert!(InputTarget::KeyboardPrimary(0).is_primary());
+        assert!(!InputTarget::KeyboardSecondary(0).is_primary());
+        assert!(!InputTarget::MouseButton(0).is_primary());
+    }
+
+    #[test]
+    fn test_input_target_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(InputTarget::KeyboardPrimary(0));
+        set.insert(InputTarget::KeyboardSecondary(0));
+        set.insert(InputTarget::MouseButton(0));
+        set.insert(InputTarget::GamepadButton(0));
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_input_target_partial_eq() {
+        let t1 = InputTarget::KeyboardPrimary(5);
+        let t2 = InputTarget::KeyboardPrimary(5);
+        let t3 = InputTarget::KeyboardPrimary(10);
+        assert_eq!(t1, t2);
+        assert_ne!(t1, t3);
     }
 }

@@ -91,6 +91,62 @@ impl Default for DialogueConfig {
     }
 }
 
+impl DialogueConfig {
+    /// Creates a new dialogue config with custom token limit.
+    #[must_use]
+    pub fn with_max_tokens(mut self, tokens: usize) -> Self {
+        self.max_response_tokens = tokens;
+        self
+    }
+
+    /// Creates a new dialogue config with custom temperature.
+    #[must_use]
+    pub fn with_temperature(mut self, temp: f32) -> Self {
+        self.temperature = temp.clamp(0.0, 2.0);
+        self
+    }
+
+    /// Creates a new dialogue config with custom top_p.
+    #[must_use]
+    pub fn with_top_p(mut self, top_p: f32) -> Self {
+        self.top_p = top_p.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Returns true if emotion analysis is enabled.
+    #[must_use]
+    pub fn has_emotion_analysis(&self) -> bool {
+        self.emotion_analysis.enable_emotion_detection || self.emotion_analysis.enable_sentiment_analysis
+    }
+
+    /// Returns true if quality control is enabled.
+    #[must_use]
+    pub fn has_quality_control(&self) -> bool {
+        self.quality_control.enable_validation
+    }
+
+    /// Returns true if dynamic branching is enabled.
+    #[must_use]
+    pub fn has_dynamic_branching(&self) -> bool {
+        self.branching_config.enable_dynamic_branching
+    }
+
+    /// Returns a brief summary of this config.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "DialogueConfig: {} tokens, temp={:.1}, {} options",
+            self.max_response_tokens, self.temperature, self.num_dialogue_options
+        )
+    }
+}
+
+impl std::fmt::Display for DialogueConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Configuration for emotional analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmotionAnalysisConfig {
@@ -122,6 +178,58 @@ impl Default for EmotionAnalysisConfig {
     }
 }
 
+impl EmotionAnalysisConfig {
+    /// Creates a disabled emotion analysis config.
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            enable_sentiment_analysis: false,
+            enable_emotion_detection: false,
+            enable_empathy_responses: false,
+            sentiment_influence: 0.0,
+            emotional_memory_retention: 0.0,
+        }
+    }
+
+    /// Returns true if any analysis is enabled.
+    #[must_use]
+    pub fn is_enabled(&self) -> bool {
+        self.enable_sentiment_analysis || self.enable_emotion_detection
+    }
+
+    /// Returns true if all analysis is disabled.
+    #[must_use]
+    pub fn is_disabled(&self) -> bool {
+        !self.is_enabled()
+    }
+
+    /// Returns a count of enabled features.
+    #[must_use]
+    pub fn enabled_feature_count(&self) -> usize {
+        let mut count = 0;
+        if self.enable_sentiment_analysis { count += 1; }
+        if self.enable_emotion_detection { count += 1; }
+        if self.enable_empathy_responses { count += 1; }
+        count
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        if self.is_disabled() {
+            "EmotionAnalysis: disabled".to_string()
+        } else {
+            format!("EmotionAnalysis: {} features enabled", self.enabled_feature_count())
+        }
+    }
+}
+
+impl std::fmt::Display for EmotionAnalysisConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Configuration for dialogue context
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DialogueContextConfig {
@@ -149,6 +257,57 @@ impl Default for DialogueContextConfig {
     }
 }
 
+impl DialogueContextConfig {
+    /// Creates a minimal context config for low memory usage.
+    #[must_use]
+    pub fn minimal() -> Self {
+        Self {
+            max_history_turns: 3,
+            max_relevant_memories: 2,
+            context_window_size: 512,
+            enable_summarization: false,
+        }
+    }
+
+    /// Creates an extended context config for detailed conversations.
+    #[must_use]
+    pub fn extended() -> Self {
+        Self {
+            max_history_turns: 20,
+            max_relevant_memories: 10,
+            context_window_size: 4096,
+            enable_summarization: true,
+        }
+    }
+
+    /// Returns the total context capacity.
+    #[must_use]
+    pub fn total_context_items(&self) -> usize {
+        self.max_history_turns + self.max_relevant_memories
+    }
+
+    /// Returns true if summarization is enabled.
+    #[must_use]
+    pub fn has_summarization(&self) -> bool {
+        self.enable_summarization
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "ContextConfig: {} turns, {} memories, {} tokens",
+            self.max_history_turns, self.max_relevant_memories, self.context_window_size
+        )
+    }
+}
+
+impl std::fmt::Display for DialogueContextConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Configuration for dialogue branching
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BranchingConfig {
@@ -173,6 +332,81 @@ impl Default for BranchingConfig {
             max_branch_depth: 5,
             merge_strategy: BranchMergeStrategy::Contextual,
         }
+    }
+}
+
+impl BranchingConfig {
+    /// Creates a disabled branching config.
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            enable_dynamic_branching: false,
+            branching_threshold: 1.0,
+            max_branch_depth: 0,
+            merge_strategy: BranchMergeStrategy::None,
+        }
+    }
+
+    /// Returns true if branching is enabled.
+    #[must_use]
+    pub fn is_enabled(&self) -> bool {
+        self.enable_dynamic_branching
+    }
+
+    /// Returns true if branching is disabled.
+    #[must_use]
+    pub fn is_disabled(&self) -> bool {
+        !self.enable_dynamic_branching
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        if self.is_disabled() {
+            "BranchingConfig: disabled".to_string()
+        } else {
+            format!(
+                "BranchingConfig: threshold={:.1}, depth={}, strategy={:?}",
+                self.branching_threshold, self.max_branch_depth, self.merge_strategy
+            )
+        }
+    }
+}
+
+impl std::fmt::Display for BranchingConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
+impl BranchMergeStrategy {
+    /// Returns the name of this strategy.
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Contextual => "Contextual",
+            Self::Emotional => "Emotional",
+            Self::PersonaBased => "Persona-Based",
+            Self::None => "None",
+        }
+    }
+
+    /// Returns true if this is a merging strategy.
+    #[must_use]
+    pub fn is_merging(&self) -> bool {
+        !matches!(self, Self::None)
+    }
+
+    /// Returns all available strategies.
+    #[must_use]
+    pub fn all() -> &'static [Self] {
+        &[Self::Contextual, Self::Emotional, Self::PersonaBased, Self::None]
+    }
+}
+
+impl std::fmt::Display for BranchMergeStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }
 
@@ -217,6 +451,73 @@ impl Default for QualityControlConfig {
             enable_repetition_detection: true,
             max_retry_attempts: 3,
         }
+    }
+}
+
+impl QualityControlConfig {
+    /// Creates a disabled quality control config.
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            enable_validation: false,
+            min_quality_score: 0.0,
+            enable_profanity_filter: false,
+            enable_repetition_detection: false,
+            max_retry_attempts: 0,
+        }
+    }
+
+    /// Creates a strict quality control config.
+    #[must_use]
+    pub fn strict() -> Self {
+        Self {
+            enable_validation: true,
+            min_quality_score: 0.8,
+            enable_profanity_filter: true,
+            enable_repetition_detection: true,
+            max_retry_attempts: 5,
+        }
+    }
+
+    /// Returns true if validation is enabled.
+    #[must_use]
+    pub fn is_enabled(&self) -> bool {
+        self.enable_validation
+    }
+
+    /// Returns true if all controls are disabled.
+    #[must_use]
+    pub fn is_disabled(&self) -> bool {
+        !self.enable_validation
+    }
+
+    /// Returns the count of enabled filters.
+    #[must_use]
+    pub fn enabled_filter_count(&self) -> usize {
+        let mut count = 0;
+        if self.enable_validation { count += 1; }
+        if self.enable_profanity_filter { count += 1; }
+        if self.enable_repetition_detection { count += 1; }
+        count
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        if self.is_disabled() {
+            "QualityControl: disabled".to_string()
+        } else {
+            format!(
+                "QualityControl: min_score={:.1}, {} filters, {} retries",
+                self.min_quality_score, self.enabled_filter_count(), self.max_retry_attempts
+            )
+        }
+    }
+}
+
+impl std::fmt::Display for QualityControlConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
     }
 }
 
@@ -279,6 +580,117 @@ impl Default for EmotionalState {
     }
 }
 
+impl EmotionalState {
+    /// Creates a positive emotional state.
+    #[must_use]
+    pub fn positive(intensity: f32) -> Self {
+        Self {
+            sentiment: intensity.clamp(0.0, 1.0),
+            emotions: HashMap::new(),
+            intensity: intensity.clamp(0.0, 1.0),
+            valence: intensity.clamp(0.0, 1.0),
+            arousal: 0.6,
+        }
+    }
+
+    /// Creates a negative emotional state.
+    #[must_use]
+    pub fn negative(intensity: f32) -> Self {
+        Self {
+            sentiment: -intensity.clamp(0.0, 1.0),
+            emotions: HashMap::new(),
+            intensity: intensity.clamp(0.0, 1.0),
+            valence: -intensity.clamp(0.0, 1.0),
+            arousal: 0.6,
+        }
+    }
+
+    /// Creates a neutral emotional state.
+    #[must_use]
+    pub fn neutral() -> Self {
+        Self::default()
+    }
+
+    /// Returns true if the sentiment is positive.
+    #[must_use]
+    pub fn is_positive(&self) -> bool {
+        self.sentiment > 0.0
+    }
+
+    /// Returns true if the sentiment is negative.
+    #[must_use]
+    pub fn is_negative(&self) -> bool {
+        self.sentiment < 0.0
+    }
+
+    /// Returns true if the sentiment is neutral.
+    #[must_use]
+    pub fn is_neutral(&self) -> bool {
+        self.sentiment.abs() < 0.1
+    }
+
+    /// Returns true if this is a high intensity state.
+    #[must_use]
+    pub fn is_intense(&self) -> bool {
+        self.intensity > 0.7
+    }
+
+    /// Returns true if this is a calm state.
+    #[must_use]
+    pub fn is_calm(&self) -> bool {
+        self.arousal < 0.3
+    }
+
+    /// Returns true if this is an excited state.
+    #[must_use]
+    pub fn is_excited(&self) -> bool {
+        self.arousal > 0.7
+    }
+
+    /// Returns the count of detected emotions.
+    #[must_use]
+    pub fn emotion_count(&self) -> usize {
+        self.emotions.len()
+    }
+
+    /// Returns true if no emotions are detected.
+    #[must_use]
+    pub fn has_no_emotions(&self) -> bool {
+        self.emotions.is_empty()
+    }
+
+    /// Returns the dominant emotion if any.
+    #[must_use]
+    pub fn dominant_emotion(&self) -> Option<(&String, f32)> {
+        self.emotions
+            .iter()
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(k, v)| (k, *v))
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        let mood = if self.is_positive() {
+            "positive"
+        } else if self.is_negative() {
+            "negative"
+        } else {
+            "neutral"
+        };
+        format!(
+            "EmotionalState: {} (sentiment={:.2}, intensity={:.2})",
+            mood, self.sentiment, self.intensity
+        )
+    }
+}
+
+impl std::fmt::Display for EmotionalState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Metadata about a conversation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConversationMetadata {
@@ -317,6 +729,59 @@ pub struct QualityMetrics {
     pub repetition_penalty: f32,
 }
 
+impl QualityMetrics {
+    /// Returns the overall score as an average of all metrics.
+    #[must_use]
+    pub fn overall_score(&self) -> f32 {
+        let base = (self.avg_response_quality + self.coherence_score + self.engagement_score) / 3.0;
+        (base - self.repetition_penalty).clamp(0.0, 1.0)
+    }
+
+    /// Returns true if quality is high (>0.7).
+    #[must_use]
+    pub fn is_high_quality(&self) -> bool {
+        self.overall_score() > 0.7
+    }
+
+    /// Returns true if quality is low (<0.4).
+    #[must_use]
+    pub fn is_low_quality(&self) -> bool {
+        self.overall_score() < 0.4
+    }
+
+    /// Returns true if there's significant repetition.
+    #[must_use]
+    pub fn has_repetition(&self) -> bool {
+        self.repetition_penalty > 0.1
+    }
+
+    /// Returns the grade as a letter (A, B, C, D, F).
+    #[must_use]
+    pub fn grade(&self) -> char {
+        let score = self.overall_score();
+        if score >= 0.9 { 'A' }
+        else if score >= 0.8 { 'B' }
+        else if score >= 0.7 { 'C' }
+        else if score >= 0.6 { 'D' }
+        else { 'F' }
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "QualityMetrics: grade={}, overall={:.2}",
+            self.grade(), self.overall_score()
+        )
+    }
+}
+
+impl std::fmt::Display for QualityMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Dynamic branching state
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BranchingState {
@@ -331,6 +796,62 @@ pub struct BranchingState {
     
     /// Branch probability scores
     pub branch_probabilities: HashMap<String, f32>,
+}
+
+impl BranchingState {
+    /// Returns true if currently on a branch.
+    #[must_use]
+    pub fn is_on_branch(&self) -> bool {
+        self.current_branch.is_some()
+    }
+
+    /// Returns true if no branch is active.
+    #[must_use]
+    pub fn is_on_main(&self) -> bool {
+        self.current_branch.is_none()
+    }
+
+    /// Returns the number of available branches.
+    #[must_use]
+    pub fn available_count(&self) -> usize {
+        self.available_branches.len()
+    }
+
+    /// Returns true if branches are available.
+    #[must_use]
+    pub fn has_branches(&self) -> bool {
+        !self.available_branches.is_empty()
+    }
+
+    /// Returns the branch history length.
+    #[must_use]
+    pub fn history_length(&self) -> usize {
+        self.branch_history.len()
+    }
+
+    /// Returns the highest probability branch.
+    #[must_use]
+    pub fn highest_probability_branch(&self) -> Option<(&str, f32)> {
+        self.branch_probabilities
+            .iter()
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(k, v)| (k.as_str(), *v))
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        match &self.current_branch {
+            Some(branch) => format!("BranchingState: on '{}', {} available", branch, self.available_count()),
+            None => format!("BranchingState: main path, {} available", self.available_count()),
+        }
+    }
+}
+
+impl std::fmt::Display for BranchingState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
 }
 
 /// A dynamic dialogue branch
@@ -352,6 +873,53 @@ pub struct DialogueBranch {
     pub metadata: HashMap<String, serde_json::Value>,
 }
 
+impl DialogueBranch {
+    /// Returns true if this branch has high probability (>0.7).
+    #[must_use]
+    pub fn is_likely(&self) -> bool {
+        self.probability > 0.7
+    }
+
+    /// Returns true if this branch has low probability (<0.3).
+    #[must_use]
+    pub fn is_unlikely(&self) -> bool {
+        self.probability < 0.3
+    }
+
+    /// Returns the response count in this branch.
+    #[must_use]
+    pub fn response_count(&self) -> usize {
+        self.content.responses.len()
+    }
+
+    /// Returns true if this branch has responses.
+    #[must_use]
+    pub fn has_responses(&self) -> bool {
+        !self.content.responses.is_empty()
+    }
+
+    /// Returns true if this branch has metadata.
+    #[must_use]
+    pub fn has_metadata(&self) -> bool {
+        !self.metadata.is_empty()
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "Branch[{}]: prob={:.2}, {} responses",
+            self.id, self.probability, self.response_count()
+        )
+    }
+}
+
+impl std::fmt::Display for DialogueBranch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Content of a dialogue branch
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DialogueBranchContent {
@@ -363,6 +931,59 @@ pub struct DialogueBranchContent {
     
     /// Narrative impact
     pub narrative_impact: f32,
+}
+
+impl DialogueBranchContent {
+    /// Returns the response count.
+    #[must_use]
+    pub fn response_count(&self) -> usize {
+        self.responses.len()
+    }
+
+    /// Returns true if there are responses.
+    #[must_use]
+    pub fn has_responses(&self) -> bool {
+        !self.responses.is_empty()
+    }
+
+    /// Returns true if this content is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.responses.is_empty()
+    }
+
+    /// Returns true if this has high narrative impact (>0.7).
+    #[must_use]
+    pub fn is_high_impact(&self) -> bool {
+        self.narrative_impact > 0.7
+    }
+
+    /// Returns true if this has low narrative impact (<0.3).
+    #[must_use]
+    pub fn is_low_impact(&self) -> bool {
+        self.narrative_impact < 0.3
+    }
+
+    /// Returns the first response if available.
+    #[must_use]
+    pub fn first_response(&self) -> Option<&GeneratedResponse> {
+        self.responses.first()
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "BranchContent: {} responses, impact={:.2}",
+            self.response_count(), self.narrative_impact
+        )
+    }
+}
+
+impl std::fmt::Display for DialogueBranchContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
 }
 
 /// A generated dialogue response with metadata
@@ -384,6 +1005,79 @@ pub struct GeneratedResponse {
     pub metadata: ResponseMetadata,
 }
 
+impl GeneratedResponse {
+    /// Returns true if this is a high quality response (>0.8).
+    #[must_use]
+    pub fn is_high_quality(&self) -> bool {
+        self.quality_score > 0.8
+    }
+
+    /// Returns true if this is a low quality response (<0.5).
+    #[must_use]
+    pub fn is_low_quality(&self) -> bool {
+        self.quality_score < 0.5
+    }
+
+    /// Returns true if this response has high confidence (>0.8).
+    #[must_use]
+    pub fn is_confident(&self) -> bool {
+        self.confidence > 0.8
+    }
+
+    /// Returns true if the response text is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
+    }
+
+    /// Returns the text length.
+    #[must_use]
+    pub fn text_len(&self) -> usize {
+        self.text.len()
+    }
+
+    /// Returns the word count.
+    #[must_use]
+    pub fn word_count(&self) -> usize {
+        self.text.split_whitespace().count()
+    }
+
+    /// Returns a truncated version of the text.
+    #[must_use]
+    pub fn truncated_text(&self, max_len: usize) -> String {
+        if self.text.len() <= max_len {
+            self.text.clone()
+        } else {
+            format!("{}...", &self.text[..max_len.saturating_sub(3)])
+        }
+    }
+
+    /// Returns the grade based on quality score.
+    #[must_use]
+    pub fn grade(&self) -> char {
+        if self.quality_score >= 0.9 { 'A' }
+        else if self.quality_score >= 0.8 { 'B' }
+        else if self.quality_score >= 0.7 { 'C' }
+        else if self.quality_score >= 0.6 { 'D' }
+        else { 'F' }
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "Response: quality={:.2} ({}), confidence={:.2}",
+            self.quality_score, self.grade(), self.confidence
+        )
+    }
+}
+
+impl std::fmt::Display for GeneratedResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Metadata about response generation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResponseMetadata {
@@ -400,8 +1094,67 @@ pub struct ResponseMetadata {
     pub context_summary: String,
 }
 
+impl ResponseMetadata {
+    /// Returns true if generation was fast (<100ms).
+    #[must_use]
+    pub fn is_fast(&self) -> bool {
+        self.processing_time_ms < 100.0
+    }
+
+    /// Returns true if generation was slow (>1000ms).
+    #[must_use]
+    pub fn is_slow(&self) -> bool {
+        self.processing_time_ms > 1000.0
+    }
+
+    /// Returns true if there were retry attempts.
+    #[must_use]
+    pub fn had_retries(&self) -> bool {
+        self.retry_attempts > 0
+    }
+
+    /// Returns true if there were multiple retries.
+    #[must_use]
+    pub fn had_multiple_retries(&self) -> bool {
+        self.retry_attempts > 1
+    }
+
+    /// Returns true if this succeeded on first try.
+    #[must_use]
+    pub fn first_try_success(&self) -> bool {
+        self.retry_attempts == 0
+    }
+
+    /// Returns true if the context summary is empty.
+    #[must_use]
+    pub fn has_context(&self) -> bool {
+        !self.context_summary.is_empty()
+    }
+
+    /// Returns the processing time in seconds.
+    #[must_use]
+    pub fn processing_time_secs(&self) -> f32 {
+        self.processing_time_ms / 1000.0
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "Metadata: {} in {:.1}ms ({} retries)",
+            self.generation_method, self.processing_time_ms, self.retry_attempts
+        )
+    }
+}
+
+impl std::fmt::Display for ResponseMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 /// Methods used for response generation
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum GenerationMethod {
     /// Pure LLM generation
     LlmGeneration,
@@ -416,6 +1169,60 @@ pub enum GenerationMethod {
     GraphBased,
 }
 
+impl GenerationMethod {
+    /// Returns the method name as a string.
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::LlmGeneration => "LLM Generation",
+            Self::TemplateBased => "Template Based",
+            Self::Hybrid => "Hybrid",
+            Self::GraphBased => "Graph Based",
+        }
+    }
+
+    /// Returns true if this uses LLM (pure or hybrid).
+    #[must_use]
+    pub fn uses_llm(&self) -> bool {
+        matches!(self, Self::LlmGeneration | Self::Hybrid)
+    }
+
+    /// Returns true if this uses templates (pure or hybrid).
+    #[must_use]
+    pub fn uses_templates(&self) -> bool {
+        matches!(self, Self::TemplateBased | Self::Hybrid)
+    }
+
+    /// Returns true if this is the traditional graph-based method.
+    #[must_use]
+    pub fn is_traditional(&self) -> bool {
+        matches!(self, Self::GraphBased)
+    }
+
+    /// Returns true if this is a pure method (not hybrid).
+    #[must_use]
+    pub fn is_pure(&self) -> bool {
+        !matches!(self, Self::Hybrid)
+    }
+
+    /// Returns all generation methods.
+    #[must_use]
+    pub fn all() -> &'static [GenerationMethod] {
+        &[
+            Self::LlmGeneration,
+            Self::TemplateBased,
+            Self::Hybrid,
+            Self::GraphBased,
+        ]
+    }
+}
+
+impl std::fmt::Display for GenerationMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 /// Performance metrics for the dialogue system
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DialogueMetrics {
@@ -428,6 +1235,111 @@ pub struct DialogueMetrics {
     pub avg_response_quality: f32,
     pub emotion_detection_accuracy: f32,
     pub conversation_satisfaction: f32,
+}
+
+impl DialogueMetrics {
+    /// Returns the success rate (0.0 to 1.0).
+    #[must_use]
+    pub fn success_rate(&self) -> f32 {
+        let total = self.successful_generations + self.failed_generations;
+        if total == 0 {
+            1.0
+        } else {
+            self.successful_generations as f32 / total as f32
+        }
+    }
+
+    /// Returns the failure rate (0.0 to 1.0).
+    #[must_use]
+    pub fn failure_rate(&self) -> f32 {
+        1.0 - self.success_rate()
+    }
+
+    /// Returns the success rate as a percentage.
+    #[must_use]
+    pub fn success_percentage(&self) -> f32 {
+        self.success_rate() * 100.0
+    }
+
+    /// Returns true if the system is healthy (>90% success rate).
+    #[must_use]
+    pub fn is_healthy(&self) -> bool {
+        self.success_rate() > 0.9
+    }
+
+    /// Returns true if the system has degraded performance (50-90% success).
+    #[must_use]
+    pub fn is_degraded(&self) -> bool {
+        let rate = self.success_rate();
+        rate >= 0.5 && rate <= 0.9
+    }
+
+    /// Returns true if the system is unhealthy (<50% success rate).
+    #[must_use]
+    pub fn is_unhealthy(&self) -> bool {
+        self.success_rate() < 0.5
+    }
+
+    /// Returns true if there are no conversations.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.total_conversations == 0
+    }
+
+    /// Returns true if there are active conversations.
+    #[must_use]
+    pub fn has_active(&self) -> bool {
+        self.active_conversations > 0
+    }
+
+    /// Returns the total generations (successful + failed).
+    #[must_use]
+    pub fn total_generations(&self) -> u64 {
+        self.successful_generations + self.failed_generations
+    }
+
+    /// Returns the average response time in seconds.
+    #[must_use]
+    pub fn avg_response_time_secs(&self) -> f32 {
+        self.avg_response_time_ms / 1000.0
+    }
+
+    /// Returns a health status string.
+    #[must_use]
+    pub fn health_status(&self) -> &'static str {
+        if self.is_healthy() {
+            "Healthy"
+        } else if self.is_degraded() {
+            "Degraded"
+        } else {
+            "Unhealthy"
+        }
+    }
+
+    /// Returns a quality grade (A-F).
+    #[must_use]
+    pub fn quality_grade(&self) -> char {
+        if self.avg_response_quality >= 0.9 { 'A' }
+        else if self.avg_response_quality >= 0.8 { 'B' }
+        else if self.avg_response_quality >= 0.7 { 'C' }
+        else if self.avg_response_quality >= 0.6 { 'D' }
+        else { 'F' }
+    }
+
+    /// Returns a brief summary.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "DialogueMetrics: {} convos, {:.1}% success, quality={}",
+            self.total_conversations, self.success_percentage(), self.quality_grade()
+        )
+    }
+}
+
+impl std::fmt::Display for DialogueMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
 }
 
 impl LlmDialogueSystem {
@@ -1101,5 +2013,927 @@ mod tests {
         // Test non-repetitive text
         assert!(!dialogue_system.detect_repetition("hello world this is different"));
         assert!(!dialogue_system.detect_repetition("I am happy today"));
+    }
+
+    // ============================================================
+    // DialogueConfig Tests
+    // ============================================================
+
+    #[test]
+    fn test_dialogue_config_builders() {
+        let config = DialogueConfig::default()
+            .with_max_tokens(1024)
+            .with_temperature(0.9)
+            .with_top_p(0.95);
+        
+        assert_eq!(config.max_tokens, 1024);
+        assert!((config.temperature - 0.9).abs() < 0.001);
+        assert!((config.top_p - 0.95).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_dialogue_config_feature_checks() {
+        let mut config = DialogueConfig::default();
+        config.enable_emotion_analysis = true;
+        config.enable_quality_control = true;
+        config.enable_dynamic_branching = false;
+        
+        assert!(config.has_emotion_analysis());
+        assert!(config.has_quality_control());
+        assert!(!config.has_dynamic_branching());
+    }
+
+    #[test]
+    fn test_dialogue_config_summary() {
+        let config = DialogueConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("DialogueConfig"));
+        assert!(summary.contains("tokens"));
+    }
+
+    #[test]
+    fn test_dialogue_config_display() {
+        let config = DialogueConfig::default();
+        let display = format!("{}", config);
+        assert!(display.contains("DialogueConfig"));
+    }
+
+    // ============================================================
+    // EmotionAnalysisConfig Tests
+    // ============================================================
+
+    #[test]
+    fn test_emotion_analysis_config_disabled() {
+        let config = EmotionAnalysisConfig::disabled();
+        assert!(!config.detect_emotions);
+        assert!(!config.adjust_tone);
+        assert!(!config.track_sentiment);
+        assert!(config.is_disabled());
+        assert!(!config.is_enabled());
+    }
+
+    #[test]
+    fn test_emotion_analysis_config_enabled_count() {
+        let mut config = EmotionAnalysisConfig::default();
+        config.detect_emotions = true;
+        config.adjust_tone = true;
+        config.track_sentiment = false;
+        
+        assert_eq!(config.enabled_feature_count(), 2);
+    }
+
+    #[test]
+    fn test_emotion_analysis_config_summary() {
+        let config = EmotionAnalysisConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("Emotion"));
+    }
+
+    #[test]
+    fn test_emotion_analysis_config_display() {
+        let config = EmotionAnalysisConfig::default();
+        let display = format!("{}", config);
+        assert!(!display.is_empty());
+    }
+
+    // ============================================================
+    // DialogueContextConfig Tests
+    // ============================================================
+
+    #[test]
+    fn test_dialogue_context_config_minimal() {
+        let config = DialogueContextConfig::minimal();
+        assert!(config.context_window_size <= 512);
+        assert!(config.max_history_turns <= 3);
+    }
+
+    #[test]
+    fn test_dialogue_context_config_extended() {
+        let config = DialogueContextConfig::extended();
+        assert!(config.context_window_size >= 4096);
+        assert!(config.max_history_turns >= 20);
+    }
+
+    #[test]
+    fn test_dialogue_context_config_total_items() {
+        let mut config = DialogueContextConfig::default();
+        config.context_window_size = 100;
+        config.max_history_turns = 50;
+        
+        assert_eq!(config.total_context_items(), 150);
+    }
+
+    #[test]
+    fn test_dialogue_context_config_summarization() {
+        let mut config = DialogueContextConfig::default();
+        config.enable_summarization = true;
+        assert!(config.has_summarization());
+        
+        config.enable_summarization = false;
+        assert!(!config.has_summarization());
+    }
+
+    #[test]
+    fn test_dialogue_context_config_display() {
+        let config = DialogueContextConfig::default();
+        let display = format!("{}", config);
+        assert!(display.contains("Context"));
+    }
+
+    // ============================================================
+    // BranchingConfig Tests
+    // ============================================================
+
+    #[test]
+    fn test_branching_config_disabled() {
+        let config = BranchingConfig::disabled();
+        assert!(!config.enabled);
+        assert!(config.is_disabled());
+        assert!(!config.is_enabled());
+    }
+
+    #[test]
+    fn test_branching_config_summary() {
+        let config = BranchingConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("Branching"));
+    }
+
+    #[test]
+    fn test_branching_config_display() {
+        let config = BranchingConfig::default();
+        let display = format!("{}", config);
+        assert!(!display.is_empty());
+    }
+
+    // ============================================================
+    // BranchMergeStrategy Tests
+    // ============================================================
+
+    #[test]
+    fn test_branch_merge_strategy_name() {
+        assert_eq!(BranchMergeStrategy::KeepBest.name(), "Keep Best");
+        assert_eq!(BranchMergeStrategy::BlendAll.name(), "Blend All");
+        assert_eq!(BranchMergeStrategy::Sequential.name(), "Sequential");
+        assert_eq!(BranchMergeStrategy::UserChoice.name(), "User Choice");
+    }
+
+    #[test]
+    fn test_branch_merge_strategy_is_merging() {
+        assert!(!BranchMergeStrategy::KeepBest.is_merging());
+        assert!(BranchMergeStrategy::BlendAll.is_merging());
+        assert!(!BranchMergeStrategy::Sequential.is_merging());
+        assert!(!BranchMergeStrategy::UserChoice.is_merging());
+    }
+
+    #[test]
+    fn test_branch_merge_strategy_all() {
+        let all = BranchMergeStrategy::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&BranchMergeStrategy::KeepBest));
+        assert!(all.contains(&BranchMergeStrategy::BlendAll));
+    }
+
+    #[test]
+    fn test_branch_merge_strategy_display() {
+        let strategy = BranchMergeStrategy::BlendAll;
+        let display = format!("{}", strategy);
+        assert_eq!(display, "Blend All");
+    }
+
+    // ============================================================
+    // QualityControlConfig Tests
+    // ============================================================
+
+    #[test]
+    fn test_quality_control_config_disabled() {
+        let config = QualityControlConfig::disabled();
+        assert!(config.is_disabled());
+        assert!(!config.is_enabled());
+    }
+
+    #[test]
+    fn test_quality_control_config_strict() {
+        let config = QualityControlConfig::strict();
+        assert!(config.filter_repetition);
+        assert!(config.filter_offensive);
+        assert!(config.ensure_coherence);
+        assert!(config.is_enabled());
+    }
+
+    #[test]
+    fn test_quality_control_config_enabled_count() {
+        let mut config = QualityControlConfig::default();
+        config.filter_repetition = true;
+        config.filter_offensive = true;
+        config.ensure_coherence = false;
+        
+        assert_eq!(config.enabled_filter_count(), 2);
+    }
+
+    #[test]
+    fn test_quality_control_config_display() {
+        let config = QualityControlConfig::default();
+        let display = format!("{}", config);
+        assert!(display.contains("Quality"));
+    }
+
+    // ============================================================
+    // EmotionalState Tests
+    // ============================================================
+
+    #[test]
+    fn test_emotional_state_positive() {
+        let state = EmotionalState::positive();
+        assert!(state.is_positive());
+        assert!(!state.is_negative());
+    }
+
+    #[test]
+    fn test_emotional_state_negative() {
+        let state = EmotionalState::negative();
+        assert!(state.is_negative());
+        assert!(!state.is_positive());
+    }
+
+    #[test]
+    fn test_emotional_state_neutral() {
+        let state = EmotionalState::neutral();
+        assert!(state.is_neutral());
+        assert!(!state.is_positive());
+        assert!(!state.is_negative());
+    }
+
+    #[test]
+    fn test_emotional_state_intensity() {
+        let mut state = EmotionalState::default();
+        state.intensity = 0.9;
+        assert!(state.is_intense());
+        
+        state.intensity = 0.2;
+        assert!(state.is_calm());
+    }
+
+    #[test]
+    fn test_emotional_state_emotions() {
+        let mut state = EmotionalState::default();
+        state.emotions.insert("joy".to_string(), 0.8);
+        state.emotions.insert("surprise".to_string(), 0.5);
+        
+        assert_eq!(state.emotion_count(), 2);
+        assert!(!state.has_no_emotions());
+        
+        let dominant = state.dominant_emotion();
+        assert!(dominant.is_some());
+        assert_eq!(dominant.unwrap().0, "joy");
+    }
+
+    #[test]
+    fn test_emotional_state_display() {
+        let state = EmotionalState::positive();
+        let display = format!("{}", state);
+        assert!(display.contains("Emotional"));
+    }
+
+    // ============================================================
+    // QualityMetrics Tests
+    // ============================================================
+
+    #[test]
+    fn test_quality_metrics_overall_score() {
+        let mut metrics = QualityMetrics::default();
+        metrics.coherence = 0.8;
+        metrics.relevance = 0.9;
+        metrics.engagement = 0.7;
+        
+        let score = metrics.overall_score();
+        assert!(score > 0.0 && score < 1.0);
+    }
+
+    #[test]
+    fn test_quality_metrics_high_quality() {
+        let mut metrics = QualityMetrics::default();
+        metrics.coherence = 0.9;
+        metrics.relevance = 0.9;
+        metrics.engagement = 0.9;
+        
+        assert!(metrics.is_high_quality());
+    }
+
+    #[test]
+    fn test_quality_metrics_low_quality() {
+        let mut metrics = QualityMetrics::default();
+        metrics.coherence = 0.3;
+        metrics.relevance = 0.4;
+        metrics.engagement = 0.3;
+        
+        assert!(metrics.is_low_quality());
+    }
+
+    #[test]
+    fn test_quality_metrics_grade() {
+        let mut metrics = QualityMetrics::default();
+        
+        metrics.coherence = 0.95;
+        metrics.relevance = 0.95;
+        metrics.engagement = 0.95;
+        assert_eq!(metrics.grade(), 'A');
+        
+        metrics.coherence = 0.5;
+        metrics.relevance = 0.5;
+        metrics.engagement = 0.5;
+        assert_eq!(metrics.grade(), 'F');
+    }
+
+    #[test]
+    fn test_quality_metrics_display() {
+        let metrics = QualityMetrics::default();
+        let display = format!("{}", metrics);
+        assert!(display.contains("Quality"));
+    }
+
+    // ============================================================
+    // BranchingState Tests
+    // ============================================================
+
+    #[test]
+    fn test_branching_state_on_main() {
+        let state = BranchingState::default();
+        assert!(state.is_on_main());
+        assert!(!state.is_on_branch());
+    }
+
+    #[test]
+    fn test_branching_state_on_branch() {
+        let mut state = BranchingState::default();
+        state.current_branch = Some("branch_1".to_string());
+        
+        assert!(state.is_on_branch());
+        assert!(!state.is_on_main());
+    }
+
+    #[test]
+    fn test_branching_state_available_branches() {
+        let mut state = BranchingState::default();
+        state.available_branches.push(DialogueBranch {
+            id: "b1".to_string(),
+            condition: "test".to_string(),
+            probability: 0.9,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata: HashMap::new(),
+        });
+        
+        assert!(state.has_branches());
+        assert_eq!(state.available_count(), 1);
+    }
+
+    #[test]
+    fn test_branching_state_highest_probability() {
+        let mut state = BranchingState::default();
+        state.available_branches.push(DialogueBranch {
+            id: "low".to_string(),
+            condition: "test".to_string(),
+            probability: 0.2,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata: HashMap::new(),
+        });
+        state.available_branches.push(DialogueBranch {
+            id: "high".to_string(),
+            condition: "test".to_string(),
+            probability: 0.9,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata: HashMap::new(),
+        });
+        
+        let highest = state.highest_probability_branch();
+        assert!(highest.is_some());
+        assert_eq!(highest.unwrap().id, "high");
+    }
+
+    #[test]
+    fn test_branching_state_display() {
+        let state = BranchingState::default();
+        let display = format!("{}", state);
+        assert!(display.contains("Branching"));
+    }
+
+    // ============================================================
+    // DialogueBranch Tests
+    // ============================================================
+
+    #[test]
+    fn test_dialogue_branch_probability() {
+        let branch = DialogueBranch {
+            id: "test".to_string(),
+            condition: "condition".to_string(),
+            probability: 0.85,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata: HashMap::new(),
+        };
+        
+        assert!(branch.is_likely());
+        assert!(!branch.is_unlikely());
+    }
+
+    #[test]
+    fn test_dialogue_branch_unlikely() {
+        let branch = DialogueBranch {
+            id: "test".to_string(),
+            condition: "condition".to_string(),
+            probability: 0.2,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata: HashMap::new(),
+        };
+        
+        assert!(!branch.is_likely());
+        assert!(branch.is_unlikely());
+    }
+
+    #[test]
+    fn test_dialogue_branch_metadata() {
+        let mut metadata = HashMap::new();
+        metadata.insert("key".to_string(), serde_json::json!("value"));
+        
+        let branch = DialogueBranch {
+            id: "test".to_string(),
+            condition: "condition".to_string(),
+            probability: 0.5,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata,
+        };
+        
+        assert!(branch.has_metadata());
+    }
+
+    #[test]
+    fn test_dialogue_branch_display() {
+        let branch = DialogueBranch {
+            id: "test".to_string(),
+            condition: "condition".to_string(),
+            probability: 0.75,
+            content: DialogueBranchContent {
+                responses: vec![],
+                emotional_context: EmotionalState::default(),
+                narrative_impact: 0.5,
+            },
+            metadata: HashMap::new(),
+        };
+        
+        let display = format!("{}", branch);
+        assert!(display.contains("Branch"));
+        assert!(display.contains("test"));
+    }
+
+    // ============================================================
+    // DialogueBranchContent Tests
+    // ============================================================
+
+    #[test]
+    fn test_dialogue_branch_content_empty() {
+        let content = DialogueBranchContent {
+            responses: vec![],
+            emotional_context: EmotionalState::default(),
+            narrative_impact: 0.5,
+        };
+        
+        assert!(content.is_empty());
+        assert!(!content.has_responses());
+        assert_eq!(content.response_count(), 0);
+    }
+
+    #[test]
+    fn test_dialogue_branch_content_impact() {
+        let high_impact = DialogueBranchContent {
+            responses: vec![],
+            emotional_context: EmotionalState::default(),
+            narrative_impact: 0.85,
+        };
+        
+        assert!(high_impact.is_high_impact());
+        assert!(!high_impact.is_low_impact());
+        
+        let low_impact = DialogueBranchContent {
+            responses: vec![],
+            emotional_context: EmotionalState::default(),
+            narrative_impact: 0.15,
+        };
+        
+        assert!(low_impact.is_low_impact());
+        assert!(!low_impact.is_high_impact());
+    }
+
+    #[test]
+    fn test_dialogue_branch_content_display() {
+        let content = DialogueBranchContent {
+            responses: vec![],
+            emotional_context: EmotionalState::default(),
+            narrative_impact: 0.5,
+        };
+        
+        let display = format!("{}", content);
+        assert!(display.contains("BranchContent"));
+    }
+
+    // ============================================================
+    // GeneratedResponse Tests
+    // ============================================================
+
+    #[test]
+    fn test_generated_response_quality() {
+        let high_quality = GeneratedResponse {
+            text: "Hello world".to_string(),
+            quality_score: 0.9,
+            emotional_tone: EmotionalState::default(),
+            confidence: 0.85,
+            metadata: ResponseMetadata {
+                generation_method: GenerationMethod::LlmGeneration,
+                processing_time_ms: 50.0,
+                retry_attempts: 0,
+                context_summary: "test".to_string(),
+            },
+        };
+        
+        assert!(high_quality.is_high_quality());
+        assert!(!high_quality.is_low_quality());
+        assert!(high_quality.is_confident());
+    }
+
+    #[test]
+    fn test_generated_response_grade() {
+        let response = GeneratedResponse {
+            text: "Test".to_string(),
+            quality_score: 0.95,
+            emotional_tone: EmotionalState::default(),
+            confidence: 0.9,
+            metadata: ResponseMetadata {
+                generation_method: GenerationMethod::LlmGeneration,
+                processing_time_ms: 50.0,
+                retry_attempts: 0,
+                context_summary: "test".to_string(),
+            },
+        };
+        
+        assert_eq!(response.grade(), 'A');
+    }
+
+    #[test]
+    fn test_generated_response_text_metrics() {
+        let response = GeneratedResponse {
+            text: "Hello world test".to_string(),
+            quality_score: 0.7,
+            emotional_tone: EmotionalState::default(),
+            confidence: 0.8,
+            metadata: ResponseMetadata {
+                generation_method: GenerationMethod::LlmGeneration,
+                processing_time_ms: 50.0,
+                retry_attempts: 0,
+                context_summary: "test".to_string(),
+            },
+        };
+        
+        assert_eq!(response.word_count(), 3);
+        assert_eq!(response.text_len(), 16);
+        assert!(!response.is_empty());
+    }
+
+    #[test]
+    fn test_generated_response_truncated() {
+        let response = GeneratedResponse {
+            text: "This is a very long text that should be truncated".to_string(),
+            quality_score: 0.7,
+            emotional_tone: EmotionalState::default(),
+            confidence: 0.8,
+            metadata: ResponseMetadata {
+                generation_method: GenerationMethod::LlmGeneration,
+                processing_time_ms: 50.0,
+                retry_attempts: 0,
+                context_summary: "test".to_string(),
+            },
+        };
+        
+        let truncated = response.truncated_text(20);
+        assert!(truncated.len() <= 20);
+        assert!(truncated.ends_with("..."));
+    }
+
+    #[test]
+    fn test_generated_response_display() {
+        let response = GeneratedResponse {
+            text: "Test".to_string(),
+            quality_score: 0.85,
+            emotional_tone: EmotionalState::default(),
+            confidence: 0.9,
+            metadata: ResponseMetadata {
+                generation_method: GenerationMethod::LlmGeneration,
+                processing_time_ms: 50.0,
+                retry_attempts: 0,
+                context_summary: "test".to_string(),
+            },
+        };
+        
+        let display = format!("{}", response);
+        assert!(display.contains("Response"));
+    }
+
+    // ============================================================
+    // ResponseMetadata Tests
+    // ============================================================
+
+    #[test]
+    fn test_response_metadata_timing() {
+        let fast = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 50.0,
+            retry_attempts: 0,
+            context_summary: "test".to_string(),
+        };
+        
+        assert!(fast.is_fast());
+        assert!(!fast.is_slow());
+        
+        let slow = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 2000.0,
+            retry_attempts: 0,
+            context_summary: "test".to_string(),
+        };
+        
+        assert!(slow.is_slow());
+        assert!(!slow.is_fast());
+    }
+
+    #[test]
+    fn test_response_metadata_retries() {
+        let first_try = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 100.0,
+            retry_attempts: 0,
+            context_summary: "test".to_string(),
+        };
+        
+        assert!(first_try.first_try_success());
+        assert!(!first_try.had_retries());
+        
+        let with_retries = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 100.0,
+            retry_attempts: 3,
+            context_summary: "test".to_string(),
+        };
+        
+        assert!(with_retries.had_retries());
+        assert!(with_retries.had_multiple_retries());
+    }
+
+    #[test]
+    fn test_response_metadata_context() {
+        let with_context = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 100.0,
+            retry_attempts: 0,
+            context_summary: "some context".to_string(),
+        };
+        
+        assert!(with_context.has_context());
+        
+        let no_context = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 100.0,
+            retry_attempts: 0,
+            context_summary: String::new(),
+        };
+        
+        assert!(!no_context.has_context());
+    }
+
+    #[test]
+    fn test_response_metadata_time_conversion() {
+        let metadata = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 1500.0,
+            retry_attempts: 0,
+            context_summary: "test".to_string(),
+        };
+        
+        assert!((metadata.processing_time_secs() - 1.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_response_metadata_display() {
+        let metadata = ResponseMetadata {
+            generation_method: GenerationMethod::LlmGeneration,
+            processing_time_ms: 100.0,
+            retry_attempts: 2,
+            context_summary: "test".to_string(),
+        };
+        
+        let display = format!("{}", metadata);
+        assert!(display.contains("Metadata"));
+    }
+
+    // ============================================================
+    // GenerationMethod Tests
+    // ============================================================
+
+    #[test]
+    fn test_generation_method_name() {
+        assert_eq!(GenerationMethod::LlmGeneration.name(), "LLM Generation");
+        assert_eq!(GenerationMethod::TemplateBased.name(), "Template Based");
+        assert_eq!(GenerationMethod::Hybrid.name(), "Hybrid");
+        assert_eq!(GenerationMethod::GraphBased.name(), "Graph Based");
+    }
+
+    #[test]
+    fn test_generation_method_uses_llm() {
+        assert!(GenerationMethod::LlmGeneration.uses_llm());
+        assert!(GenerationMethod::Hybrid.uses_llm());
+        assert!(!GenerationMethod::TemplateBased.uses_llm());
+        assert!(!GenerationMethod::GraphBased.uses_llm());
+    }
+
+    #[test]
+    fn test_generation_method_uses_templates() {
+        assert!(GenerationMethod::TemplateBased.uses_templates());
+        assert!(GenerationMethod::Hybrid.uses_templates());
+        assert!(!GenerationMethod::LlmGeneration.uses_templates());
+        assert!(!GenerationMethod::GraphBased.uses_templates());
+    }
+
+    #[test]
+    fn test_generation_method_traditional() {
+        assert!(GenerationMethod::GraphBased.is_traditional());
+        assert!(!GenerationMethod::LlmGeneration.is_traditional());
+    }
+
+    #[test]
+    fn test_generation_method_pure() {
+        assert!(GenerationMethod::LlmGeneration.is_pure());
+        assert!(GenerationMethod::TemplateBased.is_pure());
+        assert!(GenerationMethod::GraphBased.is_pure());
+        assert!(!GenerationMethod::Hybrid.is_pure());
+    }
+
+    #[test]
+    fn test_generation_method_all() {
+        let all = GenerationMethod::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&GenerationMethod::LlmGeneration));
+        assert!(all.contains(&GenerationMethod::Hybrid));
+    }
+
+    #[test]
+    fn test_generation_method_display() {
+        let method = GenerationMethod::LlmGeneration;
+        let display = format!("{}", method);
+        assert_eq!(display, "LLM Generation");
+    }
+
+    // ============================================================
+    // DialogueMetrics Tests
+    // ============================================================
+
+    #[test]
+    fn test_dialogue_metrics_success_rate() {
+        let mut metrics = DialogueMetrics::default();
+        metrics.successful_generations = 90;
+        metrics.failed_generations = 10;
+        
+        assert!((metrics.success_rate() - 0.9).abs() < 0.001);
+        assert!((metrics.failure_rate() - 0.1).abs() < 0.001);
+        assert!((metrics.success_percentage() - 90.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_dialogue_metrics_empty_rate() {
+        let metrics = DialogueMetrics::default();
+        // Empty case should return 1.0 success rate
+        assert!((metrics.success_rate() - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_dialogue_metrics_health() {
+        let mut healthy = DialogueMetrics::default();
+        healthy.successful_generations = 95;
+        healthy.failed_generations = 5;
+        
+        assert!(healthy.is_healthy());
+        assert!(!healthy.is_degraded());
+        assert!(!healthy.is_unhealthy());
+        assert_eq!(healthy.health_status(), "Healthy");
+        
+        let mut degraded = DialogueMetrics::default();
+        degraded.successful_generations = 70;
+        degraded.failed_generations = 30;
+        
+        assert!(!degraded.is_healthy());
+        assert!(degraded.is_degraded());
+        assert!(!degraded.is_unhealthy());
+        assert_eq!(degraded.health_status(), "Degraded");
+        
+        let mut unhealthy = DialogueMetrics::default();
+        unhealthy.successful_generations = 30;
+        unhealthy.failed_generations = 70;
+        
+        assert!(!unhealthy.is_healthy());
+        assert!(!unhealthy.is_degraded());
+        assert!(unhealthy.is_unhealthy());
+        assert_eq!(unhealthy.health_status(), "Unhealthy");
+    }
+
+    #[test]
+    fn test_dialogue_metrics_empty() {
+        let metrics = DialogueMetrics::default();
+        assert!(metrics.is_empty());
+        assert!(!metrics.has_active());
+    }
+
+    #[test]
+    fn test_dialogue_metrics_active() {
+        let mut metrics = DialogueMetrics::default();
+        metrics.active_conversations = 5;
+        
+        assert!(metrics.has_active());
+    }
+
+    #[test]
+    fn test_dialogue_metrics_total_generations() {
+        let mut metrics = DialogueMetrics::default();
+        metrics.successful_generations = 100;
+        metrics.failed_generations = 20;
+        
+        assert_eq!(metrics.total_generations(), 120);
+    }
+
+    #[test]
+    fn test_dialogue_metrics_time_conversion() {
+        let mut metrics = DialogueMetrics::default();
+        metrics.avg_response_time_ms = 2500.0;
+        
+        assert!((metrics.avg_response_time_secs() - 2.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_dialogue_metrics_quality_grade() {
+        let mut metrics = DialogueMetrics::default();
+        
+        metrics.avg_response_quality = 0.95;
+        assert_eq!(metrics.quality_grade(), 'A');
+        
+        metrics.avg_response_quality = 0.85;
+        assert_eq!(metrics.quality_grade(), 'B');
+        
+        metrics.avg_response_quality = 0.75;
+        assert_eq!(metrics.quality_grade(), 'C');
+        
+        metrics.avg_response_quality = 0.65;
+        assert_eq!(metrics.quality_grade(), 'D');
+        
+        metrics.avg_response_quality = 0.45;
+        assert_eq!(metrics.quality_grade(), 'F');
+    }
+
+    #[test]
+    fn test_dialogue_metrics_summary() {
+        let mut metrics = DialogueMetrics::default();
+        metrics.total_conversations = 100;
+        metrics.successful_generations = 90;
+        metrics.failed_generations = 10;
+        metrics.avg_response_quality = 0.85;
+        
+        let summary = metrics.summary();
+        assert!(summary.contains("100"));
+        assert!(summary.contains("90.0%"));
+        assert!(summary.contains("B"));
+    }
+
+    #[test]
+    fn test_dialogue_metrics_display() {
+        let metrics = DialogueMetrics::default();
+        let display = format!("{}", metrics);
+        assert!(display.contains("DialogueMetrics"));
     }
 }

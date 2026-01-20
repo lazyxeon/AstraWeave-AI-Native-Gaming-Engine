@@ -14,13 +14,19 @@ use std::collections::VecDeque;
 use crate::panels::Panel;
 
 /// Network role (server, client, or offline)
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum NetworkRole {
     #[default]
     Offline,
     Server,
     Client,
     ListenServer, // Server that also plays
+}
+
+impl std::fmt::Display for NetworkRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl NetworkRole {
@@ -31,6 +37,15 @@ impl NetworkRole {
             NetworkRole::Client,
             NetworkRole::ListenServer,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            NetworkRole::Offline => "Offline",
+            NetworkRole::Server => "Server",
+            NetworkRole::Client => "Client",
+            NetworkRole::ListenServer => "Listen Server",
+        }
     }
 
     pub fn icon(&self) -> &'static str {
@@ -50,10 +65,18 @@ impl NetworkRole {
             NetworkRole::ListenServer => "Host and play locally",
         }
     }
+
+    pub fn is_server(&self) -> bool {
+        matches!(self, NetworkRole::Server | NetworkRole::ListenServer)
+    }
+
+    pub fn is_online(&self) -> bool {
+        !matches!(self, NetworkRole::Offline)
+    }
 }
 
 /// Connection state
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ConnectionState {
     #[default]
     Disconnected,
@@ -63,7 +86,33 @@ pub enum ConnectionState {
     Error,
 }
 
+impl std::fmt::Display for ConnectionState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl ConnectionState {
+    pub fn all() -> &'static [ConnectionState] {
+        &[
+            ConnectionState::Disconnected,
+            ConnectionState::Connecting,
+            ConnectionState::Connected,
+            ConnectionState::Reconnecting,
+            ConnectionState::Error,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ConnectionState::Disconnected => "Disconnected",
+            ConnectionState::Connecting => "Connecting",
+            ConnectionState::Connected => "Connected",
+            ConnectionState::Reconnecting => "Reconnecting",
+            ConnectionState::Error => "Error",
+        }
+    }
+
     pub fn color(&self) -> Color32 {
         match self {
             ConnectionState::Disconnected => Color32::GRAY,
@@ -83,10 +132,18 @@ impl ConnectionState {
             ConnectionState::Error => "🔴",
         }
     }
+
+    pub fn is_active(&self) -> bool {
+        matches!(self, ConnectionState::Connecting | ConnectionState::Connected | ConnectionState::Reconnecting)
+    }
+
+    pub fn is_stable(&self) -> bool {
+        matches!(self, ConnectionState::Connected)
+    }
 }
 
 /// Interest management policy for entity replication
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum InterestPolicy {
     #[default]
     Full,
@@ -94,6 +151,12 @@ pub enum InterestPolicy {
     FieldOfView,
     FieldOfViewWithLOS,
     Custom,
+}
+
+impl std::fmt::Display for InterestPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl InterestPolicy {
@@ -107,6 +170,26 @@ impl InterestPolicy {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            InterestPolicy::Full => "Full",
+            InterestPolicy::Radius => "Radius",
+            InterestPolicy::FieldOfView => "Field of View",
+            InterestPolicy::FieldOfViewWithLOS => "FOV + LOS",
+            InterestPolicy::Custom => "Custom",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            InterestPolicy::Full => "🌐",
+            InterestPolicy::Radius => "⭕",
+            InterestPolicy::FieldOfView => "👁️",
+            InterestPolicy::FieldOfViewWithLOS => "🔍",
+            InterestPolicy::Custom => "⚙️",
+        }
+    }
+
     pub fn description(&self) -> &'static str {
         match self {
             InterestPolicy::Full => "Send all entities to all clients",
@@ -116,16 +199,30 @@ impl InterestPolicy {
             InterestPolicy::Custom => "Custom scripted interest logic",
         }
     }
+
+    pub fn is_spatial(&self) -> bool {
+        matches!(self, InterestPolicy::Radius | InterestPolicy::FieldOfView | InterestPolicy::FieldOfViewWithLOS)
+    }
+
+    pub fn has_visibility_check(&self) -> bool {
+        matches!(self, InterestPolicy::FieldOfView | InterestPolicy::FieldOfViewWithLOS)
+    }
 }
 
 /// Compression level for network data
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum CompressionLevel {
     None,
     #[default]
     Fast,
     Balanced,
     Maximum,
+}
+
+impl std::fmt::Display for CompressionLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl CompressionLevel {
@@ -136,6 +233,33 @@ impl CompressionLevel {
             CompressionLevel::Balanced,
             CompressionLevel::Maximum,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            CompressionLevel::None => "None",
+            CompressionLevel::Fast => "Fast",
+            CompressionLevel::Balanced => "Balanced",
+            CompressionLevel::Maximum => "Maximum",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            CompressionLevel::None => "No compression (fastest, largest)",
+            CompressionLevel::Fast => "Fast compression (good speed/size)",
+            CompressionLevel::Balanced => "Balanced compression (default)",
+            CompressionLevel::Maximum => "Maximum compression (slowest, smallest)",
+        }
+    }
+
+    pub fn cpu_cost(&self) -> u8 {
+        match self {
+            CompressionLevel::None => 0,
+            CompressionLevel::Fast => 1,
+            CompressionLevel::Balanced => 2,
+            CompressionLevel::Maximum => 4,
+        }
     }
 }
 
@@ -173,7 +297,7 @@ pub struct NetworkStats {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum NetworkTab {
     #[default]
     Connection,
@@ -181,6 +305,44 @@ pub enum NetworkTab {
     Replication,
     Statistics,
     Debug,
+}
+
+impl std::fmt::Display for NetworkTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl NetworkTab {
+    pub fn all() -> &'static [NetworkTab] {
+        &[
+            NetworkTab::Connection,
+            NetworkTab::Clients,
+            NetworkTab::Replication,
+            NetworkTab::Statistics,
+            NetworkTab::Debug,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            NetworkTab::Connection => "Connection",
+            NetworkTab::Clients => "Clients",
+            NetworkTab::Replication => "Replication",
+            NetworkTab::Statistics => "Statistics",
+            NetworkTab::Debug => "Debug",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            NetworkTab::Connection => "🔌",
+            NetworkTab::Clients => "👥",
+            NetworkTab::Replication => "🔄",
+            NetworkTab::Statistics => "📊",
+            NetworkTab::Debug => "🐛",
+        }
+    }
 }
 
 /// Lag simulation settings for testing
@@ -1572,5 +1734,197 @@ mod tests {
         for state in states {
             assert!(!state.icon().is_empty());
         }
+    }
+
+    // NEW: NetworkRole Display and helper tests (only non-duplicates)
+    #[test]
+    fn test_network_role_display() {
+        assert_eq!(format!("{}", NetworkRole::Server), "🖥️ Server");
+        assert_eq!(format!("{}", NetworkRole::Client), "💻 Client");
+    }
+
+    #[test]
+    fn test_network_role_name() {
+        assert_eq!(NetworkRole::ListenServer.name(), "Listen Server");
+        assert_eq!(NetworkRole::Offline.name(), "Offline");
+    }
+
+    #[test]
+    fn test_network_role_is_server() {
+        assert!(NetworkRole::Server.is_server());
+        assert!(NetworkRole::ListenServer.is_server());
+        assert!(!NetworkRole::Client.is_server());
+    }
+
+    #[test]
+    fn test_network_role_is_online() {
+        assert!(NetworkRole::Server.is_online());
+        assert!(NetworkRole::Client.is_online());
+        assert!(!NetworkRole::Offline.is_online());
+    }
+
+    #[test]
+    fn test_network_role_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(NetworkRole::Server);
+        set.insert(NetworkRole::Client);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: ConnectionState Display and helper tests (only non-duplicates)
+    #[test]
+    fn test_connection_state_all_method() {
+        let states = ConnectionState::all();
+        assert_eq!(states.len(), 5);
+    }
+
+    #[test]
+    fn test_connection_state_display() {
+        assert_eq!(format!("{}", ConnectionState::Connected), "🟢 Connected");
+        assert_eq!(format!("{}", ConnectionState::Error), "🔴 Error");
+    }
+
+    #[test]
+    fn test_connection_state_name() {
+        assert_eq!(ConnectionState::Reconnecting.name(), "Reconnecting");
+        assert_eq!(ConnectionState::Connecting.name(), "Connecting");
+    }
+
+    #[test]
+    fn test_connection_state_is_active() {
+        assert!(ConnectionState::Connecting.is_active());
+        assert!(ConnectionState::Connected.is_active());
+        assert!(ConnectionState::Reconnecting.is_active());
+        assert!(!ConnectionState::Disconnected.is_active());
+        assert!(!ConnectionState::Error.is_active());
+    }
+
+    #[test]
+    fn test_connection_state_is_stable() {
+        assert!(ConnectionState::Connected.is_stable());
+        assert!(!ConnectionState::Connecting.is_stable());
+        assert!(!ConnectionState::Reconnecting.is_stable());
+    }
+
+    #[test]
+    fn test_connection_state_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ConnectionState::Connected);
+        set.insert(ConnectionState::Error);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: InterestPolicy Display and helper tests (only non-duplicates)
+    #[test]
+    fn test_interest_policy_display() {
+        assert_eq!(format!("{}", InterestPolicy::Radius), "⭕ Radius");
+        assert_eq!(format!("{}", InterestPolicy::Full), "🌐 Full");
+    }
+
+    #[test]
+    fn test_interest_policy_name() {
+        assert_eq!(InterestPolicy::FieldOfView.name(), "Field of View");
+        assert_eq!(InterestPolicy::FieldOfViewWithLOS.name(), "FOV + LOS");
+    }
+
+    #[test]
+    fn test_interest_policy_icon() {
+        assert_eq!(InterestPolicy::FieldOfView.icon(), "👁️");
+        assert_eq!(InterestPolicy::Custom.icon(), "⚙️");
+    }
+
+    #[test]
+    fn test_interest_policy_is_spatial() {
+        assert!(InterestPolicy::Radius.is_spatial());
+        assert!(InterestPolicy::FieldOfView.is_spatial());
+        assert!(!InterestPolicy::Full.is_spatial());
+    }
+
+    #[test]
+    fn test_interest_policy_has_visibility_check() {
+        assert!(InterestPolicy::FieldOfView.has_visibility_check());
+        assert!(InterestPolicy::FieldOfViewWithLOS.has_visibility_check());
+        assert!(!InterestPolicy::Radius.has_visibility_check());
+    }
+
+    #[test]
+    fn test_interest_policy_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(InterestPolicy::Radius);
+        set.insert(InterestPolicy::Full);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: CompressionLevel Display and helper tests (only non-duplicates)
+    #[test]
+    fn test_compression_level_display() {
+        assert_eq!(format!("{}", CompressionLevel::Fast), "Fast");
+        assert_eq!(format!("{}", CompressionLevel::None), "None");
+    }
+
+    #[test]
+    fn test_compression_level_name() {
+        assert_eq!(CompressionLevel::Balanced.name(), "Balanced");
+        assert_eq!(CompressionLevel::Maximum.name(), "Maximum");
+    }
+
+    #[test]
+    fn test_compression_level_description() {
+        assert!(CompressionLevel::Fast.description().contains("Fast"));
+        assert!(CompressionLevel::Maximum.description().contains("Maximum"));
+    }
+
+    #[test]
+    fn test_compression_level_cpu_cost() {
+        assert_eq!(CompressionLevel::None.cpu_cost(), 0);
+        assert_eq!(CompressionLevel::Fast.cpu_cost(), 1);
+        assert_eq!(CompressionLevel::Balanced.cpu_cost(), 2);
+        assert_eq!(CompressionLevel::Maximum.cpu_cost(), 4);
+    }
+
+    #[test]
+    fn test_compression_level_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(CompressionLevel::Fast);
+        set.insert(CompressionLevel::Balanced);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: NetworkTab Display and helper tests
+    #[test]
+    fn test_network_tab_all_method() {
+        let tabs = NetworkTab::all();
+        assert_eq!(tabs.len(), 5);
+    }
+
+    #[test]
+    fn test_network_tab_display() {
+        assert_eq!(format!("{}", NetworkTab::Connection), "🔌 Connection");
+        assert_eq!(format!("{}", NetworkTab::Statistics), "📊 Statistics");
+    }
+
+    #[test]
+    fn test_network_tab_name() {
+        assert_eq!(NetworkTab::Replication.name(), "Replication");
+        assert_eq!(NetworkTab::Clients.name(), "Clients");
+    }
+
+    #[test]
+    fn test_network_tab_icon() {
+        assert_eq!(NetworkTab::Debug.icon(), "🐛");
+        assert_eq!(NetworkTab::Clients.icon(), "👥");
+    }
+
+    #[test]
+    fn test_network_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(NetworkTab::Connection);
+        set.insert(NetworkTab::Statistics);
+        assert_eq!(set.len(), 2);
     }
 }

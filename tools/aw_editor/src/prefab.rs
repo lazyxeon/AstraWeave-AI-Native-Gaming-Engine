@@ -202,6 +202,100 @@ pub enum PrefabIssue {
     InvalidRootIndex { path: PathBuf, index: usize, entity_count: usize },
 }
 
+impl std::fmt::Display for PrefabIssue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrefabIssue::MissingFile { path } => {
+                write!(f, "Missing File: {}", path.display())
+            }
+            PrefabIssue::OrphanedEntity { entity, prefab } => {
+                write!(f, "Orphaned Entity {} in {}", entity, prefab.display())
+            }
+            PrefabIssue::EmptyPrefab { path } => {
+                write!(f, "Empty Prefab: {}", path.display())
+            }
+            PrefabIssue::EmptyMapping { prefab } => {
+                write!(f, "Empty Mapping: {}", prefab.display())
+            }
+            PrefabIssue::CyclicReference { path } => {
+                write!(f, "Cyclic Reference: {}", path.display())
+            }
+            PrefabIssue::InvalidRootIndex { path, index, entity_count } => {
+                write!(f, "Invalid Root Index {} (max {}) in {}", index, entity_count, path.display())
+            }
+        }
+    }
+}
+
+impl PrefabIssue {
+    /// Returns a list of all variant names.
+    pub fn all_variants() -> &'static [&'static str] {
+        &[
+            "MissingFile",
+            "OrphanedEntity",
+            "EmptyPrefab",
+            "EmptyMapping",
+            "CyclicReference",
+            "InvalidRootIndex",
+        ]
+    }
+
+    /// Returns the display name of this issue type.
+    pub fn name(&self) -> &'static str {
+        match self {
+            PrefabIssue::MissingFile { .. } => "Missing File",
+            PrefabIssue::OrphanedEntity { .. } => "Orphaned Entity",
+            PrefabIssue::EmptyPrefab { .. } => "Empty Prefab",
+            PrefabIssue::EmptyMapping { .. } => "Empty Mapping",
+            PrefabIssue::CyclicReference { .. } => "Cyclic Reference",
+            PrefabIssue::InvalidRootIndex { .. } => "Invalid Root Index",
+        }
+    }
+
+    /// Returns an icon for this issue type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PrefabIssue::MissingFile { .. } => "❓",
+            PrefabIssue::OrphanedEntity { .. } => "👻",
+            PrefabIssue::EmptyPrefab { .. } => "📦",
+            PrefabIssue::EmptyMapping { .. } => "🗺️",
+            PrefabIssue::CyclicReference { .. } => "🔄",
+            PrefabIssue::InvalidRootIndex { .. } => "#️⃣",
+        }
+    }
+
+    /// Returns true if this is a critical issue.
+    pub fn is_critical(&self) -> bool {
+        matches!(self, 
+            PrefabIssue::MissingFile { .. } | 
+            PrefabIssue::CyclicReference { .. } | 
+            PrefabIssue::InvalidRootIndex { .. }
+        )
+    }
+
+    /// Returns true if this issue affects file loading.
+    pub fn is_file_issue(&self) -> bool {
+        matches!(self, PrefabIssue::MissingFile { .. })
+    }
+
+    /// Returns true if this issue affects entity references.
+    pub fn is_entity_issue(&self) -> bool {
+        matches!(self, PrefabIssue::OrphanedEntity { .. })
+    }
+
+    /// Returns the path associated with this issue.
+    pub fn path(&self) -> Option<&PathBuf> {
+        match self {
+            PrefabIssue::MissingFile { path } => Some(path),
+            PrefabIssue::OrphanedEntity { prefab, .. } => Some(prefab),
+            PrefabIssue::EmptyPrefab { path } => Some(path),
+            PrefabIssue::EmptyMapping { prefab } => Some(prefab),
+            PrefabIssue::CyclicReference { path } => Some(path),
+            PrefabIssue::InvalidRootIndex { path, .. } => Some(path),
+        }
+    }
+}
+
 impl PrefabData {
     pub fn from_entity(world: &World, entity: Entity, name: String) -> Result<Self> {
         Self::from_entity_with_hierarchy(world, entity, name, None)
@@ -1325,5 +1419,73 @@ mod tests {
         
         assert_eq!(snapshot.children_of(1).len(), 2);
         assert_eq!(snapshot.children_of(2).len(), 1);
+    }
+
+    // === PrefabIssue Display & helper tests ===
+
+    #[test]
+    fn test_prefab_issue_display() {
+        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
+        let cyclic = PrefabIssue::CyclicReference { path: PathBuf::from("loop.prefab") };
+        let invalid = PrefabIssue::InvalidRootIndex { 
+            path: PathBuf::from("bad.prefab"), 
+            index: 10, 
+            entity_count: 5 
+        };
+        
+        assert!(format!("{}", missing).contains("Missing File"));
+        assert!(format!("{}", cyclic).contains("Cyclic Reference"));
+        assert!(format!("{}", invalid).contains("Invalid Root Index"));
+        assert!(format!("{}", invalid).contains("10"));
+    }
+
+    #[test]
+    fn test_prefab_issue_all_variants() {
+        let variants = PrefabIssue::all_variants();
+        assert_eq!(variants.len(), 6);
+        assert!(variants.contains(&"MissingFile"));
+        assert!(variants.contains(&"CyclicReference"));
+    }
+
+    #[test]
+    fn test_prefab_issue_is_critical() {
+        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
+        let cyclic = PrefabIssue::CyclicReference { path: PathBuf::from("loop.prefab") };
+        let empty = PrefabIssue::EmptyPrefab { path: PathBuf::from("empty.prefab") };
+        
+        assert!(missing.is_critical());
+        assert!(cyclic.is_critical());
+        assert!(!empty.is_critical());
+    }
+
+    #[test]
+    fn test_prefab_issue_helpers() {
+        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
+        let orphaned = PrefabIssue::OrphanedEntity { entity: 5, prefab: PathBuf::from("a.prefab") };
+        
+        assert!(missing.is_file_issue());
+        assert!(!missing.is_entity_issue());
+        
+        assert!(!orphaned.is_file_issue());
+        assert!(orphaned.is_entity_issue());
+    }
+
+    #[test]
+    fn test_prefab_issue_path() {
+        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
+        let orphaned = PrefabIssue::OrphanedEntity { entity: 5, prefab: PathBuf::from("a.prefab") };
+        
+        assert_eq!(missing.path(), Some(&PathBuf::from("test.prefab")));
+        assert_eq!(orphaned.path(), Some(&PathBuf::from("a.prefab")));
+    }
+
+    #[test]
+    fn test_prefab_issue_name_and_icon() {
+        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
+        assert_eq!(missing.name(), "Missing File");
+        assert_eq!(missing.icon(), "❓");
+        
+        let orphaned = PrefabIssue::OrphanedEntity { entity: 5, prefab: PathBuf::from("a.prefab") };
+        assert_eq!(orphaned.icon(), "👻");
     }
 }

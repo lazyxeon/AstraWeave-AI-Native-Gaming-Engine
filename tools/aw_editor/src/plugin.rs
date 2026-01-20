@@ -50,7 +50,7 @@ impl PluginMetadata {
 }
 
 /// Plugin lifecycle events
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PluginEvent {
     /// Plugin was just loaded
     Loaded,
@@ -70,6 +70,85 @@ pub enum PluginEvent {
     PlayModeEnter,
     /// Play mode exited
     PlayModeExit,
+}
+
+impl std::fmt::Display for PluginEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PluginEvent::Loaded => write!(f, "Loaded"),
+            PluginEvent::Unloading => write!(f, "Unloading"),
+            PluginEvent::Update => write!(f, "Update"),
+            PluginEvent::SceneLoaded => write!(f, "Scene Loaded"),
+            PluginEvent::SceneSaved => write!(f, "Scene Saved"),
+            PluginEvent::EntitySelected => write!(f, "Entity Selected"),
+            PluginEvent::EntityCreated => write!(f, "Entity Created"),
+            PluginEvent::PlayModeEnter => write!(f, "Play Mode Enter"),
+            PluginEvent::PlayModeExit => write!(f, "Play Mode Exit"),
+        }
+    }
+}
+
+impl Default for PluginEvent {
+    fn default() -> Self {
+        Self::Loaded
+    }
+}
+
+impl PluginEvent {
+    /// Returns all plugin events.
+    pub fn all() -> &'static [Self] {
+        &[
+            PluginEvent::Loaded,
+            PluginEvent::Unloading,
+            PluginEvent::Update,
+            PluginEvent::SceneLoaded,
+            PluginEvent::SceneSaved,
+            PluginEvent::EntitySelected,
+            PluginEvent::EntityCreated,
+            PluginEvent::PlayModeEnter,
+            PluginEvent::PlayModeExit,
+        ]
+    }
+
+    /// Returns the display name of this event.
+    pub fn name(&self) -> &'static str {
+        match self {
+            PluginEvent::Loaded => "Loaded",
+            PluginEvent::Unloading => "Unloading",
+            PluginEvent::Update => "Update",
+            PluginEvent::SceneLoaded => "Scene Loaded",
+            PluginEvent::SceneSaved => "Scene Saved",
+            PluginEvent::EntitySelected => "Entity Selected",
+            PluginEvent::EntityCreated => "Entity Created",
+            PluginEvent::PlayModeEnter => "Play Mode Enter",
+            PluginEvent::PlayModeExit => "Play Mode Exit",
+        }
+    }
+
+    /// Returns true if this is a lifecycle event.
+    pub fn is_lifecycle(&self) -> bool {
+        matches!(self, PluginEvent::Loaded | PluginEvent::Unloading)
+    }
+
+    /// Returns true if this is a scene event.
+    pub fn is_scene_event(&self) -> bool {
+        matches!(self, PluginEvent::SceneLoaded | PluginEvent::SceneSaved)
+    }
+
+    /// Returns true if this is an entity event.
+    pub fn is_entity_event(&self) -> bool {
+        matches!(self, PluginEvent::EntitySelected | PluginEvent::EntityCreated)
+    }
+
+    /// Returns true if this is a play mode event.
+    pub fn is_play_mode_event(&self) -> bool {
+        matches!(self, PluginEvent::PlayModeEnter | PluginEvent::PlayModeExit)
+    }
+
+    /// Returns true if this event is called frequently.
+    pub fn is_frequent(&self) -> bool {
+        matches!(self, PluginEvent::Update)
+    }
 }
 
 /// Context provided to plugins during callbacks
@@ -1160,5 +1239,55 @@ mod tests {
         };
 
         assert!(stats.all_active());
+    }
+
+    // === PluginEvent Display & helper tests ===
+
+    #[test]
+    fn test_plugin_event_display() {
+        assert_eq!(format!("{}", PluginEvent::Loaded), "Loaded");
+        assert_eq!(format!("{}", PluginEvent::SceneLoaded), "Scene Loaded");
+        assert_eq!(format!("{}", PluginEvent::PlayModeEnter), "Play Mode Enter");
+    }
+
+    #[test]
+    fn test_plugin_event_all() {
+        let all = PluginEvent::all();
+        assert_eq!(all.len(), 9);
+        assert!(all.contains(&PluginEvent::Loaded));
+        assert!(all.contains(&PluginEvent::Update));
+        assert!(all.contains(&PluginEvent::PlayModeExit));
+    }
+
+    #[test]
+    fn test_plugin_event_default() {
+        assert_eq!(PluginEvent::default(), PluginEvent::Loaded);
+    }
+
+    #[test]
+    fn test_plugin_event_helpers() {
+        assert!(PluginEvent::Loaded.is_lifecycle());
+        assert!(PluginEvent::Unloading.is_lifecycle());
+        assert!(!PluginEvent::Update.is_lifecycle());
+        
+        assert!(PluginEvent::SceneLoaded.is_scene_event());
+        assert!(PluginEvent::SceneSaved.is_scene_event());
+        assert!(!PluginEvent::Loaded.is_scene_event());
+        
+        assert!(PluginEvent::EntitySelected.is_entity_event());
+        assert!(PluginEvent::EntityCreated.is_entity_event());
+        
+        assert!(PluginEvent::PlayModeEnter.is_play_mode_event());
+        assert!(PluginEvent::PlayModeExit.is_play_mode_event());
+        
+        assert!(PluginEvent::Update.is_frequent());
+        assert!(!PluginEvent::Loaded.is_frequent());
+    }
+
+    #[test]
+    fn test_plugin_event_name() {
+        assert_eq!(PluginEvent::Loaded.name(), "Loaded");
+        assert_eq!(PluginEvent::SceneLoaded.name(), "Scene Loaded");
+        assert_eq!(PluginEvent::EntitySelected.name(), "Entity Selected");
     }
 }

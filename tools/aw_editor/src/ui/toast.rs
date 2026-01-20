@@ -11,7 +11,7 @@ use egui::{Area, Color32, Context, Frame, Id, Order, Pos2, RichText};
 use std::time::{Duration, Instant};
 
 /// Toast notification level
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ToastLevel {
     Info,
     Success,
@@ -20,6 +20,16 @@ pub enum ToastLevel {
 }
 
 impl ToastLevel {
+    /// Get all toast levels
+    pub fn all() -> &'static [ToastLevel] {
+        &[
+            ToastLevel::Info,
+            ToastLevel::Success,
+            ToastLevel::Warning,
+            ToastLevel::Error,
+        ]
+    }
+
     /// Get the background color for this toast level
     pub fn color(&self) -> Color32 {
         match self {
@@ -38,6 +48,42 @@ impl ToastLevel {
             ToastLevel::Warning => "⚠️",
             ToastLevel::Error => "❌",
         }
+    }
+
+    /// Get display name
+    pub fn name(&self) -> &'static str {
+        match self {
+            ToastLevel::Info => "Info",
+            ToastLevel::Success => "Success",
+            ToastLevel::Warning => "Warning",
+            ToastLevel::Error => "Error",
+        }
+    }
+
+    /// Check if this level indicates a problem
+    pub fn is_problem(&self) -> bool {
+        matches!(self, ToastLevel::Warning | ToastLevel::Error)
+    }
+
+    /// Check if this level is success
+    pub fn is_success(&self) -> bool {
+        matches!(self, ToastLevel::Success)
+    }
+
+    /// Get severity level (0=info, 1=success, 2=warning, 3=error)
+    pub fn severity(&self) -> u8 {
+        match self {
+            ToastLevel::Info => 0,
+            ToastLevel::Success => 1,
+            ToastLevel::Warning => 2,
+            ToastLevel::Error => 3,
+        }
+    }
+}
+
+impl std::fmt::Display for ToastLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -65,6 +111,34 @@ impl ToastAction {
             ToastAction::Retry => "Retry",
             ToastAction::Open(_) => "Open",
             ToastAction::Custom { label, .. } => label,
+        }
+    }
+
+    /// Get icon for this action
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ToastAction::Undo => "↩️",
+            ToastAction::ViewDetails(_) => "🔍",
+            ToastAction::Retry => "🔄",
+            ToastAction::Open(_) => "📂",
+            ToastAction::Custom { .. } => "⚡",
+        }
+    }
+
+    /// Check if this action modifies state
+    pub fn is_mutating(&self) -> bool {
+        matches!(self, ToastAction::Undo | ToastAction::Retry)
+    }
+}
+
+impl std::fmt::Display for ToastAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ToastAction::Undo => write!(f, "Undo"),
+            ToastAction::ViewDetails(details) => write!(f, "View Details: {}", details),
+            ToastAction::Retry => write!(f, "Retry"),
+            ToastAction::Open(path) => write!(f, "Open: {}", path),
+            ToastAction::Custom { label, .. } => write!(f, "{}", label),
         }
     }
 }
@@ -596,5 +670,121 @@ mod tests {
         assert!(!manager.has_toasts());
         manager.success("msg");
         assert!(manager.has_toasts());
+    }
+
+    // === ToastLevel Display and helper tests ===
+
+    #[test]
+    fn test_toast_level_all() {
+        let all = ToastLevel::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&ToastLevel::Info));
+        assert!(all.contains(&ToastLevel::Success));
+        assert!(all.contains(&ToastLevel::Warning));
+        assert!(all.contains(&ToastLevel::Error));
+    }
+
+    #[test]
+    fn test_toast_level_display() {
+        assert_eq!(format!("{}", ToastLevel::Info), "ℹ️ Info");
+        assert_eq!(format!("{}", ToastLevel::Success), "✅ Success");
+        assert_eq!(format!("{}", ToastLevel::Warning), "⚠️ Warning");
+        assert_eq!(format!("{}", ToastLevel::Error), "❌ Error");
+    }
+
+    #[test]
+    fn test_toast_level_name() {
+        assert_eq!(ToastLevel::Info.name(), "Info");
+        assert_eq!(ToastLevel::Success.name(), "Success");
+        assert_eq!(ToastLevel::Warning.name(), "Warning");
+        assert_eq!(ToastLevel::Error.name(), "Error");
+    }
+
+    #[test]
+    fn test_toast_level_is_problem() {
+        assert!(!ToastLevel::Info.is_problem());
+        assert!(!ToastLevel::Success.is_problem());
+        assert!(ToastLevel::Warning.is_problem());
+        assert!(ToastLevel::Error.is_problem());
+    }
+
+    #[test]
+    fn test_toast_level_is_success() {
+        assert!(!ToastLevel::Info.is_success());
+        assert!(ToastLevel::Success.is_success());
+        assert!(!ToastLevel::Warning.is_success());
+        assert!(!ToastLevel::Error.is_success());
+    }
+
+    #[test]
+    fn test_toast_level_severity() {
+        assert_eq!(ToastLevel::Info.severity(), 0);
+        assert_eq!(ToastLevel::Success.severity(), 1);
+        assert_eq!(ToastLevel::Warning.severity(), 2);
+        assert_eq!(ToastLevel::Error.severity(), 3);
+    }
+
+    #[test]
+    fn test_toast_level_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ToastLevel::Info);
+        set.insert(ToastLevel::Success);
+        assert_eq!(set.len(), 2);
+    }
+
+    // === ToastAction Display and helper tests ===
+
+    #[test]
+    fn test_toast_action_display() {
+        assert_eq!(format!("{}", ToastAction::Undo), "Undo");
+        assert_eq!(
+            format!("{}", ToastAction::ViewDetails("log.txt".to_string())),
+            "View Details: log.txt"
+        );
+        assert_eq!(format!("{}", ToastAction::Retry), "Retry");
+        assert_eq!(
+            format!("{}", ToastAction::Open("file.txt".to_string())),
+            "Open: file.txt"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                ToastAction::Custom {
+                    label: "Test".to_string(),
+                    action_id: "id".to_string()
+                }
+            ),
+            "Test"
+        );
+    }
+
+    #[test]
+    fn test_toast_action_icon() {
+        assert_eq!(ToastAction::Undo.icon(), "↩️");
+        assert_eq!(ToastAction::ViewDetails("x".to_string()).icon(), "🔍");
+        assert_eq!(ToastAction::Retry.icon(), "🔄");
+        assert_eq!(ToastAction::Open("x".to_string()).icon(), "📂");
+        assert_eq!(
+            ToastAction::Custom {
+                label: "X".to_string(),
+                action_id: "y".to_string()
+            }
+            .icon(),
+            "⚡"
+        );
+    }
+
+    #[test]
+    fn test_toast_action_is_mutating() {
+        assert!(ToastAction::Undo.is_mutating());
+        assert!(ToastAction::Retry.is_mutating());
+        assert!(!ToastAction::ViewDetails("x".to_string()).is_mutating());
+        assert!(!ToastAction::Open("x".to_string()).is_mutating());
+        assert!(!ToastAction::Custom {
+            label: "X".to_string(),
+            action_id: "y".to_string()
+        }
+        .is_mutating());
     }
 }

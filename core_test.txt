@@ -1,0 +1,6 @@
+    Blocking waiting for file lock on build directory
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling parry3d v0.17.6
+   Compiling criterion v0.7.0
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)

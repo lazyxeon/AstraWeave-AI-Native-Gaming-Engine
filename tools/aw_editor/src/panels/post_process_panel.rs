@@ -14,7 +14,7 @@ use egui::{Color32, RichText, Ui};
 use crate::panels::Panel;
 
 /// Tonemapping algorithm
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum Tonemapper {
     None,
     Reinhard,
@@ -23,6 +23,12 @@ pub enum Tonemapper {
     Filmic,
     AgX,
     Neutral,
+}
+
+impl std::fmt::Display for Tonemapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl Tonemapper {
@@ -36,10 +42,36 @@ impl Tonemapper {
             Tonemapper::Neutral,
         ]
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Tonemapper::None => "None",
+            Tonemapper::Reinhard => "Reinhard",
+            Tonemapper::ACES => "ACES",
+            Tonemapper::Filmic => "Filmic",
+            Tonemapper::AgX => "AgX",
+            Tonemapper::Neutral => "Neutral",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Tonemapper::None => "⚫",
+            Tonemapper::Reinhard => "🌈",
+            Tonemapper::ACES => "🎞️",
+            Tonemapper::Filmic => "🎬",
+            Tonemapper::AgX => "🖼️",
+            Tonemapper::Neutral => "⚖️",
+        }
+    }
+
+    pub fn is_cinematic(&self) -> bool {
+        matches!(self, Tonemapper::ACES | Tonemapper::Filmic | Tonemapper::AgX)
+    }
 }
 
 /// Anti-aliasing method
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AntiAliasing {
     None,
     FXAA,
@@ -51,14 +83,105 @@ pub enum AntiAliasing {
     MSAA8x,
 }
 
+impl std::fmt::Display for AntiAliasing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AntiAliasing {
+    pub fn all() -> &'static [AntiAliasing] {
+        &[
+            AntiAliasing::None,
+            AntiAliasing::FXAA,
+            AntiAliasing::SMAA,
+            AntiAliasing::TAA,
+            AntiAliasing::MSAA2x,
+            AntiAliasing::MSAA4x,
+            AntiAliasing::MSAA8x,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AntiAliasing::None => "None",
+            AntiAliasing::FXAA => "FXAA",
+            AntiAliasing::SMAA => "SMAA",
+            AntiAliasing::TAA => "TAA",
+            AntiAliasing::MSAA2x => "MSAA 2x",
+            AntiAliasing::MSAA4x => "MSAA 4x",
+            AntiAliasing::MSAA8x => "MSAA 8x",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AntiAliasing::None => "⚫",
+            AntiAliasing::FXAA => "🖼️",
+            AntiAliasing::SMAA => "🖼️",
+            AntiAliasing::TAA => "⏱️",
+            AntiAliasing::MSAA2x => "□",
+            AntiAliasing::MSAA4x => "□",
+            AntiAliasing::MSAA8x => "□",
+        }
+    }
+
+    pub fn is_msaa(&self) -> bool {
+        matches!(self, AntiAliasing::MSAA2x | AntiAliasing::MSAA4x | AntiAliasing::MSAA8x)
+    }
+
+    pub fn is_post_process(&self) -> bool {
+        matches!(self, AntiAliasing::FXAA | AntiAliasing::SMAA | AntiAliasing::TAA)
+    }
+}
+
 /// Depth of field mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum DofMode {
     #[default]
     Disabled,
     Gaussian,
     Bokeh,
     CircleOfConfusion,
+}
+
+impl std::fmt::Display for DofMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl DofMode {
+    pub fn all() -> &'static [DofMode] {
+        &[
+            DofMode::Disabled,
+            DofMode::Gaussian,
+            DofMode::Bokeh,
+            DofMode::CircleOfConfusion,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DofMode::Disabled => "Disabled",
+            DofMode::Gaussian => "Gaussian",
+            DofMode::Bokeh => "Bokeh",
+            DofMode::CircleOfConfusion => "Circle of Confusion",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            DofMode::Disabled => "⚫",
+            DofMode::Gaussian => "🌫️",
+            DofMode::Bokeh => "✨",
+            DofMode::CircleOfConfusion => "○",
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        !matches!(self, DofMode::Disabled)
+    }
 }
 
 /// Bloom settings
@@ -212,12 +335,52 @@ pub struct AmbientOcclusionSettings {
     pub direct_lighting_strength: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AoMethod {
     #[default]
     SSAO,
     HBAO,
     GTAO,
+}
+
+impl std::fmt::Display for AoMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AoMethod {
+    pub fn all() -> &'static [AoMethod] {
+        &[
+            AoMethod::SSAO,
+            AoMethod::HBAO,
+            AoMethod::GTAO,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AoMethod::SSAO => "SSAO",
+            AoMethod::HBAO => "HBAO+",
+            AoMethod::GTAO => "GTAO",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AoMethod::SSAO => "🖤",
+            AoMethod::HBAO => "🌑",
+            AoMethod::GTAO => "🌚",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            AoMethod::SSAO => "Screen-space ambient occlusion",
+            AoMethod::HBAO => "Horizon-based ambient occlusion",
+            AoMethod::GTAO => "Ground-truth ambient occlusion",
+        }
+    }
 }
 
 impl Default for AmbientOcclusionSettings {
@@ -380,7 +543,7 @@ impl PostProcessPreset {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum PostProcessTab {
     #[default]
     Overview,
@@ -390,6 +553,50 @@ pub enum PostProcessTab {
     ColorGrading,
     Effects,
     Presets,
+}
+
+impl std::fmt::Display for PostProcessTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PostProcessTab {
+    pub fn all() -> &'static [PostProcessTab] {
+        &[
+            PostProcessTab::Overview,
+            PostProcessTab::Bloom,
+            PostProcessTab::DepthOfField,
+            PostProcessTab::MotionBlur,
+            PostProcessTab::ColorGrading,
+            PostProcessTab::Effects,
+            PostProcessTab::Presets,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            PostProcessTab::Overview => "Overview",
+            PostProcessTab::Bloom => "Bloom",
+            PostProcessTab::DepthOfField => "Depth of Field",
+            PostProcessTab::MotionBlur => "Motion Blur",
+            PostProcessTab::ColorGrading => "Color Grading",
+            PostProcessTab::Effects => "Effects",
+            PostProcessTab::Presets => "Presets",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PostProcessTab::Overview => "📋",
+            PostProcessTab::Bloom => "✨",
+            PostProcessTab::DepthOfField => "📷",
+            PostProcessTab::MotionBlur => "🎿",
+            PostProcessTab::ColorGrading => "🎨",
+            PostProcessTab::Effects => "🌟",
+            PostProcessTab::Presets => "💾",
+        }
+    }
 }
 
 /// Main Post-Processing Panel
@@ -1220,5 +1427,194 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = PostProcessPanel::new();
         assert_eq!(panel.name(), "Post-Processing");
+    }
+
+    // === Tonemapper Display and Hash Tests ===
+
+    #[test]
+    fn test_tonemapper_display() {
+        for tm in Tonemapper::all() {
+            let display = format!("{}", tm);
+            assert!(display.contains(tm.name()));
+        }
+    }
+
+    #[test]
+    fn test_tonemapper_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tm in Tonemapper::all() {
+            set.insert(*tm);
+        }
+        assert_eq!(set.len(), Tonemapper::all().len());
+    }
+
+    #[test]
+    fn test_tonemapper_all() {
+        let all = Tonemapper::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&Tonemapper::None));
+        assert!(all.contains(&Tonemapper::ACES));
+        assert!(all.contains(&Tonemapper::Filmic));
+    }
+
+    #[test]
+    fn test_tonemapper_is_cinematic() {
+        assert!(!Tonemapper::None.is_cinematic());
+        assert!(!Tonemapper::Reinhard.is_cinematic());
+        assert!(Tonemapper::ACES.is_cinematic());
+        assert!(Tonemapper::Filmic.is_cinematic());
+        assert!(Tonemapper::AgX.is_cinematic());
+        assert!(!Tonemapper::Neutral.is_cinematic());
+    }
+
+    // === AntiAliasing Display and Hash Tests ===
+
+    #[test]
+    fn test_anti_aliasing_display() {
+        for aa in AntiAliasing::all() {
+            let display = format!("{}", aa);
+            assert!(display.contains(aa.name()));
+        }
+    }
+
+    #[test]
+    fn test_anti_aliasing_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for aa in AntiAliasing::all() {
+            set.insert(*aa);
+        }
+        assert_eq!(set.len(), AntiAliasing::all().len());
+    }
+
+    #[test]
+    fn test_anti_aliasing_all() {
+        let all = AntiAliasing::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&AntiAliasing::None));
+        assert!(all.contains(&AntiAliasing::FXAA));
+        assert!(all.contains(&AntiAliasing::MSAA8x));
+    }
+
+    #[test]
+    fn test_anti_aliasing_is_msaa() {
+        assert!(!AntiAliasing::None.is_msaa());
+        assert!(!AntiAliasing::FXAA.is_msaa());
+        assert!(AntiAliasing::MSAA2x.is_msaa());
+        assert!(AntiAliasing::MSAA4x.is_msaa());
+        assert!(AntiAliasing::MSAA8x.is_msaa());
+    }
+
+    #[test]
+    fn test_anti_aliasing_is_post_process() {
+        assert!(!AntiAliasing::None.is_post_process());
+        assert!(AntiAliasing::FXAA.is_post_process());
+        assert!(AntiAliasing::SMAA.is_post_process());
+        assert!(AntiAliasing::TAA.is_post_process());
+        assert!(!AntiAliasing::MSAA4x.is_post_process());
+    }
+
+    // === DofMode Display and Hash Tests ===
+
+    #[test]
+    fn test_dof_mode_display() {
+        for mode in DofMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_dof_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in DofMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), DofMode::all().len());
+    }
+
+    #[test]
+    fn test_dof_mode_all() {
+        let all = DofMode::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&DofMode::Disabled));
+        assert!(all.contains(&DofMode::Gaussian));
+        assert!(all.contains(&DofMode::Bokeh));
+    }
+
+    #[test]
+    fn test_dof_mode_is_enabled() {
+        assert!(!DofMode::Disabled.is_enabled());
+        assert!(DofMode::Gaussian.is_enabled());
+        assert!(DofMode::Bokeh.is_enabled());
+        assert!(DofMode::CircleOfConfusion.is_enabled());
+    }
+
+    // === AoMethod Display and Hash Tests ===
+
+    #[test]
+    fn test_ao_method_display() {
+        for method in AoMethod::all() {
+            let display = format!("{}", method);
+            assert!(display.contains(method.name()));
+        }
+    }
+
+    #[test]
+    fn test_ao_method_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for method in AoMethod::all() {
+            set.insert(*method);
+        }
+        assert_eq!(set.len(), AoMethod::all().len());
+    }
+
+    #[test]
+    fn test_ao_method_all() {
+        let all = AoMethod::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&AoMethod::SSAO));
+        assert!(all.contains(&AoMethod::HBAO));
+        assert!(all.contains(&AoMethod::GTAO));
+    }
+
+    #[test]
+    fn test_ao_method_description() {
+        for method in AoMethod::all() {
+            let desc = method.description();
+            assert!(!desc.is_empty());
+        }
+    }
+
+    // === PostProcessTab Display and Hash Tests ===
+
+    #[test]
+    fn test_post_process_tab_display() {
+        for tab in PostProcessTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+        }
+    }
+
+    #[test]
+    fn test_post_process_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in PostProcessTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), PostProcessTab::all().len());
+    }
+
+    #[test]
+    fn test_post_process_tab_all() {
+        let all = PostProcessTab::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&PostProcessTab::Overview));
+        assert!(all.contains(&PostProcessTab::Bloom));
+        assert!(all.contains(&PostProcessTab::Presets));
     }
 }

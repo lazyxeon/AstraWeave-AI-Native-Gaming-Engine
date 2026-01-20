@@ -1,0 +1,293 @@
+# AstraWeave Mutation Testing Workflow
+# Validates test suite effectiveness using cargo-mutants
+# Schedule: Nightly (4 AM UTC)
+#
+# Mutation testing works by:
+# 1. Modifying code (e.g., changing > to >=)
+# 2. Running tests
+# 3. Verifying tests fail (mutation "killed")
+#
+# A high mutation score proves tests actually catch bugs.
+
+name: Mutation Testing
+
+on:
+  schedule:
+    # Run nightly at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      crates:
+        description: 'Crates to test (p0, p1, or specific crate name)'
+        required: false
+        default: 'p0'
+      timeout:
+        description: 'Timeout multiplier for slow tests'
+        required: false
+        default: '3'
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  # Mutation testing timeout (3x normal for complex crates)
+  MUTANTS_TIMEOUT_MULTIPLIER: 3
+
+jobs:
+  # P0 Core Runtime Crates (highest priority)
+  mutants-ecs:
+    name: Mutants - astraweave-ecs
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    if: github.event.inputs.crates == 'p0' || github.event.inputs.crates == 'astraweave-ecs' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-mutants-ecs-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mutants-
+      
+      - name: Run mutation testing on astraweave-ecs
+        run: |
+          cargo mutants \
+            --package astraweave-ecs \
+            --timeout-multiplier ${{ env.MUTANTS_TIMEOUT_MULTIPLIER }} \
+            --output mutants-ecs-results \
+            --json
+        continue-on-error: true
+      
+      - name: Generate mutation report
+        run: |
+          if [ -f mutants-ecs-results/mutants.json ]; then
+            echo "## Mutation Testing: astraweave-ecs" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            TOTAL=$(jq '.total_mutants' mutants-ecs-results/mutants.json)
+            KILLED=$(jq '.killed' mutants-ecs-results/mutants.json)
+            SURVIVED=$(jq '.survived' mutants-ecs-results/mutants.json)
+            TIMEOUT=$(jq '.timeout' mutants-ecs-results/mutants.json)
+            
+            if [ "$TOTAL" -gt 0 ]; then
+              SCORE=$((KILLED * 100 / TOTAL))
+              echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Total Mutants | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+              echo "| Killed | $KILLED |" >> $GITHUB_STEP_SUMMARY
+              echo "| Survived | $SURVIVED |" >> $GITHUB_STEP_SUMMARY
+              echo "| Timeout | $TIMEOUT |" >> $GITHUB_STEP_SUMMARY
+              echo "| **Mutation Score** | **${SCORE}%** |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+      
+      - name: Upload mutation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-ecs-results
+          path: mutants-ecs-results/
+          retention-days: 30
+
+  mutants-core:
+    name: Mutants - astraweave-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: github.event.inputs.crates == 'p0' || github.event.inputs.crates == 'astraweave-core' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-mutants-core-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mutants-
+      
+      - name: Run mutation testing on astraweave-core
+        run: |
+          cargo mutants \
+            --package astraweave-core \
+            --timeout-multiplier ${{ env.MUTANTS_TIMEOUT_MULTIPLIER }} \
+            --output mutants-core-results \
+            --json
+        continue-on-error: true
+      
+      - name: Upload mutation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-core-results
+          path: mutants-core-results/
+          retention-days: 30
+
+  # P1 AI & Infrastructure Crates
+  mutants-ai:
+    name: Mutants - astraweave-ai
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: github.event.inputs.crates == 'p1' || github.event.inputs.crates == 'astraweave-ai' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-mutants-ai-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mutants-
+      
+      - name: Run mutation testing on astraweave-ai
+        run: |
+          cargo mutants \
+            --package astraweave-ai \
+            --timeout-multiplier ${{ env.MUTANTS_TIMEOUT_MULTIPLIER }} \
+            --output mutants-ai-results \
+            --json
+        continue-on-error: true
+      
+      - name: Upload mutation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-ai-results
+          path: mutants-ai-results/
+          retention-days: 30
+
+  mutants-behavior:
+    name: Mutants - astraweave-behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event.inputs.crates == 'p1' || github.event.inputs.crates == 'astraweave-behavior' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-mutants-behavior-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mutants-
+      
+      - name: Run mutation testing on astraweave-behavior
+        run: |
+          cargo mutants \
+            --package astraweave-behavior \
+            --timeout-multiplier ${{ env.MUTANTS_TIMEOUT_MULTIPLIER }} \
+            --output mutants-behavior-results \
+            --json
+        continue-on-error: true
+      
+      - name: Upload mutation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-behavior-results
+          path: mutants-behavior-results/
+          retention-days: 30
+
+  mutants-nav:
+    name: Mutants - astraweave-nav
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event.inputs.crates == 'p1' || github.event.inputs.crates == 'astraweave-nav' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-mutants-nav-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mutants-
+      
+      - name: Run mutation testing on astraweave-nav
+        run: |
+          cargo mutants \
+            --package astraweave-nav \
+            --timeout-multiplier ${{ env.MUTANTS_TIMEOUT_MULTIPLIER }} \
+            --output mutants-nav-results \
+            --json
+        continue-on-error: true
+      
+      - name: Upload mutation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-nav-results
+          path: mutants-nav-results/
+          retention-days: 30
+
+  # Summary job
+  mutants-summary:
+    name: Mutation Summary
+    runs-on: ubuntu-latest
+    needs: [mutants-ecs, mutants-core, mutants-ai, mutants-behavior, mutants-nav]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-results
+        continue-on-error: true
+      
+      - name: Generate summary report
+        run: |
+          echo "## 🧬 Mutation Testing Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Crate | Status | Notes |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-ecs | ${{ needs.mutants-ecs.result == 'success' && '✅' || '⚠️' }} | P0 Core |" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-core | ${{ needs.mutants-core.result == 'success' && '✅' || '⚠️' }} | P0 Core |" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-ai | ${{ needs.mutants-ai.result == 'success' && '✅' || '⚠️' }} | P1 AI |" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-behavior | ${{ needs.mutants-behavior.result == 'success' && '✅' || '⚠️' }} | P1 AI |" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-nav | ${{ needs.mutants-nav.result == 'success' && '✅' || '⚠️' }} | P1 Infra |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Target**: 80%+ mutation score on P0, 70%+ on P1" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Detailed results available in workflow artifacts." >> $GITHUB_STEP_SUMMARY

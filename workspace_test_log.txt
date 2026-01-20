@@ -1,0 +1,15 @@
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling astraweave-nav v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+   Compiling image v0.25.8
+   Compiling windows v0.58.0
+   Compiling naga v25.0.1
+   Compiling winit v0.30.12
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling notify v8.2.0
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling darling_macro v0.20.11
+   Compiling winapi v0.3.9
+   Compiling serde_spanned v0.6.9
+   Compiling toml_datetime v0.6.11
+   Compiling gltf-derive v1.4.1
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)

@@ -8,7 +8,7 @@ use tracing::debug;
 use winit::keyboard::KeyCode;
 
 /// Gizmo operation mode (modal, like Blender).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GizmoMode {
     /// No active transform.
     Inactive,
@@ -23,10 +23,106 @@ pub enum GizmoMode {
     },
 }
 
+impl std::fmt::Display for GizmoMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GizmoMode::Inactive => write!(f, "Inactive"),
+            GizmoMode::Translate { constraint } => write!(f, "Translate ({})", constraint),
+            GizmoMode::Rotate { constraint } => write!(f, "Rotate ({})", constraint),
+            GizmoMode::Scale { constraint, uniform } => {
+                if *uniform {
+                    write!(f, "Scale Uniform")
+                } else {
+                    write!(f, "Scale ({})", constraint)
+                }
+            }
+        }
+    }
+}
+
+impl Default for GizmoMode {
+    fn default() -> Self {
+        Self::Inactive
+    }
+}
+
+impl GizmoMode {
+    /// Returns all gizmo mode variants (using default constraints).
+    pub fn all() -> &'static [Self] {
+        &[
+            GizmoMode::Inactive,
+            GizmoMode::Translate { constraint: AxisConstraint::None },
+            GizmoMode::Rotate { constraint: AxisConstraint::None },
+            GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false },
+        ]
+    }
+
+    /// Returns the display name of this mode.
+    pub fn name(&self) -> &'static str {
+        match self {
+            GizmoMode::Inactive => "Inactive",
+            GizmoMode::Translate { .. } => "Translate",
+            GizmoMode::Rotate { .. } => "Rotate",
+            GizmoMode::Scale { .. } => "Scale",
+        }
+    }
+
+    /// Returns an icon for this mode.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            GizmoMode::Inactive => "⏸",
+            GizmoMode::Translate { .. } => "↔",
+            GizmoMode::Rotate { .. } => "↻",
+            GizmoMode::Scale { .. } => "⇲",
+        }
+    }
+
+    /// Returns the keyboard shortcut for this mode.
+    pub fn shortcut(&self) -> Option<&'static str> {
+        match self {
+            GizmoMode::Inactive => None,
+            GizmoMode::Translate { .. } => Some("G"),
+            GizmoMode::Rotate { .. } => Some("R"),
+            GizmoMode::Scale { .. } => Some("S"),
+        }
+    }
+
+    /// Returns true if this mode is active (not Inactive).
+    pub fn is_active(&self) -> bool {
+        !matches!(self, GizmoMode::Inactive)
+    }
+
+    /// Returns true if this is a translation mode.
+    pub fn is_translate(&self) -> bool {
+        matches!(self, GizmoMode::Translate { .. })
+    }
+
+    /// Returns true if this is a rotation mode.
+    pub fn is_rotate(&self) -> bool {
+        matches!(self, GizmoMode::Rotate { .. })
+    }
+
+    /// Returns true if this is a scale mode.
+    pub fn is_scale(&self) -> bool {
+        matches!(self, GizmoMode::Scale { .. })
+    }
+
+    /// Returns the constraint for this mode, if any.
+    pub fn constraint(&self) -> Option<AxisConstraint> {
+        match self {
+            GizmoMode::Inactive => None,
+            GizmoMode::Translate { constraint } => Some(*constraint),
+            GizmoMode::Rotate { constraint } => Some(*constraint),
+            GizmoMode::Scale { constraint, .. } => Some(*constraint),
+        }
+    }
+}
+
 /// Axis constraint for transform operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum AxisConstraint {
     /// Free movement in all axes.
+    #[default]
     None,
     /// Lock to X axis only.
     X,
@@ -42,7 +138,58 @@ pub enum AxisConstraint {
     YZ,
 }
 
+impl std::fmt::Display for AxisConstraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AxisConstraint::None => write!(f, "Free"),
+            AxisConstraint::X => write!(f, "X"),
+            AxisConstraint::Y => write!(f, "Y"),
+            AxisConstraint::Z => write!(f, "Z"),
+            AxisConstraint::XY => write!(f, "XY Plane"),
+            AxisConstraint::XZ => write!(f, "XZ Plane"),
+            AxisConstraint::YZ => write!(f, "YZ Plane"),
+        }
+    }
+}
+
 impl AxisConstraint {
+    /// Returns all axis constraint variants.
+    pub fn all() -> &'static [Self] {
+        &[
+            AxisConstraint::None,
+            AxisConstraint::X,
+            AxisConstraint::Y,
+            AxisConstraint::Z,
+            AxisConstraint::XY,
+            AxisConstraint::XZ,
+            AxisConstraint::YZ,
+        ]
+    }
+
+    /// Returns the display name of this constraint.
+    pub fn name(&self) -> &'static str {
+        match self {
+            AxisConstraint::None => "Free",
+            AxisConstraint::X => "X Axis",
+            AxisConstraint::Y => "Y Axis",
+            AxisConstraint::Z => "Z Axis",
+            AxisConstraint::XY => "XY Plane",
+            AxisConstraint::XZ => "XZ Plane",
+            AxisConstraint::YZ => "YZ Plane",
+        }
+    }
+
+    /// Returns the keyboard key for this constraint.
+    pub fn key(&self) -> Option<&'static str> {
+        match self {
+            AxisConstraint::None => None,
+            AxisConstraint::X => Some("X"),
+            AxisConstraint::Y => Some("Y"),
+            AxisConstraint::Z => Some("Z"),
+            AxisConstraint::XY | AxisConstraint::XZ | AxisConstraint::YZ => None,
+        }
+    }
+
     /// Get the constraint axis vector(s).
     pub fn axis_vector(self) -> Vec3 {
         match self {
@@ -92,6 +239,19 @@ impl AxisConstraint {
 
             // Different axis pressed: switch to that axis
             (_, new_axis) => new_axis,
+        }
+    }
+
+    /// Returns the color for this constraint (for gizmo rendering).
+    pub fn color(&self) -> [f32; 3] {
+        match self {
+            AxisConstraint::None => [1.0, 1.0, 1.0],  // White
+            AxisConstraint::X => [1.0, 0.2, 0.2],     // Red
+            AxisConstraint::Y => [0.2, 1.0, 0.2],     // Green
+            AxisConstraint::Z => [0.3, 0.3, 1.0],     // Blue
+            AxisConstraint::XY => [1.0, 1.0, 0.2],    // Yellow
+            AxisConstraint::XZ => [1.0, 0.2, 1.0],    // Magenta
+            AxisConstraint::YZ => [0.2, 1.0, 1.0],    // Cyan
         }
     }
 }
@@ -736,5 +896,95 @@ mod tests {
         assert!(state.current_mouse.is_none());
         assert!(state.numeric_buffer.is_empty());
         assert!(state.constraint_position.is_none());
+    }
+
+    // ==================== GizmoMode Tests ====================
+
+    #[test]
+    fn test_gizmo_mode_display() {
+        assert_eq!(GizmoMode::Inactive.to_string(), "Inactive");
+        assert!(GizmoMode::Translate { constraint: AxisConstraint::X }.to_string().contains("Translate"));
+        assert!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.to_string().contains("Rotate"));
+        assert!(GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false }.to_string().contains("Scale"));
+        assert!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: true }.to_string().contains("Uniform"));
+    }
+
+    #[test]
+    fn test_gizmo_mode_all_and_name() {
+        let modes = GizmoMode::all();
+        assert_eq!(modes.len(), 4);
+        for mode in modes {
+            assert!(!mode.name().is_empty());
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_gizmo_mode_helpers() {
+        assert!(!GizmoMode::Inactive.is_active());
+        assert!(GizmoMode::Translate { constraint: AxisConstraint::None }.is_active());
+        assert!(GizmoMode::Translate { constraint: AxisConstraint::X }.is_translate());
+        assert!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.is_rotate());
+        assert!(GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false }.is_scale());
+    }
+
+    #[test]
+    fn test_gizmo_mode_constraint() {
+        assert_eq!(GizmoMode::Inactive.constraint(), None);
+        assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::X }.constraint(), Some(AxisConstraint::X));
+        assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.constraint(), Some(AxisConstraint::Y));
+    }
+
+    #[test]
+    fn test_gizmo_mode_shortcut() {
+        assert_eq!(GizmoMode::Inactive.shortcut(), None);
+        assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::None }.shortcut(), Some("G"));
+        assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::None }.shortcut(), Some("R"));
+        assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.shortcut(), Some("S"));
+    }
+
+    // ==================== AxisConstraint Tests ====================
+
+    #[test]
+    fn test_axis_constraint_display() {
+        assert_eq!(AxisConstraint::None.to_string(), "Free");
+        assert_eq!(AxisConstraint::X.to_string(), "X");
+        assert_eq!(AxisConstraint::XY.to_string(), "XY Plane");
+    }
+
+    #[test]
+    fn test_axis_constraint_all_and_name() {
+        let constraints = AxisConstraint::all();
+        assert_eq!(constraints.len(), 7);
+        for constraint in constraints {
+            assert!(!constraint.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_axis_constraint_key() {
+        assert_eq!(AxisConstraint::None.key(), None);
+        assert_eq!(AxisConstraint::X.key(), Some("X"));
+        assert_eq!(AxisConstraint::Y.key(), Some("Y"));
+        assert_eq!(AxisConstraint::Z.key(), Some("Z"));
+        assert_eq!(AxisConstraint::XY.key(), None);
+    }
+
+    #[test]
+    fn test_axis_constraint_color() {
+        // X is red-ish
+        let x_color = AxisConstraint::X.color();
+        assert!(x_color[0] > 0.5);
+        // Y is green-ish
+        let y_color = AxisConstraint::Y.color();
+        assert!(y_color[1] > 0.5);
+        // Z is blue-ish
+        let z_color = AxisConstraint::Z.color();
+        assert!(z_color[2] > 0.5);
+    }
+
+    #[test]
+    fn test_axis_constraint_default() {
+        assert_eq!(AxisConstraint::default(), AxisConstraint::None);
     }
 }

@@ -1,0 +1,46 @@
+[package]
+name = "astraweave-asset-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[workspace]
+# This is a separate workspace to avoid conflicts with the main workspace
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+
+[dependencies.astraweave-asset]
+path = ".."
+
+[[bin]]
+name = "fuzz_asset_headers"
+path = "fuzz_targets/fuzz_asset_headers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_asset_path_resolution"
+path = "fuzz_targets/fuzz_asset_path_resolution.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_asset_database"
+path = "fuzz_targets/fuzz_asset_database.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_asset_manifest"
+path = "fuzz_targets/fuzz_asset_manifest.rs"
+test = false
+doc = false
+bench = false

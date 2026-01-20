@@ -75,7 +75,7 @@ pub use cloth::{
 
 pub type BodyId = u64;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ActorKind {
     Static,
     Dynamic,
@@ -83,11 +83,163 @@ pub enum ActorKind {
     Other,
 }
 
-#[derive(Clone, Debug)]
+impl ActorKind {
+    /// Returns the name of the actor kind.
+    #[inline]
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Static => "Static",
+            Self::Dynamic => "Dynamic",
+            Self::Character => "Character",
+            Self::Other => "Other",
+        }
+    }
+
+    /// Returns true if this is a static actor.
+    #[inline]
+    pub fn is_static(&self) -> bool {
+        matches!(self, Self::Static)
+    }
+
+    /// Returns true if this is a dynamic actor.
+    #[inline]
+    pub fn is_dynamic(&self) -> bool {
+        matches!(self, Self::Dynamic)
+    }
+
+    /// Returns true if this is a character actor.
+    #[inline]
+    pub fn is_character(&self) -> bool {
+        matches!(self, Self::Character)
+    }
+
+    /// Returns true if this is an other actor.
+    #[inline]
+    pub fn is_other(&self) -> bool {
+        matches!(self, Self::Other)
+    }
+
+    /// Returns true if the actor can move (dynamic or character).
+    #[inline]
+    pub fn is_movable(&self) -> bool {
+        matches!(self, Self::Dynamic | Self::Character)
+    }
+
+    /// Returns all actor kinds.
+    pub fn all() -> [ActorKind; 4] {
+        [Self::Static, Self::Dynamic, Self::Character, Self::Other]
+    }
+}
+
+impl std::fmt::Display for ActorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct DebugLine {
     pub start: [f32; 3],
     pub end: [f32; 3],
     pub color: [f32; 3],
+}
+
+impl DebugLine {
+    /// Creates a new debug line.
+    #[inline]
+    pub fn new(start: [f32; 3], end: [f32; 3], color: [f32; 3]) -> Self {
+        Self { start, end, color }
+    }
+
+    /// Creates a debug line from Vec3 points.
+    #[inline]
+    pub fn from_vec3(start: Vec3, end: Vec3, color: [f32; 3]) -> Self {
+        Self {
+            start: [start.x, start.y, start.z],
+            end: [end.x, end.y, end.z],
+            color,
+        }
+    }
+
+    /// Returns the length of the line.
+    #[inline]
+    pub fn length(&self) -> f32 {
+        let dx = self.end[0] - self.start[0];
+        let dy = self.end[1] - self.start[1];
+        let dz = self.end[2] - self.start[2];
+        (dx * dx + dy * dy + dz * dz).sqrt()
+    }
+
+    /// Returns the squared length of the line.
+    #[inline]
+    pub fn length_squared(&self) -> f32 {
+        let dx = self.end[0] - self.start[0];
+        let dy = self.end[1] - self.start[1];
+        let dz = self.end[2] - self.start[2];
+        dx * dx + dy * dy + dz * dz
+    }
+
+    /// Returns the midpoint of the line.
+    #[inline]
+    pub fn midpoint(&self) -> [f32; 3] {
+        [
+            (self.start[0] + self.end[0]) * 0.5,
+            (self.start[1] + self.end[1]) * 0.5,
+            (self.start[2] + self.end[2]) * 0.5,
+        ]
+    }
+
+    /// Returns the direction vector of the line (not normalized).
+    #[inline]
+    pub fn direction(&self) -> [f32; 3] {
+        [
+            self.end[0] - self.start[0],
+            self.end[1] - self.start[1],
+            self.end[2] - self.start[2],
+        ]
+    }
+
+    /// Returns true if the line has zero length.
+    #[inline]
+    pub fn is_degenerate(&self) -> bool {
+        self.length_squared() < 1e-10
+    }
+
+    /// Creates a red debug line.
+    #[inline]
+    pub fn red(start: [f32; 3], end: [f32; 3]) -> Self {
+        Self::new(start, end, [1.0, 0.0, 0.0])
+    }
+
+    /// Creates a green debug line.
+    #[inline]
+    pub fn green(start: [f32; 3], end: [f32; 3]) -> Self {
+        Self::new(start, end, [0.0, 1.0, 0.0])
+    }
+
+    /// Creates a blue debug line.
+    #[inline]
+    pub fn blue(start: [f32; 3], end: [f32; 3]) -> Self {
+        Self::new(start, end, [0.0, 0.0, 1.0])
+    }
+
+    /// Creates a white debug line.
+    #[inline]
+    pub fn white(start: [f32; 3], end: [f32; 3]) -> Self {
+        Self::new(start, end, [1.0, 1.0, 1.0])
+    }
+}
+
+impl std::fmt::Display for DebugLine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Line([{:.2},{:.2},{:.2}] -> [{:.2},{:.2},{:.2}], rgb=[{:.2},{:.2},{:.2}])",
+            self.start[0], self.start[1], self.start[2],
+            self.end[0], self.end[1], self.end[2],
+            self.color[0], self.color[1], self.color[2]
+        )
+    }
 }
 
 struct LineCollector {
@@ -124,9 +276,36 @@ bitflags::bitflags! {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum CharState {
     Grounded,
+}
+
+impl CharState {
+    /// Returns the name of the state.
+    #[inline]
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Grounded => "Grounded",
+        }
+    }
+
+    /// Returns true if grounded.
+    #[inline]
+    pub fn is_grounded(&self) -> bool {
+        matches!(self, Self::Grounded)
+    }
+
+    /// Returns all character states.
+    pub fn all() -> [CharState; 1] {
+        [Self::Grounded]
+    }
+}
+
+impl std::fmt::Display for CharState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -152,7 +331,97 @@ pub struct CharacterController {
     pub pending_jump_velocity: f32,
 }
 
-#[derive(Clone, Debug)]
+impl CharacterController {
+    /// Creates a new character controller with given dimensions.
+    pub fn new(radius: f32, height: f32) -> Self {
+        Self {
+            state: CharState::Grounded,
+            max_climb_angle_deg: 45.0,
+            radius,
+            height,
+            max_step: 0.3,
+            vertical_velocity: 0.0,
+            gravity_scale: 1.0,
+            time_since_grounded: 0.0,
+            jump_buffer_timer: 0.0,
+            coyote_time_limit: 0.15,
+            jump_buffer_limit: 0.15,
+            pending_jump_velocity: 0.0,
+        }
+    }
+
+    /// Returns true if the character is grounded.
+    #[inline]
+    pub fn is_grounded(&self) -> bool {
+        self.state.is_grounded()
+    }
+
+    /// Returns true if coyote time is still active.
+    #[inline]
+    pub fn has_coyote_time(&self) -> bool {
+        self.time_since_grounded < self.coyote_time_limit
+    }
+
+    /// Returns true if jump is buffered.
+    #[inline]
+    pub fn has_buffered_jump(&self) -> bool {
+        self.jump_buffer_timer > 0.0
+    }
+
+    /// Returns true if the character can jump.
+    #[inline]
+    pub fn can_jump(&self) -> bool {
+        self.is_grounded() || self.has_coyote_time()
+    }
+
+    /// Returns the capsule volume approximation.
+    #[inline]
+    pub fn volume(&self) -> f32 {
+        let cylinder_height = self.height - 2.0 * self.radius;
+        let cylinder_volume = std::f32::consts::PI * self.radius * self.radius * cylinder_height;
+        let sphere_volume = (4.0 / 3.0) * std::f32::consts::PI * self.radius.powi(3);
+        cylinder_volume + sphere_volume
+    }
+
+    /// Returns the max climb angle in radians.
+    #[inline]
+    pub fn max_climb_angle_rad(&self) -> f32 {
+        self.max_climb_angle_deg.to_radians()
+    }
+
+    /// Returns true if character is falling.
+    #[inline]
+    pub fn is_falling(&self) -> bool {
+        self.vertical_velocity < -0.01
+    }
+
+    /// Returns true if character is rising.
+    #[inline]
+    pub fn is_rising(&self) -> bool {
+        self.vertical_velocity > 0.01
+    }
+
+    /// Resets the controller to default state.
+    pub fn reset(&mut self) {
+        self.state = CharState::Grounded;
+        self.vertical_velocity = 0.0;
+        self.time_since_grounded = 0.0;
+        self.jump_buffer_timer = 0.0;
+        self.pending_jump_velocity = 0.0;
+    }
+}
+
+impl std::fmt::Display for CharacterController {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CharController(r={:.2}, h={:.2}, state={}, vel_y={:.2})",
+            self.radius, self.height, self.state, self.vertical_velocity
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct PhysicsConfig {
     pub gravity: Vec3,
     pub ccd_enabled: bool,
@@ -160,6 +429,69 @@ pub struct PhysicsConfig {
     pub time_step: f32,
     pub water_level: f32,
     pub fluid_density: f32,
+}
+
+impl PhysicsConfig {
+    /// Creates a new physics config with default values.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Creates a physics config with custom gravity.
+    pub fn with_gravity(mut self, gravity: Vec3) -> Self {
+        self.gravity = gravity;
+        self
+    }
+
+    /// Enables CCD with the given substeps.
+    pub fn with_ccd(mut self, substeps: usize) -> Self {
+        self.ccd_enabled = true;
+        self.max_ccd_substeps = substeps;
+        self
+    }
+
+    /// Sets the time step (delta time).
+    pub fn with_time_step(mut self, dt: f32) -> Self {
+        self.time_step = dt;
+        self
+    }
+
+    /// Sets the water level for buoyancy.
+    pub fn with_water(mut self, level: f32, density: f32) -> Self {
+        self.water_level = level;
+        self.fluid_density = density;
+        self
+    }
+
+    /// Returns the target FPS based on time step.
+    #[inline]
+    pub fn target_fps(&self) -> f32 {
+        1.0 / self.time_step
+    }
+
+    /// Returns true if water simulation is enabled.
+    #[inline]
+    pub fn has_water(&self) -> bool {
+        self.water_level.is_finite()
+    }
+
+    /// Returns the gravity magnitude.
+    #[inline]
+    pub fn gravity_magnitude(&self) -> f32 {
+        self.gravity.length()
+    }
+
+    /// Returns true if this is Earth-like gravity.
+    #[inline]
+    pub fn is_earth_gravity(&self) -> bool {
+        (self.gravity.y + 9.81).abs() < 0.1 && self.gravity.x.abs() < 0.01 && self.gravity.z.abs() < 0.01
+    }
+
+    /// Returns true if gravity is zero.
+    #[inline]
+    pub fn is_zero_gravity(&self) -> bool {
+        self.gravity.length_squared() < 1e-6
+    }
 }
 
 impl Default for PhysicsConfig {
@@ -175,7 +507,18 @@ impl Default for PhysicsConfig {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+impl std::fmt::Display for PhysicsConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PhysicsConfig(g=[{:.2},{:.2},{:.2}], dt={:.4}, ccd={})",
+            self.gravity.x, self.gravity.y, self.gravity.z,
+            self.time_step, self.ccd_enabled
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum JointType {
     Fixed,
     Revolute {
@@ -189,13 +532,226 @@ pub enum JointType {
     Spherical,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+impl JointType {
+    /// Returns the name of the joint type.
+    #[inline]
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Fixed => "Fixed",
+            Self::Revolute { .. } => "Revolute",
+            Self::Prismatic { .. } => "Prismatic",
+            Self::Spherical => "Spherical",
+        }
+    }
+
+    /// Returns true if this is a fixed joint.
+    #[inline]
+    pub fn is_fixed(&self) -> bool {
+        matches!(self, Self::Fixed)
+    }
+
+    /// Returns true if this is a revolute joint.
+    #[inline]
+    pub fn is_revolute(&self) -> bool {
+        matches!(self, Self::Revolute { .. })
+    }
+
+    /// Returns true if this is a prismatic joint.
+    #[inline]
+    pub fn is_prismatic(&self) -> bool {
+        matches!(self, Self::Prismatic { .. })
+    }
+
+    /// Returns true if this is a spherical joint.
+    #[inline]
+    pub fn is_spherical(&self) -> bool {
+        matches!(self, Self::Spherical)
+    }
+
+    /// Returns true if the joint has limits.
+    #[inline]
+    pub fn has_limits(&self) -> bool {
+        match self {
+            Self::Revolute { limits, .. } | Self::Prismatic { limits, .. } => limits.is_some(),
+            _ => false,
+        }
+    }
+
+    /// Returns the axis if applicable.
+    #[inline]
+    pub fn axis(&self) -> Option<Vec3> {
+        match self {
+            Self::Revolute { axis, .. } | Self::Prismatic { axis, .. } => Some(*axis),
+            _ => None,
+        }
+    }
+
+    /// Returns the limits if applicable.
+    #[inline]
+    pub fn limits(&self) -> Option<(f32, f32)> {
+        match self {
+            Self::Revolute { limits, .. } | Self::Prismatic { limits, .. } => *limits,
+            _ => None,
+        }
+    }
+
+    /// Returns true if this is a rotational joint.
+    #[inline]
+    pub fn is_rotational(&self) -> bool {
+        matches!(self, Self::Revolute { .. } | Self::Spherical)
+    }
+
+    /// Returns true if this is a linear joint.
+    #[inline]
+    pub fn is_linear(&self) -> bool {
+        matches!(self, Self::Prismatic { .. })
+    }
+
+    /// Returns the degrees of freedom for this joint.
+    #[inline]
+    pub fn degrees_of_freedom(&self) -> u8 {
+        match self {
+            Self::Fixed => 0,
+            Self::Revolute { .. } | Self::Prismatic { .. } => 1,
+            Self::Spherical => 3,
+        }
+    }
+
+    /// Creates a revolute joint around the Y axis.
+    pub fn revolute_y() -> Self {
+        Self::Revolute { axis: Vec3::Y, limits: None }
+    }
+
+    /// Creates a revolute joint around the X axis.
+    pub fn revolute_x() -> Self {
+        Self::Revolute { axis: Vec3::X, limits: None }
+    }
+
+    /// Creates a revolute joint around the Z axis.
+    pub fn revolute_z() -> Self {
+        Self::Revolute { axis: Vec3::Z, limits: None }
+    }
+
+    /// Creates a prismatic joint along the Y axis.
+    pub fn prismatic_y() -> Self {
+        Self::Prismatic { axis: Vec3::Y, limits: None }
+    }
+}
+
+impl std::fmt::Display for JointType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Fixed => write!(f, "Fixed"),
+            Self::Revolute { axis, limits } => {
+                if let Some((min, max)) = limits {
+                    write!(f, "Revolute(axis=[{:.2},{:.2},{:.2}], limits=[{:.2},{:.2}])", 
+                        axis.x, axis.y, axis.z, min, max)
+                } else {
+                    write!(f, "Revolute(axis=[{:.2},{:.2},{:.2}])", axis.x, axis.y, axis.z)
+                }
+            }
+            Self::Prismatic { axis, limits } => {
+                if let Some((min, max)) = limits {
+                    write!(f, "Prismatic(axis=[{:.2},{:.2},{:.2}], limits=[{:.2},{:.2}])", 
+                        axis.x, axis.y, axis.z, min, max)
+                } else {
+                    write!(f, "Prismatic(axis=[{:.2},{:.2},{:.2}])", axis.x, axis.y, axis.z)
+                }
+            }
+            Self::Spherical => write!(f, "Spherical"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 pub struct JointId(pub u64);
 
-#[derive(Clone, Copy, Debug)]
+impl JointId {
+    /// Creates a new joint ID.
+    #[inline]
+    pub const fn new(id: u64) -> Self {
+        Self(id)
+    }
+
+    /// Returns the raw ID value.
+    #[inline]
+    pub const fn raw(&self) -> u64 {
+        self.0
+    }
+
+    /// Returns true if this is a valid ID (non-zero).
+    #[inline]
+    pub const fn is_valid(&self) -> bool {
+        self.0 != 0
+    }
+
+    /// Returns the invalid/null joint ID.
+    #[inline]
+    pub const fn invalid() -> Self {
+        Self(0)
+    }
+}
+
+impl std::fmt::Display for JointId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "JointId({})", self.0)
+    }
+}
+
+impl From<u64> for JointId {
+    fn from(id: u64) -> Self {
+        Self(id)
+    }
+}
+
+impl From<JointId> for u64 {
+    fn from(id: JointId) -> Self {
+        id.0
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct BuoyancyData {
     pub volume: f32,
     pub drag: f32,
+}
+
+impl BuoyancyData {
+    /// Creates new buoyancy data.
+    #[inline]
+    pub const fn new(volume: f32, drag: f32) -> Self {
+        Self { volume, drag }
+    }
+
+    /// Creates buoyancy data with zero drag.
+    #[inline]
+    pub const fn with_volume(volume: f32) -> Self {
+        Self { volume, drag: 0.0 }
+    }
+
+    /// Returns true if volume is positive.
+    #[inline]
+    pub fn is_valid(&self) -> bool {
+        self.volume > 0.0
+    }
+
+    /// Calculates buoyancy force for the given fluid density.
+    #[inline]
+    pub fn buoyancy_force(&self, fluid_density: f32) -> f32 {
+        self.volume * fluid_density * 9.81
+    }
+
+    /// Calculates drag force for the given velocity.
+    #[inline]
+    pub fn drag_force(&self, velocity: f32) -> f32 {
+        0.5 * self.drag * velocity * velocity
+    }
+}
+
+impl std::fmt::Display for BuoyancyData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Buoyancy(vol={:.3}, drag={:.3})", self.volume, self.drag)
+    }
 }
 
 pub struct PhysicsWorld {
@@ -1449,5 +2005,596 @@ mod tests {
         pw.step();
         let vel = pw.get_velocity(box_id).unwrap();
         assert!(vel.y > 0.0);
+    }
+
+    // ===== ActorKind Helper Tests =====
+
+    #[test]
+    fn test_actor_kind_name() {
+        assert_eq!(ActorKind::Static.name(), "Static");
+        assert_eq!(ActorKind::Dynamic.name(), "Dynamic");
+        assert_eq!(ActorKind::Character.name(), "Character");
+        assert_eq!(ActorKind::Other.name(), "Other");
+    }
+
+    #[test]
+    fn test_actor_kind_is_static() {
+        assert!(ActorKind::Static.is_static());
+        assert!(!ActorKind::Dynamic.is_static());
+        assert!(!ActorKind::Character.is_static());
+        assert!(!ActorKind::Other.is_static());
+    }
+
+    #[test]
+    fn test_actor_kind_is_dynamic() {
+        assert!(!ActorKind::Static.is_dynamic());
+        assert!(ActorKind::Dynamic.is_dynamic());
+        assert!(!ActorKind::Character.is_dynamic());
+        assert!(!ActorKind::Other.is_dynamic());
+    }
+
+    #[test]
+    fn test_actor_kind_is_character() {
+        assert!(!ActorKind::Static.is_character());
+        assert!(!ActorKind::Dynamic.is_character());
+        assert!(ActorKind::Character.is_character());
+        assert!(!ActorKind::Other.is_character());
+    }
+
+    #[test]
+    fn test_actor_kind_is_movable() {
+        assert!(!ActorKind::Static.is_movable());
+        assert!(ActorKind::Dynamic.is_movable());
+        assert!(ActorKind::Character.is_movable());
+        assert!(!ActorKind::Other.is_movable());
+    }
+
+    #[test]
+    fn test_actor_kind_all() {
+        let all = ActorKind::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&ActorKind::Static));
+        assert!(all.contains(&ActorKind::Dynamic));
+        assert!(all.contains(&ActorKind::Character));
+        assert!(all.contains(&ActorKind::Other));
+    }
+
+    #[test]
+    fn test_actor_kind_display() {
+        assert_eq!(format!("{}", ActorKind::Static), "Static");
+        assert_eq!(format!("{}", ActorKind::Dynamic), "Dynamic");
+        assert_eq!(format!("{}", ActorKind::Character), "Character");
+        assert_eq!(format!("{}", ActorKind::Other), "Other");
+    }
+
+    // ===== DebugLine Helper Tests =====
+
+    #[test]
+    fn test_debug_line_new() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert_eq!(line.start, [0.0, 0.0, 0.0]);
+        assert_eq!(line.end, [1.0, 0.0, 0.0]);
+        assert_eq!(line.color, [1.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_debug_line_from_vec3() {
+        let line = DebugLine::from_vec3(Vec3::ZERO, Vec3::X, [0.0, 1.0, 0.0]);
+        assert_eq!(line.start, [0.0, 0.0, 0.0]);
+        assert_eq!(line.end, [1.0, 0.0, 0.0]);
+        assert_eq!(line.color, [0.0, 1.0, 0.0]);
+    }
+
+    #[test]
+    fn test_debug_line_length() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 0.0], [1.0, 1.0, 1.0]);
+        assert!((line.length() - 5.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_debug_line_length_squared() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 0.0], [1.0, 1.0, 1.0]);
+        assert!((line.length_squared() - 25.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_debug_line_midpoint() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [2.0, 4.0, 6.0], [1.0, 1.0, 1.0]);
+        let mid = line.midpoint();
+        assert!((mid[0] - 1.0).abs() < 0.001);
+        assert!((mid[1] - 2.0).abs() < 0.001);
+        assert!((mid[2] - 3.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_debug_line_direction() {
+        let line = DebugLine::new([1.0, 2.0, 3.0], [4.0, 6.0, 9.0], [1.0, 1.0, 1.0]);
+        let dir = line.direction();
+        assert!((dir[0] - 3.0).abs() < 0.001);
+        assert!((dir[1] - 4.0).abs() < 0.001);
+        assert!((dir[2] - 6.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_debug_line_is_degenerate() {
+        let degen = DebugLine::new([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 1.0, 1.0]);
+        assert!(degen.is_degenerate());
+        
+        let valid = DebugLine::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
+        assert!(!valid.is_degenerate());
+    }
+
+    #[test]
+    fn test_debug_line_color_constructors() {
+        let red = DebugLine::red([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert_eq!(red.color, [1.0, 0.0, 0.0]);
+        
+        let green = DebugLine::green([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert_eq!(green.color, [0.0, 1.0, 0.0]);
+        
+        let blue = DebugLine::blue([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert_eq!(blue.color, [0.0, 0.0, 1.0]);
+        
+        let white = DebugLine::white([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert_eq!(white.color, [1.0, 1.0, 1.0]);
+    }
+
+    #[test]
+    fn test_debug_line_display() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [1.0, 2.0, 3.0], [0.5, 0.5, 0.5]);
+        let display = format!("{}", line);
+        assert!(display.contains("Line"));
+        assert!(display.contains("0.00"));
+    }
+
+    // ===== CharState Helper Tests =====
+
+    #[test]
+    fn test_char_state_name() {
+        assert_eq!(CharState::Grounded.name(), "Grounded");
+    }
+
+    #[test]
+    fn test_char_state_is_grounded() {
+        assert!(CharState::Grounded.is_grounded());
+    }
+
+    #[test]
+    fn test_char_state_all() {
+        let all = CharState::all();
+        assert_eq!(all.len(), 1);
+        assert!(all.contains(&CharState::Grounded));
+    }
+
+    #[test]
+    fn test_char_state_display() {
+        assert_eq!(format!("{}", CharState::Grounded), "Grounded");
+    }
+
+    // ===== CharacterController Helper Tests =====
+
+    #[test]
+    fn test_character_controller_new() {
+        let cc = CharacterController::new(0.5, 2.0);
+        assert_eq!(cc.radius, 0.5);
+        assert_eq!(cc.height, 2.0);
+        assert!(cc.is_grounded());
+    }
+
+    #[test]
+    fn test_character_controller_is_grounded() {
+        let cc = CharacterController::new(0.5, 2.0);
+        assert!(cc.is_grounded());
+    }
+
+    #[test]
+    fn test_character_controller_has_coyote_time() {
+        let mut cc = CharacterController::new(0.5, 2.0);
+        assert!(cc.has_coyote_time()); // time_since_grounded = 0.0
+        
+        cc.time_since_grounded = 0.2;
+        assert!(!cc.has_coyote_time());
+    }
+
+    #[test]
+    fn test_character_controller_has_buffered_jump() {
+        let mut cc = CharacterController::new(0.5, 2.0);
+        assert!(!cc.has_buffered_jump());
+        
+        cc.jump_buffer_timer = 0.1;
+        assert!(cc.has_buffered_jump());
+    }
+
+    #[test]
+    fn test_character_controller_can_jump() {
+        let cc = CharacterController::new(0.5, 2.0);
+        // When grounded, can_jump is always true regardless of time_since_grounded
+        assert!(cc.can_jump());
+        
+        // Test coyote time - still returns true when time_since_grounded < coyote_time_limit
+        let mut cc2 = CharacterController::new(0.5, 2.0);
+        cc2.time_since_grounded = 0.1; // within coyote time
+        assert!(cc2.can_jump()); // should be true (grounded OR coyote time)
+    }
+
+    #[test]
+    fn test_character_controller_volume() {
+        let cc = CharacterController::new(1.0, 4.0);
+        let vol = cc.volume();
+        // Volume should be positive and reasonable
+        assert!(vol > 0.0);
+        assert!(vol < 100.0);
+    }
+
+    #[test]
+    fn test_character_controller_max_climb_angle_rad() {
+        let cc = CharacterController::new(0.5, 2.0);
+        let rad = cc.max_climb_angle_rad();
+        assert!((rad - 45.0_f32.to_radians()).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_character_controller_is_falling_rising() {
+        let mut cc = CharacterController::new(0.5, 2.0);
+        
+        cc.vertical_velocity = -5.0;
+        assert!(cc.is_falling());
+        assert!(!cc.is_rising());
+        
+        cc.vertical_velocity = 5.0;
+        assert!(!cc.is_falling());
+        assert!(cc.is_rising());
+        
+        cc.vertical_velocity = 0.0;
+        assert!(!cc.is_falling());
+        assert!(!cc.is_rising());
+    }
+
+    #[test]
+    fn test_character_controller_reset() {
+        let mut cc = CharacterController::new(0.5, 2.0);
+        cc.vertical_velocity = 10.0;
+        cc.time_since_grounded = 1.0;
+        cc.jump_buffer_timer = 0.5;
+        cc.pending_jump_velocity = 5.0;
+        
+        cc.reset();
+        
+        assert!(cc.is_grounded());
+        assert_eq!(cc.vertical_velocity, 0.0);
+        assert_eq!(cc.time_since_grounded, 0.0);
+        assert_eq!(cc.jump_buffer_timer, 0.0);
+        assert_eq!(cc.pending_jump_velocity, 0.0);
+    }
+
+    #[test]
+    fn test_character_controller_display() {
+        let cc = CharacterController::new(0.5, 2.0);
+        let display = format!("{}", cc);
+        assert!(display.contains("CharController"));
+        assert!(display.contains("0.50"));
+        assert!(display.contains("2.00"));
+    }
+
+    // ===== PhysicsConfig Helper Tests =====
+
+    #[test]
+    fn test_physics_config_new() {
+        let config = PhysicsConfig::new();
+        assert!((config.gravity.y + 9.81).abs() < 0.01);
+        assert!(!config.ccd_enabled);
+    }
+
+    #[test]
+    fn test_physics_config_with_gravity() {
+        let config = PhysicsConfig::new().with_gravity(Vec3::new(0.0, -20.0, 0.0));
+        assert_eq!(config.gravity.y, -20.0);
+    }
+
+    #[test]
+    fn test_physics_config_with_ccd() {
+        let config = PhysicsConfig::new().with_ccd(4);
+        assert!(config.ccd_enabled);
+        assert_eq!(config.max_ccd_substeps, 4);
+    }
+
+    #[test]
+    fn test_physics_config_with_time_step() {
+        let config = PhysicsConfig::new().with_time_step(1.0 / 120.0);
+        assert!((config.time_step - 1.0 / 120.0).abs() < 0.0001);
+    }
+
+    #[test]
+    fn test_physics_config_with_water() {
+        let config = PhysicsConfig::new().with_water(5.0, 1025.0);
+        assert_eq!(config.water_level, 5.0);
+        assert_eq!(config.fluid_density, 1025.0);
+    }
+
+    #[test]
+    fn test_physics_config_target_fps() {
+        let config = PhysicsConfig::new();
+        assert!((config.target_fps() - 60.0).abs() < 0.1);
+        
+        let config120 = PhysicsConfig::new().with_time_step(1.0 / 120.0);
+        assert!((config120.target_fps() - 120.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_physics_config_has_water() {
+        let config = PhysicsConfig::new();
+        assert!(!config.has_water()); // default is NEG_INFINITY
+        
+        let with_water = PhysicsConfig::new().with_water(0.0, 1000.0);
+        assert!(with_water.has_water());
+    }
+
+    #[test]
+    fn test_physics_config_gravity_magnitude() {
+        let config = PhysicsConfig::new();
+        assert!((config.gravity_magnitude() - 9.81).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_physics_config_is_earth_gravity() {
+        let config = PhysicsConfig::new();
+        assert!(config.is_earth_gravity());
+        
+        let moon = PhysicsConfig::new().with_gravity(Vec3::new(0.0, -1.62, 0.0));
+        assert!(!moon.is_earth_gravity());
+    }
+
+    #[test]
+    fn test_physics_config_is_zero_gravity() {
+        let zero = PhysicsConfig::new().with_gravity(Vec3::ZERO);
+        assert!(zero.is_zero_gravity());
+        
+        let earth = PhysicsConfig::new();
+        assert!(!earth.is_zero_gravity());
+    }
+
+    #[test]
+    fn test_physics_config_display() {
+        let config = PhysicsConfig::new();
+        let display = format!("{}", config);
+        assert!(display.contains("PhysicsConfig"));
+        assert!(display.contains("-9.81"));
+    }
+
+    // ===== JointType Helper Tests =====
+
+    #[test]
+    fn test_joint_type_name() {
+        assert_eq!(JointType::Fixed.name(), "Fixed");
+        assert_eq!(JointType::Revolute { axis: Vec3::Y, limits: None }.name(), "Revolute");
+        assert_eq!(JointType::Prismatic { axis: Vec3::X, limits: None }.name(), "Prismatic");
+        assert_eq!(JointType::Spherical.name(), "Spherical");
+    }
+
+    #[test]
+    fn test_joint_type_is_fixed() {
+        assert!(JointType::Fixed.is_fixed());
+        assert!(!JointType::Spherical.is_fixed());
+    }
+
+    #[test]
+    fn test_joint_type_is_revolute() {
+        assert!(JointType::Revolute { axis: Vec3::Y, limits: None }.is_revolute());
+        assert!(!JointType::Fixed.is_revolute());
+    }
+
+    #[test]
+    fn test_joint_type_is_prismatic() {
+        assert!(JointType::Prismatic { axis: Vec3::X, limits: None }.is_prismatic());
+        assert!(!JointType::Fixed.is_prismatic());
+    }
+
+    #[test]
+    fn test_joint_type_is_spherical() {
+        assert!(JointType::Spherical.is_spherical());
+        assert!(!JointType::Fixed.is_spherical());
+    }
+
+    #[test]
+    fn test_joint_type_has_limits() {
+        let no_limits = JointType::Revolute { axis: Vec3::Y, limits: None };
+        assert!(!no_limits.has_limits());
+        
+        let with_limits = JointType::Revolute { axis: Vec3::Y, limits: Some((-1.0, 1.0)) };
+        assert!(with_limits.has_limits());
+        
+        assert!(!JointType::Fixed.has_limits());
+        assert!(!JointType::Spherical.has_limits());
+    }
+
+    #[test]
+    fn test_joint_type_axis() {
+        let revolute = JointType::Revolute { axis: Vec3::Y, limits: None };
+        assert_eq!(revolute.axis(), Some(Vec3::Y));
+        
+        let prismatic = JointType::Prismatic { axis: Vec3::X, limits: None };
+        assert_eq!(prismatic.axis(), Some(Vec3::X));
+        
+        assert_eq!(JointType::Fixed.axis(), None);
+        assert_eq!(JointType::Spherical.axis(), None);
+    }
+
+    #[test]
+    fn test_joint_type_limits() {
+        let with_limits = JointType::Revolute { axis: Vec3::Y, limits: Some((-1.5, 1.5)) };
+        assert_eq!(with_limits.limits(), Some((-1.5, 1.5)));
+        
+        let no_limits = JointType::Revolute { axis: Vec3::Y, limits: None };
+        assert_eq!(no_limits.limits(), None);
+    }
+
+    #[test]
+    fn test_joint_type_is_rotational() {
+        assert!(JointType::Revolute { axis: Vec3::Y, limits: None }.is_rotational());
+        assert!(JointType::Spherical.is_rotational());
+        assert!(!JointType::Fixed.is_rotational());
+        assert!(!JointType::Prismatic { axis: Vec3::X, limits: None }.is_rotational());
+    }
+
+    #[test]
+    fn test_joint_type_is_linear() {
+        assert!(JointType::Prismatic { axis: Vec3::X, limits: None }.is_linear());
+        assert!(!JointType::Revolute { axis: Vec3::Y, limits: None }.is_linear());
+        assert!(!JointType::Fixed.is_linear());
+    }
+
+    #[test]
+    fn test_joint_type_degrees_of_freedom() {
+        assert_eq!(JointType::Fixed.degrees_of_freedom(), 0);
+        assert_eq!(JointType::Revolute { axis: Vec3::Y, limits: None }.degrees_of_freedom(), 1);
+        assert_eq!(JointType::Prismatic { axis: Vec3::X, limits: None }.degrees_of_freedom(), 1);
+        assert_eq!(JointType::Spherical.degrees_of_freedom(), 3);
+    }
+
+    #[test]
+    fn test_joint_type_factory_methods() {
+        let ry = JointType::revolute_y();
+        assert!(ry.is_revolute());
+        assert_eq!(ry.axis(), Some(Vec3::Y));
+        
+        let rx = JointType::revolute_x();
+        assert_eq!(rx.axis(), Some(Vec3::X));
+        
+        let rz = JointType::revolute_z();
+        assert_eq!(rz.axis(), Some(Vec3::Z));
+        
+        let py = JointType::prismatic_y();
+        assert!(py.is_prismatic());
+        assert_eq!(py.axis(), Some(Vec3::Y));
+    }
+
+    #[test]
+    fn test_joint_type_display() {
+        assert_eq!(format!("{}", JointType::Fixed), "Fixed");
+        assert_eq!(format!("{}", JointType::Spherical), "Spherical");
+        
+        let revolute = JointType::Revolute { axis: Vec3::Y, limits: None };
+        let display = format!("{}", revolute);
+        assert!(display.contains("Revolute"));
+        
+        let with_limits = JointType::Revolute { axis: Vec3::Y, limits: Some((-1.0, 1.0)) };
+        let display2 = format!("{}", with_limits);
+        assert!(display2.contains("limits"));
+    }
+
+    // ===== JointId Helper Tests =====
+
+    #[test]
+    fn test_joint_id_new() {
+        let id = JointId::new(42);
+        assert_eq!(id.0, 42);
+    }
+
+    #[test]
+    fn test_joint_id_raw() {
+        let id = JointId::new(123);
+        assert_eq!(id.raw(), 123);
+    }
+
+    #[test]
+    fn test_joint_id_is_valid() {
+        let valid = JointId::new(1);
+        assert!(valid.is_valid());
+        
+        let invalid = JointId::new(0);
+        assert!(!invalid.is_valid());
+    }
+
+    #[test]
+    fn test_joint_id_invalid() {
+        let invalid = JointId::invalid();
+        assert_eq!(invalid.0, 0);
+        assert!(!invalid.is_valid());
+    }
+
+    #[test]
+    fn test_joint_id_display() {
+        let id = JointId::new(42);
+        assert_eq!(format!("{}", id), "JointId(42)");
+    }
+
+    #[test]
+    fn test_joint_id_from_u64() {
+        let id: JointId = 100u64.into();
+        assert_eq!(id.raw(), 100);
+    }
+
+    #[test]
+    fn test_joint_id_into_u64() {
+        let id = JointId::new(200);
+        let raw: u64 = id.into();
+        assert_eq!(raw, 200);
+    }
+
+    #[test]
+    fn test_joint_id_default() {
+        let id = JointId::default();
+        assert_eq!(id.0, 0);
+        assert!(!id.is_valid());
+    }
+
+    // ===== BuoyancyData Helper Tests =====
+
+    #[test]
+    fn test_buoyancy_data_new() {
+        let bd = BuoyancyData::new(1.5, 0.5);
+        assert_eq!(bd.volume, 1.5);
+        assert_eq!(bd.drag, 0.5);
+    }
+
+    #[test]
+    fn test_buoyancy_data_with_volume() {
+        let bd = BuoyancyData::with_volume(2.0);
+        assert_eq!(bd.volume, 2.0);
+        assert_eq!(bd.drag, 0.0);
+    }
+
+    #[test]
+    fn test_buoyancy_data_is_valid() {
+        let valid = BuoyancyData::new(1.0, 0.5);
+        assert!(valid.is_valid());
+        
+        let invalid = BuoyancyData::new(0.0, 0.5);
+        assert!(!invalid.is_valid());
+        
+        let negative = BuoyancyData::new(-1.0, 0.5);
+        assert!(!negative.is_valid());
+    }
+
+    #[test]
+    fn test_buoyancy_data_buoyancy_force() {
+        let bd = BuoyancyData::new(1.0, 0.0);
+        let force = bd.buoyancy_force(1000.0);
+        // F = V * rho * g = 1.0 * 1000.0 * 9.81 = 9810
+        assert!((force - 9810.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_buoyancy_data_drag_force() {
+        let bd = BuoyancyData::new(1.0, 1.0);
+        let force = bd.drag_force(10.0);
+        // F = 0.5 * drag * v^2 = 0.5 * 1.0 * 100 = 50
+        assert!((force - 50.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_buoyancy_data_display() {
+        let bd = BuoyancyData::new(1.5, 0.25);
+        let display = format!("{}", bd);
+        assert!(display.contains("Buoyancy"));
+        assert!(display.contains("1.500"));
+        assert!(display.contains("0.250"));
+    }
+
+    #[test]
+    fn test_buoyancy_data_default() {
+        let bd = BuoyancyData::default();
+        assert_eq!(bd.volume, 0.0);
+        assert_eq!(bd.drag, 0.0);
     }
 }

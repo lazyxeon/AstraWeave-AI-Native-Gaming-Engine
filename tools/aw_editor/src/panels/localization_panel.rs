@@ -32,7 +32,30 @@ pub enum Language {
     Custom(u32), // Custom language ID
 }
 
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.flag_emoji(), self.name())
+    }
+}
+
 impl Language {
+    pub fn all() -> &'static [Language] {
+        &[
+            Language::English,
+            Language::Spanish,
+            Language::French,
+            Language::German,
+            Language::Italian,
+            Language::Portuguese,
+            Language::Russian,
+            Language::Japanese,
+            Language::Korean,
+            Language::SimplifiedChinese,
+            Language::TraditionalChinese,
+            Language::Arabic,
+        ]
+    }
+
     pub fn code(&self) -> &'static str {
         match self {
             Language::English => "en",
@@ -114,7 +137,7 @@ impl Default for LocalizedString {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum StringCategory {
     #[default]
     Ui,
@@ -127,7 +150,39 @@ pub enum StringCategory {
     Error,
 }
 
+impl std::fmt::Display for StringCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl StringCategory {
+    pub fn all() -> &'static [StringCategory] {
+        &[
+            StringCategory::Ui,
+            StringCategory::Dialogue,
+            StringCategory::Quest,
+            StringCategory::Item,
+            StringCategory::Achievement,
+            StringCategory::Tutorial,
+            StringCategory::System,
+            StringCategory::Error,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            StringCategory::Ui => "UI",
+            StringCategory::Dialogue => "Dialogue",
+            StringCategory::Quest => "Quest",
+            StringCategory::Item => "Item",
+            StringCategory::Achievement => "Achievement",
+            StringCategory::Tutorial => "Tutorial",
+            StringCategory::System => "System",
+            StringCategory::Error => "Error",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             StringCategory::Ui => "🖥️",
@@ -154,7 +209,7 @@ pub struct PluralForms {
 }
 
 /// Export format
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ExportFormat {
     #[default]
     Csv,
@@ -164,8 +219,56 @@ pub enum ExportFormat {
     Resx,
 }
 
+impl std::fmt::Display for ExportFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ExportFormat {
+    pub fn all() -> &'static [ExportFormat] {
+        &[
+            ExportFormat::Csv,
+            ExportFormat::Xliff,
+            ExportFormat::Po,
+            ExportFormat::Json,
+            ExportFormat::Resx,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ExportFormat::Csv => "CSV",
+            ExportFormat::Xliff => "XLIFF",
+            ExportFormat::Po => "PO (Gettext)",
+            ExportFormat::Json => "JSON",
+            ExportFormat::Resx => "RESX (.NET)",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ExportFormat::Csv => "📊",
+            ExportFormat::Xliff => "📄",
+            ExportFormat::Po => "📁",
+            ExportFormat::Json => "📝",
+            ExportFormat::Resx => "📦",
+        }
+    }
+
+    pub fn extension(&self) -> &'static str {
+        match self {
+            ExportFormat::Csv => ".csv",
+            ExportFormat::Xliff => ".xlf",
+            ExportFormat::Po => ".po",
+            ExportFormat::Json => ".json",
+            ExportFormat::Resx => ".resx",
+        }
+    }
+}
+
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LocalizationTab {
     #[default]
     Strings,
@@ -173,6 +276,44 @@ pub enum LocalizationTab {
     Statistics,
     ImportExport,
     Settings,
+}
+
+impl std::fmt::Display for LocalizationTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LocalizationTab {
+    pub fn all() -> &'static [LocalizationTab] {
+        &[
+            LocalizationTab::Strings,
+            LocalizationTab::Languages,
+            LocalizationTab::Statistics,
+            LocalizationTab::ImportExport,
+            LocalizationTab::Settings,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LocalizationTab::Strings => "Strings",
+            LocalizationTab::Languages => "Languages",
+            LocalizationTab::Statistics => "Statistics",
+            LocalizationTab::ImportExport => "Import/Export",
+            LocalizationTab::Settings => "Settings",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LocalizationTab::Strings => "📝",
+            LocalizationTab::Languages => "🌍",
+            LocalizationTab::Statistics => "📊",
+            LocalizationTab::ImportExport => "📥",
+            LocalizationTab::Settings => "⚙️",
+        }
+    }
 }
 
 /// Main Localization Panel
@@ -1414,5 +1555,130 @@ mod tests {
         };
         assert_eq!(s.translations.len(), 4);
         assert_eq!(s.translations.get(&Language::Japanese), Some(&"こんにちは".to_string()));
+    }
+
+    // ===== Language Enum Tests =====
+
+    #[test]
+    fn test_language_display_format() {
+        for lang in Language::all() {
+            let display = format!("{}", lang);
+            assert!(!display.is_empty(), "Language display should not be empty");
+        }
+    }
+
+    #[test]
+    fn test_language_all_contains_expected() {
+        let variants = Language::all();
+        assert_eq!(variants.len(), 12, "Expected 12 standard language variants");
+        assert!(variants.contains(&Language::English));
+        assert!(variants.contains(&Language::Spanish));
+        assert!(variants.contains(&Language::French));
+        assert!(variants.contains(&Language::German));
+        assert!(variants.contains(&Language::Japanese));
+        assert!(variants.contains(&Language::SimplifiedChinese));
+    }
+
+    #[test]
+    fn test_language_hash_in_set() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for lang in Language::all() {
+            set.insert(*lang);
+        }
+        assert_eq!(set.len(), Language::all().len());
+    }
+
+    // ===== StringCategory Enum Tests =====
+
+    #[test]
+    fn test_string_category_display_format() {
+        for cat in StringCategory::all() {
+            let display = format!("{}", cat);
+            assert!(display.contains(cat.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_string_category_all_contains_expected() {
+        let variants = StringCategory::all();
+        assert_eq!(variants.len(), 8, "Expected 8 string category variants");
+        assert!(variants.contains(&StringCategory::Ui));
+        assert!(variants.contains(&StringCategory::Dialogue));
+        assert!(variants.contains(&StringCategory::Quest));
+    }
+
+    #[test]
+    fn test_string_category_hash_in_set() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for cat in StringCategory::all() {
+            set.insert(*cat);
+        }
+        assert_eq!(set.len(), StringCategory::all().len());
+    }
+
+    #[test]
+    fn test_string_category_name_method() {
+        assert_eq!(StringCategory::Ui.name(), "UI");
+        assert_eq!(StringCategory::Dialogue.name(), "Dialogue");
+        assert_eq!(StringCategory::Quest.name(), "Quest");
+    }
+
+    // ===== ExportFormat Enum Tests =====
+
+    #[test]
+    fn test_export_format_display_format() {
+        for format in ExportFormat::all() {
+            let display = format!("{}", format);
+            assert!(display.contains(format.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_export_format_hash_in_set() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for format in ExportFormat::all() {
+            set.insert(*format);
+        }
+        assert_eq!(set.len(), ExportFormat::all().len());
+    }
+
+    #[test]
+    fn test_export_format_extension_method() {
+        assert_eq!(ExportFormat::Json.extension(), ".json");
+        assert_eq!(ExportFormat::Csv.extension(), ".csv");
+        assert_eq!(ExportFormat::Xliff.extension(), ".xlf");
+        assert_eq!(ExportFormat::Po.extension(), ".po");
+        assert_eq!(ExportFormat::Resx.extension(), ".resx");
+    }
+
+    // ===== LocalizationTab Enum Tests =====
+
+    #[test]
+    fn test_localization_tab_display_format() {
+        for tab in LocalizationTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_localization_tab_hash_in_set() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in LocalizationTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), LocalizationTab::all().len());
+    }
+
+    #[test]
+    fn test_localization_tab_icon_method() {
+        for tab in LocalizationTab::all() {
+            let icon = tab.icon();
+            assert!(!icon.is_empty(), "Tab icon should not be empty");
+        }
     }
 }

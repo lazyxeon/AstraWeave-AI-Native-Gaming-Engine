@@ -15,7 +15,7 @@ use crate::terrain_integration::{all_biome_options, TerrainState};
 use egui::{Color32, RichText, Ui};
 
 /// Erosion preset types for quick configuration
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ErosionPresetType {
     Custom,
     Desert,
@@ -25,8 +25,14 @@ pub enum ErosionPresetType {
     Canyon,
 }
 
+impl std::fmt::Display for ErosionPresetType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 impl ErosionPresetType {
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         match self {
             ErosionPresetType::Custom => "Custom",
             ErosionPresetType::Desert => "Desert",
@@ -37,7 +43,7 @@ impl ErosionPresetType {
         }
     }
     
-    fn all() -> &'static [ErosionPresetType] {
+    pub fn all() -> &'static [ErosionPresetType] {
         &[
             ErosionPresetType::Custom,
             ErosionPresetType::Desert,
@@ -178,7 +184,7 @@ impl Default for SplatParams {
 }
 
 /// Water body type for fluid placement
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WaterBodyPreset {
     Custom,
     CalmLake,
@@ -189,8 +195,14 @@ pub enum WaterBodyPreset {
     SwampWetland,
 }
 
+impl std::fmt::Display for WaterBodyPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 impl WaterBodyPreset {
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         match self {
             WaterBodyPreset::Custom => "Custom",
             WaterBodyPreset::CalmLake => "Calm Lake",
@@ -202,7 +214,7 @@ impl WaterBodyPreset {
         }
     }
     
-    fn all() -> &'static [WaterBodyPreset] {
+    pub fn all() -> &'static [WaterBodyPreset] {
         &[
             WaterBodyPreset::Custom,
             WaterBodyPreset::CalmLake,
@@ -213,10 +225,14 @@ impl WaterBodyPreset {
             WaterBodyPreset::SwampWetland,
         ]
     }
+
+    pub fn is_flowing(&self) -> bool {
+        matches!(self, WaterBodyPreset::MountainStream | WaterBodyPreset::RagingRiver | WaterBodyPreset::Waterfall)
+    }
 }
 
 /// Fluid simulation quality preset
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FluidQualityPreset {
     Performance,
     Balanced,
@@ -224,14 +240,29 @@ pub enum FluidQualityPreset {
     Cinematic,
 }
 
+impl std::fmt::Display for FluidQualityPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 impl FluidQualityPreset {
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         match self {
             FluidQualityPreset::Performance => "Performance",
             FluidQualityPreset::Balanced => "Balanced",
             FluidQualityPreset::Quality => "Quality",
             FluidQualityPreset::Cinematic => "Cinematic",
         }
+    }
+
+    pub fn all() -> &'static [FluidQualityPreset] {
+        &[
+            FluidQualityPreset::Performance,
+            FluidQualityPreset::Balanced,
+            FluidQualityPreset::Quality,
+            FluidQualityPreset::Cinematic,
+        ]
     }
 }
 
@@ -406,13 +437,51 @@ pub struct TerrainPanel {
 }
 
 /// Brush modes for terrain sculpting
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BrushMode {
     Sculpt,
     Smooth,
     Flatten,
     Paint,
     Erode,
+}
+
+impl std::fmt::Display for BrushMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl BrushMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            BrushMode::Sculpt => "Sculpt",
+            BrushMode::Smooth => "Smooth",
+            BrushMode::Flatten => "Flatten",
+            BrushMode::Paint => "Paint",
+            BrushMode::Erode => "Erode",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BrushMode::Sculpt => "🏔️",
+            BrushMode::Smooth => "〰️",
+            BrushMode::Flatten => "➖",
+            BrushMode::Paint => "🖌️",
+            BrushMode::Erode => "💧",
+        }
+    }
+
+    pub fn all() -> &'static [BrushMode] {
+        &[
+            BrushMode::Sculpt,
+            BrushMode::Smooth,
+            BrushMode::Flatten,
+            BrushMode::Paint,
+            BrushMode::Erode,
+        ]
+    }
 }
 
 #[derive(Default, Clone)]
@@ -1506,5 +1575,115 @@ mod tests {
         let panel = TerrainPanel::new();
         assert!((panel.base_amplitude - 50.0).abs() < 0.01);
         assert_eq!(panel.seed, 12345);
+    }
+
+    // ============================================================
+    // DISPLAY TRAIT TESTS
+    // ============================================================
+
+    #[test]
+    fn test_erosion_preset_type_display() {
+        for preset in ErosionPresetType::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()));
+        }
+    }
+
+    #[test]
+    fn test_erosion_preset_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in ErosionPresetType::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), ErosionPresetType::all().len());
+    }
+
+    #[test]
+    fn test_water_body_preset_display() {
+        for preset in WaterBodyPreset::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()));
+        }
+    }
+
+    #[test]
+    fn test_water_body_preset_all_count() {
+        let all = WaterBodyPreset::all();
+        assert_eq!(all.len(), 7);
+    }
+
+    #[test]
+    fn test_water_body_preset_is_flowing() {
+        assert!(WaterBodyPreset::MountainStream.is_flowing());
+        assert!(WaterBodyPreset::RagingRiver.is_flowing());
+        assert!(WaterBodyPreset::Waterfall.is_flowing());
+        assert!(!WaterBodyPreset::CalmLake.is_flowing());
+        assert!(!WaterBodyPreset::Ocean.is_flowing());
+    }
+
+    #[test]
+    fn test_water_body_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in WaterBodyPreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), WaterBodyPreset::all().len());
+    }
+
+    #[test]
+    fn test_fluid_quality_preset_display() {
+        for preset in FluidQualityPreset::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()));
+        }
+    }
+
+    #[test]
+    fn test_fluid_quality_preset_all() {
+        let all = FluidQualityPreset::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_fluid_quality_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in FluidQualityPreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), FluidQualityPreset::all().len());
+    }
+
+    #[test]
+    fn test_brush_mode_display() {
+        for mode in BrushMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_brush_mode_all() {
+        let all = BrushMode::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_brush_mode_icon() {
+        assert_eq!(BrushMode::Sculpt.icon(), "🏔️");
+        assert_eq!(BrushMode::Paint.icon(), "🖌️");
+        assert_eq!(BrushMode::Erode.icon(), "💧");
+    }
+
+    #[test]
+    fn test_brush_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in BrushMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), BrushMode::all().len());
     }
 }

@@ -82,7 +82,7 @@ use tracing::{debug, info, warn};
 /// AI control mode for the arbiter.
 ///
 /// Determines which AI system is currently providing actions.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AIControlMode {
     /// GOAP provides instant tactical decisions (5-30 µs).
     /// This is the default mode and fallback when LLM plans are exhausted.
@@ -108,6 +108,69 @@ impl std::fmt::Display for AIControlMode {
                 write!(f, "ExecutingLLM[step {}]", step_index)
             }
             AIControlMode::BehaviorTree => write!(f, "BehaviorTree"),
+        }
+    }
+}
+
+impl Default for AIControlMode {
+    fn default() -> Self {
+        AIControlMode::GOAP
+    }
+}
+
+impl AIControlMode {
+    /// Check if this mode is the default GOAP mode.
+    #[must_use]
+    pub fn is_goap(&self) -> bool {
+        matches!(self, AIControlMode::GOAP)
+    }
+
+    /// Check if this mode is executing an LLM plan.
+    #[must_use]
+    pub fn is_executing_llm(&self) -> bool {
+        matches!(self, AIControlMode::ExecutingLLM { .. })
+    }
+
+    /// Check if this mode is the behavior tree fallback.
+    #[must_use]
+    pub fn is_behavior_tree(&self) -> bool {
+        matches!(self, AIControlMode::BehaviorTree)
+    }
+
+    /// Check if this mode is a fallback mode (not executing a plan).
+    #[must_use]
+    pub fn is_fallback(&self) -> bool {
+        matches!(self, AIControlMode::BehaviorTree)
+    }
+
+    /// Check if this is an instant (fast) mode.
+    #[must_use]
+    pub fn is_instant(&self) -> bool {
+        matches!(self, AIControlMode::GOAP | AIControlMode::BehaviorTree)
+    }
+
+    /// Get the current step index if executing an LLM plan.
+    #[must_use]
+    pub fn step_index(&self) -> Option<usize> {
+        match self {
+            AIControlMode::ExecutingLLM { step_index } => Some(*step_index),
+            _ => None,
+        }
+    }
+
+    /// Create an ExecutingLLM mode at the given step index.
+    #[must_use]
+    pub fn executing_llm(step_index: usize) -> Self {
+        AIControlMode::ExecutingLLM { step_index }
+    }
+
+    /// Get the mode name without step information.
+    #[must_use]
+    pub fn mode_name(&self) -> &'static str {
+        match self {
+            AIControlMode::GOAP => "GOAP",
+            AIControlMode::ExecutingLLM { .. } => "ExecutingLLM",
+            AIControlMode::BehaviorTree => "BehaviorTree",
         }
     }
 }
@@ -1453,5 +1516,144 @@ mod tests {
         arbiter.update(&snap3);
         let (_, requests3, _, _, _, _) = arbiter.metrics();
         assert_eq!(requests3, 2);
+    }
+
+    // ============================================================================
+    // AIControlMode Helper Method Tests
+    // ============================================================================
+
+    #[test]
+    fn test_ai_control_mode_is_goap() {
+        assert!(AIControlMode::GOAP.is_goap());
+        assert!(!AIControlMode::ExecutingLLM { step_index: 0 }.is_goap());
+        assert!(!AIControlMode::BehaviorTree.is_goap());
+    }
+
+    #[test]
+    fn test_ai_control_mode_is_executing_llm() {
+        assert!(!AIControlMode::GOAP.is_executing_llm());
+        assert!(AIControlMode::ExecutingLLM { step_index: 0 }.is_executing_llm());
+        assert!(AIControlMode::ExecutingLLM { step_index: 5 }.is_executing_llm());
+        assert!(!AIControlMode::BehaviorTree.is_executing_llm());
+    }
+
+    #[test]
+    fn test_ai_control_mode_is_behavior_tree() {
+        assert!(!AIControlMode::GOAP.is_behavior_tree());
+        assert!(!AIControlMode::ExecutingLLM { step_index: 0 }.is_behavior_tree());
+        assert!(AIControlMode::BehaviorTree.is_behavior_tree());
+    }
+
+    #[test]
+    fn test_ai_control_mode_is_fallback() {
+        // BehaviorTree is a fallback mode
+        assert!(!AIControlMode::GOAP.is_fallback());
+        assert!(!AIControlMode::ExecutingLLM { step_index: 0 }.is_fallback());
+        assert!(AIControlMode::BehaviorTree.is_fallback());
+    }
+
+    #[test]
+    fn test_ai_control_mode_is_instant() {
+        // GOAP provides instant responses
+        assert!(AIControlMode::GOAP.is_instant());
+        assert!(!AIControlMode::ExecutingLLM { step_index: 0 }.is_instant());
+        assert!(!AIControlMode::BehaviorTree.is_instant());
+    }
+
+    #[test]
+    fn test_ai_control_mode_step_index() {
+        assert_eq!(AIControlMode::GOAP.step_index(), None);
+        assert_eq!(AIControlMode::ExecutingLLM { step_index: 0 }.step_index(), Some(0));
+        assert_eq!(AIControlMode::ExecutingLLM { step_index: 42 }.step_index(), Some(42));
+        assert_eq!(AIControlMode::BehaviorTree.step_index(), None);
+    }
+
+    #[test]
+    fn test_ai_control_mode_executing_llm_factory() {
+        let mode = AIControlMode::executing_llm(5);
+        assert!(matches!(mode, AIControlMode::ExecutingLLM { step_index: 5 }));
+
+        let mode_zero = AIControlMode::executing_llm(0);
+        assert!(matches!(mode_zero, AIControlMode::ExecutingLLM { step_index: 0 }));
+
+        let mode_large = AIControlMode::executing_llm(1000);
+        assert!(matches!(mode_large, AIControlMode::ExecutingLLM { step_index: 1000 }));
+    }
+
+    #[test]
+    fn test_ai_control_mode_mode_name() {
+        assert_eq!(AIControlMode::GOAP.mode_name(), "GOAP");
+        assert_eq!(AIControlMode::ExecutingLLM { step_index: 0 }.mode_name(), "ExecutingLLM");
+        assert_eq!(AIControlMode::ExecutingLLM { step_index: 99 }.mode_name(), "ExecutingLLM");
+        assert_eq!(AIControlMode::BehaviorTree.mode_name(), "BehaviorTree");
+    }
+
+    #[test]
+    fn test_ai_control_mode_default() {
+        let default_mode = AIControlMode::default();
+        assert_eq!(default_mode, AIControlMode::GOAP);
+        assert!(default_mode.is_goap());
+    }
+
+    #[test]
+    fn test_ai_control_mode_hash() {
+        use std::collections::HashSet;
+
+        let mut set = HashSet::new();
+        set.insert(AIControlMode::GOAP);
+        set.insert(AIControlMode::ExecutingLLM { step_index: 0 });
+        set.insert(AIControlMode::ExecutingLLM { step_index: 1 });
+        set.insert(AIControlMode::BehaviorTree);
+
+        // Should have 4 unique entries (different step_index values are different)
+        assert_eq!(set.len(), 4);
+        assert!(set.contains(&AIControlMode::GOAP));
+        assert!(set.contains(&AIControlMode::ExecutingLLM { step_index: 0 }));
+        assert!(set.contains(&AIControlMode::ExecutingLLM { step_index: 1 }));
+        assert!(set.contains(&AIControlMode::BehaviorTree));
+    }
+
+    #[test]
+    fn test_ai_control_mode_helpers_consistency() {
+        // GOAP: instant, not fallback, no step_index
+        let goap = AIControlMode::GOAP;
+        assert!(goap.is_goap());
+        assert!(goap.is_instant());
+        assert!(!goap.is_fallback());
+        assert!(goap.step_index().is_none());
+
+        // ExecutingLLM: has step_index, not instant, not fallback
+        let llm = AIControlMode::ExecutingLLM { step_index: 3 };
+        assert!(llm.is_executing_llm());
+        assert!(!llm.is_instant());
+        assert!(!llm.is_fallback());
+        assert_eq!(llm.step_index(), Some(3));
+
+        // BehaviorTree: fallback mode, not instant
+        let bt = AIControlMode::BehaviorTree;
+        assert!(bt.is_behavior_tree());
+        assert!(bt.is_fallback());
+        assert!(!bt.is_instant());
+        assert!(bt.step_index().is_none());
+    }
+
+    #[test]
+    fn test_ai_control_mode_all_mutually_exclusive() {
+        // Each mode should only return true for exactly one is_* method
+        let modes = [
+            AIControlMode::GOAP,
+            AIControlMode::ExecutingLLM { step_index: 0 },
+            AIControlMode::BehaviorTree,
+        ];
+
+        for mode in &modes {
+            let count = [
+                mode.is_goap(),
+                mode.is_executing_llm(),
+                mode.is_behavior_tree(),
+            ].iter().filter(|&&b| b).count();
+            
+            assert_eq!(count, 1, "Mode {:?} should match exactly one category", mode);
+        }
     }
 }

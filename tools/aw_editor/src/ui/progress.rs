@@ -51,6 +51,18 @@ pub enum TaskCategory {
 }
 
 impl TaskCategory {
+    /// Get all task categories
+    pub fn all() -> &'static [TaskCategory] {
+        &[
+            TaskCategory::SceneLoading,
+            TaskCategory::AssetImport,
+            TaskCategory::Build,
+            TaskCategory::PlayMode,
+            TaskCategory::Export,
+            TaskCategory::Other,
+        ]
+    }
+
     /// Icon for the category
     pub fn icon(&self) -> &'static str {
         match self {
@@ -60,6 +72,18 @@ impl TaskCategory {
             TaskCategory::PlayMode => "▶️",
             TaskCategory::Export => "📤",
             TaskCategory::Other => "⚙️",
+        }
+    }
+
+    /// Display name for the category
+    pub fn name(&self) -> &'static str {
+        match self {
+            TaskCategory::SceneLoading => "Scene Loading",
+            TaskCategory::AssetImport => "Asset Import",
+            TaskCategory::Build => "Build",
+            TaskCategory::PlayMode => "Play Mode",
+            TaskCategory::Export => "Export",
+            TaskCategory::Other => "Other",
         }
     }
 
@@ -73,6 +97,27 @@ impl TaskCategory {
             TaskCategory::Export => egui::Color32::from_rgb(180, 100, 255),
             TaskCategory::Other => egui::Color32::from_rgb(150, 150, 150),
         }
+    }
+
+    /// Check if this category involves file I/O
+    pub fn is_io_intensive(&self) -> bool {
+        matches!(
+            self,
+            TaskCategory::SceneLoading
+                | TaskCategory::AssetImport
+                | TaskCategory::Export
+        )
+    }
+
+    /// Check if this category can be cancelled safely
+    pub fn is_cancellable(&self) -> bool {
+        !matches!(self, TaskCategory::PlayMode)
+    }
+}
+
+impl std::fmt::Display for TaskCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -556,5 +601,84 @@ mod tests {
         assert_eq!(pm.tasks.get(&id1).unwrap().category, TaskCategory::SceneLoading);
         assert_eq!(pm.tasks.get(&id2).unwrap().category, TaskCategory::AssetImport);
         assert_eq!(pm.tasks.get(&id3).unwrap().category, TaskCategory::Build);
+    }
+
+    // === TaskCategory Display and helper tests ===
+
+    #[test]
+    fn test_task_category_all() {
+        let all = TaskCategory::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&TaskCategory::SceneLoading));
+        assert!(all.contains(&TaskCategory::AssetImport));
+        assert!(all.contains(&TaskCategory::Build));
+        assert!(all.contains(&TaskCategory::PlayMode));
+        assert!(all.contains(&TaskCategory::Export));
+        assert!(all.contains(&TaskCategory::Other));
+    }
+
+    #[test]
+    fn test_task_category_display() {
+        assert_eq!(format!("{}", TaskCategory::SceneLoading), "📂 Scene Loading");
+        assert_eq!(format!("{}", TaskCategory::AssetImport), "📥 Asset Import");
+        assert_eq!(format!("{}", TaskCategory::Build), "🔨 Build");
+        assert_eq!(format!("{}", TaskCategory::PlayMode), "▶️ Play Mode");
+        assert_eq!(format!("{}", TaskCategory::Export), "📤 Export");
+        assert_eq!(format!("{}", TaskCategory::Other), "⚙️ Other");
+    }
+
+    #[test]
+    fn test_task_category_name() {
+        assert_eq!(TaskCategory::SceneLoading.name(), "Scene Loading");
+        assert_eq!(TaskCategory::AssetImport.name(), "Asset Import");
+        assert_eq!(TaskCategory::Build.name(), "Build");
+        assert_eq!(TaskCategory::PlayMode.name(), "Play Mode");
+        assert_eq!(TaskCategory::Export.name(), "Export");
+        assert_eq!(TaskCategory::Other.name(), "Other");
+    }
+
+    #[test]
+    fn test_task_category_is_io_intensive() {
+        assert!(TaskCategory::SceneLoading.is_io_intensive());
+        assert!(TaskCategory::AssetImport.is_io_intensive());
+        assert!(TaskCategory::Export.is_io_intensive());
+        assert!(!TaskCategory::Build.is_io_intensive());
+        assert!(!TaskCategory::PlayMode.is_io_intensive());
+        assert!(!TaskCategory::Other.is_io_intensive());
+    }
+
+    #[test]
+    fn test_task_category_is_cancellable() {
+        assert!(TaskCategory::SceneLoading.is_cancellable());
+        assert!(TaskCategory::AssetImport.is_cancellable());
+        assert!(TaskCategory::Build.is_cancellable());
+        assert!(TaskCategory::Export.is_cancellable());
+        assert!(TaskCategory::Other.is_cancellable());
+        assert!(!TaskCategory::PlayMode.is_cancellable());
+    }
+
+    #[test]
+    fn test_task_category_color() {
+        // Just verify colors are unique and valid
+        let colors = [
+            TaskCategory::SceneLoading.color(),
+            TaskCategory::AssetImport.color(),
+            TaskCategory::Build.color(),
+            TaskCategory::PlayMode.color(),
+            TaskCategory::Export.color(),
+            TaskCategory::Other.color(),
+        ];
+        // At least verify they're different
+        assert_ne!(colors[0], colors[1]);
+        assert_ne!(colors[2], colors[3]);
+    }
+
+    #[test]
+    fn test_task_category_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(TaskCategory::SceneLoading);
+        set.insert(TaskCategory::Build);
+        assert_eq!(set.len(), 2);
     }
 }

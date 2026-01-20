@@ -289,7 +289,7 @@ impl TabViewer for SimpleTabViewer {
 }
 
 /// Panel events that can be emitted from the tab viewer
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PanelEvent {
     /// A panel was closed
     PanelClosed(PanelType),
@@ -384,6 +384,161 @@ pub enum PanelEvent {
     ViewportCameraPreset(String),
     /// Request to reset panel layout to default
     ResetLayout,
+}
+
+impl std::fmt::Display for PanelEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PanelEvent::PanelClosed(panel) => write!(f, "Panel Closed: {}", panel),
+            PanelEvent::PanelFocused(panel) => write!(f, "Panel Focused: {}", panel),
+            PanelEvent::AddPanel(panel) => write!(f, "Add Panel: {}", panel),
+            PanelEvent::EntitySelected(id) => write!(f, "Entity Selected: {}", id),
+            PanelEvent::EntityDeselected => write!(f, "Entity Deselected"),
+            PanelEvent::TransformPositionChanged { entity_id, .. } => {
+                write!(f, "Transform Position Changed: {}", entity_id)
+            }
+            PanelEvent::TransformRotationChanged { entity_id, .. } => {
+                write!(f, "Transform Rotation Changed: {}", entity_id)
+            }
+            PanelEvent::TransformScaleChanged { entity_id, .. } => {
+                write!(f, "Transform Scale Changed: {}", entity_id)
+            }
+            PanelEvent::CreateEntity => write!(f, "Create Entity"),
+            PanelEvent::DeleteEntity(id) => write!(f, "Delete Entity: {}", id),
+            PanelEvent::DuplicateEntity(id) => write!(f, "Duplicate Entity: {}", id),
+            PanelEvent::MaterialChanged { name, property, .. } => {
+                write!(f, "Material Changed: {}.{}", name, property)
+            }
+            PanelEvent::AnimationPlayStateChanged { is_playing } => {
+                write!(f, "Animation {}", if *is_playing { "Playing" } else { "Paused" })
+            }
+            PanelEvent::AnimationFrameChanged { frame } => {
+                write!(f, "Animation Frame: {}", frame)
+            }
+            PanelEvent::AnimationKeyframeAdded { track_index, frame, .. } => {
+                write!(f, "Keyframe Added: Track {} @ {}", track_index, frame)
+            }
+            PanelEvent::ThemeChanged(theme) => write!(f, "Theme Changed: {}", theme),
+            PanelEvent::BuildRequested { target, profile } => {
+                write!(f, "Build Requested: {} ({})", target, profile)
+            }
+            PanelEvent::ConsoleCleared => write!(f, "Console Cleared"),
+            PanelEvent::AssetSelected(path) => write!(f, "Asset Selected: {}", path),
+            PanelEvent::BehaviorNodeSelected(id) => write!(f, "Behavior Node Selected: {}", id),
+            PanelEvent::GraphNodeSelected(id) => write!(f, "Graph Node Selected: {}", id),
+            PanelEvent::HierarchySearchChanged(query) => {
+                write!(f, "Hierarchy Search: {}", query)
+            }
+            PanelEvent::ConsoleSearchChanged(query) => write!(f, "Console Search: {}", query),
+            PanelEvent::RefreshSceneStats => write!(f, "Refresh Scene Stats"),
+            PanelEvent::AddComponent { component_type, .. } => {
+                write!(f, "Add Component: {}", component_type)
+            }
+            PanelEvent::RemoveComponent { component_type, .. } => {
+                write!(f, "Remove Component: {}", component_type)
+            }
+            PanelEvent::ViewportViewModeChanged(mode) => {
+                write!(f, "Viewport View Mode: {}", mode)
+            }
+            PanelEvent::ViewportGizmoModeChanged(mode) => {
+                write!(f, "Viewport Gizmo Mode: {}", mode)
+            }
+            PanelEvent::ViewportGizmoSpaceChanged(space) => {
+                write!(f, "Viewport Gizmo Space: {}", space)
+            }
+            PanelEvent::ViewportOverlayToggled { overlay, enabled } => {
+                write!(f, "Viewport Overlay {}: {}", overlay, enabled)
+            }
+            PanelEvent::ViewportCameraChanged { .. } => write!(f, "Viewport Camera Changed"),
+            PanelEvent::ViewportFocusOnSelection => write!(f, "Viewport Focus On Selection"),
+            PanelEvent::ViewportResetCamera => write!(f, "Viewport Reset Camera"),
+            PanelEvent::ViewportCameraPreset(preset) => {
+                write!(f, "Viewport Camera Preset: {}", preset)
+            }
+            PanelEvent::ResetLayout => write!(f, "Reset Layout"),
+        }
+    }
+}
+
+impl PanelEvent {
+    /// Returns the event category name.
+    pub fn category(&self) -> &'static str {
+        match self {
+            PanelEvent::PanelClosed(_) | PanelEvent::PanelFocused(_) | PanelEvent::AddPanel(_) | PanelEvent::ResetLayout => "Panel",
+            PanelEvent::EntitySelected(_) | PanelEvent::EntityDeselected | PanelEvent::CreateEntity | PanelEvent::DeleteEntity(_) | PanelEvent::DuplicateEntity(_) => "Entity",
+            PanelEvent::TransformPositionChanged { .. } | PanelEvent::TransformRotationChanged { .. } | PanelEvent::TransformScaleChanged { .. } => "Transform",
+            PanelEvent::MaterialChanged { .. } => "Material",
+            PanelEvent::AnimationPlayStateChanged { .. } | PanelEvent::AnimationFrameChanged { .. } | PanelEvent::AnimationKeyframeAdded { .. } => "Animation",
+            PanelEvent::ThemeChanged(_) => "Theme",
+            PanelEvent::BuildRequested { .. } => "Build",
+            PanelEvent::ConsoleCleared | PanelEvent::ConsoleSearchChanged(_) => "Console",
+            PanelEvent::AssetSelected(_) => "Asset",
+            PanelEvent::BehaviorNodeSelected(_) | PanelEvent::GraphNodeSelected(_) => "Graph",
+            PanelEvent::HierarchySearchChanged(_) => "Hierarchy",
+            PanelEvent::RefreshSceneStats => "Scene",
+            PanelEvent::AddComponent { .. } | PanelEvent::RemoveComponent { .. } => "Component",
+            PanelEvent::ViewportViewModeChanged(_) | PanelEvent::ViewportGizmoModeChanged(_) | PanelEvent::ViewportGizmoSpaceChanged(_) | PanelEvent::ViewportOverlayToggled { .. } | PanelEvent::ViewportCameraChanged { .. } | PanelEvent::ViewportFocusOnSelection | PanelEvent::ViewportResetCamera | PanelEvent::ViewportCameraPreset(_) => "Viewport",
+        }
+    }
+
+    /// Returns true if this is a panel management event.
+    pub fn is_panel_event(&self) -> bool {
+        matches!(self, 
+            PanelEvent::PanelClosed(_) | 
+            PanelEvent::PanelFocused(_) | 
+            PanelEvent::AddPanel(_) | 
+            PanelEvent::ResetLayout
+        )
+    }
+
+    /// Returns true if this is an entity-related event.
+    pub fn is_entity_event(&self) -> bool {
+        matches!(self,
+            PanelEvent::EntitySelected(_) |
+            PanelEvent::EntityDeselected |
+            PanelEvent::CreateEntity |
+            PanelEvent::DeleteEntity(_) |
+            PanelEvent::DuplicateEntity(_)
+        )
+    }
+
+    /// Returns true if this is a transform event.
+    pub fn is_transform_event(&self) -> bool {
+        matches!(self,
+            PanelEvent::TransformPositionChanged { .. } |
+            PanelEvent::TransformRotationChanged { .. } |
+            PanelEvent::TransformScaleChanged { .. }
+        )
+    }
+
+    /// Returns true if this is a viewport event.
+    pub fn is_viewport_event(&self) -> bool {
+        matches!(self,
+            PanelEvent::ViewportViewModeChanged(_) |
+            PanelEvent::ViewportGizmoModeChanged(_) |
+            PanelEvent::ViewportGizmoSpaceChanged(_) |
+            PanelEvent::ViewportOverlayToggled { .. } |
+            PanelEvent::ViewportCameraChanged { .. } |
+            PanelEvent::ViewportFocusOnSelection |
+            PanelEvent::ViewportResetCamera |
+            PanelEvent::ViewportCameraPreset(_)
+        )
+    }
+
+    /// Returns the entity ID if this event references one.
+    pub fn entity_id(&self) -> Option<u64> {
+        match self {
+            PanelEvent::EntitySelected(id) |
+            PanelEvent::DeleteEntity(id) |
+            PanelEvent::DuplicateEntity(id) |
+            PanelEvent::TransformPositionChanged { entity_id: id, .. } |
+            PanelEvent::TransformRotationChanged { entity_id: id, .. } |
+            PanelEvent::TransformScaleChanged { entity_id: id, .. } |
+            PanelEvent::AddComponent { entity_id: id, .. } |
+            PanelEvent::RemoveComponent { entity_id: id, .. } => Some(*id),
+            _ => None,
+        }
+    }
 }
 
 /// Callback type for panel events
@@ -521,7 +676,7 @@ impl Default for MaterialInfo {
 }
 
 /// Theme settings for theme manager
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EditorTheme {
     Dark,
     Light,
@@ -529,9 +684,52 @@ pub enum EditorTheme {
     Solarized,
 }
 
+impl std::fmt::Display for EditorTheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EditorTheme::Dark => write!(f, "Dark"),
+            EditorTheme::Light => write!(f, "Light"),
+            EditorTheme::Nord => write!(f, "Nord"),
+            EditorTheme::Solarized => write!(f, "Solarized"),
+        }
+    }
+}
+
 impl Default for EditorTheme {
     fn default() -> Self {
         Self::Dark
+    }
+}
+
+impl EditorTheme {
+    /// Returns all available themes.
+    pub fn all() -> &'static [Self] {
+        &[
+            EditorTheme::Dark,
+            EditorTheme::Light,
+            EditorTheme::Nord,
+            EditorTheme::Solarized,
+        ]
+    }
+
+    /// Returns the display name of this theme.
+    pub fn name(&self) -> &'static str {
+        match self {
+            EditorTheme::Dark => "Dark",
+            EditorTheme::Light => "Light",
+            EditorTheme::Nord => "Nord",
+            EditorTheme::Solarized => "Solarized",
+        }
+    }
+
+    /// Returns true if this is a dark theme.
+    pub fn is_dark(&self) -> bool {
+        matches!(self, EditorTheme::Dark | EditorTheme::Nord)
+    }
+
+    /// Returns true if this is a light theme.
+    pub fn is_light(&self) -> bool {
+        matches!(self, EditorTheme::Light | EditorTheme::Solarized)
     }
 }
 
@@ -614,7 +812,7 @@ pub struct BehaviorNode {
 }
 
 /// Behavior node categories
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BehaviorNodeType {
     Root,
     Sequence,
@@ -622,6 +820,83 @@ pub enum BehaviorNodeType {
     Condition,
     Action,
     Decorator,
+}
+
+impl std::fmt::Display for BehaviorNodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BehaviorNodeType::Root => write!(f, "Root"),
+            BehaviorNodeType::Sequence => write!(f, "Sequence"),
+            BehaviorNodeType::Selector => write!(f, "Selector"),
+            BehaviorNodeType::Condition => write!(f, "Condition"),
+            BehaviorNodeType::Action => write!(f, "Action"),
+            BehaviorNodeType::Decorator => write!(f, "Decorator"),
+        }
+    }
+}
+
+impl Default for BehaviorNodeType {
+    fn default() -> Self {
+        Self::Action
+    }
+}
+
+impl BehaviorNodeType {
+    /// Returns all behavior node types.
+    pub fn all() -> &'static [Self] {
+        &[
+            BehaviorNodeType::Root,
+            BehaviorNodeType::Sequence,
+            BehaviorNodeType::Selector,
+            BehaviorNodeType::Condition,
+            BehaviorNodeType::Action,
+            BehaviorNodeType::Decorator,
+        ]
+    }
+
+    /// Returns the display name of this node type.
+    pub fn name(&self) -> &'static str {
+        match self {
+            BehaviorNodeType::Root => "Root",
+            BehaviorNodeType::Sequence => "Sequence",
+            BehaviorNodeType::Selector => "Selector",
+            BehaviorNodeType::Condition => "Condition",
+            BehaviorNodeType::Action => "Action",
+            BehaviorNodeType::Decorator => "Decorator",
+        }
+    }
+
+    /// Returns an icon for this node type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BehaviorNodeType::Root => "🌳",
+            BehaviorNodeType::Sequence => "➡️",
+            BehaviorNodeType::Selector => "❓",
+            BehaviorNodeType::Condition => "⁉️",
+            BehaviorNodeType::Action => "⚡",
+            BehaviorNodeType::Decorator => "🎁",
+        }
+    }
+
+    /// Returns true if this is a composite node type.
+    pub fn is_composite(&self) -> bool {
+        matches!(self, BehaviorNodeType::Sequence | BehaviorNodeType::Selector)
+    }
+
+    /// Returns true if this is a leaf node type.
+    pub fn is_leaf(&self) -> bool {
+        matches!(self, BehaviorNodeType::Condition | BehaviorNodeType::Action)
+    }
+
+    /// Returns true if this node can have children.
+    pub fn can_have_children(&self) -> bool {
+        matches!(self, 
+            BehaviorNodeType::Root | 
+            BehaviorNodeType::Sequence | 
+            BehaviorNodeType::Selector | 
+            BehaviorNodeType::Decorator
+        )
+    }
 }
 
 /// Full-featured editor tab viewer
@@ -6534,5 +6809,89 @@ mod tests {
         // Other panels should scroll
         assert!(PanelType::Console.has_scroll());
         assert!(PanelType::Hierarchy.has_scroll());
+    }
+
+    // ==================== PanelEvent Tests ====================
+
+    #[test]
+    fn test_panel_event_display() {
+        let event = PanelEvent::PanelClosed(PanelType::Console);
+        assert!(event.to_string().contains("Closed"));
+
+        let event = PanelEvent::EntitySelected(42);
+        assert!(event.to_string().contains("Selected"));
+
+        let event = PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 };
+        assert!(event.to_string().contains("Transform"));
+    }
+
+    #[test]
+    fn test_panel_event_category() {
+        assert!(PanelEvent::PanelClosed(PanelType::Console).is_panel_event());
+        assert!(PanelEvent::PanelFocused(PanelType::Console).is_panel_event());
+        assert!(PanelEvent::EntitySelected(1).is_entity_event());
+        assert!(PanelEvent::EntityDeselected.is_entity_event());
+        assert!(PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 }.is_transform_event());
+        assert!(PanelEvent::ViewportFocusOnSelection.is_viewport_event());
+    }
+
+    #[test]
+    fn test_panel_event_entity_id() {
+        assert_eq!(PanelEvent::EntitySelected(42).entity_id(), Some(42));
+        assert_eq!(PanelEvent::EntityDeselected.entity_id(), None);
+        assert_eq!(PanelEvent::TransformPositionChanged { entity_id: 5, x: 0.0, y: 0.0 }.entity_id(), Some(5));
+    }
+
+    // ==================== EditorTheme Tests ====================
+
+    #[test]
+    fn test_editor_theme_display_and_all() {
+        let themes = EditorTheme::all();
+        assert_eq!(themes.len(), 4);
+        for theme in themes {
+            assert!(!theme.name().is_empty());
+            assert!(!theme.to_string().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_editor_theme_light_dark() {
+        assert!(EditorTheme::Dark.is_dark());
+        assert!(!EditorTheme::Dark.is_light());
+        assert!(EditorTheme::Light.is_light());
+        assert!(!EditorTheme::Light.is_dark());
+        assert!(EditorTheme::Nord.is_dark());
+        assert!(EditorTheme::Solarized.is_light());
+    }
+
+    // ==================== BehaviorNodeType Tests ====================
+
+    #[test]
+    fn test_behavior_node_type_display_and_all() {
+        let types = BehaviorNodeType::all();
+        assert_eq!(types.len(), 6);
+        for node_type in types {
+            assert!(!node_type.name().is_empty());
+            assert!(!node_type.icon().is_empty());
+            assert!(!node_type.to_string().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_behavior_node_type_default() {
+        assert_eq!(BehaviorNodeType::default(), BehaviorNodeType::Action);
+    }
+
+    #[test]
+    fn test_behavior_node_type_composite_leaf() {
+        // Composite nodes can have children
+        assert!(BehaviorNodeType::Sequence.is_composite());
+        assert!(BehaviorNodeType::Selector.is_composite());
+        assert!(BehaviorNodeType::Sequence.can_have_children());
+
+        // Leaf nodes cannot have children
+        assert!(BehaviorNodeType::Action.is_leaf());
+        assert!(BehaviorNodeType::Condition.is_leaf());
+        assert!(!BehaviorNodeType::Action.can_have_children());
     }
 }

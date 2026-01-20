@@ -71,6 +71,58 @@ impl IVec2 {
     pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
     }
+
+    /// Returns the zero vector.
+    pub const fn zero() -> Self {
+        Self { x: 0, y: 0 }
+    }
+
+    /// Returns `true` if both components are zero.
+    pub fn is_zero(&self) -> bool {
+        self.x == 0 && self.y == 0
+    }
+
+    /// Returns the Manhattan distance to another point.
+    pub fn manhattan_distance(&self, other: &Self) -> i32 {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
+    }
+
+    /// Returns the squared Euclidean distance to another point.
+    pub fn distance_squared(&self, other: &Self) -> i32 {
+        let dx = self.x - other.x;
+        let dy = self.y - other.y;
+        dx * dx + dy * dy
+    }
+
+    /// Returns the Euclidean distance to another point.
+    pub fn distance(&self, other: &Self) -> f32 {
+        (self.distance_squared(other) as f32).sqrt()
+    }
+
+    /// Returns a new vector offset by the given amounts.
+    pub fn offset(&self, dx: i32, dy: i32) -> Self {
+        Self { x: self.x + dx, y: self.y + dy }
+    }
+}
+
+impl std::fmt::Display for IVec2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl std::ops::Add for IVec2 {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self { x: self.x + rhs.x, y: self.y + rhs.y }
+    }
+}
+
+impl std::ops::Sub for IVec2 {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self { x: self.x - rhs.x, y: self.y - rhs.y }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -82,6 +134,57 @@ pub struct WorldSnapshot {
     pub pois: Vec<Poi>,
     pub obstacles: Vec<IVec2>,
     pub objective: Option<String>,
+}
+
+impl WorldSnapshot {
+    /// Returns the number of enemies in the snapshot.
+    pub fn enemy_count(&self) -> usize {
+        self.enemies.len()
+    }
+
+    /// Returns `true` if there are no enemies.
+    pub fn has_no_enemies(&self) -> bool {
+        self.enemies.is_empty()
+    }
+
+    /// Returns the nearest enemy to the companion's position.
+    pub fn nearest_enemy(&self) -> Option<&EnemyState> {
+        self.enemies.iter().min_by_key(|e| self.me.pos.distance_squared(&e.pos))
+    }
+
+    /// Returns enemies within the given Manhattan distance from the companion.
+    pub fn enemies_within_range(&self, range: i32) -> Vec<&EnemyState> {
+        self.enemies.iter()
+            .filter(|e| self.me.pos.manhattan_distance(&e.pos) <= range)
+            .collect()
+    }
+
+    /// Returns `true` if the companion has ammo.
+    pub fn has_ammo(&self) -> bool {
+        self.me.ammo > 0
+    }
+
+    /// Returns `true` if there are any points of interest.
+    pub fn has_pois(&self) -> bool {
+        !self.pois.is_empty()
+    }
+
+    /// Returns `true` if there is an objective.
+    pub fn has_objective(&self) -> bool {
+        self.objective.is_some()
+    }
+
+    /// Returns the distance from the companion to the player.
+    pub fn distance_to_player(&self) -> f32 {
+        self.me.pos.distance(&self.player.pos)
+    }
+}
+
+impl std::fmt::Display for WorldSnapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "WorldSnapshot(t={:.1}s, {} enemies, {} POIs)", 
+            self.t, self.enemies.len(), self.pois.len())
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -137,10 +240,63 @@ pub struct InteractableObject {
     pub requires_item: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct PlanIntent {
     pub plan_id: String,
     pub steps: Vec<ActionStep>,
+}
+
+impl PlanIntent {
+    /// Creates an empty plan with the given ID.
+    pub fn new(plan_id: impl Into<String>) -> Self {
+        Self { plan_id: plan_id.into(), steps: Vec::new() }
+    }
+
+    /// Creates an empty plan with no ID.
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    /// Returns `true` if the plan has no steps.
+    pub fn is_empty(&self) -> bool {
+        self.steps.is_empty()
+    }
+
+    /// Returns the number of steps in the plan.
+    pub fn step_count(&self) -> usize {
+        self.steps.len()
+    }
+
+    /// Adds a step to the plan and returns self.
+    pub fn with_step(mut self, step: ActionStep) -> Self {
+        self.steps.push(step);
+        self
+    }
+
+    /// Returns the first step, if any.
+    pub fn first_step(&self) -> Option<&ActionStep> {
+        self.steps.first()
+    }
+
+    /// Returns `true` if the plan contains any movement actions.
+    pub fn has_movement(&self) -> bool {
+        self.steps.iter().any(|s| s.is_movement())
+    }
+
+    /// Returns `true` if the plan contains any offensive actions.
+    pub fn has_offensive(&self) -> bool {
+        self.steps.iter().any(|s| s.is_offensive())
+    }
+}
+
+impl std::fmt::Display for PlanIntent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.plan_id.is_empty() {
+            write!(f, "PlanIntent({} steps)", self.steps.len())
+        } else {
+            write!(f, "PlanIntent('{}', {} steps)", self.plan_id, self.steps.len())
+        }
+    }
 }
 
 // ============================================================================
@@ -365,7 +521,7 @@ impl TerrainGenerationRequest {
 // ACTION STEP ENUM - 38 Tools Across 7 Categories (includes ModifyTerrain)
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "act")]
 pub enum ActionStep {
     // ═══════════════════════════════════════
@@ -535,6 +691,162 @@ pub enum ActionStep {
         /// Full terrain generation request payload
         payload: TerrainGenerationRequest,
     },
+}
+
+impl ActionStep {
+    /// Returns the category name for this action (Movement, Offensive, etc.).
+    pub fn category(&self) -> &'static str {
+        match self {
+            Self::MoveTo { .. } | Self::Approach { .. } | Self::Retreat { .. } |
+            Self::TakeCover { .. } | Self::Strafe { .. } | Self::Patrol { .. } => "Movement",
+            
+            Self::Attack { .. } | Self::AimedShot { .. } | Self::QuickAttack { .. } |
+            Self::HeavyAttack { .. } | Self::AoEAttack { .. } | Self::ThrowExplosive { .. } |
+            Self::CoverFire { .. } | Self::Charge { .. } => "Offensive",
+            
+            Self::Block | Self::Dodge { .. } | Self::Parry | Self::ThrowSmoke { .. } |
+            Self::Heal { .. } | Self::UseDefensiveAbility { .. } => "Defensive",
+            
+            Self::EquipWeapon { .. } | Self::SwitchWeapon { .. } | Self::Reload |
+            Self::UseItem { .. } | Self::DropItem { .. } => "Equipment",
+            
+            Self::CallReinforcements { .. } | Self::MarkTarget { .. } | Self::RequestCover { .. } |
+            Self::CoordinateAttack { .. } | Self::SetAmbush { .. } | Self::Distract { .. } |
+            Self::Regroup { .. } => "Tactical",
+            
+            Self::Scan { .. } | Self::Wait { .. } | Self::Interact { .. } |
+            Self::UseAbility { .. } | Self::Taunt { .. } => "Utility",
+            
+            Self::Throw { .. } | Self::Revive { .. } => "Legacy",
+            
+            Self::ModifyTerrain { .. } => "Terrain",
+        }
+    }
+
+    /// Returns the action name as a string (e.g., "MoveTo", "Attack").
+    pub fn action_name(&self) -> &'static str {
+        match self {
+            Self::MoveTo { .. } => "MoveTo",
+            Self::Approach { .. } => "Approach",
+            Self::Retreat { .. } => "Retreat",
+            Self::TakeCover { .. } => "TakeCover",
+            Self::Strafe { .. } => "Strafe",
+            Self::Patrol { .. } => "Patrol",
+            Self::Attack { .. } => "Attack",
+            Self::AimedShot { .. } => "AimedShot",
+            Self::QuickAttack { .. } => "QuickAttack",
+            Self::HeavyAttack { .. } => "HeavyAttack",
+            Self::AoEAttack { .. } => "AoEAttack",
+            Self::ThrowExplosive { .. } => "ThrowExplosive",
+            Self::CoverFire { .. } => "CoverFire",
+            Self::Charge { .. } => "Charge",
+            Self::Block => "Block",
+            Self::Dodge { .. } => "Dodge",
+            Self::Parry => "Parry",
+            Self::ThrowSmoke { .. } => "ThrowSmoke",
+            Self::Heal { .. } => "Heal",
+            Self::UseDefensiveAbility { .. } => "UseDefensiveAbility",
+            Self::EquipWeapon { .. } => "EquipWeapon",
+            Self::SwitchWeapon { .. } => "SwitchWeapon",
+            Self::Reload => "Reload",
+            Self::UseItem { .. } => "UseItem",
+            Self::DropItem { .. } => "DropItem",
+            Self::CallReinforcements { .. } => "CallReinforcements",
+            Self::MarkTarget { .. } => "MarkTarget",
+            Self::RequestCover { .. } => "RequestCover",
+            Self::CoordinateAttack { .. } => "CoordinateAttack",
+            Self::SetAmbush { .. } => "SetAmbush",
+            Self::Distract { .. } => "Distract",
+            Self::Regroup { .. } => "Regroup",
+            Self::Scan { .. } => "Scan",
+            Self::Wait { .. } => "Wait",
+            Self::Interact { .. } => "Interact",
+            Self::UseAbility { .. } => "UseAbility",
+            Self::Taunt { .. } => "Taunt",
+            Self::Throw { .. } => "Throw",
+            Self::Revive { .. } => "Revive",
+            Self::ModifyTerrain { .. } => "ModifyTerrain",
+        }
+    }
+
+    /// Returns `true` if this is a movement action.
+    pub fn is_movement(&self) -> bool {
+        self.category() == "Movement"
+    }
+
+    /// Returns `true` if this is an offensive action.
+    pub fn is_offensive(&self) -> bool {
+        self.category() == "Offensive"
+    }
+
+    /// Returns `true` if this is a defensive action.
+    pub fn is_defensive(&self) -> bool {
+        self.category() == "Defensive"
+    }
+
+    /// Returns `true` if this is an equipment action.
+    pub fn is_equipment(&self) -> bool {
+        self.category() == "Equipment"
+    }
+
+    /// Returns `true` if this is a tactical action.
+    pub fn is_tactical(&self) -> bool {
+        self.category() == "Tactical"
+    }
+
+    /// Returns `true` if this is a utility action.
+    pub fn is_utility(&self) -> bool {
+        self.category() == "Utility"
+    }
+
+    /// Returns `true` if this targets a specific entity.
+    pub fn targets_entity(&self) -> bool {
+        matches!(self,
+            Self::Approach { .. } | Self::Retreat { .. } | Self::Strafe { .. } |
+            Self::Attack { .. } | Self::AimedShot { .. } | Self::QuickAttack { .. } |
+            Self::HeavyAttack { .. } | Self::CoverFire { .. } | Self::Charge { .. } |
+            Self::MarkTarget { .. } | Self::CoordinateAttack { .. } | Self::Distract { .. } |
+            Self::Interact { .. } | Self::Taunt { .. } | Self::Revive { .. }
+        )
+    }
+
+    /// Returns the target entity ID if this action targets one.
+    pub fn target_entity(&self) -> Option<Entity> {
+        match self {
+            Self::Approach { target_id, .. } |
+            Self::Retreat { target_id, .. } |
+            Self::Strafe { target_id, .. } |
+            Self::Attack { target_id } |
+            Self::AimedShot { target_id } |
+            Self::QuickAttack { target_id } |
+            Self::HeavyAttack { target_id } |
+            Self::CoverFire { target_id, .. } |
+            Self::Charge { target_id } |
+            Self::MarkTarget { target_id } |
+            Self::CoordinateAttack { target_id } |
+            Self::Distract { target_id } |
+            Self::Interact { target_id } |
+            Self::Taunt { target_id } => Some(*target_id),
+            Self::Revive { ally_id } => Some(*ally_id),
+            Self::Heal { target_id } => *target_id,
+            _ => None,
+        }
+    }
+
+    /// Returns `true` if this action has a position component.
+    pub fn has_position(&self) -> bool {
+        matches!(self,
+            Self::MoveTo { .. } | Self::TakeCover { position: Some(_), .. } |
+            Self::AoEAttack { .. } | Self::ThrowExplosive { .. } | Self::ThrowSmoke { .. } |
+            Self::SetAmbush { .. } | Self::Regroup { .. } | Self::Throw { .. }
+        )
+    }
+}
+
+impl std::fmt::Display for ActionStep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}::{}", self.category(), self.action_name())
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1126,5 +1438,718 @@ mod tests {
         assert!(json.contains("\"request_id\":\"terrain-001\""));
         assert!(json.contains("\"type\":\"Cave\""));
         assert!(json.contains("\"depth\":30"));
+    }
+
+    // ========== IVec2 Helper Tests ==========
+
+    #[test]
+    fn test_ivec2_zero() {
+        let v = IVec2::zero();
+        assert_eq!(v.x, 0);
+        assert_eq!(v.y, 0);
+        assert!(v.is_zero());
+    }
+
+    #[test]
+    fn test_ivec2_is_zero() {
+        assert!(IVec2::zero().is_zero());
+        assert!(IVec2 { x: 0, y: 0 }.is_zero());
+        assert!(!IVec2 { x: 1, y: 0 }.is_zero());
+        assert!(!IVec2 { x: 0, y: 1 }.is_zero());
+        assert!(!IVec2 { x: -1, y: -1 }.is_zero());
+    }
+
+    #[test]
+    fn test_ivec2_manhattan_distance() {
+        let a = IVec2 { x: 0, y: 0 };
+        let b = IVec2 { x: 3, y: 4 };
+        assert_eq!(a.manhattan_distance(&b), 7);
+        assert_eq!(b.manhattan_distance(&a), 7);
+
+        let c = IVec2 { x: -2, y: 3 };
+        let d = IVec2 { x: 1, y: -1 };
+        assert_eq!(c.manhattan_distance(&d), 7); // |3| + |4| = 7
+    }
+
+    #[test]
+    fn test_ivec2_distance_squared() {
+        let a = IVec2 { x: 0, y: 0 };
+        let b = IVec2 { x: 3, y: 4 };
+        assert_eq!(a.distance_squared(&b), 25); // 3*3 + 4*4 = 25
+        assert_eq!(b.distance_squared(&a), 25);
+
+        let c = IVec2 { x: 1, y: 1 };
+        let d = IVec2 { x: 4, y: 5 };
+        assert_eq!(c.distance_squared(&d), 25); // 3*3 + 4*4 = 25
+    }
+
+    #[test]
+    fn test_ivec2_distance() {
+        let a = IVec2 { x: 0, y: 0 };
+        let b = IVec2 { x: 3, y: 4 };
+        assert!((a.distance(&b) - 5.0).abs() < 0.001);
+
+        let c = IVec2 { x: 0, y: 0 };
+        let d = IVec2 { x: 0, y: 10 };
+        assert!((c.distance(&d) - 10.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_ivec2_offset() {
+        let v = IVec2 { x: 5, y: 10 };
+        let result = v.offset(3, -2);
+        assert_eq!(result, IVec2 { x: 8, y: 8 });
+
+        let zero = IVec2::zero();
+        let result = zero.offset(-5, 5);
+        assert_eq!(result, IVec2 { x: -5, y: 5 });
+    }
+
+    #[test]
+    fn test_ivec2_add() {
+        let a = IVec2 { x: 1, y: 2 };
+        let b = IVec2 { x: 3, y: 4 };
+        let sum = a + b;
+        assert_eq!(sum, IVec2 { x: 4, y: 6 });
+    }
+
+    #[test]
+    fn test_ivec2_sub() {
+        let a = IVec2 { x: 5, y: 10 };
+        let b = IVec2 { x: 2, y: 3 };
+        let diff = a - b;
+        assert_eq!(diff, IVec2 { x: 3, y: 7 });
+    }
+
+    #[test]
+    fn test_ivec2_display() {
+        let v = IVec2 { x: 42, y: -17 };
+        assert_eq!(format!("{}", v), "(42, -17)");
+    }
+
+    // ========== WorldSnapshot Helper Tests ==========
+
+    #[test]
+    fn test_world_snapshot_enemy_count() {
+        let mut snap = WorldSnapshot::default();
+        assert_eq!(snap.enemy_count(), 0);
+
+        snap.enemies.push(EnemyState::default());
+        snap.enemies.push(EnemyState::default());
+        assert_eq!(snap.enemy_count(), 2);
+    }
+
+    #[test]
+    fn test_world_snapshot_has_no_enemies() {
+        let mut snap = WorldSnapshot::default();
+        assert!(snap.has_no_enemies());
+
+        snap.enemies.push(EnemyState::default());
+        assert!(!snap.has_no_enemies());
+    }
+
+    #[test]
+    fn test_world_snapshot_nearest_enemy() {
+        let mut snap = WorldSnapshot::default();
+        snap.me.pos = IVec2::zero();
+
+        // No enemies
+        assert!(snap.nearest_enemy().is_none());
+
+        // Add enemies at various distances
+        snap.enemies.push(EnemyState {
+            pos: IVec2 { x: 10, y: 0 },
+            ..Default::default()
+        });
+        snap.enemies.push(EnemyState {
+            pos: IVec2 { x: 5, y: 0 },
+            ..Default::default()
+        });
+        snap.enemies.push(EnemyState {
+            pos: IVec2 { x: 20, y: 0 },
+            ..Default::default()
+        });
+
+        let nearest = snap.nearest_enemy().unwrap();
+        assert_eq!(nearest.pos, IVec2 { x: 5, y: 0 });
+    }
+
+    #[test]
+    fn test_world_snapshot_enemies_within_range() {
+        let mut snap = WorldSnapshot::default();
+        snap.me.pos = IVec2::zero();
+
+        snap.enemies.push(EnemyState {
+            id: 1,
+            pos: IVec2 { x: 5, y: 0 }, // manhattan = 5
+            ..Default::default()
+        });
+        snap.enemies.push(EnemyState {
+            id: 2,
+            pos: IVec2 { x: 15, y: 0 }, // manhattan = 15
+            ..Default::default()
+        });
+        snap.enemies.push(EnemyState {
+            id: 3,
+            pos: IVec2 { x: 3, y: 4 }, // manhattan = 7
+            ..Default::default()
+        });
+
+        let in_range = snap.enemies_within_range(10);
+        assert_eq!(in_range.len(), 2);
+        assert!(in_range.iter().any(|e| e.id == 1));
+        assert!(in_range.iter().any(|e| e.id == 3));
+    }
+
+    #[test]
+    fn test_world_snapshot_has_ammo() {
+        let mut snap = WorldSnapshot::default();
+        snap.me.ammo = 10;
+        assert!(snap.has_ammo());
+
+        snap.me.ammo = 0;
+        assert!(!snap.has_ammo());
+
+        snap.me.ammo = -1;
+        assert!(!snap.has_ammo());
+    }
+
+    #[test]
+    fn test_world_snapshot_has_pois() {
+        let mut snap = WorldSnapshot::default();
+        assert!(!snap.has_pois());
+
+        snap.pois.push(Poi::default());
+        assert!(snap.has_pois());
+    }
+
+    #[test]
+    fn test_world_snapshot_has_objective() {
+        let mut snap = WorldSnapshot::default();
+        assert!(!snap.has_objective());
+
+        snap.objective = Some("Capture the point".to_string());
+        assert!(snap.has_objective());
+    }
+
+    #[test]
+    fn test_world_snapshot_distance_to_player() {
+        let mut snap = WorldSnapshot::default();
+        snap.me.pos = IVec2::zero();
+        snap.player.pos = IVec2 { x: 3, y: 4 };
+
+        assert!((snap.distance_to_player() - 5.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_world_snapshot_display() {
+        let mut snap = WorldSnapshot::default();
+        snap.t = 10.5;
+        snap.enemies.push(EnemyState::default());
+        snap.pois.push(Poi::default());
+
+        let display = format!("{}", snap);
+        assert!(display.contains("10.5"));
+        assert!(display.contains("1 enemies"));
+        assert!(display.contains("1 POIs"));
+    }
+
+    // ========== PlanIntent Helper Tests ==========
+
+    #[test]
+    fn test_plan_intent_new() {
+        let plan = PlanIntent::new("test-plan");
+        assert_eq!(plan.plan_id, "test-plan");
+        assert!(plan.steps.is_empty());
+    }
+
+    #[test]
+    fn test_plan_intent_empty() {
+        let plan = PlanIntent::empty();
+        assert!(plan.plan_id.is_empty());
+        assert!(plan.steps.is_empty());
+    }
+
+    #[test]
+    fn test_plan_intent_is_empty() {
+        let empty_plan = PlanIntent::empty();
+        assert!(empty_plan.is_empty());
+
+        let non_empty = PlanIntent {
+            plan_id: "test".to_string(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+        assert!(!non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_plan_intent_step_count() {
+        let mut plan = PlanIntent::new("test");
+        assert_eq!(plan.step_count(), 0);
+
+        plan.steps.push(ActionStep::Reload);
+        plan.steps.push(ActionStep::Wait { duration: 1.0 });
+        assert_eq!(plan.step_count(), 2);
+    }
+
+    #[test]
+    fn test_plan_intent_with_step() {
+        let plan = PlanIntent::new("test")
+            .with_step(ActionStep::Reload)
+            .with_step(ActionStep::Wait { duration: 1.0 });
+
+        assert_eq!(plan.step_count(), 2);
+        assert_eq!(plan.steps[0], ActionStep::Reload);
+    }
+
+    #[test]
+    fn test_plan_intent_first_step() {
+        let empty = PlanIntent::empty();
+        assert!(empty.first_step().is_none());
+
+        let plan = PlanIntent::new("test").with_step(ActionStep::Reload);
+        assert_eq!(plan.first_step(), Some(&ActionStep::Reload));
+    }
+
+    #[test]
+    fn test_plan_intent_has_movement() {
+        let empty = PlanIntent::empty();
+        assert!(!empty.has_movement());
+
+        let with_move = PlanIntent::new("test").with_step(ActionStep::MoveTo {
+            x: 5,
+            y: 5,
+            speed: None,
+        });
+        assert!(with_move.has_movement());
+
+        let without_move = PlanIntent::new("test").with_step(ActionStep::Reload);
+        assert!(!without_move.has_movement());
+    }
+
+    #[test]
+    fn test_plan_intent_has_offensive() {
+        let empty = PlanIntent::empty();
+        assert!(!empty.has_offensive());
+
+        let with_attack = PlanIntent::new("test").with_step(ActionStep::Attack { target_id: 1 });
+        assert!(with_attack.has_offensive());
+
+        let without_attack = PlanIntent::new("test").with_step(ActionStep::Reload);
+        assert!(!without_attack.has_offensive());
+    }
+
+    #[test]
+    fn test_plan_intent_display() {
+        let plan = PlanIntent::new("combat-plan")
+            .with_step(ActionStep::Reload)
+            .with_step(ActionStep::Attack { target_id: 1 });
+
+        let display = format!("{}", plan);
+        assert!(display.contains("combat-plan"));
+        assert!(display.contains("2 steps"));
+    }
+
+    // ========== ActionStep Helper Tests ==========
+
+    #[test]
+    fn test_action_step_category_movement() {
+        assert_eq!(
+            ActionStep::MoveTo {
+                x: 0,
+                y: 0,
+                speed: None
+            }
+            .category(),
+            "Movement"
+        );
+        assert_eq!(
+            ActionStep::Approach {
+                target_id: 1,
+                distance: 5.0
+            }
+            .category(),
+            "Movement"
+        );
+        assert_eq!(
+            ActionStep::Retreat {
+                target_id: 1,
+                distance: 5.0
+            }
+            .category(),
+            "Movement"
+        );
+        assert_eq!(ActionStep::TakeCover { position: None }.category(), "Movement");
+        assert_eq!(
+            ActionStep::Strafe {
+                target_id: 1,
+                direction: StrafeDirection::Left
+            }
+            .category(),
+            "Movement"
+        );
+        assert_eq!(ActionStep::Patrol { waypoints: vec![] }.category(), "Movement");
+    }
+
+    #[test]
+    fn test_action_step_category_offensive() {
+        assert_eq!(ActionStep::Attack { target_id: 1 }.category(), "Offensive");
+        assert_eq!(ActionStep::AimedShot { target_id: 1 }.category(), "Offensive");
+        assert_eq!(ActionStep::QuickAttack { target_id: 1 }.category(), "Offensive");
+        assert_eq!(ActionStep::HeavyAttack { target_id: 1 }.category(), "Offensive");
+        assert_eq!(
+            ActionStep::AoEAttack {
+                x: 0,
+                y: 0,
+                radius: 5.0
+            }
+            .category(),
+            "Offensive"
+        );
+        assert_eq!(ActionStep::ThrowExplosive { x: 0, y: 0 }.category(), "Offensive");
+        assert_eq!(
+            ActionStep::CoverFire {
+                target_id: 1,
+                duration: 2.0
+            }
+            .category(),
+            "Offensive"
+        );
+        assert_eq!(ActionStep::Charge { target_id: 1 }.category(), "Offensive");
+    }
+
+    #[test]
+    fn test_action_step_category_defensive() {
+        assert_eq!(ActionStep::Block.category(), "Defensive");
+        assert_eq!(ActionStep::Dodge { direction: None }.category(), "Defensive");
+        assert_eq!(ActionStep::Parry.category(), "Defensive");
+        assert_eq!(ActionStep::ThrowSmoke { x: 0, y: 0 }.category(), "Defensive");
+        assert_eq!(ActionStep::Heal { target_id: None }.category(), "Defensive");
+        assert_eq!(
+            ActionStep::UseDefensiveAbility {
+                ability_name: "shield".to_string()
+            }
+            .category(),
+            "Defensive"
+        );
+    }
+
+    #[test]
+    fn test_action_step_category_equipment() {
+        assert_eq!(ActionStep::Reload.category(), "Equipment");
+        assert_eq!(
+            ActionStep::EquipWeapon {
+                weapon_name: "rifle".to_string()
+            }
+            .category(),
+            "Equipment"
+        );
+        assert_eq!(ActionStep::SwitchWeapon { slot: 1 }.category(), "Equipment");
+        assert_eq!(
+            ActionStep::UseItem {
+                item_name: "medkit".to_string()
+            }
+            .category(),
+            "Equipment"
+        );
+        assert_eq!(
+            ActionStep::DropItem {
+                item_name: "grenade".to_string()
+            }
+            .category(),
+            "Equipment"
+        );
+    }
+
+    #[test]
+    fn test_action_step_category_tactical() {
+        assert_eq!(ActionStep::CallReinforcements { count: 2 }.category(), "Tactical");
+        assert_eq!(ActionStep::MarkTarget { target_id: 1 }.category(), "Tactical");
+        assert_eq!(ActionStep::RequestCover { duration: 3.0 }.category(), "Tactical");
+        assert_eq!(ActionStep::CoordinateAttack { target_id: 1 }.category(), "Tactical");
+        assert_eq!(
+            ActionStep::SetAmbush {
+                position: IVec2::zero()
+            }
+            .category(),
+            "Tactical"
+        );
+        assert_eq!(ActionStep::Distract { target_id: 1 }.category(), "Tactical");
+        assert_eq!(
+            ActionStep::Regroup {
+                rally_point: IVec2::zero()
+            }
+            .category(),
+            "Tactical"
+        );
+    }
+
+    #[test]
+    fn test_action_step_category_utility() {
+        assert_eq!(ActionStep::Scan { radius: 10.0 }.category(), "Utility");
+        assert_eq!(ActionStep::Wait { duration: 1.0 }.category(), "Utility");
+        assert_eq!(ActionStep::Interact { target_id: 1 }.category(), "Utility");
+        assert_eq!(
+            ActionStep::UseAbility {
+                ability_name: "dash".to_string()
+            }
+            .category(),
+            "Utility"
+        );
+        assert_eq!(ActionStep::Taunt { target_id: 1 }.category(), "Utility");
+    }
+
+    #[test]
+    fn test_action_step_category_legacy() {
+        assert_eq!(
+            ActionStep::Throw {
+                item: "grenade".to_string(),
+                x: 0,
+                y: 0
+            }
+            .category(),
+            "Legacy"
+        );
+        assert_eq!(ActionStep::Revive { ally_id: 1 }.category(), "Legacy");
+    }
+
+    #[test]
+    fn test_action_step_is_movement() {
+        assert!(ActionStep::MoveTo {
+            x: 0,
+            y: 0,
+            speed: None
+        }
+        .is_movement());
+        assert!(ActionStep::Approach {
+            target_id: 1,
+            distance: 5.0
+        }
+        .is_movement());
+        assert!(ActionStep::TakeCover { position: None }.is_movement());
+        assert!(!ActionStep::Reload.is_movement());
+        assert!(!ActionStep::Attack { target_id: 1 }.is_movement());
+    }
+
+    #[test]
+    fn test_action_step_is_offensive() {
+        assert!(ActionStep::Attack { target_id: 1 }.is_offensive());
+        assert!(ActionStep::AimedShot { target_id: 1 }.is_offensive());
+        assert!(ActionStep::ThrowExplosive { x: 0, y: 0 }.is_offensive());
+        assert!(!ActionStep::Reload.is_offensive());
+        assert!(!ActionStep::MoveTo {
+            x: 0,
+            y: 0,
+            speed: None
+        }
+        .is_offensive());
+    }
+
+    #[test]
+    fn test_action_step_is_defensive() {
+        assert!(ActionStep::Block.is_defensive());
+        assert!(ActionStep::Dodge { direction: None }.is_defensive());
+        assert!(ActionStep::Parry.is_defensive());
+        assert!(ActionStep::ThrowSmoke { x: 0, y: 0 }.is_defensive());
+        assert!(!ActionStep::Reload.is_defensive());
+        assert!(!ActionStep::Attack { target_id: 1 }.is_defensive());
+    }
+
+    #[test]
+    fn test_action_step_is_equipment() {
+        assert!(ActionStep::Reload.is_equipment());
+        assert!(ActionStep::SwitchWeapon { slot: 1 }.is_equipment());
+        assert!(ActionStep::EquipWeapon {
+            weapon_name: "rifle".to_string()
+        }
+        .is_equipment());
+        assert!(!ActionStep::Attack { target_id: 1 }.is_equipment());
+    }
+
+    #[test]
+    fn test_action_step_is_tactical() {
+        assert!(ActionStep::MarkTarget { target_id: 1 }.is_tactical());
+        assert!(ActionStep::CallReinforcements { count: 2 }.is_tactical());
+        assert!(ActionStep::Distract { target_id: 1 }.is_tactical());
+        assert!(!ActionStep::Reload.is_tactical());
+    }
+
+    #[test]
+    fn test_action_step_is_utility() {
+        assert!(ActionStep::Wait { duration: 1.0 }.is_utility());
+        assert!(ActionStep::Scan { radius: 10.0 }.is_utility());
+        assert!(ActionStep::Interact { target_id: 1 }.is_utility());
+        assert!(!ActionStep::Reload.is_utility());
+    }
+
+    #[test]
+    fn test_action_step_action_name() {
+        assert_eq!(
+            ActionStep::MoveTo {
+                x: 0,
+                y: 0,
+                speed: None
+            }
+            .action_name(),
+            "MoveTo"
+        );
+        assert_eq!(ActionStep::Attack { target_id: 1 }.action_name(), "Attack");
+        assert_eq!(ActionStep::Reload.action_name(), "Reload");
+        assert_eq!(ActionStep::TakeCover { position: None }.action_name(), "TakeCover");
+        assert_eq!(ActionStep::Wait { duration: 1.0 }.action_name(), "Wait");
+        assert_eq!(ActionStep::Block.action_name(), "Block");
+        assert_eq!(ActionStep::Parry.action_name(), "Parry");
+    }
+
+    #[test]
+    fn test_action_step_targets_entity() {
+        assert!(ActionStep::Attack { target_id: 1 }.targets_entity());
+        assert!(ActionStep::AimedShot { target_id: 1 }.targets_entity());
+        assert!(ActionStep::Charge { target_id: 1 }.targets_entity());
+        assert!(ActionStep::MarkTarget { target_id: 1 }.targets_entity());
+        assert!(ActionStep::Interact { target_id: 1 }.targets_entity());
+
+        assert!(!ActionStep::Reload.targets_entity());
+        assert!(!ActionStep::MoveTo {
+            x: 0,
+            y: 0,
+            speed: None
+        }
+        .targets_entity());
+        assert!(!ActionStep::Wait { duration: 1.0 }.targets_entity());
+        assert!(!ActionStep::Block.targets_entity());
+    }
+
+    #[test]
+    fn test_action_step_target_entity() {
+        assert_eq!(ActionStep::Attack { target_id: 42 }.target_entity(), Some(42));
+        assert_eq!(ActionStep::AimedShot { target_id: 5 }.target_entity(), Some(5));
+        assert_eq!(ActionStep::MarkTarget { target_id: 10 }.target_entity(), Some(10));
+        assert_eq!(ActionStep::Charge { target_id: 3 }.target_entity(), Some(3));
+        assert_eq!(ActionStep::Interact { target_id: 99 }.target_entity(), Some(99));
+        assert_eq!(
+            ActionStep::Approach {
+                target_id: 7,
+                distance: 5.0
+            }
+            .target_entity(),
+            Some(7)
+        );
+        assert_eq!(
+            ActionStep::Retreat {
+                target_id: 8,
+                distance: 10.0
+            }
+            .target_entity(),
+            Some(8)
+        );
+
+        assert_eq!(ActionStep::Reload.target_entity(), None);
+        assert_eq!(ActionStep::Wait { duration: 1.0 }.target_entity(), None);
+        assert_eq!(
+            ActionStep::MoveTo {
+                x: 0,
+                y: 0,
+                speed: None
+            }
+            .target_entity(),
+            None
+        );
+        assert_eq!(ActionStep::Block.target_entity(), None);
+    }
+
+    #[test]
+    fn test_action_step_has_position() {
+        assert!(ActionStep::MoveTo {
+            x: 5,
+            y: 10,
+            speed: None
+        }
+        .has_position());
+        assert!(ActionStep::TakeCover {
+            position: Some(IVec2 { x: 1, y: 2 })
+        }
+        .has_position());
+        assert!(ActionStep::ThrowExplosive { x: 3, y: 4 }.has_position());
+        assert!(ActionStep::ThrowSmoke { x: 5, y: 6 }.has_position());
+        assert!(ActionStep::AoEAttack {
+            x: 0,
+            y: 0,
+            radius: 5.0
+        }
+        .has_position());
+        assert!(ActionStep::SetAmbush {
+            position: IVec2::zero()
+        }
+        .has_position());
+
+        assert!(!ActionStep::TakeCover { position: None }.has_position());
+        assert!(!ActionStep::Reload.has_position());
+        assert!(!ActionStep::Attack { target_id: 1 }.has_position());
+    }
+
+    #[test]
+    fn test_action_step_display() {
+        // Display format is "Category::ActionName"
+        assert_eq!(
+            format!(
+                "{}",
+                ActionStep::MoveTo {
+                    x: 5,
+                    y: 10,
+                    speed: None
+                }
+            ),
+            "Movement::MoveTo"
+        );
+        assert_eq!(
+            format!("{}", ActionStep::Attack { target_id: 42 }),
+            "Offensive::Attack"
+        );
+        assert_eq!(format!("{}", ActionStep::Reload), "Equipment::Reload");
+        assert_eq!(
+            format!(
+                "{}",
+                ActionStep::TakeCover {
+                    position: Some(IVec2 { x: 3, y: 4 })
+                }
+            ),
+            "Movement::TakeCover"
+        );
+        assert_eq!(
+            format!("{}", ActionStep::TakeCover { position: None }),
+            "Movement::TakeCover"
+        );
+        assert_eq!(
+            format!("{}", ActionStep::Wait { duration: 2.5 }),
+            "Utility::Wait"
+        );
+        assert_eq!(format!("{}", ActionStep::Block), "Defensive::Block");
+        assert_eq!(format!("{}", ActionStep::Parry), "Defensive::Parry");
+    }
+
+    #[test]
+    fn test_action_step_equality() {
+        assert_eq!(ActionStep::Reload, ActionStep::Reload);
+        assert_eq!(ActionStep::Block, ActionStep::Block);
+        assert_eq!(
+            ActionStep::Attack { target_id: 1 },
+            ActionStep::Attack { target_id: 1 }
+        );
+        assert_ne!(
+            ActionStep::Attack { target_id: 1 },
+            ActionStep::Attack { target_id: 2 }
+        );
+        assert_ne!(ActionStep::Reload, ActionStep::Block);
+    }
+
+    #[test]
+    fn test_plan_intent_equality() {
+        let plan1 = PlanIntent::new("test").with_step(ActionStep::Reload);
+        let plan2 = PlanIntent::new("test").with_step(ActionStep::Reload);
+        let plan3 = PlanIntent::new("other").with_step(ActionStep::Reload);
+
+        assert_eq!(plan1, plan2);
+        assert_ne!(plan1, plan3);
     }
 }

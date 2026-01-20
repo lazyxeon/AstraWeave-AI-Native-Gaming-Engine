@@ -9,13 +9,19 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Available editor themes
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, Hash)]
 pub enum EditorTheme {
     #[default]
     Dark,
     Light,
     HighContrast,
     Custom,
+}
+
+impl std::fmt::Display for EditorTheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl EditorTheme {
@@ -26,6 +32,26 @@ impl EditorTheme {
             EditorTheme::HighContrast => "👁️ High Contrast",
             EditorTheme::Custom => "🎨 Custom",
         }
+    }
+
+    /// Returns the icon for this theme
+    pub fn icon(&self) -> &str {
+        match self {
+            EditorTheme::Dark => "🌙",
+            EditorTheme::Light => "☀️",
+            EditorTheme::HighContrast => "👁️",
+            EditorTheme::Custom => "🎨",
+        }
+    }
+
+    /// Returns all available themes
+    pub fn all() -> &'static [EditorTheme] {
+        &Self::ALL
+    }
+
+    /// Returns true if this theme is a dark variant
+    pub fn is_dark(&self) -> bool {
+        matches!(self, EditorTheme::Dark | EditorTheme::HighContrast)
     }
 
     pub const ALL: [EditorTheme; 4] = [
@@ -133,7 +159,7 @@ impl CustomColors {
 }
 
 /// Layout preset for different workflows
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, Hash)]
 pub enum LayoutPreset {
     #[default]
     Default,
@@ -142,6 +168,12 @@ pub enum LayoutPreset {
     Scripting,
     Debugging,
     Compact,
+}
+
+impl std::fmt::Display for LayoutPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl LayoutPreset {
@@ -156,6 +188,18 @@ impl LayoutPreset {
         }
     }
 
+    /// Returns the icon for this layout preset
+    pub fn icon(&self) -> &str {
+        match self {
+            LayoutPreset::Default => "📐",
+            LayoutPreset::Modeling => "🗿",
+            LayoutPreset::Animation => "🎬",
+            LayoutPreset::Scripting => "💻",
+            LayoutPreset::Debugging => "🐛",
+            LayoutPreset::Compact => "📱",
+        }
+    }
+
     pub fn description(&self) -> &str {
         match self {
             LayoutPreset::Default => "Balanced layout for general editing",
@@ -165,6 +209,21 @@ impl LayoutPreset {
             LayoutPreset::Debugging => "Console, profiler, and inspector expanded",
             LayoutPreset::Compact => "Minimal UI for small screens",
         }
+    }
+
+    /// Returns all available layout presets
+    pub fn all() -> &'static [LayoutPreset] {
+        &Self::ALL
+    }
+
+    /// Returns true if this layout is development-focused
+    pub fn is_development(&self) -> bool {
+        matches!(self, LayoutPreset::Scripting | LayoutPreset::Debugging)
+    }
+
+    /// Returns true if this layout minimizes UI clutter
+    pub fn is_minimal(&self) -> bool {
+        matches!(self, LayoutPreset::Modeling | LayoutPreset::Compact)
     }
 
     pub const ALL: [LayoutPreset; 6] = [
@@ -986,6 +1045,114 @@ mod tests {
         
         assert_eq!(panel.preferences.custom_colors.background, [50, 50, 50]);
         assert_eq!(panel.preferences.custom_colors.accent, [255, 100, 100]);
+    }
+
+    // ============================================================================
+    // ENHANCED ENUM TESTS (Display, Hash, helpers)
+    // ============================================================================
+
+    #[test]
+    fn test_editor_theme_display() {
+        for theme in EditorTheme::all() {
+            let display = format!("{}", theme);
+            assert_eq!(display, theme.name());
+        }
+    }
+
+    #[test]
+    fn test_editor_theme_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for theme in EditorTheme::all() {
+            set.insert(*theme);
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_editor_theme_all_method() {
+        let all = EditorTheme::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&EditorTheme::Dark));
+        assert!(all.contains(&EditorTheme::Light));
+        assert!(all.contains(&EditorTheme::HighContrast));
+        assert!(all.contains(&EditorTheme::Custom));
+    }
+
+    #[test]
+    fn test_editor_theme_icon() {
+        assert_eq!(EditorTheme::Dark.icon(), "🌙");
+        assert_eq!(EditorTheme::Light.icon(), "☀️");
+        assert_eq!(EditorTheme::HighContrast.icon(), "👁️");
+        assert_eq!(EditorTheme::Custom.icon(), "🎨");
+    }
+
+    #[test]
+    fn test_editor_theme_is_dark() {
+        assert!(EditorTheme::Dark.is_dark());
+        assert!(!EditorTheme::Light.is_dark());
+        assert!(EditorTheme::HighContrast.is_dark());
+        assert!(!EditorTheme::Custom.is_dark());
+    }
+
+    #[test]
+    fn test_layout_preset_display() {
+        for preset in LayoutPreset::all() {
+            let display = format!("{}", preset);
+            assert_eq!(display, preset.name());
+        }
+    }
+
+    #[test]
+    fn test_layout_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in LayoutPreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_layout_preset_all_method() {
+        let all = LayoutPreset::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&LayoutPreset::Default));
+        assert!(all.contains(&LayoutPreset::Modeling));
+        assert!(all.contains(&LayoutPreset::Animation));
+        assert!(all.contains(&LayoutPreset::Scripting));
+        assert!(all.contains(&LayoutPreset::Debugging));
+        assert!(all.contains(&LayoutPreset::Compact));
+    }
+
+    #[test]
+    fn test_layout_preset_icon() {
+        assert_eq!(LayoutPreset::Default.icon(), "📐");
+        assert_eq!(LayoutPreset::Modeling.icon(), "🗿");
+        assert_eq!(LayoutPreset::Animation.icon(), "🎬");
+        assert_eq!(LayoutPreset::Scripting.icon(), "💻");
+        assert_eq!(LayoutPreset::Debugging.icon(), "🐛");
+        assert_eq!(LayoutPreset::Compact.icon(), "📱");
+    }
+
+    #[test]
+    fn test_layout_preset_is_development() {
+        assert!(!LayoutPreset::Default.is_development());
+        assert!(!LayoutPreset::Modeling.is_development());
+        assert!(!LayoutPreset::Animation.is_development());
+        assert!(LayoutPreset::Scripting.is_development());
+        assert!(LayoutPreset::Debugging.is_development());
+        assert!(!LayoutPreset::Compact.is_development());
+    }
+
+    #[test]
+    fn test_layout_preset_is_minimal() {
+        assert!(!LayoutPreset::Default.is_minimal());
+        assert!(LayoutPreset::Modeling.is_minimal());
+        assert!(!LayoutPreset::Animation.is_minimal());
+        assert!(!LayoutPreset::Scripting.is_minimal());
+        assert!(!LayoutPreset::Debugging.is_minimal());
+        assert!(LayoutPreset::Compact.is_minimal());
     }
 }
 

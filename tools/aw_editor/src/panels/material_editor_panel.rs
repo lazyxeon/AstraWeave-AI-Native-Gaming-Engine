@@ -12,7 +12,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Material type/shader
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum MaterialType {
     #[default]
     StandardPBR,
@@ -27,7 +27,28 @@ pub enum MaterialType {
     Decal,
 }
 
+impl std::fmt::Display for MaterialType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl MaterialType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            MaterialType::StandardPBR => "Standard PBR",
+            MaterialType::Unlit => "Unlit",
+            MaterialType::Subsurface => "Subsurface",
+            MaterialType::Glass => "Glass",
+            MaterialType::Water => "Water",
+            MaterialType::Foliage => "Foliage",
+            MaterialType::Hair => "Hair",
+            MaterialType::Cloth => "Cloth",
+            MaterialType::Terrain => "Terrain",
+            MaterialType::Decal => "Decal",
+        }
+    }
+
     pub fn all() -> &'static [MaterialType] {
         &[
             MaterialType::StandardPBR,
@@ -60,7 +81,7 @@ impl MaterialType {
 }
 
 /// Blend mode for material
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BlendMode {
     #[default]
     Opaque,
@@ -70,8 +91,50 @@ pub enum BlendMode {
     Modulate,
 }
 
+impl std::fmt::Display for BlendMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl BlendMode {
+    pub fn all() -> &'static [BlendMode] {
+        &[
+            BlendMode::Opaque,
+            BlendMode::Masked,
+            BlendMode::Translucent,
+            BlendMode::Additive,
+            BlendMode::Modulate,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            BlendMode::Opaque => "Opaque",
+            BlendMode::Masked => "Masked",
+            BlendMode::Translucent => "Translucent",
+            BlendMode::Additive => "Additive",
+            BlendMode::Modulate => "Modulate",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BlendMode::Opaque => "⬛",
+            BlendMode::Masked => "🎭",
+            BlendMode::Translucent => "🔲",
+            BlendMode::Additive => "➕",
+            BlendMode::Modulate => "🔀",
+        }
+    }
+
+    pub fn is_transparent(&self) -> bool {
+        matches!(self, BlendMode::Translucent | BlendMode::Additive | BlendMode::Modulate)
+    }
+}
+
 /// Texture channel
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TextureChannel {
     Albedo,
     Normal,
@@ -83,7 +146,39 @@ pub enum TextureChannel {
     Opacity,
 }
 
+impl std::fmt::Display for TextureChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl TextureChannel {
+    pub fn all() -> &'static [TextureChannel] {
+        &[
+            TextureChannel::Albedo,
+            TextureChannel::Normal,
+            TextureChannel::Metallic,
+            TextureChannel::Roughness,
+            TextureChannel::AO,
+            TextureChannel::Emissive,
+            TextureChannel::Height,
+            TextureChannel::Opacity,
+        ]
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            TextureChannel::Albedo => "🎨",
+            TextureChannel::Normal => "🗺️",
+            TextureChannel::Metallic => "✨",
+            TextureChannel::Roughness => "🔨",
+            TextureChannel::AO => "🌑",
+            TextureChannel::Emissive => "💡",
+            TextureChannel::Height => "⛰️",
+            TextureChannel::Opacity => "👻",
+        }
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
             TextureChannel::Albedo => "Albedo",
@@ -292,7 +387,7 @@ impl MaterialPreset {
 }
 
 /// Preview lighting mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum PreviewLighting {
     #[default]
     Studio,
@@ -302,8 +397,46 @@ pub enum PreviewLighting {
     Custom,
 }
 
+impl std::fmt::Display for PreviewLighting {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PreviewLighting {
+    pub fn all() -> &'static [PreviewLighting] {
+        &[
+            PreviewLighting::Studio,
+            PreviewLighting::Outdoor,
+            PreviewLighting::Indoor,
+            PreviewLighting::Dramatic,
+            PreviewLighting::Custom,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            PreviewLighting::Studio => "Studio",
+            PreviewLighting::Outdoor => "Outdoor",
+            PreviewLighting::Indoor => "Indoor",
+            PreviewLighting::Dramatic => "Dramatic",
+            PreviewLighting::Custom => "Custom",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PreviewLighting::Studio => "🎬",
+            PreviewLighting::Outdoor => "☀️",
+            PreviewLighting::Indoor => "💡",
+            PreviewLighting::Dramatic => "🎭",
+            PreviewLighting::Custom => "⚙️",
+        }
+    }
+}
+
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum MaterialTab {
     #[default]
     Properties,
@@ -312,6 +445,47 @@ pub enum MaterialTab {
     Presets,
     Preview,
     Library,
+}
+
+impl std::fmt::Display for MaterialTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl MaterialTab {
+    pub fn all() -> &'static [MaterialTab] {
+        &[
+            MaterialTab::Properties,
+            MaterialTab::Textures,
+            MaterialTab::Advanced,
+            MaterialTab::Presets,
+            MaterialTab::Preview,
+            MaterialTab::Library,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            MaterialTab::Properties => "Properties",
+            MaterialTab::Textures => "Textures",
+            MaterialTab::Advanced => "Advanced",
+            MaterialTab::Presets => "Presets",
+            MaterialTab::Preview => "Preview",
+            MaterialTab::Library => "Library",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            MaterialTab::Properties => "🎨",
+            MaterialTab::Textures => "🖼️",
+            MaterialTab::Advanced => "⚙️",
+            MaterialTab::Presets => "📋",
+            MaterialTab::Preview => "👁️",
+            MaterialTab::Library => "📚",
+        }
+    }
 }
 
 /// Main Material Editor Panel
@@ -1106,5 +1280,319 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = MaterialEditorPanel::new();
         assert_eq!(panel.name(), "Material Editor");
+    }
+
+    // ============================================================
+    // ROUND 10 ENUM TESTS
+    // ============================================================
+
+    // MaterialType tests (7 tests)
+    #[test]
+    fn test_material_type_display() {
+        assert_eq!(format!("{}", MaterialType::StandardPBR), "🎨 Standard PBR");
+        assert_eq!(format!("{}", MaterialType::Unlit), "💡 Unlit");
+        assert_eq!(format!("{}", MaterialType::Subsurface), "🧴 Subsurface");
+        assert_eq!(format!("{}", MaterialType::Glass), "🔮 Glass");
+        assert_eq!(format!("{}", MaterialType::Water), "💧 Water");
+        assert_eq!(format!("{}", MaterialType::Foliage), "🌿 Foliage");
+        assert_eq!(format!("{}", MaterialType::Hair), "💇 Hair");
+        assert_eq!(format!("{}", MaterialType::Cloth), "👕 Cloth");
+        assert_eq!(format!("{}", MaterialType::Terrain), "🏔️ Terrain");
+        assert_eq!(format!("{}", MaterialType::Decal), "🏷️ Decal");
+    }
+
+    #[test]
+    fn test_material_type_all() {
+        let all = MaterialType::all();
+        assert_eq!(all.len(), 10);
+        assert!(all.contains(&MaterialType::StandardPBR));
+        assert!(all.contains(&MaterialType::Decal));
+    }
+
+    #[test]
+    fn test_material_type_name() {
+        assert_eq!(MaterialType::StandardPBR.name(), "Standard PBR");
+        assert_eq!(MaterialType::Unlit.name(), "Unlit");
+        assert_eq!(MaterialType::Glass.name(), "Glass");
+    }
+
+    #[test]
+    fn test_material_type_icon() {
+        assert_eq!(MaterialType::StandardPBR.icon(), "🎨");
+        assert_eq!(MaterialType::Water.icon(), "💧");
+        assert_eq!(MaterialType::Decal.icon(), "🏷️");
+    }
+
+    #[test]
+    fn test_material_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mat in MaterialType::all() {
+            assert!(set.insert(*mat));
+        }
+        assert_eq!(set.len(), 10);
+    }
+
+    #[test]
+    fn test_material_type_default() {
+        assert_eq!(MaterialType::default(), MaterialType::StandardPBR);
+    }
+
+    #[test]
+    fn test_material_type_coverage() {
+        for mat in MaterialType::all() {
+            assert!(!mat.name().is_empty());
+            assert!(!mat.icon().is_empty());
+        }
+    }
+
+    // BlendMode tests (8 tests)
+    #[test]
+    fn test_blend_mode_display() {
+        assert_eq!(format!("{}", BlendMode::Opaque), "⬛ Opaque");
+        assert_eq!(format!("{}", BlendMode::Masked), "🎭 Masked");
+        assert_eq!(format!("{}", BlendMode::Translucent), "🔲 Translucent");
+        assert_eq!(format!("{}", BlendMode::Additive), "➕ Additive");
+        assert_eq!(format!("{}", BlendMode::Modulate), "🔀 Modulate");
+    }
+
+    #[test]
+    fn test_blend_mode_all() {
+        let all = BlendMode::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&BlendMode::Opaque));
+        assert!(all.contains(&BlendMode::Modulate));
+    }
+
+    #[test]
+    fn test_blend_mode_name() {
+        assert_eq!(BlendMode::Opaque.name(), "Opaque");
+        assert_eq!(BlendMode::Masked.name(), "Masked");
+        assert_eq!(BlendMode::Translucent.name(), "Translucent");
+        assert_eq!(BlendMode::Additive.name(), "Additive");
+        assert_eq!(BlendMode::Modulate.name(), "Modulate");
+    }
+
+    #[test]
+    fn test_blend_mode_icon() {
+        assert_eq!(BlendMode::Opaque.icon(), "⬛");
+        assert_eq!(BlendMode::Masked.icon(), "🎭");
+        assert_eq!(BlendMode::Translucent.icon(), "🔲");
+        assert_eq!(BlendMode::Additive.icon(), "➕");
+        assert_eq!(BlendMode::Modulate.icon(), "🔀");
+    }
+
+    #[test]
+    fn test_blend_mode_is_transparent() {
+        assert!(!BlendMode::Opaque.is_transparent());
+        assert!(!BlendMode::Masked.is_transparent());
+        assert!(BlendMode::Translucent.is_transparent());
+        assert!(BlendMode::Additive.is_transparent());
+        assert!(BlendMode::Modulate.is_transparent());
+    }
+
+    #[test]
+    fn test_blend_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for blend in BlendMode::all() {
+            assert!(set.insert(*blend));
+        }
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_blend_mode_default() {
+        assert_eq!(BlendMode::default(), BlendMode::Opaque);
+    }
+
+    #[test]
+    fn test_blend_mode_transparency_types() {
+        let transparent: Vec<_> = BlendMode::all()
+            .iter()
+            .filter(|b| b.is_transparent())
+            .collect();
+        assert_eq!(transparent.len(), 3);
+    }
+
+    // TextureChannel tests (7 tests)
+    #[test]
+    fn test_texture_channel_display() {
+        assert_eq!(format!("{}", TextureChannel::Albedo), "🎨 Albedo");
+        assert_eq!(format!("{}", TextureChannel::Normal), "🗺️ Normal");
+        assert_eq!(format!("{}", TextureChannel::Metallic), "✨ Metallic");
+        assert_eq!(format!("{}", TextureChannel::Roughness), "🔨 Roughness");
+        assert_eq!(format!("{}", TextureChannel::AO), "🌑 Ambient Occlusion");
+        assert_eq!(format!("{}", TextureChannel::Emissive), "💡 Emissive");
+        assert_eq!(format!("{}", TextureChannel::Height), "⛰️ Height");
+        assert_eq!(format!("{}", TextureChannel::Opacity), "👻 Opacity");
+    }
+
+    #[test]
+    fn test_texture_channel_all() {
+        let all = TextureChannel::all();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&TextureChannel::Albedo));
+        assert!(all.contains(&TextureChannel::Opacity));
+    }
+
+    #[test]
+    fn test_texture_channel_name() {
+        assert_eq!(TextureChannel::Albedo.name(), "Albedo");
+        assert_eq!(TextureChannel::Normal.name(), "Normal");
+        assert_eq!(TextureChannel::AO.name(), "Ambient Occlusion");
+    }
+
+    #[test]
+    fn test_texture_channel_icon() {
+        assert_eq!(TextureChannel::Albedo.icon(), "🎨");
+        assert_eq!(TextureChannel::Normal.icon(), "🗺️");
+        assert_eq!(TextureChannel::Metallic.icon(), "✨");
+        assert_eq!(TextureChannel::Emissive.icon(), "💡");
+    }
+
+    #[test]
+    fn test_texture_channel_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for channel in TextureChannel::all() {
+            assert!(set.insert(*channel));
+        }
+        assert_eq!(set.len(), 8);
+    }
+
+    #[test]
+    fn test_texture_channel_coverage() {
+        for channel in TextureChannel::all() {
+            assert!(!channel.name().is_empty());
+            assert!(!channel.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_texture_channel_pbr_channels() {
+        let pbr_channels = [
+            TextureChannel::Albedo,
+            TextureChannel::Normal,
+            TextureChannel::Metallic,
+            TextureChannel::Roughness,
+            TextureChannel::AO,
+        ];
+        for channel in &pbr_channels {
+            assert!(TextureChannel::all().contains(channel));
+        }
+    }
+
+    // PreviewLighting tests (7 tests)
+    #[test]
+    fn test_preview_lighting_display() {
+        assert_eq!(format!("{}", PreviewLighting::Studio), "🎬 Studio");
+        assert_eq!(format!("{}", PreviewLighting::Outdoor), "☀️ Outdoor");
+        assert_eq!(format!("{}", PreviewLighting::Indoor), "💡 Indoor");
+        assert_eq!(format!("{}", PreviewLighting::Dramatic), "🎭 Dramatic");
+        assert_eq!(format!("{}", PreviewLighting::Custom), "⚙️ Custom");
+    }
+
+    #[test]
+    fn test_preview_lighting_all() {
+        let all = PreviewLighting::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&PreviewLighting::Studio));
+        assert!(all.contains(&PreviewLighting::Custom));
+    }
+
+    #[test]
+    fn test_preview_lighting_name() {
+        assert_eq!(PreviewLighting::Studio.name(), "Studio");
+        assert_eq!(PreviewLighting::Outdoor.name(), "Outdoor");
+        assert_eq!(PreviewLighting::Indoor.name(), "Indoor");
+        assert_eq!(PreviewLighting::Dramatic.name(), "Dramatic");
+        assert_eq!(PreviewLighting::Custom.name(), "Custom");
+    }
+
+    #[test]
+    fn test_preview_lighting_icon() {
+        assert_eq!(PreviewLighting::Studio.icon(), "🎬");
+        assert_eq!(PreviewLighting::Outdoor.icon(), "☀️");
+        assert_eq!(PreviewLighting::Indoor.icon(), "💡");
+        assert_eq!(PreviewLighting::Dramatic.icon(), "🎭");
+        assert_eq!(PreviewLighting::Custom.icon(), "⚙️");
+    }
+
+    #[test]
+    fn test_preview_lighting_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for lighting in PreviewLighting::all() {
+            assert!(set.insert(*lighting));
+        }
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_preview_lighting_default() {
+        assert_eq!(PreviewLighting::default(), PreviewLighting::Studio);
+    }
+
+    #[test]
+    fn test_preview_lighting_coverage() {
+        for lighting in PreviewLighting::all() {
+            assert!(!lighting.name().is_empty());
+            assert!(!lighting.icon().is_empty());
+        }
+    }
+
+    // MaterialTab tests (6 tests)
+    #[test]
+    fn test_material_tab_display() {
+        assert_eq!(format!("{}", MaterialTab::Properties), "🎨 Properties");
+        assert_eq!(format!("{}", MaterialTab::Textures), "🖼️ Textures");
+        assert_eq!(format!("{}", MaterialTab::Advanced), "⚙️ Advanced");
+        assert_eq!(format!("{}", MaterialTab::Presets), "📋 Presets");
+        assert_eq!(format!("{}", MaterialTab::Preview), "👁️ Preview");
+        assert_eq!(format!("{}", MaterialTab::Library), "📚 Library");
+    }
+
+    #[test]
+    fn test_material_tab_all() {
+        let all = MaterialTab::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&MaterialTab::Properties));
+        assert!(all.contains(&MaterialTab::Library));
+    }
+
+    #[test]
+    fn test_material_tab_name() {
+        assert_eq!(MaterialTab::Properties.name(), "Properties");
+        assert_eq!(MaterialTab::Textures.name(), "Textures");
+        assert_eq!(MaterialTab::Advanced.name(), "Advanced");
+        assert_eq!(MaterialTab::Presets.name(), "Presets");
+        assert_eq!(MaterialTab::Preview.name(), "Preview");
+        assert_eq!(MaterialTab::Library.name(), "Library");
+    }
+
+    #[test]
+    fn test_material_tab_icon() {
+        assert_eq!(MaterialTab::Properties.icon(), "🎨");
+        assert_eq!(MaterialTab::Textures.icon(), "🖼️");
+        assert_eq!(MaterialTab::Advanced.icon(), "⚙️");
+        assert_eq!(MaterialTab::Presets.icon(), "📋");
+        assert_eq!(MaterialTab::Preview.icon(), "👁️");
+        assert_eq!(MaterialTab::Library.icon(), "📚");
+    }
+
+    #[test]
+    fn test_material_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in MaterialTab::all() {
+            assert!(set.insert(*tab));
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_material_tab_default() {
+        assert_eq!(MaterialTab::default(), MaterialTab::Properties);
     }
 }

@@ -132,7 +132,7 @@ impl std::fmt::Display for RuntimeState {
 }
 
 /// Issues detected in runtime state
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RuntimeIssue {
     /// No simulation world when one is expected
     MissingSimulation,
@@ -141,11 +141,132 @@ pub enum RuntimeIssue {
     /// Simulation world corrupted or inconsistent
     CorruptedSimulation { reason: String },
     /// Frame time too long (potential freeze)
-    FrameTimeExceeded { frame_time_ms: f32, threshold_ms: f32 },
+    FrameTimeExceeded { frame_time_ms: u32, threshold_ms: u32 },
     /// Too few FPS (performance issue)
-    LowFps { fps: f32, minimum_fps: f32 },
+    LowFps { fps: u32, minimum_fps: u32 },
     /// Entity count mismatch after restoration
     EntityCountMismatch { expected: usize, actual: usize },
+}
+
+impl RuntimeIssue {
+    /// Get all issue variant types (for testing/documentation)
+    pub fn all_variants() -> Vec<RuntimeIssue> {
+        vec![
+            RuntimeIssue::MissingSimulation,
+            RuntimeIssue::MissingEditSnapshot,
+            RuntimeIssue::CorruptedSimulation { reason: "example".to_string() },
+            RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 },
+            RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 },
+            RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 },
+        ]
+    }
+
+    /// Check if this is a critical issue requiring immediate action
+    pub fn is_critical(&self) -> bool {
+        matches!(
+            self,
+            RuntimeIssue::MissingSimulation | RuntimeIssue::CorruptedSimulation { .. }
+        )
+    }
+
+    /// Check if this is a performance-related issue
+    pub fn is_performance_issue(&self) -> bool {
+        matches!(
+            self,
+            RuntimeIssue::FrameTimeExceeded { .. } | RuntimeIssue::LowFps { .. }
+        )
+    }
+
+    /// Check if this is a data integrity issue
+    pub fn is_data_issue(&self) -> bool {
+        matches!(
+            self,
+            RuntimeIssue::EntityCountMismatch { .. }
+                | RuntimeIssue::CorruptedSimulation { .. }
+                | RuntimeIssue::MissingEditSnapshot
+        )
+    }
+
+    /// Check if this issue is recoverable
+    pub fn is_recoverable(&self) -> bool {
+        match self {
+            RuntimeIssue::FrameTimeExceeded { .. } | RuntimeIssue::LowFps { .. } => true,
+            RuntimeIssue::EntityCountMismatch { .. } => true,
+            RuntimeIssue::MissingSimulation
+            | RuntimeIssue::MissingEditSnapshot
+            | RuntimeIssue::CorruptedSimulation { .. } => false,
+        }
+    }
+
+    /// Get severity level (1=lowest, 5=highest)
+    pub fn severity(&self) -> u8 {
+        match self {
+            RuntimeIssue::MissingSimulation | RuntimeIssue::CorruptedSimulation { .. } => 5,
+            RuntimeIssue::MissingEditSnapshot => 4,
+            RuntimeIssue::EntityCountMismatch { .. } => 3,
+            RuntimeIssue::FrameTimeExceeded { .. } => 2,
+            RuntimeIssue::LowFps { .. } => 1,
+        }
+    }
+
+    /// Get user-facing title for this issue
+    pub fn title(&self) -> &'static str {
+        match self {
+            RuntimeIssue::MissingSimulation => "Missing Simulation",
+            RuntimeIssue::MissingEditSnapshot => "Missing Edit Snapshot",
+            RuntimeIssue::CorruptedSimulation { .. } => "Corrupted Simulation",
+            RuntimeIssue::FrameTimeExceeded { .. } => "Frame Time Exceeded",
+            RuntimeIssue::LowFps { .. } => "Low FPS",
+            RuntimeIssue::EntityCountMismatch { .. } => "Entity Count Mismatch",
+        }
+    }
+
+    /// Get icon for this issue
+    pub fn icon(&self) -> &'static str {
+        match self.severity() {
+            5 => "🔴",  // Critical
+            4 => "🟠",  // High
+            3 => "🟡",  // Medium
+            2 => "🟢",  // Low
+            _ => "ℹ️",  // Info
+        }
+    }
+}
+
+impl std::fmt::Display for RuntimeIssue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RuntimeIssue::MissingSimulation => {
+                write!(f, "No simulation world when one is expected")
+            }
+            RuntimeIssue::MissingEditSnapshot => {
+                write!(f, "Missing edit snapshot for restoration")
+            }
+            RuntimeIssue::CorruptedSimulation { reason } => {
+                write!(f, "Simulation world corrupted: {}", reason)
+            }
+            RuntimeIssue::FrameTimeExceeded {
+                frame_time_ms,
+                threshold_ms,
+            } => {
+                write!(
+                    f,
+                    "Frame time {}ms exceeds threshold {}ms",
+                    frame_time_ms, threshold_ms
+                )
+            }
+            RuntimeIssue::LowFps { fps, minimum_fps } => {
+                write!(f, "FPS {} below minimum {} FPS", fps, minimum_fps)
+            }
+            RuntimeIssue::EntityCountMismatch { expected, actual } => {
+                write!(
+                    f,
+                    "Entity count mismatch: expected {}, got {}",
+                    expected, actual
+                )
+            }
+        }
+    }
 }
 
 /// Runtime performance statistics
@@ -228,19 +349,59 @@ impl RuntimeStats {
 
         if self.frame_time_ms > 33.33 {
             issues.push(RuntimeIssue::FrameTimeExceeded {
-                frame_time_ms: self.frame_time_ms,
-                threshold_ms: 33.33,
+                frame_time_ms: self.frame_time_ms as u32,
+                threshold_ms: 33,
             });
         }
 
         if self.fps > 0.0 && self.fps < 30.0 {
             issues.push(RuntimeIssue::LowFps {
-                fps: self.fps,
-                minimum_fps: 30.0,
+                fps: self.fps as u32,
+                minimum_fps: 30,
             });
         }
 
         issues
+    }
+
+    /// Check if stats are healthy (good FPS and frame time)
+    pub fn is_healthy(&self) -> bool {
+        self.is_running_smoothly()
+    }
+
+    /// Get performance status color (for UI)
+    pub fn status_color(&self) -> &'static str {
+        match self.performance_grade() {
+            "Excellent" => "green",
+            "Good" => "lightgreen",
+            "Fair" => "yellow",
+            "Poor" => "orange",
+            "Critical" => "red",
+            _ => "gray",
+        }
+    }
+
+    /// Get FPS stability indicator (how close to target)
+    pub fn fps_stability(&self) -> f32 {
+        if self.fps <= 0.0 {
+            return 0.0;
+        }
+        (self.fps / 60.0).min(1.0)
+    }
+
+    /// Get frame time as percentage of 60 FPS budget
+    pub fn frame_time_percentage_of_budget(&self) -> f32 {
+        (self.frame_time_ms / 16.667) * 100.0
+    }
+
+    /// Check if frame time is critical (>33ms = <30 FPS)
+    pub fn is_frame_time_critical(&self) -> bool {
+        self.frame_time_ms > 33.33
+    }
+
+    /// Get estimated headroom in milliseconds before dropping below 60 FPS
+    pub fn frame_time_headroom(&self) -> f32 {
+        16.667 - self.frame_time_ms
     }
 }
 
@@ -990,5 +1151,428 @@ mod tests {
     fn editor_runtime_frame_time_variance_empty() {
         let runtime = EditorRuntime::new();
         assert_eq!(runtime.frame_time_variance(), 0.0);
+    }
+
+    // === RuntimeIssue Display trait tests ===
+
+    #[test]
+    fn runtime_issue_display_missing_simulation() {
+        let issue = RuntimeIssue::MissingSimulation;
+        let display = format!("{}", issue);
+        assert!(display.contains("No simulation world"));
+    }
+
+    #[test]
+    fn runtime_issue_display_missing_snapshot() {
+        let issue = RuntimeIssue::MissingEditSnapshot;
+        let display = format!("{}", issue);
+        assert!(display.contains("Missing edit snapshot"));
+    }
+
+    #[test]
+    fn runtime_issue_display_corrupted_simulation() {
+        let issue = RuntimeIssue::CorruptedSimulation {
+            reason: "entity data invalid".to_string(),
+        };
+        let display = format!("{}", issue);
+        assert!(display.contains("corrupted"));
+        assert!(display.contains("entity data invalid"));
+    }
+
+    #[test]
+    fn runtime_issue_display_frame_time_exceeded() {
+        let issue = RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33,
+        };
+        let display = format!("{}", issue);
+        assert!(display.contains("50"));
+        assert!(display.contains("33"));
+        assert!(display.contains("ms"));
+    }
+
+    #[test]
+    fn runtime_issue_display_low_fps() {
+        let issue = RuntimeIssue::LowFps {
+            fps: 15,
+            minimum_fps: 30,
+        };
+        let display = format!("{}", issue);
+        assert!(display.contains("15"));
+        assert!(display.contains("30"));
+        assert!(display.contains("FPS"));
+    }
+
+    #[test]
+    fn runtime_issue_display_entity_count_mismatch() {
+        let issue = RuntimeIssue::EntityCountMismatch {
+            expected: 100,
+            actual: 95,
+        };
+        let display = format!("{}", issue);
+        assert!(display.contains("100"));
+        assert!(display.contains("95"));
+        assert!(display.contains("mismatch"));
+    }
+
+    // === RuntimeIssue helper methods tests ===
+
+    #[test]
+    fn runtime_issue_all_variants() {
+        let variants = RuntimeIssue::all_variants();
+        assert_eq!(variants.len(), 6);
+        assert!(variants.contains(&RuntimeIssue::MissingSimulation));
+        assert!(variants.contains(&RuntimeIssue::MissingEditSnapshot));
+    }
+
+    #[test]
+    fn runtime_issue_is_critical() {
+        assert!(RuntimeIssue::MissingSimulation.is_critical());
+        assert!(RuntimeIssue::CorruptedSimulation {
+            reason: "test".to_string()
+        }
+        .is_critical());
+        assert!(!RuntimeIssue::MissingEditSnapshot.is_critical());
+        assert!(!RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33
+        }
+        .is_critical());
+        assert!(!RuntimeIssue::LowFps {
+            fps: 15,
+            minimum_fps: 30
+        }
+        .is_critical());
+        assert!(!RuntimeIssue::EntityCountMismatch {
+            expected: 100,
+            actual: 95
+        }
+        .is_critical());
+    }
+
+    #[test]
+    fn runtime_issue_is_performance_issue() {
+        assert!(!RuntimeIssue::MissingSimulation.is_performance_issue());
+        assert!(!RuntimeIssue::MissingEditSnapshot.is_performance_issue());
+        assert!(RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33
+        }
+        .is_performance_issue());
+        assert!(RuntimeIssue::LowFps {
+            fps: 15,
+            minimum_fps: 30
+        }
+        .is_performance_issue());
+        assert!(!RuntimeIssue::EntityCountMismatch {
+            expected: 100,
+            actual: 95
+        }
+        .is_performance_issue());
+    }
+
+    #[test]
+    fn runtime_issue_is_data_issue() {
+        assert!(!RuntimeIssue::MissingSimulation.is_data_issue());
+        assert!(RuntimeIssue::MissingEditSnapshot.is_data_issue());
+        assert!(RuntimeIssue::CorruptedSimulation {
+            reason: "test".to_string()
+        }
+        .is_data_issue());
+        assert!(!RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33
+        }
+        .is_data_issue());
+        assert!(RuntimeIssue::EntityCountMismatch {
+            expected: 100,
+            actual: 95
+        }
+        .is_data_issue());
+    }
+
+    #[test]
+    fn runtime_issue_is_recoverable() {
+        assert!(!RuntimeIssue::MissingSimulation.is_recoverable());
+        assert!(!RuntimeIssue::MissingEditSnapshot.is_recoverable());
+        assert!(!RuntimeIssue::CorruptedSimulation {
+            reason: "test".to_string()
+        }
+        .is_recoverable());
+        assert!(RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33
+        }
+        .is_recoverable());
+        assert!(RuntimeIssue::LowFps {
+            fps: 15,
+            minimum_fps: 30
+        }
+        .is_recoverable());
+        assert!(RuntimeIssue::EntityCountMismatch {
+            expected: 100,
+            actual: 95
+        }
+        .is_recoverable());
+    }
+
+    #[test]
+    fn runtime_issue_severity() {
+        assert_eq!(RuntimeIssue::MissingSimulation.severity(), 5);
+        assert_eq!(
+            RuntimeIssue::CorruptedSimulation {
+                reason: "test".to_string()
+            }
+            .severity(),
+            5
+        );
+        assert_eq!(RuntimeIssue::MissingEditSnapshot.severity(), 4);
+        assert_eq!(
+            RuntimeIssue::EntityCountMismatch {
+                expected: 100,
+                actual: 95
+            }
+            .severity(),
+            3
+        );
+        assert_eq!(
+            RuntimeIssue::FrameTimeExceeded {
+                frame_time_ms: 50,
+                threshold_ms: 33
+            }
+            .severity(),
+            2
+        );
+        assert_eq!(
+            RuntimeIssue::LowFps {
+                fps: 15,
+                minimum_fps: 30
+            }
+            .severity(),
+            1
+        );
+    }
+
+    #[test]
+    fn runtime_issue_title() {
+        assert_eq!(RuntimeIssue::MissingSimulation.title(), "Missing Simulation");
+        assert_eq!(
+            RuntimeIssue::MissingEditSnapshot.title(),
+            "Missing Edit Snapshot"
+        );
+        assert_eq!(
+            RuntimeIssue::CorruptedSimulation {
+                reason: "test".to_string()
+            }
+            .title(),
+            "Corrupted Simulation"
+        );
+        assert_eq!(
+            RuntimeIssue::FrameTimeExceeded {
+                frame_time_ms: 50,
+                threshold_ms: 33
+            }
+            .title(),
+            "Frame Time Exceeded"
+        );
+        assert_eq!(
+            RuntimeIssue::LowFps {
+                fps: 15,
+                minimum_fps: 30
+            }
+            .title(),
+            "Low FPS"
+        );
+        assert_eq!(
+            RuntimeIssue::EntityCountMismatch {
+                expected: 100,
+                actual: 95
+            }
+            .title(),
+            "Entity Count Mismatch"
+        );
+    }
+
+    #[test]
+    fn runtime_issue_icon() {
+        assert_eq!(RuntimeIssue::MissingSimulation.icon(), "🔴"); // Severity 5
+        assert_eq!(RuntimeIssue::MissingEditSnapshot.icon(), "🟠"); // Severity 4
+        assert_eq!(
+            RuntimeIssue::EntityCountMismatch {
+                expected: 100,
+                actual: 95
+            }
+            .icon(),
+            "🟡"
+        ); // Severity 3
+        assert_eq!(
+            RuntimeIssue::FrameTimeExceeded {
+                frame_time_ms: 50,
+                threshold_ms: 33
+            }
+            .icon(),
+            "🟢"
+        ); // Severity 2
+        assert_eq!(
+            RuntimeIssue::LowFps {
+                fps: 15,
+                minimum_fps: 30
+            }
+            .icon(),
+            "ℹ️"
+        ); // Severity 1
+    }
+
+    // === RuntimeStats helper methods tests ===
+
+    #[test]
+    fn runtime_stats_is_healthy() {
+        let healthy_stats = RuntimeStats {
+            fps: 60.0,
+            frame_time_ms: 16.0,
+            ..Default::default()
+        };
+        assert!(healthy_stats.is_healthy());
+
+        let unhealthy_stats = RuntimeStats {
+            fps: 25.0,
+            frame_time_ms: 40.0,
+            ..Default::default()
+        };
+        assert!(!unhealthy_stats.is_healthy());
+    }
+
+    #[test]
+    fn runtime_stats_status_color() {
+        let excellent = RuntimeStats {
+            fps: 60.0,
+            frame_time_ms: 16.0,
+            ..Default::default()
+        };
+        assert_eq!(excellent.status_color(), "green");
+
+        let good = RuntimeStats {
+            fps: 50.0,
+            frame_time_ms: 20.0,
+            ..Default::default()
+        };
+        assert_eq!(good.status_color(), "lightgreen");
+
+        let fair = RuntimeStats {
+            fps: 40.0,
+            frame_time_ms: 25.0,
+            ..Default::default()
+        };
+        assert_eq!(fair.status_color(), "yellow");
+
+        let poor = RuntimeStats {
+            fps: 25.0,
+            frame_time_ms: 40.0,
+            ..Default::default()
+        };
+        assert_eq!(poor.status_color(), "orange");
+
+        let critical = RuntimeStats {
+            fps: 10.0, // Changed from 15.0 to be in Critical range (0-14)
+            frame_time_ms: 100.0,
+            ..Default::default()
+        };
+        assert_eq!(critical.status_color(), "red");
+    }
+
+    #[test]
+    fn runtime_stats_fps_stability() {
+        let perfect = RuntimeStats {
+            fps: 60.0,
+            ..Default::default()
+        };
+        assert!((perfect.fps_stability() - 1.0).abs() < 0.01);
+
+        let half = RuntimeStats {
+            fps: 30.0,
+            ..Default::default()
+        };
+        assert!((half.fps_stability() - 0.5).abs() < 0.01);
+
+        let zero = RuntimeStats {
+            fps: 0.0,
+            ..Default::default()
+        };
+        assert_eq!(zero.fps_stability(), 0.0);
+
+        let over = RuntimeStats {
+            fps: 120.0, // Higher than 60 FPS caps at 1.0
+            ..Default::default()
+        };
+        assert_eq!(over.fps_stability(), 1.0);
+    }
+
+    #[test]
+    fn runtime_stats_frame_time_percentage_of_budget() {
+        let half_budget = RuntimeStats {
+            frame_time_ms: 8.3335,
+            ..Default::default()
+        };
+        assert!((half_budget.frame_time_percentage_of_budget() - 50.0).abs() < 1.0);
+
+        let full_budget = RuntimeStats {
+            frame_time_ms: 16.667,
+            ..Default::default()
+        };
+        assert!((full_budget.frame_time_percentage_of_budget() - 100.0).abs() < 1.0);
+
+        let over_budget = RuntimeStats {
+            frame_time_ms: 33.334,
+            ..Default::default()
+        };
+        assert!((over_budget.frame_time_percentage_of_budget() - 200.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn runtime_stats_is_frame_time_critical() {
+        let good = RuntimeStats {
+            frame_time_ms: 16.0,
+            ..Default::default()
+        };
+        assert!(!good.is_frame_time_critical());
+
+        let ok = RuntimeStats {
+            frame_time_ms: 30.0,
+            ..Default::default()
+        };
+        assert!(!ok.is_frame_time_critical());
+
+        let critical = RuntimeStats {
+            frame_time_ms: 35.0,
+            ..Default::default()
+        };
+        assert!(critical.is_frame_time_critical());
+
+        let very_critical = RuntimeStats {
+            frame_time_ms: 50.0,
+            ..Default::default()
+        };
+        assert!(very_critical.is_frame_time_critical());
+    }
+
+    #[test]
+    fn runtime_stats_frame_time_headroom() {
+        let perfect = RuntimeStats {
+            frame_time_ms: 10.0,
+            ..Default::default()
+        };
+        assert!((perfect.frame_time_headroom() - 6.667).abs() < 0.01);
+
+        let no_headroom = RuntimeStats {
+            frame_time_ms: 16.667,
+            ..Default::default()
+        };
+        assert!(no_headroom.frame_time_headroom().abs() < 0.01);
+
+        let negative = RuntimeStats {
+            frame_time_ms: 20.0,
+            ..Default::default()
+        };
+        assert!(negative.frame_time_headroom() < 0.0);
     }
 }

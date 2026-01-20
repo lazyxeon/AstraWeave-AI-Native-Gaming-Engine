@@ -9,7 +9,7 @@ pub struct HierarchyNode {
     pub children: Vec<Entity>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HierarchyAction {
     CreatePrefab(Entity),
     DeleteEntity(Entity),
@@ -21,6 +21,54 @@ pub enum HierarchyAction {
     ApplyOverridesToPrefab(Entity),
     /// Week 5 Day 3-4: Revert overrides to original prefab values
     RevertToOriginalPrefab(Entity),
+}
+
+impl std::fmt::Display for HierarchyAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl HierarchyAction {
+    pub fn name(&self) -> &'static str {
+        match self {
+            HierarchyAction::CreatePrefab(_) => "Create Prefab",
+            HierarchyAction::DeleteEntity(_) => "Delete Entity",
+            HierarchyAction::DuplicateEntity(_) => "Duplicate Entity",
+            HierarchyAction::FocusEntity(_) => "Focus Entity",
+            HierarchyAction::BreakPrefabConnection(_) => "Break Prefab Connection",
+            HierarchyAction::ApplyOverridesToPrefab(_) => "Apply Overrides",
+            HierarchyAction::RevertToOriginalPrefab(_) => "Revert to Original",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            HierarchyAction::CreatePrefab(_) => "📦",
+            HierarchyAction::DeleteEntity(_) => "🗑️",
+            HierarchyAction::DuplicateEntity(_) => "📋",
+            HierarchyAction::FocusEntity(_) => "🎯",
+            HierarchyAction::BreakPrefabConnection(_) => "🔗",
+            HierarchyAction::ApplyOverridesToPrefab(_) => "✅",
+            HierarchyAction::RevertToOriginalPrefab(_) => "↩️",
+        }
+    }
+
+    /// Returns true if this action modifies the entity
+    pub fn is_destructive(&self) -> bool {
+        matches!(self, HierarchyAction::DeleteEntity(_) | HierarchyAction::BreakPrefabConnection(_))
+    }
+
+    /// Returns true if this action is prefab-related
+    pub fn is_prefab_action(&self) -> bool {
+        matches!(
+            self,
+            HierarchyAction::CreatePrefab(_)
+                | HierarchyAction::BreakPrefabConnection(_)
+                | HierarchyAction::ApplyOverridesToPrefab(_)
+                | HierarchyAction::RevertToOriginalPrefab(_)
+        )
+    }
 }
 
 pub struct HierarchyPanel {
@@ -782,5 +830,55 @@ mod tests {
         assert!(panel.is_ancestor_of(1, 2));
         assert!(panel.is_ancestor_of(2, 3));
         assert!(!panel.is_ancestor_of(3, 1));
+    }
+
+    // ===== HierarchyAction Enum Tests =====
+
+    #[test]
+    fn test_hierarchy_action_display() {
+        let action = HierarchyAction::CreatePrefab(1);
+        let display = format!("{}", action);
+        assert!(display.contains(action.name()), "Display should contain name");
+    }
+
+    #[test]
+    fn test_hierarchy_action_name() {
+        assert_eq!(HierarchyAction::CreatePrefab(1).name(), "Create Prefab");
+        assert_eq!(HierarchyAction::DeleteEntity(1).name(), "Delete Entity");
+        assert_eq!(HierarchyAction::DuplicateEntity(1).name(), "Duplicate Entity");
+        assert_eq!(HierarchyAction::FocusEntity(1).name(), "Focus Entity");
+    }
+
+    #[test]
+    fn test_hierarchy_action_icon() {
+        let action = HierarchyAction::CreatePrefab(1);
+        assert!(!action.icon().is_empty(), "Icon should not be empty");
+    }
+
+    #[test]
+    fn test_hierarchy_action_is_destructive() {
+        assert!(HierarchyAction::DeleteEntity(1).is_destructive());
+        assert!(HierarchyAction::BreakPrefabConnection(1).is_destructive());
+        assert!(!HierarchyAction::CreatePrefab(1).is_destructive());
+        assert!(!HierarchyAction::FocusEntity(1).is_destructive());
+    }
+
+    #[test]
+    fn test_hierarchy_action_is_prefab_action() {
+        assert!(HierarchyAction::CreatePrefab(1).is_prefab_action());
+        assert!(HierarchyAction::BreakPrefabConnection(1).is_prefab_action());
+        assert!(HierarchyAction::ApplyOverridesToPrefab(1).is_prefab_action());
+        assert!(HierarchyAction::RevertToOriginalPrefab(1).is_prefab_action());
+        assert!(!HierarchyAction::DeleteEntity(1).is_prefab_action());
+    }
+
+    #[test]
+    fn test_hierarchy_action_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(HierarchyAction::CreatePrefab(1));
+        set.insert(HierarchyAction::DeleteEntity(1));
+        set.insert(HierarchyAction::CreatePrefab(1)); // Duplicate
+        assert_eq!(set.len(), 2);
     }
 }

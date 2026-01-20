@@ -60,7 +60,7 @@ impl LogEntry {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum LogLevel {
     Debug,
     #[default]
@@ -70,7 +70,17 @@ pub enum LogLevel {
     All,
 }
 
+impl std::fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl LogLevel {
+    pub fn all_levels() -> &'static [LogLevel] {
+        &[LogLevel::All, LogLevel::Debug, LogLevel::Info, LogLevel::Warning, LogLevel::Error]
+    }
+
     pub fn matches(&self, log: &str) -> bool {
         match self {
             LogLevel::All => true,
@@ -773,5 +783,38 @@ mod tests {
         assert_eq!(panel.all_categories.len(), 2);
         assert!(panel.all_categories.contains(&"AI".to_string()));
         assert!(panel.all_categories.contains(&"Physics".to_string()));
+    }
+
+    // ========== LogLevel Display + Hash Tests ==========
+
+    #[test]
+    fn test_log_level_display() {
+        for level in LogLevel::all_levels() {
+            let display = format!("{}", level);
+            assert!(display.contains(level.name()));
+        }
+    }
+
+    #[test]
+    fn test_log_level_all_levels_variants() {
+        let all = LogLevel::all_levels();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&LogLevel::All));
+        assert!(all.contains(&LogLevel::Debug));
+        assert!(all.contains(&LogLevel::Info));
+        assert!(all.contains(&LogLevel::Warning));
+        assert!(all.contains(&LogLevel::Error));
+    }
+
+    #[test]
+    fn test_log_level_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<LogLevel> = LogLevel::all_levels().iter().copied().collect();
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_log_level_default() {
+        assert_eq!(LogLevel::default(), LogLevel::Info);
     }
 }
