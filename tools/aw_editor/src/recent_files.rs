@@ -103,6 +103,74 @@ impl RecentFilesManager {
             }
         }
     }
+
+    /// Returns the number of recent files.
+    pub fn len(&self) -> usize {
+        self.files.len()
+    }
+
+    /// Returns true if there are no recent files.
+    pub fn is_empty(&self) -> bool {
+        self.files.is_empty()
+    }
+
+    /// Returns the most recently opened file.
+    pub fn most_recent(&self) -> Option<&PathBuf> {
+        self.files.first()
+    }
+
+    /// Returns the capacity (maximum number of files).
+    pub fn capacity(&self) -> usize {
+        MAX_RECENT_FILES
+    }
+
+    /// Returns true if at capacity.
+    pub fn is_at_capacity(&self) -> bool {
+        self.files.len() >= MAX_RECENT_FILES
+    }
+
+    /// Returns the number of files that still exist.
+    pub fn existing_count(&self) -> usize {
+        self.files.iter().filter(|p| p.exists()).count()
+    }
+
+    /// Returns the number of missing files.
+    pub fn missing_count(&self) -> usize {
+        self.files.iter().filter(|p| !p.exists()).count()
+    }
+
+    /// Returns true if there are missing files.
+    pub fn has_missing_files(&self) -> bool {
+        self.missing_count() > 0
+    }
+
+    /// Returns files matching a pattern (case-insensitive filename contains).
+    pub fn find_by_pattern(&self, pattern: &str) -> Vec<&PathBuf> {
+        let pattern_lower = pattern.to_lowercase();
+        self.files
+            .iter()
+            .filter(|p| {
+                p.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|n| n.to_lowercase().contains(&pattern_lower))
+                    .unwrap_or(false)
+            })
+            .collect()
+    }
+
+    /// Returns files with a specific extension.
+    pub fn filter_by_extension(&self, ext: &str) -> Vec<&PathBuf> {
+        let ext_lower = ext.to_lowercase();
+        self.files
+            .iter()
+            .filter(|p| {
+                p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_lowercase() == ext_lower)
+                    .unwrap_or(false)
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -210,5 +278,87 @@ mod tests {
         
         assert_eq!(manager.get_files().len(), 1);
         assert_eq!(manager.get_files()[0], real_path);
+    }
+
+    // ====================================================================
+    // RecentFilesManager New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_recent_files_len_is_empty() {
+        let (manager, _path) = test_manager();
+        assert_eq!(manager.len(), 0);
+        assert!(manager.is_empty());
+    }
+
+    #[test]
+    fn test_recent_files_most_recent() {
+        let (mut manager, _path) = test_manager();
+        assert!(manager.most_recent().is_none());
+
+        manager.add_file(PathBuf::from("first.ron"));
+        manager.add_file(PathBuf::from("second.ron"));
+
+        assert_eq!(manager.most_recent(), Some(&PathBuf::from("second.ron")));
+    }
+
+    #[test]
+    fn test_recent_files_capacity() {
+        let (manager, _path) = test_manager();
+        assert_eq!(manager.capacity(), MAX_RECENT_FILES);
+    }
+
+    #[test]
+    fn test_recent_files_is_at_capacity() {
+        let (mut manager, _path) = test_manager();
+        assert!(!manager.is_at_capacity());
+
+        for i in 0..MAX_RECENT_FILES {
+            manager.add_file(PathBuf::from(format!("file{}.ron", i)));
+        }
+
+        assert!(manager.is_at_capacity());
+    }
+
+    #[test]
+    fn test_recent_files_existing_missing_count() {
+        let (mut manager, _path) = test_manager();
+
+        let real_file = NamedTempFile::new().unwrap();
+        let real_path = real_file.path().to_path_buf();
+
+        manager.add_file(real_path);
+        manager.add_file(PathBuf::from("nonexistent.ron"));
+
+        assert_eq!(manager.existing_count(), 1);
+        assert_eq!(manager.missing_count(), 1);
+        assert!(manager.has_missing_files());
+    }
+
+    #[test]
+    fn test_recent_files_find_by_pattern() {
+        let (mut manager, _path) = test_manager();
+
+        manager.add_file(PathBuf::from("level1.ron"));
+        manager.add_file(PathBuf::from("level2.ron"));
+        manager.add_file(PathBuf::from("settings.ron"));
+
+        let results = manager.find_by_pattern("level");
+        assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn test_recent_files_filter_by_extension() {
+        let (mut manager, _path) = test_manager();
+
+        manager.add_file(PathBuf::from("scene.ron"));
+        manager.add_file(PathBuf::from("config.json"));
+        manager.add_file(PathBuf::from("data.ron"));
+
+        let rons = manager.filter_by_extension("ron");
+        assert_eq!(rons.len(), 2);
+
+        let jsons = manager.filter_by_extension("json");
+        assert_eq!(jsons.len(), 1);
     }
 }

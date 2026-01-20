@@ -1,8 +1,69 @@
 use super::Panel;
 use egui::Ui;
+use std::collections::VecDeque;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Log entry with full metadata
+#[derive(Debug, Clone)]
+pub struct LogEntry {
+    pub message: String,
+    pub level: LogLevel,
+    pub timestamp: std::time::SystemTime,
+    pub category: Option<String>,
+    pub source_file: Option<String>,
+    pub source_line: Option<u32>,
+    pub stacktrace: Option<String>,
+}
+
+impl LogEntry {
+    /// Create a new log entry with current timestamp
+    pub fn new(message: impl Into<String>, level: LogLevel) -> Self {
+        Self {
+            message: message.into(),
+            level,
+            timestamp: std::time::SystemTime::now(),
+            category: None,
+            source_file: None,
+            source_line: None,
+            stacktrace: None,
+        }
+    }
+
+    /// Create a log entry with category
+    pub fn with_category(mut self, category: impl Into<String>) -> Self {
+        self.category = Some(category.into());
+        self
+    }
+
+    /// Create a log entry with source location
+    pub fn with_source(mut self, file: impl Into<String>, line: u32) -> Self {
+        self.source_file = Some(file.into());
+        self.source_line = Some(line);
+        self
+    }
+
+    /// Create a log entry with stacktrace
+    pub fn with_stacktrace(mut self, trace: impl Into<String>) -> Self {
+        self.stacktrace = Some(trace.into());
+        self
+    }
+
+    /// Format timestamp for display
+    pub fn format_timestamp(&self) -> String {
+        use std::time::UNIX_EPOCH;
+        let duration = self.timestamp.duration_since(UNIX_EPOCH).unwrap_or_default();
+        let secs = duration.as_secs();
+        let hours = (secs / 3600) % 24;
+        let minutes = (secs / 60) % 60;
+        let seconds = secs % 60;
+        let millis = duration.subsec_millis();
+        format!("{:02}:{:02}:{:02}.{:03}", hours, minutes, seconds, millis)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LogLevel {
+    Debug,
+    #[default]
     Info,
     Warning,
     Error,
@@ -13,27 +74,79 @@ impl LogLevel {
     pub fn matches(&self, log: &str) -> bool {
         match self {
             LogLevel::All => true,
-            LogLevel::Info => !log.contains("⚠️") && !log.contains("❌"),
+            LogLevel::Debug => log.contains("🔍") || log.to_lowercase().contains("[debug]"),
+            LogLevel::Info => !log.contains("⚠️") && !log.contains("❌") && !log.contains("🔍"),
             LogLevel::Warning => log.contains("⚠️"),
             LogLevel::Error => log.contains("❌"),
+        }
+    }
+
+    pub fn matches_entry(&self, entry: &LogEntry) -> bool {
+        match self {
+            LogLevel::All => true,
+            _ => entry.level == *self,
         }
     }
 
     pub fn name(&self) -> &'static str {
         match self {
             LogLevel::All => "All",
+            LogLevel::Debug => "Debug",
             LogLevel::Info => "Info",
             LogLevel::Warning => "Warnings",
             LogLevel::Error => "Errors",
         }
     }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LogLevel::All => "📋",
+            LogLevel::Debug => "🔍",
+            LogLevel::Info => "ℹ️",
+            LogLevel::Warning => "⚠️",
+            LogLevel::Error => "❌",
+        }
+    }
+
+    pub fn color(&self) -> egui::Color32 {
+        match self {
+            LogLevel::All => egui::Color32::LIGHT_GRAY,
+            LogLevel::Debug => egui::Color32::from_rgb(150, 150, 255),
+            LogLevel::Info => egui::Color32::from_rgb(100, 149, 237),
+            LogLevel::Warning => egui::Color32::from_rgb(255, 200, 100),
+            LogLevel::Error => egui::Color32::from_rgb(255, 100, 100),
+        }
+    }
 }
 
+/// Console panel with enhanced logging features
 pub struct ConsolePanel {
     filter_level: LogLevel,
     search_text: String,
     auto_scroll: bool,
     show_timestamps: bool,
+    show_categories: bool,
+    show_source_location: bool,
+    
+    // Enhanced log storage
+    log_entries: VecDeque<LogEntry>,
+    max_entries: usize,
+    
+    // Category filtering
+    enabled_categories: std::collections::HashSet<String>,
+    all_categories: Vec<String>,
+    
+    // Expanded stacktraces (by index)
+    expanded_stacktraces: std::collections::HashSet<usize>,
+    
+    // Console command input
+    command_input: String,
+    command_history: VecDeque<String>,
+    command_history_index: Option<usize>,
+    
+    // Pause/resume
+    is_paused: bool,
+    paused_entry_count: usize,
 }
 
 impl ConsolePanel {
@@ -43,10 +156,80 @@ impl ConsolePanel {
             search_text: String::new(),
             auto_scroll: true,
             show_timestamps: true,
+            show_categories: true,
+            show_source_location: false,
+            log_entries: VecDeque::with_capacity(1000),
+            max_entries: 1000,
+            enabled_categories: std::collections::HashSet::new(),
+            all_categories: Vec::new(),
+            expanded_stacktraces: std::collections::HashSet::new(),
+            command_input: String::new(),
+            command_history: VecDeque::with_capacity(50),
+            command_history_index: None,
+            is_paused: false,
+            paused_entry_count: 0,
         }
     }
 
-    pub fn get_counts(logs: &[String]) -> (usize, usize, usize, usize) {
+    /// Push a new log entry
+    pub fn push_entry(&mut self, entry: LogEntry) {
+        if self.is_paused {
+            self.paused_entry_count += 1;
+            return;
+        }
+        
+        // Track category
+        if let Some(cat) = &entry.category {
+            if !self.all_categories.contains(cat) {
+                self.all_categories.push(cat.clone());
+            }
+            if self.enabled_categories.is_empty() {
+                // First entry - enable all categories by default
+                self.enabled_categories.insert(cat.clone());
+            }
+        }
+        
+        // Enforce max entries
+        if self.log_entries.len() >= self.max_entries {
+            self.log_entries.pop_front();
+        }
+        self.log_entries.push_back(entry);
+    }
+
+    /// Push a simple log message (backwards compatible)
+    pub fn push_log(&mut self, message: impl Into<String>, level: LogLevel) {
+        self.push_entry(LogEntry::new(message, level));
+    }
+
+    /// Clear all logs
+    pub fn clear(&mut self) {
+        self.log_entries.clear();
+        self.expanded_stacktraces.clear();
+        self.paused_entry_count = 0;
+    }
+
+    /// Get entry counts by level
+    pub fn get_counts(&self) -> (usize, usize, usize, usize, usize) {
+        let total = self.log_entries.len();
+        let mut debug = 0;
+        let mut info = 0;
+        let mut warnings = 0;
+        let mut errors = 0;
+        
+        for entry in &self.log_entries {
+            match entry.level {
+                LogLevel::Debug => debug += 1,
+                LogLevel::Info => info += 1,
+                LogLevel::Warning => warnings += 1,
+                LogLevel::Error => errors += 1,
+                LogLevel::All => {}
+            }
+        }
+        (total, debug, info, warnings, errors)
+    }
+
+    /// Legacy counting for string-based logs
+    pub fn get_counts_legacy(logs: &[String]) -> (usize, usize, usize, usize) {
         let total = logs.len();
         let warnings = logs.iter().filter(|l| l.contains("⚠️")).count();
         let errors = logs.iter().filter(|l| l.contains("❌")).count();
@@ -66,10 +249,119 @@ impl ConsolePanel {
             .collect()
     }
 
+    /// Filter log entries
+    fn filter_entries(&self) -> Vec<(usize, &LogEntry)> {
+        self.log_entries
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| {
+                // Level filter
+                if !self.filter_level.matches_entry(entry) {
+                    return false;
+                }
+                
+                // Category filter
+                if let Some(cat) = &entry.category {
+                    if !self.enabled_categories.is_empty() && !self.enabled_categories.contains(cat) {
+                        return false;
+                    }
+                }
+                
+                // Text search
+                if !self.search_text.is_empty() {
+                    let search_lower = self.search_text.to_lowercase();
+                    if !entry.message.to_lowercase().contains(&search_lower) {
+                        return false;
+                    }
+                }
+                
+                true
+            })
+            .collect()
+    }
+
+    /// Execute a console command
+    fn execute_command(&mut self, command: &str) {
+        let cmd = command.trim();
+        if cmd.is_empty() {
+            return;
+        }
+
+        // Add to history
+        self.command_history.push_front(cmd.to_string());
+        if self.command_history.len() > 50 {
+            self.command_history.pop_back();
+        }
+        self.command_history_index = None;
+
+        // Parse and execute
+        let parts: Vec<&str> = cmd.split_whitespace().collect();
+        match parts.first() {
+            Some(&"clear") => self.clear(),
+            Some(&"help") => {
+                self.push_entry(LogEntry::new(
+                    "Available commands: clear, help, pause, resume, filter <level>",
+                    LogLevel::Info,
+                ).with_category("Console"));
+            }
+            Some(&"pause") => {
+                self.is_paused = true;
+                self.push_entry(LogEntry::new("Logging paused", LogLevel::Info).with_category("Console"));
+            }
+            Some(&"resume") => {
+                self.is_paused = false;
+                self.push_entry(LogEntry::new(
+                    format!("Logging resumed ({} entries skipped)", self.paused_entry_count),
+                    LogLevel::Info,
+                ).with_category("Console"));
+                self.paused_entry_count = 0;
+            }
+            Some(&"filter") => {
+                if let Some(&level) = parts.get(1) {
+                    match level.to_lowercase().as_str() {
+                        "all" => self.filter_level = LogLevel::All,
+                        "debug" => self.filter_level = LogLevel::Debug,
+                        "info" => self.filter_level = LogLevel::Info,
+                        "warning" | "warn" => self.filter_level = LogLevel::Warning,
+                        "error" => self.filter_level = LogLevel::Error,
+                        _ => {
+                            self.push_entry(LogEntry::new(
+                                format!("Unknown filter level: {}", level),
+                                LogLevel::Warning,
+                            ).with_category("Console"));
+                        }
+                    }
+                }
+            }
+            Some(unknown) => {
+                self.push_entry(LogEntry::new(
+                    format!("Unknown command: {}. Type 'help' for available commands.", unknown),
+                    LogLevel::Warning,
+                ).with_category("Console"));
+            }
+            None => {}
+        }
+    }
+
+    /// Export logs to string
+    pub fn export_logs(&self) -> String {
+        let mut output = String::new();
+        for entry in &self.log_entries {
+            let timestamp = entry.format_timestamp();
+            let level = entry.level.name();
+            let category = entry.category.as_deref().unwrap_or("-");
+            output.push_str(&format!("[{}] [{}] [{}] {}\n", timestamp, level, category, entry.message));
+            if let Some(trace) = &entry.stacktrace {
+                output.push_str(&format!("  Stacktrace:\n{}\n", trace));
+            }
+        }
+        output
+    }
+
     pub fn show_with_logs(&mut self, ui: &mut Ui, logs: &mut Vec<String>) -> bool {
         let mut cleared = false;
 
-        let (total_count, info_count, warning_count, error_count) = Self::get_counts(logs);
+        let (total_count, info_count, warning_count, error_count) = Self::get_counts_legacy(logs);
 
         ui.horizontal(|ui| {
             ui.heading("Console");
@@ -225,6 +517,8 @@ mod tests {
         assert_eq!(panel.filter_level, LogLevel::All);
         assert!(panel.search_text.is_empty());
         assert!(panel.auto_scroll);
+        assert!(panel.show_timestamps);
+        assert!(!panel.is_paused);
     }
 
     #[test]
@@ -233,10 +527,20 @@ mod tests {
         assert_eq!(LogLevel::Info.name(), "Info");
         assert_eq!(LogLevel::Warning.name(), "Warnings");
         assert_eq!(LogLevel::Error.name(), "Errors");
+        assert_eq!(LogLevel::Debug.name(), "Debug");
     }
 
     #[test]
-    fn test_log_counting() {
+    fn test_log_level_icons() {
+        assert_eq!(LogLevel::All.icon(), "📋");
+        assert_eq!(LogLevel::Debug.icon(), "🔍");
+        assert_eq!(LogLevel::Info.icon(), "ℹ️");
+        assert_eq!(LogLevel::Warning.icon(), "⚠️");
+        assert_eq!(LogLevel::Error.icon(), "❌");
+    }
+
+    #[test]
+    fn test_log_counting_legacy() {
         let logs = vec![
             "Info message".to_string(),
             "⚠️ Warning message".to_string(),
@@ -245,11 +549,105 @@ mod tests {
             "❌ Another error".to_string(),
         ];
 
-        let (total, infos, warnings, errors) = ConsolePanel::get_counts(&logs);
+        let (total, infos, warnings, errors) = ConsolePanel::get_counts_legacy(&logs);
         assert_eq!(total, 5);
         assert_eq!(infos, 2);
         assert_eq!(warnings, 1);
         assert_eq!(errors, 2);
+    }
+
+    #[test]
+    fn test_log_entry_creation() {
+        let entry = LogEntry::new("Test message", LogLevel::Info);
+        assert_eq!(entry.message, "Test message");
+        assert_eq!(entry.level, LogLevel::Info);
+        assert!(entry.category.is_none());
+        assert!(entry.stacktrace.is_none());
+    }
+
+    #[test]
+    fn test_log_entry_with_category() {
+        let entry = LogEntry::new("Test", LogLevel::Warning)
+            .with_category("AI")
+            .with_source("main.rs", 42);
+        
+        assert_eq!(entry.category, Some("AI".to_string()));
+        assert_eq!(entry.source_file, Some("main.rs".to_string()));
+        assert_eq!(entry.source_line, Some(42));
+    }
+
+    #[test]
+    fn test_push_entry() {
+        let mut panel = ConsolePanel::new();
+        panel.push_entry(LogEntry::new("Test 1", LogLevel::Info));
+        panel.push_entry(LogEntry::new("Test 2", LogLevel::Warning));
+        panel.push_entry(LogEntry::new("Test 3", LogLevel::Error));
+        
+        let (total, debug, info, warnings, errors) = panel.get_counts();
+        assert_eq!(total, 3);
+        assert_eq!(debug, 0);
+        assert_eq!(info, 1);
+        assert_eq!(warnings, 1);
+        assert_eq!(errors, 1);
+    }
+
+    #[test]
+    fn test_pause_logging() {
+        let mut panel = ConsolePanel::new();
+        panel.push_entry(LogEntry::new("Before pause", LogLevel::Info));
+        
+        panel.is_paused = true;
+        panel.push_entry(LogEntry::new("During pause", LogLevel::Info));
+        
+        assert_eq!(panel.log_entries.len(), 1);
+        assert_eq!(panel.paused_entry_count, 1);
+        
+        panel.is_paused = false;
+        panel.push_entry(LogEntry::new("After resume", LogLevel::Info));
+        
+        assert_eq!(panel.log_entries.len(), 2);
+    }
+
+    #[test]
+    fn test_max_entries_limit() {
+        let mut panel = ConsolePanel::new();
+        panel.max_entries = 10;
+        
+        for i in 0..20 {
+            panel.push_entry(LogEntry::new(format!("Log {}", i), LogLevel::Info));
+        }
+        
+        assert_eq!(panel.log_entries.len(), 10);
+        // Should have logs 10-19 (first 10 were evicted)
+        assert_eq!(panel.log_entries.front().unwrap().message, "Log 10");
+        assert_eq!(panel.log_entries.back().unwrap().message, "Log 19");
+    }
+
+    #[test]
+    fn test_clear_logs() {
+        let mut panel = ConsolePanel::new();
+        panel.push_entry(LogEntry::new("Test", LogLevel::Info));
+        panel.push_entry(LogEntry::new("Test 2", LogLevel::Warning));
+        panel.expanded_stacktraces.insert(0);
+        
+        panel.clear();
+        
+        assert!(panel.log_entries.is_empty());
+        assert!(panel.expanded_stacktraces.is_empty());
+    }
+
+    #[test]
+    fn test_export_logs() {
+        let mut panel = ConsolePanel::new();
+        panel.push_entry(LogEntry::new("First log", LogLevel::Info).with_category("Test"));
+        panel.push_entry(LogEntry::new("Second log", LogLevel::Warning));
+        
+        let export = panel.export_logs();
+        assert!(export.contains("First log"));
+        assert!(export.contains("Second log"));
+        assert!(export.contains("[Test]"));
+        assert!(export.contains("[Info]"));
+        assert!(export.contains("[Warnings]"));
     }
 
     #[test]
@@ -337,5 +735,43 @@ mod tests {
         // Filter Error + Search "Apple" (Mismatch)
         panel.filter_level = LogLevel::Error;
         assert!(panel.filter_logs(&logs).is_empty());
+    }
+
+    #[test]
+    fn test_command_history() {
+        let mut panel = ConsolePanel::new();
+        panel.execute_command("help");
+        panel.execute_command("clear");
+        
+        assert_eq!(panel.command_history.len(), 2);
+        assert_eq!(panel.command_history[0], "clear");
+        assert_eq!(panel.command_history[1], "help");
+    }
+
+    #[test]
+    fn test_filter_command() {
+        let mut panel = ConsolePanel::new();
+        
+        panel.execute_command("filter warning");
+        assert_eq!(panel.filter_level, LogLevel::Warning);
+        
+        panel.execute_command("filter error");
+        assert_eq!(panel.filter_level, LogLevel::Error);
+        
+        panel.execute_command("filter all");
+        assert_eq!(panel.filter_level, LogLevel::All);
+    }
+
+    #[test]
+    fn test_category_tracking() {
+        let mut panel = ConsolePanel::new();
+        
+        panel.push_entry(LogEntry::new("Test", LogLevel::Info).with_category("AI"));
+        panel.push_entry(LogEntry::new("Test", LogLevel::Info).with_category("Physics"));
+        panel.push_entry(LogEntry::new("Test", LogLevel::Info).with_category("AI"));
+        
+        assert_eq!(panel.all_categories.len(), 2);
+        assert!(panel.all_categories.contains(&"AI".to_string()));
+        assert!(panel.all_categories.contains(&"Physics".to_string()));
     }
 }

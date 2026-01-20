@@ -665,6 +665,7 @@ fn is_common_word(word: &str) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
     use astraweave_llm::MockLlm;

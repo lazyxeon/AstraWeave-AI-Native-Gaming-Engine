@@ -553,12 +553,12 @@ mod tests {
         // Test max corner (15, 7, 23)
         let idx_max = cluster_index(dims.x - 1, dims.y - 1, dims.z - 1, dims);
         let expected_max = (dims.x * dims.y * dims.z) - 1;
-        assert_eq!(idx_max as usize, expected_max as usize);
+        assert_eq!(idx_max, expected_max as usize);
 
         // Test mid-range values
         let idx_mid = cluster_index(8, 4, 12, dims);
-        let expected_mid = 8 + 4 * dims.x + 12 * (dims.x * dims.y);
-        assert_eq!(idx_mid as usize, expected_mid as usize);
+        let expected_mid = 8usize + 4usize * dims.x as usize + 12usize * (dims.x as usize * dims.y as usize);
+        assert_eq!(idx_mid, expected_mid);
 
         // Verify all valid indices are in range
         for iz in 0..dims.z {

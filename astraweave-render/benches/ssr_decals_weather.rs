@@ -100,7 +100,7 @@ fn ssr_ray_march(
         let screen_x = (pos[0] + 1.0) * 0.5;
         let screen_y = (pos[1] + 1.0) * 0.5;
 
-        if screen_x < 0.0 || screen_x > 1.0 || screen_y < 0.0 || screen_y > 1.0 {
+        if !(0.0..=1.0).contains(&screen_x) || !(0.0..=1.0).contains(&screen_y) {
             break;
         }
 
@@ -774,7 +774,7 @@ fn bench_weather(c: &mut Criterion) {
             |b, particles| {
                 b.iter(|| {
                     let instances: Vec<InstanceRaw> =
-                        particles.iter().map(|p| particle_to_instance(p)).collect();
+                        particles.iter().map(particle_to_instance).collect();
                     black_box(instances)
                 });
             },
@@ -802,7 +802,7 @@ fn bench_weather(c: &mut Criterion) {
 
                     // Generate instances
                     let instances: Vec<InstanceRaw> =
-                        particles.iter().map(|p| particle_to_instance(p)).collect();
+                        particles.iter().map(particle_to_instance).collect();
 
                     black_box(instances.len())
                 });

@@ -216,6 +216,7 @@ pub fn to_egui_color(color: Color) -> egui::Color32 {
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
 

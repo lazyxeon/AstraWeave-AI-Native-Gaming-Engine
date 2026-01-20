@@ -84,12 +84,12 @@ fn test_load_real_ktx2_texture() {
 
     match fs::read(&path) {
         Ok(bytes) => {
-            assert!(bytes.len() > 0, "KTX2 file should have data");
+            assert!(!bytes.is_empty(), "KTX2 file should have data");
 
             // KTX2 magic header: 0xAB 0x4B 0x54 0x58 0x20 0x32 0x30 0xBB 0x0D 0x0A 0x1A 0x0A
             if bytes.len() >= 12 {
                 // Check first 2 bytes for KTX2 magic
-                if &bytes[0..2] == &[0xAB, 0x4B] {
+                if bytes[0..2] == [0xAB, 0x4B] {
                     eprintln!("✓ dirt.ktx2 has valid KTX2 magic header");
                 } else {
                     eprintln!(
@@ -127,7 +127,7 @@ fn test_validate_ktx2_magic_header() {
             let expected_magic = [
                 0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A,
             ];
-            if &bytes[0..12] == &expected_magic {
+            if bytes[0..12] == expected_magic {
                 eprintln!("✓ grass.ktx2 has valid KTX2 magic header");
             } else {
                 eprintln!("Note: grass.ktx2 doesn't have KTX2 magic (might be different format)");
@@ -190,7 +190,7 @@ fn test_load_real_normal_map() {
     }
 
     let bytes = fs::read(&path).expect("Failed to read dirt_n.ktx2");
-    assert!(bytes.len() > 0, "Normal map should have data");
+    assert!(!bytes.is_empty(), "Normal map should have data");
 }
 
 // Test 10: Test real metallic/roughness map
@@ -203,7 +203,7 @@ fn test_load_real_mra_map() {
     }
 
     let bytes = fs::read(&path).expect("Failed to read grass_mra.ktx2");
-    assert!(bytes.len() > 0, "MRA map should have data");
+    assert!(!bytes.is_empty(), "MRA map should have data");
 }
 
 // Test 11: Validate PNG pixel data access
@@ -255,11 +255,11 @@ fn test_load_multiple_ktx2_textures() {
         if path.exists() {
             match fs::read(&path) {
                 Ok(bytes) => {
-                    assert!(bytes.len() > 0, "Texture {} should have data", texture);
+                    assert!(!bytes.is_empty(), "Texture {} should have data", texture);
                     loaded += 1;
 
                     // Validate KTX2 magic if file is large enough
-                    if bytes.len() >= 12 && &bytes[0..2] == &[0xAB, 0x4B] {
+                    if bytes.len() >= 12 && bytes[0..2] == [0xAB, 0x4B] {
                         valid_ktx2 += 1;
                     }
                 }

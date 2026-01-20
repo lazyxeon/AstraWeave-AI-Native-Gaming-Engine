@@ -8,6 +8,8 @@
 //! - Packet batching optimization
 //! - Interest management overhead
 
+#![allow(dead_code, unused_imports)]
+
 use criterion::{
     black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };

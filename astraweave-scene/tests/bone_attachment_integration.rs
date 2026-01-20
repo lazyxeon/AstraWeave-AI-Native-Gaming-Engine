@@ -67,12 +67,14 @@ mod tests {
         let skeleton_entity = setup_animated_skeleton(&mut world);
 
         // Set joint matrices to known values (rest pose)
-        let mut matrices = CJointMatrices::default();
-        matrices.matrices = vec![
+        let matrices = CJointMatrices {
+            matrices: vec![
             Mat4::IDENTITY,                                   // Joint 0 at origin
             Mat4::from_translation(Vec3::new(0.0, 1.0, 0.0)), // Joint 1 at Y=1
             Mat4::from_translation(Vec3::new(0.0, 2.0, 0.0)), // Joint 2 at Y=2
-        ];
+            ],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices);
 
         // Create attached entity (weapon)
@@ -117,12 +119,14 @@ mod tests {
         );
 
         // Frame 1: Joint 2 at Y=2
-        let mut matrices1 = CJointMatrices::default();
-        matrices1.matrices = vec![
+        let matrices1 = CJointMatrices {
+            matrices: vec![
             Mat4::IDENTITY,
             Mat4::from_translation(Vec3::new(0.0, 1.0, 0.0)),
             Mat4::from_translation(Vec3::new(0.0, 2.0, 0.0)),
-        ];
+            ],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices1);
         sync_bone_attachments(&mut world);
 
@@ -134,12 +138,14 @@ mod tests {
             .truncate();
 
         // Frame 2: Joint 2 moved to Y=3 (animation)
-        let mut matrices2 = CJointMatrices::default();
-        matrices2.matrices = vec![
+        let matrices2 = CJointMatrices {
+            matrices: vec![
             Mat4::IDENTITY,
             Mat4::from_translation(Vec3::new(0.0, 1.0, 0.0)),
             Mat4::from_translation(Vec3::new(0.0, 3.0, 0.0)), // Moved up
-        ];
+            ],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices2);
         sync_bone_attachments(&mut world);
 
@@ -191,12 +197,14 @@ mod tests {
         );
 
         // Set joint matrices
-        let mut matrices = CJointMatrices::default();
-        matrices.matrices = vec![
+        let matrices = CJointMatrices {
+            matrices: vec![
             Mat4::from_translation(Vec3::new(1.0, 0.0, 0.0)), // Joint 0
             Mat4::from_translation(Vec3::new(2.0, 1.0, 0.0)), // Joint 1
             Mat4::from_translation(Vec3::new(3.0, 2.0, 0.0)), // Joint 2
-        ];
+            ],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices);
 
         sync_bone_attachments(&mut world);
@@ -245,8 +253,10 @@ mod tests {
         let transform =
             Mat4::from_scale_rotation_translation(Vec3::ONE, rotation, Vec3::new(0.0, 1.0, 0.0));
 
-        let mut matrices = CJointMatrices::default();
-        matrices.matrices = vec![Mat4::IDENTITY, transform, Mat4::IDENTITY];
+        let matrices = CJointMatrices {
+            matrices: vec![Mat4::IDENTITY, transform, Mat4::IDENTITY],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices);
 
         sync_bone_attachments(&mut world);
@@ -284,8 +294,10 @@ mod tests {
             },
         );
 
-        let mut matrices = CJointMatrices::default();
-        matrices.matrices = vec![Mat4::IDENTITY, Mat4::IDENTITY, Mat4::IDENTITY];
+        let matrices = CJointMatrices {
+            matrices: vec![Mat4::IDENTITY, Mat4::IDENTITY, Mat4::IDENTITY],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices);
 
         // Should not panic, just skip this attachment
@@ -313,12 +325,14 @@ mod tests {
         // Run multiple frames
         for frame in 0..10 {
             let y_offset = frame as f32 * 0.1;
-            let mut matrices = CJointMatrices::default();
-            matrices.matrices = vec![
+            let matrices = CJointMatrices {
+                matrices: vec![
                 Mat4::IDENTITY,
                 Mat4::from_translation(Vec3::new(0.0, 1.0 + y_offset, 0.0)),
                 Mat4::IDENTITY,
-            ];
+                ],
+                ..Default::default()
+            };
             world.insert(skeleton_entity, matrices);
 
             sync_bone_attachments(&mut world);
@@ -366,12 +380,14 @@ mod tests {
             },
         );
 
-        let mut matrices = CJointMatrices::default();
-        matrices.matrices = vec![
+        let matrices = CJointMatrices {
+            matrices: vec![
             Mat4::IDENTITY,
             Mat4::from_translation(Vec3::new(0.0, 1.0, 0.0)),
             Mat4::IDENTITY,
-        ];
+            ],
+            ..Default::default()
+        };
         world.insert(skeleton_entity, matrices);
 
         sync_bone_attachments(&mut world);

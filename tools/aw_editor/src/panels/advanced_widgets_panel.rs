@@ -369,9 +369,17 @@ impl AdvancedWidgetsPanel {
 mod tests {
     use super::*;
 
+    // === Panel Creation Tests ===
+
     #[test]
     fn test_panel_creation() {
         let panel = AdvancedWidgetsPanel::new();
+        assert!(!panel.initialized);
+    }
+
+    #[test]
+    fn test_panel_default() {
+        let panel = AdvancedWidgetsPanel::default();
         assert!(!panel.initialized);
     }
 
@@ -386,16 +394,41 @@ mod tests {
     }
 
     #[test]
-    fn test_color_picker_defaults() {
-        let panel = AdvancedWidgetsPanel::new();
+    fn test_panel_double_initialization() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+        let count1 = panel.scene_hierarchy.node_count();
+        
+        panel.initialize_tree_views(); // Should not re-initialize
+        let count2 = panel.scene_hierarchy.node_count();
+        
+        assert_eq!(count1, count2);
+    }
 
-        // Ambient color should be dark blue-ish
+    #[test]
+    fn test_panel_update_initializes() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        assert!(!panel.initialized);
+        
+        panel.update();
+        
+        assert!(panel.initialized);
+    }
+
+    // === Color Picker Tests ===
+
+    #[test]
+    fn test_ambient_color_default() {
+        let panel = AdvancedWidgetsPanel::new();
         let ambient = panel.ambient_color.color();
         assert_eq!(ambient.r(), 50);
         assert_eq!(ambient.g(), 50);
         assert_eq!(ambient.b(), 70);
+    }
 
-        // Directional light should be warm white
+    #[test]
+    fn test_directional_light_color_default() {
+        let panel = AdvancedWidgetsPanel::new();
         let light = panel.directional_light_color.color();
         assert_eq!(light.r(), 255);
         assert_eq!(light.g(), 244);
@@ -403,50 +436,280 @@ mod tests {
     }
 
     #[test]
-    fn test_range_slider_defaults() {
+    fn test_fog_color_default() {
         let panel = AdvancedWidgetsPanel::new();
+        let fog = panel.fog_color.color();
+        assert_eq!(fog.r(), 180);
+        assert_eq!(fog.g(), 180);
+        assert_eq!(fog.b(), 200);
+    }
 
-        // Camera distance
+    #[test]
+    fn test_ambient_color_is_dark() {
+        let panel = AdvancedWidgetsPanel::new();
+        let c = panel.ambient_color.color();
+        // Ambient should be darker than directional light
+        let brightness = (c.r() as u32 + c.g() as u32 + c.b() as u32) / 3;
+        assert!(brightness < 100);
+    }
+
+    #[test]
+    fn test_directional_light_is_bright() {
+        let panel = AdvancedWidgetsPanel::new();
+        let c = panel.directional_light_color.color();
+        // Sun light should be bright
+        let brightness = (c.r() as u32 + c.g() as u32 + c.b() as u32) / 3;
+        assert!(brightness > 200);
+    }
+
+    // === Range Slider Tests ===
+
+    #[test]
+    fn test_camera_distance_defaults() {
+        let panel = AdvancedWidgetsPanel::new();
         assert_eq!(panel.camera_distance.min_value(), 5.0);
         assert_eq!(panel.camera_distance.max_value(), 25.0);
+    }
 
-        // Player level
+    #[test]
+    fn test_camera_distance_bounds() {
+        let panel = AdvancedWidgetsPanel::new();
+        // Range is 1.0 to 100.0, current is 5.0 to 25.0
+        assert!(panel.camera_distance.min_value() >= 1.0);
+        assert!(panel.camera_distance.max_value() <= 100.0);
+    }
+
+    #[test]
+    fn test_player_level_range_defaults() {
+        let panel = AdvancedWidgetsPanel::new();
         assert_eq!(panel.player_level_range.min_value(), 10.0);
         assert_eq!(panel.player_level_range.max_value(), 50.0);
+    }
 
-        // Audio frequency
+    #[test]
+    fn test_player_level_range_bounds() {
+        let panel = AdvancedWidgetsPanel::new();
+        // Range is 1.0 to 100.0
+        assert!(panel.player_level_range.min_value() >= 1.0);
+        assert!(panel.player_level_range.max_value() <= 100.0);
+    }
+
+    #[test]
+    fn test_audio_frequency_defaults() {
+        let panel = AdvancedWidgetsPanel::new();
         assert_eq!(panel.audio_frequency.min_value(), 200.0);
         assert_eq!(panel.audio_frequency.max_value(), 8000.0);
     }
+
+    #[test]
+    fn test_audio_frequency_bounds() {
+        let panel = AdvancedWidgetsPanel::new();
+        // Range is 20.0 to 20000.0 (human hearing range)
+        assert!(panel.audio_frequency.min_value() >= 20.0);
+        assert!(panel.audio_frequency.max_value() <= 20000.0);
+    }
+
+    #[test]
+    fn test_range_slider_min_less_than_max() {
+        let panel = AdvancedWidgetsPanel::new();
+        assert!(panel.camera_distance.min_value() < panel.camera_distance.max_value());
+        assert!(panel.player_level_range.min_value() < panel.player_level_range.max_value());
+        assert!(panel.audio_frequency.min_value() < panel.audio_frequency.max_value());
+    }
+
+    // === Scene Hierarchy Tests ===
 
     #[test]
     fn test_scene_hierarchy_structure() {
         let mut panel = AdvancedWidgetsPanel::new();
         panel.initialize_tree_views();
 
-        // Should have root nodes
-        assert!(panel.scene_hierarchy.node_count() >= 3); // World, Environment, Entities
-
-        // Check specific nodes exist
-        assert!(panel.scene_hierarchy.get_node(1).is_some()); // World
-        assert!(panel.scene_hierarchy.get_node(2).is_some()); // Environment
-        assert!(panel.scene_hierarchy.get_node(3).is_some()); // Entities
-        assert!(panel.scene_hierarchy.get_node(20).is_some()); // Player
+        assert!(panel.scene_hierarchy.node_count() >= 3);
     }
+
+    #[test]
+    fn test_scene_hierarchy_world_node() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let world = panel.scene_hierarchy.get_node(1);
+        assert!(world.is_some());
+        assert_eq!(world.unwrap().label, "World");
+    }
+
+    #[test]
+    fn test_scene_hierarchy_environment_node() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let env = panel.scene_hierarchy.get_node(2);
+        assert!(env.is_some());
+        assert_eq!(env.unwrap().label, "Environment");
+    }
+
+    #[test]
+    fn test_scene_hierarchy_entities_node() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let entities = panel.scene_hierarchy.get_node(3);
+        assert!(entities.is_some());
+        assert_eq!(entities.unwrap().label, "Entities");
+    }
+
+    #[test]
+    fn test_scene_hierarchy_player_node() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let player = panel.scene_hierarchy.get_node(20);
+        assert!(player.is_some());
+        assert_eq!(player.unwrap().label, "Player");
+    }
+
+    #[test]
+    fn test_scene_hierarchy_camera_node() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let camera = panel.scene_hierarchy.get_node(21);
+        assert!(camera.is_some());
+        assert_eq!(camera.unwrap().label, "Camera");
+    }
+
+    #[test]
+    fn test_scene_hierarchy_enemies_exist() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        // Check enemies parent
+        let enemies = panel.scene_hierarchy.get_node(23);
+        assert!(enemies.is_some());
+        
+        // Check individual enemies
+        assert!(panel.scene_hierarchy.get_node(24).is_some()); // Enemy_1
+        assert!(panel.scene_hierarchy.get_node(25).is_some()); // Enemy_2
+        assert!(panel.scene_hierarchy.get_node(26).is_some()); // Enemy_3
+    }
+
+    #[test]
+    fn test_scene_hierarchy_npcs_exist() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let npcs = panel.scene_hierarchy.get_node(27);
+        assert!(npcs.is_some());
+        
+        assert!(panel.scene_hierarchy.get_node(28).is_some()); // Merchant
+        assert!(panel.scene_hierarchy.get_node(29).is_some()); // Guard
+    }
+
+    // === Asset Browser Tests ===
 
     #[test]
     fn test_asset_browser_structure() {
         let mut panel = AdvancedWidgetsPanel::new();
         panel.initialize_tree_views();
 
-        // Should have asset nodes
         assert!(panel.asset_browser.node_count() > 0);
+    }
 
-        // Check asset categories exist
-        assert!(panel.asset_browser.get_node(100).is_some()); // Assets root
-        assert!(panel.asset_browser.get_node(101).is_some()); // Models
-        assert!(panel.asset_browser.get_node(102).is_some()); // Textures
-        assert!(panel.asset_browser.get_node(103).is_some()); // Audio
-        assert!(panel.asset_browser.get_node(104).is_some()); // Scripts
+    #[test]
+    fn test_asset_browser_root() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let assets = panel.asset_browser.get_node(100);
+        assert!(assets.is_some());
+        assert_eq!(assets.unwrap().label, "Assets");
+    }
+
+    #[test]
+    fn test_asset_browser_models_category() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let models = panel.asset_browser.get_node(101);
+        assert!(models.is_some());
+        assert_eq!(models.unwrap().label, "Models");
+        
+        // Check model files
+        assert!(panel.asset_browser.get_node(110).is_some()); // character.fbx
+        assert!(panel.asset_browser.get_node(111).is_some()); // weapon.fbx
+    }
+
+    #[test]
+    fn test_asset_browser_textures_category() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let textures = panel.asset_browser.get_node(102);
+        assert!(textures.is_some());
+        assert_eq!(textures.unwrap().label, "Textures");
+        
+        // Check texture files
+        assert!(panel.asset_browser.get_node(120).is_some()); // albedo.png
+        assert!(panel.asset_browser.get_node(121).is_some()); // normal.png
+    }
+
+    #[test]
+    fn test_asset_browser_audio_category() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let audio = panel.asset_browser.get_node(103);
+        assert!(audio.is_some());
+        assert_eq!(audio.unwrap().label, "Audio");
+        
+        // Check audio files
+        assert!(panel.asset_browser.get_node(130).is_some()); // music.ogg
+        assert!(panel.asset_browser.get_node(131).is_some()); // sfx_shot.wav
+    }
+
+    #[test]
+    fn test_asset_browser_scripts_category() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.initialize_tree_views();
+
+        let scripts = panel.asset_browser.get_node(104);
+        assert!(scripts.is_some());
+        assert_eq!(scripts.unwrap().label, "Scripts");
+        
+        // Check script files
+        assert!(panel.asset_browser.get_node(140).is_some()); // player_controller.rs
+        assert!(panel.asset_browser.get_node(141).is_some()); // enemy_ai.rs
+    }
+
+    // === Integration Tests ===
+
+    #[test]
+    fn test_full_initialization() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        
+        // Before init
+        assert!(!panel.initialized);
+        assert_eq!(panel.scene_hierarchy.node_count(), 0);
+        assert_eq!(panel.asset_browser.node_count(), 0);
+        
+        // After init
+        panel.update();
+        
+        assert!(panel.initialized);
+        assert!(panel.scene_hierarchy.node_count() > 10);
+        assert!(panel.asset_browser.node_count() > 10);
+    }
+
+    #[test]
+    fn test_node_count_summary() {
+        let mut panel = AdvancedWidgetsPanel::new();
+        panel.update();
+        
+        // Scene should have more nodes than just root
+        let scene_count = panel.scene_hierarchy.node_count();
+        let asset_count = panel.asset_browser.node_count();
+        
+        assert!(scene_count >= 15, "Scene should have at least 15 nodes");
+        assert!(asset_count >= 10, "Asset browser should have at least 10 nodes");
     }
 }
+

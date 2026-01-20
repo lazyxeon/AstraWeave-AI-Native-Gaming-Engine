@@ -5,6 +5,8 @@
 //!
 //! **Coverage Goal**: Test all signature operations, edge cases, and attack scenarios
 
+#![allow(unused_imports)]
+
 use super::*;
 use ed25519_dalek::{Signature, SigningKey, VerifyingKey};
 

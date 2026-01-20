@@ -549,7 +549,7 @@ mod tests {
     fn test_average_player_health() {
         let mut episode = Episode::new("health_test".to_string(), EpisodeCategory::Combat);
 
-        let healths = vec![1.0, 0.8, 0.6, 0.4];
+        let healths = [1.0, 0.8, 0.6, 0.4];
         for (i, health) in healths.iter().enumerate() {
             episode.add_observation(Observation::new(
                 i as u64 * 1000,

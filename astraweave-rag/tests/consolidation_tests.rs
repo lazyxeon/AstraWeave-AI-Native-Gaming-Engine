@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::consolidation::{ConsolidationConfig, ConsolidationEngine, ConsolidationStrategy};
 use std::collections::HashMap;

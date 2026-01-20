@@ -830,7 +830,7 @@ mod tests {
         
         let mut script = CScript::new("test_raycast.rhai", script_source);
         script.script_state.insert("hit_entity".to_string(), Dynamic::from(0_i64));
-        script.script_state.insert("hit_dist".to_string(), Dynamic::from(0.0 as f32));
+        script.script_state.insert("hit_dist".to_string(), Dynamic::from(0.0_f32));
         app.world.insert(e, script);
         
         // Run one tick
@@ -843,7 +843,7 @@ mod tests {
         
         assert_eq!(hit_entity, target.to_raw() as i64);
         // Distance should be 4.5 (5.0 center - 0.5 half extent)
-        assert!((hit_dist - 4.5 as f32).abs() < 0.001);
+        assert!((hit_dist - 4.5_f32).abs() < 0.001);
     }
 
     #[test]

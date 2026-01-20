@@ -1,7 +1,8 @@
 // Cache Stress Test - Validate 80%+ hit rate under load
 // Simulates 1000+ requests with realistic prompt patterns
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

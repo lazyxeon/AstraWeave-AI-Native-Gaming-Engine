@@ -474,8 +474,8 @@ fn bench_taa_jitter(c: &mut Criterion) {
     group.bench_function("halton_sequence_16", |b| {
         b.iter(|| {
             let mut jitters = [(0.0f32, 0.0f32); 16];
-            for i in 0..16 {
-                jitters[i] = (
+            for (i, jitter) in jitters.iter_mut().enumerate() {
+                *jitter = (
                     black_box(taa_halton_jitter(i as u32, 2)),
                     black_box(taa_halton_jitter(i as u32, 3)),
                 );

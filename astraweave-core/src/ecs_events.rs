@@ -97,12 +97,11 @@ mod tests {
     #[test]
     fn test_events_send_and_len() {
         let mut events: Events<i32> = Events::default();
-        let mut writer = events.writer();
-
-        writer.send(42);
-        writer.send(100);
-
-        drop(writer);
+        {
+            let mut writer = events.writer();
+            writer.send(42);
+            writer.send(100);
+        }
         assert_eq!(events.len(), 2);
         assert!(!events.is_empty());
     }
@@ -110,31 +109,30 @@ mod tests {
     #[test]
     fn test_events_drain() {
         let mut events: Events<i32> = Events::default();
-        let mut writer = events.writer();
+        {
+            let mut writer = events.writer();
+            writer.send(1);
+            writer.send(2);
+            writer.send(3);
+        }
 
-        writer.send(1);
-        writer.send(2);
-        writer.send(3);
-
-        drop(writer);
-
-        let mut reader = events.reader();
-        let drained: Vec<_> = reader.drain().collect();
+        let drained: Vec<_> = {
+            let mut reader = events.reader();
+            reader.drain().collect()
+        };
 
         assert_eq!(drained, vec![1, 2, 3]);
-        drop(reader);
         assert!(events.is_empty());
     }
 
     #[test]
     fn test_events_clear() {
         let mut events: Events<i32> = Events::default();
-        let mut writer = events.writer();
-
-        writer.send(1);
-        writer.send(2);
-
-        drop(writer);
+        {
+            let mut writer = events.writer();
+            writer.send(1);
+            writer.send(2);
+        }
         events.clear();
 
         assert!(events.is_empty());

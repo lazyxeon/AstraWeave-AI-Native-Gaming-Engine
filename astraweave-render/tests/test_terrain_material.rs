@@ -171,21 +171,34 @@ mod terrain_material_tests {
 
     #[test]
     fn test_normal_blend_parsing() {
-        let mut desc = TerrainMaterialDesc::default();
-
-        desc.normal_blend_method = "linear".to_string();
+        let desc = TerrainMaterialDesc {
+            normal_blend_method: "linear".to_string(),
+            ..Default::default()
+        };
         assert_eq!(desc.normal_blend_to_gpu(), 0);
 
-        desc.normal_blend_method = "rnm".to_string();
+        let desc = TerrainMaterialDesc {
+            normal_blend_method: "rnm".to_string(),
+            ..Default::default()
+        };
         assert_eq!(desc.normal_blend_to_gpu(), 1);
 
-        desc.normal_blend_method = "udn".to_string();
+        let desc = TerrainMaterialDesc {
+            normal_blend_method: "udn".to_string(),
+            ..Default::default()
+        };
         assert_eq!(desc.normal_blend_to_gpu(), 2);
 
-        desc.normal_blend_method = "RNM".to_string(); // Case insensitive
+        let desc = TerrainMaterialDesc {
+            normal_blend_method: "RNM".to_string(), // Case insensitive
+            ..Default::default()
+        };
         assert_eq!(desc.normal_blend_to_gpu(), 1);
 
-        desc.normal_blend_method = "invalid".to_string();
+        let desc = TerrainMaterialDesc {
+            normal_blend_method: "invalid".to_string(),
+            ..Default::default()
+        };
         assert_eq!(desc.normal_blend_to_gpu(), 1); // Falls back to RNM
     }
 
@@ -414,8 +427,10 @@ mod terrain_material_tests {
 
     #[test]
     fn test_zero_splat_uv_scale() {
-        let mut desc = TerrainMaterialDesc::default();
-        desc.splat_uv_scale = 0.0;
+        let desc = TerrainMaterialDesc {
+            splat_uv_scale: 0.0,
+            ..Default::default()
+        };
 
         let resolver = |_: &PathBuf| -> u32 { 0 };
         let gpu = desc.to_gpu(&resolver);
@@ -426,13 +441,18 @@ mod terrain_material_tests {
 
     #[test]
     fn test_extreme_triplanar_power() {
-        let mut layer = TerrainLayerGpu::default();
-        layer.triplanar_power = 20.0; // Very high (sharp transitions)
+        let layer = TerrainLayerGpu {
+            triplanar_power: 20.0, // Very high (sharp transitions)
+            ..Default::default()
+        };
 
         // Should be valid (pow will just make sharp falloff)
         assert!(layer.triplanar_power > 0.0);
 
-        layer.triplanar_power = 0.5; // Very low (soft transitions)
+        let layer = TerrainLayerGpu {
+            triplanar_power: 0.5, // Very low (soft transitions)
+            ..Default::default()
+        };
         assert!(layer.triplanar_power > 0.0);
     }
 

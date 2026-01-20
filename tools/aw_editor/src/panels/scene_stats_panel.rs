@@ -333,6 +333,160 @@ impl Panel for SceneStatsPanel {
 mod tests {
     use super::*;
 
+    // ============================================================
+    // SCENESTATS DEFAULT TESTS
+    // ============================================================
+
+    #[test]
+    fn test_scene_stats_default() {
+        let stats = SceneStats::default();
+        assert_eq!(stats.entity_count, 0);
+        assert_eq!(stats.selected_count, 0);
+        assert_eq!(stats.component_count, 0);
+        assert_eq!(stats.prefab_count, 0);
+        assert_eq!(stats.undo_stack_size, 0);
+        assert_eq!(stats.redo_stack_size, 0);
+        assert_eq!(stats.memory_estimate_kb, 0);
+        assert!(stats.scene_path.is_none());
+        assert!(!stats.is_dirty);
+    }
+
+    #[test]
+    fn test_scene_stats_mesh_defaults() {
+        let stats = SceneStats::default();
+        assert_eq!(stats.mesh_count, 0);
+        assert_eq!(stats.total_triangles, 0);
+        assert_eq!(stats.total_vertices, 0);
+        assert_eq!(stats.mesh_memory_kb, 0);
+    }
+
+    #[test]
+    fn test_scene_stats_texture_defaults() {
+        let stats = SceneStats::default();
+        assert_eq!(stats.texture_count, 0);
+        assert_eq!(stats.texture_memory_kb, 0);
+        assert_eq!(stats.max_texture_resolution, (0, 0));
+    }
+
+    #[test]
+    fn test_scene_stats_material_defaults() {
+        let stats = SceneStats::default();
+        assert_eq!(stats.material_count, 0);
+        assert_eq!(stats.unique_shader_count, 0);
+    }
+
+    #[test]
+    fn test_scene_stats_performance_defaults() {
+        let stats = SceneStats::default();
+        assert_eq!(stats.estimated_draw_calls, 0);
+        assert_eq!(stats.estimated_state_changes, 0);
+        assert!(stats.performance_warning.is_none());
+    }
+
+    #[test]
+    fn test_scene_stats_clone() {
+        let stats = SceneStats {
+            entity_count: 100,
+            total_triangles: 50000,
+            scene_path: Some("test.scene".into()),
+            is_dirty: true,
+            ..Default::default()
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.entity_count, 100);
+        assert_eq!(cloned.total_triangles, 50000);
+        assert_eq!(cloned.scene_path, Some("test.scene".into()));
+        assert!(cloned.is_dirty);
+    }
+
+    // ============================================================
+    // SCENESTATS CUSTOM VALUES TESTS
+    // ============================================================
+
+    #[test]
+    fn test_scene_stats_entity_values() {
+        let stats = SceneStats {
+            entity_count: 500,
+            selected_count: 10,
+            component_count: 1500,
+            prefab_count: 25,
+            ..Default::default()
+        };
+        assert_eq!(stats.entity_count, 500);
+        assert_eq!(stats.selected_count, 10);
+        assert_eq!(stats.component_count, 1500);
+        assert_eq!(stats.prefab_count, 25);
+    }
+
+    #[test]
+    fn test_scene_stats_undo_redo_values() {
+        let stats = SceneStats {
+            undo_stack_size: 50,
+            redo_stack_size: 10,
+            memory_estimate_kb: 4096,
+            ..Default::default()
+        };
+        assert_eq!(stats.undo_stack_size, 50);
+        assert_eq!(stats.redo_stack_size, 10);
+        assert_eq!(stats.memory_estimate_kb, 4096);
+    }
+
+    #[test]
+    fn test_scene_stats_mesh_values() {
+        let stats = SceneStats {
+            mesh_count: 250,
+            total_triangles: 1_500_000,
+            total_vertices: 750_000,
+            mesh_memory_kb: 32768,
+            ..Default::default()
+        };
+        assert_eq!(stats.mesh_count, 250);
+        assert_eq!(stats.total_triangles, 1_500_000);
+        assert_eq!(stats.total_vertices, 750_000);
+        assert_eq!(stats.mesh_memory_kb, 32768);
+    }
+
+    #[test]
+    fn test_scene_stats_texture_values() {
+        let stats = SceneStats {
+            texture_count: 100,
+            texture_memory_kb: 1024 * 1024, // 1 GB
+            max_texture_resolution: (4096, 4096),
+            ..Default::default()
+        };
+        assert_eq!(stats.texture_count, 100);
+        assert_eq!(stats.texture_memory_kb, 1024 * 1024);
+        assert_eq!(stats.max_texture_resolution, (4096, 4096));
+    }
+
+    #[test]
+    fn test_scene_stats_material_values() {
+        let stats = SceneStats {
+            material_count: 50,
+            unique_shader_count: 12,
+            ..Default::default()
+        };
+        assert_eq!(stats.material_count, 50);
+        assert_eq!(stats.unique_shader_count, 12);
+    }
+
+    #[test]
+    fn test_scene_stats_performance_values() {
+        let stats = SceneStats {
+            estimated_draw_calls: 350,
+            estimated_state_changes: 75,
+            performance_warning: Some("High draw calls".into()),
+            ..Default::default()
+        };
+        assert_eq!(stats.estimated_draw_calls, 350);
+        assert_eq!(stats.estimated_state_changes, 75);
+        assert_eq!(stats.performance_warning, Some("High draw calls".into()));
+    }
+
+    // ============================================================
+    // SCENESTATSPANEL CREATION TESTS
+    // ============================================================
+
     #[test]
     fn test_scene_stats_panel_creation() {
         let panel = SceneStatsPanel::new();
@@ -340,6 +494,23 @@ mod tests {
         assert_eq!(panel.cached_stats.total_triangles, 0);
         assert_eq!(panel.cached_stats.texture_memory_kb, 0);
     }
+
+    #[test]
+    fn test_scene_stats_panel_default() {
+        let panel = SceneStatsPanel::default();
+        assert_eq!(panel.cached_stats.entity_count, 0);
+        assert_eq!(panel.cached_stats.mesh_count, 0);
+    }
+
+    #[test]
+    fn test_scene_stats_panel_trait() {
+        let panel = SceneStatsPanel::new();
+        assert_eq!(panel.name(), "Scene Statistics");
+    }
+
+    // ============================================================
+    // UPDATE STATS TESTS
+    // ============================================================
 
     #[test]
     fn test_stats_update() {
@@ -371,7 +542,57 @@ mod tests {
         assert!(panel.cached_stats.is_dirty);
         assert_eq!(panel.cached_stats.total_triangles, 50000);
     }
-    
+
+    #[test]
+    fn test_stats_update_replaces_all() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            entity_count: 100,
+            ..Default::default()
+        });
+        assert_eq!(panel.cached_stats.entity_count, 100);
+        
+        panel.update_stats(SceneStats {
+            entity_count: 50,
+            mesh_count: 25,
+            ..Default::default()
+        });
+        assert_eq!(panel.cached_stats.entity_count, 50);
+        assert_eq!(panel.cached_stats.mesh_count, 25);
+    }
+
+    #[test]
+    fn test_stats_update_with_scene_path() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            scene_path: Some("levels/main.scene".into()),
+            ..Default::default()
+        });
+        assert_eq!(panel.cached_stats.scene_path, Some("levels/main.scene".into()));
+    }
+
+    #[test]
+    fn test_stats_update_dirty_flag() {
+        let mut panel = SceneStatsPanel::new();
+        assert!(!panel.cached_stats.is_dirty);
+        
+        panel.update_stats(SceneStats {
+            is_dirty: true,
+            ..Default::default()
+        });
+        assert!(panel.cached_stats.is_dirty);
+        
+        panel.update_stats(SceneStats {
+            is_dirty: false,
+            ..Default::default()
+        });
+        assert!(!panel.cached_stats.is_dirty);
+    }
+
+    // ============================================================
+    // PERFORMANCE WARNING TESTS - TRIANGLES
+    // ============================================================
+
     #[test]
     fn test_performance_warning_triangles() {
         let mut panel = SceneStatsPanel::new();
@@ -383,6 +604,32 @@ mod tests {
         assert!(warning.is_some());
         assert!(warning.unwrap().contains("triangle"));
     }
+
+    #[test]
+    fn test_performance_warning_triangles_at_threshold() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            total_triangles: WARN_TRIANGLES,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_none()); // At threshold, not over
+    }
+
+    #[test]
+    fn test_performance_warning_triangles_just_over() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            total_triangles: WARN_TRIANGLES + 1,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_some());
+    }
+
+    // ============================================================
+    // PERFORMANCE WARNING TESTS - DRAW CALLS
+    // ============================================================
     
     #[test]
     fn test_performance_warning_draw_calls() {
@@ -395,6 +642,32 @@ mod tests {
         assert!(warning.is_some());
         assert!(warning.unwrap().contains("draw call"));
     }
+
+    #[test]
+    fn test_performance_warning_draw_calls_at_threshold() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            estimated_draw_calls: WARN_DRAW_CALLS,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_none());
+    }
+
+    #[test]
+    fn test_performance_warning_draw_calls_just_over() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            estimated_draw_calls: WARN_DRAW_CALLS + 1,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_some());
+    }
+
+    // ============================================================
+    // PERFORMANCE WARNING TESTS - TEXTURE MEMORY
+    // ============================================================
     
     #[test]
     fn test_performance_warning_texture_memory() {
@@ -407,6 +680,32 @@ mod tests {
         assert!(warning.is_some());
         assert!(warning.unwrap().contains("texture memory"));
     }
+
+    #[test]
+    fn test_performance_warning_texture_memory_at_threshold() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            texture_memory_kb: WARN_TEXTURE_MEMORY_MB * 1024,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_none());
+    }
+
+    #[test]
+    fn test_performance_warning_texture_memory_just_over() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            texture_memory_kb: WARN_TEXTURE_MEMORY_MB * 1024 + 1,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_some());
+    }
+
+    // ============================================================
+    // PERFORMANCE WARNING TESTS - COMBINED
+    // ============================================================
     
     #[test]
     fn test_no_performance_warning_under_thresholds() {
@@ -420,19 +719,156 @@ mod tests {
         let warning = panel.generate_performance_warning();
         assert!(warning.is_none());
     }
+
+    #[test]
+    fn test_performance_warning_multiple_issues() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            total_triangles: 2_000_000,
+            estimated_draw_calls: 600,
+            texture_memory_kb: 600 * 1024,
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_some());
+        let w = warning.unwrap();
+        assert!(w.contains("triangle"));
+        assert!(w.contains("draw call"));
+        assert!(w.contains("texture memory"));
+    }
+
+    #[test]
+    fn test_performance_warning_two_issues() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats {
+            total_triangles: 2_000_000,
+            estimated_draw_calls: 600,
+            texture_memory_kb: 256 * 1024, // Under threshold
+            ..Default::default()
+        });
+        let warning = panel.generate_performance_warning();
+        assert!(warning.is_some());
+        let w = warning.unwrap();
+        assert!(w.contains("triangle"));
+        assert!(w.contains("draw call"));
+        assert!(!w.contains("texture memory"));
+    }
+
+    // ============================================================
+    // FORMAT MEMORY TESTS
+    // ============================================================
     
     #[test]
-    fn test_format_memory() {
+    fn test_format_memory_kb() {
+        assert_eq!(SceneStatsPanel::format_memory(0), "0 KB");
+        assert_eq!(SceneStatsPanel::format_memory(1), "1 KB");
         assert_eq!(SceneStatsPanel::format_memory(512), "512 KB");
+        assert_eq!(SceneStatsPanel::format_memory(1023), "1023 KB");
+    }
+
+    #[test]
+    fn test_format_memory_mb() {
         assert_eq!(SceneStatsPanel::format_memory(1024), "1.0 MB");
         assert_eq!(SceneStatsPanel::format_memory(2048), "2.0 MB");
-        assert_eq!(SceneStatsPanel::format_memory(1024 * 1024), "1.0 GB");
+        assert_eq!(SceneStatsPanel::format_memory(1536), "1.5 MB");
+        assert_eq!(SceneStatsPanel::format_memory(10240), "10.0 MB");
     }
+
+    #[test]
+    fn test_format_memory_gb() {
+        assert_eq!(SceneStatsPanel::format_memory(1024 * 1024), "1.0 GB");
+        assert_eq!(SceneStatsPanel::format_memory(2 * 1024 * 1024), "2.0 GB");
+        assert_eq!(SceneStatsPanel::format_memory(1536 * 1024), "1.5 GB");
+    }
+
+    #[test]
+    fn test_format_memory_large_values() {
+        assert_eq!(SceneStatsPanel::format_memory(4 * 1024 * 1024), "4.0 GB");
+        assert_eq!(SceneStatsPanel::format_memory(8 * 1024 * 1024), "8.0 GB");
+    }
+
+    // ============================================================
+    // FORMAT NUMBER TESTS
+    // ============================================================
     
     #[test]
-    fn test_format_number() {
+    fn test_format_number_small() {
+        assert_eq!(SceneStatsPanel::format_number(0), "0");
+        assert_eq!(SceneStatsPanel::format_number(1), "1");
         assert_eq!(SceneStatsPanel::format_number(500), "500");
+        assert_eq!(SceneStatsPanel::format_number(999), "999");
+    }
+
+    #[test]
+    fn test_format_number_thousands() {
+        assert_eq!(SceneStatsPanel::format_number(1000), "1.0K");
         assert_eq!(SceneStatsPanel::format_number(1500), "1.5K");
+        assert_eq!(SceneStatsPanel::format_number(10000), "10.0K");
+        assert_eq!(SceneStatsPanel::format_number(999999), "1000.0K");
+    }
+
+    #[test]
+    fn test_format_number_millions() {
+        assert_eq!(SceneStatsPanel::format_number(1_000_000), "1.00M");
         assert_eq!(SceneStatsPanel::format_number(1_500_000), "1.50M");
+        assert_eq!(SceneStatsPanel::format_number(10_000_000), "10.00M");
+        assert_eq!(SceneStatsPanel::format_number(100_000_000), "100.00M");
+    }
+
+    // ============================================================
+    // THRESHOLD CONSTANT TESTS
+    // ============================================================
+
+    #[test]
+    fn test_threshold_constants() {
+        assert_eq!(WARN_TRIANGLES, 1_000_000);
+        assert_eq!(WARN_DRAW_CALLS, 500);
+        assert_eq!(WARN_TEXTURE_MEMORY_MB, 512);
+    }
+
+    // ============================================================
+    // EDGE CASE TESTS
+    // ============================================================
+
+    #[test]
+    fn test_zero_stats() {
+        let mut panel = SceneStatsPanel::new();
+        panel.update_stats(SceneStats::default());
+        assert!(panel.generate_performance_warning().is_none());
+    }
+
+    #[test]
+    fn test_max_resolution_variants() {
+        let stats = SceneStats {
+            max_texture_resolution: (8192, 8192),
+            ..Default::default()
+        };
+        assert_eq!(stats.max_texture_resolution.0, 8192);
+        assert_eq!(stats.max_texture_resolution.1, 8192);
+    }
+
+    #[test]
+    fn test_asymmetric_resolution() {
+        let stats = SceneStats {
+            max_texture_resolution: (4096, 2048),
+            ..Default::default()
+        };
+        assert_eq!(stats.max_texture_resolution.0, 4096);
+        assert_eq!(stats.max_texture_resolution.1, 2048);
+    }
+
+    #[test]
+    fn test_scene_path_none() {
+        let stats = SceneStats::default();
+        assert!(stats.scene_path.is_none());
+    }
+
+    #[test]
+    fn test_scene_path_with_path() {
+        let stats = SceneStats {
+            scene_path: Some("assets/levels/dungeon.scene".into()),
+            ..Default::default()
+        };
+        assert_eq!(stats.scene_path, Some("assets/levels/dungeon.scene".into()));
     }
 }

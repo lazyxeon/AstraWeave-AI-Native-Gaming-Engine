@@ -1,6 +1,9 @@
-/// Input event handling tests
-///
-/// Tests keyboard, mouse, and event priority
+//! Input event handling tests
+//!
+//! Tests keyboard, mouse, and event priority
+
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_ui::{
     AudioSettings, ControlsSettings, GraphicsSettings, MenuAction, MenuManager, MenuState,
     QualityPreset,

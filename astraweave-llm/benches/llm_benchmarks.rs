@@ -1,7 +1,8 @@
 // LLM Latency Benchmarks - Measure p50/p95/p99 percentiles
 // Target: p99 < 100ms for cache hits, p99 < 500ms for LLM calls
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use std::time::Duration;
 
 // Mock LLM client for benchmarking
@@ -113,9 +114,9 @@ fn bench_retry_backoff_calculation(c: &mut Criterion) {
             let multiplier = 2.0f64;
             let max_ms = 500u64;
 
-            for attempt in 0..5 {
+            for attempt in 0i32..5 {
                 let backoff =
-                    (initial_ms as f64 * multiplier.powi(attempt as i32)).min(max_ms as f64) as u64;
+                    (initial_ms as f64 * multiplier.powi(attempt)).min(max_ms as f64) as u64;
 
                 // Add jitter (±25%)
                 let jitter_range = (backoff as f64 * 0.25) as u64;
@@ -133,6 +134,7 @@ fn bench_circuit_breaker_check(c: &mut Criterion) {
     use std::sync::{Arc, Mutex};
 
     #[derive(Clone, Copy)]
+    #[allow(dead_code)]
     enum CircuitState {
         Closed,
         Open,

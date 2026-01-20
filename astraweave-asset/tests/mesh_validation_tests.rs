@@ -324,8 +324,8 @@ mod mesh_validation_tests {
         match load_first_mesh_from_glb_bytes(&bytes) {
             Ok(mesh) => {
                 // Validate basic integrity
-                assert!(mesh.positions.len() > 0, "Mesh should have vertices");
-                assert!(mesh.indices.len() > 0, "Mesh should have indices");
+                assert!(!mesh.positions.is_empty(), "Mesh should have vertices");
+                assert!(!mesh.indices.is_empty(), "Mesh should have indices");
                 assert_eq!(mesh.indices.len() % 3, 0, "Indices should form triangles");
 
                 // Validate all indices are in bounds
@@ -466,7 +466,8 @@ mod mesh_validation_tests {
                 continue;
             }
 
-            let bytes = fs::read(&path).expect(&format!("Failed to read {}", asset));
+            let bytes = fs::read(&path)
+                .unwrap_or_else(|e| panic!("Failed to read {}: {e}", asset));
             match load_first_mesh_from_glb_bytes(&bytes) {
                 Ok(mesh) => {
                     // Basic statistics

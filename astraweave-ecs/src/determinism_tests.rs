@@ -112,12 +112,14 @@ use std::collections::HashSet;
 // === Test Components ===
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 struct Position {
     x: f32,
     y: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -190,7 +192,7 @@ fn test_spawn_order_with_components() {
     world.insert(e3, Position { x: 3.0, y: 3.0 });
     world.insert(e3, Velocity { x: 3.0, y: 3.0 });
 
-    let expected_order = vec![e1, e2, e3];
+    let expected_order = [e1, e2, e3];
 
     // Collect entities
     let collected = collect_entities(&world);
@@ -198,11 +200,10 @@ fn test_spawn_order_with_components() {
     assert_eq!(collected.len(), 3, "Should have 3 entities");
 
     // Check spawn order preserved even with different component combinations
-    for (i, &entity) in collected.iter().enumerate() {
+    for (entity, expected) in collected.iter().zip(expected_order.iter()) {
         assert_eq!(
-            entity, expected_order[i],
-            "Entity at index {} should match spawn order",
-            i
+            entity, expected,
+            "Entity should match spawn order"
         );
     }
 }

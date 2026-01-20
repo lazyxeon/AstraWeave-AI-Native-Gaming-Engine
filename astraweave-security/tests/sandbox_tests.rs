@@ -30,6 +30,7 @@ fn create_standard_sandbox() -> ScriptSandbox {
     }
 }
 
+#[allow(dead_code)]
 fn create_strict_sandbox() -> ScriptSandbox {
     let mut engine = rhai::Engine::new();
     engine.set_max_operations(1000);

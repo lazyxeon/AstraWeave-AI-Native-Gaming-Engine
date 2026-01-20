@@ -161,5 +161,5 @@ fn test_bloom_mip_clamp() {
 #[cfg(not(feature = "bloom"))]
 fn test_bloom_disabled() {
     // When bloom feature is disabled, this test ensures the crate still compiles
-    assert!(true, "Bloom feature disabled, test passes trivially");
+    eprintln!("Bloom feature disabled; skipping bloom integration assertions.");
 }

@@ -441,7 +441,7 @@ mod tests {
         let mut manager = FluidLodManager::new(config);
         
         // Each update increments frame_accumulator
-        for i in 1..=10 {
+        for _ in 0..10 {
             manager.update([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
             // frame_accumulator should be i after i updates
             // We can verify this indirectly through should_simulate behavior

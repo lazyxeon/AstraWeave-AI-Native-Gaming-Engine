@@ -2,9 +2,11 @@
 //!
 //! Stress testing for Steamworks SDK integration, achievements, cloud saves, and stats.
 
+#![allow(dead_code, unused_variables, clippy::type_complexity)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
-use std::hint::black_box as std_black_box;
+use std::hint::black_box;
 use std::time::Instant;
 
 // ============================================================================
@@ -147,7 +149,7 @@ fn bench_achievements(c: &mut Criterion) {
                 })
                 .collect();
             
-            std_black_box(achievements.len())
+            black_box(achievements.len())
         });
     });
     
@@ -185,7 +187,7 @@ fn bench_achievements(c: &mut Criterion) {
                 }
             }
             
-            std_black_box(unlocked)
+            black_box(unlocked)
         });
     });
     
@@ -228,7 +230,7 @@ fn bench_achievements(c: &mut Criterion) {
                 }
             }
             
-            std_black_box(completed)
+            black_box(completed)
         });
     });
     
@@ -272,7 +274,7 @@ fn bench_achievements(c: &mut Criterion) {
                     })
                     .collect();
                 
-                std_black_box((unlocked.len(), locked_visible.len(), in_progress.len()));
+                black_box((unlocked.len(), locked_visible.len(), in_progress.len()));
             }
         });
     });
@@ -307,7 +309,7 @@ fn bench_statistics(c: &mut Criterion) {
                 })
                 .collect();
             
-            std_black_box(stats.len())
+            black_box(stats.len())
         });
     });
     
@@ -343,7 +345,7 @@ fn bench_statistics(c: &mut Criterion) {
                 }
             }
             
-            std_black_box(client.stats.len())
+            black_box(client.stats.len())
         });
     });
     
@@ -352,7 +354,7 @@ fn bench_statistics(c: &mut Criterion) {
         let stats: Vec<PlayerStat> = (0..10000)
             .map(|i| PlayerStat {
                 name: format!("stat_{}", i),
-                value: StatValue::Int((i % 1000) as i32),
+                value: StatValue::Int(i % 1000),
                 min: Some(0.0),
                 max: Some(1000.0),
             })
@@ -381,14 +383,14 @@ fn bench_statistics(c: &mut Criterion) {
                 .max()
                 .unwrap_or(0);
             
-            std_black_box((total, avg, max))
+            black_box((total, avg, max))
         });
     });
     
     // Test 4: Stat validation
     group.bench_function("stat_validation_20000", |bencher| {
         let updates: Vec<(String, i32)> = (0..20000)
-            .map(|i| (format!("stat_{}", i % 50), (i as i32 * 137) % 2000 - 500))
+            .map(|i| (format!("stat_{}", i % 50), (i * 137) % 2000 - 500))
             .collect();
         
         let stat_limits: HashMap<String, (i32, i32)> = (0..50)
@@ -416,7 +418,7 @@ fn bench_statistics(c: &mut Criterion) {
                 .collect();
             
             let invalid_count = validated.iter().filter(|(_, _, v)| !v).count();
-            std_black_box(invalid_count)
+            black_box(invalid_count)
         });
     });
     
@@ -445,7 +447,7 @@ fn bench_cloud_saves(c: &mut Criterion) {
                         data: vec![0u8; size],
                     };
                     
-                    std_black_box(file.data.len())
+                    black_box(file.data.len())
                 });
             },
         );
@@ -502,7 +504,7 @@ fn bench_cloud_saves(c: &mut Criterion) {
                 .collect();
             
             let total_size: usize = serialized.iter().map(|s| s.len()).sum();
-            std_black_box(total_size)
+            black_box(total_size)
         });
     });
     
@@ -550,7 +552,7 @@ fn bench_cloud_saves(c: &mut Criterion) {
                 client.cloud_files.insert(file.name.clone(), file);
             }
             
-            std_black_box((client.cloud_files.len(), deleted))
+            black_box((client.cloud_files.len(), deleted))
         });
     });
     
@@ -588,7 +590,7 @@ fn bench_cloud_saves(c: &mut Criterion) {
                 }
                 
                 let local_wins = resolutions.iter().filter(|(r, _)| *r == "local").count();
-                std_black_box(local_wins);
+                black_box(local_wins);
             }
         });
     });
@@ -617,8 +619,8 @@ fn bench_leaderboards(c: &mut Criterion) {
                 let entry = LeaderboardEntry {
                     steam_id: SteamId(i as u64),
                     rank: 0, // Will be calculated
-                    score: (i as i32 * 137) % 1_000_000,
-                    details: vec![i as i32 % 100, i as i32 % 50],
+                    score: (i * 137) % 1_000_000,
+                    details: vec![i % 100, i % 50],
                 };
                 
                 leaderboard.entries.push(entry);
@@ -630,7 +632,7 @@ fn bench_leaderboards(c: &mut Criterion) {
                 entry.rank = (i + 1) as u32;
             }
             
-            std_black_box(leaderboard.entries.len())
+            black_box(leaderboard.entries.len())
         });
     });
     
@@ -644,7 +646,7 @@ fn bench_leaderboards(c: &mut Criterion) {
                 .map(|i| LeaderboardEntry {
                     steam_id: SteamId(i as u64),
                     rank: (i + 1) as u32,
-                    score: 1_000_000 - i as i32,
+                    score: 1_000_000 - i,
                     details: vec![],
                 })
                 .collect(),
@@ -671,7 +673,7 @@ fn bench_leaderboards(c: &mut Criterion) {
                     .iter()
                     .find(|e| e.steam_id == user_id);
                 
-                std_black_box((top_10.len(), around.len(), user_entry.is_some()));
+                black_box((top_10.len(), around.len(), user_entry.is_some()));
             }
         });
     });
@@ -681,7 +683,7 @@ fn bench_leaderboards(c: &mut Criterion) {
         let submissions: Vec<(SteamId, i32)> = (0..5000)
             .map(|i| {
                 let user = SteamId((i % 1000) as u64);
-                let score = (i as i32 * 137) % 1_000_000;
+                let score = (i * 137) % 1_000_000;
                 (user, score)
             })
             .collect();
@@ -698,7 +700,7 @@ fn bench_leaderboards(c: &mut Criterion) {
             let mut entries: Vec<_> = best_scores.into_iter().collect();
             entries.sort_by(|a, b| b.1.cmp(&a.1));
             
-            std_black_box(entries.len())
+            black_box(entries.len())
         });
     });
     
@@ -708,7 +710,7 @@ fn bench_leaderboards(c: &mut Criterion) {
         let submissions: Vec<(SteamId, i32)> = (0..2000)
             .map(|i| {
                 let user = SteamId((i % 500) as u64);
-                let time_ms = 60_000 + (i as i32 * 137) % 120_000; // 1-3 minutes
+                let time_ms = 60_000 + (i * 137) % 120_000; // 1-3 minutes
                 (user, time_ms)
             })
             .collect();
@@ -737,7 +739,7 @@ fn bench_leaderboards(c: &mut Criterion) {
                 })
                 .collect();
             
-            std_black_box(formatted.len())
+            black_box(formatted.len())
         });
     });
     
@@ -774,7 +776,7 @@ fn bench_workshop(c: &mut Criterion) {
                 })
                 .collect();
             
-            std_black_box(items.len())
+            black_box(items.len())
         });
     });
     
@@ -817,7 +819,7 @@ fn bench_workshop(c: &mut Criterion) {
                 .filter(|item| item.subscribed)
                 .collect();
             
-            std_black_box((weapons.len(), by_rating.len(), subscribed.len()))
+            black_box((weapons.len(), by_rating.len(), subscribed.len()))
         });
     });
     
@@ -851,7 +853,7 @@ fn bench_workshop(c: &mut Criterion) {
             }
             
             let sub_count = subscriptions.values().filter(|&&v| v).count();
-            std_black_box(sub_count)
+            black_box(sub_count)
         });
     });
     
@@ -889,7 +891,7 @@ fn bench_workshop(c: &mut Criterion) {
                     / bandwidth;
             }
             
-            std_black_box((completed, downloaded))
+            black_box((completed, downloaded))
         });
     });
     
@@ -939,7 +941,7 @@ fn bench_platform_api(c: &mut Criterion) {
             let total_batches = batches.len();
             let max_batch_size = batches.values().map(|b| b.len()).max().unwrap_or(0);
             
-            std_black_box((total_batches, max_batch_size))
+            black_box((total_batches, max_batch_size))
         });
     });
     
@@ -967,7 +969,7 @@ fn bench_platform_api(c: &mut Criterion) {
                 }
             }
             
-            std_black_box((allowed, throttled))
+            black_box((allowed, throttled))
         });
     });
     
@@ -998,7 +1000,7 @@ fn bench_platform_api(c: &mut Criterion) {
                 *processed_by_type.entry(callback.callback_type).or_insert(0) += 1;
             }
             
-            std_black_box(processed_by_type.len())
+            black_box(processed_by_type.len())
         });
     });
     
@@ -1057,7 +1059,7 @@ fn bench_platform_api(c: &mut Criterion) {
             }
             
             let active = sessions.values().filter(|s| s.state == "active").count();
-            std_black_box(active)
+            black_box(active)
         });
     });
     

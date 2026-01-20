@@ -58,7 +58,7 @@ fn retryable_error_strategy() -> impl Strategy<Value = RetryableError> {
         Just(RetryableError::NetworkError),
         Just(RetryableError::RateLimited),
         (500u16..600).prop_map(RetryableError::ServerError),
-        "[a-zA-Z0-9 ]{0,50}".prop_map(|s| RetryableError::Permanent(s)),
+        "[a-zA-Z0-9 ]{0,50}".prop_map(RetryableError::Permanent),
     ]
 }
 

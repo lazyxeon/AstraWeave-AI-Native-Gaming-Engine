@@ -14,7 +14,6 @@ fn test_ui_rendering_all_flags_on() {
         show_map: true,
         show_quests: true,
         show_settings: true,
-        ..Default::default()
     };
     let mut acc = Accessibility::default();
     let mut menu_manager = MenuManager::default();

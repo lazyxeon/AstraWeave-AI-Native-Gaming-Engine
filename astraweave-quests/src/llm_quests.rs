@@ -750,10 +750,7 @@ mod tests {
             completion_criteria: "Collect 5 items".to_string(),
         };
 
-        match objective.objective_type {
-            ObjectiveType::Collect => assert!(true),
-            _ => assert!(false, "Expected Collect objective type"),
-        }
+        assert!(matches!(objective.objective_type, ObjectiveType::Collect));
     }
 
     #[test]

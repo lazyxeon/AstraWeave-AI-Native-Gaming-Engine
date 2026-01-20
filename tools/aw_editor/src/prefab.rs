@@ -128,6 +128,78 @@ impl EntityOverrides {
     pub fn has_any_override(&self) -> bool {
         self.has_pose_override() || self.has_health_override()
     }
+
+    /// Count total number of overridden fields
+    pub fn override_count(&self) -> usize {
+        [
+            self.pos_x.is_some(),
+            self.pos_y.is_some(),
+            self.health.is_some(),
+            self.max_health.is_some(),
+        ]
+        .iter()
+        .filter(|&&x| x)
+        .count()
+    }
+}
+
+/// Statistics about prefab system state
+#[derive(Debug, Clone, Default)]
+pub struct PrefabStats {
+    /// Total number of prefab instances in scene
+    pub instance_count: usize,
+    /// Total entities across all prefab instances
+    pub total_prefab_entities: usize,
+    /// Number of instances with overrides
+    pub instances_with_overrides: usize,
+    /// Total number of overridden entities
+    pub overridden_entity_count: usize,
+    /// Total number of overridden fields
+    pub total_override_count: usize,
+    /// Number of available prefab files
+    pub prefab_file_count: usize,
+}
+
+impl PrefabStats {
+    /// Check if any overrides exist
+    pub fn has_overrides(&self) -> bool {
+        self.overridden_entity_count > 0
+    }
+
+    /// Get average entities per instance
+    pub fn avg_entities_per_instance(&self) -> f32 {
+        if self.instance_count == 0 {
+            0.0
+        } else {
+            self.total_prefab_entities as f32 / self.instance_count as f32
+        }
+    }
+
+    /// Get override percentage (overridden entities / total entities)
+    pub fn override_percentage(&self) -> f32 {
+        if self.total_prefab_entities == 0 {
+            0.0
+        } else {
+            (self.overridden_entity_count as f32 / self.total_prefab_entities as f32) * 100.0
+        }
+    }
+}
+
+/// Issues detected in prefab system
+#[derive(Debug, Clone, PartialEq)]
+pub enum PrefabIssue {
+    /// Prefab file not found on disk
+    MissingFile { path: PathBuf },
+    /// Entity in mapping no longer exists in world
+    OrphanedEntity { entity: Entity, prefab: PathBuf },
+    /// Prefab has no entities
+    EmptyPrefab { path: PathBuf },
+    /// Entity mapping is empty for an instance
+    EmptyMapping { prefab: PathBuf },
+    /// Cycle detected in prefab hierarchy
+    CyclicReference { path: PathBuf },
+    /// Invalid root entity index
+    InvalidRootIndex { path: PathBuf, index: usize, entity_count: usize },
 }
 
 impl PrefabData {
@@ -835,6 +907,131 @@ impl PrefabManager {
         self.instances.clear();
         debug!("Cleared {} prefab instances", count);
     }
+
+    // === New Statistics and Validation Methods ===
+
+    /// Get comprehensive statistics about the prefab system
+    pub fn stats(&self) -> PrefabStats {
+        let instance_count = self.instances.len();
+        let total_prefab_entities: usize = self.instances.iter()
+            .map(|inst| inst.entity_mapping.len() + 1)  // +1 for root entity
+            .sum();
+        
+        let instances_with_overrides = self.instances.iter()
+            .filter(|inst| inst.overrides.values().any(|o| o.has_any_override()))
+            .count();
+        
+        let overridden_entity_count: usize = self.instances.iter()
+            .flat_map(|inst| inst.overrides.values())
+            .filter(|o| o.has_any_override())
+            .count();
+        
+        let total_override_count: usize = self.instances.iter()
+            .flat_map(|inst| inst.overrides.values())
+            .map(|o| o.override_count())
+            .sum();
+        
+        let prefab_file_count = self.get_all_prefab_files()
+            .map(|files| files.len())
+            .unwrap_or(0);
+
+        PrefabStats {
+            instance_count,
+            total_prefab_entities,
+            instances_with_overrides,
+            overridden_entity_count,
+            total_override_count,
+            prefab_file_count,
+        }
+    }
+
+    /// Validate prefab system for issues
+    pub fn validate(&self, world: &World) -> Vec<PrefabIssue> {
+        let mut issues = Vec::new();
+
+        for instance in &self.instances {
+            // Check if prefab file exists
+            if !instance.source.exists() {
+                issues.push(PrefabIssue::MissingFile {
+                    path: instance.source.clone(),
+                });
+            }
+
+            // Check for empty mapping
+            if instance.entity_mapping.is_empty() {
+                issues.push(PrefabIssue::EmptyMapping {
+                    prefab: instance.source.clone(),
+                });
+            }
+
+            // Check for orphaned entities
+            for &entity in instance.entity_mapping.values() {
+                if world.name(entity).is_none() {
+                    issues.push(PrefabIssue::OrphanedEntity {
+                        entity,
+                        prefab: instance.source.clone(),
+                    });
+                }
+            }
+
+            // Check root entity exists
+            if world.name(instance.root_entity).is_none() {
+                issues.push(PrefabIssue::OrphanedEntity {
+                    entity: instance.root_entity,
+                    prefab: instance.source.clone(),
+                });
+            }
+        }
+
+        issues
+    }
+
+    /// Check if prefab system is valid
+    pub fn is_valid(&self, world: &World) -> bool {
+        self.validate(world).is_empty()
+    }
+
+    /// Find all instances of a specific prefab file
+    pub fn find_instances_by_source(&self, source: &Path) -> Vec<&PrefabInstance> {
+        self.instances.iter()
+            .filter(|inst| inst.source == source)
+            .collect()
+    }
+
+    /// Count instances of a specific prefab file
+    pub fn count_instances_of(&self, source: &Path) -> usize {
+        self.instances.iter()
+            .filter(|inst| inst.source == source)
+            .count()
+    }
+
+    /// Get all unique prefab sources currently in use
+    pub fn active_prefab_sources(&self) -> Vec<&Path> {
+        let mut sources: Vec<&Path> = self.instances.iter()
+            .map(|inst| inst.source.as_path())
+            .collect();
+        sources.sort();
+        sources.dedup();
+        sources
+    }
+
+    /// Get total override count across all instances
+    pub fn total_override_count(&self) -> usize {
+        self.instances.iter()
+            .flat_map(|inst| inst.overrides.values())
+            .map(|o| o.override_count())
+            .sum()
+    }
+
+    /// Get all root entities of prefab instances
+    pub fn all_root_entities(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.instances.iter().map(|inst| inst.root_entity)
+    }
+
+    /// Check if a specific prefab file is in use
+    pub fn is_prefab_in_use(&self, source: &Path) -> bool {
+        self.instances.iter().any(|inst| inst.source == source)
+    }
 }
 
 #[cfg(test)]
@@ -926,5 +1123,207 @@ mod tests {
             .position(|e| e.name == "Grandchild")
             .expect("grandchild entity present");
         assert_eq!(grandchild_indices[0], grandchild_index);
+    }
+
+    // === New EntityOverrides tests ===
+
+    #[test]
+    fn test_entity_overrides_has_pose_override() {
+        let mut overrides = EntityOverrides::default();
+        assert!(!overrides.has_pose_override());
+        
+        overrides.pos_x = Some(10);
+        assert!(overrides.has_pose_override());
+        
+        overrides.pos_x = None;
+        overrides.pos_y = Some(20);
+        assert!(overrides.has_pose_override());
+    }
+
+    #[test]
+    fn test_entity_overrides_has_health_override() {
+        let mut overrides = EntityOverrides::default();
+        assert!(!overrides.has_health_override());
+        
+        overrides.health = Some(50);
+        assert!(overrides.has_health_override());
+        
+        overrides.health = None;
+        overrides.max_health = Some(100);
+        assert!(overrides.has_health_override());
+    }
+
+    #[test]
+    fn test_entity_overrides_has_any_override() {
+        let mut overrides = EntityOverrides::default();
+        assert!(!overrides.has_any_override());
+        
+        overrides.pos_x = Some(5);
+        assert!(overrides.has_any_override());
+    }
+
+    #[test]
+    fn test_entity_overrides_override_count() {
+        let mut overrides = EntityOverrides::default();
+        assert_eq!(overrides.override_count(), 0);
+        
+        overrides.pos_x = Some(10);
+        assert_eq!(overrides.override_count(), 1);
+        
+        overrides.pos_y = Some(20);
+        overrides.health = Some(50);
+        assert_eq!(overrides.override_count(), 3);
+        
+        overrides.max_health = Some(100);
+        assert_eq!(overrides.override_count(), 4);
+    }
+
+    // === PrefabStats tests ===
+
+    #[test]
+    fn test_prefab_stats_default() {
+        let stats = PrefabStats::default();
+        assert_eq!(stats.instance_count, 0);
+        assert_eq!(stats.total_prefab_entities, 0);
+        assert!(!stats.has_overrides());
+    }
+
+    #[test]
+    fn test_prefab_stats_has_overrides() {
+        let mut stats = PrefabStats::default();
+        assert!(!stats.has_overrides());
+        
+        stats.overridden_entity_count = 1;
+        assert!(stats.has_overrides());
+    }
+
+    #[test]
+    fn test_prefab_stats_avg_entities_per_instance() {
+        let mut stats = PrefabStats::default();
+        assert_eq!(stats.avg_entities_per_instance(), 0.0);
+        
+        stats.instance_count = 4;
+        stats.total_prefab_entities = 12;
+        assert_eq!(stats.avg_entities_per_instance(), 3.0);
+    }
+
+    #[test]
+    fn test_prefab_stats_override_percentage() {
+        let mut stats = PrefabStats::default();
+        assert_eq!(stats.override_percentage(), 0.0);
+        
+        stats.total_prefab_entities = 10;
+        stats.overridden_entity_count = 3;
+        assert!((stats.override_percentage() - 30.0).abs() < 0.1);
+    }
+
+    // === PrefabManager tests ===
+
+    #[test]
+    fn test_prefab_manager_empty_stats() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        let stats = manager.stats();
+        
+        assert_eq!(stats.instance_count, 0);
+        assert_eq!(stats.total_prefab_entities, 0);
+    }
+
+    #[test]
+    fn test_prefab_manager_is_valid_empty() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        let world = World::new();
+        
+        assert!(manager.is_valid(&world));
+        assert!(manager.validate(&world).is_empty());
+    }
+
+    #[test]
+    fn test_prefab_manager_find_instances_by_source() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        let path = PathBuf::from("nonexistent.prefab.ron");
+        
+        let found = manager.find_instances_by_source(&path);
+        assert!(found.is_empty());
+    }
+
+    #[test]
+    fn test_prefab_manager_count_instances_of() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        let path = PathBuf::from("test.prefab.ron");
+        
+        assert_eq!(manager.count_instances_of(&path), 0);
+    }
+
+    #[test]
+    fn test_prefab_manager_active_prefab_sources_empty() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        assert!(manager.active_prefab_sources().is_empty());
+    }
+
+    #[test]
+    fn test_prefab_manager_total_override_count_empty() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        assert_eq!(manager.total_override_count(), 0);
+    }
+
+    #[test]
+    fn test_prefab_manager_all_root_entities_empty() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        assert_eq!(manager.all_root_entities().count(), 0);
+    }
+
+    #[test]
+    fn test_prefab_manager_is_prefab_in_use() {
+        let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
+        let path = PathBuf::from("test.prefab.ron");
+        
+        assert!(!manager.is_prefab_in_use(&path));
+    }
+
+    // === PrefabHierarchySnapshot tests ===
+
+    #[test]
+    fn test_hierarchy_snapshot_new() {
+        let snapshot = PrefabHierarchySnapshot::new();
+        assert!(snapshot.children_of(0).is_empty());
+    }
+
+    #[test]
+    fn test_hierarchy_snapshot_insert_children() {
+        let mut snapshot = PrefabHierarchySnapshot::new();
+        snapshot.insert_children(1, vec![2, 3, 4]);
+        
+        let children = snapshot.children_of(1);
+        assert_eq!(children.len(), 3);
+        assert!(children.contains(&2));
+        assert!(children.contains(&3));
+        assert!(children.contains(&4));
+    }
+
+    #[test]
+    fn test_hierarchy_snapshot_add_child() {
+        let mut snapshot = PrefabHierarchySnapshot::new();
+        snapshot.add_child(1, 2);
+        snapshot.add_child(1, 3);
+        
+        let children = snapshot.children_of(1);
+        assert_eq!(children.len(), 2);
+    }
+
+    #[test]
+    fn test_hierarchy_snapshot_children_of_empty() {
+        let snapshot = PrefabHierarchySnapshot::new();
+        assert!(snapshot.children_of(999).is_empty());
+    }
+
+    #[test]
+    fn test_hierarchy_snapshot_from_iterator() {
+        let snapshot: PrefabHierarchySnapshot = vec![
+            (1, vec![2, 3]),
+            (2, vec![4]),
+        ].into_iter().collect();
+        
+        assert_eq!(snapshot.children_of(1).len(), 2);
+        assert_eq!(snapshot.children_of(2).len(), 1);
     }
 }

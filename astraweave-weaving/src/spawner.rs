@@ -515,7 +515,7 @@ mod tests {
 
         // Update 3 more seconds (wave spawns)
         let requests = spawner.update(3.1, &anchors);
-        assert!(requests.len() > 0);
+        assert!(!requests.is_empty());
         assert_eq!(spawner.current_wave(), 2); // Wave incremented
     }
 
@@ -662,7 +662,7 @@ mod tests {
         let requests = spawner.update(5.1, &anchors);
 
         // All spawns should be at broken anchor's spawn point
-        assert!(requests.len() > 0, "Expected spawn requests");
+        assert!(!requests.is_empty(), "Expected spawn requests");
         for request in &requests {
             assert_eq!(
                 request.anchor_id,

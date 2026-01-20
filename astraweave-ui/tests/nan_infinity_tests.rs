@@ -3,6 +3,8 @@
 //! P0-Critical: Ensures UI systems handle invalid float inputs gracefully
 //! without panicking or corrupting visual state.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_ui::hud::{
     easing, DamageNumber, DamageType, EnemyData, EnemyFaction, HealthAnimation, PlayerStats,
 };

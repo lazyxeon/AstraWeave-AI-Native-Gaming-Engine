@@ -25,8 +25,8 @@ fn test_save_10000_entities() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: (i * 2) as i32,
+                    x: i,
+                    y: (i * 2),
                 },
             },
         );
@@ -78,15 +78,15 @@ fn test_load_10000_entities_under_5_seconds() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32,
+                    x: i,
+                    y: i,
                 },
             },
         );
         world.insert(
             e,
             CHealth {
-                hp: 50 + (i % 100) as i32,
+                hp: 50 + (i % 100),
             },
         );
         world.insert(e, CTeam { id: (i % 8) as u8 });
@@ -136,8 +136,8 @@ fn test_save_100000_components() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32,
+                    x: i,
+                    y: i,
                 },
             },
         );
@@ -208,8 +208,8 @@ fn test_memory_usage_reasonable() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32,
+                    x: i,
+                    y: i,
                 },
             },
         );
@@ -252,8 +252,8 @@ fn test_large_world_hash_performance() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32,
+                    x: i,
+                    y: i,
                 },
             },
         );
@@ -302,15 +302,15 @@ fn test_roundtrip_50000_entities() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: (i % 1000) as i32,
+                    x: i,
+                    y: (i % 1000),
                 },
             },
         );
         world.insert(
             e,
             CHealth {
-                hp: 50 + (i % 100) as i32,
+                hp: 50 + (i % 100),
             },
         );
 
@@ -321,7 +321,7 @@ fn test_roundtrip_50000_entities() {
 
     // Serialize
     let blob = serialize_ecs_world(&world).expect("serialize failed");
-    let original_hash = calculate_world_hash(&world);
+    let _original_hash = calculate_world_hash(&world);
 
     // Deserialize
     let mut world2 = World::new();
@@ -356,8 +356,8 @@ fn test_blob_size_scaling() {
                 e,
                 CPos {
                     pos: IVec2 {
-                        x: i as i32,
-                        y: i as i32,
+                        x: i,
+                        y: i,
                     },
                 },
             );
@@ -406,8 +406,8 @@ fn test_serialize_deserialize_throughput() {
             e,
             CPos {
                 pos: IVec2 {
-                    x: i as i32,
-                    y: i as i32,
+                    x: i,
+                    y: i,
                 },
             },
         );

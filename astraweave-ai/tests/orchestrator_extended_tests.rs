@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 const COOLDOWN_THROW_SMOKE: &str = "throw:smoke";
 
 /// Helper: Create a WorldSnapshot with configurable parameters
+#[allow(clippy::too_many_arguments)]
 fn make_snapshot(
     time: f32,
     companion_pos: IVec2,

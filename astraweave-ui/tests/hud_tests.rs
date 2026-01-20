@@ -1,6 +1,9 @@
-/// HUD (Heads-Up Display) system tests
-///
-/// Tests HUD updates, persistence, validation, and animations
+//! HUD (Heads-Up Display) system tests
+//!
+//! Tests HUD updates, persistence, validation, and animations
+
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_ui::hud::{
     DamageNumber, DamageType, EnemyData, EnemyFaction, HealthAnimation, PlayerStats,
 };

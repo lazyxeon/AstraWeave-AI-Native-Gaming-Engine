@@ -134,7 +134,7 @@ fn test_zero_speed_valid() {
 
 #[test]
 fn test_negative_speed_invalid() {
-    let detector = SpeedHackDetector::new(10.0);
+    let _detector = SpeedHackDetector::new(10.0);
     let speed = -5.0;
 
     // Negative speed is physically impossible

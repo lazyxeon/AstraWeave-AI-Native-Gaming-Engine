@@ -3,6 +3,8 @@
 //! Tests content hashing performance across various data sizes
 //! and usage patterns using SHA-256 (the actual hash algorithm used).
 
+#![allow(unused_imports)]
+
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
 use std::hint::black_box;
 use sha2::{Digest, Sha256};
@@ -320,7 +322,7 @@ fn bench_hash_throughput_mb_per_sec(c: &mut Criterion) {
     
     // Large data to get accurate throughput
     let sizes = vec![
-        1 * 1024 * 1024,    // 1 MB
+        1024 * 1024,        // 1 MB
         10 * 1024 * 1024,   // 10 MB
         100 * 1024 * 1024,  // 100 MB
     ];

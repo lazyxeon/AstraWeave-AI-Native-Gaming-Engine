@@ -24,6 +24,130 @@ pub enum RuntimeState {
     SteppingOneFrame,
 }
 
+impl RuntimeState {
+    /// Get all possible runtime states
+    pub fn all() -> &'static [RuntimeState] {
+        &[
+            RuntimeState::Editing,
+            RuntimeState::Playing,
+            RuntimeState::Paused,
+            RuntimeState::SteppingOneFrame,
+        ]
+    }
+
+    /// Check if this state can transition to another state
+    pub fn can_transition_to(&self, target: RuntimeState) -> bool {
+        match (self, target) {
+            // From Editing: can only start playing
+            (RuntimeState::Editing, RuntimeState::Playing) => true,
+            (RuntimeState::Editing, _) => false,
+
+            // From Playing: can pause, step, or stop (go back to editing)
+            (RuntimeState::Playing, RuntimeState::Paused) => true,
+            (RuntimeState::Playing, RuntimeState::Editing) => true,
+            (RuntimeState::Playing, RuntimeState::SteppingOneFrame) => true,
+            (RuntimeState::Playing, RuntimeState::Playing) => false,
+
+            // From Paused: can resume, step, or stop
+            (RuntimeState::Paused, RuntimeState::Playing) => true,
+            (RuntimeState::Paused, RuntimeState::Editing) => true,
+            (RuntimeState::Paused, RuntimeState::SteppingOneFrame) => true,
+            (RuntimeState::Paused, RuntimeState::Paused) => false,
+
+            // From SteppingOneFrame: transitions to Paused automatically, but can also stop
+            (RuntimeState::SteppingOneFrame, RuntimeState::Paused) => true,
+            (RuntimeState::SteppingOneFrame, RuntimeState::Editing) => true,
+            (RuntimeState::SteppingOneFrame, RuntimeState::Playing) => true,
+            (RuntimeState::SteppingOneFrame, RuntimeState::SteppingOneFrame) => true,
+        }
+    }
+
+    /// Get valid states we can transition to from this state
+    pub fn valid_transitions(&self) -> Vec<RuntimeState> {
+        RuntimeState::all()
+            .iter()
+            .copied()
+            .filter(|&target| self.can_transition_to(target))
+            .collect()
+    }
+
+    /// Get icon representation for this state
+    pub fn icon(&self) -> &'static str {
+        match self {
+            RuntimeState::Editing => "✏️",
+            RuntimeState::Playing => "▶️",
+            RuntimeState::Paused => "⏸️",
+            RuntimeState::SteppingOneFrame => "⏭️",
+        }
+    }
+
+    /// Get keyboard shortcut hint for this state action
+    pub fn shortcut_hint(&self) -> &'static str {
+        match self {
+            RuntimeState::Editing => "Ctrl+P to Play",
+            RuntimeState::Playing => "Ctrl+P to Pause, Esc to Stop",
+            RuntimeState::Paused => "Ctrl+P to Resume, F10 to Step",
+            RuntimeState::SteppingOneFrame => "F10 to Step Again",
+        }
+    }
+
+    /// Get human-readable description
+    pub fn description(&self) -> &'static str {
+        match self {
+            RuntimeState::Editing => "Scene is editable, simulation stopped",
+            RuntimeState::Playing => "Simulation running in real-time",
+            RuntimeState::Paused => "Simulation paused, can step or resume",
+            RuntimeState::SteppingOneFrame => "Advancing single frame",
+        }
+    }
+
+    /// Check if simulation world exists in this state
+    pub fn has_simulation(&self) -> bool {
+        matches!(
+            self,
+            RuntimeState::Playing | RuntimeState::Paused | RuntimeState::SteppingOneFrame
+        )
+    }
+
+    /// Check if world can be edited in this state
+    pub fn is_editable(&self) -> bool {
+        matches!(self, RuntimeState::Editing)
+    }
+
+    /// Check if simulation is actively running
+    pub fn is_active(&self) -> bool {
+        matches!(self, RuntimeState::Playing | RuntimeState::SteppingOneFrame)
+    }
+}
+
+impl std::fmt::Display for RuntimeState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RuntimeState::Editing => write!(f, "Editing"),
+            RuntimeState::Playing => write!(f, "Playing"),
+            RuntimeState::Paused => write!(f, "Paused"),
+            RuntimeState::SteppingOneFrame => write!(f, "Stepping"),
+        }
+    }
+}
+
+/// Issues detected in runtime state
+#[derive(Debug, Clone, PartialEq)]
+pub enum RuntimeIssue {
+    /// No simulation world when one is expected
+    MissingSimulation,
+    /// Missing edit snapshot for restoration
+    MissingEditSnapshot,
+    /// Simulation world corrupted or inconsistent
+    CorruptedSimulation { reason: String },
+    /// Frame time too long (potential freeze)
+    FrameTimeExceeded { frame_time_ms: f32, threshold_ms: f32 },
+    /// Too few FPS (performance issue)
+    LowFps { fps: f32, minimum_fps: f32 },
+    /// Entity count mismatch after restoration
+    EntityCountMismatch { expected: usize, actual: usize },
+}
+
 /// Runtime performance statistics
 #[derive(Debug, Clone)]
 pub struct RuntimeStats {
@@ -48,6 +172,75 @@ impl Default for RuntimeStats {
             fps: 0.0,
             fixed_steps_last_tick: 0,
         }
+    }
+}
+
+impl RuntimeStats {
+    /// Check if frame time is within acceptable bounds
+    pub fn is_frame_time_healthy(&self, max_ms: f32) -> bool {
+        self.frame_time_ms <= max_ms
+    }
+
+    /// Check if FPS is within acceptable bounds
+    pub fn is_fps_healthy(&self, min_fps: f32) -> bool {
+        self.fps >= min_fps
+    }
+
+    /// Get performance grade based on FPS
+    pub fn performance_grade(&self) -> &'static str {
+        match self.fps as u32 {
+            0..=14 => "Critical",
+            15..=29 => "Poor",
+            30..=44 => "Fair",
+            45..=59 => "Good",
+            _ => "Excellent",
+        }
+    }
+
+    /// Get frame time budget usage as percentage (assuming 60 FPS target = 16.67ms)
+    pub fn frame_budget_percentage(&self) -> f32 {
+        (self.frame_time_ms / 16.667) * 100.0
+    }
+
+    /// Get estimated maximum entities based on current performance
+    pub fn estimated_entity_capacity(&self) -> usize {
+        if self.entity_count == 0 || self.frame_time_ms <= 0.0 {
+            return 0;
+        }
+        // Calculate how many entities we could have while staying under 16.67ms
+        let entities_per_ms = self.entity_count as f32 / self.frame_time_ms;
+        (entities_per_ms * 16.667) as usize
+    }
+
+    /// Check if running smoothly (60+ FPS, <16.67ms frame time)
+    pub fn is_running_smoothly(&self) -> bool {
+        self.fps >= 60.0 && self.frame_time_ms <= 16.67
+    }
+
+    /// Get simulation duration in seconds (assuming 60 Hz fixed timestep)
+    pub fn simulation_duration_secs(&self) -> f32 {
+        self.tick_count as f32 / 60.0
+    }
+
+    /// Validate stats for potential issues
+    pub fn validate(&self) -> Vec<RuntimeIssue> {
+        let mut issues = Vec::new();
+
+        if self.frame_time_ms > 33.33 {
+            issues.push(RuntimeIssue::FrameTimeExceeded {
+                frame_time_ms: self.frame_time_ms,
+                threshold_ms: 33.33,
+            });
+        }
+
+        if self.fps > 0.0 && self.fps < 30.0 {
+            issues.push(RuntimeIssue::LowFps {
+                fps: self.fps,
+                minimum_fps: 30.0,
+            });
+        }
+
+        issues
     }
 }
 
@@ -320,6 +513,82 @@ impl EditorRuntime {
             };
         }
     }
+
+    // === New Validation and Query Methods ===
+
+    /// Validate runtime state for issues
+    pub fn validate(&self) -> Vec<RuntimeIssue> {
+        let mut issues = self.stats.validate();
+
+        // Check for missing simulation when expected
+        if self.state.has_simulation() && self.sim_app.is_none() {
+            issues.push(RuntimeIssue::MissingSimulation);
+        }
+
+        // Check for missing edit snapshot when in play mode
+        if self.state != RuntimeState::Editing && self.edit_snapshot.is_none() {
+            issues.push(RuntimeIssue::MissingEditSnapshot);
+        }
+
+        issues
+    }
+
+    /// Check if runtime state is valid
+    pub fn is_valid(&self) -> bool {
+        self.validate().is_empty()
+    }
+
+    /// Check if we can transition to a target state
+    pub fn can_transition_to(&self, target: RuntimeState) -> bool {
+        self.state.can_transition_to(target)
+    }
+
+    /// Get tick count
+    pub fn tick_count(&self) -> u64 {
+        self.tick_count
+    }
+
+    /// Get current frame times for analysis
+    pub fn frame_times(&self) -> &[f32] {
+        &self.frame_times
+    }
+
+    /// Get frame time variance (for jitter detection)
+    pub fn frame_time_variance(&self) -> f32 {
+        if self.frame_times.len() < 2 {
+            return 0.0;
+        }
+        let mean = self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
+        let variance: f32 = self.frame_times.iter()
+            .map(|&t| (t - mean).powi(2))
+            .sum::<f32>() / self.frame_times.len() as f32;
+        variance.sqrt()
+    }
+
+    /// Check if frame times are stable (low jitter)
+    pub fn is_frame_time_stable(&self, max_variance_ms: f32) -> bool {
+        self.frame_time_variance() <= max_variance_ms
+    }
+
+    /// Get minimum frame time in history
+    pub fn min_frame_time(&self) -> Option<f32> {
+        self.frame_times.iter().copied().reduce(f32::min)
+    }
+
+    /// Get maximum frame time in history
+    pub fn max_frame_time(&self) -> Option<f32> {
+        self.frame_times.iter().copied().reduce(f32::max)
+    }
+
+    /// Check if edit snapshot exists
+    pub fn has_edit_snapshot(&self) -> bool {
+        self.edit_snapshot.is_some()
+    }
+
+    /// Get fixed timestep (60 Hz)
+    pub fn fixed_dt(&self) -> f32 {
+        self.fixed_dt
+    }
 }
 
 #[cfg(test)]
@@ -487,5 +756,239 @@ mod tests {
         assert_eq!(runtime.stats().tick_count, 1);
         assert_eq!(runtime.stats().fixed_steps_last_tick, 1);
         assert!(runtime.is_paused());
+    }
+
+    // === New tests for enhanced RuntimeState ===
+
+    #[test]
+    fn runtime_state_all_returns_all_states() {
+        let all = RuntimeState::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&RuntimeState::Editing));
+        assert!(all.contains(&RuntimeState::Playing));
+        assert!(all.contains(&RuntimeState::Paused));
+        assert!(all.contains(&RuntimeState::SteppingOneFrame));
+    }
+
+    #[test]
+    fn runtime_state_transitions_from_editing() {
+        let state = RuntimeState::Editing;
+        assert!(state.can_transition_to(RuntimeState::Playing));
+        assert!(!state.can_transition_to(RuntimeState::Paused));
+        assert!(!state.can_transition_to(RuntimeState::Editing));
+        assert!(!state.can_transition_to(RuntimeState::SteppingOneFrame));
+    }
+
+    #[test]
+    fn runtime_state_transitions_from_playing() {
+        let state = RuntimeState::Playing;
+        assert!(state.can_transition_to(RuntimeState::Paused));
+        assert!(state.can_transition_to(RuntimeState::Editing));
+        assert!(state.can_transition_to(RuntimeState::SteppingOneFrame));
+        assert!(!state.can_transition_to(RuntimeState::Playing));
+    }
+
+    #[test]
+    fn runtime_state_transitions_from_paused() {
+        let state = RuntimeState::Paused;
+        assert!(state.can_transition_to(RuntimeState::Playing));
+        assert!(state.can_transition_to(RuntimeState::Editing));
+        assert!(state.can_transition_to(RuntimeState::SteppingOneFrame));
+        assert!(!state.can_transition_to(RuntimeState::Paused));
+    }
+
+    #[test]
+    fn runtime_state_valid_transitions() {
+        let editing = RuntimeState::Editing;
+        let valid = editing.valid_transitions();
+        assert_eq!(valid.len(), 1);
+        assert!(valid.contains(&RuntimeState::Playing));
+
+        let playing = RuntimeState::Playing;
+        let valid = playing.valid_transitions();
+        assert_eq!(valid.len(), 3);
+    }
+
+    #[test]
+    fn runtime_state_icons_not_empty() {
+        for state in RuntimeState::all() {
+            assert!(!state.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn runtime_state_shortcut_hints_not_empty() {
+        for state in RuntimeState::all() {
+            assert!(!state.shortcut_hint().is_empty());
+        }
+    }
+
+    #[test]
+    fn runtime_state_descriptions_not_empty() {
+        for state in RuntimeState::all() {
+            assert!(!state.description().is_empty());
+        }
+    }
+
+    #[test]
+    fn runtime_state_has_simulation() {
+        assert!(!RuntimeState::Editing.has_simulation());
+        assert!(RuntimeState::Playing.has_simulation());
+        assert!(RuntimeState::Paused.has_simulation());
+        assert!(RuntimeState::SteppingOneFrame.has_simulation());
+    }
+
+    #[test]
+    fn runtime_state_is_editable() {
+        assert!(RuntimeState::Editing.is_editable());
+        assert!(!RuntimeState::Playing.is_editable());
+        assert!(!RuntimeState::Paused.is_editable());
+        assert!(!RuntimeState::SteppingOneFrame.is_editable());
+    }
+
+    #[test]
+    fn runtime_state_is_active() {
+        assert!(!RuntimeState::Editing.is_active());
+        assert!(RuntimeState::Playing.is_active());
+        assert!(!RuntimeState::Paused.is_active());
+        assert!(RuntimeState::SteppingOneFrame.is_active());
+    }
+
+    #[test]
+    fn runtime_state_display() {
+        assert_eq!(RuntimeState::Editing.to_string(), "Editing");
+        assert_eq!(RuntimeState::Playing.to_string(), "Playing");
+        assert_eq!(RuntimeState::Paused.to_string(), "Paused");
+        assert_eq!(RuntimeState::SteppingOneFrame.to_string(), "Stepping");
+    }
+
+    // === RuntimeStats tests ===
+
+    #[test]
+    fn runtime_stats_is_frame_time_healthy() {
+        let stats = RuntimeStats {
+            frame_time_ms: 10.0,
+            ..Default::default()
+        };
+        assert!(stats.is_frame_time_healthy(16.67));
+        assert!(!stats.is_frame_time_healthy(5.0));
+    }
+
+    #[test]
+    fn runtime_stats_is_fps_healthy() {
+        let stats = RuntimeStats {
+            fps: 60.0,
+            ..Default::default()
+        };
+        assert!(stats.is_fps_healthy(30.0));
+        assert!(!stats.is_fps_healthy(90.0));
+    }
+
+    #[test]
+    fn runtime_stats_performance_grade() {
+        let stats = RuntimeStats { fps: 10.0, ..Default::default() };
+        assert_eq!(stats.performance_grade(), "Critical");
+        
+        let stats = RuntimeStats { fps: 25.0, ..Default::default() };
+        assert_eq!(stats.performance_grade(), "Poor");
+        
+        let stats = RuntimeStats { fps: 40.0, ..Default::default() };
+        assert_eq!(stats.performance_grade(), "Fair");
+        
+        let stats = RuntimeStats { fps: 55.0, ..Default::default() };
+        assert_eq!(stats.performance_grade(), "Good");
+        
+        let stats = RuntimeStats { fps: 120.0, ..Default::default() };
+        assert_eq!(stats.performance_grade(), "Excellent");
+    }
+
+    #[test]
+    fn runtime_stats_frame_budget_percentage() {
+        let stats = RuntimeStats { frame_time_ms: 16.667, ..Default::default() };
+        assert!((stats.frame_budget_percentage() - 100.0).abs() < 1.0);
+        
+        let stats = RuntimeStats { frame_time_ms: 8.33, ..Default::default() };
+        assert!((stats.frame_budget_percentage() - 50.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn runtime_stats_is_running_smoothly() {
+        let stats = RuntimeStats {
+            fps: 60.0,
+            frame_time_ms: 16.0,
+            ..Default::default()
+        };
+        assert!(stats.is_running_smoothly());
+        
+        let stats = RuntimeStats { fps: 30.0, ..Default::default() };
+        assert!(!stats.is_running_smoothly());
+    }
+
+    #[test]
+    fn runtime_stats_simulation_duration() {
+        let stats = RuntimeStats {
+            tick_count: 120,
+            ..Default::default()
+        };
+        assert!((stats.simulation_duration_secs() - 2.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn runtime_stats_validate_detects_issues() {
+        let stats = RuntimeStats {
+            frame_time_ms: 50.0,  // Too slow
+            fps: 20.0,  // Too low
+            ..Default::default()
+        };
+        let issues = stats.validate();
+        assert_eq!(issues.len(), 2);
+    }
+
+    // === EditorRuntime validation tests ===
+
+    #[test]
+    fn editor_runtime_validate_in_editing_mode() {
+        let runtime = EditorRuntime::new();
+        let issues = runtime.validate();
+        assert!(issues.is_empty());
+        assert!(runtime.is_valid());
+    }
+
+    #[test]
+    fn editor_runtime_can_transition_to() {
+        let runtime = EditorRuntime::new();
+        assert!(runtime.can_transition_to(RuntimeState::Playing));
+        assert!(!runtime.can_transition_to(RuntimeState::Paused));
+    }
+
+    #[test]
+    fn editor_runtime_tick_count() {
+        let mut runtime = EditorRuntime::new();
+        let world = World::new();
+        runtime.enter_play(&world).expect("enter play");
+        runtime.tick(1.0 / 60.0).expect("tick");
+        assert_eq!(runtime.tick_count(), 1);
+    }
+
+    #[test]
+    fn editor_runtime_has_edit_snapshot() {
+        let mut runtime = EditorRuntime::new();
+        assert!(!runtime.has_edit_snapshot());
+        
+        let world = World::new();
+        runtime.enter_play(&world).expect("enter play");
+        assert!(runtime.has_edit_snapshot());
+    }
+
+    #[test]
+    fn editor_runtime_fixed_dt() {
+        let runtime = EditorRuntime::new();
+        assert!((runtime.fixed_dt() - 1.0 / 60.0).abs() < 0.0001);
+    }
+
+    #[test]
+    fn editor_runtime_frame_time_variance_empty() {
+        let runtime = EditorRuntime::new();
+        assert_eq!(runtime.frame_time_variance(), 0.0);
     }
 }

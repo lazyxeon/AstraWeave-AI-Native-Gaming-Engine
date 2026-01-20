@@ -556,6 +556,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_error_codes() {
         assert_eq!(AW_OK, 0);
         assert!(AW_ERR_NULL < 0);

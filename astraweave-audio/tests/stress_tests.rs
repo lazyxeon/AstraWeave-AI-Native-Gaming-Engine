@@ -10,6 +10,8 @@
 //! Note: Limited by actual AudioEngine API (no set_emitter_position, no per-channel volume)
 //! Pattern: Week 3 stress tests (27 tests, 1.5h target)
 
+#![allow(clippy::assertions_on_constants)]
+
 use astraweave_audio::engine::{AudioEngine, ListenerPose, MusicTrack, PanMode};
 use glam::vec3;
 

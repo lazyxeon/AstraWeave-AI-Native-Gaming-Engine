@@ -2,6 +2,8 @@
 //!
 //! Tests cache entry creation, lookup, eviction, and persistence.
 
+#![allow(clippy::redundant_closure, clippy::no_effect)]
+
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
 use std::hint::black_box;
 use std::path::PathBuf;

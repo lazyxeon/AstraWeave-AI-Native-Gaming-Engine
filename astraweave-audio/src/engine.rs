@@ -615,7 +615,7 @@ mod tests {
         let mut engine = AudioEngine::new().unwrap();
 
         // Test various emitter IDs
-        let ids = vec![0, 1, 42, 100, 1000, 10000, u64::MAX];
+        let ids = [0, 1, 42, 100, 1000, 10000, u64::MAX];
 
         for (i, id) in ids.iter().enumerate() {
             let pos = vec3(i as f32, 0.0, 0.0);

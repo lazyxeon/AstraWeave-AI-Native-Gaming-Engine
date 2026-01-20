@@ -29,6 +29,19 @@ pub enum DistributionFormat {
 }
 
 impl DistributionFormat {
+    /// Get all distribution format variants
+    pub fn all() -> &'static [Self] {
+        &[
+            Self::WindowsInstaller,
+            Self::WindowsPortable,
+            Self::MacOSBundle,
+            Self::MacOSDmg,
+            Self::LinuxAppImage,
+            Self::LinuxTarball,
+            Self::SteamDepot,
+        ]
+    }
+
     /// Get file extension for this format
     pub fn extension(&self) -> &str {
         match self {
@@ -53,6 +66,68 @@ impl DistributionFormat {
             Self::LinuxTarball => "Linux Tarball",
             Self::SteamDepot => "Steam Depot",
         }
+    }
+
+    /// Get target platform name
+    pub fn platform(&self) -> &str {
+        match self {
+            Self::WindowsInstaller | Self::WindowsPortable => "Windows",
+            Self::MacOSBundle | Self::MacOSDmg => "macOS",
+            Self::LinuxAppImage | Self::LinuxTarball => "Linux",
+            Self::SteamDepot => "Steam",
+        }
+    }
+
+    /// Get icon for this format
+    pub fn icon(&self) -> &str {
+        match self {
+            Self::WindowsInstaller => "💿",
+            Self::WindowsPortable => "📦",
+            Self::MacOSBundle => "🍎",
+            Self::MacOSDmg => "💾",
+            Self::LinuxAppImage => "🐧",
+            Self::LinuxTarball => "📁",
+            Self::SteamDepot => "🎮",
+        }
+    }
+
+    /// Check if this is a Windows format
+    pub fn is_windows(&self) -> bool {
+        matches!(self, Self::WindowsInstaller | Self::WindowsPortable)
+    }
+
+    /// Check if this is a macOS format
+    pub fn is_macos(&self) -> bool {
+        matches!(self, Self::MacOSBundle | Self::MacOSDmg)
+    }
+
+    /// Check if this is a Linux format
+    pub fn is_linux(&self) -> bool {
+        matches!(self, Self::LinuxAppImage | Self::LinuxTarball)
+    }
+
+    /// Check if this is a Steam format
+    pub fn is_steam(&self) -> bool {
+        matches!(self, Self::SteamDepot)
+    }
+
+    /// Get description of the format
+    pub fn description(&self) -> &str {
+        match self {
+            Self::WindowsInstaller => "Installable EXE with setup wizard",
+            Self::WindowsPortable => "Portable ZIP, no installation required",
+            Self::MacOSBundle => "Standard macOS application bundle",
+            Self::MacOSDmg => "Disk image for drag-and-drop install",
+            Self::LinuxAppImage => "Self-contained portable Linux app",
+            Self::LinuxTarball => "Compressed archive for manual install",
+            Self::SteamDepot => "Steam content depot for publishing",
+        }
+    }
+}
+
+impl std::fmt::Display for DistributionFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }
 
@@ -89,6 +164,33 @@ impl Default for DistributionConfig {
     }
 }
 
+impl DistributionConfig {
+    /// Check if Steam publishing is configured
+    pub fn has_steam_config(&self) -> bool {
+        self.steam_app_id.is_some()
+    }
+
+    /// Check if a custom icon is set
+    pub fn has_custom_icon(&self) -> bool {
+        self.icon_path.is_some()
+    }
+
+    /// Get sanitized game name for filenames
+    pub fn sanitized_name(&self) -> String {
+        self.game_name.replace(' ', "_").replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "")
+    }
+
+    /// Generate a summary of the configuration
+    pub fn summary(&self) -> String {
+        format!("{} v{} by {}", self.game_name, self.version, self.publisher)
+    }
+
+    /// Check if configuration is valid for distribution
+    pub fn is_valid(&self) -> bool {
+        !self.game_name.is_empty() && !self.version.is_empty() && !self.publisher.is_empty()
+    }
+}
+
 /// Result of a distribution build
 #[derive(Debug)]
 pub struct DistributionResult {
@@ -100,6 +202,40 @@ pub struct DistributionResult {
     pub size_bytes: u64,
     /// Duration in seconds
     pub duration_secs: f32,
+}
+
+impl DistributionResult {
+    /// Get human-readable size
+    pub fn formatted_size(&self) -> String {
+        format_bytes(self.size_bytes)
+    }
+
+    /// Get formatted duration
+    pub fn formatted_duration(&self) -> String {
+        if self.duration_secs < 60.0 {
+            format!("{:.1}s", self.duration_secs)
+        } else {
+            let mins = (self.duration_secs / 60.0).floor();
+            let secs = self.duration_secs % 60.0;
+            format!("{}m {:.0}s", mins, secs)
+        }
+    }
+
+    /// Get file name from output path
+    pub fn file_name(&self) -> Option<&str> {
+        self.output_path.file_name().and_then(|n| n.to_str())
+    }
+
+    /// Generate a summary of the result
+    pub fn summary(&self) -> String {
+        format!(
+            "{} {} built in {} ({})",
+            self.format.icon(),
+            self.file_name().unwrap_or("output"),
+            self.formatted_duration(),
+            self.formatted_size()
+        )
+    }
 }
 
 /// Distribution builder for creating platform packages
@@ -454,5 +590,183 @@ mod tests {
 
         assert!(app_vdf.contains("\"AppID\" \"480\""));
         assert!(depot_vdf.contains("\"DepotID\" \"481\""));
+    }
+
+    // ====================================================================
+    // DistributionFormat New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_distribution_format_all() {
+        let all = DistributionFormat::all();
+        assert_eq!(all.len(), 7);
+    }
+
+    #[test]
+    fn test_distribution_format_platform() {
+        assert_eq!(DistributionFormat::WindowsInstaller.platform(), "Windows");
+        assert_eq!(DistributionFormat::MacOSBundle.platform(), "macOS");
+        assert_eq!(DistributionFormat::LinuxAppImage.platform(), "Linux");
+        assert_eq!(DistributionFormat::SteamDepot.platform(), "Steam");
+    }
+
+    #[test]
+    fn test_distribution_format_icon_not_empty() {
+        for format in DistributionFormat::all() {
+            assert!(!format.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_distribution_format_is_windows() {
+        assert!(DistributionFormat::WindowsInstaller.is_windows());
+        assert!(DistributionFormat::WindowsPortable.is_windows());
+        assert!(!DistributionFormat::MacOSBundle.is_windows());
+    }
+
+    #[test]
+    fn test_distribution_format_is_macos() {
+        assert!(DistributionFormat::MacOSBundle.is_macos());
+        assert!(DistributionFormat::MacOSDmg.is_macos());
+        assert!(!DistributionFormat::LinuxAppImage.is_macos());
+    }
+
+    #[test]
+    fn test_distribution_format_is_linux() {
+        assert!(DistributionFormat::LinuxAppImage.is_linux());
+        assert!(DistributionFormat::LinuxTarball.is_linux());
+        assert!(!DistributionFormat::WindowsPortable.is_linux());
+    }
+
+    #[test]
+    fn test_distribution_format_is_steam() {
+        assert!(DistributionFormat::SteamDepot.is_steam());
+        assert!(!DistributionFormat::LinuxAppImage.is_steam());
+    }
+
+    #[test]
+    fn test_distribution_format_description_not_empty() {
+        for format in DistributionFormat::all() {
+            assert!(!format.description().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_distribution_format_display() {
+        assert_eq!(format!("{}", DistributionFormat::WindowsPortable), "Windows Portable");
+    }
+
+    // ====================================================================
+    // DistributionConfig New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_distribution_config_has_steam_config() {
+        let config = DistributionConfig::default();
+        assert!(!config.has_steam_config());
+
+        let config_with_steam = DistributionConfig {
+            steam_app_id: Some(480),
+            ..Default::default()
+        };
+        assert!(config_with_steam.has_steam_config());
+    }
+
+    #[test]
+    fn test_distribution_config_has_custom_icon() {
+        let config = DistributionConfig::default();
+        assert!(!config.has_custom_icon());
+
+        let config_with_icon = DistributionConfig {
+            icon_path: Some(PathBuf::from("icon.png")),
+            ..Default::default()
+        };
+        assert!(config_with_icon.has_custom_icon());
+    }
+
+    #[test]
+    fn test_distribution_config_sanitized_name() {
+        let config = DistributionConfig {
+            game_name: "My Game: Special Edition".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(config.sanitized_name(), "My_Game_Special_Edition");
+    }
+
+    #[test]
+    fn test_distribution_config_summary() {
+        let config = DistributionConfig::default();
+        let summary = config.summary();
+        assert!(summary.contains("AstraWeave Game"));
+        assert!(summary.contains("1.0.0"));
+    }
+
+    #[test]
+    fn test_distribution_config_is_valid() {
+        let config = DistributionConfig::default();
+        assert!(config.is_valid());
+
+        let empty = DistributionConfig {
+            game_name: "".to_string(),
+            ..Default::default()
+        };
+        assert!(!empty.is_valid());
+    }
+
+    // ====================================================================
+    // DistributionResult New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_distribution_result_formatted_size() {
+        let result = DistributionResult {
+            output_path: PathBuf::from("game.zip"),
+            format: DistributionFormat::WindowsPortable,
+            size_bytes: 1_572_864,
+            duration_secs: 5.5,
+        };
+        assert_eq!(result.formatted_size(), "1.50 MB");
+    }
+
+    #[test]
+    fn test_distribution_result_formatted_duration() {
+        let short = DistributionResult {
+            output_path: PathBuf::from("game.zip"),
+            format: DistributionFormat::WindowsPortable,
+            size_bytes: 1000,
+            duration_secs: 5.5,
+        };
+        assert_eq!(short.formatted_duration(), "5.5s");
+
+        let long = DistributionResult {
+            output_path: PathBuf::from("game.zip"),
+            format: DistributionFormat::WindowsPortable,
+            size_bytes: 1000,
+            duration_secs: 125.0,
+        };
+        assert!(long.formatted_duration().contains("m"));
+    }
+
+    #[test]
+    fn test_distribution_result_file_name() {
+        let result = DistributionResult {
+            output_path: PathBuf::from("dist/game.zip"),
+            format: DistributionFormat::WindowsPortable,
+            size_bytes: 1000,
+            duration_secs: 1.0,
+        };
+        assert_eq!(result.file_name(), Some("game.zip"));
+    }
+
+    #[test]
+    fn test_distribution_result_summary() {
+        let result = DistributionResult {
+            output_path: PathBuf::from("game.zip"),
+            format: DistributionFormat::WindowsPortable,
+            size_bytes: 1024,
+            duration_secs: 2.0,
+        };
+        let summary = result.summary();
+        assert!(summary.contains("game.zip"));
     }
 }

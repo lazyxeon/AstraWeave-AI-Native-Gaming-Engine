@@ -2,6 +2,9 @@
 //!
 //! Stress testing for texture compression, mesh optimization, and validation.
 
+#![allow(dead_code)]
+#![allow(clippy::wrong_self_convention)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;
@@ -89,8 +92,8 @@ fn simulate_compression(input: &TextureInput, format: CompressionFormat) -> Comp
         CompressionFormat::None => 1,
     };
 
-    let blocks_x = (input.width + block_size - 1) / block_size;
-    let blocks_y = (input.height + block_size - 1) / block_size;
+    let blocks_x = input.width.div_ceil(block_size);
+    let blocks_y = input.height.div_ceil(block_size);
 
     let bytes_per_block = match format {
         CompressionFormat::Bc7 => 16,
@@ -345,7 +348,8 @@ fn bench_mesh_optimization(c: &mut Criterion) {
                     pos[2].to_bits(),
                 ];
 
-                let idx = *unique_map.entry(key).or_insert_with(|| unique_map.len() as u32);
+                let next_idx = unique_map.len() as u32;
+                let idx = *unique_map.entry(key).or_insert(next_idx);
                 remap.push(idx);
             }
 
@@ -395,7 +399,7 @@ fn bench_validation(c: &mut Criterion) {
 
     // Test 1: Texture validation
     group.bench_function("texture_validation_100", |bencher| {
-        let textures: Vec<TextureInput> = (0..100).map(|i| generate_texture(256, 256)).collect();
+        let textures: Vec<TextureInput> = (0..100).map(|_i| generate_texture(256, 256)).collect();
 
         bencher.iter(|| {
             let results: Vec<ValidationResult> = textures
@@ -497,8 +501,7 @@ fn bench_validation(c: &mut Criterion) {
         bencher.iter(|| {
             let missing: Vec<(&String, &str)> = mesh_materials
                 .iter()
-                .enumerate()
-                .flat_map(|(mesh_idx, materials)| {
+                .flat_map(|materials| {
                     materials
                         .iter()
                         .filter(|m| !available_materials.contains(m.as_str()))
@@ -581,7 +584,7 @@ fn bench_batch_processing(c: &mut Criterion) {
         let meshes: Vec<MeshInput> = (0..20).map(|_| generate_mesh(2000)).collect();
 
         bencher.iter(|| {
-            let results: Vec<OptimizedMesh> = meshes.iter().map(|m| optimize_mesh(m)).collect();
+            let results: Vec<OptimizedMesh> = meshes.iter().map(optimize_mesh).collect();
 
             let avg_miss_ratio: f32 =
                 results.iter().map(|r| r.vertex_cache_miss_ratio).sum::<f32>() / results.len() as f32;
@@ -772,8 +775,7 @@ fn bench_lod_generation(c: &mut Criterion) {
             let errors: Vec<f32> = objects
                 .iter()
                 .map(|&(distance, radius)| {
-                    let projected_size = (radius / distance) * (screen_height / (2.0 * (fov / 2.0).tan()));
-                    projected_size
+                    (radius / distance) * (screen_height / (2.0 * (fov / 2.0).tan()))
                 })
                 .collect();
 

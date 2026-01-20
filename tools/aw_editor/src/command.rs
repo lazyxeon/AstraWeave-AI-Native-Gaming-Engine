@@ -100,6 +100,105 @@ pub trait EditorCommand: Send + fmt::Debug + std::any::Any {
 }
 
 // ============================================================================
+// Undo Stack Statistics
+// ============================================================================
+
+/// Statistics about the undo stack state.
+#[derive(Debug, Clone, Copy)]
+pub struct UndoStackStats {
+    /// Total commands currently in the stack
+    pub total_commands: usize,
+    /// Number of undo operations available
+    pub undo_available: usize,
+    /// Number of redo operations available
+    pub redo_available: usize,
+    /// Maximum stack size
+    pub max_size: usize,
+    /// Whether auto-merge is enabled
+    pub auto_merge_enabled: bool,
+}
+
+impl UndoStackStats {
+    /// Calculate stack utilization as a percentage (0.0 - 1.0)
+    pub fn utilization(&self) -> f32 {
+        if self.max_size == 0 {
+            return 0.0;
+        }
+        self.total_commands as f32 / self.max_size as f32
+    }
+
+    /// Check if stack is near capacity (>80% full)
+    pub fn is_near_capacity(&self) -> bool {
+        self.utilization() > 0.8
+    }
+
+    /// Check if stack is empty
+    pub fn is_empty(&self) -> bool {
+        self.total_commands == 0
+    }
+
+    /// Check if undo is available
+    pub fn can_undo(&self) -> bool {
+        self.undo_available > 0
+    }
+
+    /// Check if redo is available
+    pub fn can_redo(&self) -> bool {
+        self.redo_available > 0
+    }
+
+    /// Get remaining capacity (commands before hitting max_size)
+    pub fn remaining_capacity(&self) -> usize {
+        self.max_size.saturating_sub(self.total_commands)
+    }
+}
+
+/// Issues that may affect undo stack health.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UndoStackIssue {
+    /// Stack is approaching capacity limit
+    NearCapacity { utilization_percent: u8 },
+    /// Stack is at full capacity (oldest commands being dropped)
+    AtCapacity,
+    /// Auto-merge is disabled (may cause stack bloat)
+    AutoMergeDisabled,
+    /// No commands recorded (may indicate broken undo tracking)
+    NoHistory,
+}
+
+impl UndoStackIssue {
+    /// Check if this issue is an error (vs warning)
+    pub fn is_error(&self) -> bool {
+        matches!(self, UndoStackIssue::AtCapacity)
+    }
+
+    /// Get icon for this issue
+    pub fn icon(&self) -> &'static str {
+        match self {
+            UndoStackIssue::NearCapacity { .. } => "⚠️",
+            UndoStackIssue::AtCapacity => "🔴",
+            UndoStackIssue::AutoMergeDisabled => "ℹ️",
+            UndoStackIssue::NoHistory => "📝",
+        }
+    }
+}
+
+impl std::fmt::Display for UndoStackIssue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UndoStackIssue::NearCapacity { utilization_percent } => {
+                write!(f, "Undo stack {}% full", utilization_percent)
+            }
+            UndoStackIssue::AtCapacity => write!(f, "Undo stack at capacity"),
+            UndoStackIssue::AutoMergeDisabled => {
+                write!(f, "Auto-merge disabled (stack may grow quickly)")
+            }
+            UndoStackIssue::NoHistory => write!(f, "No undo history recorded"),
+        }
+    }
+}
+
+// ============================================================================
 // Undo Stack
 // ============================================================================
 
@@ -307,6 +406,106 @@ impl UndoStack {
         self.commands.len().saturating_sub(self.cursor)
     }
 
+    /// Get statistics about the undo stack for debugging and UI display.
+    pub fn stats(&self) -> UndoStackStats {
+        UndoStackStats {
+            total_commands: self.commands.len(),
+            undo_available: self.cursor,
+            redo_available: self.commands.len().saturating_sub(self.cursor),
+            max_size: self.max_size,
+            auto_merge_enabled: self.auto_merge,
+        }
+    }
+
+    /// Validate the undo stack and return any issues found.
+    pub fn validate(&self) -> Vec<UndoStackIssue> {
+        let mut issues = Vec::new();
+
+        let utilization = if self.max_size > 0 {
+            (self.commands.len() as f32 / self.max_size as f32 * 100.0) as u8
+        } else {
+            0
+        };
+
+        if self.commands.len() >= self.max_size {
+            issues.push(UndoStackIssue::AtCapacity);
+        } else if utilization > 80 {
+            issues.push(UndoStackIssue::NearCapacity { utilization_percent: utilization });
+        }
+
+        if !self.auto_merge {
+            issues.push(UndoStackIssue::AutoMergeDisabled);
+        }
+
+        if self.commands.is_empty() {
+            issues.push(UndoStackIssue::NoHistory);
+        }
+
+        issues
+    }
+
+    /// Check if undo stack has no issues
+    pub fn is_valid(&self) -> bool {
+        self.validate().iter().all(|i| !i.is_error())
+    }
+
+    /// Get descriptions of recent commands (for history UI)
+    pub fn recent_commands(&self, count: usize) -> Vec<String> {
+        let start = self.cursor.saturating_sub(count);
+        self.commands[start..self.cursor]
+            .iter()
+            .map(|cmd| cmd.describe())
+            .collect()
+    }
+
+    /// Get descriptions of upcoming redo commands
+    pub fn upcoming_redos(&self, count: usize) -> Vec<String> {
+        let end = (self.cursor + count).min(self.commands.len());
+        self.commands[self.cursor..end]
+            .iter()
+            .map(|cmd| cmd.describe())
+            .collect()
+    }
+
+    /// Get max size of the stack
+    pub fn max_size(&self) -> usize {
+        self.max_size
+    }
+
+    /// Check if auto-merge is enabled
+    pub fn is_auto_merge_enabled(&self) -> bool {
+        self.auto_merge
+    }
+
+    /// Execute multiple commands as a single undoable batch.
+    ///
+    /// All commands in the batch are executed in order. If any fails,
+    /// previously executed commands in the batch are rolled back.
+    /// The entire batch appears as a single entry in the undo history.
+    ///
+    /// # Arguments
+    ///
+    /// * `commands` - Vector of commands to execute as a batch
+    /// * `world` - Mutable world reference
+    /// * `description` - Description for the batch operation
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if any command fails. Partially executed commands are undone.
+    pub fn execute_batch(
+        &mut self,
+        commands: Vec<Box<dyn EditorCommand>>,
+        world: &mut World,
+        description: String,
+    ) -> Result<()> {
+        if commands.is_empty() {
+            return Ok(());
+        }
+
+        let batch = BatchCommand::new(commands, description);
+        self.execute(batch, world)
+    }
+
     /// Add an already-executed command to the undo stack.
     ///
     /// Use this when you've already applied a transform (e.g., during gizmo drag)
@@ -331,6 +530,110 @@ impl UndoStack {
             self.commands.drain(0..remove_count);
             self.cursor = self.cursor.saturating_sub(remove_count);
         }
+    }
+}
+
+// ============================================================================
+// Batch Command - Group multiple operations as one undoable action
+// ============================================================================
+
+/// Groups multiple commands into a single undoable operation.
+///
+/// Useful for complex operations like "Align All Selected" that affect
+/// multiple entities but should be undone/redone as a single action.
+///
+/// # Rollback Behavior
+///
+/// If any command in the batch fails during execution, all previously
+/// executed commands are automatically rolled back (undone) to maintain
+/// consistency.
+#[derive(Debug)]
+pub struct BatchCommand {
+    /// Commands in execution order
+    commands: Vec<Box<dyn EditorCommand>>,
+    /// Human-readable description for undo menu
+    description: String,
+    /// Index of last successfully executed command (for rollback)
+    executed_up_to: usize,
+}
+
+impl BatchCommand {
+    /// Create a new batch command.
+    ///
+    /// # Arguments
+    ///
+    /// * `commands` - Commands to execute in order
+    /// * `description` - Description for the batch (e.g., "Align 5 entities")
+    pub fn new(commands: Vec<Box<dyn EditorCommand>>, description: String) -> Box<Self> {
+        Box::new(Self {
+            commands,
+            description,
+            executed_up_to: 0,
+        })
+    }
+
+    /// Create a batch command from multiple move operations.
+    pub fn from_moves(entity_moves: Vec<(Entity, IVec2, IVec2)>) -> Box<Self> {
+        let count = entity_moves.len();
+        let commands: Vec<Box<dyn EditorCommand>> = entity_moves
+            .into_iter()
+            .map(|(entity, old_pos, new_pos)| {
+                MoveEntityCommand::new(entity, old_pos, new_pos) as Box<dyn EditorCommand>
+            })
+            .collect();
+
+        Box::new(Self {
+            commands,
+            description: format!("Move {} entities", count),
+            executed_up_to: 0,
+        })
+    }
+
+    /// Get the number of commands in this batch.
+    pub fn len(&self) -> usize {
+        self.commands.len()
+    }
+
+    /// Check if batch is empty.
+    pub fn is_empty(&self) -> bool {
+        self.commands.is_empty()
+    }
+}
+
+impl EditorCommand for BatchCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        self.executed_up_to = 0;
+
+        for (i, cmd) in self.commands.iter_mut().enumerate() {
+            match cmd.execute(world) {
+                Ok(()) => {
+                    self.executed_up_to = i + 1;
+                }
+                Err(e) => {
+                    // Rollback previously executed commands in reverse order
+                    for j in (0..i).rev() {
+                        if let Err(undo_err) = self.commands[j].undo(world) {
+                            debug!("⚠️ Rollback failed for command {}: {}", j, undo_err);
+                        }
+                    }
+                    return Err(e);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        // Undo in reverse order, only up to what was executed
+        for i in (0..self.executed_up_to).rev() {
+            self.commands[i].undo(world)?;
+        }
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        self.description.clone()
     }
 }
 
@@ -1285,5 +1588,375 @@ mod tests {
 
         stack.undo(&mut world).unwrap();
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(0, 0));
+    }
+
+    // ====================================================================
+    // UndoStackStats Tests
+    // ====================================================================
+
+    #[test]
+    fn test_undo_stack_stats_basic() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+
+        let mut stack = UndoStack::new(10);
+        stack.set_auto_merge(false);
+
+        let stats = stack.stats();
+        assert_eq!(stats.total_commands, 0);
+        assert_eq!(stats.undo_available, 0);
+        assert_eq!(stats.redo_available, 0);
+        assert_eq!(stats.max_size, 10);
+
+        // Execute some commands
+        stack
+            .execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world)
+            .unwrap();
+        stack
+            .execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world)
+            .unwrap();
+
+        let stats = stack.stats();
+        assert_eq!(stats.total_commands, 2);
+        assert_eq!(stats.undo_available, 2);
+        assert_eq!(stats.redo_available, 0);
+
+        // Undo one
+        stack.undo(&mut world).unwrap();
+        let stats = stack.stats();
+        assert_eq!(stats.undo_available, 1);
+        assert_eq!(stats.redo_available, 1);
+    }
+
+    #[test]
+    fn test_undo_stack_stats_utilization() {
+        let stack = UndoStack::new(10);
+
+        // Empty stack
+        let stats = stack.stats();
+        assert!((stats.utilization() - 0.0).abs() < 0.001);
+        assert!(!stats.is_near_capacity());
+    }
+
+    #[test]
+    fn test_undo_stack_stats_near_capacity() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+
+        let mut stack = UndoStack::new(5);
+        stack.set_auto_merge(false);
+
+        // Add 4 commands (80% full)
+        for i in 0..4 {
+            stack
+                .execute(
+                    MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                    &mut world,
+                )
+                .unwrap();
+        }
+
+        let stats = stack.stats();
+        assert!((stats.utilization() - 0.8).abs() < 0.001);
+        assert!(!stats.is_near_capacity()); // exactly 80% is not near
+
+        // Add one more (now 100%)
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(4, 4), IVec2::new(5, 5)),
+                &mut world,
+            )
+            .unwrap();
+
+        let stats = stack.stats();
+        assert!((stats.utilization() - 1.0).abs() < 0.001);
+        assert!(stats.is_near_capacity());
+    }
+
+    // ====================================================================
+    // BatchCommand Tests
+    // ====================================================================
+
+    #[test]
+    fn test_batch_command_basic() {
+        let mut world = World::new();
+        let e1 = spawn_basic_entity(&mut world);
+        let e2 = world.spawn("E2", IVec2::new(5, 5), Team { id: 0 }, 100, 30);
+
+        let commands: Vec<Box<dyn EditorCommand>> = vec![
+            MoveEntityCommand::new(e1, IVec2::new(0, 0), IVec2::new(10, 10)),
+            MoveEntityCommand::new(e2, IVec2::new(5, 5), IVec2::new(20, 20)),
+        ];
+
+        let mut batch = BatchCommand::new(commands, "Move 2 entities".to_string());
+
+        assert_eq!(batch.len(), 2);
+        assert!(!batch.is_empty());
+        assert_eq!(batch.describe(), "Move 2 entities");
+
+        // Execute
+        batch.execute(&mut world).unwrap();
+        assert_eq!(world.pose(e1).unwrap().pos, IVec2::new(10, 10));
+        assert_eq!(world.pose(e2).unwrap().pos, IVec2::new(20, 20));
+
+        // Undo
+        batch.undo(&mut world).unwrap();
+        assert_eq!(world.pose(e1).unwrap().pos, IVec2::new(0, 0));
+        assert_eq!(world.pose(e2).unwrap().pos, IVec2::new(5, 5));
+    }
+
+    #[test]
+    fn test_batch_command_from_moves() {
+        let mut world = World::new();
+        let e1 = spawn_basic_entity(&mut world);
+        let e2 = world.spawn("E2", IVec2::new(1, 1), Team { id: 0 }, 100, 30);
+        let e3 = world.spawn("E3", IVec2::new(2, 2), Team { id: 0 }, 100, 30);
+
+        let moves = vec![
+            (e1, IVec2::new(0, 0), IVec2::new(5, 5)),
+            (e2, IVec2::new(1, 1), IVec2::new(6, 6)),
+            (e3, IVec2::new(2, 2), IVec2::new(7, 7)),
+        ];
+
+        let mut batch = BatchCommand::from_moves(moves);
+
+        assert_eq!(batch.len(), 3);
+        assert!(batch.describe().contains("3"));
+
+        batch.execute(&mut world).unwrap();
+        assert_eq!(world.pose(e1).unwrap().pos, IVec2::new(5, 5));
+        assert_eq!(world.pose(e2).unwrap().pos, IVec2::new(6, 6));
+        assert_eq!(world.pose(e3).unwrap().pos, IVec2::new(7, 7));
+    }
+
+    #[test]
+    fn test_batch_command_empty() {
+        let mut world = World::new();
+
+        let commands: Vec<Box<dyn EditorCommand>> = vec![];
+        let mut batch = BatchCommand::new(commands, "Empty batch".to_string());
+
+        assert!(batch.is_empty());
+        assert_eq!(batch.len(), 0);
+
+        // Empty batch should succeed
+        batch.execute(&mut world).unwrap();
+        batch.undo(&mut world).unwrap();
+    }
+
+    #[test]
+    fn test_execute_batch_on_stack() {
+        let mut world = World::new();
+        let e1 = spawn_basic_entity(&mut world);
+        let e2 = world.spawn("E2", IVec2::new(5, 5), Team { id: 0 }, 100, 30);
+
+        let mut stack = UndoStack::new(10);
+
+        let commands: Vec<Box<dyn EditorCommand>> = vec![
+            MoveEntityCommand::new(e1, IVec2::new(0, 0), IVec2::new(10, 10)),
+            MoveEntityCommand::new(e2, IVec2::new(5, 5), IVec2::new(20, 20)),
+        ];
+
+        stack
+            .execute_batch(commands, &mut world, "Batch move".to_string())
+            .unwrap();
+
+        assert_eq!(stack.len(), 1); // Should be single entry
+        assert!(stack.undo_description().unwrap().contains("Batch move"));
+
+        // Undo the whole batch
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.pose(e1).unwrap().pos, IVec2::new(0, 0));
+        assert_eq!(world.pose(e2).unwrap().pos, IVec2::new(5, 5));
+    }
+
+    #[test]
+    fn test_execute_batch_empty() {
+        let mut world = World::new();
+        let mut stack = UndoStack::new(10);
+
+        // Empty batch should succeed without adding entry
+        stack
+            .execute_batch(vec![], &mut world, "Empty".to_string())
+            .unwrap();
+
+        assert_eq!(stack.len(), 0);
+    }
+
+    // ====================================================================
+    // UndoStackStats New Methods Tests
+    // ====================================================================
+
+    #[test]
+    fn test_undo_stack_stats_is_empty() {
+        let stack = UndoStack::new(10);
+        let stats = stack.stats();
+        assert!(stats.is_empty());
+    }
+
+    #[test]
+    fn test_undo_stack_stats_can_undo_redo() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+        let mut stack = UndoStack::new(10);
+        stack.set_auto_merge(false);
+
+        let stats = stack.stats();
+        assert!(!stats.can_undo());
+        assert!(!stats.can_redo());
+
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+
+        let stats = stack.stats();
+        assert!(stats.can_undo());
+        assert!(!stats.can_redo());
+
+        stack.undo(&mut world).unwrap();
+
+        let stats = stack.stats();
+        assert!(!stats.can_undo());
+        assert!(stats.can_redo());
+    }
+
+    #[test]
+    fn test_undo_stack_stats_remaining_capacity() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+        let mut stack = UndoStack::new(5);
+        stack.set_auto_merge(false);
+
+        assert_eq!(stack.stats().remaining_capacity(), 5);
+
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world).unwrap();
+
+        assert_eq!(stack.stats().remaining_capacity(), 3);
+    }
+
+    // ====================================================================
+    // UndoStackIssue Tests
+    // ====================================================================
+
+    #[test]
+    fn test_undo_stack_issue_is_error() {
+        assert!(!UndoStackIssue::NearCapacity { utilization_percent: 85 }.is_error());
+        assert!(UndoStackIssue::AtCapacity.is_error());
+        assert!(!UndoStackIssue::AutoMergeDisabled.is_error());
+        assert!(!UndoStackIssue::NoHistory.is_error());
+    }
+
+    #[test]
+    fn test_undo_stack_issue_icon_not_empty() {
+        assert!(!UndoStackIssue::NearCapacity { utilization_percent: 85 }.icon().is_empty());
+        assert!(!UndoStackIssue::AtCapacity.icon().is_empty());
+        assert!(!UndoStackIssue::AutoMergeDisabled.icon().is_empty());
+        assert!(!UndoStackIssue::NoHistory.icon().is_empty());
+    }
+
+    #[test]
+    fn test_undo_stack_issue_display() {
+        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let display = format!("{}", issue);
+        assert!(display.contains("85"));
+
+        let issue = UndoStackIssue::AtCapacity;
+        let display = format!("{}", issue);
+        assert!(display.contains("capacity"));
+    }
+
+    // ====================================================================
+    // UndoStack Validate Tests
+    // ====================================================================
+
+    #[test]
+    fn test_undo_stack_validate_empty() {
+        let stack = UndoStack::new(10);
+        let issues = stack.validate();
+        assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::NoHistory)));
+    }
+
+    #[test]
+    fn test_undo_stack_validate_auto_merge_disabled() {
+        let mut stack = UndoStack::new(10);
+        stack.set_auto_merge(false);
+        let issues = stack.validate();
+        assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::AutoMergeDisabled)));
+    }
+
+    #[test]
+    fn test_undo_stack_validate_at_capacity() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+        let mut stack = UndoStack::new(3);
+        stack.set_auto_merge(false);
+
+        for i in 0..3 {
+            stack.execute(MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)), &mut world).unwrap();
+        }
+
+        let issues = stack.validate();
+        assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::AtCapacity)));
+    }
+
+    #[test]
+    fn test_undo_stack_is_valid() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+        let mut stack = UndoStack::new(10);
+
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+
+        assert!(stack.is_valid());
+    }
+
+    // ====================================================================
+    // UndoStack Recent Commands Tests
+    // ====================================================================
+
+    #[test]
+    fn test_undo_stack_recent_commands() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+        let mut stack = UndoStack::new(10);
+        stack.set_auto_merge(false);
+
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world).unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(2, 2), IVec2::new(3, 3)), &mut world).unwrap();
+
+        let recent = stack.recent_commands(2);
+        assert_eq!(recent.len(), 2);
+    }
+
+    #[test]
+    fn test_undo_stack_upcoming_redos() {
+        let mut world = World::new();
+        let entity = spawn_basic_entity(&mut world);
+        let mut stack = UndoStack::new(10);
+        stack.set_auto_merge(false);
+
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world).unwrap();
+
+        stack.undo(&mut world).unwrap();
+        stack.undo(&mut world).unwrap();
+
+        let redos = stack.upcoming_redos(5);
+        assert_eq!(redos.len(), 2);
+    }
+
+    #[test]
+    fn test_undo_stack_max_size_accessor() {
+        let stack = UndoStack::new(42);
+        assert_eq!(stack.max_size(), 42);
+    }
+
+    #[test]
+    fn test_undo_stack_auto_merge_accessor() {
+        let mut stack = UndoStack::new(10);
+        assert!(stack.is_auto_merge_enabled());
+        
+        stack.set_auto_merge(false);
+        assert!(!stack.is_auto_merge_enabled());
     }
 }

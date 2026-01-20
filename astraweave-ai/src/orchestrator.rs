@@ -652,7 +652,7 @@ mod tests {
 
         let cfg = SystemOrchestratorConfig::default();
 
-        assert_eq!(cfg.use_llm, false);
+        assert!(!cfg.use_llm);
         assert_eq!(cfg.ollama_url, "http://127.0.0.1:11434");
         assert_eq!(cfg.ollama_model, "phi3:medium");
     }
@@ -663,22 +663,22 @@ mod tests {
         // Test ASTRAWEAVE_USE_LLM=1
         std::env::set_var("ASTRAWEAVE_USE_LLM", "1");
         let cfg1 = SystemOrchestratorConfig::default();
-        assert_eq!(cfg1.use_llm, true);
+        assert!(cfg1.use_llm);
 
         // Test ASTRAWEAVE_USE_LLM=true
         std::env::set_var("ASTRAWEAVE_USE_LLM", "true");
         let cfg2 = SystemOrchestratorConfig::default();
-        assert_eq!(cfg2.use_llm, true);
+        assert!(cfg2.use_llm);
 
         // Test ASTRAWEAVE_USE_LLM=TRUE (case insensitive)
         std::env::set_var("ASTRAWEAVE_USE_LLM", "TRUE");
         let cfg3 = SystemOrchestratorConfig::default();
-        assert_eq!(cfg3.use_llm, true);
+        assert!(cfg3.use_llm);
 
         // Test ASTRAWEAVE_USE_LLM=0
         std::env::set_var("ASTRAWEAVE_USE_LLM", "0");
         let cfg4 = SystemOrchestratorConfig::default();
-        assert_eq!(cfg4.use_llm, false);
+        assert!(!cfg4.use_llm);
 
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
     }
@@ -1219,7 +1219,7 @@ mod tests {
         let cfg = SystemOrchestratorConfig::default();
 
         // Empty string != "1" or "true", should be false
-        assert_eq!(cfg.use_llm, false, "Empty string should parse as false");
+        assert!(!cfg.use_llm, "Empty string should parse as false");
         // Empty strings ARE used as-is (unwrap_or_else doesn't treat "" as missing)
         assert_eq!(
             cfg.ollama_url, "",

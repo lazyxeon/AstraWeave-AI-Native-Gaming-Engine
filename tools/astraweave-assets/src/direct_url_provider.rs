@@ -273,7 +273,7 @@ mod tests {
         assert_eq!(resolved.provider, "polypizza");
         assert_eq!(resolved.asset_type, AssetType::Model);
         assert_eq!(resolved.license.spdx_id, "CC0-1.0");
-        assert_eq!(resolved.license.requires_attribution, false);
+        assert!(!resolved.license.requires_attribution);
         assert!(resolved.urls.contains_key("model"));
     }
 
@@ -300,7 +300,7 @@ mod tests {
         assert_eq!(resolved.provider, "opengameart");
         assert_eq!(resolved.asset_type, AssetType::Audio);
         assert_eq!(resolved.license.spdx_id, "CC-BY-4.0");
-        assert_eq!(resolved.license.requires_attribution, true);
+        assert!(resolved.license.requires_attribution);
         assert_eq!(resolved.license.author, Some("TestArtist".to_string()));
     }
 
@@ -413,7 +413,7 @@ mod tests {
         assert_eq!(resolved.provider, "itchio");
         assert_eq!(resolved.asset_type, AssetType::Sprite);
         assert_eq!(resolved.license.spdx_id, "CC0-1.0");
-        assert_eq!(resolved.license.requires_attribution, false);
+        assert!(!resolved.license.requires_attribution);
         assert!(resolved.urls.contains_key("sprite"));
     }
 
@@ -440,7 +440,7 @@ mod tests {
         assert_eq!(resolved.provider, "itchio");
         assert_eq!(resolved.asset_type, AssetType::Audio);
         assert_eq!(resolved.license.spdx_id, "CC-BY-4.0");
-        assert_eq!(resolved.license.requires_attribution, true);
+        assert!(resolved.license.requires_attribution);
         assert_eq!(resolved.license.author, Some("MusicArtist".to_string()));
         assert!(resolved.urls.contains_key("audio"));
     }

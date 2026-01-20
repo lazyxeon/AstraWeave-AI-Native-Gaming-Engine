@@ -28,6 +28,67 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Category for grouping related panels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PanelCategory {
+    /// Scene editing panels (Hierarchy, Inspector, Viewport)
+    Scene,
+    /// Asset management panels
+    Assets,
+    /// Debug and profiling panels
+    Debug,
+    /// Tool panels for specific workflows
+    Tools,
+    /// System and settings panels
+    System,
+    /// Content creation panels
+    Content,
+}
+
+impl PanelCategory {
+    /// Get all panel categories
+    pub fn all() -> &'static [PanelCategory] {
+        &[
+            PanelCategory::Scene,
+            PanelCategory::Assets,
+            PanelCategory::Debug,
+            PanelCategory::Tools,
+            PanelCategory::System,
+            PanelCategory::Content,
+        ]
+    }
+
+    /// Get display name for this category
+    pub fn name(&self) -> &'static str {
+        match self {
+            PanelCategory::Scene => "Scene",
+            PanelCategory::Assets => "Assets",
+            PanelCategory::Debug => "Debug",
+            PanelCategory::Tools => "Tools",
+            PanelCategory::System => "System",
+            PanelCategory::Content => "Content Creation",
+        }
+    }
+
+    /// Get icon for this category
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PanelCategory::Scene => "🎬",
+            PanelCategory::Assets => "📁",
+            PanelCategory::Debug => "🔧",
+            PanelCategory::Tools => "🛠️",
+            PanelCategory::System => "⚙️",
+            PanelCategory::Content => "🎨",
+        }
+    }
+}
+
+impl fmt::Display for PanelCategory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 /// Enumeration of all available editor panels
 ///
 /// Each panel type represents a distinct functional area of the editor.
@@ -101,6 +162,59 @@ pub enum PanelType {
 
     /// Terrain generation and editing panel
     Terrain,
+
+    // === New SOTA Panels (Phase 8) ===
+
+    /// UI Editor for runtime UI building
+    UiEditor,
+
+    /// Foliage painting and vegetation placement
+    Foliage,
+
+    /// Spline/path editor for roads, rails, rivers
+    SplineEditor,
+
+    /// LOD configuration and distance settings
+    LodConfig,
+
+    /// Localization and translation management
+    Localization,
+
+    /// Project-wide settings configuration
+    ProjectSettings,
+
+    /// Audio mixer and sound management
+    Audio,
+
+    /// Cinematics timeline and sequencer
+    Cinematics,
+
+    /// Dialogue editor for NPC conversations
+    DialogueEditor,
+
+    /// Lighting configuration and light placement
+    Lighting,
+
+    /// Navigation mesh and pathfinding
+    Navigation,
+
+    /// Network and multiplayer configuration
+    Networking,
+
+    /// Particle system editor
+    ParticleSystem,
+
+    /// Procedural content generation
+    Pcg,
+
+    /// Physics settings and simulation
+    Physics,
+
+    /// Post-processing effects stack
+    PostProcess,
+
+    /// Input bindings configuration
+    InputBindings,
 }
 
 impl PanelType {
@@ -129,6 +243,24 @@ impl PanelType {
             Self::EntityPanel => "Entity",
             Self::BehaviorGraph => "Behavior Graph",
             Self::Terrain => "Terrain",
+            // New SOTA panels
+            Self::UiEditor => "UI Editor",
+            Self::Foliage => "Foliage",
+            Self::SplineEditor => "Spline Editor",
+            Self::LodConfig => "LOD Config",
+            Self::Localization => "Localization",
+            Self::ProjectSettings => "Project Settings",
+            Self::Audio => "Audio",
+            Self::Cinematics => "Cinematics",
+            Self::DialogueEditor => "Dialogue Editor",
+            Self::Lighting => "Lighting",
+            Self::Navigation => "Navigation",
+            Self::Networking => "Networking",
+            Self::ParticleSystem => "Particle System",
+            Self::Pcg => "PCG",
+            Self::Physics => "Physics",
+            Self::PostProcess => "Post Process",
+            Self::InputBindings => "Input Bindings",
         }
     }
 
@@ -157,6 +289,24 @@ impl PanelType {
             Self::EntityPanel => "📦",
             Self::BehaviorGraph => "🧠",
             Self::Terrain => "🏔️",
+            // New SOTA panels
+            Self::UiEditor => "🖼️",
+            Self::Foliage => "🌿",
+            Self::SplineEditor => "〰️",
+            Self::LodConfig => "📐",
+            Self::Localization => "🌐",
+            Self::ProjectSettings => "⚙️",
+            Self::Audio => "🔊",
+            Self::Cinematics => "🎬",
+            Self::DialogueEditor => "💬",
+            Self::Lighting => "💡",
+            Self::Navigation => "🧭",
+            Self::Networking => "🌐",
+            Self::ParticleSystem => "✨",
+            Self::Pcg => "🎲",
+            Self::Physics => "🧪",
+            Self::PostProcess => "🎨",
+            Self::InputBindings => "🎮",
         }
     }
 
@@ -185,6 +335,108 @@ impl PanelType {
         }
     }
 
+    /// Returns the category this panel belongs to
+    pub fn category(&self) -> PanelCategory {
+        match self {
+            // Scene panels
+            Self::Hierarchy | Self::Inspector | Self::Viewport | Self::World |
+            Self::EntityPanel | Self::Transform => PanelCategory::Scene,
+            
+            // Asset panels
+            Self::AssetBrowser => PanelCategory::Assets,
+            
+            // Debug panels
+            Self::Console | Self::Profiler | Self::Performance | Self::SceneStats => PanelCategory::Debug,
+            
+            // Tool panels
+            Self::Charts | Self::AdvancedWidgets | Self::Graph | Self::Animation |
+            Self::BehaviorGraph | Self::SplineEditor | Self::Navigation => PanelCategory::Tools,
+            
+            // System panels
+            Self::BuildManager | Self::ThemeManager | Self::ProjectSettings |
+            Self::Localization | Self::Networking | Self::InputBindings => PanelCategory::System,
+            
+            // Content creation panels
+            Self::MaterialEditor | Self::Terrain | Self::UiEditor | Self::Foliage |
+            Self::LodConfig | Self::Audio | Self::Cinematics | Self::DialogueEditor |
+            Self::Lighting | Self::ParticleSystem | Self::Pcg | Self::Physics |
+            Self::PostProcess => PanelCategory::Content,
+        }
+    }
+
+    /// Returns a description of what this panel does
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::Hierarchy => "View and organize scene entities in a tree structure",
+            Self::Inspector => "Edit properties of selected entities and assets",
+            Self::AssetBrowser => "Browse, import, and manage project assets",
+            Self::Viewport => "3D scene view for visual editing and placement",
+            Self::Console => "View logs, warnings, and error messages",
+            Self::Profiler => "Analyze frame timing and performance metrics",
+            Self::BuildManager => "Configure and execute project builds",
+            Self::SceneStats => "View scene statistics and memory usage",
+            Self::Transform => "Edit position, rotation, and scale",
+            Self::Performance => "Monitor real-time performance graphs",
+            Self::Charts => "Data visualization and charting tools",
+            Self::AdvancedWidgets => "Color pickers, curves, and specialized controls",
+            Self::Graph => "Node-based graph editor for shaders and logic",
+            Self::Animation => "Timeline and keyframe animation editor",
+            Self::ThemeManager => "Customize editor appearance and layout",
+            Self::World => "Configure world settings and environment",
+            Self::MaterialEditor => "Create and edit PBR materials",
+            Self::EntityPanel => "Entity component inspector and editor",
+            Self::BehaviorGraph => "Visual AI behavior tree editor",
+            Self::Terrain => "Terrain sculpting and painting tools",
+            Self::UiEditor => "Design runtime UI layouts and widgets",
+            Self::Foliage => "Paint and manage vegetation placement",
+            Self::SplineEditor => "Create paths, roads, and spline meshes",
+            Self::LodConfig => "Configure level-of-detail settings",
+            Self::Localization => "Manage translations and localized text",
+            Self::ProjectSettings => "Configure project-wide settings",
+            Self::Audio => "Audio mixing and sound management",
+            Self::Cinematics => "Sequence editor for cutscenes",
+            Self::DialogueEditor => "Create NPC dialogue trees",
+            Self::Lighting => "Configure lights and global illumination",
+            Self::Navigation => "Edit navmesh and pathfinding settings",
+            Self::Networking => "Multiplayer and network configuration",
+            Self::ParticleSystem => "Create and edit particle effects",
+            Self::Pcg => "Procedural content generation tools",
+            Self::Physics => "Physics simulation settings",
+            Self::PostProcess => "Post-processing effects configuration",
+            Self::InputBindings => "Configure keyboard and controller bindings",
+        }
+    }
+
+    /// Returns keyboard shortcut hint for opening this panel (if any)
+    pub fn shortcut_hint(&self) -> Option<&'static str> {
+        match self {
+            Self::Hierarchy => Some("Ctrl+1"),
+            Self::Inspector => Some("Ctrl+2"),
+            Self::AssetBrowser => Some("Ctrl+3"),
+            Self::Console => Some("Ctrl+`"),
+            Self::Profiler => Some("Ctrl+P"),
+            Self::Animation => Some("Ctrl+Shift+A"),
+            Self::Graph => Some("Ctrl+G"),
+            Self::ProjectSettings => Some("Ctrl+Shift+P"),
+            _ => None,
+        }
+    }
+
+    /// Check if this is a debug/development panel
+    pub fn is_debug_panel(&self) -> bool {
+        self.category() == PanelCategory::Debug
+    }
+
+    /// Check if this is a content creation panel
+    pub fn is_content_panel(&self) -> bool {
+        self.category() == PanelCategory::Content
+    }
+
+    /// Get all panels in a specific category
+    pub fn in_category(category: PanelCategory) -> Vec<PanelType> {
+        Self::all().iter().copied().filter(|p| p.category() == category).collect()
+    }
+
     /// Returns a list of all available panel types
     pub fn all() -> &'static [PanelType] {
         &[
@@ -208,6 +460,24 @@ impl PanelType {
             Self::EntityPanel,
             Self::BehaviorGraph,
             Self::Terrain,
+            // New SOTA panels
+            Self::UiEditor,
+            Self::Foliage,
+            Self::SplineEditor,
+            Self::LodConfig,
+            Self::Localization,
+            Self::ProjectSettings,
+            Self::Audio,
+            Self::Cinematics,
+            Self::DialogueEditor,
+            Self::Lighting,
+            Self::Navigation,
+            Self::Networking,
+            Self::ParticleSystem,
+            Self::Pcg,
+            Self::Physics,
+            Self::PostProcess,
+            Self::InputBindings,
         ]
     }
 
@@ -298,5 +568,106 @@ mod tests {
         assert!(right.contains(&PanelType::Inspector));
         assert!(bottom.contains(&PanelType::Console));
         assert_eq!(center, PanelType::Viewport);
+    }
+
+    // ====================================================================
+    // PanelCategory Tests
+    // ====================================================================
+
+    #[test]
+    fn test_panel_category_all() {
+        let categories = PanelCategory::all();
+        assert!(categories.len() >= 5);
+    }
+
+    #[test]
+    fn test_panel_category_name_not_empty() {
+        for cat in PanelCategory::all() {
+            assert!(!cat.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_panel_category_icon_not_empty() {
+        for cat in PanelCategory::all() {
+            assert!(!cat.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_panel_category_display() {
+        let display = format!("{}", PanelCategory::Scene);
+        assert!(display.contains("Scene"));
+    }
+
+    // ====================================================================
+    // PanelType Category Tests
+    // ====================================================================
+
+    #[test]
+    fn test_panel_type_category_scene() {
+        assert_eq!(PanelType::Hierarchy.category(), PanelCategory::Scene);
+        assert_eq!(PanelType::Viewport.category(), PanelCategory::Scene);
+        assert_eq!(PanelType::Inspector.category(), PanelCategory::Scene);
+    }
+
+    #[test]
+    fn test_panel_type_category_debug() {
+        assert_eq!(PanelType::Console.category(), PanelCategory::Debug);
+        assert_eq!(PanelType::Profiler.category(), PanelCategory::Debug);
+        assert_eq!(PanelType::Performance.category(), PanelCategory::Debug);
+    }
+
+    #[test]
+    fn test_panel_type_category_content() {
+        assert_eq!(PanelType::MaterialEditor.category(), PanelCategory::Content);
+        assert_eq!(PanelType::Terrain.category(), PanelCategory::Content);
+    }
+
+    #[test]
+    fn test_panel_type_description_not_empty() {
+        for panel in PanelType::all() {
+            assert!(!panel.description().is_empty(), "{:?} has empty description", panel);
+        }
+    }
+
+    #[test]
+    fn test_panel_type_shortcut_hint() {
+        assert!(PanelType::Hierarchy.shortcut_hint().is_some());
+        assert!(PanelType::Console.shortcut_hint().is_some());
+        // Most panels don't have shortcuts
+        assert!(PanelType::Terrain.shortcut_hint().is_none());
+    }
+
+    #[test]
+    fn test_panel_type_is_debug_panel() {
+        assert!(PanelType::Console.is_debug_panel());
+        assert!(PanelType::Profiler.is_debug_panel());
+        assert!(!PanelType::Hierarchy.is_debug_panel());
+        assert!(!PanelType::MaterialEditor.is_debug_panel());
+    }
+
+    #[test]
+    fn test_panel_type_is_content_panel() {
+        assert!(PanelType::MaterialEditor.is_content_panel());
+        assert!(PanelType::Terrain.is_content_panel());
+        assert!(PanelType::ParticleSystem.is_content_panel());
+        assert!(!PanelType::Console.is_content_panel());
+    }
+
+    #[test]
+    fn test_panel_type_in_category() {
+        let debug_panels = PanelType::in_category(PanelCategory::Debug);
+        assert!(debug_panels.contains(&PanelType::Console));
+        assert!(debug_panels.contains(&PanelType::Profiler));
+        assert!(!debug_panels.contains(&PanelType::Hierarchy));
+    }
+
+    #[test]
+    fn test_all_panels_have_category() {
+        for panel in PanelType::all() {
+            // Just verify category() doesn't panic
+            let _cat = panel.category();
+        }
     }
 }

@@ -187,7 +187,7 @@ mod benchmarks {
 
         c.bench_function("arbiter_mode_transition_to_llm", |b| {
             b.iter_batched(
-                || create_arbiter(),
+                create_arbiter,
                 |mut arbiter| {
                     // Benchmark transition to LLM mode (GOAP → ExecutingLLM)
                     arbiter.transition_to_llm(black_box(create_mock_plan(1)));

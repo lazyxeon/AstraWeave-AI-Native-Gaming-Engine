@@ -155,7 +155,7 @@ mod tests {
     #[test]
     fn test_world_serde_roundtrip() {
         let mut w1 = World::new();
-        w1.t = 3.14;
+        w1.t = std::f32::consts::PI;
         w1.next_id = 999;
         w1.obstacles.insert((1, 2));
         w1.obstacles.insert((3, 4));

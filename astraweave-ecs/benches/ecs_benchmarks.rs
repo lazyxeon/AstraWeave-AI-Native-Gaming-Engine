@@ -13,6 +13,7 @@
 //! 4. **Archetype Transitions** (100 entities × 10 transitions)
 //!
 //! # Correctness Assertions
+#![allow(clippy::redundant_closure)]
 //!
 //! Each benchmark validates:
 //! - Entity count matches expected

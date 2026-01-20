@@ -148,8 +148,8 @@ fn test_validation_performance() {
 
     for i in 0..iterations {
         let target = IVec2 {
-            x: 10 + (i % 50) as i32,
-            y: 10 + (i / 50) as i32,
+            x: 10 + (i % 50),
+            y: 10 + (i / 50),
         };
         let _ = ctx.validate_action(&ToolVerb::MoveTo, target, agent_pos);
     }
@@ -252,8 +252,8 @@ fn test_concurrency_safety() {
 
             for i in 0..validations_per_thread {
                 let target = IVec2 {
-                    x: 10 + (i % 20) as i32,
-                    y: 10 + (i / 20) as i32,
+                    x: 10 + (i % 20),
+                    y: 10 + (i / 20),
                 };
 
                 let ctx_lock = ctx_clone.lock().unwrap();

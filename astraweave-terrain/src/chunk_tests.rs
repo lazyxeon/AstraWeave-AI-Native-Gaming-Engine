@@ -4,7 +4,7 @@
 //! Target: 26.36% → 80%+ coverage for chunk.rs
 
 #[cfg(test)]
-mod chunk_tests {
+mod tests {
     use crate::chunk::*;
     use crate::{BiomeType, Heightmap};
     use glam::Vec3;
@@ -313,8 +313,7 @@ mod chunk_tests {
         assert_eq!(neighbors.len(), 9);
 
         // Verify grid contains all expected chunks
-        let expected_ids = vec![
-            ChunkId::new(-1, -1),
+        let expected_ids = [ChunkId::new(-1, -1),
             ChunkId::new(0, -1),
             ChunkId::new(1, -1),
             ChunkId::new(-1, 0),
@@ -322,8 +321,7 @@ mod chunk_tests {
             ChunkId::new(1, 0),
             ChunkId::new(-1, 1),
             ChunkId::new(0, 1),
-            ChunkId::new(1, 1),
-        ];
+            ChunkId::new(1, 1)];
 
         for expected in expected_ids.iter() {
             assert!(
@@ -367,7 +365,7 @@ mod chunk_tests {
         let chunk_size = 64.0;
 
         // Test positions exactly on chunk boundaries
-        let boundary_cases = vec![
+        let boundary_cases = [
             Vec3::new(63.999, 0.0, 0.0), // Just before boundary
             Vec3::new(64.0, 0.0, 0.0),   // Exactly on boundary
             Vec3::new(64.001, 0.0, 0.0), // Just after boundary

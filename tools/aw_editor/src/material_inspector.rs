@@ -138,6 +138,54 @@ impl Default for DisplayMode {
     }
 }
 
+impl DisplayMode {
+    /// Get all display mode variants
+    pub fn all() -> &'static [Self] {
+        &[Self::Albedo, Self::Normal, Self::Orm, Self::Split]
+    }
+
+    /// Get human-readable name
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Albedo => "Albedo",
+            Self::Normal => "Normal",
+            Self::Orm => "ORM",
+            Self::Split => "Split View",
+        }
+    }
+
+    /// Get icon for this mode
+    pub fn icon(&self) -> &str {
+        match self {
+            Self::Albedo => "🎨",
+            Self::Normal => "↗️",
+            Self::Orm => "🔧",
+            Self::Split => "⊞",
+        }
+    }
+
+    /// Get keyboard shortcut
+    pub fn shortcut(&self) -> &str {
+        match self {
+            Self::Albedo => "1",
+            Self::Normal => "2",
+            Self::Orm => "3",
+            Self::Split => "4",
+        }
+    }
+
+    /// Check if this is a single texture mode
+    pub fn is_single_texture(&self) -> bool {
+        !matches!(self, Self::Split)
+    }
+}
+
+impl std::fmt::Display for DisplayMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 /// Channel isolation filter
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelFilter {
@@ -146,6 +194,57 @@ pub enum ChannelFilter {
     Green,
     Blue,
     Alpha,
+}
+
+impl ChannelFilter {
+    /// Get all channel filter variants
+    pub fn all() -> &'static [Self] {
+        &[Self::All, Self::Red, Self::Green, Self::Blue, Self::Alpha]
+    }
+
+    /// Get human-readable name
+    pub fn name(&self) -> &str {
+        match self {
+            Self::All => "RGB",
+            Self::Red => "Red",
+            Self::Green => "Green",
+            Self::Blue => "Blue",
+            Self::Alpha => "Alpha",
+        }
+    }
+
+    /// Get icon/symbol for this channel
+    pub fn icon(&self) -> &str {
+        match self {
+            Self::All => "🔳",
+            Self::Red => "🔴",
+            Self::Green => "🟢",
+            Self::Blue => "🔵",
+            Self::Alpha => "⚪",
+        }
+    }
+
+    /// Get keyboard shortcut
+    pub fn shortcut(&self) -> &str {
+        match self {
+            Self::All => "0",
+            Self::Red => "R",
+            Self::Green => "G",
+            Self::Blue => "B",
+            Self::Alpha => "A",
+        }
+    }
+
+    /// Check if this is viewing a single channel
+    pub fn is_single_channel(&self) -> bool {
+        !matches!(self, Self::All)
+    }
+}
+
+impl std::fmt::Display for ChannelFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl Default for ChannelFilter {
@@ -164,6 +263,48 @@ pub enum ColorSpace {
 impl Default for ColorSpace {
     fn default() -> Self {
         Self::Srgb
+    }
+}
+
+impl ColorSpace {
+    /// Get all color space variants
+    pub fn all() -> &'static [Self] {
+        &[Self::Linear, Self::Srgb]
+    }
+
+    /// Get human-readable name
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Linear => "Linear",
+            Self::Srgb => "sRGB",
+        }
+    }
+
+    /// Get icon for this color space
+    pub fn icon(&self) -> &str {
+        match self {
+            Self::Linear => "📊",
+            Self::Srgb => "🖥️",
+        }
+    }
+
+    /// Get description of this color space
+    pub fn description(&self) -> &str {
+        match self {
+            Self::Linear => "Raw linear values, used for lighting calculations",
+            Self::Srgb => "Gamma-corrected for display on monitors",
+        }
+    }
+
+    /// Check if this is linear color space
+    pub fn is_linear(&self) -> bool {
+        matches!(self, Self::Linear)
+    }
+}
+
+impl std::fmt::Display for ColorSpace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }
 
@@ -1273,5 +1414,166 @@ impl MaterialInspector {
 impl Default for MaterialInspector {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ====================================================================
+    // DisplayMode Tests
+    // ====================================================================
+
+    #[test]
+    fn test_display_mode_all() {
+        let all = DisplayMode::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_display_mode_name() {
+        assert_eq!(DisplayMode::Combined.name(), "Combined");
+        assert_eq!(DisplayMode::Albedo.name(), "Albedo");
+        assert_eq!(DisplayMode::Normal.name(), "Normal");
+        assert_eq!(DisplayMode::Orm.name(), "ORM");
+    }
+
+    #[test]
+    fn test_display_mode_icon_not_empty() {
+        for mode in DisplayMode::all() {
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_display_mode_shortcut() {
+        assert_eq!(DisplayMode::Combined.shortcut(), "C");
+        assert_eq!(DisplayMode::Albedo.shortcut(), "A");
+        assert_eq!(DisplayMode::Normal.shortcut(), "N");
+        assert_eq!(DisplayMode::Orm.shortcut(), "O");
+    }
+
+    #[test]
+    fn test_display_mode_is_single_texture() {
+        assert!(!DisplayMode::Combined.is_single_texture());
+        assert!(DisplayMode::Albedo.is_single_texture());
+        assert!(DisplayMode::Normal.is_single_texture());
+        assert!(DisplayMode::Orm.is_single_texture());
+    }
+
+    #[test]
+    fn test_display_mode_display() {
+        assert_eq!(format!("{}", DisplayMode::Combined), "Combined");
+        assert_eq!(format!("{}", DisplayMode::Albedo), "Albedo");
+    }
+
+    // ====================================================================
+    // ChannelFilter Tests
+    // ====================================================================
+
+    #[test]
+    fn test_channel_filter_all() {
+        let all = ChannelFilter::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_channel_filter_name() {
+        assert_eq!(ChannelFilter::RGBA.name(), "RGBA");
+        assert_eq!(ChannelFilter::Red.name(), "Red");
+        assert_eq!(ChannelFilter::Green.name(), "Green");
+        assert_eq!(ChannelFilter::Blue.name(), "Blue");
+        assert_eq!(ChannelFilter::Alpha.name(), "Alpha");
+    }
+
+    #[test]
+    fn test_channel_filter_icon_not_empty() {
+        for filter in ChannelFilter::all() {
+            assert!(!filter.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_channel_filter_shortcut() {
+        assert_eq!(ChannelFilter::RGBA.shortcut(), "0");
+        assert_eq!(ChannelFilter::Red.shortcut(), "1");
+        assert_eq!(ChannelFilter::Green.shortcut(), "2");
+        assert_eq!(ChannelFilter::Blue.shortcut(), "3");
+        assert_eq!(ChannelFilter::Alpha.shortcut(), "4");
+    }
+
+    #[test]
+    fn test_channel_filter_is_single_channel() {
+        assert!(!ChannelFilter::RGBA.is_single_channel());
+        assert!(ChannelFilter::Red.is_single_channel());
+        assert!(ChannelFilter::Green.is_single_channel());
+        assert!(ChannelFilter::Blue.is_single_channel());
+        assert!(ChannelFilter::Alpha.is_single_channel());
+    }
+
+    #[test]
+    fn test_channel_filter_display() {
+        assert_eq!(format!("{}", ChannelFilter::RGBA), "RGBA");
+        assert_eq!(format!("{}", ChannelFilter::Red), "Red");
+    }
+
+    // ====================================================================
+    // ColorSpace Tests
+    // ====================================================================
+
+    #[test]
+    fn test_color_space_all() {
+        let all = ColorSpace::all();
+        assert_eq!(all.len(), 2);
+    }
+
+    #[test]
+    fn test_color_space_name() {
+        assert_eq!(ColorSpace::SRGB.name(), "sRGB");
+        assert_eq!(ColorSpace::Linear.name(), "Linear");
+    }
+
+    #[test]
+    fn test_color_space_icon_not_empty() {
+        for space in ColorSpace::all() {
+            assert!(!space.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_color_space_description() {
+        assert!(ColorSpace::SRGB.description().contains("gamma"));
+        assert!(ColorSpace::Linear.description().contains("physically"));
+    }
+
+    #[test]
+    fn test_color_space_is_linear() {
+        assert!(!ColorSpace::SRGB.is_linear());
+        assert!(ColorSpace::Linear.is_linear());
+    }
+
+    #[test]
+    fn test_color_space_display() {
+        assert_eq!(format!("{}", ColorSpace::SRGB), "sRGB");
+        assert_eq!(format!("{}", ColorSpace::Linear), "Linear");
+    }
+
+    // ====================================================================
+    // MaterialInspector Tests
+    // ====================================================================
+
+    #[test]
+    fn test_material_inspector_creation() {
+        let inspector = MaterialInspector::new();
+        assert_eq!(inspector.zoom_level, 1.0);
+        assert!(matches!(inspector.display_mode, DisplayMode::Combined));
+        assert!(matches!(inspector.channel_filter, ChannelFilter::RGBA));
+    }
+
+    #[test]
+    fn test_material_inspector_default() {
+        let inspector = MaterialInspector::default();
+        assert_eq!(inspector.zoom_level, 1.0);
     }
 }

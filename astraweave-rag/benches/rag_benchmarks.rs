@@ -279,7 +279,7 @@ fn bench_memory_batch_clone(c: &mut Criterion) {
             b.iter_with_setup(
                 || create_test_memories(count),
                 |memories| {
-                    let cloned: Vec<_> = memories.iter().map(|m| m.clone()).collect();
+                    let cloned = memories.to_vec();
                     black_box(cloned)
                 },
             )

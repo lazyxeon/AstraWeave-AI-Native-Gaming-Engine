@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use anyhow::Result;
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::retrieval::{RetrievalConfig, RetrievalEngine, RetrievalQuery};
@@ -52,8 +54,7 @@ fn create_test_memories() -> Vec<Memory> {
 fn test_engine_initialization() {
     let config = RetrievalConfig::default();
     let _engine = RetrievalEngine::new(config);
-    // Just checking it constructs
-    assert!(true);
+    // Just checking it constructs without panicking
 }
 
 #[test]
@@ -139,7 +140,7 @@ fn test_similarity_ranking() -> Result<()> {
     
     // With threshold 0.4, we should get all 3
     if results.len() >= 3 {
-        assert!(results[0].score > results[1].score || results[0].score == results[1].score);
+        assert!(results[0].score >= results[1].score);
     }
     
     Ok(())

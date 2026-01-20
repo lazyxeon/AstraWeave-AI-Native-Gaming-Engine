@@ -1,5 +1,7 @@
 //! Common test utilities for astraweave-net integration tests
 
+#![allow(dead_code)]
+
 use anyhow::Result;
 use astraweave_core::{IVec2, PlanIntent, Team, World};
 use astraweave_net::{build_snapshot, GameServer, Msg, Snapshot};

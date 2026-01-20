@@ -1,5 +1,7 @@
-/// Tests for helper functions in astraweave-prompts
-/// Covers template helpers, utility functions, and edge cases
+//! Tests for helper functions in astraweave-prompts
+//! Covers template helpers, utility functions, and edge cases
+
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
     ContextValue, PromptContext, PromptTemplate, TemplateEngine,

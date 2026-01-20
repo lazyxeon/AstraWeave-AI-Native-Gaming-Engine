@@ -298,18 +298,17 @@ fn test_grid_material_ordering() {
     let materials = grid.generate();
 
     // First row (y=0): strength should increase, roughness=0
-    for x in 0..4 {
+    for (x, mat) in materials.iter().take(4).enumerate() {
         let expected_strength = x as f32 / 3.0;
-        assert!((materials[x].clearcoat_strength - expected_strength).abs() < 1e-5);
-        assert!((materials[x].clearcoat_roughness - 0.0).abs() < 1e-6);
+        assert!((mat.clearcoat_strength - expected_strength).abs() < 1e-5);
+        assert!((mat.clearcoat_roughness - 0.0).abs() < 1e-6);
     }
 
     // Last row (y=3): strength should increase, roughness=1
-    for x in 0..4 {
-        let idx = 12 + x; // Row 3 starts at index 12
+    for (x, mat) in materials.iter().skip(12).take(4).enumerate() {
         let expected_strength = x as f32 / 3.0;
-        assert!((materials[idx].clearcoat_strength - expected_strength).abs() < 1e-5);
-        assert!((materials[idx].clearcoat_roughness - 1.0).abs() < 1e-6);
+        assert!((mat.clearcoat_strength - expected_strength).abs() < 1e-5);
+        assert!((mat.clearcoat_roughness - 1.0).abs() < 1e-6);
     }
 }
 

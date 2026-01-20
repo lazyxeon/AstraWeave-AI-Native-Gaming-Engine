@@ -1400,8 +1400,10 @@ mod tests {
 
     #[test]
     fn test_wheel_state_contact_normal() {
-        let mut state = WheelState::default();
-        state.contact_normal = Vec3::new(0.0, 1.0, 0.0);
+        let state = WheelState {
+            contact_normal: Vec3::new(0.0, 1.0, 0.0),
+            ..Default::default()
+        };
         
         assert!((state.contact_normal.y - 1.0).abs() < 0.01);
     }

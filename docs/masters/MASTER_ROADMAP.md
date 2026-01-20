@@ -288,26 +288,163 @@ Key achievements:
 
 ## Revision History
 
-| Version | Date | Summary |
-|---------|------|---------|
-| **1.44** | **Jan 2026** | **Revised Validation Plan v2.0**: Comprehensive tool research (LLVM Sanitizers, wgpu validation, Miri/Kani alternatives). Created `REVISED_VALIDATION_PLAN.md` with crate-specific recommendations. Added `sanitizers.yml` CI workflow (ASan, LSan, TSan, Miri). Removed Kani (ROI too low), added `contracts` crate alternative. Added `validate.ps1` local runner script. |
-| 1.43 | Jan 2026 | ✅ ECS REGRESSION FIXED: Critical BlobVec performance regression from NASA-grade audit v5.52 **FULLY RESOLVED**. Root cause: HashMap allocation in Archetype::new() even in legacy mode. Fix: Lazy initialization with Option<HashMap>. Results: entity_spawn 52% faster, entity_despawn 68% faster, 10K+ entities @ 60 FPS restored. All 220 ECS tests passing. Grade: B- → A+ |
-| 1.42 | Dec 21, 2025 | Renderer production validation: Comprehensive headless verification |
-| 1.41 | Dec 20, 2025 | Renderer Headless Refactor: Refactored `Renderer` for CI-safe testing, added 365 tests, increased coverage to ~42% |
-| 1.40 | Dec 8, 2025 | AI-Orchestrated Dynamic Terrain: 8 phases complete (TerrainSolver, TerrainModifier, NavMesh invalidation, Persistence, LLM prompts, Quest generation), 320+ tests |
-| 1.39 | Dec 6, 2025 | Steam Platform: astraweave-steam crate with Steamworks SDK, achievements, stats, Platform trait |
-| 1.38 | Dec 6, 2025 | Phase 10 GI audit: VXGI complete (VxgiRenderer, cone tracing), 355 render tests passing |
-| 1.37 | Dec 6, 2025 | Phase 10 Networking complete: astraweave-net (7 tests), astraweave-net-ecs (4 tests), TLS/WebSocket/HMAC |
-| 1.36 | Dec 6, 2025 | Phase 9 complete: Build/Packaging verified (aw_build, aw_release, release.yml for Win/Mac/Linux) |
-| 1.35 | Dec 6, 2025 | Phase 9 audit: Scripting (12 tests), Asset Pipeline (48 tests) verified complete |
-| 1.34 | Dec 6, 2025 | Phase 8.4 Production Audio complete: Fixed Windows file locking with #[serial], 147 tests passing |
-| 1.33 | Dec 5, 2025 | Phase 8.3 Save/Load complete: Fixed debug test thresholds, 52 tests passing (aw-save + persistence-ecs) |
-| 1.32 | Dec 5, 2025 | Phase 8.1 UI Framework complete: gamepad.rs (7 tests), accessibility.rs (12 tests), 153 total UI tests |
-| 1.31 | Dec 5, 2025 | Documentation audit: Corrected crate count (82→121), added TLS/Security, LLM Schema, docs reorganization |
-| 1.30 | Nov 23, 2025 | Phase 9.2 Sprint 2: Event system, API expansion |
-| 1.29 | Nov 23, 2025 | Phase 9.2 started: astraweave-scripting crate |
-| 1.28 | Nov 23, 2025 | Phase 8.7 Sprint 4: Full stack integration |
-| 1.27 | Nov 22, 2025 | Phase 8.7 RAG integration complete |
+> **IEEE/ACM-Compliant Format** (restructured 2026-01-18)
+
+### Executive Summary
+
+| Metric | Value |
+|--------|-------|
+| **Total Versions** | 18 |
+| **Timeline** | Nov 22, 2025 → Jan 2026 (~2 months) |
+| **Primary Authors** | AI Team |
+| **Average Frequency** | ~3 days/version |
+
+### Version Type Legend
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| 🔷 | MAJOR | Phase completion, strategic milestones |
+| 🔹 | MINOR | Feature additions, sprint completion |
+| 🔸 | PATCH | Bug fixes, small updates |
+| 🔍 | AUDIT | Validation, verification sessions |
+| ⚠️ | FIX | Critical bug fixes, regressions |
+| 📋 | PLAN | Documentation, planning updates |
+
+### Impact Grade Legend
+
+| Grade | Symbol | Criteria |
+|-------|--------|----------|
+| 🔴 | CRITICAL | Phase completion, >100 tests, strategic change |
+| 🟡 | SIGNIFICANT | Sprint complete, >20 tests, milestone |
+| 🟢 | INCREMENTAL | <20 tests, documentation, minor updates |
+| ⚪ | ADMINISTRATIVE | Planning, documentation-only |
+
+---
+
+### Primary Revision Table
+
+| Ver | Date | Type | Impact | Summary (≤80 chars) |
+|-----|------|------|--------|---------------------|
+| **1.44** | Jan 26 | 📋 | 🟢 | Revised Validation Plan v2.0: Sanitizers, CI workflow, validate.ps1 |
+| **1.43** | Jan 26 | ⚠️ | 🔴 | ECS REGRESSION FIXED: BlobVec 52-68% faster, 10K+ entities restored |
+| **1.42** | Dec 21 | 🔍 | 🟢 | Renderer production validation: Headless verification complete |
+| **1.41** | Dec 20 | 🔹 | 🟡 | Renderer Headless: +365 tests, 42% coverage, CI-safe testing |
+| **1.40** | Dec 8 | 🔷 | 🔴 | AI Terrain: 8 phases, TerrainSolver, NavMesh, 320+ tests |
+| **1.39** | Dec 6 | 🔹 | 🟡 | Steam Platform: astraweave-steam, Steamworks SDK, achievements |
+| **1.38** | Dec 6 | 🔍 | 🟡 | Phase 10 GI: VXGI complete, VxgiRenderer, 355 render tests |
+| **1.37** | Dec 6 | 🔷 | 🟡 | Phase 10 Networking: astraweave-net/net-ecs, TLS/WebSocket/HMAC |
+| **1.36** | Dec 6 | 🔷 | 🟡 | Phase 9 complete: Build/Packaging, release.yml Win/Mac/Linux |
+| **1.35** | Dec 6 | 🔍 | 🟢 | Phase 9 audit: Scripting 12 tests, Asset Pipeline 48 tests |
+| **1.34** | Dec 6 | 🔷 | 🟡 | Phase 8.4 Audio complete: #[serial] fix, 147 tests passing |
+| **1.33** | Dec 5 | 🔷 | 🟡 | Phase 8.3 Save/Load: Debug thresholds fixed, 52 tests |
+| **1.32** | Dec 5 | 🔷 | 🟡 | Phase 8.1 UI Framework: gamepad/accessibility, 153 tests |
+| **1.31** | Dec 5 | 📋 | 🟢 | Docs audit: 82→121 crates, TLS/Security, docs reorg |
+| **1.30** | Nov 23 | 🔹 | 🟢 | Phase 9.2 Sprint 2: Event system, API expansion |
+| **1.29** | Nov 23 | 🔹 | 🟢 | Phase 9.2 started: astraweave-scripting crate |
+| **1.28** | Nov 23 | 🔹 | 🟢 | Phase 8.7 Sprint 4: Full stack integration |
+| **1.27** | Nov 22 | 🔹 | 🟢 | Phase 8.7 RAG integration complete |
+
+---
+
+### Statistical Summary
+
+**By Type:**
+| Type | Count | % |
+|------|-------|---|
+| 🔷 MAJOR | 6 | 33.3% |
+| 🔹 MINOR | 6 | 33.3% |
+| 📋 PLAN | 2 | 11.1% |
+| 🔍 AUDIT | 3 | 16.7% |
+| ⚠️ FIX | 1 | 5.6% |
+
+**By Impact:**
+| Impact | Count | % |
+|--------|-------|---|
+| 🔴 CRITICAL | 2 | 11.1% |
+| 🟡 SIGNIFICANT | 8 | 44.4% |
+| 🟢 INCREMENTAL | 8 | 44.4% |
+
+---
+
+### Key Milestones Timeline
+
+```
+Nov 22 ─── v1.27: Phase 8.7 RAG Integration
+    │
+Nov 23 ─── v1.28-1.30: Sprint 4, Scripting Foundation
+    │
+Dec 5 ─┬─ v1.32: Phase 8.1 UI Framework (153 tests)
+       ├─ v1.33: Phase 8.3 Save/Load (52 tests)
+       └─ v1.34: Phase 8.4 Audio (147 tests)
+    │
+Dec 6 ─┬─ v1.36: Phase 9 Build/Packaging
+       ├─ v1.37: Phase 10 Networking (TLS/WS)
+       └─ v1.39: Steam Platform Integration
+    │
+Dec 8 ─── v1.40: AI-Orchestrated Dynamic Terrain (320+ tests)
+    │
+Dec 20-21 ─ v1.41-1.42: Renderer Headless (+365 tests)
+    │
+Jan 2026 ─ v1.43-1.44: ECS Regression Fix, Validation Plan v2.0
+```
+
+---
+
+### Detailed Changelog (Critical Versions)
+
+<details>
+<summary><b>v1.43 (Jan 2026) - ECS REGRESSION FIX</b></summary>
+
+**Impact**: 🔴 CRITICAL  
+**Type**: ⚠️ FIX  
+**Author**: AI Team
+
+**Changes**:
+- Fixed critical BlobVec performance regression from NASA-grade audit v5.52
+- Root cause: HashMap allocation in Archetype::new() even in legacy mode
+- Fix: Lazy initialization with Option<HashMap>
+- Results: entity_spawn 52% faster, entity_despawn 68% faster
+- 10K+ entities @ 60 FPS restored, all 220 ECS tests passing
+- Grade: B- → A+
+
+</details>
+
+<details>
+<summary><b>v1.40 (Dec 8, 2025) - AI-ORCHESTRATED DYNAMIC TERRAIN</b></summary>
+
+**Impact**: 🔴 CRITICAL  
+**Type**: 🔷 MAJOR  
+**Author**: AI Team
+
+**Changes**:
+- Complete 8-phase implementation:
+  - TerrainSolver for LLM-to-world coordinate translation
+  - TerrainModifier with time-sliced voxel operations
+  - NavMesh invalidation and partial rebaking
+  - Terrain persistence with compression
+  - LLM prompt templates for terrain generation
+  - Terrain-driven quest generation (20 feature types)
+  - API expansion (`apply_damage`, `set_position`)
+- 320+ tests added
+
+</details>
+
+---
+
+### Issues Resolved During Restructuring
+
+| ID | Issue | Resolution |
+|----|-------|------------|
+| VERBOSE-001 | Entries 50-200 words each | Summarized to ≤80 chars |
+| FORMAT-001 | Missing type/impact classification | Added 6 types + 4 impact grades |
+| STATS-001 | No statistical summary | Added type/impact distribution |
+| TIMELINE-001 | No visual timeline | Added ASCII milestone visualization |
+
+---
+
+**Next Review Date**: 2026-02-18 (monthly cadence)  
+**Revision History Format Version**: 2.0.0 (IEEE/ACM-compliant)  
+**Last Restructured**: 2026-01-18
 
 ---
 

@@ -215,7 +215,7 @@ fn test_enemystate_edge_cases() {
     assert_eq!(forgotten.last_seen, 100.0);
 
     // Various cover types
-    let covers = vec!["none", "half", "full", "partial", "heavy"];
+    let covers = ["none", "half", "full", "partial", "heavy"];
     for (i, cover_type) in covers.iter().enumerate() {
         let enemy = EnemyState {
             id: i as u32,
@@ -259,7 +259,7 @@ fn test_playerstate_edge_cases() {
     assert_eq!(busy.orders[3], "regroup_delta");
 
     // Various stances
-    let stances = vec!["stand", "crouch", "prone", "cover"];
+    let stances = ["stand", "crouch", "prone", "cover"];
     for (i, stance) in stances.iter().enumerate() {
         let player = PlayerState {
             hp: 100,

@@ -227,7 +227,7 @@ mod tests {
         let state = MsaaMode::X4.multisample_state();
         assert_eq!(state.count, 4);
         assert_eq!(state.mask, !0);
-        assert_eq!(state.alpha_to_coverage_enabled, false);
+        assert!(!state.alpha_to_coverage_enabled);
     }
 
     #[test]

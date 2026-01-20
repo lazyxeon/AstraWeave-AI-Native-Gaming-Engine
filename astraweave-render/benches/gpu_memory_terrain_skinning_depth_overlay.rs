@@ -380,8 +380,10 @@ impl JointPalette {
 
     pub fn from_identity(count: usize) -> Self {
         let count = count.min(MAX_JOINTS);
-        let mut palette = Self::default();
-        palette.joint_count = count as u32;
+        let mut palette = Self {
+            joint_count: count as u32,
+            ..Default::default()
+        };
 
         // Identity matrix
         let identity: [f32; 16] = [
@@ -788,23 +790,12 @@ impl ColorGradingConfig {
 }
 
 /// Combined post-process config
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct PostProcessConfig {
     pub taa: TaaConfig,
     pub motion_blur: MotionBlurConfig,
     pub dof: DofConfig,
     pub color_grading: ColorGradingConfig,
-}
-
-impl Default for PostProcessConfig {
-    fn default() -> Self {
-        Self {
-            taa: TaaConfig::default(),
-            motion_blur: MotionBlurConfig::default(),
-            dof: DofConfig::default(),
-            color_grading: ColorGradingConfig::default(),
-        }
-    }
 }
 
 // ============================================================================
@@ -1452,14 +1443,14 @@ fn bench_combined_scenarios(c: &mut Criterion) {
             // Simulate frame allocations
             let _ = mgr.try_allocate(MemoryCategory::Textures, 64 * 1024 * 1024);
             let _ = mgr.try_allocate(MemoryCategory::Geometry, 16 * 1024 * 1024);
-            let _ = mgr.try_allocate(MemoryCategory::Uniforms, 1 * 1024 * 1024);
+            let _ = mgr.try_allocate(MemoryCategory::Uniforms, 1024 * 1024);
             let _ = mgr.try_allocate(MemoryCategory::RenderTargets, 32 * 1024 * 1024);
             let pressure = mgr.pressure_level();
 
             // Free
             mgr.free(MemoryCategory::Textures, 64 * 1024 * 1024);
             mgr.free(MemoryCategory::Geometry, 16 * 1024 * 1024);
-            mgr.free(MemoryCategory::Uniforms, 1 * 1024 * 1024);
+            mgr.free(MemoryCategory::Uniforms, 1024 * 1024);
             mgr.free(MemoryCategory::RenderTargets, 32 * 1024 * 1024);
 
             black_box(pressure)

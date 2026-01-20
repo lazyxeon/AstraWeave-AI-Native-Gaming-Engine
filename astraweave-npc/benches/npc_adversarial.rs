@@ -2,6 +2,13 @@
 //!
 //! Stress testing for NPC behavior, LLM integration, profiles, runtime, and sense systems.
 
+#![allow(
+    dead_code,
+    clippy::type_complexity,
+    clippy::if_same_then_else,
+    clippy::unwrap_or_default
+)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;
@@ -333,10 +340,10 @@ fn bench_behavior_systems(c: &mut Criterion) {
         let npcs: Vec<HashMap<String, i32>> = (0..200)
             .map(|i| {
                 let mut state = HashMap::new();
-                state.insert("has_weapon".to_string(), (i % 2) as i32);
+                state.insert("has_weapon".to_string(), i % 2);
                 state.insert("enemy_visible".to_string(), (i % 3 == 0) as i32);
-                state.insert("health".to_string(), 50 + (i % 50) as i32);
-                state.insert("ammo".to_string(), (i % 30) as i32);
+                state.insert("health".to_string(), 50 + (i % 50));
+                state.insert("ammo".to_string(), i % 30);
                 state
             })
             .collect();
@@ -1230,8 +1237,8 @@ fn bench_dialogue_systems(c: &mut Criterion) {
                         let text = format!("Node {} text for tree {}", j, i);
                         let options: Vec<(String, u32)> = if j < 9 {
                             vec![
-                                (format!("Choice A"), (j + 1) as u32),
-                                (format!("Choice B"), (j + 1) as u32),
+                                ("Choice A".to_string(), (j + 1) as u32),
+                                ("Choice B".to_string(), (j + 1) as u32),
                             ]
                         } else {
                             vec![]
@@ -1272,10 +1279,8 @@ fn bench_dialogue_systems(c: &mut Criterion) {
     
     // Test 3: Keyword matching
     group.bench_function("keyword_matching_2000", |bencher| {
-        let keywords = vec![
-            "quest", "help", "gold", "weapon", "armor", "potion",
-            "merchant", "guard", "king", "dragon", "treasure", "map",
-        ];
+        let keywords = ["quest", "help", "gold", "weapon", "armor", "potion",
+            "merchant", "guard", "king", "dragon", "treasure", "map"];
         
         let dialogues: Vec<String> = (0..2000)
             .map(|i| {

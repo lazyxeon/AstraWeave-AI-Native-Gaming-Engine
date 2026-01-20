@@ -158,6 +158,16 @@ impl GraphNode {
         Rect::from_min_size(self.position, self.size)
     }
 
+    /// Get node X position
+    pub fn x(&self) -> f32 {
+        self.position.x
+    }
+
+    /// Get node Y position
+    pub fn y(&self) -> f32 {
+        self.position.y
+    }
+
     /// Get port position (world coordinates)
     pub fn port_position(&self, is_output: bool, port_index: usize) -> Pos2 {
         let port_offset_y = 30.0 + (port_index as f32 * 20.0);
@@ -285,6 +295,14 @@ impl NodeGraph {
         self.nodes.clear();
         self.edges.clear();
         self.next_id = 1;
+    }
+
+    /// Remove a node and its connected edges
+    pub fn remove_node(&mut self, id: NodeId) -> Option<GraphNode> {
+        // Remove all edges connected to this node
+        self.edges.retain(|e| e.source_node != id && e.target_node != id);
+        // Remove the node
+        self.nodes.remove(&id)
     }
 
     /// Apply force-directed layout to arrange nodes automatically

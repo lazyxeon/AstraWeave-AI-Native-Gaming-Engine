@@ -373,10 +373,12 @@ mod tests {
 
     #[test]
     fn test_memory_manager_with_custom_config() {
-        let mut config = MemoryManagerConfig::default();
-        config.importance_threshold = 0.5;
-        config.auto_consolidation = false;
-        config.enable_forgetting = false;
+        let config = MemoryManagerConfig {
+            importance_threshold: 0.5,
+            auto_consolidation: false,
+            enable_forgetting: false,
+            ..Default::default()
+        };
 
         let manager = MemoryManager::with_config(config.clone());
         assert_eq!(manager.get_config().importance_threshold, 0.5);
@@ -536,9 +538,11 @@ mod tests {
     fn test_update_config() {
         let mut manager = MemoryManager::new();
         
-        let mut new_config = MemoryManagerConfig::default();
-        new_config.importance_threshold = 0.8;
-        new_config.auto_consolidation = false;
+        let new_config = MemoryManagerConfig {
+            importance_threshold: 0.8,
+            auto_consolidation: false,
+            ..Default::default()
+        };
 
         manager.update_config(new_config);
         
@@ -628,8 +632,10 @@ mod tests {
     fn test_cleanup_actually_removes_weak_memories() {
         use chrono::Duration;
         
-        let mut config = MemoryManagerConfig::default();
-        config.importance_threshold = 0.5; // Set a reasonable threshold
+        let config = MemoryManagerConfig {
+            importance_threshold: 0.5, // Set a reasonable threshold
+            ..Default::default()
+        };
         let mut manager = MemoryManager::with_config(config);
         
         // Create a memory that will be considered weak
@@ -653,8 +659,10 @@ mod tests {
 
     #[test]
     fn test_cleanup_mixed_memories() {
-        let mut config = MemoryManagerConfig::default();
-        config.importance_threshold = 0.3;
+        let config = MemoryManagerConfig {
+            importance_threshold: 0.3,
+            ..Default::default()
+        };
         let mut manager = MemoryManager::with_config(config);
 
         // Strong memory that should stay
@@ -703,7 +711,8 @@ mod tests {
 
         let results = manager.retrieve_memories(&context).unwrap();
         // Should retrieve at least one memory matching the context
-        assert!(!results.is_empty() || true); // Context matching depends on implementation
+        // Context matching depends on implementation - may return empty
+        let _ = results; // Just verify it runs
     }
 
     #[test]

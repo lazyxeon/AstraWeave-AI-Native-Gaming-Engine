@@ -25,10 +25,10 @@ async fn test_zero_packet_loss_baseline() {
         .await;
 
     // Execute 10 commands
-    for i in 0..10 {
+    for i in 0i32..10 {
         let plan = PlanIntent {
             plan_id: format!("move_{}", i),
-            steps: vec![ActionStep::MoveTo { x: (i % 10) as i32,
+            steps: vec![ActionStep::MoveTo { x: i % 10,
                 y: 1,
                 speed: None,
             }],

@@ -2,8 +2,6 @@
 //!
 //! Provides utilities for rendering to buffers and comparing against golden images.
 
-use wgpu;
-
 pub struct VisualTestContext {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -190,7 +188,7 @@ fn image_delta(a: &[u8], b: &[u8]) -> (u8, f32) {
     let mut count = 0u32;
 
     for (pixel_a, pixel_b) in a.iter().zip(b.iter()) {
-        let delta = (*pixel_a as i16 - *pixel_b as i16).abs() as u8;
+        let delta = ((*pixel_a as i16 - *pixel_b as i16).unsigned_abs()) as u8;
         max_delta = max_delta.max(delta);
         sum_delta += delta as u32;
         count += 1;

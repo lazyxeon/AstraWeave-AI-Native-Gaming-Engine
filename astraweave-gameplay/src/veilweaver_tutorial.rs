@@ -276,7 +276,7 @@ mod tests {
             activation_order: None,
         };
         let cloned = status.clone();
-        assert_eq!(cloned.stabilized, false);
+        assert!(!cloned.stabilized);
         assert!(cloned.activation_order.is_none());
     }
 

@@ -2,7 +2,7 @@
 // Targeting edge cases and uncovered code paths in animation.rs
 
 #[cfg(test)]
-mod animation_extra_tests {
+mod tests {
     use super::super::animation::*;
     use glam::{Mat4, Quat, Vec3};
 

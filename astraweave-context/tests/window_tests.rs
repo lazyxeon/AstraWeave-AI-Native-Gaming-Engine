@@ -1,7 +1,10 @@
-/// ContextWindow Integration Tests
-///
-/// Sprint: Phase 8.7 LLM Testing Sprint 1
-/// Day 2-3: 12 tests for ContextWindow core functionality
+//! ContextWindow Integration Tests
+//!
+//! Sprint: Phase 8.7 LLM Testing Sprint 1
+//! Day 2-3: 12 tests for ContextWindow core functionality
+
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_context::{ContextWindow, ContextWindowConfig, Message, Role, WindowType};
 
 // ============================================================================
@@ -50,7 +53,7 @@ fn test_get_important_messages_by_threshold() {
 
     // System messages have default weight 1.0, should pass threshold
     assert!(
-        important.len() > 0,
+        !important.is_empty(),
         "Should have at least one important message"
     );
 
@@ -316,7 +319,7 @@ fn test_attention_based_pruning() {
     // System message should likely be preserved (highest attention weight)
     let system_msgs = window.get_messages_by_role(Role::System);
     assert!(
-        system_msgs.len() > 0,
+        !system_msgs.is_empty(),
         "High-attention system message should be preserved"
     );
 }

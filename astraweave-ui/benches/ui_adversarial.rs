@@ -495,7 +495,7 @@ fn bench_damage_numbers(c: &mut Criterion) {
                 .map(|i| {
                     let pos = (i as f32 * 0.1, 0.0, 0.0);
                     DamageNumber::new(
-                        100 + i as i32 * 10,
+                        100 + i * 10,
                         base_time + i as f32 * 0.001,
                         pos,
                         if i % 5 == 0 {

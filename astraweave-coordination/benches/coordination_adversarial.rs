@@ -2,9 +2,11 @@
 //!
 //! Stress testing for multi-agent coordination, social graphs, and narrative coherence.
 
+#![allow(dead_code, unused_variables)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::hint::black_box as std_black_box;
+use std::hint::black_box;
 
 // ============================================================================
 // LOCAL TYPES (Mirror astraweave-coordination API)
@@ -140,7 +142,7 @@ fn bench_social_graph(c: &mut Criterion) {
 
                 bencher.iter(|| {
                     let graph = generate_social_graph(&agents);
-                    std_black_box(graph.len())
+                    black_box(graph.len())
                 });
             },
         );
@@ -155,7 +157,7 @@ fn bench_social_graph(c: &mut Criterion) {
             let mut total_relationship = 0.0f32;
 
             for _ in 0..10000 {
-                let agent_id = AgentId(rand_simple(1000) as u64);
+                let agent_id = AgentId(rand_simple(1000));
                 if let Some(connections) = graph.get(&agent_id) {
                     if let Some((_, rel)) = connections.first() {
                         total_relationship += rel;
@@ -163,7 +165,7 @@ fn bench_social_graph(c: &mut Criterion) {
                 }
             }
 
-            std_black_box(total_relationship)
+            black_box(total_relationship)
         });
     });
 
@@ -206,7 +208,7 @@ fn bench_social_graph(c: &mut Criterion) {
                 }
             }
 
-            std_black_box(paths_found)
+            black_box(paths_found)
         });
     });
 
@@ -225,7 +227,7 @@ fn bench_social_graph(c: &mut Criterion) {
             }
 
             let sizes: Vec<usize> = factions.values().map(|v| v.len()).collect();
-            std_black_box(sizes.iter().sum::<usize>())
+            black_box(sizes.iter().sum::<usize>())
         });
     });
 
@@ -248,7 +250,7 @@ fn bench_social_graph(c: &mut Criterion) {
                 .flat_map(|c| c.iter().map(|(_, r)| r))
                 .sum();
 
-            std_black_box(total)
+            black_box(total)
         });
     });
 
@@ -279,7 +281,7 @@ fn bench_squad_coordination(c: &mut Criterion) {
                         formation: Formation::Wedge,
                     };
 
-                    std_black_box(squad.members.len())
+                    black_box(squad.members.len())
                 });
             },
         );
@@ -301,7 +303,7 @@ fn bench_squad_coordination(c: &mut Criterion) {
                     ],
                     Formation::Wedge => {
                         let row = (i as f32).sqrt() as i32;
-                        let col = i as i32 - row * row;
+                        let col = i - row * row;
                         [
                             leader_pos[0] + col as f32 * 2.0 - row as f32,
                             leader_pos[1] - row as f32 * 2.0,
@@ -325,7 +327,7 @@ fn bench_squad_coordination(c: &mut Criterion) {
                 })
                 .collect();
 
-            std_black_box(positions.len())
+            black_box(positions.len())
         });
     });
 
@@ -349,7 +351,7 @@ fn bench_squad_coordination(c: &mut Criterion) {
                 .map(|(i, squad)| (squad, objectives[i % objectives.len()]))
                 .collect();
 
-            std_black_box(assignments.len())
+            black_box(assignments.len())
         });
     });
 
@@ -384,7 +386,7 @@ fn bench_squad_coordination(c: &mut Criterion) {
                 }
             }
 
-            std_black_box(received.len())
+            black_box(received.len())
         });
     });
 
@@ -417,7 +419,7 @@ fn bench_world_events(c: &mut Criterion) {
                 })
                 .collect();
 
-            std_black_box(events.len())
+            black_box(events.len())
         });
     });
 
@@ -445,7 +447,7 @@ fn bench_world_events(c: &mut Criterion) {
                 .filter(|e| matches!(e.event_type, EventType::Combat))
                 .collect();
 
-            std_black_box(combat_events.len())
+            black_box(combat_events.len())
         });
     });
 
@@ -479,7 +481,7 @@ fn bench_world_events(c: &mut Criterion) {
                 })
                 .collect();
 
-            std_black_box(nearby.len())
+            black_box(nearby.len())
         });
     });
 
@@ -497,7 +499,7 @@ fn bench_world_events(c: &mut Criterion) {
 
         bencher.iter(|| {
             events.sort_by(|a, b| a.timestamp.partial_cmp(&b.timestamp).unwrap());
-            std_black_box(events.first().map(|e| e.id))
+            black_box(events.first().map(|e| e.id))
         });
     });
 
@@ -529,7 +531,7 @@ fn bench_world_events(c: &mut Criterion) {
                 .max_by_key(|(_, events)| events.len())
                 .map(|(id, _)| *id);
 
-            std_black_box(busiest_agent)
+            black_box(busiest_agent)
         });
     });
 
@@ -556,7 +558,7 @@ fn bench_narrative_coherence(c: &mut Criterion) {
                 })
                 .collect();
 
-            std_black_box(threads.len())
+            black_box(threads.len())
         });
     });
 
@@ -616,7 +618,7 @@ fn bench_narrative_coherence(c: &mut Criterion) {
                 .collect();
 
             let avg_coherence: f32 = scores.iter().sum::<f32>() / scores.len() as f32;
-            std_black_box(avg_coherence)
+            black_box(avg_coherence)
         });
     });
 
@@ -650,7 +652,7 @@ fn bench_narrative_coherence(c: &mut Criterion) {
                 }
             }
 
-            std_black_box(merge_candidates.len())
+            black_box(merge_candidates.len())
         });
     });
 
@@ -698,7 +700,7 @@ fn bench_narrative_coherence(c: &mut Criterion) {
                 }
             }
 
-            std_black_box(conflicts.len())
+            black_box(conflicts.len())
         });
     });
 
@@ -742,7 +744,7 @@ fn bench_decision_making(c: &mut Criterion) {
                 .collect();
 
             let attack_count = decisions.iter().filter(|(a, _)| *a == "attack").count();
-            std_black_box(attack_count)
+            black_box(attack_count)
         });
     });
 
@@ -769,7 +771,7 @@ fn bench_decision_making(c: &mut Criterion) {
             }
 
             let winner = votes.iter().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).map(|(k, _)| *k);
-            std_black_box(winner)
+            black_box(winner)
         });
     });
 
@@ -807,7 +809,7 @@ fn bench_decision_making(c: &mut Criterion) {
                 coalitions.push(coalition);
             }
 
-            std_black_box(coalitions.len())
+            black_box(coalitions.len())
         });
     });
 
@@ -841,7 +843,7 @@ fn bench_decision_making(c: &mut Criterion) {
                 .collect();
 
             let allocated: u32 = allocations.iter().map(|(_, a)| *a).sum();
-            std_black_box(allocated)
+            black_box(allocated)
         });
     });
 
@@ -868,7 +870,7 @@ fn bench_communication(c: &mut Criterion) {
                 .map(|a| a.id)
                 .collect();
 
-            std_black_box(recipients.len())
+            black_box(recipients.len())
         });
     });
 
@@ -891,7 +893,7 @@ fn bench_communication(c: &mut Criterion) {
                 .map(|a| a.id)
                 .collect();
 
-            std_black_box(in_range.len())
+            black_box(in_range.len())
         });
     });
 
@@ -918,7 +920,7 @@ fn bench_communication(c: &mut Criterion) {
                 .take(1000) // Process batch
                 .collect();
 
-            std_black_box(processed.len())
+            black_box(processed.len())
         });
     });
 
@@ -948,7 +950,7 @@ fn bench_communication(c: &mut Criterion) {
                 }
             }
 
-            std_black_box(current_informed.len())
+            black_box(current_informed.len())
         });
     });
 

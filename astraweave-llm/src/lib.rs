@@ -2072,8 +2072,7 @@ mod tests {
         // MockLlm returns valid plan with ThrowSmoke, MoveTo, Attack
         if let PlanSource::Llm(plan) = result {
             assert!(!plan.steps.is_empty());
-            // Verify at least one step exists
-            assert!(plan.steps.len() >= 1);
+            // Verify at least one step exists (already checked with is_empty)
         } else {
             panic!("Expected LLM plan from MockLlm");
         }

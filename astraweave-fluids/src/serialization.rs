@@ -259,8 +259,10 @@ mod tests {
 
     #[test]
     fn test_snapshot_params_clone() {
-        let mut params = SnapshotParams::default();
-        params.viscosity = 50.0;
+        let params = SnapshotParams {
+            viscosity: 50.0,
+            ..Default::default()
+        };
         
         let cloned = params.clone();
         
@@ -269,18 +271,19 @@ mod tests {
 
     #[test]
     fn test_snapshot_params_roundtrip() {
-        let mut params = SnapshotParams::default();
-        params.smoothing_radius = 5.5;
-        params.target_density = 100.0;
-        params.pressure_multiplier = 500.0;
-        params.viscosity = 25.0;
-        params.surface_tension = 0.1;
-        params.gravity = -20.0;
-        params.iterations = 8;
-        params.cell_size = 2.0;
-        params.grid_width = 256;
-        params.grid_height = 256;
-        params.grid_depth = 256;
+        let params = SnapshotParams {
+            smoothing_radius: 5.5,
+            target_density: 100.0,
+            pressure_multiplier: 500.0,
+            viscosity: 25.0,
+            surface_tension: 0.1,
+            gravity: -20.0,
+            iterations: 8,
+            cell_size: 2.0,
+            grid_width: 256,
+            grid_height: 256,
+            grid_depth: 256,
+        };
         
         let bytes = bincode::serialize(&params).expect("Serialization failed");
         let recovered: SnapshotParams = bincode::deserialize(&bytes).expect("Deserialization failed");
@@ -330,10 +333,12 @@ mod tests {
 
     #[test]
     fn test_snapshot_params_zero_values() {
-        let mut params = SnapshotParams::default();
-        params.smoothing_radius = 0.0;
-        params.gravity = 0.0;
-        params.iterations = 0;
+        let params = SnapshotParams {
+            smoothing_radius: 0.0,
+            gravity: 0.0,
+            iterations: 0,
+            ..Default::default()
+        };
         
         let bytes = bincode::serialize(&params).expect("Serialization failed");
         let recovered: SnapshotParams = bincode::deserialize(&bytes).expect("Deserialization failed");

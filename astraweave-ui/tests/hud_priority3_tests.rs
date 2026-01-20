@@ -129,7 +129,8 @@ fn test_persistence_load_settings_never_panics() {
     // Verify we get valid settings (defaults if file missing/corrupted)
     assert!(settings.graphics.resolution.0 > 0);
     assert!(settings.graphics.resolution.1 > 0);
-    assert!(settings.graphics.fullscreen == false || settings.graphics.fullscreen == true);
+    // fullscreen is always a valid bool, just verify the object was created
+    let _fullscreen = settings.graphics.fullscreen;
     assert!(settings.audio.master_volume >= 0.0);
 }
 
@@ -155,7 +156,8 @@ fn test_persistence_save_and_load_consistency() {
 
     // Verify we get valid settings object (doesn't panic)
     assert!(loaded.graphics.resolution.0 > 0);
-    assert!(loaded.graphics.fullscreen == true || loaded.graphics.fullscreen == false);
+    // fullscreen is always a valid bool, just verify the object was created
+    let _fullscreen = loaded.graphics.fullscreen;
 }
 
 // ============================================================================

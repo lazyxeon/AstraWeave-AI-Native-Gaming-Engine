@@ -1,3 +1,18 @@
+#![allow(
+    unused_imports,
+    unused_variables,
+    unused_mut,
+    unused_must_use,
+    clippy::assertions_on_constants,
+    clippy::clone_on_copy,
+    clippy::identity_op,
+    clippy::len_zero,
+    clippy::let_unit_value,
+    clippy::manual_range_contains,
+    clippy::overly_complex_bool_expr,
+    clippy::useless_vec,
+)]
+
 use astraweave_materials::{Graph, MaterialPackage, Node};
 use astraweave_render::{
     animation::{
@@ -4550,9 +4565,9 @@ async fn test_decal_system_comprehensive() {
     decal3.fade_duration = 2.0; // fade_duration is f32, not Option
 
     // Add decals
-    system.add_decal(decal1);
-    system.add_decal(decal2);
-    system.add_decal(decal3);
+    let _ = system.add_decal(decal1);
+    let _ = system.add_decal(decal2);
+    let _ = system.add_decal(decal3);
 
     assert_eq!(system.count(), 3);
 

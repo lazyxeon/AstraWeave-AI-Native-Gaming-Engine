@@ -286,7 +286,7 @@ fn is_retryable() {
     };
     assert!(timeout.is_retryable());
     
-    let io_err = BlendError::IoError(io::Error::new(io::ErrorKind::Other, "temp"));
+    let io_err = BlendError::IoError(io::Error::other("temp"));
     assert!(io_err.is_retryable());
     
     let not_retryable = BlendError::Cancelled;
@@ -364,7 +364,7 @@ fn error_messages_not_empty() {
         BlendError::Cancelled,
         BlendError::Internal { message: "test".to_string() },
         BlendError::Serialization("test".to_string()),
-        BlendError::IoError(io::Error::new(io::ErrorKind::Other, "test")),
+        BlendError::IoError(io::Error::other("test")),
     ];
     
     for err in errors {

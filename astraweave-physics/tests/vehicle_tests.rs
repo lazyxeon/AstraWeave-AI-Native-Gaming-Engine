@@ -83,7 +83,11 @@ fn test_suspension_compression() {
     
     // Vehicle should settle with wheels on ground
     // Note: This depends on raycast working correctly
-    assert!(grounded > 0 || true, "Vehicle simulation ran without crashing");
+    assert!(
+        grounded <= 4,
+        "Expected at most 4 grounded wheels, got {}",
+        grounded
+    );
 }
 
 /// Test engine torque curve

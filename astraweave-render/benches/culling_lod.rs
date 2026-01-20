@@ -35,23 +35,23 @@ use std::hint::black_box;
 #[inline]
 fn assert_aabb_valid(center: [f32; 3], extent: [f32; 3], context: &str) {
     // Center must be finite
-    for i in 0..3 {
+    for (i, c) in center.iter().enumerate() {
         assert!(
-            center[i].is_finite(),
+            c.is_finite(),
             "[CORRECTNESS FAILURE] {}: AABB center[{}] is non-finite ({})",
             context,
             i,
-            center[i]
+            c
         );
     }
     // Extent must be non-negative and finite
-    for i in 0..3 {
+    for (i, e) in extent.iter().enumerate() {
         assert!(
-            extent[i] >= 0.0 && extent[i].is_finite(),
+            *e >= 0.0 && e.is_finite(),
             "[CORRECTNESS FAILURE] {}: AABB extent[{}] invalid ({})",
             context,
             i,
-            extent[i]
+            e
         );
     }
 }
@@ -137,8 +137,8 @@ impl InstanceAABB {
 
         // Transform extent by taking absolute values of transformed basis vectors
         let mut world_extent = [0.0f32; 3];
-        for i in 0..3 {
-            world_extent[i] = local_extent[0] * transform[0][i].abs()
+        for (i, out) in world_extent.iter_mut().enumerate() {
+            *out = local_extent[0] * transform[0][i].abs()
                 + local_extent[1] * transform[1][i].abs()
                 + local_extent[2] * transform[2][i].abs();
         }
@@ -347,13 +347,13 @@ struct EdgeCollapse {
 
 impl PartialOrd for EdgeCollapse {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.error.partial_cmp(&self.error) // Min-heap
+        Some(self.cmp(other))
     }
 }
 
 impl PartialEq for EdgeCollapse {
     fn eq(&self, other: &Self) -> bool {
-        self.error == other.error
+        self.cmp(other) == Ordering::Equal
     }
 }
 
@@ -361,7 +361,8 @@ impl Eq for EdgeCollapse {}
 
 impl Ord for EdgeCollapse {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+        // Min-heap: smaller error should compare as "greater".
+        other.error.total_cmp(&self.error)
     }
 }
 

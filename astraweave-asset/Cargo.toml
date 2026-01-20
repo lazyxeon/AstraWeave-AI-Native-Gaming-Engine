@@ -30,6 +30,7 @@ astraweave-blend = { path = "../crates/astraweave-blend", optional = true }
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs"] }
 tempfile = "3"
+criterion = { workspace = true }
 
 [features]
 default = ["gltf"]

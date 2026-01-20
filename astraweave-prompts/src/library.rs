@@ -64,6 +64,37 @@ impl PromptLibrary {
     pub fn list_templates(&self) -> Vec<String> {
         self.templates.keys().cloned().collect()
     }
+
+    /// Returns the number of templates in the library.
+    pub fn template_count(&self) -> usize {
+        self.templates.len()
+    }
+
+    /// Returns true if the library contains a template with the given name.
+    pub fn has_template(&self, name: &str) -> bool {
+        self.templates.contains_key(name)
+    }
+
+    /// Returns true if the library is empty.
+    pub fn is_empty(&self) -> bool {
+        self.templates.is_empty()
+    }
+
+    /// Clears all templates from the library.
+    pub fn clear(&mut self) {
+        self.templates.clear();
+    }
+
+    /// Returns a summary of the library.
+    pub fn summary(&self) -> String {
+        format!("PromptLibrary: {} templates", self.template_count())
+    }
+}
+
+impl std::fmt::Display for PromptLibrary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
 }
 
 /// Template collection
@@ -91,6 +122,55 @@ pub struct LibraryMetadata {
     pub created_at: String,
 }
 
+impl LibraryMetadata {
+    /// Creates a new library metadata.
+    pub fn new(version: impl Into<String>, description: impl Into<String>, author: impl Into<String>) -> Self {
+        Self {
+            version: version.into(),
+            description: description.into(),
+            author: author.into(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+
+    /// Creates a default library metadata.
+    pub fn default_metadata() -> Self {
+        Self {
+            version: "1.0.0".to_string(),
+            description: "AstraWeave Template Library".to_string(),
+            author: "AstraWeave".to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+
+    /// Returns true if this metadata has an author.
+    pub fn has_author(&self) -> bool {
+        !self.author.is_empty()
+    }
+
+    /// Returns true if this metadata has a description.
+    pub fn has_description(&self) -> bool {
+        !self.description.is_empty()
+    }
+
+    /// Returns a summary of the metadata.
+    pub fn summary(&self) -> String {
+        format!("v{} by {}", self.version, self.author)
+    }
+}
+
+impl std::fmt::Display for LibraryMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
+impl Default for LibraryMetadata {
+    fn default() -> Self {
+        Self::default_metadata()
+    }
+}
+
 /// Collection metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CollectionMetadata {
@@ -100,6 +180,67 @@ pub struct CollectionMetadata {
     pub description: String,
     /// Collection tags
     pub tags: Vec<String>,
+}
+
+impl CollectionMetadata {
+    /// Creates a new collection metadata.
+    pub fn new(version: impl Into<String>, description: impl Into<String>) -> Self {
+        Self {
+            version: version.into(),
+            description: description.into(),
+            tags: Vec::new(),
+        }
+    }
+
+    /// Creates a new collection metadata with tags.
+    pub fn with_tags(version: impl Into<String>, description: impl Into<String>, tags: Vec<String>) -> Self {
+        Self {
+            version: version.into(),
+            description: description.into(),
+            tags,
+        }
+    }
+
+    /// Returns true if this collection has tags.
+    pub fn has_tags(&self) -> bool {
+        !self.tags.is_empty()
+    }
+
+    /// Returns true if this collection has a specific tag.
+    pub fn has_tag(&self, tag: &str) -> bool {
+        self.tags.iter().any(|t| t == tag)
+    }
+
+    /// Returns the number of tags.
+    pub fn tag_count(&self) -> usize {
+        self.tags.len()
+    }
+
+    /// Returns true if this collection has a description.
+    pub fn has_description(&self) -> bool {
+        !self.description.is_empty()
+    }
+
+    /// Returns a summary of the metadata.
+    pub fn summary(&self) -> String {
+        if self.tags.is_empty() {
+            format!("v{}", self.version)
+        } else {
+            format!("v{} [{}]", self.version, self.tags.join(", "))
+        }
+    }
+}
+
+impl std::fmt::Display for CollectionMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
+impl Default for CollectionMetadata {
+    fn default() -> Self {
+        Self::new("1.0.0", "")
+    }
 }
 
 impl TemplateLibrary {
@@ -125,6 +266,46 @@ impl TemplateLibrary {
     /// List all collections
     pub fn list_collections(&self) -> Vec<&String> {
         self.collections.keys().collect()
+    }
+
+    /// Returns the number of collections.
+    pub fn collection_count(&self) -> usize {
+        self.collections.len()
+    }
+
+    /// Returns true if the library has a collection with the given name.
+    pub fn has_collection(&self, name: &str) -> bool {
+        self.collections.contains_key(name)
+    }
+
+    /// Returns true if the library is empty.
+    pub fn is_empty(&self) -> bool {
+        self.collections.is_empty()
+    }
+
+    /// Returns the library name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns a reference to the library metadata.
+    pub fn metadata(&self) -> &LibraryMetadata {
+        &self.metadata
+    }
+
+    /// Returns the total number of templates across all collections.
+    pub fn total_template_count(&self) -> usize {
+        self.collections.values().map(|c| c.template_count()).sum()
+    }
+
+    /// Returns a summary of the library.
+    pub fn summary(&self) -> String {
+        format!(
+            "TemplateLibrary '{}': {} collections, {} templates",
+            self.name,
+            self.collection_count(),
+            self.total_template_count()
+        )
     }
 
     /// Load library from directory
@@ -180,6 +361,12 @@ impl TemplateLibrary {
     }
 }
 
+impl std::fmt::Display for TemplateLibrary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
+    }
+}
+
 impl TemplateCollection {
     /// Create a new template collection
     pub fn new(name: String, metadata: CollectionMetadata) -> Self {
@@ -208,6 +395,52 @@ impl TemplateCollection {
     /// Remove a template from the collection
     pub fn remove_template(&mut self, name: &str) -> Option<String> {
         self.templates.remove(name)
+    }
+
+    /// Returns the collection name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns a reference to the collection metadata.
+    pub fn metadata(&self) -> &CollectionMetadata {
+        &self.metadata
+    }
+
+    /// Returns the number of templates in the collection.
+    pub fn template_count(&self) -> usize {
+        self.templates.len()
+    }
+
+    /// Returns true if the collection contains a template with the given name.
+    pub fn has_template(&self, name: &str) -> bool {
+        self.templates.contains_key(name)
+    }
+
+    /// Returns true if the collection is empty.
+    pub fn is_empty(&self) -> bool {
+        self.templates.is_empty()
+    }
+
+    /// Clears all templates from the collection.
+    pub fn clear(&mut self) {
+        self.templates.clear();
+    }
+
+    /// Returns a summary of the collection.
+    pub fn summary(&self) -> String {
+        format!(
+            "TemplateCollection '{}': {} templates ({})",
+            self.name,
+            self.template_count(),
+            self.metadata.summary()
+        )
+    }
+}
+
+impl std::fmt::Display for TemplateCollection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
     }
 }
 
@@ -474,5 +707,306 @@ mod tests {
         let result = TemplateLibrary::load_from_directory(path);
         // Should succeed with empty default collection
         assert!(result.is_ok());
+    }
+
+    // ===== PromptLibrary helper tests =====
+
+    #[test]
+    fn test_prompt_library_template_count() {
+        let mut lib = PromptLibrary::new();
+        assert_eq!(lib.template_count(), 0);
+
+        let template = crate::template::PromptTemplate::new("test", "Hello");
+        lib.add_template("greeting", template);
+        assert_eq!(lib.template_count(), 1);
+    }
+
+    #[test]
+    fn test_prompt_library_has_template() {
+        let mut lib = PromptLibrary::new();
+        assert!(!lib.has_template("greeting"));
+
+        let template = crate::template::PromptTemplate::new("test", "Hello");
+        lib.add_template("greeting", template);
+        assert!(lib.has_template("greeting"));
+    }
+
+    #[test]
+    fn test_prompt_library_is_empty() {
+        let mut lib = PromptLibrary::new();
+        assert!(lib.is_empty());
+
+        let template = crate::template::PromptTemplate::new("test", "Hello");
+        lib.add_template("greeting", template);
+        assert!(!lib.is_empty());
+    }
+
+    #[test]
+    fn test_prompt_library_clear() {
+        let mut lib = PromptLibrary::new();
+        let template = crate::template::PromptTemplate::new("test", "Hello");
+        lib.add_template("greeting", template);
+        assert!(!lib.is_empty());
+
+        lib.clear();
+        assert!(lib.is_empty());
+    }
+
+    #[test]
+    fn test_prompt_library_summary() {
+        let lib = PromptLibrary::new();
+        let summary = lib.summary();
+        assert!(summary.contains("PromptLibrary"));
+        assert!(summary.contains("0 templates"));
+    }
+
+    #[test]
+    fn test_prompt_library_display() {
+        let lib = PromptLibrary::new();
+        let display = format!("{}", lib);
+        assert!(display.contains("PromptLibrary"));
+    }
+
+    // ===== LibraryMetadata helper tests =====
+
+    #[test]
+    fn test_library_metadata_new() {
+        let meta = LibraryMetadata::new("1.0.0", "Test library", "Author");
+        assert_eq!(meta.version, "1.0.0");
+        assert_eq!(meta.description, "Test library");
+        assert_eq!(meta.author, "Author");
+    }
+
+    #[test]
+    fn test_library_metadata_default() {
+        let meta = LibraryMetadata::default();
+        assert_eq!(meta.version, "1.0.0");
+        assert_eq!(meta.author, "AstraWeave");
+    }
+
+    #[test]
+    fn test_library_metadata_has_author() {
+        let meta = LibraryMetadata::new("1.0", "Desc", "Author");
+        assert!(meta.has_author());
+
+        let no_author = LibraryMetadata::new("1.0", "Desc", "");
+        assert!(!no_author.has_author());
+    }
+
+    #[test]
+    fn test_library_metadata_has_description() {
+        let meta = LibraryMetadata::new("1.0", "Description", "Author");
+        assert!(meta.has_description());
+
+        let no_desc = LibraryMetadata::new("1.0", "", "Author");
+        assert!(!no_desc.has_description());
+    }
+
+    #[test]
+    fn test_library_metadata_summary() {
+        let meta = LibraryMetadata::new("2.0.0", "Desc", "Developer");
+        let summary = meta.summary();
+        assert!(summary.contains("v2.0.0"));
+        assert!(summary.contains("Developer"));
+    }
+
+    #[test]
+    fn test_library_metadata_display() {
+        let meta = LibraryMetadata::new("1.0", "Desc", "Author");
+        let display = format!("{}", meta);
+        assert!(display.contains("v1.0"));
+    }
+
+    // ===== CollectionMetadata helper tests =====
+
+    #[test]
+    fn test_collection_metadata_new() {
+        let meta = CollectionMetadata::new("1.0.0", "Test collection");
+        assert_eq!(meta.version, "1.0.0");
+        assert_eq!(meta.description, "Test collection");
+        assert!(meta.tags.is_empty());
+    }
+
+    #[test]
+    fn test_collection_metadata_with_tags() {
+        let meta = CollectionMetadata::with_tags("1.0", "Desc", vec!["ai".to_string(), "game".to_string()]);
+        assert_eq!(meta.tags.len(), 2);
+    }
+
+    #[test]
+    fn test_collection_metadata_has_tags() {
+        let meta = CollectionMetadata::new("1.0", "Desc");
+        assert!(!meta.has_tags());
+
+        let with_tags = CollectionMetadata::with_tags("1.0", "Desc", vec!["ai".to_string()]);
+        assert!(with_tags.has_tags());
+    }
+
+    #[test]
+    fn test_collection_metadata_has_tag() {
+        let meta = CollectionMetadata::with_tags("1.0", "Desc", vec!["ai".to_string(), "game".to_string()]);
+        assert!(meta.has_tag("ai"));
+        assert!(meta.has_tag("game"));
+        assert!(!meta.has_tag("missing"));
+    }
+
+    #[test]
+    fn test_collection_metadata_tag_count() {
+        let meta = CollectionMetadata::with_tags("1.0", "Desc", vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        assert_eq!(meta.tag_count(), 3);
+    }
+
+    #[test]
+    fn test_collection_metadata_summary() {
+        let meta = CollectionMetadata::with_tags("2.0", "Desc", vec!["ai".to_string()]);
+        let summary = meta.summary();
+        assert!(summary.contains("v2.0"));
+        assert!(summary.contains("ai"));
+    }
+
+    #[test]
+    fn test_collection_metadata_display() {
+        let meta = CollectionMetadata::new("1.0", "Desc");
+        let display = format!("{}", meta);
+        assert!(display.contains("v1.0"));
+    }
+
+    #[test]
+    fn test_collection_metadata_default() {
+        let meta = CollectionMetadata::default();
+        assert_eq!(meta.version, "1.0.0");
+        assert!(meta.tags.is_empty());
+    }
+
+    // ===== TemplateLibrary helper tests =====
+
+    #[test]
+    fn test_template_library_collection_count() {
+        let mut lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
+        assert_eq!(lib.collection_count(), 0);
+
+        lib.add_collection(TemplateCollection::new("col1".to_string(), CollectionMetadata::default()));
+        assert_eq!(lib.collection_count(), 1);
+    }
+
+    #[test]
+    fn test_template_library_has_collection() {
+        let mut lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
+        assert!(!lib.has_collection("col1"));
+
+        lib.add_collection(TemplateCollection::new("col1".to_string(), CollectionMetadata::default()));
+        assert!(lib.has_collection("col1"));
+    }
+
+    #[test]
+    fn test_template_library_is_empty() {
+        let lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
+        assert!(lib.is_empty());
+    }
+
+    #[test]
+    fn test_template_library_name() {
+        let lib = TemplateLibrary::new("my_library".to_string(), LibraryMetadata::default());
+        assert_eq!(lib.name(), "my_library");
+    }
+
+    #[test]
+    fn test_template_library_metadata() {
+        let lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::new("2.0", "Desc", "Author"));
+        assert_eq!(lib.metadata().version, "2.0");
+    }
+
+    #[test]
+    fn test_template_library_total_template_count() {
+        let mut lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
+        
+        let mut col1 = TemplateCollection::new("col1".to_string(), CollectionMetadata::default());
+        col1.add_template("t1".to_string(), "Template 1".to_string());
+        col1.add_template("t2".to_string(), "Template 2".to_string());
+        lib.add_collection(col1);
+
+        let mut col2 = TemplateCollection::new("col2".to_string(), CollectionMetadata::default());
+        col2.add_template("t3".to_string(), "Template 3".to_string());
+        lib.add_collection(col2);
+
+        assert_eq!(lib.total_template_count(), 3);
+    }
+
+    #[test]
+    fn test_template_library_summary() {
+        let lib = TemplateLibrary::new("my_lib".to_string(), LibraryMetadata::default());
+        let summary = lib.summary();
+        assert!(summary.contains("TemplateLibrary"));
+        assert!(summary.contains("my_lib"));
+    }
+
+    #[test]
+    fn test_template_library_display() {
+        let lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
+        let display = format!("{}", lib);
+        assert!(display.contains("TemplateLibrary"));
+    }
+
+    // ===== TemplateCollection helper tests =====
+
+    #[test]
+    fn test_template_collection_name() {
+        let col = TemplateCollection::new("my_collection".to_string(), CollectionMetadata::default());
+        assert_eq!(col.name(), "my_collection");
+    }
+
+    #[test]
+    fn test_template_collection_metadata() {
+        let col = TemplateCollection::new("test".to_string(), CollectionMetadata::new("2.0", "Desc"));
+        assert_eq!(col.metadata().version, "2.0");
+    }
+
+    #[test]
+    fn test_template_collection_template_count() {
+        let mut col = TemplateCollection::new("test".to_string(), CollectionMetadata::default());
+        assert_eq!(col.template_count(), 0);
+
+        col.add_template("t1".to_string(), "Template".to_string());
+        assert_eq!(col.template_count(), 1);
+    }
+
+    #[test]
+    fn test_template_collection_has_template() {
+        let mut col = TemplateCollection::new("test".to_string(), CollectionMetadata::default());
+        assert!(!col.has_template("t1"));
+
+        col.add_template("t1".to_string(), "Template".to_string());
+        assert!(col.has_template("t1"));
+    }
+
+    #[test]
+    fn test_template_collection_is_empty() {
+        let col = TemplateCollection::new("test".to_string(), CollectionMetadata::default());
+        assert!(col.is_empty());
+    }
+
+    #[test]
+    fn test_template_collection_clear() {
+        let mut col = TemplateCollection::new("test".to_string(), CollectionMetadata::default());
+        col.add_template("t1".to_string(), "Template".to_string());
+        assert!(!col.is_empty());
+
+        col.clear();
+        assert!(col.is_empty());
+    }
+
+    #[test]
+    fn test_template_collection_summary() {
+        let col = TemplateCollection::new("my_col".to_string(), CollectionMetadata::default());
+        let summary = col.summary();
+        assert!(summary.contains("TemplateCollection"));
+        assert!(summary.contains("my_col"));
+    }
+
+    #[test]
+    fn test_template_collection_display() {
+        let col = TemplateCollection::new("test".to_string(), CollectionMetadata::default());
+        let display = format!("{}", col);
+        assert!(display.contains("TemplateCollection"));
     }
 }

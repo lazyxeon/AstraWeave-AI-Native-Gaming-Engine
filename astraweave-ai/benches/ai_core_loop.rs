@@ -95,10 +95,10 @@ fn create_complex_snapshot() -> WorldSnapshot {
         enemies.push(EnemyState {
             id: 200 + i as u32,
             pos: IVec2 {
-                x: 20 + (i as i32) * 2,
-                y: 15 + (i as i32 % 3),
+                x: 20 + i * 2,
+                y: 15 + (i % 3),
             },
-            hp: 50 + (i as i32) * 5,
+            hp: 50 + i * 5,
             cover: if i % 2 == 0 { "low" } else { "high" }.to_string(),
             last_seen: (i as f32) * 0.5,
         });
@@ -109,8 +109,8 @@ fn create_complex_snapshot() -> WorldSnapshot {
         pois.push(Poi {
             k: if i % 2 == 0 { "medkit" } else { "ammo" }.to_string(),
             pos: IVec2 {
-                x: 5 + (i as i32) * 3,
-                y: 5 + (i as i32) * 2,
+                x: 5 + i * 3,
+                y: 5 + i * 2,
             },
         });
     }
@@ -118,8 +118,8 @@ fn create_complex_snapshot() -> WorldSnapshot {
     let mut obstacles = vec![];
     for i in 0..20 {
         obstacles.push(IVec2 {
-            x: 10 + (i as i32) % 10,
-            y: 10 + (i as i32) / 10,
+            x: 10 + (i % 10),
+            y: 10 + (i / 10),
         });
     }
 

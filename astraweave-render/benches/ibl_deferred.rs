@@ -14,6 +14,9 @@ use std::f32::consts::PI;
 use std::hint::black_box;
 
 // =============================================================================
+
+type GBufferTestDatum = ([f32; 3], [f32; 3], f32, f32, f32);
+type PixelDatum = ([f32; 3], [f32; 3], f32, f32, [f32; 3]);
 // SPHERICAL HARMONICS BENCHMARKS
 // =============================================================================
 
@@ -229,24 +232,22 @@ fn direction_to_cubemap_uv(dir: [f32; 3]) -> (u32, [f32; 2]) {
                 ],
             )
         }
+    } else if dir[2] > 0.0 {
+        (
+            4,
+            [
+                (dir[0] / abs_dir[2] + 1.0) * 0.5,
+                (-dir[1] / abs_dir[2] + 1.0) * 0.5,
+            ],
+        )
     } else {
-        if dir[2] > 0.0 {
-            (
-                4,
-                [
-                    (dir[0] / abs_dir[2] + 1.0) * 0.5,
-                    (-dir[1] / abs_dir[2] + 1.0) * 0.5,
-                ],
-            )
-        } else {
-            (
-                5,
-                [
-                    (-dir[0] / abs_dir[2] + 1.0) * 0.5,
-                    (-dir[1] / abs_dir[2] + 1.0) * 0.5,
-                ],
-            )
-        }
+        (
+            5,
+            [
+                (-dir[0] / abs_dir[2] + 1.0) * 0.5,
+                (-dir[1] / abs_dir[2] + 1.0) * 0.5,
+            ],
+        )
     };
 
     (face, uv)
@@ -601,7 +602,7 @@ fn bench_gbuffer_operations(c: &mut Criterion) {
     });
 
     // Benchmark full G-buffer pixel packing
-    let test_data: Vec<([f32; 3], [f32; 3], f32, f32, f32)> = (0..1000)
+    let test_data: Vec<GBufferTestDatum> = (0..1000)
         .map(|i| {
             let t = i as f32 * 0.001;
             (
@@ -778,6 +779,7 @@ fn bench_brdf_lut(c: &mut Criterion) {
 // =============================================================================
 
 /// Point light contribution calculation
+#[allow(clippy::too_many_arguments)]
 fn calculate_point_light(
     world_pos: [f32; 3],
     normal: [f32; 3],
@@ -933,7 +935,7 @@ fn bench_deferred_lighting(c: &mut Criterion) {
     }
 
     // Benchmark pixel processing (multiple pixels, fixed light count)
-    let pixels: Vec<([f32; 3], [f32; 3], f32, f32, [f32; 3])> = (0..1000)
+    let pixels: Vec<PixelDatum> = (0..1000)
         .map(|i| {
             let t = i as f32 * 0.001;
             (

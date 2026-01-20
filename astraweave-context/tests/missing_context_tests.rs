@@ -1,7 +1,8 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_context::{
     ContextWindow, ContextWindowConfig, WindowType, Role, Message, SerializableContextWindow
 };
-use serde_json;
 
 #[test]
 fn test_context_window_serialization() {

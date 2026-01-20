@@ -3,7 +3,6 @@ use astraweave_core::{
     WorldSnapshot,
 };
 use astraweave_llm::{parse_llm_plan, plan_from_llm, MockLlm, PlanSource};
-use serde_json;
 
 /// Integration test for end-to-end LLM workflow
 #[tokio::test]

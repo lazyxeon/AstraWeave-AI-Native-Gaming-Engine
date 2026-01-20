@@ -474,7 +474,7 @@ fn test_3d_audio_lifecycle_drop_no_panic() {
                 let pos = vec3(
                     (i as f32 * 2.0) - 20.0,
                     0.0,
-                    (i as f32 * -1.0),
+                    -(i as f32),
                 );
                 let _ = engine.play_sfx_3d_beep(i as u64, pos, 440.0 + (i as f32 * 10.0), 0.1, 0.3);
             }

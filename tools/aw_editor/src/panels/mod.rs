@@ -20,19 +20,40 @@ pub trait Panel {
 // Panel implementations
 pub mod advanced_widgets_panel;
 pub mod animation;
+pub mod animation_panel;
 pub mod asset_browser;
+pub mod audio_panel;
 pub mod build_manager;
 pub mod charts_panel;
+pub mod cinematics_panel;
 pub mod console_panel;
+pub mod dialogue_editor_panel;
+pub mod distribution_panel;
 pub mod entity_panel;
+pub mod foliage_panel;
 pub mod graph_panel;
 pub mod hierarchy_panel;
+pub mod input_bindings_panel;
+pub mod lighting_panel;
+pub mod localization_panel;
+pub mod lod_config_panel;
+pub mod material_editor_panel;
+pub mod navigation_panel;
+pub mod networking_panel;
+pub mod particle_system_panel;
+pub mod pcg_panel;
 pub mod performance_panel;
+pub mod physics_panel;
+pub mod polish_panel;
+pub mod post_process_panel;
 pub mod profiler_panel;
+pub mod project_settings_panel;
 pub mod scene_stats_panel;
+pub mod spline_editor_panel;
 pub mod terrain_panel;
 pub mod theme_manager;
 pub mod transform_panel;
+pub mod ui_editor_panel;
 pub mod world_panel;
 
 // Re-exports
@@ -52,3 +73,25 @@ pub use terrain_panel::TerrainPanel;
 pub use theme_manager::ThemeManagerPanel;
 pub use transform_panel::TransformPanel;
 pub use world_panel::WorldPanel;
+
+// New panel re-exports (Phase 8 additions)
+pub use audio_panel::AudioPanel;
+pub use cinematics_panel::CinematicsPanel;
+pub use dialogue_editor_panel::DialogueEditorPanel;
+pub use foliage_panel::FoliagePanel;
+pub use input_bindings_panel::InputBindingsPanel;
+pub use lighting_panel::LightingPanel;
+pub use localization_panel::LocalizationPanel;
+pub use lod_config_panel::LodConfigPanel;
+pub use material_editor_panel::MaterialEditorPanel;
+pub use navigation_panel::NavigationPanel;
+pub use networking_panel::NetworkingPanel;
+pub use particle_system_panel::ParticleSystemPanel;
+pub use pcg_panel::PcgPanel;
+pub use physics_panel::PhysicsPanel;
+#[allow(unused_imports)]
+pub use polish_panel::PolishPanel;
+pub use post_process_panel::PostProcessPanel;
+pub use project_settings_panel::ProjectSettingsPanel;
+pub use spline_editor_panel::SplineEditorPanel;
+pub use ui_editor_panel::UiEditorPanel;

@@ -129,6 +129,12 @@ impl CraftBench {
 mod tests {
     use super::*;
     use crate::{DamageType, Rarity};
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+
+    fn seeded_rng() -> StdRng {
+        StdRng::seed_from_u64(12345)
+    }
 
     #[test]
     fn test_craft_cost_creation() {
@@ -176,7 +182,8 @@ mod tests {
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Ore, 10);
 
-        let item = recipe_book.craft("Basic Armor", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("Basic Armor", &mut inv, &mut rng);
         assert!(item.is_some());
         let item = item.unwrap();
         assert_eq!(item.name, "Basic Armor");
@@ -201,7 +208,8 @@ mod tests {
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Crystal, 5); // Not enough
 
-        let item = recipe_book.craft("Expensive Item", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("Expensive Item", &mut inv, &mut rng);
         assert!(item.is_none());
         // Resources should NOT be consumed
         assert_eq!(inv.resources[0], (ResourceKind::Crystal, 5));
@@ -221,7 +229,8 @@ mod tests {
         };
         let mut inv = Inventory::default();
 
-        let item = recipe_book.craft("Nonexistent Recipe", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("Nonexistent Recipe", &mut inv, &mut rng);
         assert!(item.is_none());
     }
 
@@ -252,7 +261,8 @@ mod tests {
         inv.add_resource(ResourceKind::Fiber, 5);
         inv.add_resource(ResourceKind::Essence, 2);
 
-        let item = recipe_book.craft("Complex Item", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("Complex Item", &mut inv, &mut rng);
         assert!(item.is_some());
     }
 
@@ -278,7 +288,8 @@ mod tests {
         inv.add_resource(ResourceKind::Wood, 5);
         // Missing Crystal
 
-        let item = recipe_book.craft("Item", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("Item", &mut inv, &mut rng);
         assert!(item.is_none());
     }
 
@@ -416,7 +427,8 @@ mod tests {
     fn test_recipe_book_empty() {
         let recipe_book = RecipeBook { recipes: vec![] };
         let mut inv = Inventory::default();
-        let item = recipe_book.craft("anything", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("anything", &mut inv, &mut rng);
         assert!(item.is_none());
     }
 
@@ -454,7 +466,8 @@ mod tests {
             }],
         };
         let mut inv = Inventory::default();
-        let item = recipe_book.craft("Free Item", &mut inv);
+        let mut rng = seeded_rng();
+        let item = recipe_book.craft_seeded("Free Item", &mut inv, &mut rng);
         assert!(item.is_some());
     }
 }

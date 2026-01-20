@@ -1,4 +1,5 @@
-#![cfg(test)]
+// Tests for astraweave-net - cfg(test) already applied by mod declaration in lib.rs
+#![allow(clippy::duplicated_attributes, clippy::clone_on_copy)]
 
 use crate::Interest;
 use crate::{

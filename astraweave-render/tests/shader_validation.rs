@@ -23,41 +23,44 @@ fn get_all_shaders() -> Vec<PathBuf> {
     std::env::set_current_dir(&workspace_root).unwrap();
 
     // Core rendering shaders
-    for entry in glob::glob("astraweave-render/shaders/**/*.wgsl").unwrap() {
-        if let Ok(path) = entry {
-            shaders.push(path);
-        }
+    for path in glob::glob("astraweave-render/shaders/**/*.wgsl")
+        .unwrap()
+        .flatten()
+    {
+        shaders.push(path);
     }
-    for entry in glob::glob("astraweave-render/src/shaders/**/*.wgsl").unwrap() {
-        if let Ok(path) = entry {
-            shaders.push(path);
-        }
+    for path in glob::glob("astraweave-render/src/shaders/**/*.wgsl")
+        .unwrap()
+        .flatten()
+    {
+        shaders.push(path);
     }
 
     // Bevy integration shaders
-    for entry in glob::glob("astraweave-render-bevy/shaders/**/*.wgsl").unwrap() {
-        if let Ok(path) = entry {
-            shaders.push(path);
-        }
+    for path in glob::glob("astraweave-render-bevy/shaders/**/*.wgsl")
+        .unwrap()
+        .flatten()
+    {
+        shaders.push(path);
     }
-    for entry in glob::glob("astraweave-render-bevy/src/shaders/**/*.wgsl").unwrap() {
-        if let Ok(path) = entry {
-            shaders.push(path);
-        }
+    for path in glob::glob("astraweave-render-bevy/src/shaders/**/*.wgsl")
+        .unwrap()
+        .flatten()
+    {
+        shaders.push(path);
     }
 
     // Editor viewport shaders
-    for entry in glob::glob("tools/aw_editor/src/viewport/shaders/**/*.wgsl").unwrap() {
-        if let Ok(path) = entry {
-            shaders.push(path);
-        }
+    for path in glob::glob("tools/aw_editor/src/viewport/shaders/**/*.wgsl")
+        .unwrap()
+        .flatten()
+    {
+        shaders.push(path);
     }
 
     // Example shaders
-    for entry in glob::glob("examples/**/src/**/*.wgsl").unwrap() {
-        if let Ok(path) = entry {
-            shaders.push(path);
-        }
+    for path in glob::glob("examples/**/src/**/*.wgsl").unwrap().flatten() {
+        shaders.push(path);
     }
 
     shaders
@@ -260,6 +263,6 @@ fn test_shader_entry_points() {
         }
     }
 
-    // This is informational only, not a failure
-    assert!(true, "Entry point check complete");
+    // Informational only, not a failure.
+    println!("Entry point check complete");
 }

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use astraweave_physics::{Layers, PhysicsWorld};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::{vec3, Mat4};

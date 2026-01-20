@@ -7,6 +7,8 @@ use crate::dialogue::{Choice, Cond, Dialogue, DialogueState, Line, Node};
 use crate::{DamageType, Inventory, ItemKind, ResourceKind, Stats};
 use glam::Vec3;
 
+use rand::SeedableRng;
+
 /// Test that combat damage is deterministic with fixed positions
 #[test]
 fn test_combat_deterministic_damage() {
@@ -146,7 +148,8 @@ fn test_crafting_deterministic() {
     inv1.add_resource(ResourceKind::Ore, 10);
     inv1.add_resource(ResourceKind::Wood, 5);
 
-    let result1 = book.craft("iron_sword", &mut inv1);
+    let mut rng1 = rand::rngs::StdRng::seed_from_u64(12345);
+    let result1 = book.craft_seeded("iron_sword", &mut inv1, &mut rng1);
     assert!(result1.is_some(), "Crafting should succeed with resources");
 
     let item = result1.unwrap();
@@ -182,7 +185,8 @@ fn test_crafting_deterministic() {
     let mut inv2 = Inventory::default();
     inv2.add_resource(ResourceKind::Ore, 3); // Not enough ore
 
-    let result2 = book.craft("iron_sword", &mut inv2);
+    let mut rng2 = rand::rngs::StdRng::seed_from_u64(12345);
+    let result2 = book.craft_seeded("iron_sword", &mut inv2, &mut rng2);
     assert!(result2.is_none(), "Crafting should fail without resources");
 }
 
@@ -330,7 +334,8 @@ fn test_gameplay_loop_deterministic() {
     }];
 
     let book = RecipeBook { recipes };
-    let result = book.craft("battle_axe", &mut inv);
+    let mut rng = rand::rngs::StdRng::seed_from_u64(1337);
+    let result = book.craft_seeded("battle_axe", &mut inv, &mut rng);
 
     assert!(
         result.is_some(),

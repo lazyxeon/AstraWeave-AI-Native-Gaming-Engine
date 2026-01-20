@@ -61,6 +61,125 @@ pub enum ReloadEvent {
     Model(PathBuf),
 }
 
+impl ReloadEvent {
+    /// Get the path associated with this event
+    pub fn path(&self) -> &Path {
+        match self {
+            ReloadEvent::Material(p) => p,
+            ReloadEvent::Texture(p) => p,
+            ReloadEvent::Prefab(p) => p,
+            ReloadEvent::Model(p) => p,
+        }
+    }
+
+    /// Get the type name of this event
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ReloadEvent::Material(_) => "Material",
+            ReloadEvent::Texture(_) => "Texture",
+            ReloadEvent::Prefab(_) => "Prefab",
+            ReloadEvent::Model(_) => "Model",
+        }
+    }
+
+    /// Get icon for this event type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ReloadEvent::Material(_) => "🎨",
+            ReloadEvent::Texture(_) => "🖼️",
+            ReloadEvent::Prefab(_) => "📦",
+            ReloadEvent::Model(_) => "🗿",
+        }
+    }
+
+    /// Check if this is a material event
+    pub fn is_material(&self) -> bool {
+        matches!(self, ReloadEvent::Material(_))
+    }
+
+    /// Check if this is a texture event
+    pub fn is_texture(&self) -> bool {
+        matches!(self, ReloadEvent::Texture(_))
+    }
+
+    /// Check if this is a prefab event
+    pub fn is_prefab(&self) -> bool {
+        matches!(self, ReloadEvent::Prefab(_))
+    }
+
+    /// Check if this is a model event
+    pub fn is_model(&self) -> bool {
+        matches!(self, ReloadEvent::Model(_))
+    }
+}
+
+impl std::fmt::Display for ReloadEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}: {}", self.icon(), self.type_name(), self.path().display())
+    }
+}
+
+/// Statistics about file watcher events
+#[derive(Debug, Clone, Default)]
+pub struct WatcherStats {
+    /// Total number of events received
+    pub total_events: usize,
+    /// Number of material events
+    pub material_events: usize,
+    /// Number of texture events
+    pub texture_events: usize,
+    /// Number of prefab events
+    pub prefab_events: usize,
+    /// Number of model events
+    pub model_events: usize,
+}
+
+impl WatcherStats {
+    /// Increment stats for an event type
+    pub fn record_event(&mut self, event: &ReloadEvent) {
+        self.total_events += 1;
+        match event {
+            ReloadEvent::Material(_) => self.material_events += 1,
+            ReloadEvent::Texture(_) => self.texture_events += 1,
+            ReloadEvent::Prefab(_) => self.prefab_events += 1,
+            ReloadEvent::Model(_) => self.model_events += 1,
+        }
+    }
+
+    /// Get the most common event type
+    pub fn most_common_type(&self) -> Option<&'static str> {
+        let counts = [
+            (self.material_events, "Material"),
+            (self.texture_events, "Texture"),
+            (self.prefab_events, "Prefab"),
+            (self.model_events, "Model"),
+        ];
+        counts.into_iter()
+            .filter(|(c, _)| *c > 0)
+            .max_by_key(|(c, _)| *c)
+            .map(|(_, name)| name)
+    }
+
+    /// Get events per type as percentages
+    pub fn type_percentages(&self) -> [f32; 4] {
+        if self.total_events == 0 {
+            return [0.0; 4];
+        }
+        let total = self.total_events as f32;
+        [
+            self.material_events as f32 / total * 100.0,
+            self.texture_events as f32 / total * 100.0,
+            self.prefab_events as f32 / total * 100.0,
+            self.model_events as f32 / total * 100.0,
+        ]
+    }
+
+    /// Reset all counters
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
 /// File watcher state with debouncing
 pub struct FileWatcher {
     /// notify watcher (keeps thread alive)
@@ -125,6 +244,76 @@ impl FileWatcher {
     /// Try to receive a reload event (non-blocking)
     pub fn try_recv(&self) -> Result<ReloadEvent, std::sync::mpsc::TryRecvError> {
         self.receiver.try_recv()
+    }
+
+    /// Receive all pending events (non-blocking)
+    pub fn drain_events(&self) -> Vec<ReloadEvent> {
+        let mut events = Vec::new();
+        while let Ok(event) = self.receiver.try_recv() {
+            events.push(event);
+        }
+        events
+    }
+
+    /// Receive all pending events and update stats (non-blocking)
+    pub fn drain_events_with_stats(&self, stats: &mut WatcherStats) -> Vec<ReloadEvent> {
+        let events = self.drain_events();
+        for event in &events {
+            stats.record_event(event);
+        }
+        events
+    }
+
+    /// Filter pending events by type
+    pub fn drain_events_filtered<F>(&self, predicate: F) -> Vec<ReloadEvent>
+    where
+        F: Fn(&ReloadEvent) -> bool,
+    {
+        self.drain_events().into_iter().filter(predicate).collect()
+    }
+
+    /// Get only material events
+    pub fn drain_material_events(&self) -> Vec<PathBuf> {
+        self.drain_events()
+            .into_iter()
+            .filter_map(|e| match e {
+                ReloadEvent::Material(p) => Some(p),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Get only texture events
+    pub fn drain_texture_events(&self) -> Vec<PathBuf> {
+        self.drain_events()
+            .into_iter()
+            .filter_map(|e| match e {
+                ReloadEvent::Texture(p) => Some(p),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Get only prefab events
+    pub fn drain_prefab_events(&self) -> Vec<PathBuf> {
+        self.drain_events()
+            .into_iter()
+            .filter_map(|e| match e {
+                ReloadEvent::Prefab(p) => Some(p),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Get only model events
+    pub fn drain_model_events(&self) -> Vec<PathBuf> {
+        self.drain_events()
+            .into_iter()
+            .filter_map(|e| match e {
+                ReloadEvent::Model(p) => Some(p),
+                _ => None,
+            })
+            .collect()
     }
 
     /// Handle notify event (called from watcher thread)
@@ -368,5 +557,157 @@ mod tests {
 
         // Cleanup
         fs::remove_dir_all(&temp_dir).ok();
+    }
+
+    // === New ReloadEvent tests ===
+
+    #[test]
+    fn test_reload_event_path() {
+        let path = PathBuf::from("test/material.toml");
+        let event = ReloadEvent::Material(path.clone());
+        assert_eq!(event.path(), path.as_path());
+    }
+
+    #[test]
+    fn test_reload_event_type_names() {
+        assert_eq!(ReloadEvent::Material(PathBuf::new()).type_name(), "Material");
+        assert_eq!(ReloadEvent::Texture(PathBuf::new()).type_name(), "Texture");
+        assert_eq!(ReloadEvent::Prefab(PathBuf::new()).type_name(), "Prefab");
+        assert_eq!(ReloadEvent::Model(PathBuf::new()).type_name(), "Model");
+    }
+
+    #[test]
+    fn test_reload_event_icons_not_empty() {
+        assert!(!ReloadEvent::Material(PathBuf::new()).icon().is_empty());
+        assert!(!ReloadEvent::Texture(PathBuf::new()).icon().is_empty());
+        assert!(!ReloadEvent::Prefab(PathBuf::new()).icon().is_empty());
+        assert!(!ReloadEvent::Model(PathBuf::new()).icon().is_empty());
+    }
+
+    #[test]
+    fn test_reload_event_is_material() {
+        let event = ReloadEvent::Material(PathBuf::new());
+        assert!(event.is_material());
+        assert!(!event.is_texture());
+        assert!(!event.is_prefab());
+        assert!(!event.is_model());
+    }
+
+    #[test]
+    fn test_reload_event_is_texture() {
+        let event = ReloadEvent::Texture(PathBuf::new());
+        assert!(!event.is_material());
+        assert!(event.is_texture());
+        assert!(!event.is_prefab());
+        assert!(!event.is_model());
+    }
+
+    #[test]
+    fn test_reload_event_is_prefab() {
+        let event = ReloadEvent::Prefab(PathBuf::new());
+        assert!(!event.is_material());
+        assert!(!event.is_texture());
+        assert!(event.is_prefab());
+        assert!(!event.is_model());
+    }
+
+    #[test]
+    fn test_reload_event_is_model() {
+        let event = ReloadEvent::Model(PathBuf::new());
+        assert!(!event.is_material());
+        assert!(!event.is_texture());
+        assert!(!event.is_prefab());
+        assert!(event.is_model());
+    }
+
+    #[test]
+    fn test_reload_event_display() {
+        let event = ReloadEvent::Material(PathBuf::from("test.toml"));
+        let display = format!("{}", event);
+        assert!(display.contains("Material"));
+        assert!(display.contains("test.toml"));
+    }
+
+    // === WatcherStats tests ===
+
+    #[test]
+    fn test_watcher_stats_default() {
+        let stats = WatcherStats::default();
+        assert_eq!(stats.total_events, 0);
+        assert_eq!(stats.material_events, 0);
+        assert_eq!(stats.texture_events, 0);
+        assert_eq!(stats.prefab_events, 0);
+        assert_eq!(stats.model_events, 0);
+    }
+
+    #[test]
+    fn test_watcher_stats_record_event() {
+        let mut stats = WatcherStats::default();
+        
+        stats.record_event(&ReloadEvent::Material(PathBuf::new()));
+        assert_eq!(stats.total_events, 1);
+        assert_eq!(stats.material_events, 1);
+        
+        stats.record_event(&ReloadEvent::Texture(PathBuf::new()));
+        assert_eq!(stats.total_events, 2);
+        assert_eq!(stats.texture_events, 1);
+        
+        stats.record_event(&ReloadEvent::Prefab(PathBuf::new()));
+        assert_eq!(stats.prefab_events, 1);
+        
+        stats.record_event(&ReloadEvent::Model(PathBuf::new()));
+        assert_eq!(stats.model_events, 1);
+        assert_eq!(stats.total_events, 4);
+    }
+
+    #[test]
+    fn test_watcher_stats_most_common_type() {
+        let mut stats = WatcherStats::default();
+        assert!(stats.most_common_type().is_none());
+        
+        stats.material_events = 5;
+        stats.texture_events = 3;
+        stats.total_events = 8;
+        
+        assert_eq!(stats.most_common_type(), Some("Material"));
+    }
+
+    #[test]
+    fn test_watcher_stats_type_percentages() {
+        let mut stats = WatcherStats::default();
+        
+        let percentages = stats.type_percentages();
+        assert_eq!(percentages, [0.0, 0.0, 0.0, 0.0]);
+        
+        stats.total_events = 10;
+        stats.material_events = 5;
+        stats.texture_events = 3;
+        stats.prefab_events = 1;
+        stats.model_events = 1;
+        
+        let percentages = stats.type_percentages();
+        assert!((percentages[0] - 50.0).abs() < 0.1);  // Material 50%
+        assert!((percentages[1] - 30.0).abs() < 0.1);  // Texture 30%
+        assert!((percentages[2] - 10.0).abs() < 0.1);  // Prefab 10%
+        assert!((percentages[3] - 10.0).abs() < 0.1);  // Model 10%
+    }
+
+    #[test]
+    fn test_watcher_stats_reset() {
+        let mut stats = WatcherStats {
+            total_events: 10,
+            material_events: 5,
+            texture_events: 3,
+            prefab_events: 1,
+            model_events: 1,
+        };
+        
+        stats.reset();
+        
+        assert_eq!(stats.total_events, 0);
+        assert_eq!(stats.material_events, 0);
+        assert_eq!(stats.texture_events, 0);
+        assert_eq!(stats.prefab_events, 0);
+        assert_eq!(stats.model_events, 0);
     }
 }

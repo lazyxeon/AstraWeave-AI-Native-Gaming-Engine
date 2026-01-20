@@ -465,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_consolidation_strategy() {
-        let strategies = vec![
+        let strategies = [
             ConsolidationStrategy::Importance,
             ConsolidationStrategy::Recency,
             ConsolidationStrategy::Similarity,
@@ -498,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_injection_strategies() {
-        let strategies = vec![
+        let strategies = [
             InjectionStrategy::Prepend,
             InjectionStrategy::Append,
             InjectionStrategy::Insert,

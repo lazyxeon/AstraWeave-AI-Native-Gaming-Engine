@@ -629,6 +629,8 @@ pub fn show_settings_menu(
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
+#[allow(clippy::redundant_closure)]
 mod tests {
     use super::*;
 

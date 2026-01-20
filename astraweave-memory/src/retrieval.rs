@@ -751,7 +751,7 @@ mod tests {
         };
         
         let relevance = engine.calculate_relevance(&context, &memory).unwrap();
-        assert!(relevance >= 0.0 && relevance <= 1.0);
+        assert!((0.0..=1.0).contains(&relevance));
     }
 
     #[test]

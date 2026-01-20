@@ -18,18 +18,21 @@ fn should_not_panic<F: FnOnce() + panic::UnwindSafe>(name: &str, f: F) {
 
 // Define test components (no need to implement Component - blanket impl exists)
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 struct Position {
     x: f32,
     y: f32,
 }
 
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 struct Velocity {
     vx: f32,
     vy: f32,
 }
 
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 struct Health(i32);
 
 /// Helper to spawn entity with a component using spawn + insert

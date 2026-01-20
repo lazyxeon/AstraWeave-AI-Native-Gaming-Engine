@@ -131,9 +131,9 @@ mod tests {
 
     #[test]
     fn test_rhai_to_json_f64() {
-        let d = Dynamic::from(3.14_f64);
+        let d = Dynamic::from(3.25_f64);
         let json = rhai_to_json(&d).unwrap();
-        assert_eq!(json, serde_json::Value::from(3.14));
+        assert_eq!(json, serde_json::Value::from(3.25));
     }
 
     #[test]
@@ -160,10 +160,11 @@ mod tests {
 
     #[test]
     fn test_rhai_to_json_array() {
-        let mut arr = rhai::Array::new();
-        arr.push(Dynamic::from(1_i64));
-        arr.push(Dynamic::from(2_i64));
-        arr.push(Dynamic::from(3_i64));
+        let arr: rhai::Array = vec![
+            Dynamic::from(1_i64),
+            Dynamic::from(2_i64),
+            Dynamic::from(3_i64),
+        ];
         let d = Dynamic::from(arr);
         
         let json = rhai_to_json(&d).unwrap();

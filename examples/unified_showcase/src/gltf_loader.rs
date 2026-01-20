@@ -316,8 +316,7 @@ mod tests {
     fn test_load_demo_plane() {
         // This test requires the demo_plane.gltf file to exist
         let result = load_gltf("../../assets/demo_plane.gltf");
-        if result.is_ok() {
-            let meshes = result.unwrap();
+        if let Ok(meshes) = result {
             assert!(!meshes.is_empty(), "Should have meshes");
             let mesh = &meshes[0];
             assert!(!mesh.vertices.is_empty(), "Should have vertices");

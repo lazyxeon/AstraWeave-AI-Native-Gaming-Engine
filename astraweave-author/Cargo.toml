@@ -10,3 +10,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 rhai = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "author_adversarial"
+harness = false

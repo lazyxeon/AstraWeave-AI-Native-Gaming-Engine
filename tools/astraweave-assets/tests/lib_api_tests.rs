@@ -5,7 +5,6 @@ use astraweave_assets::{AssetManifest, TextureAsset};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tempfile::TempDir;
-use tokio;
 
 /// Helper to create a minimal test manifest
 fn create_test_manifest(temp_dir: &TempDir) -> (PathBuf, AssetManifest) {
@@ -462,7 +461,7 @@ async fn test_ensure_asset_return_type_consistency() {
         Err(e) => {
             // Verify it's an anyhow::Error
             let _error_string = e.to_string();
-            assert!(true, "Error type is anyhow::Error");
+            // Error was returned - this is valid for network failure
         }
     }
 }

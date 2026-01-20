@@ -35,7 +35,7 @@ fn assert_listener_valid(pose: &ListenerPose, context: &str) {
 /// CORRECTNESS: Validate volume is in valid range
 #[inline]
 fn assert_volume_valid(volume: f32, context: &str) {
-    assert!(volume >= 0.0 && volume <= 1.0,
+    assert!((0.0..=1.0).contains(&volume),
         "[CORRECTNESS FAILURE] {}: volume out of range [0,1]: {}", context, volume);
     assert!(volume.is_finite(),
         "[CORRECTNESS FAILURE] {}: volume non-finite: {}", context, volume);

@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_context::{
     ContextWindow, ContextWindowConfig, WindowType, Role, Message,
     MultiAgentContextManager, RoutingConfig, RoutingRule

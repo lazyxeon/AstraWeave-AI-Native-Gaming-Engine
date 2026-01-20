@@ -159,9 +159,9 @@ mod tests {
     }
 
     #[derive(Clone)]
+    #[allow(dead_code)]
     struct WithDrop {
         value: i32,
-        #[allow(dead_code)]
         data: Vec<u8>,
     }
 

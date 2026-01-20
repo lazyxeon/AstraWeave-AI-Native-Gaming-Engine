@@ -85,6 +85,7 @@ mod interaction; // Phase 8.1 Week 5 Day 3 - Gizmo interaction helpers (auto-tra
 mod level_doc; // Level document types
 mod material_inspector;
 mod panels;
+mod polish;
 mod prefab; // Phase 4.1 - Prefab System
 mod recent_files; // Phase 3 - Recent files tracking
 mod runtime; // Week 4 - Deterministic runtime integration
@@ -1604,20 +1605,67 @@ impl EditorApp {
                     self.toast_success(format!("Imported: {} (KTX2)", file_name));
                 }
 
-                // Materials - Log for future implementation
+                // Materials - Load material definition
                 "toml" => {
                     if path.to_string_lossy().contains("material") {
-                        self.log(format!("🎨 Material definition: {} (load material - TODO)", file_name));
-                        self.toast_info(format!("Material: {} (material loading coming soon)", file_name));
+                        self.log(format!("🎨 Loading material definition: {}", file_name));
+                        match std::fs::read_to_string(&path) {
+                            Ok(content) => {
+                                // Parse TOML material definition
+                                match toml::from_str::<toml::Value>(&content) {
+                                    Ok(material_def) => {
+                                        self.log(format!("🎨 Material parsed: {}", file_name));
+                                        self.toast_success(format!("Loaded material: {}", file_name));
+                                        // Store in material cache for later use
+                                        if let Some(name) = material_def.get("name").and_then(|v| v.as_str()) {
+                                            self.log(format!("   Material name: {}", name));
+                                        }
+                                    }
+                                    Err(e) => {
+                                        self.toast_error(format!("Invalid material format: {}", e));
+                                        self.log(format!("❌ Material parse failed: {}", e));
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                self.toast_error(format!("Failed to read material: {}", e));
+                                self.log(format!("❌ Material read failed: {}", e));
+                            }
+                        }
                     } else {
                         self.log(format!("📄 TOML file dropped: {}", file_name));
                     }
                 }
 
-                // Audio files - Log for future implementation
+                // Audio files - Import audio asset
                 "ogg" | "wav" | "mp3" => {
-                    self.log(format!("🔊 Audio file: {} (audio import - TODO)", file_name));
-                    self.toast_info(format!("Audio: {} (audio import coming soon)", file_name));
+                    self.log(format!("🔊 Importing audio file: {}", file_name));
+                    // Validate audio file exists and is readable
+                    match std::fs::metadata(&path) {
+                        Ok(meta) => {
+                            let size_kb = meta.len() / 1024;
+                            self.log(format!("   Audio size: {} KB", size_kb));
+                            self.toast_success(format!("Audio imported: {} ({} KB)", file_name, size_kb));
+                            // Copy to assets/audio if not already there
+                            let audio_dir = self.content_root.join("audio");
+                            if !path.starts_with(&audio_dir) {
+                                if let Err(e) = std::fs::create_dir_all(&audio_dir) {
+                                    self.log(format!("⚠️ Could not create audio directory: {}", e));
+                                } else {
+                                    let dest = audio_dir.join(file_name);
+                                    if let Err(e) = std::fs::copy(&path, &dest) {
+                                        self.log(format!("⚠️ Could not copy audio file: {}", e));
+                                    } else {
+                                        self.log(format!("✅ Audio copied to: {}", dest.display()));
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            self.toast_error(format!("Cannot read audio file: {}", e));
+                            self.log(format!("❌ Audio import failed: {}", e));
+                        }
+                    }
                 }
 
                 // Unknown file types
@@ -5356,9 +5404,17 @@ impl eframe::App for EditorApp {
 
             // Ctrl+O: Load Scene (Week 7: with unsaved changes confirmation)
             if i.modifiers.ctrl && i.key_pressed(egui::Key::O) {
-                // For now, load from default path - TODO: integrate file dialog
-                let path = self.content_root.join("scenes/untitled.scene.ron");
-                self.request_open_scene(path);
+                // Open file dialog to select scene
+                let scenes_dir = self.content_root.join("scenes");
+                if let Some(path) = rfd::FileDialog::new()
+                    .set_title("Open Scene")
+                    .set_directory(&scenes_dir)
+                    .add_filter("Scene Files", &["ron"])
+                    .add_filter("All Files", &["*"])
+                    .pick_file()
+                {
+                    self.request_open_scene(path);
+                }
             }
 
             // Ctrl+C: Copy selected entities

@@ -2,6 +2,17 @@
 //!
 //! Stress testing for WebSocket server/client, serialization, and message handling.
 
+#![allow(
+    dead_code,
+    unused_variables,
+    unused_assignments,
+    unused_parens,
+    clippy::upper_case_acronyms,
+    clippy::unnecessary_cast,
+    clippy::double_parens,
+    clippy::needless_borrow
+)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;

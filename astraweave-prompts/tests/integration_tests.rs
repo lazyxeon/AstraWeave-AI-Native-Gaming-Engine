@@ -1,5 +1,7 @@
-/// Integration tests for astraweave-prompts crate
-/// Tests complete workflows and public API usage patterns
+//! Integration tests for astraweave-prompts crate
+//! Tests complete workflows and public API usage patterns
+
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
     ContextValue, PromptContext, PromptLibrary, PromptTemplate, TemplateEngine,
@@ -554,7 +556,7 @@ fn test_template_with_metadata() {
 
 #[test]
 fn test_template_category_variants() {
-    let categories = vec![
+    let categories = [
         TemplateCategory::Dialogue,
         TemplateCategory::Behavior,
         TemplateCategory::Narrative,

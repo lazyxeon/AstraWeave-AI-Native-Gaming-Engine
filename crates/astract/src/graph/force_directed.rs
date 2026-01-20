@@ -308,9 +308,11 @@ mod tests {
 
     #[test]
     fn test_layout_convergence() {
-        let mut params = ForceDirectedParams::default();
-        params.max_iterations = 100; // Fewer iterations
-        params.threshold = 5.0; // Looser threshold
+        let params = ForceDirectedParams {
+            max_iterations: 100,
+            threshold: 5.0,
+            ..Default::default()
+        };
 
         let layout = ForceDirectedLayout::new(params);
         let nodes = vec![1u32, 2, 3, 4];

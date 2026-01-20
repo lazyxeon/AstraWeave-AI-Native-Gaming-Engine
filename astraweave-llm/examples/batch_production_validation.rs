@@ -68,7 +68,7 @@ async fn run_validation_tests(
 
     let start = Instant::now();
     let results1 = fallback
-        .plan_batch_with_fallback(client, agents1, &reg)
+        .plan_batch_with_fallback(client, agents1, reg)
         .await;
     let elapsed1 = start.elapsed();
 
@@ -89,7 +89,7 @@ async fn run_validation_tests(
 
     let start = Instant::now();
     let results5 = fallback
-        .plan_batch_with_fallback(client, agents5.clone(), &reg)
+        .plan_batch_with_fallback(client, agents5.clone(), reg)
         .await;
     let elapsed5 = start.elapsed();
 
@@ -114,7 +114,7 @@ async fn run_validation_tests(
 
     let start = Instant::now();
     let results10 = fallback
-        .plan_batch_with_fallback(client, agents10.clone(), &reg)
+        .plan_batch_with_fallback(client, agents10.clone(), reg)
         .await;
     let elapsed10 = start.elapsed();
 
@@ -139,7 +139,7 @@ async fn run_validation_tests(
     for run in 1..=3 {
         println!("Run {}/3...", run);
         let results = fallback
-            .plan_batch_with_fallback(client, agents5.clone(), &reg)
+            .plan_batch_with_fallback(client, agents5.clone(), reg)
             .await;
         let agent_ids: Vec<_> = results.keys().copied().collect();
         run_results.push(agent_ids);

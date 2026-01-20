@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn test_chunk_id_clone_and_copy() {
         let id = ChunkId::new(10, 20);
-        let cloned = id.clone();
+        let cloned = id;
         let copied = id; // Copy trait
 
         assert_eq!(id, cloned);

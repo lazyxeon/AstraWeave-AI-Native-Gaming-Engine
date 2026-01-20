@@ -402,9 +402,11 @@ mod tests {
     #[tokio::test]
     async fn test_force_load_cell_uses_lru_fast_path() {
         let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
-        let mut cfg = StreamingConfig::default();
-        cfg.streaming_radius = 0.1;
-        cfg.max_concurrent_loads = 1;
+        let cfg = StreamingConfig {
+            streaming_radius: 0.1,
+            max_concurrent_loads: 1,
+            ..Default::default()
+        };
 
         let mut mgr = WorldPartitionManager::new(Arc::clone(&partition), cfg);
         let coord = GridCoord::new(0, 0, 0);
@@ -430,9 +432,11 @@ mod tests {
     #[tokio::test]
     async fn test_update_unloads_active_cells_out_of_range_and_emits_events() {
         let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
-        let mut cfg = StreamingConfig::default();
-        cfg.streaming_radius = 0.1;
-        cfg.max_concurrent_loads = 1;
+        let cfg = StreamingConfig {
+            streaming_radius: 0.1,
+            max_concurrent_loads: 1,
+            ..Default::default()
+        };
 
         let mut mgr = WorldPartitionManager::new(Arc::clone(&partition), cfg);
 

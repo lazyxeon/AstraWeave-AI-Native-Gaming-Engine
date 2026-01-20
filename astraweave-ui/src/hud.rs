@@ -2685,6 +2685,9 @@ impl HudManager {
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
+#[allow(clippy::manual_range_contains)]
+#[allow(clippy::redundant_closure)]
 mod tests {
     use super::*;
 

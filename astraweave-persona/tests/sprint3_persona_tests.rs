@@ -105,7 +105,7 @@ async fn test_update_mood() {
     
     // Negative interaction should decrease mood
     manager.generate_response("This is terrible, I hate it.", None).await.unwrap();
-    let state = manager.get_persona_state().await;
+    let _state = manager.get_persona_state().await;
     // Note: exact value depends on implementation details, but should be lower
     // The implementation clamps between -1.0 and 1.0
 }
@@ -832,12 +832,14 @@ async fn test_multiple_personality_evolutions() {
 async fn test_base_persona_integration() {
     use astraweave_memory::Persona as BasePersona;
     
-    let mut base = BasePersona::default();
-    base.tone = "mysterious".to_string();
-    base.voice = "Oracle".to_string();
-    base.humor = "dry".to_string();
-    base.risk = "calculated".to_string();
-    base.backstory = "Ancient guardian of knowledge".to_string();
+    let base = BasePersona {
+        tone: "mysterious".to_string(),
+        voice: "Oracle".to_string(),
+        humor: "dry".to_string(),
+        risk: "calculated".to_string(),
+        backstory: "Ancient guardian of knowledge".to_string(),
+        ..Default::default()
+    };
     
     let llm_client = Arc::new(MockLlm);
     let embedding_client = Arc::new(MockEmbeddingClient::new());

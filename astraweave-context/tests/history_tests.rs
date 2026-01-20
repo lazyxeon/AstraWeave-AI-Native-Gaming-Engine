@@ -1,7 +1,10 @@
-/// ConversationHistory Integration Tests
-///
-/// Sprint: Phase 8.7 LLM Testing Sprint 1
-/// Day 2-3: 15 tests for ConversationHistory core functionality
+//! ConversationHistory Integration Tests
+//!
+//! Sprint: Phase 8.7 LLM Testing Sprint 1
+//! Day 2-3: 15 tests for ConversationHistory core functionality
+
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_context::{ContextConfig, ConversationHistory, Message, OverflowStrategy, Role};
 use astraweave_llm::MockLlm;
 use std::collections::HashMap;
@@ -109,7 +112,7 @@ async fn test_get_total_tokens() {
     // Should have positive token count
     assert!(total_tokens > 0);
     // Should be roughly proportional to content length (5-10 tokens + 15-20 tokens ≈ 20-30 tokens)
-    assert!(total_tokens >= 10 && total_tokens <= 50);
+    assert!((10..=50).contains(&total_tokens));
 }
 
 #[tokio::test]
@@ -161,7 +164,7 @@ async fn test_truncate_start_pruning() {
     assert!(messages.len() <= 10, "Should have pruned some messages");
 
     // Verify messages exist
-    assert!(messages.len() > 0, "Should have some messages remaining");
+    assert!(!messages.is_empty(), "Should have some messages remaining");
 }
 
 #[tokio::test]
@@ -188,7 +191,7 @@ async fn test_truncate_middle_pruning() {
         messages.len() <= 12,
         "Should have pruned or kept within limit"
     );
-    assert!(messages.len() > 0, "Should have some messages");
+    assert!(!messages.is_empty(), "Should have some messages");
 }
 
 #[tokio::test]
@@ -389,7 +392,8 @@ async fn test_metrics_tracking() {
     assert_eq!(metrics.total_messages, 5);
     assert!(metrics.current_tokens > 0);
     assert!(metrics.avg_message_tokens > 0.0);
-    assert!(metrics.processing_time_ms >= 0);
+    // processing_time_ms is u64, always >= 0 by type
+    let _ = metrics.processing_time_ms;
 }
 
 // ============================================================================

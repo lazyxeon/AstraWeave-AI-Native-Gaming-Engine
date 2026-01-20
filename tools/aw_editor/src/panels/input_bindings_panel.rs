@@ -1,0 +1,1354 @@
+//! Input Bindings Panel for the editor UI
+//!
+//! Provides comprehensive input configuration:
+//! - Keyboard/mouse/gamepad binding editor
+//! - Action categories (Movement, Combat, UI, etc.)
+//! - Preset management (default, FPS, third-person, etc.)
+//! - Axis configuration (deadzone, sensitivity, invert)
+//! - Input testing and visualization
+//! - Conflict detection
+
+#![allow(clippy::upper_case_acronyms)] // FPS, RTS are industry-standard acronyms
+
+use egui::{Color32, RichText, Ui, Vec2};
+
+use crate::panels::Panel;
+
+/// Input device type
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum InputDevice {
+    #[default]
+    Keyboard,
+    Mouse,
+    Gamepad,
+    All,
+}
+
+impl InputDevice {
+    pub fn all() -> &'static [InputDevice] {
+        &[
+            InputDevice::Keyboard,
+            InputDevice::Mouse,
+            InputDevice::Gamepad,
+            InputDevice::All,
+        ]
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            InputDevice::Keyboard => "⌨️",
+            InputDevice::Mouse => "🖱️",
+            InputDevice::Gamepad => "🎮",
+            InputDevice::All => "🔧",
+        }
+    }
+}
+
+/// Action category for grouping
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ActionCategory {
+    #[default]
+    Movement,
+    Combat,
+    Interaction,
+    UI,
+    Camera,
+    Vehicle,
+    Debug,
+}
+
+impl ActionCategory {
+    pub fn all() -> &'static [ActionCategory] {
+        &[
+            ActionCategory::Movement,
+            ActionCategory::Combat,
+            ActionCategory::Interaction,
+            ActionCategory::UI,
+            ActionCategory::Camera,
+            ActionCategory::Vehicle,
+            ActionCategory::Debug,
+        ]
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ActionCategory::Movement => "🚶",
+            ActionCategory::Combat => "⚔️",
+            ActionCategory::Interaction => "🤝",
+            ActionCategory::UI => "📋",
+            ActionCategory::Camera => "📷",
+            ActionCategory::Vehicle => "🚗",
+            ActionCategory::Debug => "🐛",
+        }
+    }
+}
+
+/// Binding preset
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum BindingPreset {
+    #[default]
+    Default,
+    FPS,
+    ThirdPerson,
+    RTS,
+    Racing,
+    LeftHanded,
+    Custom,
+}
+
+impl BindingPreset {
+    pub fn all() -> &'static [BindingPreset] {
+        &[
+            BindingPreset::Default,
+            BindingPreset::FPS,
+            BindingPreset::ThirdPerson,
+            BindingPreset::RTS,
+            BindingPreset::Racing,
+            BindingPreset::LeftHanded,
+            BindingPreset::Custom,
+        ]
+    }
+}
+
+/// Gamepad button representation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GamepadButton {
+    South,      // A (Xbox), X (PlayStation)
+    East,       // B (Xbox), Circle (PlayStation)
+    West,       // X (Xbox), Square (PlayStation)
+    North,      // Y (Xbox), Triangle (PlayStation)
+    L1,
+    R1,
+    L2,
+    R2,
+    Select,
+    Start,
+    LStick,
+    RStick,
+    DPadUp,
+    DPadDown,
+    DPadLeft,
+    DPadRight,
+}
+
+impl GamepadButton {
+    pub fn all() -> &'static [GamepadButton] {
+        &[
+            GamepadButton::South,
+            GamepadButton::East,
+            GamepadButton::West,
+            GamepadButton::North,
+            GamepadButton::L1,
+            GamepadButton::R1,
+            GamepadButton::L2,
+            GamepadButton::R2,
+            GamepadButton::Select,
+            GamepadButton::Start,
+            GamepadButton::LStick,
+            GamepadButton::RStick,
+            GamepadButton::DPadUp,
+            GamepadButton::DPadDown,
+            GamepadButton::DPadLeft,
+            GamepadButton::DPadRight,
+        ]
+    }
+
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            GamepadButton::South => "A / ✕",
+            GamepadButton::East => "B / ○",
+            GamepadButton::West => "X / □",
+            GamepadButton::North => "Y / △",
+            GamepadButton::L1 => "LB / L1",
+            GamepadButton::R1 => "RB / R1",
+            GamepadButton::L2 => "LT / L2",
+            GamepadButton::R2 => "RT / R2",
+            GamepadButton::Select => "Select",
+            GamepadButton::Start => "Start",
+            GamepadButton::LStick => "L3",
+            GamepadButton::RStick => "R3",
+            GamepadButton::DPadUp => "D-Up",
+            GamepadButton::DPadDown => "D-Down",
+            GamepadButton::DPadLeft => "D-Left",
+            GamepadButton::DPadRight => "D-Right",
+        }
+    }
+}
+
+/// Common keyboard key representation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum KeyboardKey {
+    // Letters
+    A, B, C, D, E, F, G, H, I, J, K, L, M,
+    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    // Numbers
+    Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8, Key9, Key0,
+    // Function keys
+    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+    // Modifiers
+    ShiftLeft, ShiftRight, CtrlLeft, CtrlRight, AltLeft, AltRight,
+    // Special
+    Space, Enter, Escape, Tab, Backspace,
+    // Arrow keys
+    ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+    // Other
+    Insert, Delete, Home, End, PageUp, PageDown,
+}
+
+impl KeyboardKey {
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            KeyboardKey::A => "A", KeyboardKey::B => "B", KeyboardKey::C => "C",
+            KeyboardKey::D => "D", KeyboardKey::E => "E", KeyboardKey::F => "F",
+            KeyboardKey::G => "G", KeyboardKey::H => "H", KeyboardKey::I => "I",
+            KeyboardKey::J => "J", KeyboardKey::K => "K", KeyboardKey::L => "L",
+            KeyboardKey::M => "M", KeyboardKey::N => "N", KeyboardKey::O => "O",
+            KeyboardKey::P => "P", KeyboardKey::Q => "Q", KeyboardKey::R => "R",
+            KeyboardKey::S => "S", KeyboardKey::T => "T", KeyboardKey::U => "U",
+            KeyboardKey::V => "V", KeyboardKey::W => "W", KeyboardKey::X => "X",
+            KeyboardKey::Y => "Y", KeyboardKey::Z => "Z",
+            KeyboardKey::Key1 => "1", KeyboardKey::Key2 => "2", KeyboardKey::Key3 => "3",
+            KeyboardKey::Key4 => "4", KeyboardKey::Key5 => "5", KeyboardKey::Key6 => "6",
+            KeyboardKey::Key7 => "7", KeyboardKey::Key8 => "8", KeyboardKey::Key9 => "9",
+            KeyboardKey::Key0 => "0",
+            KeyboardKey::F1 => "F1", KeyboardKey::F2 => "F2", KeyboardKey::F3 => "F3",
+            KeyboardKey::F4 => "F4", KeyboardKey::F5 => "F5", KeyboardKey::F6 => "F6",
+            KeyboardKey::F7 => "F7", KeyboardKey::F8 => "F8", KeyboardKey::F9 => "F9",
+            KeyboardKey::F10 => "F10", KeyboardKey::F11 => "F11", KeyboardKey::F12 => "F12",
+            KeyboardKey::ShiftLeft => "L-Shift", KeyboardKey::ShiftRight => "R-Shift",
+            KeyboardKey::CtrlLeft => "L-Ctrl", KeyboardKey::CtrlRight => "R-Ctrl",
+            KeyboardKey::AltLeft => "L-Alt", KeyboardKey::AltRight => "R-Alt",
+            KeyboardKey::Space => "Space", KeyboardKey::Enter => "Enter",
+            KeyboardKey::Escape => "Esc", KeyboardKey::Tab => "Tab",
+            KeyboardKey::Backspace => "Backspace",
+            KeyboardKey::ArrowUp => "↑", KeyboardKey::ArrowDown => "↓",
+            KeyboardKey::ArrowLeft => "←", KeyboardKey::ArrowRight => "→",
+            KeyboardKey::Insert => "Ins", KeyboardKey::Delete => "Del",
+            KeyboardKey::Home => "Home", KeyboardKey::End => "End",
+            KeyboardKey::PageUp => "PgUp", KeyboardKey::PageDown => "PgDn",
+        }
+    }
+}
+
+/// Mouse button representation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MouseButton {
+    Left,
+    Right,
+    Middle,
+    Back,
+    Forward,
+}
+
+impl MouseButton {
+    pub fn all() -> &'static [MouseButton] {
+        &[
+            MouseButton::Left,
+            MouseButton::Right,
+            MouseButton::Middle,
+            MouseButton::Back,
+            MouseButton::Forward,
+        ]
+    }
+
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            MouseButton::Left => "Left Click",
+            MouseButton::Right => "Right Click",
+            MouseButton::Middle => "Middle Click",
+            MouseButton::Back => "Mouse 4",
+            MouseButton::Forward => "Mouse 5",
+        }
+    }
+}
+
+/// Action binding configuration
+#[derive(Debug, Clone)]
+pub struct ActionBinding {
+    pub name: String,
+    pub category: ActionCategory,
+    pub description: String,
+    pub keyboard_primary: Option<KeyboardKey>,
+    pub keyboard_secondary: Option<KeyboardKey>,
+    pub mouse_button: Option<MouseButton>,
+    pub gamepad_button: Option<GamepadButton>,
+    pub is_hold: bool,
+    pub is_axis: bool,
+}
+
+impl Default for ActionBinding {
+    fn default() -> Self {
+        Self {
+            name: "Unnamed".to_string(),
+            category: ActionCategory::Movement,
+            description: String::new(),
+            keyboard_primary: None,
+            keyboard_secondary: None,
+            mouse_button: None,
+            gamepad_button: None,
+            is_hold: false,
+            is_axis: false,
+        }
+    }
+}
+
+/// Axis binding configuration
+#[derive(Debug, Clone)]
+pub struct AxisBinding {
+    pub name: String,
+    pub description: String,
+    pub sensitivity: f32,
+    pub deadzone: f32,
+    pub invert: bool,
+    pub smoothing: f32,
+}
+
+impl Default for AxisBinding {
+    fn default() -> Self {
+        Self {
+            name: "Unnamed Axis".to_string(),
+            description: String::new(),
+            sensitivity: 1.0,
+            deadzone: 0.15,
+            invert: false,
+            smoothing: 0.0,
+        }
+    }
+}
+
+/// Binding conflict info
+#[derive(Debug, Clone)]
+pub struct BindingConflict {
+    pub action1: String,
+    pub action2: String,
+    pub device: InputDevice,
+    pub binding: String,
+}
+
+/// Panel tabs
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum InputTab {
+    #[default]
+    Actions,
+    Axes,
+    Gamepad,
+    Testing,
+    Presets,
+}
+
+/// Main Input Bindings Panel
+pub struct InputBindingsPanel {
+    // Tab state
+    active_tab: InputTab,
+
+    // Filter state
+    device_filter: InputDevice,
+    category_filter: Option<ActionCategory>,
+    search_text: String,
+
+    // Binding data
+    actions: Vec<ActionBinding>,
+    axes: Vec<AxisBinding>,
+    conflicts: Vec<BindingConflict>,
+
+    // Preset
+    current_preset: BindingPreset,
+
+    // Editing state
+    editing_action: Option<usize>,
+    waiting_for_input: bool,
+    input_target: Option<InputTarget>,
+
+    // Gamepad settings
+    gamepad_connected: bool,
+    gamepad_name: String,
+    rumble_enabled: bool,
+    rumble_intensity: f32,
+
+    // Mouse settings
+    mouse_sensitivity: f32,
+    mouse_smoothing: f32,
+    mouse_invert_y: bool,
+    mouse_raw_input: bool,
+
+    // Testing state
+    last_input: String,
+    input_history: Vec<String>,
+    test_axis_values: [f32; 4], // Left X, Left Y, Right X, Right Y
+}
+
+impl Default for InputBindingsPanel {
+    fn default() -> Self {
+        Self {
+            active_tab: InputTab::Actions,
+
+            device_filter: InputDevice::All,
+            category_filter: None,
+            search_text: String::new(),
+
+            actions: Self::default_actions(),
+            axes: Self::default_axes(),
+            conflicts: Vec::new(),
+
+            current_preset: BindingPreset::Default,
+
+            editing_action: None,
+            waiting_for_input: false,
+            input_target: None,
+
+            gamepad_connected: false,
+            gamepad_name: "No gamepad detected".to_string(),
+            rumble_enabled: true,
+            rumble_intensity: 1.0,
+
+            mouse_sensitivity: 1.0,
+            mouse_smoothing: 0.0,
+            mouse_invert_y: false,
+            mouse_raw_input: true,
+
+            last_input: String::new(),
+            input_history: Vec::new(),
+            test_axis_values: [0.0; 4],
+        }
+    }
+}
+
+/// What input we're waiting for
+#[derive(Debug, Clone, Copy)]
+pub enum InputTarget {
+    KeyboardPrimary(usize),
+    KeyboardSecondary(usize),
+    MouseButton(usize),
+    GamepadButton(usize),
+}
+
+impl InputBindingsPanel {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn default_actions() -> Vec<ActionBinding> {
+        vec![
+            // Movement
+            ActionBinding {
+                name: "Move Forward".to_string(),
+                category: ActionCategory::Movement,
+                description: "Move the character forward".to_string(),
+                keyboard_primary: Some(KeyboardKey::W),
+                gamepad_button: None,
+                is_hold: true,
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Move Backward".to_string(),
+                category: ActionCategory::Movement,
+                description: "Move the character backward".to_string(),
+                keyboard_primary: Some(KeyboardKey::S),
+                is_hold: true,
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Move Left".to_string(),
+                category: ActionCategory::Movement,
+                description: "Strafe left".to_string(),
+                keyboard_primary: Some(KeyboardKey::A),
+                is_hold: true,
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Move Right".to_string(),
+                category: ActionCategory::Movement,
+                description: "Strafe right".to_string(),
+                keyboard_primary: Some(KeyboardKey::D),
+                is_hold: true,
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Jump".to_string(),
+                category: ActionCategory::Movement,
+                description: "Jump / climb".to_string(),
+                keyboard_primary: Some(KeyboardKey::Space),
+                gamepad_button: Some(GamepadButton::South),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Crouch".to_string(),
+                category: ActionCategory::Movement,
+                description: "Crouch / slide".to_string(),
+                keyboard_primary: Some(KeyboardKey::CtrlLeft),
+                gamepad_button: Some(GamepadButton::RStick),
+                is_hold: true,
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Sprint".to_string(),
+                category: ActionCategory::Movement,
+                description: "Run faster".to_string(),
+                keyboard_primary: Some(KeyboardKey::ShiftLeft),
+                gamepad_button: Some(GamepadButton::LStick),
+                is_hold: true,
+                ..Default::default()
+            },
+            // Combat
+            ActionBinding {
+                name: "Attack".to_string(),
+                category: ActionCategory::Combat,
+                description: "Primary attack".to_string(),
+                mouse_button: Some(MouseButton::Left),
+                gamepad_button: Some(GamepadButton::R2),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Aim".to_string(),
+                category: ActionCategory::Combat,
+                description: "Aim down sights / block".to_string(),
+                mouse_button: Some(MouseButton::Right),
+                gamepad_button: Some(GamepadButton::L2),
+                is_hold: true,
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Reload".to_string(),
+                category: ActionCategory::Combat,
+                description: "Reload weapon".to_string(),
+                keyboard_primary: Some(KeyboardKey::R),
+                gamepad_button: Some(GamepadButton::West),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Ability 1".to_string(),
+                category: ActionCategory::Combat,
+                description: "Use first ability".to_string(),
+                keyboard_primary: Some(KeyboardKey::Q),
+                gamepad_button: Some(GamepadButton::L1),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Ability 2".to_string(),
+                category: ActionCategory::Combat,
+                description: "Use second ability".to_string(),
+                keyboard_primary: Some(KeyboardKey::E),
+                gamepad_button: Some(GamepadButton::R1),
+                ..Default::default()
+            },
+            // Interaction
+            ActionBinding {
+                name: "Interact".to_string(),
+                category: ActionCategory::Interaction,
+                description: "Interact with objects/NPCs".to_string(),
+                keyboard_primary: Some(KeyboardKey::F),
+                gamepad_button: Some(GamepadButton::East),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Use Item".to_string(),
+                category: ActionCategory::Interaction,
+                description: "Use equipped item".to_string(),
+                keyboard_primary: Some(KeyboardKey::G),
+                gamepad_button: Some(GamepadButton::DPadUp),
+                ..Default::default()
+            },
+            // UI
+            ActionBinding {
+                name: "Inventory".to_string(),
+                category: ActionCategory::UI,
+                description: "Open inventory".to_string(),
+                keyboard_primary: Some(KeyboardKey::I),
+                keyboard_secondary: Some(KeyboardKey::Tab),
+                gamepad_button: Some(GamepadButton::Select),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Map".to_string(),
+                category: ActionCategory::UI,
+                description: "Open map".to_string(),
+                keyboard_primary: Some(KeyboardKey::M),
+                gamepad_button: Some(GamepadButton::DPadDown),
+                ..Default::default()
+            },
+            ActionBinding {
+                name: "Pause".to_string(),
+                category: ActionCategory::UI,
+                description: "Pause game".to_string(),
+                keyboard_primary: Some(KeyboardKey::Escape),
+                gamepad_button: Some(GamepadButton::Start),
+                ..Default::default()
+            },
+        ]
+    }
+
+    fn default_axes() -> Vec<AxisBinding> {
+        vec![
+            AxisBinding {
+                name: "Move X".to_string(),
+                description: "Left stick horizontal (strafe)".to_string(),
+                sensitivity: 1.0,
+                deadzone: 0.15,
+                invert: false,
+                smoothing: 0.0,
+            },
+            AxisBinding {
+                name: "Move Y".to_string(),
+                description: "Left stick vertical (forward/back)".to_string(),
+                sensitivity: 1.0,
+                deadzone: 0.15,
+                invert: false,
+                smoothing: 0.0,
+            },
+            AxisBinding {
+                name: "Look X".to_string(),
+                description: "Right stick horizontal (turn)".to_string(),
+                sensitivity: 2.0,
+                deadzone: 0.1,
+                invert: false,
+                smoothing: 0.1,
+            },
+            AxisBinding {
+                name: "Look Y".to_string(),
+                description: "Right stick vertical (pitch)".to_string(),
+                sensitivity: 2.0,
+                deadzone: 0.1,
+                invert: false,
+                smoothing: 0.1,
+            },
+        ]
+    }
+
+    fn show_tab_bar(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            let tabs = [
+                (InputTab::Actions, "⌨️ Actions"),
+                (InputTab::Axes, "🕹️ Axes"),
+                (InputTab::Gamepad, "🎮 Gamepad"),
+                (InputTab::Testing, "🧪 Testing"),
+                (InputTab::Presets, "📋 Presets"),
+            ];
+
+            for (tab, label) in tabs {
+                let is_selected = self.active_tab == tab;
+                let button = egui::Button::new(label).fill(if is_selected {
+                    Color32::from_rgb(60, 100, 160)
+                } else {
+                    Color32::from_rgb(50, 50, 55)
+                });
+
+                if ui.add(button).clicked() {
+                    self.active_tab = tab;
+                }
+            }
+        });
+
+        // Preset indicator
+        ui.horizontal(|ui| {
+            ui.label(format!("Preset: {:?}", self.current_preset));
+            if !self.conflicts.is_empty() {
+                ui.colored_label(
+                    Color32::YELLOW,
+                    format!("⚠ {} conflicts", self.conflicts.len()),
+                );
+            }
+            if self.gamepad_connected {
+                ui.label("🎮 Connected");
+            }
+        });
+
+        ui.separator();
+    }
+
+    fn show_actions_tab(&mut self, ui: &mut Ui) {
+        ui.heading("⌨️ Action Bindings");
+        ui.add_space(5.0);
+
+        // Filters
+        ui.horizontal(|ui| {
+            ui.label("Filter:");
+
+            // Device filter
+            for device in InputDevice::all() {
+                if ui
+                    .selectable_label(
+                        self.device_filter == *device,
+                        format!("{} {:?}", device.icon(), device),
+                    )
+                    .clicked()
+                {
+                    self.device_filter = *device;
+                }
+            }
+
+            ui.separator();
+
+            // Search
+            ui.label("🔍");
+            ui.text_edit_singleline(&mut self.search_text);
+        });
+
+        // Category filter
+        ui.horizontal(|ui| {
+            ui.label("Category:");
+            if ui
+                .selectable_label(self.category_filter.is_none(), "All")
+                .clicked()
+            {
+                self.category_filter = None;
+            }
+            for cat in ActionCategory::all() {
+                if ui
+                    .selectable_label(
+                        self.category_filter == Some(*cat),
+                        format!("{} {:?}", cat.icon(), cat),
+                    )
+                    .clicked()
+                {
+                    self.category_filter = Some(*cat);
+                }
+            }
+        });
+
+        ui.add_space(10.0);
+
+        // Actions list
+        egui::ScrollArea::vertical()
+            .max_height(300.0)
+            .show(ui, |ui| {
+                let filtered_indices: Vec<usize> = self
+                    .actions
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, action)| {
+                        // Category filter
+                        if let Some(cat) = self.category_filter {
+                            if action.category != cat {
+                                return false;
+                            }
+                        }
+                        // Search filter
+                        if !self.search_text.is_empty()
+                            && !action
+                                .name
+                                .to_lowercase()
+                                .contains(&self.search_text.to_lowercase())
+                            {
+                                return false;
+                            }
+                        true
+                    })
+                    .map(|(i, _)| i)
+                    .collect();
+
+                for idx in filtered_indices {
+                    let action = &self.actions[idx];
+                    let is_editing = self.editing_action == Some(idx);
+
+                    ui.group(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(action.category.icon());
+                            ui.label(RichText::new(&action.name).strong());
+
+                            if action.is_hold {
+                                ui.label(RichText::new("[HOLD]").small().color(Color32::GRAY));
+                            }
+                        });
+
+                        ui.horizontal(|ui| {
+                            // Keyboard primary
+                            let kb_text = action
+                                .keyboard_primary
+                                .map(|k| k.display_name())
+                                .unwrap_or("---");
+                            if ui.button(format!("⌨️ {}", kb_text)).clicked() {
+                                self.editing_action = Some(idx);
+                                self.waiting_for_input = true;
+                                self.input_target = Some(InputTarget::KeyboardPrimary(idx));
+                            }
+
+                            // Keyboard secondary
+                            let kb2_text = action
+                                .keyboard_secondary
+                                .map(|k| k.display_name())
+                                .unwrap_or("---");
+                            if ui.button(format!("⌨️ {}", kb2_text)).clicked() {
+                                self.editing_action = Some(idx);
+                                self.waiting_for_input = true;
+                                self.input_target = Some(InputTarget::KeyboardSecondary(idx));
+                            }
+
+                            // Mouse
+                            let mouse_text = action
+                                .mouse_button
+                                .map(|m| m.display_name())
+                                .unwrap_or("---");
+                            if ui.button(format!("🖱️ {}", mouse_text)).clicked() {
+                                self.editing_action = Some(idx);
+                                self.waiting_for_input = true;
+                                self.input_target = Some(InputTarget::MouseButton(idx));
+                            }
+
+                            // Gamepad
+                            let gp_text = action
+                                .gamepad_button
+                                .map(|g| g.display_name())
+                                .unwrap_or("---");
+                            if ui.button(format!("🎮 {}", gp_text)).clicked() {
+                                self.editing_action = Some(idx);
+                                self.waiting_for_input = true;
+                                self.input_target = Some(InputTarget::GamepadButton(idx));
+                            }
+
+                            // Clear button
+                            if ui.small_button("🗑").clicked() {
+                                // Would clear bindings here
+                            }
+                        });
+
+                        if is_editing && self.waiting_for_input {
+                            ui.colored_label(Color32::YELLOW, "⏳ Press a key/button...");
+                        }
+                    });
+                }
+            });
+    }
+
+    fn show_axes_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🕹️ Axis Configuration");
+        ui.add_space(10.0);
+
+        // Mouse settings
+        ui.group(|ui| {
+            ui.label(RichText::new("🖱️ Mouse Settings").strong());
+
+            ui.add(
+                egui::Slider::new(&mut self.mouse_sensitivity, 0.1..=5.0)
+                    .text("Sensitivity")
+                    .logarithmic(true),
+            );
+            ui.add(
+                egui::Slider::new(&mut self.mouse_smoothing, 0.0..=1.0)
+                    .text("Smoothing"),
+            );
+            ui.checkbox(&mut self.mouse_invert_y, "Invert Y axis");
+            ui.checkbox(&mut self.mouse_raw_input, "Raw input (no acceleration)");
+        });
+
+        ui.add_space(10.0);
+
+        // Gamepad axes
+        ui.group(|ui| {
+            ui.label(RichText::new("🎮 Gamepad Axes").strong());
+
+            for axis in &mut self.axes {
+                ui.collapsing(&axis.name, |ui| {
+                    ui.label(&axis.description);
+
+                    ui.add(
+                        egui::Slider::new(&mut axis.sensitivity, 0.1..=5.0)
+                            .text("Sensitivity"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut axis.deadzone, 0.0..=0.5)
+                            .text("Deadzone"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut axis.smoothing, 0.0..=1.0)
+                            .text("Smoothing"),
+                    );
+                    ui.checkbox(&mut axis.invert, "Invert");
+                });
+            }
+        });
+    }
+
+    fn show_gamepad_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🎮 Gamepad Settings");
+        ui.add_space(10.0);
+
+        // Connection status
+        ui.group(|ui| {
+            ui.label(RichText::new("Connection Status").strong());
+
+            if self.gamepad_connected {
+                ui.horizontal(|ui| {
+                    ui.colored_label(Color32::GREEN, "🟢 Connected");
+                    ui.label(&self.gamepad_name);
+                });
+            } else {
+                ui.colored_label(Color32::GRAY, "⚫ No gamepad detected");
+                ui.label("Connect a gamepad to configure it.");
+            }
+
+            if ui.button("🔄 Refresh").clicked() {
+                // Refresh gamepad detection
+            }
+        });
+
+        ui.add_space(10.0);
+
+        // Rumble settings
+        ui.group(|ui| {
+            ui.label(RichText::new("Vibration / Rumble").strong());
+
+            ui.checkbox(&mut self.rumble_enabled, "Enable rumble");
+
+            if self.rumble_enabled {
+                ui.add(
+                    egui::Slider::new(&mut self.rumble_intensity, 0.0..=1.0)
+                        .text("Intensity"),
+                );
+
+                ui.horizontal(|ui| {
+                    if ui.button("Test Light").clicked() {
+                        // Test light rumble
+                    }
+                    if ui.button("Test Heavy").clicked() {
+                        // Test heavy rumble
+                    }
+                });
+            }
+        });
+
+        ui.add_space(10.0);
+
+        // Gamepad visualization
+        ui.group(|ui| {
+            ui.label(RichText::new("Gamepad Visualization").strong());
+
+            self.draw_gamepad_diagram(ui);
+        });
+    }
+
+    fn show_testing_tab(&mut self, ui: &mut Ui) {
+        ui.heading("🧪 Input Testing");
+        ui.add_space(10.0);
+
+        // Last input
+        ui.group(|ui| {
+            ui.label(RichText::new("Last Input").strong());
+
+            if self.last_input.is_empty() {
+                ui.label("Press any key/button to test...");
+            } else {
+                ui.label(
+                    RichText::new(&self.last_input)
+                        .size(24.0)
+                        .color(Color32::from_rgb(100, 200, 255)),
+                );
+            }
+        });
+
+        ui.add_space(10.0);
+
+        // Axis values
+        ui.group(|ui| {
+            ui.label(RichText::new("Axis Values").strong());
+
+            egui::Grid::new("axis_values_grid")
+                .num_columns(2)
+                .spacing([20.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Left Stick X:");
+                    ui.add(
+                        egui::ProgressBar::new((self.test_axis_values[0] + 1.0) / 2.0)
+                            .show_percentage(),
+                    );
+                    ui.end_row();
+
+                    ui.label("Left Stick Y:");
+                    ui.add(
+                        egui::ProgressBar::new((self.test_axis_values[1] + 1.0) / 2.0)
+                            .show_percentage(),
+                    );
+                    ui.end_row();
+
+                    ui.label("Right Stick X:");
+                    ui.add(
+                        egui::ProgressBar::new((self.test_axis_values[2] + 1.0) / 2.0)
+                            .show_percentage(),
+                    );
+                    ui.end_row();
+
+                    ui.label("Right Stick Y:");
+                    ui.add(
+                        egui::ProgressBar::new((self.test_axis_values[3] + 1.0) / 2.0)
+                            .show_percentage(),
+                    );
+                    ui.end_row();
+                });
+        });
+
+        ui.add_space(10.0);
+
+        // Input history
+        ui.group(|ui| {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Input History").strong());
+                if ui.button("Clear").clicked() {
+                    self.input_history.clear();
+                }
+            });
+
+            egui::ScrollArea::vertical()
+                .max_height(100.0)
+                .show(ui, |ui| {
+                    for entry in self.input_history.iter().rev().take(20) {
+                        ui.label(entry);
+                    }
+                    if self.input_history.is_empty() {
+                        ui.label("No input recorded yet.");
+                    }
+                });
+        });
+    }
+
+    fn show_presets_tab(&mut self, ui: &mut Ui) {
+        ui.heading("📋 Binding Presets");
+        ui.add_space(10.0);
+
+        // Current preset
+        ui.group(|ui| {
+            ui.label(RichText::new("Current Preset").strong());
+
+            ui.horizontal_wrapped(|ui| {
+                for preset in BindingPreset::all() {
+                    if ui
+                        .selectable_label(self.current_preset == *preset, format!("{:?}", preset))
+                        .clicked()
+                    {
+                        self.current_preset = *preset;
+                        self.apply_preset(*preset);
+                    }
+                }
+            });
+        });
+
+        ui.add_space(10.0);
+
+        // Preset description
+        ui.group(|ui| {
+            ui.label(RichText::new("Preset Details").strong());
+
+            let description = match self.current_preset {
+                BindingPreset::Default => "Standard WASD + Mouse controls",
+                BindingPreset::FPS => "Optimized for first-person shooters",
+                BindingPreset::ThirdPerson => "Optimized for third-person action games",
+                BindingPreset::RTS => "Strategy game controls (QWERTY hotkeys)",
+                BindingPreset::Racing => "Driving controls (arrows/triggers)",
+                BindingPreset::LeftHanded => "Mirror layout for left-handed players",
+                BindingPreset::Custom => "User-defined custom bindings",
+            };
+
+            ui.label(description);
+        });
+
+        ui.add_space(10.0);
+
+        // Preset management
+        ui.group(|ui| {
+            ui.label(RichText::new("Management").strong());
+
+            ui.horizontal(|ui| {
+                if ui.button("💾 Save as Custom").clicked() {
+                    self.current_preset = BindingPreset::Custom;
+                }
+                if ui.button("📥 Import").clicked() {
+                    // Import bindings from file
+                }
+                if ui.button("📤 Export").clicked() {
+                    // Export bindings to file
+                }
+                if ui.button("🔄 Reset to Default").clicked() {
+                    self.current_preset = BindingPreset::Default;
+                    self.apply_preset(BindingPreset::Default);
+                }
+            });
+        });
+
+        ui.add_space(10.0);
+
+        // Conflicts
+        if !self.conflicts.is_empty() {
+            ui.group(|ui| {
+                ui.label(RichText::new("⚠️ Binding Conflicts").strong().color(Color32::YELLOW));
+
+                for conflict in &self.conflicts {
+                    ui.horizontal(|ui| {
+                        ui.label(format!(
+                            "{} ↔ {} ({} {})",
+                            conflict.action1,
+                            conflict.action2,
+                            conflict.device.icon(),
+                            conflict.binding
+                        ));
+                    });
+                }
+            });
+        }
+    }
+
+    fn draw_gamepad_diagram(&self, ui: &mut Ui) {
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width().min(300.0), 150.0), egui::Sense::hover());
+
+        let center = rect.center();
+        let painter = ui.painter();
+
+        // Draw gamepad outline
+        painter.rect_stroke(
+            rect.shrink(10.0),
+            20.0,
+            egui::Stroke::new(2.0, Color32::GRAY),
+            egui::StrokeKind::Outside,
+        );
+
+        // Left stick
+        let left_stick_center = egui::Pos2::new(center.x - 60.0, center.y);
+        painter.circle_stroke(
+            left_stick_center,
+            25.0,
+            egui::Stroke::new(2.0, Color32::WHITE),
+        );
+        let stick_pos = egui::Pos2::new(
+            left_stick_center.x + self.test_axis_values[0] * 20.0,
+            left_stick_center.y + self.test_axis_values[1] * 20.0,
+        );
+        painter.circle_filled(stick_pos, 10.0, Color32::from_rgb(100, 150, 255));
+
+        // Right stick
+        let right_stick_center = egui::Pos2::new(center.x + 60.0, center.y + 20.0);
+        painter.circle_stroke(
+            right_stick_center,
+            25.0,
+            egui::Stroke::new(2.0, Color32::WHITE),
+        );
+        let stick_pos = egui::Pos2::new(
+            right_stick_center.x + self.test_axis_values[2] * 20.0,
+            right_stick_center.y + self.test_axis_values[3] * 20.0,
+        );
+        painter.circle_filled(stick_pos, 10.0, Color32::from_rgb(100, 150, 255));
+
+        // D-Pad
+        let dpad_center = egui::Pos2::new(center.x - 60.0, center.y + 40.0);
+        painter.rect_filled(
+            egui::Rect::from_center_size(dpad_center, Vec2::new(40.0, 15.0)),
+            2.0,
+            Color32::DARK_GRAY,
+        );
+        painter.rect_filled(
+            egui::Rect::from_center_size(dpad_center, Vec2::new(15.0, 40.0)),
+            2.0,
+            Color32::DARK_GRAY,
+        );
+
+        // Face buttons
+        let buttons_center = egui::Pos2::new(center.x + 60.0, center.y - 25.0);
+        let button_positions = [
+            (0.0, 15.0, "A", Color32::GREEN),   // South
+            (15.0, 0.0, "B", Color32::RED),     // East
+            (-15.0, 0.0, "X", Color32::BLUE),   // West
+            (0.0, -15.0, "Y", Color32::YELLOW), // North
+        ];
+
+        for (dx, dy, label, color) in button_positions {
+            let pos = egui::Pos2::new(buttons_center.x + dx, buttons_center.y + dy);
+            painter.circle_filled(pos, 10.0, color);
+            painter.text(
+                pos,
+                egui::Align2::CENTER_CENTER,
+                label,
+                egui::FontId::proportional(10.0),
+                Color32::WHITE,
+            );
+        }
+    }
+
+    fn apply_preset(&mut self, preset: BindingPreset) {
+        match preset {
+            BindingPreset::Default | BindingPreset::FPS | BindingPreset::ThirdPerson => {
+                self.actions = Self::default_actions();
+                self.axes = Self::default_axes();
+            }
+            BindingPreset::LeftHanded => {
+                self.actions = Self::default_actions();
+                // Swap WASD to IJKL, etc.
+                for action in &mut self.actions {
+                    action.keyboard_primary = match action.keyboard_primary {
+                        Some(KeyboardKey::W) => Some(KeyboardKey::I),
+                        Some(KeyboardKey::A) => Some(KeyboardKey::J),
+                        Some(KeyboardKey::S) => Some(KeyboardKey::K),
+                        Some(KeyboardKey::D) => Some(KeyboardKey::L),
+                        other => other,
+                    };
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Getters for testing
+    pub fn action_count(&self) -> usize {
+        self.actions.len()
+    }
+
+    pub fn axis_count(&self) -> usize {
+        self.axes.len()
+    }
+
+    pub fn current_preset(&self) -> BindingPreset {
+        self.current_preset
+    }
+
+    pub fn device_filter(&self) -> InputDevice {
+        self.device_filter
+    }
+
+    pub fn is_gamepad_connected(&self) -> bool {
+        self.gamepad_connected
+    }
+
+    pub fn mouse_sensitivity(&self) -> f32 {
+        self.mouse_sensitivity
+    }
+
+    pub fn set_preset(&mut self, preset: BindingPreset) {
+        self.current_preset = preset;
+        self.apply_preset(preset);
+    }
+
+    pub fn set_device_filter(&mut self, filter: InputDevice) {
+        self.device_filter = filter;
+    }
+
+    pub fn set_gamepad_connected(&mut self, connected: bool) {
+        self.gamepad_connected = connected;
+    }
+
+    pub fn set_mouse_sensitivity(&mut self, sensitivity: f32) {
+        self.mouse_sensitivity = sensitivity;
+    }
+
+    pub fn record_input(&mut self, input: &str) {
+        self.last_input = input.to_string();
+        self.input_history.push(input.to_string());
+    }
+
+    pub fn conflict_count(&self) -> usize {
+        self.conflicts.len()
+    }
+
+    pub fn add_conflict(&mut self, conflict: BindingConflict) {
+        self.conflicts.push(conflict);
+    }
+}
+
+impl Panel for InputBindingsPanel {
+    fn name(&self) -> &'static str {
+        "Input Bindings"
+    }
+
+    fn show(&mut self, ui: &mut Ui) {
+        self.show_tab_bar(ui);
+
+        match self.active_tab {
+            InputTab::Actions => self.show_actions_tab(ui),
+            InputTab::Axes => self.show_axes_tab(ui),
+            InputTab::Gamepad => self.show_gamepad_tab(ui),
+            InputTab::Testing => self.show_testing_tab(ui),
+            InputTab::Presets => self.show_presets_tab(ui),
+        }
+    }
+
+    fn update(&mut self) {
+        // Cancel waiting for input after timeout
+        // Poll for gamepad state
+        // Update axis visualization
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_bindings_panel_creation() {
+        let panel = InputBindingsPanel::new();
+        assert_eq!(panel.current_preset(), BindingPreset::Default);
+        assert_eq!(panel.device_filter(), InputDevice::All);
+    }
+
+    #[test]
+    fn test_default_actions() {
+        let panel = InputBindingsPanel::new();
+        assert!(panel.action_count() > 10); // Should have many default actions
+    }
+
+    #[test]
+    fn test_default_axes() {
+        let panel = InputBindingsPanel::new();
+        assert_eq!(panel.axis_count(), 4); // Move X/Y, Look X/Y
+    }
+
+    #[test]
+    fn test_preset_switching() {
+        let mut panel = InputBindingsPanel::new();
+        panel.set_preset(BindingPreset::LeftHanded);
+        assert_eq!(panel.current_preset(), BindingPreset::LeftHanded);
+    }
+
+    #[test]
+    fn test_device_filter() {
+        let mut panel = InputBindingsPanel::new();
+        panel.set_device_filter(InputDevice::Gamepad);
+        assert_eq!(panel.device_filter(), InputDevice::Gamepad);
+    }
+
+    #[test]
+    fn test_gamepad_connection() {
+        let mut panel = InputBindingsPanel::new();
+        assert!(!panel.is_gamepad_connected());
+
+        panel.set_gamepad_connected(true);
+        assert!(panel.is_gamepad_connected());
+    }
+
+    #[test]
+    fn test_mouse_sensitivity() {
+        let mut panel = InputBindingsPanel::new();
+        assert_eq!(panel.mouse_sensitivity(), 1.0);
+
+        panel.set_mouse_sensitivity(2.5);
+        assert_eq!(panel.mouse_sensitivity(), 2.5);
+    }
+
+    #[test]
+    fn test_input_recording() {
+        let mut panel = InputBindingsPanel::new();
+        panel.record_input("Space pressed");
+        assert_eq!(panel.last_input, "Space pressed");
+        assert_eq!(panel.input_history.len(), 1);
+    }
+
+    #[test]
+    fn test_conflict_tracking() {
+        let mut panel = InputBindingsPanel::new();
+        assert_eq!(panel.conflict_count(), 0);
+
+        panel.add_conflict(BindingConflict {
+            action1: "Jump".to_string(),
+            action2: "Crouch".to_string(),
+            device: InputDevice::Keyboard,
+            binding: "Space".to_string(),
+        });
+        assert_eq!(panel.conflict_count(), 1);
+    }
+
+    #[test]
+    fn test_gamepad_button_names() {
+        assert_eq!(GamepadButton::South.display_name(), "A / ✕");
+        assert_eq!(GamepadButton::L1.display_name(), "LB / L1");
+    }
+
+    #[test]
+    fn test_panel_trait_implementation() {
+        let panel = InputBindingsPanel::new();
+        assert_eq!(panel.name(), "Input Bindings");
+    }
+}

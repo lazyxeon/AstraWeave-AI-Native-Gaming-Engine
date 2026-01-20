@@ -1,5 +1,7 @@
-/// Retrieval Engine Tests - Sprint 1 Day 4-5
-/// Simplified tests for retrieval core functionality
+//! Retrieval Engine Tests - Sprint 1 Day 4-5
+//! Simplified tests for retrieval core functionality
+
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::{RetrievalConfig, RetrievalEngine, RetrievalQuery};
@@ -24,7 +26,7 @@ fn test_retrieval_basic_search() {
     };
 
     let results = engine.search(&query, &memories).unwrap();
-    assert!(results.len() > 0);
+    assert!(!results.is_empty());
     
     if results.len() >= 2 {
         assert!(results[0].score >= results[1].score);
@@ -142,7 +144,7 @@ fn test_retrieval_no_category_filter() {
     };
 
     let results = engine.search(&query, &memories).unwrap();
-    assert!(results.len() > 0);
+    assert!(!results.is_empty());
 }
 
 #[test]

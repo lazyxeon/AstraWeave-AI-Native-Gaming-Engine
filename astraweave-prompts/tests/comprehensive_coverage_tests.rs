@@ -1,13 +1,15 @@
-/// Comprehensive Coverage Tests for astraweave-prompts
-/// Focus: Improve coverage from 12.35% to 40%+ with targeted tests
-///
-/// Coverage areas:
-/// - Template creation with various formats
-/// - Variable substitution (simple, nested, arrays, objects)
-/// - Edge cases (empty templates, missing vars, invalid syntax)
-/// - Context management (scopes, merging, paths)
-/// - Engine operations (registration, rendering, partials, helpers)
-/// - Template validation and error handling
+//! Comprehensive Coverage Tests for astraweave-prompts
+//! Focus: Improve coverage from 12.35% to 40%+ with targeted tests
+//!
+//! Coverage areas:
+//! - Template creation with various formats
+//! - Variable substitution (simple, nested, arrays, objects)
+//! - Edge cases (empty templates, missing vars, invalid syntax)
+//! - Context management (scopes, merging, paths)
+//! - Engine operations (registration, rendering, partials, helpers)
+//! - Template validation and error handling
+
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
     ContextValue, PromptContext, PromptEngine, PromptTemplate, TemplateEngine,

@@ -25,18 +25,18 @@ use std::hint::black_box;
 /// CORRECTNESS: Validate octahedral encoding round-trip preserves normal direction
 #[inline]
 fn assert_octahedral_roundtrip_valid(original: Vec3, encoded: [i16; 2], context: &str) {
-    // Encoded values should be in valid range
-    assert!(
-        encoded[0] >= -32767 && encoded[0] <= 32767,
-        "[CORRECTNESS FAILURE] {}: encoded X out of range {}",
-        context,
-        encoded[0]
+    // Encoded values should never hit i16::MIN (reserved in many symmetric mappings)
+    assert_ne!(
+        encoded[0],
+        i16::MIN,
+        "[CORRECTNESS FAILURE] {}: encoded X hit i16::MIN (reserved)",
+        context
     );
-    assert!(
-        encoded[1] >= -32767 && encoded[1] <= 32767,
-        "[CORRECTNESS FAILURE] {}: encoded Y out of range {}",
-        context,
-        encoded[1]
+    assert_ne!(
+        encoded[1],
+        i16::MIN,
+        "[CORRECTNESS FAILURE] {}: encoded Y hit i16::MIN (reserved)",
+        context
     );
     // Decode and verify round-trip
     let decoded = OctahedralEncoder::decode(encoded);
@@ -119,7 +119,7 @@ fn assert_memory_savings_valid(
 ) {
     // Savings ratio should be in valid range [0, 1)
     assert!(
-        savings_ratio >= 0.0 && savings_ratio < 1.0,
+        (0.0..1.0).contains(&savings_ratio),
         "[CORRECTNESS FAILURE] {}: savings ratio {} out of valid range [0,1)",
         context,
         savings_ratio
@@ -263,7 +263,21 @@ fn bench_vertex_compression_memory(c: &mut Criterion) {
             BenchmarkId::new("calculate_savings", vertex_count),
             &vertex_count,
             |b, &count| {
-                b.iter(|| black_box(VertexCompressor::calculate_savings(black_box(count))));
+                b.iter(|| {
+                    let (standard_bytes, compressed_bytes, _savings_bytes, _savings_percent) =
+                        VertexCompressor::calculate_savings(black_box(count));
+
+                    let savings_ratio =
+                        (standard_bytes - compressed_bytes) as f32 / standard_bytes as f32;
+                    assert_memory_savings_valid(
+                        standard_bytes,
+                        compressed_bytes,
+                        savings_ratio,
+                        "vertex_compression/calculate_savings",
+                    );
+
+                    black_box((standard_bytes, compressed_bytes, savings_ratio))
+                });
             },
         );
     }
@@ -337,7 +351,16 @@ fn bench_lod_generation(c: &mut Criterion) {
             BenchmarkId::new("sphere_50_percent", vertex_count),
             &mesh,
             |b, mesh| {
-                b.iter(|| black_box(generator.simplify(black_box(mesh), vertex_count / 2)));
+                b.iter(|| {
+                    let lod = generator.simplify(black_box(mesh), vertex_count / 2);
+                    assert_lod_mesh_valid(
+                        lod.vertex_count(),
+                        lod.indices.len(),
+                        mesh.vertex_count(),
+                        "lod_generation/sphere_50_percent",
+                    );
+                    black_box(lod)
+                });
             },
         );
     }
@@ -359,7 +382,18 @@ fn bench_lod_multi_level(c: &mut Criterion) {
     let generator = LODGenerator::new(config);
 
     group.bench_function("generate_3_lods", |b| {
-        b.iter(|| black_box(generator.generate_lods(black_box(&mesh))));
+        b.iter(|| {
+            let lods = generator.generate_lods(black_box(&mesh));
+            for lod in &lods {
+                assert_lod_mesh_valid(
+                    lod.vertex_count(),
+                    lod.indices.len(),
+                    mesh.vertex_count(),
+                    "lod_generation/multi_level",
+                );
+            }
+            black_box(lods)
+        });
     });
 
     group.finish();
@@ -521,8 +555,17 @@ fn bench_memory_savings_combined(c: &mut Criterion) {
             &vertex_count,
             |b, &count| {
                 b.iter(|| {
-                    let (_, _, savings, _) = VertexCompressor::calculate_savings(count);
-                    black_box(savings)
+                    let (standard_bytes, compressed_bytes, _savings_bytes, _savings_percent) =
+                        VertexCompressor::calculate_savings(count);
+                    let savings_ratio =
+                        (standard_bytes - compressed_bytes) as f32 / standard_bytes as f32;
+                    assert_memory_savings_valid(
+                        standard_bytes,
+                        compressed_bytes,
+                        savings_ratio,
+                        "integrated/memory_savings",
+                    );
+                    black_box(savings_ratio)
                 });
             },
         );

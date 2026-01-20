@@ -297,8 +297,8 @@ mod tests {
         let backoff2 = config.backoff_for_attempt(0).as_millis();
 
         // Should be within ±25% of 100ms = 75-125ms range
-        assert!(backoff1 >= 75 && backoff1 <= 125);
-        assert!(backoff2 >= 75 && backoff2 <= 125);
+        assert!((75..=125).contains(&backoff1));
+        assert!((75..=125).contains(&backoff2));
     }
 
     #[test]

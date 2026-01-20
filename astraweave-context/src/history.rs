@@ -523,6 +523,7 @@ impl ConversationHistory {
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
     use crate::Role;
@@ -869,7 +870,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(history.get_recent_messages(10).len() > 0);
+        assert!(!history.get_recent_messages(10).is_empty());
         
         history.clear();
         
@@ -1055,7 +1056,7 @@ mod tests {
         let roles = vec![Role::User, Role::Assistant, Role::System, Role::Function];
         
         for role in roles {
-            let message = Message::new(role.clone(), "Test".to_string());
+            let message = Message::new(role, "Test".to_string());
             assert_eq!(message.role, role);
         }
     }

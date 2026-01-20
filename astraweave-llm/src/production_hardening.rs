@@ -873,7 +873,7 @@ mod tests {
         let config = HealthCheckConfig::default();
         let checker = HealthChecker::new(config);
 
-        for (_, health) in &checker.components {
+        for health in checker.components.values() {
             assert_eq!(health.status, HealthStatus::Healthy);
             assert_eq!(health.consecutive_failures, 0);
             assert!(health.last_error.is_none());
@@ -950,8 +950,7 @@ mod tests {
         let config = HardeningConfig::default();
         let _layer = ProductionHardeningLayer::new(config);
 
-        // Test that layer can be created without panicking
-        assert!(true);
+        // Test that layer can be created without panicking - test passes if no panic
     }
 
     #[tokio::test]
@@ -2020,8 +2019,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_health_checker_check_health_timeout() {
-        let mut config = HealthCheckConfig::default();
-        config.check_timeout = Duration::from_millis(50);
+        let config = HealthCheckConfig {
+            check_timeout: Duration::from_millis(50),
+            ..Default::default()
+        };
         let mut checker = HealthChecker::new(config);
         
         checker.check_health("timeout_comp", async {

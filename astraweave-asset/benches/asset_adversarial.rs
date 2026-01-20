@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Adversarial Asset Loading Benchmarks
 //!
 //! Stress testing for asset loading, caching, hot reload, and validation.
@@ -480,7 +482,9 @@ fn bench_hot_reload(c: &mut Criterion) {
             let changed: Vec<_> = file_times
                 .iter()
                 .filter(|(path, &old_time)| {
-                    current_times.get(*path).map_or(false, |&new_time| new_time > old_time)
+                    current_times
+                        .get(*path)
+                        .is_some_and(|&new_time| new_time > old_time)
                 })
                 .collect();
             std_black_box(changed.len())

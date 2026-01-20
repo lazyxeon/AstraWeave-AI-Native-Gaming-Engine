@@ -7,7 +7,7 @@
 //! These benchmarks measure CPU-side performance of streaming and GI systems.
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use glam::{Mat4, Vec3, Vec4};
+use glam::{Vec3, Vec4};
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::hint::black_box;
@@ -21,6 +21,7 @@ type AssetId = String;
 
 /// Texture handle for benchmarking (simplified)
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct TextureHandle {
     id: AssetId,
     width: u32,
@@ -31,6 +32,7 @@ struct TextureHandle {
 
 /// Asset state in the streaming system
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 enum AssetState {
     Loading,
     Resident(TextureHandle),
@@ -163,11 +165,13 @@ impl TextureStreamingManager {
     }
 
     /// Pop next load request from priority queue
+    #[allow(dead_code)]
     fn pop_load_request(&mut self) -> Option<LoadRequest> {
         self.load_queue.pop()
     }
 
     /// Check if texture is resident
+    #[allow(dead_code)]
     fn is_resident(&self, id: &AssetId) -> bool {
         matches!(self.assets.get(id), Some(AssetState::Resident(_)))
     }

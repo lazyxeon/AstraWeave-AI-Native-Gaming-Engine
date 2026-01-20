@@ -1,5 +1,5 @@
-/// Prompts Core Tests - Sprint 2
-/// High-value tests for TemplateEngine, PromptTemplate, TemplateContext
+//! Prompts Core Tests - Sprint 2
+//! High-value tests for TemplateEngine, PromptTemplate, TemplateContext
 
 use astraweave_prompts::{
     PromptContext, PromptTemplate, TemplateEngine, TemplateProcessor, ProcessorConfig,

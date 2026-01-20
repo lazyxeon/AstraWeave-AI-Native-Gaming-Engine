@@ -8,14 +8,15 @@
 //! - Error propagation overhead
 //! - Memory lifecycle management
 
+#![allow(dead_code, unused_variables, clippy::type_complexity)]
+
 use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+    criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
-use std::hint::black_box as std_black_box;
+use std::hint::black_box;
 use std::os::raw::{c_char, c_int, c_void};
-use std::ptr;
 
 // ============================================================================
 // LOCAL TYPE DEFINITIONS (Standalone benchmark - no crate imports)
@@ -361,7 +362,7 @@ fn bench_handle_operations(c: &mut Criterion) {
     group.bench_function("handle_creation_10000", |b| {
         b.iter(|| {
             let handles: Vec<Handle> = (1..=10000).map(Handle::new).collect();
-            std_black_box(handles)
+            black_box(handles)
         })
     });
 
@@ -370,7 +371,7 @@ fn bench_handle_operations(c: &mut Criterion) {
     group.bench_function("handle_validation_10000", |b| {
         b.iter(|| {
             let valid: Vec<bool> = handles.iter().map(|h| h.is_valid()).collect();
-            std_black_box(valid)
+            black_box(valid)
         })
     });
 
@@ -384,7 +385,7 @@ fn bench_handle_operations(c: &mut Criterion) {
         let lookup_handles: Vec<Handle> = (1..=10000).map(Handle::new).collect();
         b.iter(|| {
             let results: Vec<Option<&u32>> = lookup_handles.iter().map(|h| map.get(h)).collect();
-            std_black_box(results)
+            black_box(results)
         })
     });
 
@@ -428,7 +429,7 @@ fn bench_data_marshalling(c: &mut Criterion) {
                         })
                         .collect();
 
-                    std_black_box(reconstructed)
+                    black_box(reconstructed)
                 })
             },
         );
@@ -460,7 +461,7 @@ fn bench_data_marshalling(c: &mut Criterion) {
                 })
                 .collect();
 
-            std_black_box(bytes)
+            black_box(bytes)
         })
     });
 
@@ -480,7 +481,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
     group.bench_function("string_to_cstring_1000", |b| {
         b.iter(|| {
             let cstrings: Vec<CString> = strings.iter().map(|s| marshal_string_to_c(s)).collect();
-            std_black_box(cstrings)
+            black_box(cstrings)
         })
     });
 
@@ -492,7 +493,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
         b.iter(|| {
             let results: Vec<Option<String>> =
                 ptrs.iter().map(|&p| marshal_string_from_c(p)).collect();
-            std_black_box(results)
+            black_box(results)
         })
     });
 
@@ -505,7 +506,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
         b.iter(|| {
             let cstrings: Vec<CString> =
                 long_strings.iter().map(|s| marshal_string_to_c(s)).collect();
-            std_black_box(cstrings)
+            black_box(cstrings)
         })
     });
 
@@ -518,7 +519,7 @@ fn bench_string_marshalling(c: &mut Criterion) {
     group.bench_function("cached_string_lookup_1000", |b| {
         b.iter(|| {
             let results: Vec<Option<&CString>> = strings.iter().map(|s| cache.get(s)).collect();
-            std_black_box(results)
+            black_box(results)
         })
     });
 
@@ -555,7 +556,7 @@ fn bench_entity_lifecycle(c: &mut Criterion) {
                         ctx.destroy_entity(*handle);
                     }
 
-                    std_black_box(handles.len())
+                    black_box(handles.len())
                 })
             },
         );
@@ -588,7 +589,7 @@ fn bench_entity_lifecycle(c: &mut Criterion) {
                     let transforms: Vec<Transform> =
                         handles.iter().filter_map(|h| ctx.get_transform(*h).ok()).collect();
 
-                    std_black_box(transforms)
+                    black_box(transforms)
                 })
             },
         );
@@ -620,7 +621,7 @@ fn bench_batch_operations(c: &mut Criterion) {
                     }
 
                     let results = batch.execute(&mut ctx);
-                    std_black_box(results)
+                    black_box(results)
                 })
             },
         );
@@ -658,7 +659,7 @@ fn bench_batch_operations(c: &mut Criterion) {
                     }
 
                     let results = batch.execute(&mut ctx);
-                    std_black_box(results)
+                    black_box(results)
                 })
             },
         );
@@ -685,7 +686,7 @@ fn bench_callback_invocation(c: &mut Criterion) {
                         handle,
                         Box::new(move |dt| {
                             // Simulate simple callback work
-                            let _ = std_black_box(dt * i as f32);
+                            let _ = black_box(dt * i as f32);
                             0
                         }),
                     );
@@ -693,7 +694,7 @@ fn bench_callback_invocation(c: &mut Criterion) {
 
                 b.iter(|| {
                     let results = registry.invoke_updates(0.016);
-                    std_black_box(results)
+                    black_box(results)
                 })
             },
         );
@@ -713,7 +714,7 @@ fn bench_callback_invocation(c: &mut Criterion) {
                     for j in 0..100 {
                         sum += (j as f32 * dt).sin();
                     }
-                    let _ = std_black_box(sum);
+                    let _ = black_box(sum);
                     0
                 }),
             );
@@ -721,7 +722,7 @@ fn bench_callback_invocation(c: &mut Criterion) {
 
         b.iter(|| {
             let results = registry.invoke_updates(0.016);
-            std_black_box(results)
+            black_box(results)
         })
     });
 
@@ -747,7 +748,7 @@ fn bench_error_handling(c: &mut Criterion) {
 
         b.iter(|| {
             let results: Vec<Result<i32, SdkError>> = (0..1000).map(|_| level_1()).collect();
-            std_black_box(results)
+            black_box(results)
         })
     });
 
@@ -775,7 +776,7 @@ fn bench_error_handling(c: &mut Criterion) {
         b.iter(|| {
             let results: Vec<Result<Transform, SdkError>> =
                 mixed_handles.iter().map(|h| ctx.get_transform(*h)).collect();
-            std_black_box(results)
+            black_box(results)
         })
     });
 
@@ -805,7 +806,7 @@ fn bench_error_handling(c: &mut Criterion) {
                     SdkError::NotFound => "Not Found",
                 })
                 .collect();
-            std_black_box(strings)
+            black_box(strings)
         })
     });
 
@@ -825,14 +826,14 @@ fn bench_vector_operations(c: &mut Criterion) {
     group.bench_function("vec3_length_10000", |b| {
         b.iter(|| {
             let lengths: Vec<f32> = vectors.iter().map(|v| v.length()).collect();
-            std_black_box(lengths)
+            black_box(lengths)
         })
     });
 
     group.bench_function("vec3_normalize_10000", |b| {
         b.iter(|| {
             let normalized: Vec<Vec3> = vectors.iter().map(|v| v.normalize()).collect();
-            std_black_box(normalized)
+            black_box(normalized)
         })
     });
 
@@ -847,7 +848,7 @@ fn bench_vector_operations(c: &mut Criterion) {
                     (len, norm)
                 })
                 .collect();
-            std_black_box(results)
+            black_box(results)
         })
     });
 

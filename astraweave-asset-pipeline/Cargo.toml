@@ -35,6 +35,11 @@ tracing = "0.1"
 
 [dev-dependencies]
 tokio-test = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "pipeline_adversarial"
+harness = false
 
 [features]
 default = ["astc"]

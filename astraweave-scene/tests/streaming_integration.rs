@@ -10,6 +10,7 @@ use tokio::fs;
 use tokio::sync::RwLock;
 
 /// Helper to generate unique test directory per test to prevent parallel test race conditions
+#[allow(dead_code)]
 fn unique_test_dir(test_name: &str) -> PathBuf {
     PathBuf::from(format!("target/test_assets/cells_{}", test_name))
 }

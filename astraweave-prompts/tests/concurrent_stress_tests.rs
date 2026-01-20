@@ -4,6 +4,7 @@
 //! under moderate concurrent load.
 
 #![cfg(test)]
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::sanitize::{sanitize_input, sanitize_variable_name, TrustLevel, SanitizationConfig};
 use std::sync::Arc;
@@ -36,7 +37,7 @@ fn test_concurrent_sanitize_input_no_panic() {
                 let s = &inputs[(i + t) % inputs.len()];
                 let out = sanitize_input(s, TrustLevel::User, &cfg).expect("sanitize_input should not error in this config");
                 assert!(out.len() <= cfg.max_user_input_length);
-                assert!(out.chars().all(|c| c.is_ascii()));
+                assert!(out.is_ascii());
             }
         }));
     }

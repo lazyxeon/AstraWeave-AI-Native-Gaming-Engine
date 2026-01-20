@@ -316,7 +316,7 @@ impl SerializedEntity {
 
     #[allow(dead_code)]
     fn byte_size(&self) -> usize {
-        8 + 4 + self.components.iter().map(|(_, d)| 4 + 4 + d.len()).sum::<usize>()
+        8 + 4 + self.components.values().map(|d| 4 + 4 + d.len()).sum::<usize>()
     }
 }
 

@@ -1216,6 +1216,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn test_dynamic_object_clone() {
         let obj = DynamicObject {
             transform: [[5.0; 4]; 4],
@@ -1317,6 +1318,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn test_secondary_particle_clone() {
         let particle = SecondaryParticle {
             position: [10.0, 20.0, 30.0, 1.0],

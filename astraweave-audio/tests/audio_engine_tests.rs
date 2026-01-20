@@ -9,6 +9,8 @@
 //! - Listener updates (position, orientation, ear separation)
 //! - Volume controls (master, per-channel, spatialization)
 
+#![allow(unused_imports)]
+
 use astraweave_audio::{AudioEngine, ListenerPose, MusicTrack, PanMode};
 use glam::{vec3, Vec3};
 
@@ -172,7 +174,7 @@ fn test_3d_sfx_beep_playback() {
     assert!(result.is_ok(), "3D beep should play successfully");
 
     // Test multiple positions
-    let positions = vec![
+    let positions = [
         vec3(10.0, 0.0, 0.0),  // Right
         vec3(-10.0, 0.0, 0.0), // Left
         vec3(0.0, 10.0, 0.0),  // Up

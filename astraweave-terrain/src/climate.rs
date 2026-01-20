@@ -357,8 +357,8 @@ mod tests {
         let climate = ClimateMap::new(&config, 12345);
 
         let (temperature, moisture) = climate.sample_climate(100.0, 100.0, 10.0);
-        assert!(temperature >= 0.0 && temperature <= 1.0);
-        assert!(moisture >= 0.0 && moisture <= 1.0);
+        assert!((0.0..=1.0).contains(&temperature));
+        assert!((0.0..=1.0).contains(&moisture));
     }
 
     #[test]
@@ -383,8 +383,8 @@ mod tests {
 
         assert_eq!(climate_data.len(), 32 * 32);
         for (temp, moisture) in climate_data {
-            assert!(temp >= 0.0 && temp <= 1.0);
-            assert!(moisture >= 0.0 && moisture <= 1.0);
+            assert!((0.0..=1.0).contains(&temp));
+            assert!((0.0..=1.0).contains(&moisture));
         }
     }
 

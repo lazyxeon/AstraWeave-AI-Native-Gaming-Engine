@@ -4,6 +4,7 @@
 //! Tests trust score calculations, anomaly detection, and validation thresholds.
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod anticheat_tests {
     use crate::{validate_player_input, CAntiCheat, ValidationResult};
 

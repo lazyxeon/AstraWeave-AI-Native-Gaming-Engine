@@ -315,6 +315,85 @@ impl TerrainState {
             .map(|chunk| (chunk.vertices.clone(), chunk.indices.clone()))
             .collect()
     }
+
+    /// Get total vertex count across all chunks
+    pub fn total_vertex_count(&self) -> usize {
+        self.generated_chunks.values().map(|c| c.vertices.len()).sum()
+    }
+
+    /// Get total index/triangle count across all chunks
+    pub fn total_index_count(&self) -> usize {
+        self.generated_chunks.values().map(|c| c.indices.len()).sum()
+    }
+
+    /// Get total triangle count
+    pub fn total_triangle_count(&self) -> usize {
+        self.total_index_count() / 3
+    }
+
+    /// Check if terrain has been generated
+    pub fn has_terrain(&self) -> bool {
+        !self.generated_chunks.is_empty()
+    }
+
+    /// Get chunk IDs as a list
+    pub fn chunk_ids(&self) -> Vec<ChunkId> {
+        self.generated_chunks.keys().cloned().collect()
+    }
+
+    /// Get terrain statistics
+    pub fn stats(&self) -> TerrainStats {
+        TerrainStats {
+            chunk_count: self.generated_chunks.len(),
+            total_vertices: self.total_vertex_count(),
+            total_indices: self.total_index_count(),
+            total_triangles: self.total_triangle_count(),
+            seed: self.last_seed,
+            is_dirty: self.terrain_dirty,
+        }
+    }
+}
+
+/// Statistics for terrain state
+#[derive(Debug, Clone)]
+pub struct TerrainStats {
+    /// Number of chunks generated
+    pub chunk_count: usize,
+    /// Total vertex count
+    pub total_vertices: usize,
+    /// Total index count
+    pub total_indices: usize,
+    /// Total triangle count
+    pub total_triangles: usize,
+    /// Seed used for generation
+    pub seed: u64,
+    /// Whether terrain needs regeneration
+    pub is_dirty: bool,
+}
+
+impl TerrainStats {
+    /// Check if any terrain has been generated
+    pub fn has_terrain(&self) -> bool {
+        self.chunk_count > 0
+    }
+
+    /// Get average vertices per chunk
+    pub fn avg_vertices_per_chunk(&self) -> f32 {
+        if self.chunk_count == 0 {
+            0.0
+        } else {
+            self.total_vertices as f32 / self.chunk_count as f32
+        }
+    }
+
+    /// Get average triangles per chunk
+    pub fn avg_triangles_per_chunk(&self) -> f32 {
+        if self.chunk_count == 0 {
+            0.0
+        } else {
+            self.total_triangles as f32 / self.chunk_count as f32
+        }
+    }
 }
 
 impl TerrainVertex {
@@ -374,4 +453,149 @@ pub fn all_biome_options() -> &'static [(&'static str, &'static str)] {
         ("beach", "Beach"),
         ("river", "River"),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_terrain_state_creation() {
+        let state = TerrainState::new();
+        assert_eq!(state.chunk_count(), 0);
+        assert!(!state.has_terrain());
+    }
+
+    #[test]
+    fn test_terrain_state_has_terrain() {
+        let state = TerrainState::new();
+        assert!(!state.has_terrain());
+    }
+
+    #[test]
+    fn test_terrain_state_total_vertex_count() {
+        let state = TerrainState::new();
+        assert_eq!(state.total_vertex_count(), 0);
+    }
+
+    #[test]
+    fn test_terrain_state_total_index_count() {
+        let state = TerrainState::new();
+        assert_eq!(state.total_index_count(), 0);
+    }
+
+    #[test]
+    fn test_terrain_state_total_triangle_count() {
+        let state = TerrainState::new();
+        assert_eq!(state.total_triangle_count(), 0);
+    }
+
+    #[test]
+    fn test_terrain_state_chunk_ids() {
+        let state = TerrainState::new();
+        assert!(state.chunk_ids().is_empty());
+    }
+
+    #[test]
+    fn test_terrain_state_stats() {
+        let state = TerrainState::new();
+        let stats = state.stats();
+        assert_eq!(stats.chunk_count, 0);
+        assert_eq!(stats.total_vertices, 0);
+        // New terrain states start as dirty (needing generation)
+        assert!(stats.is_dirty);
+    }
+
+    // ====================================================================
+    // TerrainStats Tests
+    // ====================================================================
+
+    #[test]
+    fn test_terrain_stats_has_terrain() {
+        let no_terrain = TerrainStats {
+            chunk_count: 0,
+            total_vertices: 0,
+            total_indices: 0,
+            total_triangles: 0,
+            seed: 0,
+            is_dirty: false,
+        };
+        assert!(!no_terrain.has_terrain());
+
+        let with_terrain = TerrainStats {
+            chunk_count: 4,
+            total_vertices: 1000,
+            total_indices: 3000,
+            total_triangles: 1000,
+            seed: 12345,
+            is_dirty: false,
+        };
+        assert!(with_terrain.has_terrain());
+    }
+
+    #[test]
+    fn test_terrain_stats_avg_vertices_per_chunk() {
+        let stats = TerrainStats {
+            chunk_count: 4,
+            total_vertices: 1000,
+            total_indices: 3000,
+            total_triangles: 1000,
+            seed: 0,
+            is_dirty: false,
+        };
+        assert!((stats.avg_vertices_per_chunk() - 250.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_terrain_stats_avg_vertices_per_chunk_empty() {
+        let stats = TerrainStats {
+            chunk_count: 0,
+            total_vertices: 0,
+            total_indices: 0,
+            total_triangles: 0,
+            seed: 0,
+            is_dirty: false,
+        };
+        assert!((stats.avg_vertices_per_chunk() - 0.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_terrain_stats_avg_triangles_per_chunk() {
+        let stats = TerrainStats {
+            chunk_count: 5,
+            total_vertices: 1000,
+            total_indices: 3000,
+            total_triangles: 500,
+            seed: 0,
+            is_dirty: false,
+        };
+        assert!((stats.avg_triangles_per_chunk() - 100.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_terrain_stats_avg_triangles_per_chunk_empty() {
+        let stats = TerrainStats {
+            chunk_count: 0,
+            total_vertices: 0,
+            total_indices: 0,
+            total_triangles: 0,
+            seed: 0,
+            is_dirty: false,
+        };
+        assert!((stats.avg_triangles_per_chunk() - 0.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_biome_display_name() {
+        assert_eq!(biome_display_name("grassland"), "Grassland");
+        assert_eq!(biome_display_name("forest"), "Forest");
+        assert_eq!(biome_display_name("unknown"), "Unknown");
+    }
+
+    #[test]
+    fn test_all_biome_options() {
+        let options = all_biome_options();
+        assert_eq!(options.len(), 8);
+        assert_eq!(options[0], ("grassland", "Grassland"));
+    }
 }

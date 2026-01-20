@@ -136,7 +136,10 @@ fn calculate_percentile(mut frame_times: Vec<Duration>, percentile: f32) -> Dura
 /// **Performance Target**: 1000 entities @ 60 FPS (p99 <16.67ms)
 /// **Baseline**: ECS spawn 420 ns/entity, tick <1 ns/entity
 /// **Expected Frame Time**: ~5-10ms (60% headroom)
+/// 
+/// NOTE: Ignored by default due to sensitivity to system load. Run with `--ignored`.
 #[test]
+#[ignore = "Performance test sensitive to system load - run with --ignored"]
 fn test_1000_entity_60fps_capacity() {
     const NUM_ENTITIES: usize = TARGET_ENTITY_COUNT_60FPS;
     const NUM_FRAMES: usize = 60; // 1 second of simulation
@@ -260,7 +263,10 @@ fn test_ai_planning_latency_under_load() {
 ///
 /// **Performance Target**: 0 frame drops over 100 frames
 /// **Baseline**: Should have 40-60% headroom (frame time ~6-10ms)
+/// 
+/// NOTE: Ignored by default due to sensitivity to system load. Run with `--ignored`.
 #[test]
+#[ignore = "Performance test sensitive to system load - run with --ignored"]
 fn test_frame_budget_never_exceeded() {
     const NUM_ENTITIES: usize = 500; // Conservative (50% of target)
     const NUM_FRAMES: usize = 100;

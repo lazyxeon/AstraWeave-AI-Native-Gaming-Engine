@@ -274,15 +274,13 @@ fn test_episode_analysis_helpers() {
     let mut episode = Episode::new("analysis_test".to_string(), EpisodeCategory::Combat);
 
     // Add varied actions
-    let action_types = vec![
-        "melee_attack",
+    let action_types = ["melee_attack",
         "melee_attack",
         "melee_attack",
         "dodge",
         "ranged_attack",
         "use_potion",
-        "melee_attack",
-    ];
+        "melee_attack"];
 
     for (i, action_type) in action_types.iter().enumerate() {
         let obs = Observation::new(

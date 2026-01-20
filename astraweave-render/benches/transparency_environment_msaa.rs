@@ -118,6 +118,16 @@ impl TransparencyManager {
     pub fn len(&self) -> usize {
         self.instances.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.instances.is_empty()
+    }
+}
+
+impl Default for TransparencyManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 fn bench_transparency_manager(c: &mut Criterion) {
@@ -991,6 +1001,12 @@ impl MsaaRenderTarget {
         let bytes_per_pixel = 4 * 4; // RGBA32Float
         let samples = self.mode.sample_count() as usize;
         self.width as usize * self.height as usize * bytes_per_pixel * samples
+    }
+}
+
+impl Default for MsaaRenderTarget {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

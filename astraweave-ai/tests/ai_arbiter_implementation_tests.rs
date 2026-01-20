@@ -48,6 +48,7 @@ impl MockLlmOrch {
         self
     }
 
+    #[allow(dead_code)]
     fn set_plan(&self, plan: Option<PlanIntent>) {
         *self.plan_to_return.lock().unwrap() = plan;
     }

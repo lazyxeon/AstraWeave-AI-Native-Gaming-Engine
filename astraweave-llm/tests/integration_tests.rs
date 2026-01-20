@@ -234,7 +234,7 @@ fn test_fallback_heuristic_plan() {
     assert!(!plan.steps.is_empty(), "Fallback plan should have steps");
 
     // Fallback heuristic generates at least one step (actual count varies by game state)
-    assert!(plan.steps.len() >= 1, "Should have at least 1 step");
+    assert!(!plan.steps.is_empty(), "Should have at least 1 step");
 }
 
 // ============================================================================

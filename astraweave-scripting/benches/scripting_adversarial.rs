@@ -3,6 +3,8 @@
 //! Professional-grade stress testing for Rhai scripting system:
 //! compilation, execution, command processing, security limits, hot reload.
 
+#![allow(dead_code, clippy::enum_variant_names)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::hint::black_box as std_black_box;
@@ -13,7 +15,6 @@ use std::sync::Arc;
 // ============================================================================
 
 #[derive(Clone, Debug, PartialEq)]
-#[allow(dead_code)]
 enum ScriptCommand {
     Spawn { prefab: String, position: (f32, f32, f32) },
     Despawn { entity: i64 },
@@ -190,7 +191,7 @@ fn bench_compilation_stress(c: &mut Criterion) {
         for _ in 0..100 {
             source.push('(');
         }
-        source.push_str("1");
+        source.push('1');
         for _ in 0..100 {
             source.push_str(" + 1)");
         }

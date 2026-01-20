@@ -2,8 +2,9 @@
 //!
 //! Stress testing for boss AI, phase systems, and LLM-driven directors.
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+#![allow(dead_code)]
+
+use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box as std_black_box;
 
 // ============================================================================
@@ -579,8 +580,7 @@ fn bench_encounter_metrics(c: &mut Criterion) {
             let window_size = 5.0f32; // 5 second window
             let dps_values: Vec<f32> = damage_samples
                 .iter()
-                .enumerate()
-                .map(|(i, (time, _))| {
+                .map(|(time, _)| {
                     let window_damage: f32 = damage_samples
                         .iter()
                         .filter(|(t, _)| t >= &(*time - window_size) && t <= time)
@@ -636,7 +636,7 @@ fn bench_encounter_metrics(c: &mut Criterion) {
             (4, 360.0),
         ];
 
-        let expected_times = vec![90.0f32, 180.0, 270.0, 400.0];
+        let expected_times = [90.0f32, 180.0, 270.0, 400.0];
 
         bencher.iter(|| {
             let analysis: Vec<(u32, f32, &str)> = phase_events

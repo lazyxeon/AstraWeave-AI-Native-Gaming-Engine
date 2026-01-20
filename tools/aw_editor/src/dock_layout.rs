@@ -54,6 +54,111 @@ impl Default for LayoutPreset {
     }
 }
 
+impl LayoutPreset {
+    /// Get all available layout presets
+    pub fn all() -> &'static [LayoutPreset] {
+        &[
+            LayoutPreset::Default,
+            LayoutPreset::Wide,
+            LayoutPreset::Compact,
+            LayoutPreset::Modeling,
+            LayoutPreset::Animation,
+            LayoutPreset::Debug,
+        ]
+    }
+
+    /// Get human-readable name for this preset
+    pub fn name(&self) -> &'static str {
+        match self {
+            LayoutPreset::Default => "Default",
+            LayoutPreset::Wide => "Wide",
+            LayoutPreset::Compact => "Compact",
+            LayoutPreset::Modeling => "Modeling",
+            LayoutPreset::Animation => "Animation",
+            LayoutPreset::Debug => "Debug",
+        }
+    }
+
+    /// Get description of this layout preset
+    pub fn description(&self) -> &'static str {
+        match self {
+            LayoutPreset::Default => "Balanced layout for general editing",
+            LayoutPreset::Wide => "Maximized viewport for scene viewing",
+            LayoutPreset::Compact => "All panels visible in smaller configuration",
+            LayoutPreset::Modeling => "Large viewport with transform tools",
+            LayoutPreset::Animation => "Timeline at bottom, graph on side",
+            LayoutPreset::Debug => "Console and profiler prominent",
+        }
+    }
+
+    /// Get icon for this preset
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LayoutPreset::Default => "🏠",
+            LayoutPreset::Wide => "🖥️",
+            LayoutPreset::Compact => "📐",
+            LayoutPreset::Modeling => "🔧",
+            LayoutPreset::Animation => "🎬",
+            LayoutPreset::Debug => "🔍",
+        }
+    }
+
+    /// Get keyboard shortcut hint for this preset
+    pub fn shortcut_hint(&self) -> Option<&'static str> {
+        match self {
+            LayoutPreset::Default => Some("Ctrl+1"),
+            LayoutPreset::Wide => Some("Ctrl+2"),
+            LayoutPreset::Compact => Some("Ctrl+3"),
+            LayoutPreset::Modeling => Some("Ctrl+4"),
+            LayoutPreset::Animation => Some("Ctrl+5"),
+            LayoutPreset::Debug => Some("Ctrl+6"),
+        }
+    }
+
+    /// Get expected panel count for this preset
+    pub fn expected_panel_count(&self) -> usize {
+        match self {
+            LayoutPreset::Default => 6,  // Viewport, Inspector, Transform, Console, Profiler, SceneStats
+            LayoutPreset::Wide => 2,     // Viewport, Inspector
+            LayoutPreset::Compact => 8,  // Many panels
+            LayoutPreset::Modeling => 3, // Viewport, Transform, Inspector
+            LayoutPreset::Animation => 5, // Viewport, BehaviorGraph, Inspector, Animation, Graph
+            LayoutPreset::Debug => 5,    // Viewport, Performance, SceneStats, Console, Profiler
+        }
+    }
+
+    /// Check if this is a debug/development layout
+    pub fn is_debug_layout(&self) -> bool {
+        matches!(self, LayoutPreset::Debug)
+    }
+
+    /// Check if this is a content creation layout
+    pub fn is_content_creation_layout(&self) -> bool {
+        matches!(self, LayoutPreset::Modeling | LayoutPreset::Animation)
+    }
+}
+
+impl std::fmt::Display for LayoutPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+/// Statistics about the current dock layout
+#[derive(Debug, Clone, Default)]
+pub struct LayoutStats {
+    /// Total number of visible panels
+    pub panel_count: usize,
+    /// Number of tab groups (panels grouped together)
+    pub tab_group_count: usize,
+    /// List of all visible panel types
+    pub visible_panels: Vec<PanelType>,
+    /// Whether viewport is visible
+    pub has_viewport: bool,
+    /// Whether any debug panels are visible
+    pub has_debug_panels: bool,
+}
+
 /// Docking layout manager
 ///
 /// Manages the `egui_dock::DockState` and provides methods
@@ -450,6 +555,82 @@ impl DockLayout {
             .style(self.style.clone())
             .show_inside(ui, tab_viewer);
     }
+
+    // === New Statistics and Query Methods ===
+
+    /// Get statistics about the current layout
+    pub fn stats(&self) -> LayoutStats {
+        let visible_panels = self.collect_visible_panels();
+        let panel_count = visible_panels.len();
+        let has_viewport = visible_panels.contains(&PanelType::Viewport);
+        let has_debug_panels = visible_panels.iter().any(|p| {
+            matches!(p, PanelType::Console | PanelType::Profiler | PanelType::Performance | PanelType::SceneStats)
+        });
+
+        // Count tab groups (approximate - one per unique position)
+        let tab_group_count = self.dock_state.iter_all_tabs().count().saturating_sub(
+            visible_panels.len().saturating_sub(1)
+        ).max(1);
+
+        LayoutStats {
+            panel_count,
+            tab_group_count,
+            visible_panels,
+            has_viewport,
+            has_debug_panels,
+        }
+    }
+
+    /// Get count of visible panels
+    pub fn panel_count(&self) -> usize {
+        self.collect_visible_panels().len()
+    }
+
+    /// Get all currently visible panels
+    pub fn visible_panels(&self) -> Vec<PanelType> {
+        self.collect_visible_panels()
+    }
+
+    /// Check if any debug panels are visible
+    pub fn has_debug_panels(&self) -> bool {
+        self.collect_visible_panels().iter().any(|p| {
+            matches!(p, PanelType::Console | PanelType::Profiler | PanelType::Performance | PanelType::SceneStats)
+        })
+    }
+
+    /// Check if layout has minimum required panels (at least viewport)
+    pub fn is_valid(&self) -> bool {
+        self.is_panel_visible(&PanelType::Viewport)
+    }
+
+    /// Get panels that are missing compared to expected preset
+    pub fn missing_panels_for_preset(&self, preset: LayoutPreset) -> Vec<PanelType> {
+        let current = self.collect_visible_panels();
+        let expected = DockLayout::from_preset(preset).collect_visible_panels();
+        expected.into_iter()
+            .filter(|p| !current.contains(p))
+            .collect()
+    }
+
+    /// Check if current layout matches a preset
+    pub fn matches_preset(&self, preset: LayoutPreset) -> bool {
+        let current: std::collections::HashSet<_> = self.collect_visible_panels().into_iter().collect();
+        let expected: std::collections::HashSet<_> = DockLayout::from_preset(preset).collect_visible_panels().into_iter().collect();
+        current == expected
+    }
+
+    /// Find which preset best matches current layout
+    pub fn closest_preset(&self) -> LayoutPreset {
+        let current: std::collections::HashSet<_> = self.collect_visible_panels().into_iter().collect();
+        
+        LayoutPreset::all().iter().copied()
+            .max_by_key(|&preset| {
+                let preset_panels: std::collections::HashSet<_> = 
+                    DockLayout::from_preset(preset).collect_visible_panels().into_iter().collect();
+                current.intersection(&preset_panels).count()
+            })
+            .unwrap_or(LayoutPreset::Default)
+    }
 }
 
 /// Serializable layout data for persistence
@@ -544,5 +725,153 @@ mod tests {
         assert!(layout.is_panel_visible(&PanelType::Console));
         assert!(layout.is_panel_visible(&PanelType::Inspector));
         assert!(layout.is_panel_visible(&PanelType::Viewport));
+    }
+
+    // === New LayoutPreset tests ===
+
+    #[test]
+    fn test_layout_preset_all() {
+        let all = LayoutPreset::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&LayoutPreset::Default));
+        assert!(all.contains(&LayoutPreset::Wide));
+        assert!(all.contains(&LayoutPreset::Compact));
+        assert!(all.contains(&LayoutPreset::Modeling));
+        assert!(all.contains(&LayoutPreset::Animation));
+        assert!(all.contains(&LayoutPreset::Debug));
+    }
+
+    #[test]
+    fn test_layout_preset_names() {
+        assert_eq!(LayoutPreset::Default.name(), "Default");
+        assert_eq!(LayoutPreset::Wide.name(), "Wide");
+        assert_eq!(LayoutPreset::Compact.name(), "Compact");
+        assert_eq!(LayoutPreset::Modeling.name(), "Modeling");
+        assert_eq!(LayoutPreset::Animation.name(), "Animation");
+        assert_eq!(LayoutPreset::Debug.name(), "Debug");
+    }
+
+    #[test]
+    fn test_layout_preset_descriptions_not_empty() {
+        for preset in LayoutPreset::all() {
+            assert!(!preset.description().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_layout_preset_icons_not_empty() {
+        for preset in LayoutPreset::all() {
+            assert!(!preset.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_layout_preset_shortcut_hints() {
+        for preset in LayoutPreset::all() {
+            // All presets should have shortcut hints
+            assert!(preset.shortcut_hint().is_some());
+        }
+    }
+
+    #[test]
+    fn test_layout_preset_expected_panel_counts() {
+        assert!(LayoutPreset::Default.expected_panel_count() >= 2);
+        assert!(LayoutPreset::Wide.expected_panel_count() >= 1);
+        assert!(LayoutPreset::Compact.expected_panel_count() >= 4);
+    }
+
+    #[test]
+    fn test_layout_preset_is_debug_layout() {
+        assert!(LayoutPreset::Debug.is_debug_layout());
+        assert!(!LayoutPreset::Default.is_debug_layout());
+        assert!(!LayoutPreset::Wide.is_debug_layout());
+    }
+
+    #[test]
+    fn test_layout_preset_is_content_creation_layout() {
+        assert!(LayoutPreset::Modeling.is_content_creation_layout());
+        assert!(LayoutPreset::Animation.is_content_creation_layout());
+        assert!(!LayoutPreset::Default.is_content_creation_layout());
+        assert!(!LayoutPreset::Debug.is_content_creation_layout());
+    }
+
+    #[test]
+    fn test_layout_preset_display() {
+        assert_eq!(format!("{}", LayoutPreset::Default), "Default");
+        assert_eq!(format!("{}", LayoutPreset::Debug), "Debug");
+    }
+
+    // === New DockLayout stats tests ===
+
+    #[test]
+    fn test_layout_stats_default() {
+        let layout = DockLayout::new();
+        let stats = layout.stats();
+        
+        assert!(stats.panel_count >= 2);
+        assert!(stats.has_viewport);
+    }
+
+    #[test]
+    fn test_layout_panel_count() {
+        let layout = DockLayout::new();
+        assert!(layout.panel_count() >= 2);
+    }
+
+    #[test]
+    fn test_layout_visible_panels() {
+        let layout = DockLayout::new();
+        let panels = layout.visible_panels();
+        
+        assert!(panels.contains(&PanelType::Viewport));
+    }
+
+    #[test]
+    fn test_layout_has_debug_panels() {
+        let layout = DockLayout::from_preset(LayoutPreset::Debug);
+        assert!(layout.has_debug_panels());
+    }
+
+    #[test]
+    fn test_layout_is_valid() {
+        let layout = DockLayout::new();
+        assert!(layout.is_valid());
+    }
+
+    #[test]
+    fn test_layout_focused_panel() {
+        let mut layout = DockLayout::new();
+        assert!(layout.focused_panel().is_none());
+        
+        layout.set_focused_panel(Some(PanelType::Inspector));
+        assert_eq!(layout.focused_panel(), Some(PanelType::Inspector));
+        
+        layout.set_focused_panel(None);
+        assert!(layout.focused_panel().is_none());
+    }
+
+    #[test]
+    fn test_layout_matches_preset() {
+        let layout = DockLayout::from_preset(LayoutPreset::Default);
+        assert!(layout.matches_preset(LayoutPreset::Default));
+    }
+
+    #[test]
+    fn test_layout_closest_preset() {
+        let layout = DockLayout::from_preset(LayoutPreset::Wide);
+        // Should match Wide or find closest
+        let closest = layout.closest_preset();
+        // At minimum, it should return a valid preset
+        assert!(LayoutPreset::all().contains(&closest));
+    }
+
+    // === LayoutStats tests ===
+
+    #[test]
+    fn test_layout_stats_default_struct() {
+        let stats = LayoutStats::default();
+        assert_eq!(stats.panel_count, 0);
+        assert!(!stats.has_viewport);
+        assert!(!stats.has_debug_panels);
     }
 }

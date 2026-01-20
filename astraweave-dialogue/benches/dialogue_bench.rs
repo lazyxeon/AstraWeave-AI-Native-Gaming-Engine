@@ -24,6 +24,7 @@ fn assert_graph_valid(graph: &DialogueGraph) {
 }
 
 /// Assert that a node exists and has expected ID
+#[allow(dead_code)]
 fn assert_node_exists(graph: &DialogueGraph, id: &str) {
     let node = graph.get_node(id);
     assert!(node.is_some(), "Node '{}' should exist", id);
@@ -50,7 +51,7 @@ fn create_linear_dialogue(length: usize) -> DialogueGraph {
             id,
             text: format!("This is dialogue text for node {}. It contains some meaningful content.", i),
             responses: vec![DialogueResponse {
-                text: format!("Continue to next part of the conversation"),
+                text: "Continue to next part of the conversation".to_string(),
                 next_id,
             }],
         });
@@ -508,7 +509,7 @@ fn bench_traversal(c: &mut Criterion) {
             let mut steps = 0;
             while let Some(node) = current {
                 steps += 1;
-                if let Some(ref response) = node.responses.first() {
+                if let Some(response) = node.responses.first() {
                     if let Some(ref next_id) = response.next_id {
                         current = linear_100.get_node(next_id);
                     } else {

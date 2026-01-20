@@ -716,7 +716,7 @@ fn bench_query_processing(c: &mut Criterion) {
 
     // Test 1: Empty query
     group.bench_function("empty_query_handling", |bencher| {
-        let query = "";
+        let query = String::new();
 
         bencher.iter(|| {
             let processed = if query.is_empty() {
