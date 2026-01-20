@@ -16,3 +16,6 @@ mod packet_loss_tests;
 
 #[path = "integration/server_logic_tests.rs"]
 mod server_logic_tests;
+
+#[path = "integration/snapshot_sync_tests.rs"]
+mod snapshot_sync_tests;

@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Weather type with associated properties
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum WeatherType {
     #[default]
     Clear,
@@ -25,6 +25,12 @@ pub enum WeatherType {
     Fog,
     Sandstorm,
     Hail,
+}
+
+impl std::fmt::Display for WeatherType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl WeatherType {
@@ -146,7 +152,7 @@ impl Default for WeatherSettings {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Time of day presets
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum TimePreset {
     Midnight,
     Dawn,
@@ -160,7 +166,27 @@ pub enum TimePreset {
     Night,
 }
 
+impl std::fmt::Display for TimePreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl TimePreset {
+    pub fn all() -> &'static [TimePreset] {
+        &[
+            TimePreset::Midnight,
+            TimePreset::Dawn,
+            TimePreset::Sunrise,
+            TimePreset::Morning,
+            TimePreset::Noon,
+            TimePreset::Afternoon,
+            TimePreset::Sunset,
+            TimePreset::Dusk,
+            TimePreset::Night,
+        ]
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
             TimePreset::Midnight => "Midnight",
@@ -201,20 +227,6 @@ impl TimePreset {
             TimePreset::Dusk => 20.0,
             TimePreset::Night => 22.0,
         }
-    }
-
-    pub fn all() -> &'static [TimePreset] {
-        &[
-            TimePreset::Midnight,
-            TimePreset::Dawn,
-            TimePreset::Sunrise,
-            TimePreset::Morning,
-            TimePreset::Noon,
-            TimePreset::Afternoon,
-            TimePreset::Sunset,
-            TimePreset::Dusk,
-            TimePreset::Night,
-        ]
     }
 }
 
@@ -359,7 +371,7 @@ impl WorldBounds {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Environment preset for quick setup
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum EnvironmentPreset {
     #[default]
     Sunny,
@@ -373,6 +385,12 @@ pub enum EnvironmentPreset {
     Arctic,
     Desert,
     Custom,
+}
+
+impl std::fmt::Display for EnvironmentPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl EnvironmentPreset {
@@ -437,13 +455,19 @@ pub struct WorldEvent {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WorldEventType {
     TerrainGenerated,
     WeatherChanged,
     TimeChanged,
     BiomeChanged,
     SettingsModified,
+}
+
+impl std::fmt::Display for WorldEventType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl WorldEvent {
@@ -461,6 +485,26 @@ impl WorldEvent {
 }
 
 impl WorldEventType {
+    pub fn all() -> &'static [WorldEventType] {
+        &[
+            WorldEventType::TerrainGenerated,
+            WorldEventType::WeatherChanged,
+            WorldEventType::TimeChanged,
+            WorldEventType::BiomeChanged,
+            WorldEventType::SettingsModified,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            WorldEventType::TerrainGenerated => "Terrain Generated",
+            WorldEventType::WeatherChanged => "Weather Changed",
+            WorldEventType::TimeChanged => "Time Changed",
+            WorldEventType::BiomeChanged => "Biome Changed",
+            WorldEventType::SettingsModified => "Settings Modified",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             WorldEventType::TerrainGenerated => "🏔️",
@@ -1344,5 +1388,136 @@ mod tests {
         }
         
         assert_eq!(panel.events.len(), 5);
+    }
+
+    // =====================================================================
+    // WeatherType Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_weather_type_display() {
+        for weather in WeatherType::all() {
+            let display = format!("{}", weather);
+            assert!(display.contains(weather.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_weather_type_all_variants() {
+        let variants = WeatherType::all();
+        assert_eq!(variants.len(), 11, "Expected 11 weather type variants");
+        assert!(variants.contains(&WeatherType::Clear));
+        assert!(variants.contains(&WeatherType::Thunderstorm));
+        assert!(variants.contains(&WeatherType::Snow));
+    }
+
+    #[test]
+    fn test_weather_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for weather in WeatherType::all() {
+            set.insert(*weather);
+        }
+        assert_eq!(set.len(), WeatherType::all().len());
+    }
+
+    // =====================================================================
+    // TimePreset Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_time_preset_display() {
+        for preset in TimePreset::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_time_preset_all_variants() {
+        let variants = TimePreset::all();
+        assert_eq!(variants.len(), 9, "Expected 9 time preset variants");
+        assert!(variants.contains(&TimePreset::Midnight));
+        assert!(variants.contains(&TimePreset::Noon));
+        assert!(variants.contains(&TimePreset::Sunset));
+    }
+
+    #[test]
+    fn test_time_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in TimePreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), TimePreset::all().len());
+    }
+
+    // =====================================================================
+    // EnvironmentPreset Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_environment_preset_display() {
+        for preset in EnvironmentPreset::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_environment_preset_all_variants() {
+        let variants = EnvironmentPreset::all();
+        assert_eq!(variants.len(), 11, "Expected 11 environment preset variants");
+        assert!(variants.contains(&EnvironmentPreset::Sunny));
+        assert!(variants.contains(&EnvironmentPreset::Stormy));
+        assert!(variants.contains(&EnvironmentPreset::Custom));
+    }
+
+    #[test]
+    fn test_environment_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in EnvironmentPreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), EnvironmentPreset::all().len());
+    }
+
+    // =====================================================================
+    // WorldEventType Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_world_event_type_display() {
+        for event in WorldEventType::all() {
+            let display = format!("{}", event);
+            assert!(display.contains(event.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_world_event_type_all_variants() {
+        let variants = WorldEventType::all();
+        assert_eq!(variants.len(), 5, "Expected 5 world event type variants");
+        assert!(variants.contains(&WorldEventType::TerrainGenerated));
+        assert!(variants.contains(&WorldEventType::WeatherChanged));
+        assert!(variants.contains(&WorldEventType::SettingsModified));
+    }
+
+    #[test]
+    fn test_world_event_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for event in WorldEventType::all() {
+            set.insert(*event);
+        }
+        assert_eq!(set.len(), WorldEventType::all().len());
+    }
+
+    #[test]
+    fn test_world_event_type_name() {
+        assert_eq!(WorldEventType::TerrainGenerated.name(), "Terrain Generated");
+        assert_eq!(WorldEventType::WeatherChanged.name(), "Weather Changed");
+        assert_eq!(WorldEventType::SettingsModified.name(), "Settings Modified");
     }
 }

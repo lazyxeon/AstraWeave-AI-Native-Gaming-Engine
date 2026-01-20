@@ -1,0 +1,49 @@
+[package]
+name = "astraweave-net-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[workspace]
+# This is a separate workspace to avoid conflicts with the main workspace
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+
+[dependencies.astraweave-net]
+path = ".."
+
+[dependencies.astraweave-core]
+path = "../../astraweave-core"
+
+[[bin]]
+name = "fuzz_packet_parsing"
+path = "fuzz_targets/fuzz_packet_parsing.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_delta_compression"
+path = "fuzz_targets/fuzz_delta_compression.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_snapshot_serialization"
+path = "fuzz_targets/fuzz_snapshot_serialization.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_interest_management"
+path = "fuzz_targets/fuzz_interest_management.rs"
+test = false
+doc = false
+bench = false

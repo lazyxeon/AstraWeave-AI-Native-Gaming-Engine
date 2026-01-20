@@ -20,7 +20,7 @@ use astraweave_core::ActionStep;
 use crate::orchestrator::{Orchestrator, RuleOrchestrator};
 
 /// Planner mode selection for AI entities.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PlannerMode {
     /// Use rule-based orchestrator (smoke + advance logic).
     Rule,
@@ -28,6 +28,52 @@ pub enum PlannerMode {
     BehaviorTree,
     /// Use GOAP planner (requires `ai-goap` feature).
     GOAP,
+}
+
+impl std::fmt::Display for PlannerMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PlannerMode::Rule => write!(f, "Rule"),
+            PlannerMode::BehaviorTree => write!(f, "BehaviorTree"),
+            PlannerMode::GOAP => write!(f, "GOAP"),
+        }
+    }
+}
+
+impl PlannerMode {
+    /// Check if this mode requires the `ai-bt` feature.
+    #[must_use]
+    pub fn requires_bt_feature(&self) -> bool {
+        matches!(self, PlannerMode::BehaviorTree)
+    }
+
+    /// Check if this mode requires the `ai-goap` feature.
+    #[must_use]
+    pub fn requires_goap_feature(&self) -> bool {
+        matches!(self, PlannerMode::GOAP)
+    }
+
+    /// Check if this mode is always available (no feature flag required).
+    #[must_use]
+    pub fn is_always_available(&self) -> bool {
+        matches!(self, PlannerMode::Rule)
+    }
+
+    /// Get the feature flag name required for this mode, if any.
+    #[must_use]
+    pub fn required_feature(&self) -> Option<&'static str> {
+        match self {
+            PlannerMode::Rule => None,
+            PlannerMode::BehaviorTree => Some("ai-bt"),
+            PlannerMode::GOAP => Some("ai-goap"),
+        }
+    }
+
+    /// Get all available planner modes.
+    #[must_use]
+    pub fn all() -> &'static [PlannerMode] {
+        &[PlannerMode::Rule, PlannerMode::BehaviorTree, PlannerMode::GOAP]
+    }
 }
 
 /// Component for AI entities to control which planner to use.
@@ -41,7 +87,7 @@ pub enum PlannerMode {
 ///     policy: Some("gather_craft_policy".to_string()),
 /// };
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CAiController {
     /// Which planner to use for this entity.
     pub mode: PlannerMode,
@@ -50,12 +96,84 @@ pub struct CAiController {
     pub policy: Option<String>,
 }
 
+impl std::fmt::Display for CAiController {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.policy {
+            Some(policy) => write!(f, "CAiController({}, policy={})", self.mode, policy),
+            None => write!(f, "CAiController({})", self.mode),
+        }
+    }
+}
+
 impl Default for CAiController {
     fn default() -> Self {
         Self {
             mode: PlannerMode::Rule,
             policy: None,
         }
+    }
+}
+
+impl CAiController {
+    /// Create a new AI controller with the specified planner mode.
+    #[must_use]
+    pub fn new(mode: PlannerMode) -> Self {
+        Self { mode, policy: None }
+    }
+
+    /// Create a new AI controller with a policy.
+    #[must_use]
+    pub fn with_policy(mode: PlannerMode, policy: impl Into<String>) -> Self {
+        Self {
+            mode,
+            policy: Some(policy.into()),
+        }
+    }
+
+    /// Create a rule-based AI controller (default).
+    #[must_use]
+    pub fn rule() -> Self {
+        Self::new(PlannerMode::Rule)
+    }
+
+    /// Create a behavior tree AI controller.
+    #[must_use]
+    pub fn behavior_tree() -> Self {
+        Self::new(PlannerMode::BehaviorTree)
+    }
+
+    /// Create a GOAP AI controller.
+    #[must_use]
+    pub fn goap() -> Self {
+        Self::new(PlannerMode::GOAP)
+    }
+
+    /// Check if this controller has a policy.
+    #[must_use]
+    pub fn has_policy(&self) -> bool {
+        self.policy.is_some()
+    }
+
+    /// Get the policy name if set.
+    #[must_use]
+    pub fn policy_name(&self) -> Option<&str> {
+        self.policy.as_deref()
+    }
+
+    /// Set the policy for this controller.
+    pub fn set_policy(&mut self, policy: impl Into<String>) {
+        self.policy = Some(policy.into());
+    }
+
+    /// Clear the policy for this controller.
+    pub fn clear_policy(&mut self) {
+        self.policy = None;
+    }
+
+    /// Check if this controller requires feature flags.
+    #[must_use]
+    pub fn requires_feature(&self) -> bool {
+        self.mode.required_feature().is_some()
     }
 }
 
@@ -501,5 +619,169 @@ mod tests {
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("ai-goap' feature"));
+    }
+
+    // ===== Tests for new PlannerMode enhancements =====
+
+    #[test]
+    fn test_planner_mode_display() {
+        assert_eq!(format!("{}", PlannerMode::Rule), "Rule");
+        assert_eq!(format!("{}", PlannerMode::BehaviorTree), "BehaviorTree");
+        assert_eq!(format!("{}", PlannerMode::GOAP), "GOAP");
+    }
+
+    #[test]
+    fn test_planner_mode_requires_bt_feature() {
+        assert!(!PlannerMode::Rule.requires_bt_feature());
+        assert!(PlannerMode::BehaviorTree.requires_bt_feature());
+        assert!(!PlannerMode::GOAP.requires_bt_feature());
+    }
+
+    #[test]
+    fn test_planner_mode_requires_goap_feature() {
+        assert!(!PlannerMode::Rule.requires_goap_feature());
+        assert!(!PlannerMode::BehaviorTree.requires_goap_feature());
+        assert!(PlannerMode::GOAP.requires_goap_feature());
+    }
+
+    #[test]
+    fn test_planner_mode_is_always_available() {
+        assert!(PlannerMode::Rule.is_always_available());
+        assert!(!PlannerMode::BehaviorTree.is_always_available());
+        assert!(!PlannerMode::GOAP.is_always_available());
+    }
+
+    #[test]
+    fn test_planner_mode_required_feature() {
+        assert_eq!(PlannerMode::Rule.required_feature(), None);
+        assert_eq!(PlannerMode::BehaviorTree.required_feature(), Some("ai-bt"));
+        assert_eq!(PlannerMode::GOAP.required_feature(), Some("ai-goap"));
+    }
+
+    #[test]
+    fn test_planner_mode_all() {
+        let all = PlannerMode::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&PlannerMode::Rule));
+        assert!(all.contains(&PlannerMode::BehaviorTree));
+        assert!(all.contains(&PlannerMode::GOAP));
+    }
+
+    #[test]
+    fn test_planner_mode_copy() {
+        let mode = PlannerMode::GOAP;
+        let copy = mode;
+        assert_eq!(mode, copy);
+    }
+
+    #[test]
+    fn test_planner_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(PlannerMode::Rule);
+        set.insert(PlannerMode::BehaviorTree);
+        set.insert(PlannerMode::GOAP);
+        assert_eq!(set.len(), 3);
+    }
+
+    // ===== Tests for new CAiController enhancements =====
+
+    #[test]
+    fn test_controller_display_without_policy() {
+        let controller = CAiController::new(PlannerMode::Rule);
+        assert_eq!(format!("{}", controller), "CAiController(Rule)");
+    }
+
+    #[test]
+    fn test_controller_display_with_policy() {
+        let controller = CAiController::with_policy(PlannerMode::GOAP, "combat_policy");
+        assert_eq!(format!("{}", controller), "CAiController(GOAP, policy=combat_policy)");
+    }
+
+    #[test]
+    fn test_controller_new() {
+        let controller = CAiController::new(PlannerMode::BehaviorTree);
+        assert_eq!(controller.mode, PlannerMode::BehaviorTree);
+        assert!(controller.policy.is_none());
+    }
+
+    #[test]
+    fn test_controller_with_policy() {
+        let controller = CAiController::with_policy(PlannerMode::GOAP, "gather_policy");
+        assert_eq!(controller.mode, PlannerMode::GOAP);
+        assert_eq!(controller.policy, Some("gather_policy".to_string()));
+    }
+
+    #[test]
+    fn test_controller_rule_factory() {
+        let controller = CAiController::rule();
+        assert_eq!(controller.mode, PlannerMode::Rule);
+        assert!(controller.policy.is_none());
+    }
+
+    #[test]
+    fn test_controller_behavior_tree_factory() {
+        let controller = CAiController::behavior_tree();
+        assert_eq!(controller.mode, PlannerMode::BehaviorTree);
+        assert!(controller.policy.is_none());
+    }
+
+    #[test]
+    fn test_controller_goap_factory() {
+        let controller = CAiController::goap();
+        assert_eq!(controller.mode, PlannerMode::GOAP);
+        assert!(controller.policy.is_none());
+    }
+
+    #[test]
+    fn test_controller_has_policy() {
+        let controller1 = CAiController::new(PlannerMode::Rule);
+        let controller2 = CAiController::with_policy(PlannerMode::Rule, "policy");
+        assert!(!controller1.has_policy());
+        assert!(controller2.has_policy());
+    }
+
+    #[test]
+    fn test_controller_policy_name() {
+        let controller1 = CAiController::new(PlannerMode::Rule);
+        let controller2 = CAiController::with_policy(PlannerMode::Rule, "test_policy");
+        assert_eq!(controller1.policy_name(), None);
+        assert_eq!(controller2.policy_name(), Some("test_policy"));
+    }
+
+    #[test]
+    fn test_controller_set_policy() {
+        let mut controller = CAiController::new(PlannerMode::Rule);
+        assert!(!controller.has_policy());
+        controller.set_policy("new_policy");
+        assert!(controller.has_policy());
+        assert_eq!(controller.policy_name(), Some("new_policy"));
+    }
+
+    #[test]
+    fn test_controller_clear_policy() {
+        let mut controller = CAiController::with_policy(PlannerMode::Rule, "policy");
+        assert!(controller.has_policy());
+        controller.clear_policy();
+        assert!(!controller.has_policy());
+    }
+
+    #[test]
+    fn test_controller_requires_feature() {
+        let rule = CAiController::rule();
+        let bt = CAiController::behavior_tree();
+        let goap = CAiController::goap();
+        assert!(!rule.requires_feature());
+        assert!(bt.requires_feature());
+        assert!(goap.requires_feature());
+    }
+
+    #[test]
+    fn test_controller_equality() {
+        let c1 = CAiController::with_policy(PlannerMode::GOAP, "policy");
+        let c2 = CAiController::with_policy(PlannerMode::GOAP, "policy");
+        let c3 = CAiController::with_policy(PlannerMode::GOAP, "other");
+        assert_eq!(c1, c2);
+        assert_ne!(c1, c3);
     }
 }

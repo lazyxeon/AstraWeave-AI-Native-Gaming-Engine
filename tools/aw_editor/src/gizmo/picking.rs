@@ -12,7 +12,7 @@ use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 
 /// Gizmo handle type (for picking).
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GizmoHandle {
     TranslateX,
     TranslateY,
@@ -24,6 +24,92 @@ pub enum GizmoHandle {
     ScaleY,
     ScaleZ,
     ScaleUniform,
+}
+
+impl std::fmt::Display for GizmoHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GizmoHandle::TranslateX => write!(f, "Translate X"),
+            GizmoHandle::TranslateY => write!(f, "Translate Y"),
+            GizmoHandle::TranslateZ => write!(f, "Translate Z"),
+            GizmoHandle::RotateX => write!(f, "Rotate X"),
+            GizmoHandle::RotateY => write!(f, "Rotate Y"),
+            GizmoHandle::RotateZ => write!(f, "Rotate Z"),
+            GizmoHandle::ScaleX => write!(f, "Scale X"),
+            GizmoHandle::ScaleY => write!(f, "Scale Y"),
+            GizmoHandle::ScaleZ => write!(f, "Scale Z"),
+            GizmoHandle::ScaleUniform => write!(f, "Scale Uniform"),
+        }
+    }
+}
+
+impl GizmoHandle {
+    /// Returns all gizmo handle variants.
+    pub fn all() -> &'static [Self] {
+        &[
+            GizmoHandle::TranslateX,
+            GizmoHandle::TranslateY,
+            GizmoHandle::TranslateZ,
+            GizmoHandle::RotateX,
+            GizmoHandle::RotateY,
+            GizmoHandle::RotateZ,
+            GizmoHandle::ScaleX,
+            GizmoHandle::ScaleY,
+            GizmoHandle::ScaleZ,
+            GizmoHandle::ScaleUniform,
+        ]
+    }
+
+    /// Returns the display name of this handle.
+    pub fn name(&self) -> &'static str {
+        match self {
+            GizmoHandle::TranslateX => "Translate X",
+            GizmoHandle::TranslateY => "Translate Y",
+            GizmoHandle::TranslateZ => "Translate Z",
+            GizmoHandle::RotateX => "Rotate X",
+            GizmoHandle::RotateY => "Rotate Y",
+            GizmoHandle::RotateZ => "Rotate Z",
+            GizmoHandle::ScaleX => "Scale X",
+            GizmoHandle::ScaleY => "Scale Y",
+            GizmoHandle::ScaleZ => "Scale Z",
+            GizmoHandle::ScaleUniform => "Scale Uniform",
+        }
+    }
+
+    /// Returns true if this is a translation handle.
+    pub fn is_translate(&self) -> bool {
+        matches!(self, GizmoHandle::TranslateX | GizmoHandle::TranslateY | GizmoHandle::TranslateZ)
+    }
+
+    /// Returns true if this is a rotation handle.
+    pub fn is_rotate(&self) -> bool {
+        matches!(self, GizmoHandle::RotateX | GizmoHandle::RotateY | GizmoHandle::RotateZ)
+    }
+
+    /// Returns true if this is a scale handle.
+    pub fn is_scale(&self) -> bool {
+        matches!(self, GizmoHandle::ScaleX | GizmoHandle::ScaleY | GizmoHandle::ScaleZ | GizmoHandle::ScaleUniform)
+    }
+
+    /// Returns the axis character for this handle ('X', 'Y', 'Z', or 'U' for uniform).
+    pub fn axis(&self) -> char {
+        match self {
+            GizmoHandle::TranslateX | GizmoHandle::RotateX | GizmoHandle::ScaleX => 'X',
+            GizmoHandle::TranslateY | GizmoHandle::RotateY | GizmoHandle::ScaleY => 'Y',
+            GizmoHandle::TranslateZ | GizmoHandle::RotateZ | GizmoHandle::ScaleZ => 'Z',
+            GizmoHandle::ScaleUniform => 'U',
+        }
+    }
+
+    /// Returns the color for this handle (for rendering).
+    pub fn color(&self) -> [f32; 3] {
+        match self {
+            GizmoHandle::TranslateX | GizmoHandle::RotateX | GizmoHandle::ScaleX => [1.0, 0.2, 0.2], // Red
+            GizmoHandle::TranslateY | GizmoHandle::RotateY | GizmoHandle::ScaleY => [0.2, 1.0, 0.2], // Green
+            GizmoHandle::TranslateZ | GizmoHandle::RotateZ | GizmoHandle::ScaleZ => [0.3, 0.3, 1.0], // Blue
+            GizmoHandle::ScaleUniform => [1.0, 1.0, 1.0], // White
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -524,5 +610,60 @@ mod tests {
 
         let handle = picker.pick_scale_handle(&ray, gizmo_pos);
         assert_eq!(handle, Some(GizmoHandle::ScaleY));
+    }
+
+    // ==================== GizmoHandle Display Tests ====================
+
+    #[test]
+    fn test_gizmo_handle_display() {
+        assert_eq!(GizmoHandle::TranslateX.to_string(), "Translate X");
+        assert_eq!(GizmoHandle::RotateY.to_string(), "Rotate Y");
+        assert_eq!(GizmoHandle::ScaleZ.to_string(), "Scale Z");
+        assert_eq!(GizmoHandle::ScaleUniform.to_string(), "Scale Uniform");
+    }
+
+    #[test]
+    fn test_gizmo_handle_all_and_name() {
+        let handles = GizmoHandle::all();
+        assert_eq!(handles.len(), 10);
+        for handle in handles {
+            assert!(!handle.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_gizmo_handle_type_helpers() {
+        assert!(GizmoHandle::TranslateX.is_translate());
+        assert!(GizmoHandle::TranslateY.is_translate());
+        assert!(GizmoHandle::TranslateZ.is_translate());
+        assert!(!GizmoHandle::TranslateX.is_rotate());
+        assert!(!GizmoHandle::TranslateX.is_scale());
+
+        assert!(GizmoHandle::RotateX.is_rotate());
+        assert!(!GizmoHandle::RotateX.is_translate());
+
+        assert!(GizmoHandle::ScaleX.is_scale());
+        assert!(GizmoHandle::ScaleUniform.is_scale());
+    }
+
+    #[test]
+    fn test_gizmo_handle_axis() {
+        assert_eq!(GizmoHandle::TranslateX.axis(), 'X');
+        assert_eq!(GizmoHandle::RotateY.axis(), 'Y');
+        assert_eq!(GizmoHandle::ScaleZ.axis(), 'Z');
+        assert_eq!(GizmoHandle::ScaleUniform.axis(), 'U');
+    }
+
+    #[test]
+    fn test_gizmo_handle_color() {
+        // X handles are red-ish
+        assert!(GizmoHandle::TranslateX.color()[0] > 0.5);
+        // Y handles are green-ish
+        assert!(GizmoHandle::RotateY.color()[1] > 0.5);
+        // Z handles are blue-ish
+        assert!(GizmoHandle::ScaleZ.color()[2] > 0.5);
+        // Uniform is white
+        let uniform_color = GizmoHandle::ScaleUniform.color();
+        assert!(uniform_color[0] > 0.9 && uniform_color[1] > 0.9 && uniform_color[2] > 0.9);
     }
 }

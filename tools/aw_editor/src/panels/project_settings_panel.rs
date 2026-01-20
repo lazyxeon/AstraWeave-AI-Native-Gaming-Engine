@@ -13,7 +13,7 @@ use egui::{Color32, RichText, Ui};
 use crate::panels::Panel;
 
 /// Target platform
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TargetPlatform {
     Windows,
     Linux,
@@ -26,7 +26,53 @@ pub enum TargetPlatform {
     NintendoSwitch,
 }
 
+impl std::fmt::Display for TargetPlatform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl TargetPlatform {
+    pub fn name(&self) -> &'static str {
+        match self {
+            TargetPlatform::Windows => "Windows",
+            TargetPlatform::Linux => "Linux",
+            TargetPlatform::MacOS => "macOS",
+            TargetPlatform::Android => "Android",
+            TargetPlatform::Ios => "iOS",
+            TargetPlatform::WebAssembly => "WebAssembly",
+            TargetPlatform::PlayStation => "PlayStation",
+            TargetPlatform::Xbox => "Xbox",
+            TargetPlatform::NintendoSwitch => "Nintendo Switch",
+        }
+    }
+
+    pub fn all() -> &'static [TargetPlatform] {
+        &[
+            TargetPlatform::Windows,
+            TargetPlatform::Linux,
+            TargetPlatform::MacOS,
+            TargetPlatform::Android,
+            TargetPlatform::Ios,
+            TargetPlatform::WebAssembly,
+            TargetPlatform::PlayStation,
+            TargetPlatform::Xbox,
+            TargetPlatform::NintendoSwitch,
+        ]
+    }
+
+    pub fn is_desktop(&self) -> bool {
+        matches!(self, TargetPlatform::Windows | TargetPlatform::Linux | TargetPlatform::MacOS)
+    }
+
+    pub fn is_mobile(&self) -> bool {
+        matches!(self, TargetPlatform::Android | TargetPlatform::Ios)
+    }
+
+    pub fn is_console(&self) -> bool {
+        matches!(self, TargetPlatform::PlayStation | TargetPlatform::Xbox | TargetPlatform::NintendoSwitch)
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             TargetPlatform::Windows => "🪟",
@@ -56,7 +102,7 @@ pub struct QualityLevel {
     pub particle_density: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum TextureQuality {
     Low,
     Medium,
@@ -65,7 +111,33 @@ pub enum TextureQuality {
     Ultra,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for TextureQuality {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl TextureQuality {
+    pub fn name(&self) -> &'static str {
+        match self {
+            TextureQuality::Low => "Low",
+            TextureQuality::Medium => "Medium",
+            TextureQuality::High => "High",
+            TextureQuality::Ultra => "Ultra",
+        }
+    }
+
+    pub fn all() -> &'static [TextureQuality] {
+        &[
+            TextureQuality::Low,
+            TextureQuality::Medium,
+            TextureQuality::High,
+            TextureQuality::Ultra,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AntialiasingMode {
     None,
     Fxaa,
@@ -75,6 +147,42 @@ pub enum AntialiasingMode {
     Msaa2x,
     Msaa4x,
     Msaa8x,
+}
+
+impl std::fmt::Display for AntialiasingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl AntialiasingMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            AntialiasingMode::None => "None",
+            AntialiasingMode::Fxaa => "FXAA",
+            AntialiasingMode::Smaa => "SMAA",
+            AntialiasingMode::Taa => "TAA",
+            AntialiasingMode::Msaa2x => "MSAA 2x",
+            AntialiasingMode::Msaa4x => "MSAA 4x",
+            AntialiasingMode::Msaa8x => "MSAA 8x",
+        }
+    }
+
+    pub fn all() -> &'static [AntialiasingMode] {
+        &[
+            AntialiasingMode::None,
+            AntialiasingMode::Fxaa,
+            AntialiasingMode::Smaa,
+            AntialiasingMode::Taa,
+            AntialiasingMode::Msaa2x,
+            AntialiasingMode::Msaa4x,
+            AntialiasingMode::Msaa8x,
+        ]
+    }
+
+    pub fn is_msaa(&self) -> bool {
+        matches!(self, AntialiasingMode::Msaa2x | AntialiasingMode::Msaa4x | AntialiasingMode::Msaa8x)
+    }
 }
 
 impl Default for QualityLevel {
@@ -106,12 +214,36 @@ pub struct PhysicsSettings {
     pub enable_ccd: bool,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BroadphaseType {
     #[default]
     Sap,
     DynamicAabb,
     Quadtree,
+}
+
+impl std::fmt::Display for BroadphaseType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl BroadphaseType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            BroadphaseType::Sap => "SAP",
+            BroadphaseType::DynamicAabb => "Dynamic AABB",
+            BroadphaseType::Quadtree => "Quadtree",
+        }
+    }
+
+    pub fn all() -> &'static [BroadphaseType] {
+        &[
+            BroadphaseType::Sap,
+            BroadphaseType::DynamicAabb,
+            BroadphaseType::Quadtree,
+        ]
+    }
 }
 
 impl Default for PhysicsSettings {
@@ -142,7 +274,7 @@ pub struct AudioSettings {
     pub audio_backend: AudioBackend,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AudioBackend {
     #[default]
     Auto,
@@ -150,6 +282,34 @@ pub enum AudioBackend {
     CoreAudio,
     Alsa,
     PulseAudio,
+}
+
+impl std::fmt::Display for AudioBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl AudioBackend {
+    pub fn name(&self) -> &'static str {
+        match self {
+            AudioBackend::Auto => "Auto",
+            AudioBackend::Wasapi => "WASAPI",
+            AudioBackend::CoreAudio => "Core Audio",
+            AudioBackend::Alsa => "ALSA",
+            AudioBackend::PulseAudio => "PulseAudio",
+        }
+    }
+
+    pub fn all() -> &'static [AudioBackend] {
+        &[
+            AudioBackend::Auto,
+            AudioBackend::Wasapi,
+            AudioBackend::CoreAudio,
+            AudioBackend::Alsa,
+            AudioBackend::PulseAudio,
+        ]
+    }
 }
 
 impl Default for AudioSettings {
@@ -181,7 +341,7 @@ pub struct RenderingSettings {
     pub shadow_mode: ShadowMode,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum RendererBackend {
     #[default]
     Auto,
@@ -192,7 +352,37 @@ pub enum RendererBackend {
     WebGpu,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for RendererBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl RendererBackend {
+    pub fn name(&self) -> &'static str {
+        match self {
+            RendererBackend::Auto => "Auto",
+            RendererBackend::Vulkan => "Vulkan",
+            RendererBackend::DirectX12 => "DirectX 12",
+            RendererBackend::Metal => "Metal",
+            RendererBackend::OpenGL => "OpenGL",
+            RendererBackend::WebGpu => "WebGPU",
+        }
+    }
+
+    pub fn all() -> &'static [RendererBackend] {
+        &[
+            RendererBackend::Auto,
+            RendererBackend::Vulkan,
+            RendererBackend::DirectX12,
+            RendererBackend::Metal,
+            RendererBackend::OpenGL,
+            RendererBackend::WebGpu,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum TonemappingMode {
     None,
     Reinhard,
@@ -202,7 +392,35 @@ pub enum TonemappingMode {
     Filmic,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for TonemappingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl TonemappingMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            TonemappingMode::None => "None",
+            TonemappingMode::Reinhard => "Reinhard",
+            TonemappingMode::Aces => "ACES",
+            TonemappingMode::AgX => "AgX",
+            TonemappingMode::Filmic => "Filmic",
+        }
+    }
+
+    pub fn all() -> &'static [TonemappingMode] {
+        &[
+            TonemappingMode::None,
+            TonemappingMode::Reinhard,
+            TonemappingMode::Aces,
+            TonemappingMode::AgX,
+            TonemappingMode::Filmic,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AoMode {
     None,
     Ssao,
@@ -211,7 +429,33 @@ pub enum AoMode {
     Gtao,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for AoMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl AoMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            AoMode::None => "None",
+            AoMode::Ssao => "SSAO",
+            AoMode::Hbao => "HBAO+",
+            AoMode::Gtao => "GTAO",
+        }
+    }
+
+    pub fn all() -> &'static [AoMode] {
+        &[
+            AoMode::None,
+            AoMode::Ssao,
+            AoMode::Hbao,
+            AoMode::Gtao,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum GiMode {
     #[default]
     None,
@@ -220,7 +464,37 @@ pub enum GiMode {
     PathTraced,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for GiMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl GiMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            GiMode::None => "None",
+            GiMode::ScreenSpace => "Screen Space",
+            GiMode::Lumen => "Lumen",
+            GiMode::PathTraced => "Path Traced",
+        }
+    }
+
+    pub fn all() -> &'static [GiMode] {
+        &[
+            GiMode::None,
+            GiMode::ScreenSpace,
+            GiMode::Lumen,
+            GiMode::PathTraced,
+        ]
+    }
+
+    pub fn is_raytraced(&self) -> bool {
+        matches!(self, GiMode::Lumen | GiMode::PathTraced)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ReflectionMode {
     None,
     #[default]
@@ -229,13 +503,65 @@ pub enum ReflectionMode {
     Hybrid,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for ReflectionMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl ReflectionMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            ReflectionMode::None => "None",
+            ReflectionMode::ScreenSpace => "Screen Space",
+            ReflectionMode::Raytraced => "Raytraced",
+            ReflectionMode::Hybrid => "Hybrid",
+        }
+    }
+
+    pub fn all() -> &'static [ReflectionMode] {
+        &[
+            ReflectionMode::None,
+            ReflectionMode::ScreenSpace,
+            ReflectionMode::Raytraced,
+            ReflectionMode::Hybrid,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ShadowMode {
     None,
     HardShadows,
     #[default]
     SoftShadows,
     Raytraced,
+}
+
+impl std::fmt::Display for ShadowMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl ShadowMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            ShadowMode::None => "None",
+            ShadowMode::HardShadows => "Hard Shadows",
+            ShadowMode::SoftShadows => "Soft Shadows",
+            ShadowMode::Raytraced => "Raytraced",
+        }
+    }
+
+    pub fn all() -> &'static [ShadowMode] {
+        &[
+            ShadowMode::None,
+            ShadowMode::HardShadows,
+            ShadowMode::SoftShadows,
+            ShadowMode::Raytraced,
+        ]
+    }
 }
 
 impl Default for RenderingSettings {
@@ -305,12 +631,36 @@ pub struct BuildConfig {
     pub company: String,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum CompressionMode {
     None,
     #[default]
     Fast,
     Best,
+}
+
+impl std::fmt::Display for CompressionMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl CompressionMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            CompressionMode::None => "None",
+            CompressionMode::Fast => "Fast",
+            CompressionMode::Best => "Best",
+        }
+    }
+
+    pub fn all() -> &'static [CompressionMode] {
+        &[
+            CompressionMode::None,
+            CompressionMode::Fast,
+            CompressionMode::Best,
+        ]
+    }
 }
 
 impl Default for BuildConfig {
@@ -329,7 +679,7 @@ impl Default for BuildConfig {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SettingsTab {
     #[default]
     Project,
@@ -340,6 +690,53 @@ pub enum SettingsTab {
     Quality,
     TagsLayers,
     Build,
+}
+
+impl std::fmt::Display for SettingsTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl SettingsTab {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SettingsTab::Project => "Project",
+            SettingsTab::Rendering => "Rendering",
+            SettingsTab::Physics => "Physics",
+            SettingsTab::Audio => "Audio",
+            SettingsTab::Input => "Input",
+            SettingsTab::Quality => "Quality",
+            SettingsTab::TagsLayers => "Tags & Layers",
+            SettingsTab::Build => "Build",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SettingsTab::Project => "📁",
+            SettingsTab::Rendering => "🎨",
+            SettingsTab::Physics => "⚙️",
+            SettingsTab::Audio => "🔊",
+            SettingsTab::Input => "🎮",
+            SettingsTab::Quality => "✨",
+            SettingsTab::TagsLayers => "🏷️",
+            SettingsTab::Build => "📦",
+        }
+    }
+
+    pub fn all() -> &'static [SettingsTab] {
+        &[
+            SettingsTab::Project,
+            SettingsTab::Rendering,
+            SettingsTab::Physics,
+            SettingsTab::Audio,
+            SettingsTab::Input,
+            SettingsTab::Quality,
+            SettingsTab::TagsLayers,
+            SettingsTab::Build,
+        ]
+    }
 }
 
 /// Main Project Settings Panel
@@ -1874,5 +2271,384 @@ mod tests {
         let panel = ProjectSettingsPanel::new();
         // Should have Default, Player, Enemy, Trigger, Projectile
         assert_eq!(panel.layer_count(), 5);
+    }
+
+    // ============================================================
+    // DISPLAY TRAIT TESTS
+    // ============================================================
+
+    #[test]
+    fn test_target_platform_display() {
+        for platform in TargetPlatform::all() {
+            let display = format!("{}", platform);
+            assert!(display.contains(platform.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_target_platform_name() {
+        assert_eq!(TargetPlatform::Windows.name(), "Windows");
+        assert_eq!(TargetPlatform::MacOS.name(), "macOS");
+        assert_eq!(TargetPlatform::NintendoSwitch.name(), "Nintendo Switch");
+    }
+
+    #[test]
+    fn test_target_platform_all() {
+        let all = TargetPlatform::all();
+        assert_eq!(all.len(), 9);
+        assert!(all.contains(&TargetPlatform::Windows));
+        assert!(all.contains(&TargetPlatform::WebAssembly));
+    }
+
+    #[test]
+    fn test_target_platform_is_desktop() {
+        assert!(TargetPlatform::Windows.is_desktop());
+        assert!(TargetPlatform::Linux.is_desktop());
+        assert!(TargetPlatform::MacOS.is_desktop());
+        assert!(!TargetPlatform::Android.is_desktop());
+        assert!(!TargetPlatform::PlayStation.is_desktop());
+    }
+
+    #[test]
+    fn test_target_platform_is_mobile() {
+        assert!(TargetPlatform::Android.is_mobile());
+        assert!(TargetPlatform::Ios.is_mobile());
+        assert!(!TargetPlatform::Windows.is_mobile());
+    }
+
+    #[test]
+    fn test_target_platform_is_console() {
+        assert!(TargetPlatform::PlayStation.is_console());
+        assert!(TargetPlatform::Xbox.is_console());
+        assert!(TargetPlatform::NintendoSwitch.is_console());
+        assert!(!TargetPlatform::Windows.is_console());
+    }
+
+    #[test]
+    fn test_target_platform_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for platform in TargetPlatform::all() {
+            set.insert(*platform);
+        }
+        assert_eq!(set.len(), TargetPlatform::all().len());
+    }
+
+    #[test]
+    fn test_texture_quality_display() {
+        for quality in TextureQuality::all() {
+            let display = format!("{}", quality);
+            assert!(display.contains(quality.name()));
+        }
+    }
+
+    #[test]
+    fn test_texture_quality_all() {
+        let all = TextureQuality::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_texture_quality_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for quality in TextureQuality::all() {
+            set.insert(*quality);
+        }
+        assert_eq!(set.len(), TextureQuality::all().len());
+    }
+
+    #[test]
+    fn test_antialiasing_mode_display() {
+        for mode in AntialiasingMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_antialiasing_mode_all() {
+        let all = AntialiasingMode::all();
+        assert_eq!(all.len(), 7);
+    }
+
+    #[test]
+    fn test_antialiasing_mode_is_msaa() {
+        assert!(AntialiasingMode::Msaa2x.is_msaa());
+        assert!(AntialiasingMode::Msaa4x.is_msaa());
+        assert!(AntialiasingMode::Msaa8x.is_msaa());
+        assert!(!AntialiasingMode::Fxaa.is_msaa());
+        assert!(!AntialiasingMode::Taa.is_msaa());
+    }
+
+    #[test]
+    fn test_antialiasing_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in AntialiasingMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), AntialiasingMode::all().len());
+    }
+
+    #[test]
+    fn test_broadphase_type_display() {
+        for bp in BroadphaseType::all() {
+            let display = format!("{}", bp);
+            assert!(display.contains(bp.name()));
+        }
+    }
+
+    #[test]
+    fn test_broadphase_type_all() {
+        let all = BroadphaseType::all();
+        assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_broadphase_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for bp in BroadphaseType::all() {
+            set.insert(*bp);
+        }
+        assert_eq!(set.len(), BroadphaseType::all().len());
+    }
+
+    #[test]
+    fn test_audio_backend_display() {
+        for backend in AudioBackend::all() {
+            let display = format!("{}", backend);
+            assert!(display.contains(backend.name()));
+        }
+    }
+
+    #[test]
+    fn test_audio_backend_all() {
+        let all = AudioBackend::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_audio_backend_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for backend in AudioBackend::all() {
+            set.insert(*backend);
+        }
+        assert_eq!(set.len(), AudioBackend::all().len());
+    }
+
+    #[test]
+    fn test_renderer_backend_display() {
+        for backend in RendererBackend::all() {
+            let display = format!("{}", backend);
+            assert!(display.contains(backend.name()));
+        }
+    }
+
+    #[test]
+    fn test_renderer_backend_all() {
+        let all = RendererBackend::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_renderer_backend_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for backend in RendererBackend::all() {
+            set.insert(*backend);
+        }
+        assert_eq!(set.len(), RendererBackend::all().len());
+    }
+
+    #[test]
+    fn test_tonemapping_mode_display() {
+        for mode in TonemappingMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_tonemapping_mode_all() {
+        let all = TonemappingMode::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_tonemapping_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in TonemappingMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), TonemappingMode::all().len());
+    }
+
+    #[test]
+    fn test_ao_mode_display() {
+        for mode in AoMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_ao_mode_all() {
+        let all = AoMode::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_ao_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in AoMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), AoMode::all().len());
+    }
+
+    #[test]
+    fn test_gi_mode_display() {
+        for mode in GiMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_gi_mode_all() {
+        let all = GiMode::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_gi_mode_is_raytraced() {
+        assert!(GiMode::Lumen.is_raytraced());
+        assert!(GiMode::PathTraced.is_raytraced());
+        assert!(!GiMode::None.is_raytraced());
+        assert!(!GiMode::ScreenSpace.is_raytraced());
+    }
+
+    #[test]
+    fn test_gi_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in GiMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), GiMode::all().len());
+    }
+
+    #[test]
+    fn test_reflection_mode_display() {
+        for mode in ReflectionMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_reflection_mode_all() {
+        let all = ReflectionMode::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_reflection_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in ReflectionMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), ReflectionMode::all().len());
+    }
+
+    #[test]
+    fn test_shadow_mode_display() {
+        for mode in ShadowMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_shadow_mode_all() {
+        let all = ShadowMode::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_shadow_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in ShadowMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), ShadowMode::all().len());
+    }
+
+    #[test]
+    fn test_compression_mode_display() {
+        for mode in CompressionMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_compression_mode_all() {
+        let all = CompressionMode::all();
+        assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_compression_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in CompressionMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), CompressionMode::all().len());
+    }
+
+    #[test]
+    fn test_settings_tab_display() {
+        for tab in SettingsTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_settings_tab_name() {
+        assert_eq!(SettingsTab::Project.name(), "Project");
+        assert_eq!(SettingsTab::TagsLayers.name(), "Tags & Layers");
+    }
+
+    #[test]
+    fn test_settings_tab_icon() {
+        assert_eq!(SettingsTab::Project.icon(), "📁");
+        assert_eq!(SettingsTab::Rendering.icon(), "🎨");
+        assert_eq!(SettingsTab::Build.icon(), "📦");
+    }
+
+    #[test]
+    fn test_settings_tab_all() {
+        let all = SettingsTab::all();
+        assert_eq!(all.len(), 8);
+    }
+
+    #[test]
+    fn test_settings_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in SettingsTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), SettingsTab::all().len());
     }
 }

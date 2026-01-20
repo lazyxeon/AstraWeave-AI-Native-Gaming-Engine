@@ -14,7 +14,7 @@ use egui::{Color32, RichText, Ui};
 use crate::panels::Panel;
 
 /// Light type enumeration
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LightType {
     #[default]
     Directional,
@@ -22,6 +22,12 @@ pub enum LightType {
     Spot,
     Area,
     Ambient,
+}
+
+impl std::fmt::Display for LightType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl LightType {
@@ -35,6 +41,16 @@ impl LightType {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            LightType::Directional => "Directional",
+            LightType::Point => "Point",
+            LightType::Spot => "Spot",
+            LightType::Area => "Area",
+            LightType::Ambient => "Ambient",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             LightType::Directional => "☀️",
@@ -44,10 +60,28 @@ impl LightType {
             LightType::Ambient => "🌐",
         }
     }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            LightType::Directional => "Sun-like light from infinitely far away",
+            LightType::Point => "Omnidirectional light source",
+            LightType::Spot => "Cone-shaped focused light",
+            LightType::Area => "Light emitted from a surface",
+            LightType::Ambient => "Global ambient illumination",
+        }
+    }
+
+    pub fn is_directional(&self) -> bool {
+        matches!(self, LightType::Directional)
+    }
+
+    pub fn has_range(&self) -> bool {
+        matches!(self, LightType::Point | LightType::Spot)
+    }
 }
 
 /// Shadow quality preset
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ShadowQuality {
     Off,
     Low,
@@ -57,8 +91,60 @@ pub enum ShadowQuality {
     Ultra,
 }
 
+impl std::fmt::Display for ShadowQuality {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ShadowQuality {
+    pub fn all() -> &'static [ShadowQuality] {
+        &[
+            ShadowQuality::Off,
+            ShadowQuality::Low,
+            ShadowQuality::Medium,
+            ShadowQuality::High,
+            ShadowQuality::Ultra,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ShadowQuality::Off => "Off",
+            ShadowQuality::Low => "Low",
+            ShadowQuality::Medium => "Medium",
+            ShadowQuality::High => "High",
+            ShadowQuality::Ultra => "Ultra",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ShadowQuality::Off => "⚫",
+            ShadowQuality::Low => "🔅",
+            ShadowQuality::Medium => "🔆",
+            ShadowQuality::High => "💎",
+            ShadowQuality::Ultra => "✨",
+        }
+    }
+
+    pub fn resolution(&self) -> u32 {
+        match self {
+            ShadowQuality::Off => 0,
+            ShadowQuality::Low => 512,
+            ShadowQuality::Medium => 1024,
+            ShadowQuality::High => 2048,
+            ShadowQuality::Ultra => 4096,
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        !matches!(self, ShadowQuality::Off)
+    }
+}
+
 /// Shadow type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ShadowType {
     None,
     #[default]
@@ -67,8 +153,56 @@ pub enum ShadowType {
     PCSS,
 }
 
+impl std::fmt::Display for ShadowType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ShadowType {
+    pub fn all() -> &'static [ShadowType] {
+        &[
+            ShadowType::None,
+            ShadowType::Hard,
+            ShadowType::Soft,
+            ShadowType::PCSS,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ShadowType::None => "None",
+            ShadowType::Hard => "Hard",
+            ShadowType::Soft => "Soft",
+            ShadowType::PCSS => "PCSS",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ShadowType::None => "⚫",
+            ShadowType::Hard => "🟥",
+            ShadowType::Soft => "🟧",
+            ShadowType::PCSS => "🟢",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            ShadowType::None => "No shadows",
+            ShadowType::Hard => "Sharp shadow edges",
+            ShadowType::Soft => "Blurred shadow edges",
+            ShadowType::PCSS => "Contact-hardening soft shadows",
+        }
+    }
+
+    pub fn is_soft(&self) -> bool {
+        matches!(self, ShadowType::Soft | ShadowType::PCSS)
+    }
+}
+
 /// Light unit
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LightUnit {
     #[default]
     Unitless,
@@ -76,6 +210,58 @@ pub enum LightUnit {
     Candela,
     Lux,
     Nit,
+}
+
+impl std::fmt::Display for LightUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LightUnit {
+    pub fn all() -> &'static [LightUnit] {
+        &[
+            LightUnit::Unitless,
+            LightUnit::Lumen,
+            LightUnit::Candela,
+            LightUnit::Lux,
+            LightUnit::Nit,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LightUnit::Unitless => "Unitless",
+            LightUnit::Lumen => "Lumen",
+            LightUnit::Candela => "Candela",
+            LightUnit::Lux => "Lux",
+            LightUnit::Nit => "Nit",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LightUnit::Unitless => "📊",
+            LightUnit::Lumen => "💡",
+            LightUnit::Candela => "🕯️",
+            LightUnit::Lux => "☀️",
+            LightUnit::Nit => "📺",
+        }
+    }
+
+    pub fn abbreviation(&self) -> &'static str {
+        match self {
+            LightUnit::Unitless => "",
+            LightUnit::Lumen => "lm",
+            LightUnit::Candela => "cd",
+            LightUnit::Lux => "lx",
+            LightUnit::Nit => "nt",
+        }
+    }
+
+    pub fn is_physical(&self) -> bool {
+        !matches!(self, LightUnit::Unitless)
+    }
 }
 
 /// Light definition
@@ -158,13 +344,65 @@ impl Default for Light {
 }
 
 /// Global illumination mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum GiMode {
     #[default]
     None,
     BakedLightmaps,
     RealtimeGI,
     Hybrid,
+}
+
+impl std::fmt::Display for GiMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl GiMode {
+    pub fn all() -> &'static [GiMode] {
+        &[
+            GiMode::None,
+            GiMode::BakedLightmaps,
+            GiMode::RealtimeGI,
+            GiMode::Hybrid,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            GiMode::None => "None",
+            GiMode::BakedLightmaps => "Baked Lightmaps",
+            GiMode::RealtimeGI => "Realtime GI",
+            GiMode::Hybrid => "Hybrid",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            GiMode::None => "⚫",
+            GiMode::BakedLightmaps => "🗺️",
+            GiMode::RealtimeGI => "⚡",
+            GiMode::Hybrid => "🔀",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            GiMode::None => "No global illumination",
+            GiMode::BakedLightmaps => "Pre-computed lightmaps",
+            GiMode::RealtimeGI => "Dynamic real-time GI",
+            GiMode::Hybrid => "Baked + realtime combined",
+        }
+    }
+
+    pub fn is_realtime(&self) -> bool {
+        matches!(self, GiMode::RealtimeGI | GiMode::Hybrid)
+    }
+
+    pub fn requires_baking(&self) -> bool {
+        matches!(self, GiMode::BakedLightmaps | GiMode::Hybrid)
+    }
 }
 
 /// Global illumination settings
@@ -253,12 +491,48 @@ pub struct ReflectionProbe {
     pub box_projection: bool,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum RefreshMode {
     #[default]
     OnAwake,
     EveryFrame,
     ViaScript,
+}
+
+impl std::fmt::Display for RefreshMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl RefreshMode {
+    /// Returns the human-readable name for this refresh mode
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::OnAwake => "On Awake",
+            Self::EveryFrame => "Every Frame",
+            Self::ViaScript => "Via Script",
+        }
+    }
+
+    /// Returns the icon for this refresh mode
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::OnAwake => "🔄",
+            Self::EveryFrame => "⚡",
+            Self::ViaScript => "📜",
+        }
+    }
+
+    /// Returns all available refresh modes
+    pub fn all() -> &'static [RefreshMode] {
+        &[RefreshMode::OnAwake, RefreshMode::EveryFrame, RefreshMode::ViaScript]
+    }
+
+    /// Returns true if this mode is automatic (not script-controlled)
+    pub fn is_automatic(&self) -> bool {
+        !matches!(self, Self::ViaScript)
+    }
 }
 
 impl Default for ReflectionProbe {
@@ -309,7 +583,7 @@ pub struct EnvironmentSettings {
     pub fog_height_density: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AmbientMode {
     #[default]
     Skybox,
@@ -317,13 +591,82 @@ pub enum AmbientMode {
     Gradient,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for AmbientMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AmbientMode {
+    /// Returns the human-readable name for this ambient mode
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Skybox => "Skybox",
+            Self::Color => "Color",
+            Self::Gradient => "Gradient",
+        }
+    }
+
+    /// Returns the icon for this ambient mode
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Skybox => "🌅",
+            Self::Color => "🎨",
+            Self::Gradient => "🌈",
+        }
+    }
+
+    /// Returns all available ambient modes
+    pub fn all() -> &'static [AmbientMode] {
+        &[AmbientMode::Skybox, AmbientMode::Color, AmbientMode::Gradient]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum FogMode {
     #[default]
     Linear,
     Exponential,
     ExponentialSquared,
     Height,
+}
+
+impl std::fmt::Display for FogMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl FogMode {
+    /// Returns the human-readable name for this fog mode
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Linear => "Linear",
+            Self::Exponential => "Exponential",
+            Self::ExponentialSquared => "Exponential Squared",
+            Self::Height => "Height",
+        }
+    }
+
+    /// Returns the icon for this fog mode
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Linear => "📏",
+            Self::Exponential => "📈",
+            Self::ExponentialSquared => "📊",
+            Self::Height => "⛰️",
+        }
+    }
+
+    /// Returns all available fog modes
+    pub fn all() -> &'static [FogMode] {
+        &[FogMode::Linear, FogMode::Exponential, FogMode::ExponentialSquared, FogMode::Height]
+    }
+
+    /// Returns true if this mode uses exponential falloff
+    pub fn is_exponential(&self) -> bool {
+        matches!(self, Self::Exponential | Self::ExponentialSquared)
+    }
 }
 
 impl Default for EnvironmentSettings {
@@ -355,7 +698,7 @@ impl Default for EnvironmentSettings {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LightingTab {
     #[default]
     Lights,
@@ -364,6 +707,50 @@ pub enum LightingTab {
     Probes,
     Environment,
     Debug,
+}
+
+impl std::fmt::Display for LightingTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LightingTab {
+    /// Returns the human-readable name for this tab
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Lights => "Lights",
+            Self::Shadows => "Shadows",
+            Self::GI => "GI",
+            Self::Probes => "Probes",
+            Self::Environment => "Environment",
+            Self::Debug => "Debug",
+        }
+    }
+
+    /// Returns the icon for this tab
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Lights => "💡",
+            Self::Shadows => "🌑",
+            Self::GI => "🌞",
+            Self::Probes => "🔮",
+            Self::Environment => "🌍",
+            Self::Debug => "🐛",
+        }
+    }
+
+    /// Returns all available lighting tabs
+    pub fn all() -> &'static [LightingTab] {
+        &[
+            LightingTab::Lights,
+            LightingTab::Shadows,
+            LightingTab::GI,
+            LightingTab::Probes,
+            LightingTab::Environment,
+            LightingTab::Debug,
+        ]
+    }
 }
 
 /// Main Lighting Panel
@@ -1821,5 +2208,345 @@ mod tests {
     fn test_fog_range_valid() {
         let env = EnvironmentSettings::default();
         assert!(env.fog_start <= env.fog_end);
+    }
+
+    // ============================================================
+    // SESSION 6: ENUM DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_light_type_display() {
+        // Verify Display trait outputs icon + name
+        for light_type in LightType::all() {
+            let display = format!("{}", light_type);
+            assert!(display.contains(light_type.name()));
+            assert!(display.contains(light_type.icon()));
+        }
+    }
+
+    #[test]
+    fn test_light_type_name() {
+        assert_eq!(LightType::Directional.name(), "Directional");
+        assert_eq!(LightType::Point.name(), "Point");
+        assert_eq!(LightType::Spot.name(), "Spot");
+        assert_eq!(LightType::Area.name(), "Area");
+        assert_eq!(LightType::Ambient.name(), "Ambient");
+    }
+
+    #[test]
+    fn test_light_type_is_directional() {
+        assert!(LightType::Directional.is_directional());
+        assert!(!LightType::Point.is_directional());
+        assert!(!LightType::Spot.is_directional());
+    }
+
+    #[test]
+    fn test_light_type_has_range() {
+        assert!(!LightType::Directional.has_range());
+        assert!(LightType::Point.has_range());
+        assert!(LightType::Spot.has_range());
+        assert!(!LightType::Area.has_range());
+        assert!(!LightType::Ambient.has_range());
+    }
+
+    #[test]
+    fn test_light_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(LightType::Directional);
+        set.insert(LightType::Point);
+        assert!(set.contains(&LightType::Directional));
+        assert!(!set.contains(&LightType::Spot));
+    }
+
+    #[test]
+    fn test_shadow_quality_display() {
+        // Verify Display trait outputs icon + name
+        for quality in ShadowQuality::all() {
+            let display = format!("{}", quality);
+            assert!(display.contains(quality.name()));
+            assert!(display.contains(quality.icon()));
+        }
+    }
+
+    #[test]
+    fn test_shadow_quality_all() {
+        let all = ShadowQuality::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&ShadowQuality::Off));
+        assert!(all.contains(&ShadowQuality::Ultra));
+    }
+
+    #[test]
+    fn test_shadow_quality_resolution() {
+        assert_eq!(ShadowQuality::Off.resolution(), 0);
+        assert_eq!(ShadowQuality::Low.resolution(), 512);
+        assert_eq!(ShadowQuality::Medium.resolution(), 1024);
+        assert_eq!(ShadowQuality::High.resolution(), 2048);
+        assert_eq!(ShadowQuality::Ultra.resolution(), 4096);
+    }
+
+    #[test]
+    fn test_shadow_quality_is_enabled() {
+        assert!(!ShadowQuality::Off.is_enabled());
+        assert!(ShadowQuality::Low.is_enabled());
+        assert!(ShadowQuality::Ultra.is_enabled());
+    }
+
+    #[test]
+    fn test_shadow_type_display() {
+        // Verify Display trait outputs icon + name
+        for shadow_type in ShadowType::all() {
+            let display = format!("{}", shadow_type);
+            assert!(display.contains(shadow_type.name()));
+            assert!(display.contains(shadow_type.icon()));
+        }
+    }
+
+    #[test]
+    fn test_shadow_type_is_soft() {
+        assert!(!ShadowType::None.is_soft());
+        assert!(!ShadowType::Hard.is_soft());
+        assert!(ShadowType::Soft.is_soft());
+        assert!(ShadowType::PCSS.is_soft());
+    }
+
+    #[test]
+    fn test_light_unit_display() {
+        // Verify Display trait outputs icon + name
+        for unit in LightUnit::all() {
+            let display = format!("{}", unit);
+            assert!(display.contains(unit.name()));
+            assert!(display.contains(unit.icon()));
+        }
+    }
+
+    #[test]
+    fn test_light_unit_abbreviation() {
+        assert_eq!(LightUnit::Unitless.abbreviation(), "");
+        assert_eq!(LightUnit::Lumen.abbreviation(), "lm");
+        assert_eq!(LightUnit::Candela.abbreviation(), "cd");
+        assert_eq!(LightUnit::Lux.abbreviation(), "lx");
+        assert_eq!(LightUnit::Nit.abbreviation(), "nt");
+    }
+
+    #[test]
+    fn test_light_unit_is_physical() {
+        assert!(!LightUnit::Unitless.is_physical());
+        assert!(LightUnit::Lumen.is_physical());
+        assert!(LightUnit::Candela.is_physical());
+        assert!(LightUnit::Lux.is_physical());
+        assert!(LightUnit::Nit.is_physical());
+    }
+
+    #[test]
+    fn test_gi_mode_display() {
+        // Verify Display trait outputs icon + name
+        for mode in GiMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+            assert!(display.contains(mode.icon()));
+        }
+    }
+
+    #[test]
+    fn test_gi_mode_is_realtime() {
+        assert!(!GiMode::None.is_realtime());
+        assert!(!GiMode::BakedLightmaps.is_realtime());
+        assert!(GiMode::RealtimeGI.is_realtime());
+        assert!(GiMode::Hybrid.is_realtime());
+    }
+
+    #[test]
+    fn test_gi_mode_requires_baking() {
+        assert!(!GiMode::None.requires_baking());
+        assert!(GiMode::BakedLightmaps.requires_baking());
+        assert!(!GiMode::RealtimeGI.requires_baking());
+        assert!(GiMode::Hybrid.requires_baking());
+    }
+
+    #[test]
+    fn test_gi_mode_all() {
+        let all = GiMode::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&GiMode::None));
+        assert!(all.contains(&GiMode::Hybrid));
+    }
+
+    // ============================================================================
+    // ENHANCED ENUM TESTS (RefreshMode, AmbientMode, FogMode, LightingTab)
+    // ============================================================================
+
+    #[test]
+    fn test_refresh_mode_display() {
+        for mode in RefreshMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+            assert!(display.contains(mode.icon()));
+        }
+    }
+
+    #[test]
+    fn test_refresh_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in RefreshMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn test_refresh_mode_all() {
+        let all = RefreshMode::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&RefreshMode::OnAwake));
+        assert!(all.contains(&RefreshMode::EveryFrame));
+        assert!(all.contains(&RefreshMode::ViaScript));
+    }
+
+    #[test]
+    fn test_refresh_mode_name() {
+        assert_eq!(RefreshMode::OnAwake.name(), "On Awake");
+        assert_eq!(RefreshMode::EveryFrame.name(), "Every Frame");
+        assert_eq!(RefreshMode::ViaScript.name(), "Via Script");
+    }
+
+    #[test]
+    fn test_refresh_mode_is_automatic() {
+        assert!(RefreshMode::OnAwake.is_automatic());
+        assert!(RefreshMode::EveryFrame.is_automatic());
+        assert!(!RefreshMode::ViaScript.is_automatic());
+    }
+
+    #[test]
+    fn test_ambient_mode_display() {
+        for mode in AmbientMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+            assert!(display.contains(mode.icon()));
+        }
+    }
+
+    #[test]
+    fn test_ambient_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in AmbientMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn test_ambient_mode_all() {
+        let all = AmbientMode::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&AmbientMode::Skybox));
+        assert!(all.contains(&AmbientMode::Color));
+        assert!(all.contains(&AmbientMode::Gradient));
+    }
+
+    #[test]
+    fn test_ambient_mode_name() {
+        assert_eq!(AmbientMode::Skybox.name(), "Skybox");
+        assert_eq!(AmbientMode::Color.name(), "Color");
+        assert_eq!(AmbientMode::Gradient.name(), "Gradient");
+    }
+
+    #[test]
+    fn test_fog_mode_display() {
+        for mode in FogMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+            assert!(display.contains(mode.icon()));
+        }
+    }
+
+    #[test]
+    fn test_fog_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in FogMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_fog_mode_all() {
+        let all = FogMode::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&FogMode::Linear));
+        assert!(all.contains(&FogMode::Exponential));
+        assert!(all.contains(&FogMode::ExponentialSquared));
+        assert!(all.contains(&FogMode::Height));
+    }
+
+    #[test]
+    fn test_fog_mode_name() {
+        assert_eq!(FogMode::Linear.name(), "Linear");
+        assert_eq!(FogMode::Exponential.name(), "Exponential");
+        assert_eq!(FogMode::ExponentialSquared.name(), "Exponential Squared");
+        assert_eq!(FogMode::Height.name(), "Height");
+    }
+
+    #[test]
+    fn test_fog_mode_is_exponential() {
+        assert!(!FogMode::Linear.is_exponential());
+        assert!(FogMode::Exponential.is_exponential());
+        assert!(FogMode::ExponentialSquared.is_exponential());
+        assert!(!FogMode::Height.is_exponential());
+    }
+
+    #[test]
+    fn test_lighting_tab_display() {
+        for tab in LightingTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+            assert!(display.contains(tab.icon()));
+        }
+    }
+
+    #[test]
+    fn test_lighting_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in LightingTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_lighting_tab_all() {
+        let all = LightingTab::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&LightingTab::Lights));
+        assert!(all.contains(&LightingTab::Shadows));
+        assert!(all.contains(&LightingTab::GI));
+        assert!(all.contains(&LightingTab::Probes));
+        assert!(all.contains(&LightingTab::Environment));
+        assert!(all.contains(&LightingTab::Debug));
+    }
+
+    #[test]
+    fn test_lighting_tab_name() {
+        assert_eq!(LightingTab::Lights.name(), "Lights");
+        assert_eq!(LightingTab::Shadows.name(), "Shadows");
+        assert_eq!(LightingTab::GI.name(), "GI");
+        assert_eq!(LightingTab::Probes.name(), "Probes");
+        assert_eq!(LightingTab::Environment.name(), "Environment");
+        assert_eq!(LightingTab::Debug.name(), "Debug");
+    }
+
+    #[test]
+    fn test_lighting_tab_icon() {
+        assert_eq!(LightingTab::Lights.icon(), "💡");
+        assert_eq!(LightingTab::Shadows.icon(), "🌑");
+        assert_eq!(LightingTab::GI.icon(), "🌞");
+        assert_eq!(LightingTab::Probes.icon(), "🔮");
+        assert_eq!(LightingTab::Environment.icon(), "🌍");
+        assert_eq!(LightingTab::Debug.icon(), "🐛");
     }
 }

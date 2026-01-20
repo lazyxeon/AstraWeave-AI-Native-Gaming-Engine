@@ -24,7 +24,7 @@ pub struct MusicTrackEntry {
 }
 
 /// Music mood categories
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum MusicMood {
     #[default]
     Ambient,
@@ -36,6 +36,12 @@ pub enum MusicMood {
     Defeat,
     Boss,
     Menu,
+}
+
+impl std::fmt::Display for MusicMood {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl MusicMood {
@@ -53,6 +59,20 @@ impl MusicMood {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            MusicMood::Ambient => "Ambient",
+            MusicMood::Calm => "Calm",
+            MusicMood::Exploration => "Exploration",
+            MusicMood::Combat => "Combat",
+            MusicMood::Tension => "Tension",
+            MusicMood::Victory => "Victory",
+            MusicMood::Defeat => "Defeat",
+            MusicMood::Boss => "Boss",
+            MusicMood::Menu => "Menu",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             MusicMood::Ambient => "🌿",
@@ -66,10 +86,28 @@ impl MusicMood {
             MusicMood::Menu => "📋",
         }
     }
+
+    pub fn is_combat_related(&self) -> bool {
+        matches!(self, MusicMood::Combat | MusicMood::Tension | MusicMood::Boss)
+    }
+
+    pub fn is_positive(&self) -> bool {
+        matches!(self, MusicMood::Victory | MusicMood::Calm)
+    }
+
+    pub fn intensity(&self) -> u8 {
+        match self {
+            MusicMood::Ambient | MusicMood::Calm | MusicMood::Menu => 1,
+            MusicMood::Exploration | MusicMood::Defeat => 2,
+            MusicMood::Tension => 3,
+            MusicMood::Combat | MusicMood::Victory => 4,
+            MusicMood::Boss => 5,
+        }
+    }
 }
 
 /// Spatial audio preset configurations
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SpatialPreset {
     #[default]
     Standard,
@@ -77,6 +115,12 @@ pub enum SpatialPreset {
     Speakers,
     Surround,
     VR,
+}
+
+impl std::fmt::Display for SpatialPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl SpatialPreset {
@@ -88,6 +132,26 @@ impl SpatialPreset {
             SpatialPreset::Surround,
             SpatialPreset::VR,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            SpatialPreset::Standard => "Standard",
+            SpatialPreset::Headphones => "Headphones",
+            SpatialPreset::Speakers => "Speakers",
+            SpatialPreset::Surround => "Surround",
+            SpatialPreset::VR => "VR",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SpatialPreset::Standard => "🔊",
+            SpatialPreset::Headphones => "🎧",
+            SpatialPreset::Speakers => "🔉",
+            SpatialPreset::Surround => "🎵",
+            SpatialPreset::VR => "🥽",
+        }
     }
 
     pub fn ear_separation(&self) -> f32 {
@@ -109,10 +173,14 @@ impl SpatialPreset {
             SpatialPreset::VR => "VR/AR head-tracked audio",
         }
     }
+
+    pub fn is_multichannel(&self) -> bool {
+        matches!(self, SpatialPreset::Surround | SpatialPreset::VR)
+    }
 }
 
 /// Reverb environment presets
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ReverbEnvironment {
     #[default]
     None,
@@ -123,6 +191,12 @@ pub enum ReverbEnvironment {
     Forest,
     Underwater,
     Cathedral,
+}
+
+impl std::fmt::Display for ReverbEnvironment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl ReverbEnvironment {
@@ -137,6 +211,19 @@ impl ReverbEnvironment {
             ReverbEnvironment::Underwater,
             ReverbEnvironment::Cathedral,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ReverbEnvironment::None => "None",
+            ReverbEnvironment::SmallRoom => "Small Room",
+            ReverbEnvironment::LargeRoom => "Large Room",
+            ReverbEnvironment::Hall => "Hall",
+            ReverbEnvironment::Cave => "Cave",
+            ReverbEnvironment::Forest => "Forest",
+            ReverbEnvironment::Underwater => "Underwater",
+            ReverbEnvironment::Cathedral => "Cathedral",
+        }
     }
 
     pub fn icon(&self) -> &'static str {
@@ -177,6 +264,14 @@ impl ReverbEnvironment {
             ReverbEnvironment::Cathedral => 0.5,
         }
     }
+
+    pub fn is_indoor(&self) -> bool {
+        matches!(self, ReverbEnvironment::SmallRoom | ReverbEnvironment::LargeRoom | ReverbEnvironment::Hall | ReverbEnvironment::Cathedral)
+    }
+
+    pub fn is_natural(&self) -> bool {
+        matches!(self, ReverbEnvironment::Cave | ReverbEnvironment::Forest | ReverbEnvironment::Underwater)
+    }
 }
 
 /// Audio emitter information for 3D audio
@@ -192,7 +287,7 @@ pub struct AudioEmitterInfo {
 }
 
 /// Panel tab selection
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AudioTab {
     #[default]
     Mixer,
@@ -200,6 +295,44 @@ pub enum AudioTab {
     Spatial,
     Emitters,
     Preview,
+}
+
+impl std::fmt::Display for AudioTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AudioTab {
+    pub fn all() -> &'static [AudioTab] {
+        &[
+            AudioTab::Mixer,
+            AudioTab::Music,
+            AudioTab::Spatial,
+            AudioTab::Emitters,
+            AudioTab::Preview,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AudioTab::Mixer => "Mixer",
+            AudioTab::Music => "Music",
+            AudioTab::Spatial => "Spatial",
+            AudioTab::Emitters => "Emitters",
+            AudioTab::Preview => "Preview",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AudioTab::Mixer => "🎚️",
+            AudioTab::Music => "🎵",
+            AudioTab::Spatial => "📍",
+            AudioTab::Emitters => "🔊",
+            AudioTab::Preview => "▶️",
+        }
+    }
 }
 
 /// Main Audio Panel for editor
@@ -264,12 +397,18 @@ pub struct AudioPanel {
 }
 
 /// Distance attenuation model
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum DistanceModel {
     #[default]
     Linear,
     Inverse,
     Exponential,
+}
+
+impl std::fmt::Display for DistanceModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl DistanceModel {
@@ -279,6 +418,26 @@ impl DistanceModel {
             DistanceModel::Inverse,
             DistanceModel::Exponential,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DistanceModel::Linear => "Linear",
+            DistanceModel::Inverse => "Inverse",
+            DistanceModel::Exponential => "Exponential",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            DistanceModel::Linear => "Linear distance falloff",
+            DistanceModel::Inverse => "Inverse distance (1/d) falloff",
+            DistanceModel::Exponential => "Exponential distance (1/d²) falloff",
+        }
+    }
+
+    pub fn is_realistic(&self) -> bool {
+        matches!(self, DistanceModel::Inverse | DistanceModel::Exponential)
     }
 }
 
@@ -1346,5 +1505,213 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = AudioPanel::new();
         assert_eq!(panel.name(), "Audio");
+    }
+
+    // NEW: MusicMood Display and helper tests
+    #[test]
+    fn test_music_mood_all() {
+        let moods = MusicMood::all();
+        assert_eq!(moods.len(), 9);
+        assert!(moods.contains(&MusicMood::Ambient));
+        assert!(moods.contains(&MusicMood::Boss));
+    }
+
+    #[test]
+    fn test_music_mood_display() {
+        assert_eq!(format!("{}", MusicMood::Combat), "⚔️ Combat");
+        assert_eq!(format!("{}", MusicMood::Victory), "🏆 Victory");
+    }
+
+    #[test]
+    fn test_music_mood_name() {
+        assert_eq!(MusicMood::Exploration.name(), "Exploration");
+        assert_eq!(MusicMood::Tension.name(), "Tension");
+    }
+
+    #[test]
+    fn test_music_mood_is_combat_related() {
+        assert!(MusicMood::Combat.is_combat_related());
+        assert!(MusicMood::Tension.is_combat_related());
+        assert!(MusicMood::Boss.is_combat_related());
+        assert!(!MusicMood::Calm.is_combat_related());
+    }
+
+    #[test]
+    fn test_music_mood_is_positive() {
+        assert!(MusicMood::Victory.is_positive());
+        assert!(MusicMood::Calm.is_positive());
+        assert!(!MusicMood::Defeat.is_positive());
+    }
+
+    #[test]
+    fn test_music_mood_intensity() {
+        assert_eq!(MusicMood::Ambient.intensity(), 1);
+        assert_eq!(MusicMood::Calm.intensity(), 1);
+        assert_eq!(MusicMood::Exploration.intensity(), 2);
+        assert_eq!(MusicMood::Tension.intensity(), 3);
+        assert_eq!(MusicMood::Combat.intensity(), 4);
+        assert_eq!(MusicMood::Boss.intensity(), 5);
+    }
+
+    #[test]
+    fn test_music_mood_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(MusicMood::Combat);
+        set.insert(MusicMood::Calm);
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&MusicMood::Combat));
+    }
+
+    // NEW: SpatialPreset Display and helper tests
+    #[test]
+    fn test_spatial_preset_all() {
+        let presets = SpatialPreset::all();
+        assert_eq!(presets.len(), 5);
+    }
+
+    #[test]
+    fn test_spatial_preset_display() {
+        assert_eq!(format!("{}", SpatialPreset::Standard), "🔊 Standard");
+        assert_eq!(format!("{}", SpatialPreset::Headphones), "🎧 Headphones");
+    }
+
+    #[test]
+    fn test_spatial_preset_name() {
+        assert_eq!(SpatialPreset::Surround.name(), "Surround");
+        assert_eq!(SpatialPreset::VR.name(), "VR");
+    }
+
+    #[test]
+    fn test_spatial_preset_icon() {
+        assert_eq!(SpatialPreset::Headphones.icon(), "🎧");
+        assert_eq!(SpatialPreset::VR.icon(), "🥽");
+    }
+
+    #[test]
+    fn test_spatial_preset_is_multichannel() {
+        assert!(SpatialPreset::Surround.is_multichannel());
+        assert!(SpatialPreset::VR.is_multichannel());
+        assert!(!SpatialPreset::Headphones.is_multichannel());
+    }
+
+    #[test]
+    fn test_spatial_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(SpatialPreset::Standard);
+        set.insert(SpatialPreset::VR);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: ReverbEnvironment Display and helper tests
+    #[test]
+    fn test_reverb_environment_all() {
+        let envs = ReverbEnvironment::all();
+        assert_eq!(envs.len(), 8);
+    }
+
+    #[test]
+    fn test_reverb_environment_display() {
+        assert_eq!(format!("{}", ReverbEnvironment::Cave), "🕳️ Cave");
+        assert_eq!(format!("{}", ReverbEnvironment::Cathedral), "⛪ Cathedral");
+    }
+
+    #[test]
+    fn test_reverb_environment_name() {
+        assert_eq!(ReverbEnvironment::SmallRoom.name(), "Small Room");
+        assert_eq!(ReverbEnvironment::Underwater.name(), "Underwater");
+    }
+
+    #[test]
+    fn test_reverb_environment_is_indoor() {
+        assert!(ReverbEnvironment::SmallRoom.is_indoor());
+        assert!(ReverbEnvironment::Cathedral.is_indoor());
+        assert!(!ReverbEnvironment::Forest.is_indoor());
+    }
+
+    #[test]
+    fn test_reverb_environment_is_natural() {
+        assert!(ReverbEnvironment::Cave.is_natural());
+        assert!(ReverbEnvironment::Forest.is_natural());
+        assert!(ReverbEnvironment::Underwater.is_natural());
+        assert!(!ReverbEnvironment::Hall.is_natural());
+    }
+
+    #[test]
+    fn test_reverb_environment_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ReverbEnvironment::Cave);
+        set.insert(ReverbEnvironment::Forest);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: DistanceModel Display and helper tests
+    #[test]
+    fn test_distance_model_display() {
+        assert_eq!(format!("{}", DistanceModel::Linear), "Linear");
+        assert_eq!(format!("{}", DistanceModel::Exponential), "Exponential");
+    }
+
+    #[test]
+    fn test_distance_model_name() {
+        assert_eq!(DistanceModel::Inverse.name(), "Inverse");
+    }
+
+    #[test]
+    fn test_distance_model_description() {
+        assert!(DistanceModel::Inverse.description().contains("1/d"));
+        assert!(DistanceModel::Exponential.description().contains("1/d²"));
+    }
+
+    #[test]
+    fn test_distance_model_is_realistic() {
+        assert!(DistanceModel::Inverse.is_realistic());
+        assert!(DistanceModel::Exponential.is_realistic());
+        assert!(!DistanceModel::Linear.is_realistic());
+    }
+
+    #[test]
+    fn test_distance_model_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(DistanceModel::Linear);
+        set.insert(DistanceModel::Inverse);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: AudioTab Display and helper tests
+    #[test]
+    fn test_audio_tab_all() {
+        let tabs = AudioTab::all();
+        assert_eq!(tabs.len(), 5);
+    }
+
+    #[test]
+    fn test_audio_tab_display() {
+        assert_eq!(format!("{}", AudioTab::Mixer), "🎚️ Mixer");
+        assert_eq!(format!("{}", AudioTab::Music), "🎵 Music");
+    }
+
+    #[test]
+    fn test_audio_tab_name() {
+        assert_eq!(AudioTab::Spatial.name(), "Spatial");
+        assert_eq!(AudioTab::Emitters.name(), "Emitters");
+    }
+
+    #[test]
+    fn test_audio_tab_icon() {
+        assert_eq!(AudioTab::Preview.icon(), "▶️");
+        assert_eq!(AudioTab::Mixer.icon(), "🎚️");
+    }
+
+    #[test]
+    fn test_audio_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(AudioTab::Mixer);
+        set.insert(AudioTab::Music);
+        assert_eq!(set.len(), 2);
     }
 }

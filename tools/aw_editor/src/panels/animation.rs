@@ -13,7 +13,7 @@ use egui::{Color32, Pos2, Vec2};
 use glam::Vec3;
 
 /// Animation playback state
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum PlaybackState {
     #[default]
     Stopped,
@@ -21,8 +21,44 @@ pub enum PlaybackState {
     Paused,
 }
 
+impl std::fmt::Display for PlaybackState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PlaybackState {
+    /// Returns the human-readable name for this state
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Stopped => "Stopped",
+            Self::Playing => "Playing",
+            Self::Paused => "Paused",
+        }
+    }
+
+    /// Returns the icon for this state
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Stopped => "⏹",
+            Self::Playing => "▶",
+            Self::Paused => "⏸",
+        }
+    }
+
+    /// Returns all playback states
+    pub fn all() -> &'static [PlaybackState] {
+        &[PlaybackState::Stopped, PlaybackState::Playing, PlaybackState::Paused]
+    }
+
+    /// Returns true if playback is active (playing)
+    pub fn is_active(&self) -> bool {
+        matches!(self, Self::Playing)
+    }
+}
+
 /// Animation property that can be animated
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum AnimatedProperty {
     #[default]
     PositionY,
@@ -30,6 +66,12 @@ pub enum AnimatedProperty {
     PositionZ,
     RotationY,
     Scale,
+}
+
+impl std::fmt::Display for AnimatedProperty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl AnimatedProperty {
@@ -41,6 +83,38 @@ impl AnimatedProperty {
             Self::RotationY => "Rotation Y",
             Self::Scale => "Scale",
         }
+    }
+
+    /// Returns the icon for this property
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::PositionX => "↔",
+            Self::PositionY => "↕",
+            Self::PositionZ => "↗",
+            Self::RotationY => "🔄",
+            Self::Scale => "📐",
+        }
+    }
+
+    /// Returns all animated properties
+    pub fn all() -> &'static [AnimatedProperty] {
+        &[
+            AnimatedProperty::PositionX,
+            AnimatedProperty::PositionY,
+            AnimatedProperty::PositionZ,
+            AnimatedProperty::RotationY,
+            AnimatedProperty::Scale,
+        ]
+    }
+
+    /// Returns true if this property is a position component
+    pub fn is_position(&self) -> bool {
+        matches!(self, Self::PositionX | Self::PositionY | Self::PositionZ)
+    }
+
+    /// Returns true if this property is a rotation component
+    pub fn is_rotation(&self) -> bool {
+        matches!(self, Self::RotationY)
     }
 }
 
@@ -1385,5 +1459,115 @@ mod tests {
 
         panel.show_editor = false;
         assert!(!panel.show_editor);
+    }
+
+    // ============================================================================
+    // ENHANCED ENUM TESTS (Display, Hash, helpers)
+    // ============================================================================
+
+    #[test]
+    fn test_playback_state_display() {
+        for state in PlaybackState::all() {
+            let display = format!("{}", state);
+            assert!(display.contains(state.name()));
+            assert!(display.contains(state.icon()));
+        }
+    }
+
+    #[test]
+    fn test_playback_state_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for state in PlaybackState::all() {
+            set.insert(*state);
+        }
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn test_playback_state_all() {
+        let all = PlaybackState::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&PlaybackState::Stopped));
+        assert!(all.contains(&PlaybackState::Playing));
+        assert!(all.contains(&PlaybackState::Paused));
+    }
+
+    #[test]
+    fn test_playback_state_name() {
+        assert_eq!(PlaybackState::Stopped.name(), "Stopped");
+        assert_eq!(PlaybackState::Playing.name(), "Playing");
+        assert_eq!(PlaybackState::Paused.name(), "Paused");
+    }
+
+    #[test]
+    fn test_playback_state_icon() {
+        assert_eq!(PlaybackState::Stopped.icon(), "⏹");
+        assert_eq!(PlaybackState::Playing.icon(), "▶");
+        assert_eq!(PlaybackState::Paused.icon(), "⏸");
+    }
+
+    #[test]
+    fn test_playback_state_is_active() {
+        assert!(!PlaybackState::Stopped.is_active());
+        assert!(PlaybackState::Playing.is_active());
+        assert!(!PlaybackState::Paused.is_active());
+    }
+
+    #[test]
+    fn test_animated_property_display() {
+        for prop in AnimatedProperty::all() {
+            let display = format!("{}", prop);
+            assert!(display.contains(prop.name()));
+            assert!(display.contains(prop.icon()));
+        }
+    }
+
+    #[test]
+    fn test_animated_property_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for prop in AnimatedProperty::all() {
+            set.insert(*prop);
+        }
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_animated_property_all() {
+        let all = AnimatedProperty::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&AnimatedProperty::PositionX));
+        assert!(all.contains(&AnimatedProperty::PositionY));
+        assert!(all.contains(&AnimatedProperty::PositionZ));
+        assert!(all.contains(&AnimatedProperty::RotationY));
+        assert!(all.contains(&AnimatedProperty::Scale));
+    }
+
+    #[test]
+    fn test_animated_property_icon() {
+        assert_eq!(AnimatedProperty::PositionX.icon(), "↔");
+        assert_eq!(AnimatedProperty::PositionY.icon(), "↕");
+        assert_eq!(AnimatedProperty::PositionZ.icon(), "↗");
+        assert_eq!(AnimatedProperty::RotationY.icon(), "🔄");
+        assert_eq!(AnimatedProperty::Scale.icon(), "📐");
+    }
+
+    #[test]
+    fn test_animated_property_is_position() {
+        assert!(AnimatedProperty::PositionX.is_position());
+        assert!(AnimatedProperty::PositionY.is_position());
+        assert!(AnimatedProperty::PositionZ.is_position());
+        assert!(!AnimatedProperty::RotationY.is_position());
+        assert!(!AnimatedProperty::Scale.is_position());
+    }
+
+    #[test]
+    fn test_animated_property_is_rotation() {
+        assert!(!AnimatedProperty::PositionX.is_rotation());
+        assert!(!AnimatedProperty::PositionY.is_rotation());
+        assert!(!AnimatedProperty::PositionZ.is_rotation());
+        assert!(AnimatedProperty::RotationY.is_rotation());
+        assert!(!AnimatedProperty::Scale.is_rotation());
     }
 }

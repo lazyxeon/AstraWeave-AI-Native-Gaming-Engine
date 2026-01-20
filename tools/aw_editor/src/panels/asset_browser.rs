@@ -34,7 +34,55 @@ pub enum TextureType {
     Unknown,
 }
 
+impl std::fmt::Display for TextureType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl TextureType {
+    /// Get all texture types
+    pub fn all() -> &'static [TextureType] {
+        &[
+            TextureType::Albedo,
+            TextureType::Normal,
+            TextureType::ORM,
+            TextureType::MRA,
+            TextureType::Roughness,
+            TextureType::Metallic,
+            TextureType::AO,
+            TextureType::Emission,
+            TextureType::Height,
+            TextureType::Unknown,
+        ]
+    }
+
+    /// Get the display name
+    pub fn name(&self) -> &'static str {
+        match self {
+            TextureType::Albedo => "Albedo",
+            TextureType::Normal => "Normal",
+            TextureType::ORM => "ORM",
+            TextureType::MRA => "MRA",
+            TextureType::Roughness => "Roughness",
+            TextureType::Metallic => "Metallic",
+            TextureType::AO => "Ambient Occlusion",
+            TextureType::Emission => "Emission",
+            TextureType::Height => "Height",
+            TextureType::Unknown => "Unknown",
+        }
+    }
+
+    /// Check if this is a PBR component texture
+    pub fn is_pbr_component(&self) -> bool {
+        !matches!(self, TextureType::Unknown)
+    }
+
+    /// Check if this is a packed/combined texture
+    pub fn is_packed(&self) -> bool {
+        matches!(self, TextureType::ORM | TextureType::MRA)
+    }
+
     /// Detect texture type from filename using common naming conventions
     /// Supports: _n, _normal, _nrm, _orm, _mra, _r, _rough, _roughness,
     /// _m, _metal, _metallic, _ao, _occlusion, _e, _emit, _emission,
@@ -149,7 +197,7 @@ impl TextureType {
 // ============================================================================
 
 /// Asset categories for organizing the asset browser
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AssetCategory {
     All,
     Models,
@@ -161,7 +209,32 @@ pub enum AssetCategory {
     Configs,
 }
 
+impl std::fmt::Display for AssetCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl AssetCategory {
+    /// Get all asset categories
+    pub fn all() -> &'static [AssetCategory] {
+        &[
+            AssetCategory::All,
+            AssetCategory::Models,
+            AssetCategory::Textures,
+            AssetCategory::Materials,
+            AssetCategory::Prefabs,
+            AssetCategory::Scenes,
+            AssetCategory::Audio,
+            AssetCategory::Configs,
+        ]
+    }
+
+    /// Get the display name
+    pub fn name(&self) -> &'static str {
+        self.label()
+    }
+
     /// Check if an asset type matches this category
     pub fn matches(&self, asset_type: &AssetType) -> bool {
         match self {
@@ -210,7 +283,7 @@ impl AssetCategory {
 // ============================================================================
 
 /// Actions triggered from the asset browser for processing by the editor
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AssetAction {
     /// Import a 3D model into the scene as a new entity
     ImportModel { path: PathBuf },
@@ -233,11 +306,101 @@ pub enum AssetAction {
     InspectAsset { path: PathBuf },
 }
 
+impl std::fmt::Display for AssetAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AssetAction {
+    /// Returns all action type variant names
+    pub fn all_variants() -> &'static [&'static str] {
+        &[
+            "ImportModel",
+            "LoadToViewport",
+            "ApplyTexture",
+            "ApplyMaterial",
+            "LoadScene",
+            "SpawnPrefab",
+            "OpenExternal",
+            "InspectAsset",
+        ]
+    }
+
+    /// Returns the name of this action type
+    pub fn name(&self) -> &'static str {
+        match self {
+            AssetAction::ImportModel { .. } => "Import Model",
+            AssetAction::LoadToViewport { .. } => "Load to Viewport",
+            AssetAction::ApplyTexture { .. } => "Apply Texture",
+            AssetAction::ApplyMaterial { .. } => "Apply Material",
+            AssetAction::LoadScene { .. } => "Load Scene",
+            AssetAction::SpawnPrefab { .. } => "Spawn Prefab",
+            AssetAction::OpenExternal { .. } => "Open External",
+            AssetAction::InspectAsset { .. } => "Inspect Asset",
+        }
+    }
+
+    /// Returns the icon for this action type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AssetAction::ImportModel { .. } => "📥",
+            AssetAction::LoadToViewport { .. } => "👁️",
+            AssetAction::ApplyTexture { .. } => "🎨",
+            AssetAction::ApplyMaterial { .. } => "🪨",
+            AssetAction::LoadScene { .. } => "🌍",
+            AssetAction::SpawnPrefab { .. } => "📦",
+            AssetAction::OpenExternal { .. } => "🔗",
+            AssetAction::InspectAsset { .. } => "🔍",
+        }
+    }
+
+    /// Returns the path associated with this action
+    pub fn path(&self) -> &PathBuf {
+        match self {
+            AssetAction::ImportModel { path } => path,
+            AssetAction::LoadToViewport { path } => path,
+            AssetAction::ApplyTexture { path, .. } => path,
+            AssetAction::ApplyMaterial { path } => path,
+            AssetAction::LoadScene { path } => path,
+            AssetAction::SpawnPrefab { path } => path,
+            AssetAction::OpenExternal { path } => path,
+            AssetAction::InspectAsset { path } => path,
+        }
+    }
+
+    /// Returns true if this action modifies scene content
+    pub fn is_modifying(&self) -> bool {
+        matches!(
+            self,
+            AssetAction::ImportModel { .. }
+                | AssetAction::ApplyTexture { .. }
+                | AssetAction::ApplyMaterial { .. }
+                | AssetAction::SpawnPrefab { .. }
+        )
+    }
+
+    /// Returns true if this is a load/view action (no scene modification)
+    pub fn is_viewing(&self) -> bool {
+        matches!(
+            self,
+            AssetAction::LoadToViewport { .. }
+                | AssetAction::OpenExternal { .. }
+                | AssetAction::InspectAsset { .. }
+        )
+    }
+
+    /// Returns true if this action loads a scene
+    pub fn is_scene_action(&self) -> bool {
+        matches!(self, AssetAction::LoadScene { .. })
+    }
+}
+
 // ============================================================================
 // ASSET TYPE - Basic asset classification by file type
 // ============================================================================
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AssetType {
     Model,
     Texture,
@@ -250,7 +413,56 @@ pub enum AssetType {
     Unknown,
 }
 
+impl std::fmt::Display for AssetType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl AssetType {
+    /// Get all asset types
+    pub fn all() -> &'static [AssetType] {
+        &[
+            AssetType::Model,
+            AssetType::Texture,
+            AssetType::Scene,
+            AssetType::Material,
+            AssetType::Audio,
+            AssetType::Config,
+            AssetType::Prefab,
+            AssetType::Directory,
+            AssetType::Unknown,
+        ]
+    }
+
+    /// Get the display name
+    pub fn name(&self) -> &'static str {
+        match self {
+            AssetType::Model => "Model",
+            AssetType::Texture => "Texture",
+            AssetType::Scene => "Scene",
+            AssetType::Material => "Material",
+            AssetType::Audio => "Audio",
+            AssetType::Config => "Config",
+            AssetType::Prefab => "Prefab",
+            AssetType::Directory => "Directory",
+            AssetType::Unknown => "Unknown",
+        }
+    }
+
+    /// Check if this is a content asset (not config/directory)
+    pub fn is_content(&self) -> bool {
+        matches!(
+            self,
+            AssetType::Model
+                | AssetType::Texture
+                | AssetType::Scene
+                | AssetType::Material
+                | AssetType::Audio
+                | AssetType::Prefab
+        )
+    }
+
     pub fn from_path(path: &Path) -> Self {
         if path.is_dir() {
             return AssetType::Directory;
@@ -353,10 +565,39 @@ impl AssetEntry {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ViewMode {
     List,
     Grid,
+}
+
+impl std::fmt::Display for ViewMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ViewMode {
+    /// Get all view modes
+    pub fn all() -> &'static [ViewMode] {
+        &[ViewMode::List, ViewMode::Grid]
+    }
+
+    /// Get the display name
+    pub fn name(&self) -> &'static str {
+        match self {
+            ViewMode::List => "List",
+            ViewMode::Grid => "Grid",
+        }
+    }
+
+    /// Get the icon
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ViewMode::List => "📄",
+            ViewMode::Grid => "📰",
+        }
+    }
 }
 
 pub struct AssetBrowser {
@@ -1685,5 +1926,306 @@ mod tests {
             _ => panic!("Wrong action type"),
         }
     }
-}
 
+    // ============================================================
+    // SESSION 6: ENUM DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_texture_type_display() {
+        assert_eq!(format!("{}", TextureType::Albedo), "🎨 Albedo");
+        assert_eq!(format!("{}", TextureType::Normal), "🔵 Normal");
+        assert_eq!(format!("{}", TextureType::ORM), "🔶 ORM");
+        assert_eq!(format!("{}", TextureType::MRA), "🔷 MRA");
+        assert_eq!(format!("{}", TextureType::Unknown), "❓ Unknown");
+    }
+
+    #[test]
+    fn test_texture_type_all() {
+        let all = TextureType::all();
+        assert_eq!(all.len(), 10);
+        assert!(all.contains(&TextureType::Albedo));
+        assert!(all.contains(&TextureType::Unknown));
+    }
+
+    #[test]
+    fn test_texture_type_name() {
+        assert_eq!(TextureType::Albedo.name(), "Albedo");
+        assert_eq!(TextureType::Normal.name(), "Normal");
+        assert_eq!(TextureType::AO.name(), "Ambient Occlusion");
+        assert_eq!(TextureType::Roughness.name(), "Roughness");
+    }
+
+    #[test]
+    fn test_texture_type_is_pbr_component() {
+        assert!(TextureType::Albedo.is_pbr_component());
+        assert!(TextureType::Normal.is_pbr_component());
+        assert!(TextureType::ORM.is_pbr_component());
+        assert!(!TextureType::Unknown.is_pbr_component());
+    }
+
+    #[test]
+    fn test_texture_type_is_packed() {
+        assert!(!TextureType::Albedo.is_packed());
+        assert!(!TextureType::Normal.is_packed());
+        assert!(TextureType::ORM.is_packed());
+        assert!(TextureType::MRA.is_packed());
+        assert!(!TextureType::Roughness.is_packed());
+    }
+
+    #[test]
+    fn test_asset_category_display() {
+        assert_eq!(format!("{}", AssetCategory::All), "📦 All");
+        assert_eq!(format!("{}", AssetCategory::Models), "🎭 Models");
+        assert_eq!(format!("{}", AssetCategory::Textures), "🖼️ Textures");
+        assert_eq!(format!("{}", AssetCategory::Audio), "🔊 Audio");
+    }
+
+    #[test]
+    fn test_asset_category_all() {
+        let all = AssetCategory::all();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&AssetCategory::All));
+        assert!(all.contains(&AssetCategory::Configs));
+    }
+
+    #[test]
+    fn test_asset_category_name() {
+        assert_eq!(AssetCategory::All.name(), "All");
+        assert_eq!(AssetCategory::Models.name(), "Models");
+        assert_eq!(AssetCategory::Textures.name(), "Textures");
+    }
+
+    #[test]
+    fn test_asset_category_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(AssetCategory::All);
+        set.insert(AssetCategory::Models);
+        assert!(set.contains(&AssetCategory::All));
+        assert!(!set.contains(&AssetCategory::Audio));
+    }
+
+    #[test]
+    fn test_asset_type_display() {
+        assert_eq!(format!("{}", AssetType::Model), "🎭 Model");
+        assert_eq!(format!("{}", AssetType::Texture), "🖼️ Texture");
+        assert_eq!(format!("{}", AssetType::Scene), "🌍 Scene");
+        assert_eq!(format!("{}", AssetType::Directory), "📁 Directory");
+        assert_eq!(format!("{}", AssetType::Unknown), "📄 Unknown");
+    }
+
+    #[test]
+    fn test_asset_type_all() {
+        let all = AssetType::all();
+        assert_eq!(all.len(), 9);
+        assert!(all.contains(&AssetType::Model));
+        assert!(all.contains(&AssetType::Unknown));
+    }
+
+    #[test]
+    fn test_asset_type_name() {
+        assert_eq!(AssetType::Model.name(), "Model");
+        assert_eq!(AssetType::Texture.name(), "Texture");
+        assert_eq!(AssetType::Scene.name(), "Scene");
+        assert_eq!(AssetType::Directory.name(), "Directory");
+    }
+
+    #[test]
+    fn test_asset_type_is_content() {
+        assert!(AssetType::Model.is_content());
+        assert!(AssetType::Texture.is_content());
+        assert!(AssetType::Scene.is_content());
+        assert!(AssetType::Audio.is_content());
+        assert!(AssetType::Prefab.is_content());
+        assert!(!AssetType::Config.is_content());
+        assert!(!AssetType::Directory.is_content());
+        assert!(!AssetType::Unknown.is_content());
+    }
+
+    #[test]
+    fn test_asset_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(AssetType::Model);
+        set.insert(AssetType::Texture);
+        assert!(set.contains(&AssetType::Model));
+        assert!(!set.contains(&AssetType::Scene));
+    }
+
+    #[test]
+    fn test_view_mode_display() {
+        assert_eq!(format!("{}", ViewMode::List), "📄 List");
+        assert_eq!(format!("{}", ViewMode::Grid), "📰 Grid");
+    }
+
+    #[test]
+    fn test_view_mode_all() {
+        let all = ViewMode::all();
+        assert_eq!(all.len(), 2);
+        assert!(all.contains(&ViewMode::List));
+        assert!(all.contains(&ViewMode::Grid));
+    }
+
+    #[test]
+    fn test_view_mode_name() {
+        assert_eq!(ViewMode::List.name(), "List");
+        assert_eq!(ViewMode::Grid.name(), "Grid");
+    }
+
+    #[test]
+    fn test_view_mode_icon() {
+        assert_eq!(ViewMode::List.icon(), "📄");
+        assert_eq!(ViewMode::Grid.icon(), "📰");
+    }
+
+    #[test]
+    fn test_view_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ViewMode::List);
+        assert!(set.contains(&ViewMode::List));
+        assert!(!set.contains(&ViewMode::Grid));
+    }
+
+    // ========== AssetAction Tests ==========
+
+    #[test]
+    fn test_asset_action_display() {
+        let action = AssetAction::ImportModel {
+            path: PathBuf::from("test.obj"),
+        };
+        let display = format!("{}", action);
+        assert!(display.contains(action.name()));
+    }
+
+    #[test]
+    fn test_asset_action_all_variants() {
+        let all = AssetAction::all_variants();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&"ImportModel"));
+        assert!(all.contains(&"ApplyTexture"));
+        assert!(all.contains(&"LoadScene"));
+    }
+
+    #[test]
+    fn test_asset_action_names() {
+        let import = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        assert_eq!(import.name(), "Import Model");
+
+        let load = AssetAction::LoadToViewport {
+            path: PathBuf::from("model.obj"),
+        };
+        assert_eq!(load.name(), "Load to Viewport");
+
+        let texture = AssetAction::ApplyTexture {
+            path: PathBuf::from("texture.png"),
+            texture_type: TextureType::Albedo,
+        };
+        assert_eq!(texture.name(), "Apply Texture");
+    }
+
+    #[test]
+    fn test_asset_action_icons() {
+        let import = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        assert_eq!(import.icon(), "📥");
+
+        let inspect = AssetAction::InspectAsset {
+            path: PathBuf::from("asset.mat"),
+        };
+        assert_eq!(inspect.icon(), "🔍");
+    }
+
+    #[test]
+    fn test_asset_action_path() {
+        let path = PathBuf::from("test/model.obj");
+        let action = AssetAction::ImportModel { path: path.clone() };
+        assert_eq!(action.path(), &path);
+    }
+
+    #[test]
+    fn test_asset_action_is_modifying() {
+        let import = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        assert!(import.is_modifying());
+
+        let apply_texture = AssetAction::ApplyTexture {
+            path: PathBuf::from("texture.png"),
+            texture_type: TextureType::Normal,
+        };
+        assert!(apply_texture.is_modifying());
+
+        let spawn = AssetAction::SpawnPrefab {
+            path: PathBuf::from("prefab.ron"),
+        };
+        assert!(spawn.is_modifying());
+
+        // Non-modifying
+        let load = AssetAction::LoadToViewport {
+            path: PathBuf::from("model.obj"),
+        };
+        assert!(!load.is_modifying());
+
+        let inspect = AssetAction::InspectAsset {
+            path: PathBuf::from("asset.mat"),
+        };
+        assert!(!inspect.is_modifying());
+    }
+
+    #[test]
+    fn test_asset_action_is_viewing() {
+        let load = AssetAction::LoadToViewport {
+            path: PathBuf::from("model.obj"),
+        };
+        assert!(load.is_viewing());
+
+        let external = AssetAction::OpenExternal {
+            path: PathBuf::from("file.txt"),
+        };
+        assert!(external.is_viewing());
+
+        let inspect = AssetAction::InspectAsset {
+            path: PathBuf::from("asset.mat"),
+        };
+        assert!(inspect.is_viewing());
+
+        // Non-viewing
+        let import = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        assert!(!import.is_viewing());
+    }
+
+    #[test]
+    fn test_asset_action_is_scene_action() {
+        let load_scene = AssetAction::LoadScene {
+            path: PathBuf::from("level.scene"),
+        };
+        assert!(load_scene.is_scene_action());
+
+        let import = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        assert!(!import.is_scene_action());
+    }
+
+    #[test]
+    fn test_asset_action_partial_eq() {
+        let a1 = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        let a2 = AssetAction::ImportModel {
+            path: PathBuf::from("model.obj"),
+        };
+        let a3 = AssetAction::ImportModel {
+            path: PathBuf::from("other.obj"),
+        };
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+    }
+}

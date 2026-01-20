@@ -130,7 +130,7 @@ impl Default for UiPolishSettings {
 }
 
 /// Screen transition style
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TransitionStyle {
     /// Fade in/out
     Fade,
@@ -148,9 +148,69 @@ pub enum TransitionStyle {
     Instant,
 }
 
+impl std::fmt::Display for TransitionStyle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl Default for TransitionStyle {
     fn default() -> Self {
         Self::Fade
+    }
+}
+
+impl TransitionStyle {
+    /// Returns the human-readable name for this transition style
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Fade => "Fade",
+            Self::SlideRight => "Slide Right",
+            Self::SlideLeft => "Slide Left",
+            Self::SlideTop => "Slide Top",
+            Self::SlideBottom => "Slide Bottom",
+            Self::Dissolve => "Dissolve",
+            Self::Instant => "Instant",
+        }
+    }
+
+    /// Returns the icon for this transition style
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Fade => "🌅",
+            Self::SlideRight => "➡️",
+            Self::SlideLeft => "⬅️",
+            Self::SlideTop => "⬆️",
+            Self::SlideBottom => "⬇️",
+            Self::Dissolve => "✨",
+            Self::Instant => "⚡",
+        }
+    }
+
+    /// Returns all available transition styles
+    pub fn all() -> &'static [TransitionStyle] {
+        &[
+            TransitionStyle::Fade,
+            TransitionStyle::SlideRight,
+            TransitionStyle::SlideLeft,
+            TransitionStyle::SlideTop,
+            TransitionStyle::SlideBottom,
+            TransitionStyle::Dissolve,
+            TransitionStyle::Instant,
+        ]
+    }
+
+    /// Returns true if this transition is a slide-based transition
+    pub fn is_slide(&self) -> bool {
+        matches!(
+            self,
+            Self::SlideRight | Self::SlideLeft | Self::SlideTop | Self::SlideBottom
+        )
+    }
+
+    /// Returns true if this transition has no visible effect duration
+    pub fn is_immediate(&self) -> bool {
+        matches!(self, Self::Instant)
     }
 }
 
@@ -1311,6 +1371,89 @@ mod tests {
         assert!(panel.new_achievement_id.is_empty());
         assert!(panel.new_achievement_name.is_empty());
         assert!(panel.new_achievement_desc.is_empty());
+    }
+
+    // ============================================================================
+    // ENHANCED ENUM TESTS (Display, Hash, helpers)
+    // ============================================================================
+
+    #[test]
+    fn test_transition_style_display() {
+        for style in TransitionStyle::all() {
+            let display = format!("{}", style);
+            assert!(display.contains(style.name()));
+            assert!(display.contains(style.icon()));
+        }
+    }
+
+    #[test]
+    fn test_transition_style_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for style in TransitionStyle::all() {
+            set.insert(*style);
+        }
+        assert_eq!(set.len(), 7);
+    }
+
+    #[test]
+    fn test_transition_style_all() {
+        let all = TransitionStyle::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&TransitionStyle::Fade));
+        assert!(all.contains(&TransitionStyle::SlideRight));
+        assert!(all.contains(&TransitionStyle::SlideLeft));
+        assert!(all.contains(&TransitionStyle::SlideTop));
+        assert!(all.contains(&TransitionStyle::SlideBottom));
+        assert!(all.contains(&TransitionStyle::Dissolve));
+        assert!(all.contains(&TransitionStyle::Instant));
+    }
+
+    #[test]
+    fn test_transition_style_name() {
+        assert_eq!(TransitionStyle::Fade.name(), "Fade");
+        assert_eq!(TransitionStyle::SlideRight.name(), "Slide Right");
+        assert_eq!(TransitionStyle::SlideLeft.name(), "Slide Left");
+        assert_eq!(TransitionStyle::SlideTop.name(), "Slide Top");
+        assert_eq!(TransitionStyle::SlideBottom.name(), "Slide Bottom");
+        assert_eq!(TransitionStyle::Dissolve.name(), "Dissolve");
+        assert_eq!(TransitionStyle::Instant.name(), "Instant");
+    }
+
+    #[test]
+    fn test_transition_style_icon() {
+        assert_eq!(TransitionStyle::Fade.icon(), "🌅");
+        assert_eq!(TransitionStyle::SlideRight.icon(), "➡️");
+        assert_eq!(TransitionStyle::SlideLeft.icon(), "⬅️");
+        assert_eq!(TransitionStyle::SlideTop.icon(), "⬆️");
+        assert_eq!(TransitionStyle::SlideBottom.icon(), "⬇️");
+        assert_eq!(TransitionStyle::Dissolve.icon(), "✨");
+        assert_eq!(TransitionStyle::Instant.icon(), "⚡");
+    }
+
+    #[test]
+    fn test_transition_style_is_slide() {
+        assert!(!TransitionStyle::Fade.is_slide());
+        assert!(TransitionStyle::SlideRight.is_slide());
+        assert!(TransitionStyle::SlideLeft.is_slide());
+        assert!(TransitionStyle::SlideTop.is_slide());
+        assert!(TransitionStyle::SlideBottom.is_slide());
+        assert!(!TransitionStyle::Dissolve.is_slide());
+        assert!(!TransitionStyle::Instant.is_slide());
+    }
+
+    #[test]
+    fn test_transition_style_is_immediate() {
+        assert!(!TransitionStyle::Fade.is_immediate());
+        assert!(!TransitionStyle::SlideRight.is_immediate());
+        assert!(!TransitionStyle::Dissolve.is_immediate());
+        assert!(TransitionStyle::Instant.is_immediate());
+    }
+
+    #[test]
+    fn test_transition_style_default() {
+        let style: TransitionStyle = Default::default();
+        assert_eq!(style, TransitionStyle::Fade);
     }
 }
 

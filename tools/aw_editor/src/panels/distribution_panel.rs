@@ -19,7 +19,7 @@ use crate::panels::Panel;
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Build optimization profile
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum BuildProfile {
     /// Debug build with symbols
     Debug,
@@ -30,6 +30,12 @@ pub enum BuildProfile {
     ReleaseOptimized,
     /// Minimal size build
     MinSize,
+}
+
+impl std::fmt::Display for BuildProfile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl BuildProfile {
@@ -77,6 +83,10 @@ impl BuildProfile {
             BuildProfile::MinSize,
         ]
     }
+
+    pub fn is_release(&self) -> bool {
+        !matches!(self, BuildProfile::Debug)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -84,7 +94,7 @@ impl BuildProfile {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Target platform for cross-compilation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum TargetPlatform {
     #[default]
     Native,
@@ -95,6 +105,12 @@ pub enum TargetPlatform {
     MacOSUniversal,
     LinuxX64,
     LinuxArm64,
+}
+
+impl std::fmt::Display for TargetPlatform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl TargetPlatform {
@@ -144,6 +160,14 @@ impl TargetPlatform {
             TargetPlatform::LinuxX64,
             TargetPlatform::LinuxArm64,
         ]
+    }
+
+    pub fn is_cross_compile(&self) -> bool {
+        !matches!(self, TargetPlatform::Native)
+    }
+
+    pub fn is_64bit(&self) -> bool {
+        !matches!(self, TargetPlatform::Windows32)
     }
 }
 
@@ -218,7 +242,7 @@ impl Default for AssetOptions {
 }
 
 /// Texture compression format
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum TextureFormat {
     None,
     #[default]
@@ -226,6 +250,12 @@ pub enum TextureFormat {
     BC5,
     ASTC,
     ETC2,
+}
+
+impl std::fmt::Display for TextureFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl TextureFormat {
@@ -239,6 +269,16 @@ impl TextureFormat {
         }
     }
 
+    pub fn icon(&self) -> &'static str {
+        match self {
+            TextureFormat::None => "🖼️",
+            TextureFormat::BC7 => "💻",
+            TextureFormat::BC5 => "🔵",
+            TextureFormat::ASTC => "📱",
+            TextureFormat::ETC2 => "🧱",
+        }
+    }
+
     pub fn all() -> &'static [TextureFormat] {
         &[
             TextureFormat::None,
@@ -248,10 +288,14 @@ impl TextureFormat {
             TextureFormat::ETC2,
         ]
     }
+
+    pub fn is_compressed(&self) -> bool {
+        !matches!(self, TextureFormat::None)
+    }
 }
 
 /// Audio compression format
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum AudioFormat {
     None,
     #[default]
@@ -259,6 +303,12 @@ pub enum AudioFormat {
     Opus,
     MP3,
     AAC,
+}
+
+impl std::fmt::Display for AudioFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl AudioFormat {
@@ -272,6 +322,16 @@ impl AudioFormat {
         }
     }
 
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AudioFormat::None => "🔊",
+            AudioFormat::Vorbis => "🎵",
+            AudioFormat::Opus => "🎼",
+            AudioFormat::MP3 => "🎶",
+            AudioFormat::AAC => "🎧",
+        }
+    }
+
     pub fn all() -> &'static [AudioFormat] {
         &[
             AudioFormat::None,
@@ -281,6 +341,10 @@ impl AudioFormat {
             AudioFormat::AAC,
         ]
     }
+
+    pub fn is_compressed(&self) -> bool {
+        !matches!(self, AudioFormat::None)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -288,7 +352,7 @@ impl AudioFormat {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Build pipeline step
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BuildStep {
     Preparing,
     CleaningBuild,
@@ -302,6 +366,12 @@ pub enum BuildStep {
     Finalizing,
     Complete,
     Failed,
+}
+
+impl std::fmt::Display for BuildStep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl BuildStep {
@@ -1587,5 +1657,163 @@ mod tests {
         panel.build_options.run_tests_before_build = false;
         panel.validate();
         assert!(panel.validation.warnings.iter().any(|w| w.message.contains("Tests disabled")));
+    }
+
+    // ============================================================
+    // SESSION 6: ENUM DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_build_profile_display() {
+        // Verify Display trait outputs icon + name
+        for profile in BuildProfile::all() {
+            let display = format!("{}", profile);
+            assert!(display.contains(profile.name()));
+            assert!(display.contains(profile.icon()));
+        }
+    }
+
+    #[test]
+    fn test_build_profile_is_release() {
+        assert!(!BuildProfile::Debug.is_release());
+        assert!(BuildProfile::Release.is_release());
+        assert!(BuildProfile::ReleaseOptimized.is_release());
+        assert!(BuildProfile::MinSize.is_release());
+    }
+
+    #[test]
+    fn test_build_profile_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(BuildProfile::Debug);
+        set.insert(BuildProfile::Release);
+        assert!(set.contains(&BuildProfile::Debug));
+        assert!(!set.contains(&BuildProfile::MinSize));
+    }
+
+    #[test]
+    fn test_target_platform_display() {
+        // Verify Display trait outputs icon + name
+        for platform in TargetPlatform::all() {
+            let display = format!("{}", platform);
+            assert!(display.contains(platform.name()));
+            assert!(display.contains(platform.icon()));
+        }
+    }
+
+    #[test]
+    fn test_target_platform_all_contains_all_variants() {
+        let all = TargetPlatform::all();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&TargetPlatform::Native));
+        assert!(all.contains(&TargetPlatform::MacOSUniversal));
+    }
+
+    #[test]
+    fn test_target_platform_is_cross_compile() {
+        assert!(!TargetPlatform::Native.is_cross_compile());
+        assert!(TargetPlatform::Windows64.is_cross_compile());
+        assert!(TargetPlatform::LinuxArm64.is_cross_compile());
+    }
+
+    #[test]
+    fn test_target_platform_is_64bit() {
+        assert!(TargetPlatform::Native.is_64bit());
+        assert!(TargetPlatform::Windows64.is_64bit());
+        assert!(!TargetPlatform::Windows32.is_64bit());
+        assert!(TargetPlatform::MacOSArm64.is_64bit());
+    }
+
+    #[test]
+    fn test_texture_format_display() {
+        // Verify Display trait outputs icon + name
+        for format in TextureFormat::all() {
+            let display = format!("{}", format);
+            assert!(display.contains(format.name()));
+            assert!(display.contains(format.icon()));
+        }
+    }
+
+    #[test]
+    fn test_texture_format_is_compressed() {
+        assert!(!TextureFormat::None.is_compressed());
+        assert!(TextureFormat::BC7.is_compressed());
+        assert!(TextureFormat::BC5.is_compressed());
+        assert!(TextureFormat::ASTC.is_compressed());
+        assert!(TextureFormat::ETC2.is_compressed());
+    }
+
+    #[test]
+    fn test_texture_format_all_contains_all_variants() {
+        let all = TextureFormat::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&TextureFormat::None));
+        assert!(all.contains(&TextureFormat::ETC2));
+    }
+
+    #[test]
+    fn test_audio_format_display() {
+        // Verify Display trait outputs icon + name
+        for format in AudioFormat::all() {
+            let display = format!("{}", format);
+            assert!(display.contains(format.name()));
+            assert!(display.contains(format.icon()));
+        }
+    }
+
+    #[test]
+    fn test_audio_format_is_compressed() {
+        assert!(!AudioFormat::None.is_compressed());
+        assert!(AudioFormat::Vorbis.is_compressed());
+        assert!(AudioFormat::Opus.is_compressed());
+        assert!(AudioFormat::MP3.is_compressed());
+        assert!(AudioFormat::AAC.is_compressed());
+    }
+
+    #[test]
+    fn test_audio_format_all_contains_all_variants() {
+        let all = AudioFormat::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&AudioFormat::None));
+        assert!(all.contains(&AudioFormat::AAC));
+    }
+
+    #[test]
+    fn test_build_step_display() {
+        // Verify Display trait outputs icon + name
+        for step in BuildStep::all_steps() {
+            let display = format!("{}", step);
+            assert!(display.contains(step.name()));
+            assert!(display.contains(step.icon()));
+        }
+    }
+
+    #[test]
+    fn test_build_step_is_terminal_all_variants() {
+        assert!(!BuildStep::Preparing.is_terminal());
+        assert!(!BuildStep::CompilingCode.is_terminal());
+        assert!(BuildStep::Complete.is_terminal());
+        assert!(BuildStep::Failed.is_terminal());
+    }
+
+    #[test]
+    fn test_build_step_all_steps_complete() {
+        let all = BuildStep::all_steps();
+        // all_steps returns 11 normal build steps (excludes Failed which is an error state)
+        assert_eq!(all.len(), 11);
+        assert!(all.contains(&BuildStep::Preparing));
+        assert!(all.contains(&BuildStep::Complete));
+        // Failed is not in normal steps (it's an error state)
+        assert!(!all.contains(&BuildStep::Failed));
+    }
+
+    #[test]
+    fn test_build_step_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(BuildStep::Preparing);
+        set.insert(BuildStep::Complete);
+        assert!(set.contains(&BuildStep::Preparing));
+        assert!(!set.contains(&BuildStep::Failed));
     }
 }

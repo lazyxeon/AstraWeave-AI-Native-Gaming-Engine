@@ -23,7 +23,7 @@ use std::collections::{HashMap, HashSet};
 use tracing::debug;
 
 /// Actions that require prefab manager access
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum PrefabAction {
     RevertToOriginal(Entity),
     ApplyChangesToFile(Entity),
@@ -31,8 +31,39 @@ pub enum PrefabAction {
     ApplyAllChangesToFile(Entity), // Apply all entities in prefab instance (entity is any member)
 }
 
+impl std::fmt::Display for PrefabAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PrefabAction {
+    pub fn name(&self) -> &'static str {
+        match self {
+            PrefabAction::RevertToOriginal(_) => "Revert to Original",
+            PrefabAction::ApplyChangesToFile(_) => "Apply Changes",
+            PrefabAction::RevertAllToOriginal(_) => "Revert All",
+            PrefabAction::ApplyAllChangesToFile(_) => "Apply All Changes",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PrefabAction::RevertToOriginal(_) => "↩️",
+            PrefabAction::ApplyChangesToFile(_) => "✅",
+            PrefabAction::RevertAllToOriginal(_) => "🔄",
+            PrefabAction::ApplyAllChangesToFile(_) => "💾",
+        }
+    }
+
+    /// Returns true if this action affects all entities in the prefab
+    pub fn is_bulk_action(&self) -> bool {
+        matches!(self, PrefabAction::RevertAllToOriginal(_) | PrefabAction::ApplyAllChangesToFile(_))
+    }
+}
+
 /// Entity template archetype
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EntityArchetype {
     Player,
     Companion,
@@ -43,6 +74,12 @@ pub enum EntityArchetype {
     Trigger,
     Light,
     Camera,
+}
+
+impl std::fmt::Display for EntityArchetype {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl EntityArchetype {
@@ -60,6 +97,20 @@ impl EntityArchetype {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Player => "Player",
+            Self::Companion => "Companion",
+            Self::Enemy => "Enemy",
+            Self::Boss => "Boss",
+            Self::NPC => "NPC",
+            Self::Prop => "Prop",
+            Self::Trigger => "Trigger",
+            Self::Light => "Light",
+            Self::Camera => "Camera",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             Self::Player => "🎮",
@@ -72,6 +123,11 @@ impl EntityArchetype {
             Self::Light => "💡",
             Self::Camera => "📷",
         }
+    }
+
+    /// Returns true if this archetype is combat-related
+    pub fn is_combatant(&self) -> bool {
+        matches!(self, Self::Player | Self::Companion | Self::Enemy | Self::Boss)
     }
 
     pub fn default_health(&self) -> i32 {
@@ -123,14 +179,36 @@ pub struct ValidationIssue {
 }
 
 /// Validation severity
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ValidationSeverity {
     Error,
     Warning,
     Info,
 }
 
+impl std::fmt::Display for ValidationSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl ValidationSeverity {
+    pub fn all() -> &'static [ValidationSeverity] {
+        &[
+            ValidationSeverity::Error,
+            ValidationSeverity::Warning,
+            ValidationSeverity::Info,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Error => "Error",
+            Self::Warning => "Warning",
+            Self::Info => "Info",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             Self::Error => "❌",
@@ -145,6 +223,11 @@ impl ValidationSeverity {
             Self::Warning => Color32::from_rgb(255, 200, 100),
             Self::Info => Color32::from_rgb(100, 200, 255),
         }
+    }
+
+    /// Returns true if this severity indicates a serious issue
+    pub fn is_serious(&self) -> bool {
+        matches!(self, Self::Error | Self::Warning)
     }
 }
 
@@ -1698,5 +1781,135 @@ mod tests {
         panel.favorites.insert(entity);
         panel.favorites.clear();
         assert!(panel.favorites.is_empty());
+    }
+
+    // =====================================================================
+    // PrefabAction Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_prefab_action_display() {
+        let action = PrefabAction::RevertToOriginal(1);
+        let display = format!("{}", action);
+        assert!(display.contains(action.name()), "Display should contain name");
+    }
+
+    #[test]
+    fn test_prefab_action_name() {
+        assert_eq!(PrefabAction::RevertToOriginal(1).name(), "Revert to Original");
+        assert_eq!(PrefabAction::ApplyChangesToFile(1).name(), "Apply Changes");
+        assert_eq!(PrefabAction::RevertAllToOriginal(1).name(), "Revert All");
+        assert_eq!(PrefabAction::ApplyAllChangesToFile(1).name(), "Apply All Changes");
+    }
+
+    #[test]
+    fn test_prefab_action_is_bulk_action() {
+        assert!(PrefabAction::RevertAllToOriginal(1).is_bulk_action());
+        assert!(PrefabAction::ApplyAllChangesToFile(1).is_bulk_action());
+        assert!(!PrefabAction::RevertToOriginal(1).is_bulk_action());
+        assert!(!PrefabAction::ApplyChangesToFile(1).is_bulk_action());
+    }
+
+    #[test]
+    fn test_prefab_action_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(PrefabAction::RevertToOriginal(1));
+        set.insert(PrefabAction::ApplyChangesToFile(1));
+        set.insert(PrefabAction::RevertToOriginal(1)); // Duplicate
+        assert_eq!(set.len(), 2);
+    }
+
+    // =====================================================================
+    // EntityArchetype Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_entity_archetype_display() {
+        for arch in EntityArchetype::all() {
+            let display = format!("{}", arch);
+            assert!(display.contains(arch.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_entity_archetype_all_variants() {
+        let variants = EntityArchetype::all();
+        assert_eq!(variants.len(), 9, "Expected 9 entity archetype variants");
+        assert!(variants.contains(&EntityArchetype::Player));
+        assert!(variants.contains(&EntityArchetype::Enemy));
+        assert!(variants.contains(&EntityArchetype::NPC));
+    }
+
+    #[test]
+    fn test_entity_archetype_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for arch in EntityArchetype::all() {
+            set.insert(arch.clone());
+        }
+        assert_eq!(set.len(), EntityArchetype::all().len());
+    }
+
+    #[test]
+    fn test_entity_archetype_name() {
+        assert_eq!(EntityArchetype::Player.name(), "Player");
+        assert_eq!(EntityArchetype::Companion.name(), "Companion");
+        assert_eq!(EntityArchetype::Boss.name(), "Boss");
+    }
+
+    #[test]
+    fn test_entity_archetype_is_combatant() {
+        assert!(EntityArchetype::Player.is_combatant());
+        assert!(EntityArchetype::Companion.is_combatant());
+        assert!(EntityArchetype::Enemy.is_combatant());
+        assert!(EntityArchetype::Boss.is_combatant());
+        assert!(!EntityArchetype::NPC.is_combatant());
+        assert!(!EntityArchetype::Prop.is_combatant());
+    }
+
+    // =====================================================================
+    // ValidationSeverity Enum Tests
+    // =====================================================================
+
+    #[test]
+    fn test_validation_severity_display() {
+        for sev in ValidationSeverity::all() {
+            let display = format!("{}", sev);
+            assert!(display.contains(sev.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_validation_severity_all_variants() {
+        let variants = ValidationSeverity::all();
+        assert_eq!(variants.len(), 3, "Expected 3 validation severity variants");
+        assert!(variants.contains(&ValidationSeverity::Error));
+        assert!(variants.contains(&ValidationSeverity::Warning));
+        assert!(variants.contains(&ValidationSeverity::Info));
+    }
+
+    #[test]
+    fn test_validation_severity_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for sev in ValidationSeverity::all() {
+            set.insert(*sev);
+        }
+        assert_eq!(set.len(), ValidationSeverity::all().len());
+    }
+
+    #[test]
+    fn test_validation_severity_name() {
+        assert_eq!(ValidationSeverity::Error.name(), "Error");
+        assert_eq!(ValidationSeverity::Warning.name(), "Warning");
+        assert_eq!(ValidationSeverity::Info.name(), "Info");
+    }
+
+    #[test]
+    fn test_validation_severity_is_serious() {
+        assert!(ValidationSeverity::Error.is_serious());
+        assert!(ValidationSeverity::Warning.is_serious());
+        assert!(!ValidationSeverity::Info.is_serious());
     }
 }

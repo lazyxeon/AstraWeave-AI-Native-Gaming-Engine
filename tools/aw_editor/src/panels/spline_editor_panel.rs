@@ -13,7 +13,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Spline type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SplineType {
     #[default]
     CatmullRom,
@@ -23,7 +23,23 @@ pub enum SplineType {
     BSpline,
 }
 
+impl std::fmt::Display for SplineType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 impl SplineType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SplineType::CatmullRom => "Catmull-Rom",
+            SplineType::Bezier => "Bezier",
+            SplineType::Linear => "Linear",
+            SplineType::Hermite => "Hermite",
+            SplineType::BSpline => "B-Spline",
+        }
+    }
+
     pub fn all() -> &'static [SplineType] {
         &[
             SplineType::CatmullRom,
@@ -33,10 +49,14 @@ impl SplineType {
             SplineType::BSpline,
         ]
     }
+
+    pub fn is_smooth(&self) -> bool {
+        !matches!(self, SplineType::Linear)
+    }
 }
 
 /// Spline preset category
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SplinePreset {
     #[default]
     Custom,
@@ -49,7 +69,26 @@ pub enum SplinePreset {
     CameraRail,
 }
 
+impl std::fmt::Display for SplinePreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl SplinePreset {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SplinePreset::Custom => "Custom",
+            SplinePreset::Road => "Road",
+            SplinePreset::Rail => "Rail",
+            SplinePreset::River => "River",
+            SplinePreset::Fence => "Fence",
+            SplinePreset::Cable => "Cable",
+            SplinePreset::AnimationPath => "Animation Path",
+            SplinePreset::CameraRail => "Camera Rail",
+        }
+    }
+
     pub fn all() -> &'static [SplinePreset] {
         &[
             SplinePreset::Custom,
@@ -75,6 +114,10 @@ impl SplinePreset {
             SplinePreset::CameraRail => "🎥",
         }
     }
+
+    pub fn is_infrastructure(&self) -> bool {
+        matches!(self, SplinePreset::Road | SplinePreset::Rail | SplinePreset::Fence | SplinePreset::Cable)
+    }
 }
 
 /// Control point on the spline
@@ -96,7 +139,7 @@ pub struct SplinePoint {
     pub custom_data: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum TangentMode {
     #[default]
     Auto,
@@ -104,6 +147,34 @@ pub enum TangentMode {
     Linear,
     Free,
     Aligned,
+}
+
+impl std::fmt::Display for TangentMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl TangentMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            TangentMode::Auto => "Auto",
+            TangentMode::Smooth => "Smooth",
+            TangentMode::Linear => "Linear",
+            TangentMode::Free => "Free",
+            TangentMode::Aligned => "Aligned",
+        }
+    }
+
+    pub fn all() -> &'static [TangentMode] {
+        &[
+            TangentMode::Auto,
+            TangentMode::Smooth,
+            TangentMode::Linear,
+            TangentMode::Free,
+            TangentMode::Aligned,
+        ]
+    }
 }
 
 impl Default for SplinePoint {
@@ -159,7 +230,7 @@ pub struct Spline {
     pub total_length: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum MeshProfile {
     #[default]
     Flat,
@@ -170,12 +241,66 @@ pub enum MeshProfile {
     Custom,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+impl std::fmt::Display for MeshProfile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl MeshProfile {
+    pub fn name(&self) -> &'static str {
+        match self {
+            MeshProfile::Flat => "Flat",
+            MeshProfile::Round => "Round",
+            MeshProfile::Square => "Square",
+            MeshProfile::RoadWithSidewalk => "Road with Sidewalk",
+            MeshProfile::RiverBed => "River Bed",
+            MeshProfile::Custom => "Custom",
+        }
+    }
+
+    pub fn all() -> &'static [MeshProfile] {
+        &[
+            MeshProfile::Flat,
+            MeshProfile::Round,
+            MeshProfile::Square,
+            MeshProfile::RoadWithSidewalk,
+            MeshProfile::RiverBed,
+            MeshProfile::Custom,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum UvMode {
     #[default]
     Stretch,
     Tile,
     TileWorld,
+}
+
+impl std::fmt::Display for UvMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl UvMode {
+    pub fn name(&self) -> &'static str {
+        match self {
+            UvMode::Stretch => "Stretch",
+            UvMode::Tile => "Tile",
+            UvMode::TileWorld => "Tile World",
+        }
+    }
+
+    pub fn all() -> &'static [UvMode] {
+        &[
+            UvMode::Stretch,
+            UvMode::Tile,
+            UvMode::TileWorld,
+        ]
+    }
 }
 
 impl Default for Spline {
@@ -212,7 +337,7 @@ impl Default for Spline {
 }
 
 /// Editor tool
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SplineTool {
     #[default]
     Select,
@@ -223,7 +348,35 @@ pub enum SplineTool {
     Draw,
 }
 
+impl std::fmt::Display for SplineTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl SplineTool {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SplineTool::Select => "Select",
+            SplineTool::AddPoint => "Add Point",
+            SplineTool::InsertPoint => "Insert Point",
+            SplineTool::DeletePoint => "Delete Point",
+            SplineTool::MoveTangent => "Move Tangent",
+            SplineTool::Draw => "Draw",
+        }
+    }
+
+    pub fn all() -> &'static [SplineTool] {
+        &[
+            SplineTool::Select,
+            SplineTool::AddPoint,
+            SplineTool::InsertPoint,
+            SplineTool::DeletePoint,
+            SplineTool::MoveTangent,
+            SplineTool::Draw,
+        ]
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             SplineTool::Select => "👆",
@@ -233,6 +386,10 @@ impl SplineTool {
             SplineTool::MoveTangent => "↗️",
             SplineTool::Draw => "✏️",
         }
+    }
+
+    pub fn is_destructive(&self) -> bool {
+        matches!(self, SplineTool::DeletePoint)
     }
 }
 
@@ -263,7 +420,7 @@ impl Default for CustomProfile {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SplineTab {
     #[default]
     Splines,
@@ -272,6 +429,47 @@ pub enum SplineTab {
     Terrain,
     Animation,
     Profiles,
+}
+
+impl std::fmt::Display for SplineTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl SplineTab {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SplineTab::Splines => "Splines",
+            SplineTab::Points => "Points",
+            SplineTab::Mesh => "Mesh",
+            SplineTab::Terrain => "Terrain",
+            SplineTab::Animation => "Animation",
+            SplineTab::Profiles => "Profiles",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SplineTab::Splines => "〰️",
+            SplineTab::Points => "📍",
+            SplineTab::Mesh => "🔷",
+            SplineTab::Terrain => "🏔️",
+            SplineTab::Animation => "🎬",
+            SplineTab::Profiles => "📐",
+        }
+    }
+
+    pub fn all() -> &'static [SplineTab] {
+        &[
+            SplineTab::Splines,
+            SplineTab::Points,
+            SplineTab::Mesh,
+            SplineTab::Terrain,
+            SplineTab::Animation,
+            SplineTab::Profiles,
+        ]
+    }
 }
 
 /// Main Spline Editor Panel
@@ -1433,5 +1631,208 @@ mod tests {
         assert!((pp.x - 0.5).abs() < 0.001);
         assert!((pp.y - 1.0).abs() < 0.001);
         assert!((pp.uv - 0.5).abs() < 0.001);
+    }
+
+    // ============================================================
+    // DISPLAY TRAIT TESTS
+    // ============================================================
+
+    #[test]
+    fn test_spline_type_display() {
+        for spline_type in SplineType::all() {
+            let display = format!("{}", spline_type);
+            assert!(display.contains(spline_type.name()));
+        }
+    }
+
+    #[test]
+    fn test_spline_type_all_count() {
+        let all = SplineType::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_spline_type_is_smooth() {
+        assert!(SplineType::CatmullRom.is_smooth());
+        assert!(SplineType::Bezier.is_smooth());
+        assert!(!SplineType::Linear.is_smooth());
+    }
+
+    #[test]
+    fn test_spline_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for spline_type in SplineType::all() {
+            set.insert(*spline_type);
+        }
+        assert_eq!(set.len(), SplineType::all().len());
+    }
+
+    #[test]
+    fn test_spline_preset_display() {
+        for preset in SplinePreset::all() {
+            let display = format!("{}", preset);
+            assert!(display.contains(preset.name()));
+        }
+    }
+
+    #[test]
+    fn test_spline_preset_all_count() {
+        let all = SplinePreset::all();
+        assert_eq!(all.len(), 8);
+    }
+
+    #[test]
+    fn test_spline_preset_is_infrastructure() {
+        assert!(SplinePreset::Road.is_infrastructure());
+        assert!(SplinePreset::Rail.is_infrastructure());
+        assert!(SplinePreset::Fence.is_infrastructure());
+        assert!(SplinePreset::Cable.is_infrastructure());
+        assert!(!SplinePreset::River.is_infrastructure());
+        assert!(!SplinePreset::AnimationPath.is_infrastructure());
+    }
+
+    #[test]
+    fn test_spline_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for preset in SplinePreset::all() {
+            set.insert(*preset);
+        }
+        assert_eq!(set.len(), SplinePreset::all().len());
+    }
+
+    #[test]
+    fn test_tangent_mode_display() {
+        for mode in TangentMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_tangent_mode_all() {
+        let all = TangentMode::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_tangent_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in TangentMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), TangentMode::all().len());
+    }
+
+    #[test]
+    fn test_mesh_profile_display() {
+        for profile in MeshProfile::all() {
+            let display = format!("{}", profile);
+            assert!(display.contains(profile.name()));
+        }
+    }
+
+    #[test]
+    fn test_mesh_profile_all() {
+        let all = MeshProfile::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_mesh_profile_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for profile in MeshProfile::all() {
+            set.insert(*profile);
+        }
+        assert_eq!(set.len(), MeshProfile::all().len());
+    }
+
+    #[test]
+    fn test_uv_mode_display() {
+        for mode in UvMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+        }
+    }
+
+    #[test]
+    fn test_uv_mode_all() {
+        let all = UvMode::all();
+        assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_uv_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in UvMode::all() {
+            set.insert(*mode);
+        }
+        assert_eq!(set.len(), UvMode::all().len());
+    }
+
+    #[test]
+    fn test_spline_tool_display() {
+        for tool in SplineTool::all() {
+            let display = format!("{}", tool);
+            assert!(display.contains(tool.name()));
+        }
+    }
+
+    #[test]
+    fn test_spline_tool_all() {
+        let all = SplineTool::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_spline_tool_is_destructive() {
+        assert!(SplineTool::DeletePoint.is_destructive());
+        assert!(!SplineTool::Select.is_destructive());
+        assert!(!SplineTool::AddPoint.is_destructive());
+    }
+
+    #[test]
+    fn test_spline_tool_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tool in SplineTool::all() {
+            set.insert(*tool);
+        }
+        assert_eq!(set.len(), SplineTool::all().len());
+    }
+
+    #[test]
+    fn test_spline_tab_display() {
+        for tab in SplineTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+        }
+    }
+
+    #[test]
+    fn test_spline_tab_all() {
+        let all = SplineTab::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_spline_tab_icon() {
+        assert_eq!(SplineTab::Splines.icon(), "〰️");
+        assert_eq!(SplineTab::Points.icon(), "📍");
+        assert_eq!(SplineTab::Animation.icon(), "🎬");
+    }
+
+    #[test]
+    fn test_spline_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in SplineTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), SplineTab::all().len());
     }
 }

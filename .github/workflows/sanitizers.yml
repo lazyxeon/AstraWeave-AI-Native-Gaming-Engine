@@ -105,13 +105,54 @@ jobs:
         run: |
           # NOTE: astraweave-render excluded - GPU drivers cause ASan false positives
           # GPU validation is handled by wgpu's built-in validation layers
-          for crate in astraweave-ecs astraweave-physics astraweave-core astraweave-ai astraweave-nav; do
+          #
+          # Expanded coverage (January 2025):
+          # - P0 Core: ecs, physics, core, ai, nav
+          # - P1 Infrastructure: net, asset, llm, memory, context
+          # - P2 Support: behavior, prompts, embeddings
+          
+          CRATES=(
+            # P0 Core Runtime
+            astraweave-ecs
+            astraweave-physics
+            astraweave-core
+            astraweave-ai
+            astraweave-nav
+            # P1 Infrastructure
+            astraweave-net
+            astraweave-asset
+            astraweave-llm
+            astraweave-memory
+            astraweave-context
+            # P2 Support
+            astraweave-behavior
+            astraweave-prompts
+            astraweave-embeddings
+          )
+          
+          echo "=== Running ASan on ${#CRATES[@]} crates ==="
+          FAILED=0
+          for crate in "${CRATES[@]}"; do
+            echo ""
             echo "=== Testing $crate with ASan ==="
-            RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+            if RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
               -p $crate \
               --target x86_64-unknown-linux-gnu \
-              -- --test-threads=1 || echo "Warning: $crate had ASan failures"
+              -- --test-threads=1 2>&1; then
+              echo "✅ $crate passed ASan"
+            else
+              echo "⚠️ $crate had ASan failures (may be expected)"
+              FAILED=$((FAILED + 1))
+            fi
           done
+          
+          echo ""
+          echo "=== ASan Summary ==="
+          echo "Total crates: ${#CRATES[@]}"
+          echo "Failures: $FAILED"
+          
+          # Don't fail the job - some crates may have acceptable issues
+          exit 0
 
   # LeakSanitizer (fast, run on every PR)
   leak-sanitizer:

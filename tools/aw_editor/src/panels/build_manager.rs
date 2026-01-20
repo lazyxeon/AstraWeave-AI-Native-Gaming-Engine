@@ -14,13 +14,19 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 /// Target platform for game builds
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum BuildTarget {
     #[default]
     Windows,
     Linux,
     MacOS,
     Web,
+}
+
+impl std::fmt::Display for BuildTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl BuildTarget {
@@ -51,6 +57,21 @@ impl BuildTarget {
         }
     }
 
+    /// Returns all available build targets
+    pub fn all() -> &'static [BuildTarget] {
+        &Self::ALL
+    }
+
+    /// Returns true if this target is a desktop platform
+    pub fn is_desktop(&self) -> bool {
+        matches!(self, BuildTarget::Windows | BuildTarget::Linux | BuildTarget::MacOS)
+    }
+
+    /// Returns true if this target requires cross-compilation
+    pub fn is_crosscompile(&self) -> bool {
+        self.cargo_target().is_some()
+    }
+
     pub const ALL: [BuildTarget; 4] = [
         BuildTarget::Windows,
         BuildTarget::Linux,
@@ -60,11 +81,17 @@ impl BuildTarget {
 }
 
 /// Build profile (Debug vs Release)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum BuildProfile {
     Debug,
     #[default]
     Release,
+}
+
+impl std::fmt::Display for BuildProfile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl BuildProfile {
@@ -75,11 +102,28 @@ impl BuildProfile {
         }
     }
 
+    pub fn icon(&self) -> &str {
+        match self {
+            BuildProfile::Debug => "🐛",
+            BuildProfile::Release => "🚀",
+        }
+    }
+
     pub fn cargo_flag(&self) -> Option<&str> {
         match self {
             BuildProfile::Debug => None,
             BuildProfile::Release => Some("--release"),
         }
+    }
+
+    /// Returns all available build profiles
+    pub fn all() -> &'static [BuildProfile] {
+        &[BuildProfile::Debug, BuildProfile::Release]
+    }
+
+    /// Returns true if this profile produces optimized builds
+    pub fn is_optimized(&self) -> bool {
+        matches!(self, BuildProfile::Release)
     }
 }
 
@@ -99,6 +143,50 @@ pub enum BuildStatus {
     Failed {
         error_message: String,
     },
+}
+
+impl std::fmt::Display for BuildStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BuildStatus::Idle => write!(f, "⏸ Idle"),
+            BuildStatus::Building { progress, current_step } => {
+                write!(f, "🔨 Building ({:.0}%): {}", progress * 100.0, current_step)
+            }
+            BuildStatus::Success { duration_secs, .. } => {
+                write!(f, "✅ Success ({:.1}s)", duration_secs)
+            }
+            BuildStatus::Failed { error_message } => {
+                write!(f, "❌ Failed: {}", error_message)
+            }
+        }
+    }
+}
+
+impl BuildStatus {
+    /// Returns true if the build is in progress
+    pub fn is_building(&self) -> bool {
+        matches!(self, BuildStatus::Building { .. })
+    }
+
+    /// Returns true if the build succeeded
+    pub fn is_success(&self) -> bool {
+        matches!(self, BuildStatus::Success { .. })
+    }
+
+    /// Returns true if the build failed
+    pub fn is_failed(&self) -> bool {
+        matches!(self, BuildStatus::Failed { .. })
+    }
+
+    /// Returns the icon for this status
+    pub fn icon(&self) -> &str {
+        match self {
+            BuildStatus::Idle => "⏸",
+            BuildStatus::Building { .. } => "🔨",
+            BuildStatus::Success { .. } => "✅",
+            BuildStatus::Failed { .. } => "❌",
+        }
+    }
 }
 
 /// Build configuration options
@@ -142,6 +230,47 @@ pub enum BuildMessage {
     Failed {
         error: String,
     },
+}
+
+impl std::fmt::Display for BuildMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BuildMessage::Progress { percent, step } => {
+                write!(f, "📊 Progress ({:.0}%): {}", percent * 100.0, step)
+            }
+            BuildMessage::LogLine(line) => {
+                write!(f, "📝 {}", line)
+            }
+            BuildMessage::Complete { output_path, duration_secs } => {
+                write!(f, "✅ Complete: {} ({:.1}s)", output_path.display(), duration_secs)
+            }
+            BuildMessage::Failed { error } => {
+                write!(f, "❌ Failed: {}", error)
+            }
+        }
+    }
+}
+
+impl BuildMessage {
+    /// Returns the icon for this message type
+    pub fn icon(&self) -> &str {
+        match self {
+            BuildMessage::Progress { .. } => "📊",
+            BuildMessage::LogLine(_) => "📝",
+            BuildMessage::Complete { .. } => "✅",
+            BuildMessage::Failed { .. } => "❌",
+        }
+    }
+
+    /// Returns true if this message indicates an error
+    pub fn is_error(&self) -> bool {
+        matches!(self, BuildMessage::Failed { .. })
+    }
+
+    /// Returns true if this message indicates completion (success or failure)
+    pub fn is_terminal(&self) -> bool {
+        matches!(self, BuildMessage::Complete { .. } | BuildMessage::Failed { .. })
+    }
 }
 
 /// Build Manager Panel - Phase 5.2 with GameProject integration
@@ -1166,6 +1295,279 @@ mod tests {
         panel.cancel_build();
         assert!(panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
         assert!(panel.build_logs.iter().any(|log| log.contains("cancellation")));
+    }
+
+    // ============================================================================
+    // ENHANCED ENUM TESTS (Display, Hash, helpers)
+    // ============================================================================
+
+    #[test]
+    fn test_build_target_display() {
+        for target in BuildTarget::all() {
+            let display = format!("{}", target);
+            assert!(display.contains(target.name()));
+            assert!(display.contains(target.icon()));
+        }
+    }
+
+    #[test]
+    fn test_build_target_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for target in BuildTarget::all() {
+            set.insert(*target);
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_build_target_all_method() {
+        let all = BuildTarget::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&BuildTarget::Windows));
+        assert!(all.contains(&BuildTarget::Linux));
+        assert!(all.contains(&BuildTarget::MacOS));
+        assert!(all.contains(&BuildTarget::Web));
+    }
+
+    #[test]
+    fn test_build_target_is_desktop() {
+        assert!(BuildTarget::Windows.is_desktop());
+        assert!(BuildTarget::Linux.is_desktop());
+        assert!(BuildTarget::MacOS.is_desktop());
+        assert!(!BuildTarget::Web.is_desktop());
+    }
+
+    #[test]
+    fn test_build_target_is_crosscompile() {
+        assert!(!BuildTarget::Windows.is_crosscompile()); // Native on Windows
+        assert!(BuildTarget::Linux.is_crosscompile());
+        assert!(BuildTarget::MacOS.is_crosscompile());
+        assert!(BuildTarget::Web.is_crosscompile());
+    }
+
+    #[test]
+    fn test_build_profile_display() {
+        for profile in BuildProfile::all() {
+            let display = format!("{}", profile);
+            assert!(display.contains(profile.name()));
+            assert!(display.contains(profile.icon()));
+        }
+    }
+
+    #[test]
+    fn test_build_profile_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for profile in BuildProfile::all() {
+            set.insert(*profile);
+        }
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn test_build_profile_all() {
+        let all = BuildProfile::all();
+        assert_eq!(all.len(), 2);
+        assert!(all.contains(&BuildProfile::Debug));
+        assert!(all.contains(&BuildProfile::Release));
+    }
+
+    #[test]
+    fn test_build_profile_icon() {
+        assert_eq!(BuildProfile::Debug.icon(), "🐛");
+        assert_eq!(BuildProfile::Release.icon(), "🚀");
+    }
+
+    #[test]
+    fn test_build_profile_is_optimized() {
+        assert!(!BuildProfile::Debug.is_optimized());
+        assert!(BuildProfile::Release.is_optimized());
+    }
+
+    #[test]
+    fn test_build_status_display() {
+        let idle = BuildStatus::Idle;
+        let display = format!("{}", idle);
+        assert!(display.contains("Idle"));
+
+        let building = BuildStatus::Building {
+            progress: 0.5,
+            current_step: "Compiling".to_string(),
+        };
+        let display = format!("{}", building);
+        assert!(display.contains("50%"));
+        assert!(display.contains("Compiling"));
+
+        let success = BuildStatus::Success {
+            output_path: PathBuf::from("game.exe"),
+            duration_secs: 30.0,
+        };
+        let display = format!("{}", success);
+        assert!(display.contains("Success"));
+        assert!(display.contains("30.0"));
+
+        let failed = BuildStatus::Failed {
+            error_message: "Link error".to_string(),
+        };
+        let display = format!("{}", failed);
+        assert!(display.contains("Failed"));
+        assert!(display.contains("Link error"));
+    }
+
+    #[test]
+    fn test_build_status_helpers() {
+        let idle = BuildStatus::Idle;
+        assert!(!idle.is_building());
+        assert!(!idle.is_success());
+        assert!(!idle.is_failed());
+
+        let building = BuildStatus::Building {
+            progress: 0.5,
+            current_step: "Test".to_string(),
+        };
+        assert!(building.is_building());
+        assert!(!building.is_success());
+        assert!(!building.is_failed());
+
+        let success = BuildStatus::Success {
+            output_path: PathBuf::from("out"),
+            duration_secs: 10.0,
+        };
+        assert!(!success.is_building());
+        assert!(success.is_success());
+        assert!(!success.is_failed());
+
+        let failed = BuildStatus::Failed {
+            error_message: "Error".to_string(),
+        };
+        assert!(!failed.is_building());
+        assert!(!failed.is_success());
+        assert!(failed.is_failed());
+    }
+
+    #[test]
+    fn test_build_status_icon() {
+        assert_eq!(BuildStatus::Idle.icon(), "⏸");
+        assert_eq!(
+            BuildStatus::Building {
+                progress: 0.0,
+                current_step: String::new()
+            }
+            .icon(),
+            "🔨"
+        );
+        assert_eq!(
+            BuildStatus::Success {
+                output_path: PathBuf::new(),
+                duration_secs: 0.0
+            }
+            .icon(),
+            "✅"
+        );
+        assert_eq!(
+            BuildStatus::Failed {
+                error_message: String::new()
+            }
+            .icon(),
+            "❌"
+        );
+    }
+
+    #[test]
+    fn test_build_message_display() {
+        let progress = BuildMessage::Progress {
+            percent: 0.75,
+            step: "Linking".to_string(),
+        };
+        let display = format!("{}", progress);
+        assert!(display.contains("75%"));
+        assert!(display.contains("Linking"));
+
+        let log = BuildMessage::LogLine("Build started".to_string());
+        let display = format!("{}", log);
+        assert!(display.contains("Build started"));
+
+        let complete = BuildMessage::Complete {
+            output_path: PathBuf::from("build/game"),
+            duration_secs: 45.5,
+        };
+        let display = format!("{}", complete);
+        assert!(display.contains("Complete"));
+        assert!(display.contains("45.5"));
+
+        let failed = BuildMessage::Failed {
+            error: "Compile error".to_string(),
+        };
+        let display = format!("{}", failed);
+        assert!(display.contains("Failed"));
+        assert!(display.contains("Compile error"));
+    }
+
+    #[test]
+    fn test_build_message_icon() {
+        assert_eq!(
+            BuildMessage::Progress {
+                percent: 0.0,
+                step: String::new()
+            }
+            .icon(),
+            "📊"
+        );
+        assert_eq!(BuildMessage::LogLine(String::new()).icon(), "📝");
+        assert_eq!(
+            BuildMessage::Complete {
+                output_path: PathBuf::new(),
+                duration_secs: 0.0
+            }
+            .icon(),
+            "✅"
+        );
+        assert_eq!(
+            BuildMessage::Failed {
+                error: String::new()
+            }
+            .icon(),
+            "❌"
+        );
+    }
+
+    #[test]
+    fn test_build_message_is_error() {
+        assert!(!BuildMessage::Progress {
+            percent: 0.0,
+            step: String::new()
+        }
+        .is_error());
+        assert!(!BuildMessage::LogLine(String::new()).is_error());
+        assert!(!BuildMessage::Complete {
+            output_path: PathBuf::new(),
+            duration_secs: 0.0
+        }
+        .is_error());
+        assert!(BuildMessage::Failed {
+            error: String::new()
+        }
+        .is_error());
+    }
+
+    #[test]
+    fn test_build_message_is_terminal() {
+        assert!(!BuildMessage::Progress {
+            percent: 0.0,
+            step: String::new()
+        }
+        .is_terminal());
+        assert!(!BuildMessage::LogLine(String::new()).is_terminal());
+        assert!(BuildMessage::Complete {
+            output_path: PathBuf::new(),
+            duration_secs: 0.0
+        }
+        .is_terminal());
+        assert!(BuildMessage::Failed {
+            error: String::new()
+        }
+        .is_terminal());
     }
 }
 

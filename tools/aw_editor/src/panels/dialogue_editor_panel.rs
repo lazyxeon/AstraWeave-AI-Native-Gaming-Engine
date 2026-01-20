@@ -18,7 +18,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Dialogue node type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum DialogueNodeType {
     #[default]
     Speech,
@@ -28,6 +28,12 @@ pub enum DialogueNodeType {
     RandomBranch,
     Jump,
     End,
+}
+
+impl std::fmt::Display for DialogueNodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl DialogueNodeType {
@@ -41,6 +47,18 @@ impl DialogueNodeType {
             DialogueNodeType::Jump,
             DialogueNodeType::End,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DialogueNodeType::Speech => "Speech",
+            DialogueNodeType::Choice => "Choice",
+            DialogueNodeType::Condition => "Condition",
+            DialogueNodeType::Action => "Action",
+            DialogueNodeType::RandomBranch => "Random Branch",
+            DialogueNodeType::Jump => "Jump",
+            DialogueNodeType::End => "End",
+        }
     }
 
     pub fn icon(&self) -> &'static str {
@@ -66,10 +84,18 @@ impl DialogueNodeType {
             DialogueNodeType::End => Color32::from_rgb(220, 20, 60),
         }
     }
+
+    pub fn is_branching(&self) -> bool {
+        matches!(self, DialogueNodeType::Choice | DialogueNodeType::Condition | DialogueNodeType::RandomBranch)
+    }
+
+    pub fn is_terminal(&self) -> bool {
+        matches!(self, DialogueNodeType::End)
+    }
 }
 
 /// Speaker/character definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DialogueSpeaker {
     pub id: String,
     pub name: String,
@@ -91,7 +117,7 @@ impl Default for DialogueSpeaker {
 }
 
 /// Dialogue response/choice
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DialogueChoice {
     pub text: String,
     pub target_node_id: Option<u32>,
@@ -111,7 +137,7 @@ impl Default for DialogueChoice {
 }
 
 /// Dialogue node
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DialogueNode {
     pub id: u32,
     pub node_type: DialogueNodeType,
@@ -146,13 +172,52 @@ pub struct DialogueVariable {
 }
 
 /// Variable type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum VariableType {
     #[default]
     Boolean,
     Integer,
     Float,
     String,
+}
+
+impl std::fmt::Display for VariableType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl VariableType {
+    pub fn all() -> &'static [VariableType] {
+        &[
+            VariableType::Boolean,
+            VariableType::Integer,
+            VariableType::Float,
+            VariableType::String,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            VariableType::Boolean => "Boolean",
+            VariableType::Integer => "Integer",
+            VariableType::Float => "Float",
+            VariableType::String => "String",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            VariableType::Boolean => "☑️",
+            VariableType::Integer => "#️⃣",
+            VariableType::Float => "🔢",
+            VariableType::String => "📝",
+        }
+    }
+
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, VariableType::Integer | VariableType::Float)
+    }
 }
 
 /// Dialogue graph (conversation tree)
@@ -190,7 +255,7 @@ pub struct LocalizationEntry {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum DialogueTab {
     #[default]
     Graph,
@@ -204,23 +269,171 @@ pub enum DialogueTab {
     Templates,
 }
 
+impl std::fmt::Display for DialogueTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl DialogueTab {
+    pub fn all() -> &'static [DialogueTab] {
+        &[
+            DialogueTab::Graph,
+            DialogueTab::Nodes,
+            DialogueTab::Speakers,
+            DialogueTab::Variables,
+            DialogueTab::Localization,
+            DialogueTab::Preview,
+            DialogueTab::Validation,
+            DialogueTab::Export,
+            DialogueTab::Templates,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DialogueTab::Graph => "Graph",
+            DialogueTab::Nodes => "Nodes",
+            DialogueTab::Speakers => "Speakers",
+            DialogueTab::Variables => "Variables",
+            DialogueTab::Localization => "Localization",
+            DialogueTab::Preview => "Preview",
+            DialogueTab::Validation => "Validation",
+            DialogueTab::Export => "Export",
+            DialogueTab::Templates => "Templates",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            DialogueTab::Graph => "📈",
+            DialogueTab::Nodes => "💬",
+            DialogueTab::Speakers => "👤",
+            DialogueTab::Variables => "📝",
+            DialogueTab::Localization => "🌐",
+            DialogueTab::Preview => "👁️",
+            DialogueTab::Validation => "✅",
+            DialogueTab::Export => "📤",
+            DialogueTab::Templates => "📋",
+        }
+    }
+}
+
 /// Auto-layout algorithm
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LayoutAlgorithm {
+    #[default]
     Hierarchical,
     Radial,
     ForceDirected,
     Tree,
 }
 
+impl std::fmt::Display for LayoutAlgorithm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LayoutAlgorithm {
+    pub fn all() -> &'static [LayoutAlgorithm] {
+        &[
+            LayoutAlgorithm::Hierarchical,
+            LayoutAlgorithm::Radial,
+            LayoutAlgorithm::ForceDirected,
+            LayoutAlgorithm::Tree,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LayoutAlgorithm::Hierarchical => "Hierarchical",
+            LayoutAlgorithm::Radial => "Radial",
+            LayoutAlgorithm::ForceDirected => "Force Directed",
+            LayoutAlgorithm::Tree => "Tree",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LayoutAlgorithm::Hierarchical => "📊",
+            LayoutAlgorithm::Radial => "◎",
+            LayoutAlgorithm::ForceDirected => "🧲",
+            LayoutAlgorithm::Tree => "🌳",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            LayoutAlgorithm::Hierarchical => "Top-down layered layout",
+            LayoutAlgorithm::Radial => "Circular layout from center",
+            LayoutAlgorithm::ForceDirected => "Physics-based node placement",
+            LayoutAlgorithm::Tree => "Branching tree structure",
+        }
+    }
+}
+
 /// Export format
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ExportFormat {
+    #[default]
     Json,
     Yarn,
     Ink,
     Xml,
     Csv,
+}
+
+impl std::fmt::Display for ExportFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ExportFormat {
+    pub fn all() -> &'static [ExportFormat] {
+        &[
+            ExportFormat::Json,
+            ExportFormat::Yarn,
+            ExportFormat::Ink,
+            ExportFormat::Xml,
+            ExportFormat::Csv,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ExportFormat::Json => "JSON",
+            ExportFormat::Yarn => "Yarn",
+            ExportFormat::Ink => "Ink",
+            ExportFormat::Xml => "XML",
+            ExportFormat::Csv => "CSV",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ExportFormat::Json => "📄",
+            ExportFormat::Yarn => "🧶",
+            ExportFormat::Ink => "✒️",
+            ExportFormat::Xml => "📰",
+            ExportFormat::Csv => "📊",
+        }
+    }
+
+    pub fn extension(&self) -> &'static str {
+        match self {
+            ExportFormat::Json => "json",
+            ExportFormat::Yarn => "yarn",
+            ExportFormat::Ink => "ink",
+            ExportFormat::Xml => "xml",
+            ExportFormat::Csv => "csv",
+        }
+    }
+
+    pub fn is_text_format(&self) -> bool {
+        true // All dialogue formats are text-based
+    }
 }
 
 /// Validation issue
@@ -232,14 +445,37 @@ pub struct ValidationIssue {
     pub suggestion: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum IssueSeverity {
-    Error,
-    Warning,
+    #[default]
     Info,
+    Warning,
+    Error,
+}
+
+impl std::fmt::Display for IssueSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl IssueSeverity {
+    pub fn all() -> &'static [IssueSeverity] {
+        &[
+            IssueSeverity::Info,
+            IssueSeverity::Warning,
+            IssueSeverity::Error,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            IssueSeverity::Info => "Info",
+            IssueSeverity::Warning => "Warning",
+            IssueSeverity::Error => "Error",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             IssueSeverity::Error => "❌",
@@ -254,6 +490,10 @@ impl IssueSeverity {
             IssueSeverity::Warning => Color32::from_rgb(255, 180, 60),
             IssueSeverity::Info => Color32::from_rgb(100, 150, 255),
         }
+    }
+
+    pub fn is_blocking(&self) -> bool {
+        matches!(self, IssueSeverity::Error)
     }
 }
 
@@ -334,13 +574,91 @@ impl Default for SearchFilter {
 }
 
 /// Undo/redo action
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum EditorAction {
     AddNode(DialogueNode),
     DeleteNode(u32),
     ModifyNode(u32, DialogueNode),
     AddSpeaker(DialogueSpeaker),
     ModifySpeaker(usize, DialogueSpeaker),
+}
+
+impl std::fmt::Display for EditorAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl EditorAction {
+    /// Returns all action variant names
+    pub fn all_variants() -> &'static [&'static str] {
+        &[
+            "AddNode",
+            "DeleteNode",
+            "ModifyNode",
+            "AddSpeaker",
+            "ModifySpeaker",
+        ]
+    }
+
+    /// Returns the name of this action
+    pub fn name(&self) -> &'static str {
+        match self {
+            EditorAction::AddNode(_) => "Add Node",
+            EditorAction::DeleteNode(_) => "Delete Node",
+            EditorAction::ModifyNode(_, _) => "Modify Node",
+            EditorAction::AddSpeaker(_) => "Add Speaker",
+            EditorAction::ModifySpeaker(_, _) => "Modify Speaker",
+        }
+    }
+
+    /// Returns the icon for this action
+    pub fn icon(&self) -> &'static str {
+        match self {
+            EditorAction::AddNode(_) => "➕",
+            EditorAction::DeleteNode(_) => "🗑️",
+            EditorAction::ModifyNode(_, _) => "✏️",
+            EditorAction::AddSpeaker(_) => "👤",
+            EditorAction::ModifySpeaker(_, _) => "📝",
+        }
+    }
+
+    /// Returns true if this action affects nodes
+    pub fn is_node_action(&self) -> bool {
+        matches!(
+            self,
+            EditorAction::AddNode(_) | EditorAction::DeleteNode(_) | EditorAction::ModifyNode(_, _)
+        )
+    }
+
+    /// Returns true if this action affects speakers
+    pub fn is_speaker_action(&self) -> bool {
+        matches!(
+            self,
+            EditorAction::AddSpeaker(_) | EditorAction::ModifySpeaker(_, _)
+        )
+    }
+
+    /// Returns true if this is an add action
+    pub fn is_add(&self) -> bool {
+        matches!(
+            self,
+            EditorAction::AddNode(_) | EditorAction::AddSpeaker(_)
+        )
+    }
+
+    /// Returns true if this is a delete action
+    pub fn is_delete(&self) -> bool {
+        matches!(self, EditorAction::DeleteNode(_))
+    }
+
+    /// Returns true if this is a modify action
+    pub fn is_modify(&self) -> bool {
+        matches!(
+            self,
+            EditorAction::ModifyNode(_, _) | EditorAction::ModifySpeaker(_, _)
+        )
+    }
 }
 
 /// Collaboration state
@@ -2408,5 +2726,386 @@ mod tests {
     fn test_active_tab_default() {
         let panel = DialogueEditorPanel::new();
         assert!(matches!(panel.active_tab, DialogueTab::Graph));
+    }
+
+    // === DialogueNodeType Display and Hash Tests ===
+
+    #[test]
+    fn test_dialogue_node_type_display() {
+        for node_type in DialogueNodeType::all() {
+            let display = format!("{}", node_type);
+            assert!(display.contains(node_type.name()));
+        }
+    }
+
+    #[test]
+    fn test_dialogue_node_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for node_type in DialogueNodeType::all() {
+            set.insert(*node_type);
+        }
+        assert_eq!(set.len(), DialogueNodeType::all().len());
+    }
+
+    #[test]
+    fn test_dialogue_node_type_all() {
+        let all = DialogueNodeType::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&DialogueNodeType::Speech));
+        assert!(all.contains(&DialogueNodeType::Choice));
+        assert!(all.contains(&DialogueNodeType::Condition));
+        assert!(all.contains(&DialogueNodeType::Action));
+        assert!(all.contains(&DialogueNodeType::RandomBranch));
+        assert!(all.contains(&DialogueNodeType::Jump));
+        assert!(all.contains(&DialogueNodeType::End));
+    }
+
+    #[test]
+    fn test_dialogue_node_type_is_branching() {
+        assert!(!DialogueNodeType::Speech.is_branching());
+        assert!(DialogueNodeType::Choice.is_branching());
+        assert!(DialogueNodeType::Condition.is_branching());
+        assert!(DialogueNodeType::RandomBranch.is_branching());
+        assert!(!DialogueNodeType::Action.is_branching());
+        assert!(!DialogueNodeType::Jump.is_branching());
+        assert!(!DialogueNodeType::End.is_branching());
+    }
+
+    #[test]
+    fn test_dialogue_node_type_is_terminal() {
+        assert!(!DialogueNodeType::Speech.is_terminal());
+        assert!(DialogueNodeType::End.is_terminal());
+    }
+
+    // === VariableType Display and Hash Tests ===
+
+    #[test]
+    fn test_variable_type_display() {
+        for var_type in VariableType::all() {
+            let display = format!("{}", var_type);
+            assert!(display.contains(var_type.name()));
+        }
+    }
+
+    #[test]
+    fn test_variable_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for var_type in VariableType::all() {
+            set.insert(*var_type);
+        }
+        assert_eq!(set.len(), VariableType::all().len());
+    }
+
+    #[test]
+    fn test_variable_type_all() {
+        let all = VariableType::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&VariableType::Boolean));
+        assert!(all.contains(&VariableType::Integer));
+        assert!(all.contains(&VariableType::Float));
+        assert!(all.contains(&VariableType::String));
+    }
+
+    #[test]
+    fn test_variable_type_is_numeric() {
+        assert!(!VariableType::Boolean.is_numeric());
+        assert!(VariableType::Integer.is_numeric());
+        assert!(VariableType::Float.is_numeric());
+        assert!(!VariableType::String.is_numeric());
+    }
+
+    // === DialogueTab Display and Hash Tests ===
+
+    #[test]
+    fn test_dialogue_tab_display() {
+        for tab in DialogueTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+        }
+    }
+
+    #[test]
+    fn test_dialogue_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in DialogueTab::all() {
+            set.insert(*tab);
+        }
+        assert_eq!(set.len(), DialogueTab::all().len());
+    }
+
+    #[test]
+    fn test_dialogue_tab_all() {
+        let all = DialogueTab::all();
+        assert_eq!(all.len(), 9);
+        assert!(all.contains(&DialogueTab::Graph));
+        assert!(all.contains(&DialogueTab::Nodes));
+        assert!(all.contains(&DialogueTab::Speakers));
+        assert!(all.contains(&DialogueTab::Variables));
+        assert!(all.contains(&DialogueTab::Localization));
+        assert!(all.contains(&DialogueTab::Preview));
+        assert!(all.contains(&DialogueTab::Validation));
+        assert!(all.contains(&DialogueTab::Export));
+        assert!(all.contains(&DialogueTab::Templates));
+    }
+
+    // === LayoutAlgorithm Display and Hash Tests ===
+
+    #[test]
+    fn test_layout_algorithm_display() {
+        for alg in LayoutAlgorithm::all() {
+            let display = format!("{}", alg);
+            assert!(display.contains(alg.name()));
+        }
+    }
+
+    #[test]
+    fn test_layout_algorithm_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for alg in LayoutAlgorithm::all() {
+            set.insert(*alg);
+        }
+        assert_eq!(set.len(), LayoutAlgorithm::all().len());
+    }
+
+    #[test]
+    fn test_layout_algorithm_all() {
+        let all = LayoutAlgorithm::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&LayoutAlgorithm::Hierarchical));
+        assert!(all.contains(&LayoutAlgorithm::Radial));
+        assert!(all.contains(&LayoutAlgorithm::ForceDirected));
+        assert!(all.contains(&LayoutAlgorithm::Tree));
+    }
+
+    #[test]
+    fn test_layout_algorithm_default_trait() {
+        let default = LayoutAlgorithm::default();
+        assert_eq!(default, LayoutAlgorithm::Hierarchical);
+    }
+
+    #[test]
+    fn test_layout_algorithm_description() {
+        for alg in LayoutAlgorithm::all() {
+            let desc = alg.description();
+            assert!(!desc.is_empty());
+        }
+    }
+
+    // === ExportFormat Display and Hash Tests ===
+
+    #[test]
+    fn test_export_format_display() {
+        for format in ExportFormat::all() {
+            let display = format!("{}", format);
+            assert!(display.contains(format.name()));
+        }
+    }
+
+    #[test]
+    fn test_export_format_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for format in ExportFormat::all() {
+            set.insert(*format);
+        }
+        assert_eq!(set.len(), ExportFormat::all().len());
+    }
+
+    #[test]
+    fn test_export_format_all() {
+        let all = ExportFormat::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&ExportFormat::Json));
+        assert!(all.contains(&ExportFormat::Yarn));
+        assert!(all.contains(&ExportFormat::Ink));
+        assert!(all.contains(&ExportFormat::Xml));
+        assert!(all.contains(&ExportFormat::Csv));
+    }
+
+    #[test]
+    fn test_export_format_default_trait() {
+        let default = ExportFormat::default();
+        assert_eq!(default, ExportFormat::Json);
+    }
+
+    #[test]
+    fn test_export_format_extension() {
+        assert_eq!(ExportFormat::Json.extension(), "json");
+        assert_eq!(ExportFormat::Yarn.extension(), "yarn");
+        assert_eq!(ExportFormat::Ink.extension(), "ink");
+        assert_eq!(ExportFormat::Xml.extension(), "xml");
+        assert_eq!(ExportFormat::Csv.extension(), "csv");
+    }
+
+    #[test]
+    fn test_export_format_is_text_format() {
+        for format in ExportFormat::all() {
+            assert!(format.is_text_format());
+        }
+    }
+
+    // === IssueSeverity Display and Hash Tests ===
+
+    #[test]
+    fn test_issue_severity_display() {
+        for severity in IssueSeverity::all() {
+            let display = format!("{}", severity);
+            assert!(display.contains(severity.name()));
+        }
+    }
+
+    #[test]
+    fn test_issue_severity_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for severity in IssueSeverity::all() {
+            set.insert(*severity);
+        }
+        assert_eq!(set.len(), IssueSeverity::all().len());
+    }
+
+    #[test]
+    fn test_issue_severity_all() {
+        let all = IssueSeverity::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&IssueSeverity::Info));
+        assert!(all.contains(&IssueSeverity::Warning));
+        assert!(all.contains(&IssueSeverity::Error));
+    }
+
+    #[test]
+    fn test_issue_severity_default() {
+        let default = IssueSeverity::default();
+        assert_eq!(default, IssueSeverity::Info);
+    }
+
+    #[test]
+    fn test_issue_severity_is_blocking() {
+        assert!(!IssueSeverity::Info.is_blocking());
+        assert!(!IssueSeverity::Warning.is_blocking());
+        assert!(IssueSeverity::Error.is_blocking());
+    }
+
+    // === EditorAction Display and Helper Tests ===
+
+    #[test]
+    fn test_editor_action_display() {
+        let action = EditorAction::AddNode(DialogueNode::default());
+        let display = format!("{}", action);
+        assert!(display.contains(action.name()));
+    }
+
+    #[test]
+    fn test_editor_action_all_variants() {
+        let all = EditorAction::all_variants();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&"AddNode"));
+        assert!(all.contains(&"DeleteNode"));
+        assert!(all.contains(&"ModifyNode"));
+        assert!(all.contains(&"AddSpeaker"));
+        assert!(all.contains(&"ModifySpeaker"));
+    }
+
+    #[test]
+    fn test_editor_action_names() {
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert_eq!(add_node.name(), "Add Node");
+
+        let delete_node = EditorAction::DeleteNode(1);
+        assert_eq!(delete_node.name(), "Delete Node");
+
+        let modify_node = EditorAction::ModifyNode(1, DialogueNode::default());
+        assert_eq!(modify_node.name(), "Modify Node");
+
+        let add_speaker = EditorAction::AddSpeaker(DialogueSpeaker::default());
+        assert_eq!(add_speaker.name(), "Add Speaker");
+
+        let modify_speaker = EditorAction::ModifySpeaker(0, DialogueSpeaker::default());
+        assert_eq!(modify_speaker.name(), "Modify Speaker");
+    }
+
+    #[test]
+    fn test_editor_action_icons() {
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert_eq!(add_node.icon(), "➕");
+
+        let delete_node = EditorAction::DeleteNode(1);
+        assert_eq!(delete_node.icon(), "🗑️");
+
+        let add_speaker = EditorAction::AddSpeaker(DialogueSpeaker::default());
+        assert_eq!(add_speaker.icon(), "👤");
+    }
+
+    #[test]
+    fn test_editor_action_is_node_action() {
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert!(add_node.is_node_action());
+
+        let delete_node = EditorAction::DeleteNode(1);
+        assert!(delete_node.is_node_action());
+
+        let modify_node = EditorAction::ModifyNode(1, DialogueNode::default());
+        assert!(modify_node.is_node_action());
+
+        let add_speaker = EditorAction::AddSpeaker(DialogueSpeaker::default());
+        assert!(!add_speaker.is_node_action());
+    }
+
+    #[test]
+    fn test_editor_action_is_speaker_action() {
+        let add_speaker = EditorAction::AddSpeaker(DialogueSpeaker::default());
+        assert!(add_speaker.is_speaker_action());
+
+        let modify_speaker = EditorAction::ModifySpeaker(0, DialogueSpeaker::default());
+        assert!(modify_speaker.is_speaker_action());
+
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert!(!add_node.is_speaker_action());
+    }
+
+    #[test]
+    fn test_editor_action_is_add() {
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert!(add_node.is_add());
+
+        let add_speaker = EditorAction::AddSpeaker(DialogueSpeaker::default());
+        assert!(add_speaker.is_add());
+
+        let delete_node = EditorAction::DeleteNode(1);
+        assert!(!delete_node.is_add());
+    }
+
+    #[test]
+    fn test_editor_action_is_delete() {
+        let delete_node = EditorAction::DeleteNode(1);
+        assert!(delete_node.is_delete());
+
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert!(!add_node.is_delete());
+    }
+
+    #[test]
+    fn test_editor_action_is_modify() {
+        let modify_node = EditorAction::ModifyNode(1, DialogueNode::default());
+        assert!(modify_node.is_modify());
+
+        let modify_speaker = EditorAction::ModifySpeaker(0, DialogueSpeaker::default());
+        assert!(modify_speaker.is_modify());
+
+        let add_node = EditorAction::AddNode(DialogueNode::default());
+        assert!(!add_node.is_modify());
+    }
+
+    #[test]
+    fn test_editor_action_partial_eq() {
+        let a1 = EditorAction::DeleteNode(5);
+        let a2 = EditorAction::DeleteNode(5);
+        let a3 = EditorAction::DeleteNode(10);
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
     }
 }

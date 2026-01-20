@@ -13,7 +13,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// Foliage type category
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum FoliageCategory {
     #[default]
     Grass,
@@ -24,7 +24,24 @@ pub enum FoliageCategory {
     Custom,
 }
 
+impl std::fmt::Display for FoliageCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl FoliageCategory {
+    pub fn name(&self) -> &'static str {
+        match self {
+            FoliageCategory::Grass => "Grass",
+            FoliageCategory::Flowers => "Flowers",
+            FoliageCategory::Shrubs => "Shrubs",
+            FoliageCategory::Trees => "Trees",
+            FoliageCategory::Rocks => "Rocks",
+            FoliageCategory::Custom => "Custom",
+        }
+    }
+
     pub fn all() -> &'static [FoliageCategory] {
         &[
             FoliageCategory::Grass,
@@ -137,7 +154,7 @@ impl Default for FoliageType {
 }
 
 /// Brush tool type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BrushTool {
     #[default]
     Paint,
@@ -147,7 +164,33 @@ pub enum BrushTool {
     SinglePlace,
 }
 
+impl std::fmt::Display for BrushTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl BrushTool {
+    pub fn all() -> &'static [BrushTool] {
+        &[
+            BrushTool::Paint,
+            BrushTool::Erase,
+            BrushTool::Select,
+            BrushTool::Reapply,
+            BrushTool::SinglePlace,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            BrushTool::Paint => "Paint",
+            BrushTool::Erase => "Erase",
+            BrushTool::Select => "Select",
+            BrushTool::Reapply => "Reapply",
+            BrushTool::SinglePlace => "Single Place",
+        }
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             BrushTool::Paint => "🖌️",
@@ -204,13 +247,48 @@ pub struct ProceduralRule {
     pub spacing: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum DistributionType {
     #[default]
     Random,
     Uniform,
     Clustered,
     PoissonDisc,
+}
+
+impl std::fmt::Display for DistributionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl DistributionType {
+    pub fn all() -> &'static [DistributionType] {
+        &[
+            DistributionType::Random,
+            DistributionType::Uniform,
+            DistributionType::Clustered,
+            DistributionType::PoissonDisc,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DistributionType::Random => "Random",
+            DistributionType::Uniform => "Uniform",
+            DistributionType::Clustered => "Clustered",
+            DistributionType::PoissonDisc => "Poisson Disc",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            DistributionType::Random => "🎲",
+            DistributionType::Uniform => "⊞",
+            DistributionType::Clustered => "⚫",
+            DistributionType::PoissonDisc => "◎",
+        }
+    }
 }
 
 impl Default for ProceduralRule {
@@ -254,7 +332,7 @@ impl Default for FoliageLayer {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum FoliageTab {
     #[default]
     Paint,
@@ -263,6 +341,47 @@ pub enum FoliageTab {
     Procedural,
     Layers,
     Statistics,
+}
+
+impl std::fmt::Display for FoliageTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl FoliageTab {
+    pub fn all() -> &'static [FoliageTab] {
+        &[
+            FoliageTab::Paint,
+            FoliageTab::Types,
+            FoliageTab::Settings,
+            FoliageTab::Procedural,
+            FoliageTab::Layers,
+            FoliageTab::Statistics,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            FoliageTab::Paint => "Paint",
+            FoliageTab::Types => "Types",
+            FoliageTab::Settings => "Settings",
+            FoliageTab::Procedural => "Procedural",
+            FoliageTab::Layers => "Layers",
+            FoliageTab::Statistics => "Statistics",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            FoliageTab::Paint => "🖌️",
+            FoliageTab::Types => "🌿",
+            FoliageTab::Settings => "⚙️",
+            FoliageTab::Procedural => "🔧",
+            FoliageTab::Layers => "📚",
+            FoliageTab::Statistics => "📊",
+        }
+    }
 }
 
 /// Main Foliage Panel
@@ -1112,6 +1231,230 @@ mod tests {
     }
 
     // ============================================================
+    // Session 5: Enum Enhancement Tests
+    // ============================================================
+
+    // FoliageCategory tests (7 tests)
+    #[test]
+    fn test_foliage_category_display() {
+        assert!(format!("{}", FoliageCategory::Grass).contains("Grass"));
+        assert!(format!("{}", FoliageCategory::Flowers).contains("Flowers"));
+        assert!(format!("{}", FoliageCategory::Trees).contains("Trees"));
+        assert!(format!("{}", FoliageCategory::Rocks).contains("Rocks"));
+    }
+
+    #[test]
+    fn test_foliage_category_name() {
+        assert_eq!(FoliageCategory::Grass.name(), "Grass");
+        assert_eq!(FoliageCategory::Flowers.name(), "Flowers");
+        assert_eq!(FoliageCategory::Shrubs.name(), "Shrubs");
+        assert_eq!(FoliageCategory::Custom.name(), "Custom");
+    }
+
+    #[test]
+    fn test_foliage_category_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for cat in FoliageCategory::all() {
+            assert!(set.insert(*cat));
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_foliage_category_default_value() {
+        assert_eq!(FoliageCategory::default(), FoliageCategory::Grass);
+    }
+
+    #[test]
+    fn test_foliage_category_all_unique() {
+        let all = FoliageCategory::all();
+        for (i, cat1) in all.iter().enumerate() {
+            for (j, cat2) in all.iter().enumerate() {
+                if i != j {
+                    assert_ne!(cat1, cat2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_foliage_category_all_have_names() {
+        for cat in FoliageCategory::all() {
+            assert!(!cat.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_foliage_category_icon_not_empty() {
+        for cat in FoliageCategory::all() {
+            assert!(!cat.icon().is_empty());
+        }
+    }
+
+    // BrushTool tests (7 tests)
+    #[test]
+    fn test_brush_tool_display() {
+        assert!(format!("{}", BrushTool::Paint).contains("Paint"));
+        assert!(format!("{}", BrushTool::Erase).contains("Erase"));
+        assert!(format!("{}", BrushTool::Select).contains("Select"));
+        assert!(format!("{}", BrushTool::SinglePlace).contains("Single Place"));
+    }
+
+    #[test]
+    fn test_brush_tool_name() {
+        assert_eq!(BrushTool::Paint.name(), "Paint");
+        assert_eq!(BrushTool::Erase.name(), "Erase");
+        assert_eq!(BrushTool::Reapply.name(), "Reapply");
+        assert_eq!(BrushTool::SinglePlace.name(), "Single Place");
+    }
+
+    #[test]
+    fn test_brush_tool_icon_present() {
+        assert!(!BrushTool::Paint.icon().is_empty());
+        assert!(!BrushTool::Erase.icon().is_empty());
+        assert!(!BrushTool::Select.icon().is_empty());
+        assert!(!BrushTool::Reapply.icon().is_empty());
+    }
+
+    #[test]
+    fn test_brush_tool_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tool in BrushTool::all() {
+            assert!(set.insert(*tool));
+        }
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_brush_tool_default_value() {
+        assert_eq!(BrushTool::default(), BrushTool::Paint);
+    }
+
+    #[test]
+    fn test_brush_tool_all_have_names() {
+        for tool in BrushTool::all() {
+            assert!(!tool.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_brush_tool_all_have_icons() {
+        for tool in BrushTool::all() {
+            assert!(!tool.icon().is_empty());
+        }
+    }
+
+    // DistributionType tests (7 tests)
+    #[test]
+    fn test_distribution_type_display() {
+        assert!(format!("{}", DistributionType::Random).contains("Random"));
+        assert!(format!("{}", DistributionType::Uniform).contains("Uniform"));
+        assert!(format!("{}", DistributionType::Clustered).contains("Clustered"));
+        assert!(format!("{}", DistributionType::PoissonDisc).contains("Poisson Disc"));
+    }
+
+    #[test]
+    fn test_distribution_type_name() {
+        assert_eq!(DistributionType::Random.name(), "Random");
+        assert_eq!(DistributionType::Uniform.name(), "Uniform");
+        assert_eq!(DistributionType::Clustered.name(), "Clustered");
+        assert_eq!(DistributionType::PoissonDisc.name(), "Poisson Disc");
+    }
+
+    #[test]
+    fn test_distribution_type_icon_present() {
+        assert!(!DistributionType::Random.icon().is_empty());
+        assert!(!DistributionType::Uniform.icon().is_empty());
+        assert!(!DistributionType::Clustered.icon().is_empty());
+        assert!(!DistributionType::PoissonDisc.icon().is_empty());
+    }
+
+    #[test]
+    fn test_distribution_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for dist in DistributionType::all() {
+            assert!(set.insert(*dist));
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_distribution_type_default_value() {
+        assert_eq!(DistributionType::default(), DistributionType::Random);
+    }
+
+    #[test]
+    fn test_distribution_type_all_have_names() {
+        for dist in DistributionType::all() {
+            assert!(!dist.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_distribution_type_all_have_icons() {
+        for dist in DistributionType::all() {
+            assert!(!dist.icon().is_empty());
+        }
+    }
+
+    // FoliageTab tests (7 tests)
+    #[test]
+    fn test_foliage_tab_display() {
+        assert!(format!("{}", FoliageTab::Paint).contains("Paint"));
+        assert!(format!("{}", FoliageTab::Types).contains("Types"));
+        assert!(format!("{}", FoliageTab::Settings).contains("Settings"));
+        assert!(format!("{}", FoliageTab::Statistics).contains("Statistics"));
+    }
+
+    #[test]
+    fn test_foliage_tab_name() {
+        assert_eq!(FoliageTab::Paint.name(), "Paint");
+        assert_eq!(FoliageTab::Types.name(), "Types");
+        assert_eq!(FoliageTab::Procedural.name(), "Procedural");
+        assert_eq!(FoliageTab::Layers.name(), "Layers");
+    }
+
+    #[test]
+    fn test_foliage_tab_icon_present() {
+        assert!(!FoliageTab::Paint.icon().is_empty());
+        assert!(!FoliageTab::Types.icon().is_empty());
+        assert!(!FoliageTab::Settings.icon().is_empty());
+        assert!(!FoliageTab::Statistics.icon().is_empty());
+    }
+
+    #[test]
+    fn test_foliage_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in FoliageTab::all() {
+            assert!(set.insert(*tab));
+        }
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_foliage_tab_default_value() {
+        assert_eq!(FoliageTab::default(), FoliageTab::Paint);
+    }
+
+    #[test]
+    fn test_foliage_tab_all_have_names() {
+        for tab in FoliageTab::all() {
+            assert!(!tab.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_foliage_tab_all_have_icons() {
+        for tab in FoliageTab::all() {
+            assert!(!tab.icon().is_empty());
+        }
+    }
+
+    // ============================================================
     // BRUSH TOOL TESTS
     // ============================================================
 
@@ -1159,7 +1502,7 @@ mod tests {
     }
 
     #[test]
-    fn test_brush_tool_all_have_icons() {
+    fn test_brush_tool_icon_not_empty() {
         let tools = [
             BrushTool::Paint,
             BrushTool::Erase,

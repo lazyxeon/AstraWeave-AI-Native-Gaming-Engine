@@ -1,0 +1,255 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run nightly at 4 AM UTC
+    - cron: '0 4 * * *'
+
+# Prevent multiple CI runs on same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+
+jobs:
+  # ===========================================================================
+  # Core Pipeline Integration Tests
+  # ===========================================================================
+  core-pipeline:
+    name: Core Pipeline (ECS → AI → Physics)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install system dependencies (Linux)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q \
+            build-essential pkg-config cmake \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev
+      
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "integration-tests"
+      
+      - name: Run ECS full pipeline integration tests
+        run: cargo test -p astraweave-ecs --test full_pipeline_integration -- --nocapture
+      
+  # ===========================================================================
+  # Network Integration Tests  
+  # ===========================================================================
+  network-integration:
+    name: Network Snapshot Sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install system dependencies (Linux)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q build-essential pkg-config cmake libudev-dev
+        
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "integration-tests"
+      
+      - name: Run Network snapshot sync tests
+        run: cargo test -p astraweave-net --test snapshot_sync_tests -- --nocapture
+
+  # ===========================================================================
+  # LLM Integration Tests
+  # ===========================================================================
+  llm-integration:
+    name: LLM Fallback Chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install system dependencies (Linux)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q build-essential pkg-config cmake
+        
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "integration-tests"
+      
+      - name: Run LLM fallback chain integration tests
+        run: cargo test -p astraweave-llm --test fallback_chain_integration -- --nocapture
+
+  # ===========================================================================
+  # Persistence Integration Tests
+  # ===========================================================================
+  persistence-integration:
+    name: Save/Load Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "integration-tests"
+      
+      - name: Run save/load integration tests
+        run: cargo test -p aw-save --tests -- --nocapture
+
+  # ===========================================================================
+  # Asset Pipeline Integration Tests
+  # ===========================================================================
+  asset-integration:
+    name: Asset Pipeline (glTF, Textures)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install system dependencies (Linux)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q build-essential pkg-config cmake
+        
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "integration-tests"
+      
+      - name: Run asset pipeline integration tests
+        run: cargo test -p astraweave-asset --tests -- --nocapture
+
+  # ===========================================================================
+  # Cross-Platform Determinism Tests
+  # ===========================================================================
+  determinism-cross-platform:
+    name: Determinism (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q \
+            build-essential pkg-config cmake \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev
+        
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "integration-tests-${{ matrix.os }}"
+      
+      - name: Run determinism tests
+        run: |
+          # Run all tests that include "determinism" in their name
+          cargo test -p astraweave-ecs --test full_pipeline_integration -- determinism --nocapture
+      
+      - name: Upload determinism artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: determinism-results-${{ matrix.os }}
+          path: target/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ===========================================================================
+  # Integration Test Summary
+  # ===========================================================================
+  integration-summary:
+    name: Integration Test Summary
+    runs-on: ubuntu-latest
+    needs: [core-pipeline, network-integration, llm-integration, persistence-integration, asset-integration, determinism-cross-platform]
+    if: always()
+    
+    steps:
+      - name: Check all integration test results
+        run: |
+          echo "=== Integration Test Summary ==="
+          echo ""
+          echo "Core Pipeline: ${{ needs.core-pipeline.result }}"
+          echo "Network Integration: ${{ needs.network-integration.result }}"
+          echo "LLM Integration: ${{ needs.llm-integration.result }}"
+          echo "Persistence Integration: ${{ needs.persistence-integration.result }}"
+          echo "Asset Integration: ${{ needs.asset-integration.result }}"
+          echo "Determinism Cross-Platform: ${{ needs.determinism-cross-platform.result }}"
+          echo ""
+          
+          # Fail if any required job failed
+          if [[ "${{ needs.core-pipeline.result }}" == "failure" ]] || \
+             [[ "${{ needs.network-integration.result }}" == "failure" ]] || \
+             [[ "${{ needs.llm-integration.result }}" == "failure" ]] || \
+             [[ "${{ needs.persistence-integration.result }}" == "failure" ]] || \
+             [[ "${{ needs.asset-integration.result }}" == "failure" ]] || \
+             [[ "${{ needs.determinism-cross-platform.result }}" == "failure" ]]; then
+            echo "❌ One or more integration tests failed!"
+            exit 1
+          fi
+          
+          echo "✅ All integration tests passed!"

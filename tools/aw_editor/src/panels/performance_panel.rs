@@ -25,6 +25,12 @@ pub enum PerfCategory {
     Scripting,
 }
 
+impl std::fmt::Display for PerfCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl PerfCategory {
     pub fn name(&self) -> &'static str {
         match self {
@@ -148,7 +154,7 @@ impl PerfMetric {
 }
 
 /// Metric unit for display
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MetricUnit {
     Milliseconds,
     Microseconds,
@@ -163,7 +169,55 @@ pub enum MetricUnit {
     Fps,
 }
 
+impl std::fmt::Display for MetricUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.suffix())
+    }
+}
+
 impl MetricUnit {
+    pub fn all() -> &'static [MetricUnit] {
+        &[
+            MetricUnit::Milliseconds,
+            MetricUnit::Microseconds,
+            MetricUnit::Nanoseconds,
+            MetricUnit::Percent,
+            MetricUnit::Bytes,
+            MetricUnit::Kilobytes,
+            MetricUnit::Megabytes,
+            MetricUnit::Gigabytes,
+            MetricUnit::Count,
+            MetricUnit::PerSecond,
+            MetricUnit::Fps,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            MetricUnit::Milliseconds => "Milliseconds",
+            MetricUnit::Microseconds => "Microseconds",
+            MetricUnit::Nanoseconds => "Nanoseconds",
+            MetricUnit::Percent => "Percent",
+            MetricUnit::Bytes => "Bytes",
+            MetricUnit::Kilobytes => "Kilobytes",
+            MetricUnit::Megabytes => "Megabytes",
+            MetricUnit::Gigabytes => "Gigabytes",
+            MetricUnit::Count => "Count",
+            MetricUnit::PerSecond => "Per Second",
+            MetricUnit::Fps => "FPS",
+        }
+    }
+
+    /// Returns true if this is a time unit
+    pub fn is_time_unit(&self) -> bool {
+        matches!(self, MetricUnit::Milliseconds | MetricUnit::Microseconds | MetricUnit::Nanoseconds)
+    }
+
+    /// Returns true if this is a memory unit
+    pub fn is_memory_unit(&self) -> bool {
+        matches!(self, MetricUnit::Bytes | MetricUnit::Kilobytes | MetricUnit::Megabytes | MetricUnit::Gigabytes)
+    }
+
     pub fn suffix(&self) -> &'static str {
         match self {
             MetricUnit::Milliseconds => "ms",
@@ -305,14 +359,37 @@ pub struct GpuStats {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Performance alert severity
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AlertSeverity {
     Info,
     Warning,
     Critical,
 }
 
+impl std::fmt::Display for AlertSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl AlertSeverity {
+    pub fn all() -> &'static [AlertSeverity] {
+        &[AlertSeverity::Info, AlertSeverity::Warning, AlertSeverity::Critical]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AlertSeverity::Info => "Info",
+            AlertSeverity::Warning => "Warning",
+            AlertSeverity::Critical => "Critical",
+        }
+    }
+
+    /// Returns true if this is a serious alert
+    pub fn is_serious(&self) -> bool {
+        matches!(self, AlertSeverity::Warning | AlertSeverity::Critical)
+    }
+
     pub fn color(&self) -> Color32 {
         match self {
             AlertSeverity::Info => Color32::from_rgb(100, 180, 255),
@@ -1368,5 +1445,112 @@ mod tests {
         panel.add_alert(PerfAlert::new(AlertSeverity::Warning, PerfCategory::Frame, "Test"));
         
         assert_eq!(panel.alerts.len(), 1);
+    }
+
+    // ========== PerfCategory Display Tests ==========
+
+    #[test]
+    fn test_perf_category_display() {
+        for cat in PerfCategory::all() {
+            let display = format!("{}", cat);
+            assert!(display.contains(cat.name()));
+        }
+    }
+
+    #[test]
+    fn test_perf_category_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<PerfCategory> = PerfCategory::all().iter().copied().collect();
+        assert_eq!(set.len(), 10);
+    }
+
+    // ========== MetricUnit Tests ==========
+
+    #[test]
+    fn test_metric_unit_display() {
+        for unit in MetricUnit::all() {
+            let display = format!("{}", unit);
+            assert_eq!(display, unit.suffix());
+        }
+    }
+
+    #[test]
+    fn test_metric_unit_all_variants() {
+        let all = MetricUnit::all();
+        assert_eq!(all.len(), 11);
+    }
+
+    #[test]
+    fn test_metric_unit_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<MetricUnit> = MetricUnit::all().iter().copied().collect();
+        assert_eq!(set.len(), 11);
+    }
+
+    #[test]
+    fn test_metric_unit_is_time_unit() {
+        assert!(MetricUnit::Milliseconds.is_time_unit());
+        assert!(MetricUnit::Microseconds.is_time_unit());
+        assert!(MetricUnit::Nanoseconds.is_time_unit());
+        assert!(!MetricUnit::Percent.is_time_unit());
+        assert!(!MetricUnit::Megabytes.is_time_unit());
+        assert!(!MetricUnit::Fps.is_time_unit());
+    }
+
+    #[test]
+    fn test_metric_unit_is_memory_unit() {
+        assert!(MetricUnit::Bytes.is_memory_unit());
+        assert!(MetricUnit::Kilobytes.is_memory_unit());
+        assert!(MetricUnit::Megabytes.is_memory_unit());
+        assert!(MetricUnit::Gigabytes.is_memory_unit());
+        assert!(!MetricUnit::Milliseconds.is_memory_unit());
+        assert!(!MetricUnit::Percent.is_memory_unit());
+    }
+
+    #[test]
+    fn test_metric_unit_name() {
+        assert_eq!(MetricUnit::Milliseconds.name(), "Milliseconds");
+        assert_eq!(MetricUnit::Fps.name(), "FPS");
+        assert_eq!(MetricUnit::PerSecond.name(), "Per Second");
+    }
+
+    // ========== AlertSeverity Tests ==========
+
+    #[test]
+    fn test_alert_severity_display() {
+        for severity in AlertSeverity::all() {
+            let display = format!("{}", severity);
+            assert!(display.contains(severity.name()));
+        }
+    }
+
+    #[test]
+    fn test_alert_severity_all_variants() {
+        let all = AlertSeverity::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&AlertSeverity::Info));
+        assert!(all.contains(&AlertSeverity::Warning));
+        assert!(all.contains(&AlertSeverity::Critical));
+    }
+
+    #[test]
+    fn test_alert_severity_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<AlertSeverity> = AlertSeverity::all().iter().copied().collect();
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn test_alert_severity_is_serious() {
+        assert!(!AlertSeverity::Info.is_serious());
+        assert!(AlertSeverity::Warning.is_serious());
+        assert!(AlertSeverity::Critical.is_serious());
+    }
+
+    #[test]
+    fn test_alert_severity_name() {
+        assert_eq!(AlertSeverity::Info.name(), "Info");
+        assert_eq!(AlertSeverity::Warning.name(), "Warning");
+        assert_eq!(AlertSeverity::Critical.name(), "Critical");
     }
 }

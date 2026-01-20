@@ -6,7 +6,7 @@ pub mod partitioned_scene;
 pub mod streaming;
 pub mod world_partition;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Transform {
     pub translation: Vec3,
     pub rotation: Quat,
@@ -24,12 +24,115 @@ impl Default for Transform {
 }
 
 impl Transform {
+    /// Creates a new transform with the given translation, rotation, and scale.
+    pub fn new(translation: Vec3, rotation: Quat, scale: Vec3) -> Self {
+        Self { translation, rotation, scale }
+    }
+
+    /// Creates an identity transform.
+    #[inline]
+    pub fn identity() -> Self {
+        Self::default()
+    }
+
+    /// Creates a transform with only translation.
+    pub fn from_translation(translation: Vec3) -> Self {
+        Self { translation, ..Default::default() }
+    }
+
+    /// Creates a transform with only rotation.
+    pub fn from_rotation(rotation: Quat) -> Self {
+        Self { rotation, ..Default::default() }
+    }
+
+    /// Creates a transform with only uniform scale.
+    pub fn from_scale(scale: f32) -> Self {
+        Self { scale: Vec3::splat(scale), ..Default::default() }
+    }
+
+    /// Creates a transform with non-uniform scale.
+    pub fn from_scale_vec(scale: Vec3) -> Self {
+        Self { scale, ..Default::default() }
+    }
+
+    /// Returns the 4x4 transformation matrix.
     pub fn matrix(&self) -> Mat4 {
         Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.translation)
     }
+
+    /// Returns true if this is an identity transform.
+    pub fn is_identity(&self) -> bool {
+        self.translation == Vec3::ZERO
+            && self.rotation == Quat::IDENTITY
+            && self.scale == Vec3::ONE
+    }
+
+    /// Returns true if the scale is uniform.
+    pub fn is_uniform_scale(&self) -> bool {
+        (self.scale.x - self.scale.y).abs() < f32::EPSILON
+            && (self.scale.y - self.scale.z).abs() < f32::EPSILON
+    }
+
+    /// Returns the uniform scale (average of xyz).
+    pub fn uniform_scale(&self) -> f32 {
+        (self.scale.x + self.scale.y + self.scale.z) / 3.0
+    }
+
+    /// Returns the forward direction (negative Z in local space).
+    pub fn forward(&self) -> Vec3 {
+        self.rotation * Vec3::NEG_Z
+    }
+
+    /// Returns the right direction (positive X in local space).
+    pub fn right(&self) -> Vec3 {
+        self.rotation * Vec3::X
+    }
+
+    /// Returns the up direction (positive Y in local space).
+    pub fn up(&self) -> Vec3 {
+        self.rotation * Vec3::Y
+    }
+
+    /// Returns the inverse of this transform.
+    pub fn inverse(&self) -> Self {
+        let inv_rotation = self.rotation.inverse();
+        let inv_scale = Vec3::new(1.0 / self.scale.x, 1.0 / self.scale.y, 1.0 / self.scale.z);
+        let inv_translation = inv_rotation * (-self.translation * inv_scale);
+        Self {
+            translation: inv_translation,
+            rotation: inv_rotation,
+            scale: inv_scale,
+        }
+    }
+
+    /// Transforms a point from local to world space.
+    pub fn transform_point(&self, point: Vec3) -> Vec3 {
+        self.rotation * (point * self.scale) + self.translation
+    }
+
+    /// Transforms a direction from local to world space (ignores translation).
+    pub fn transform_direction(&self, direction: Vec3) -> Vec3 {
+        self.rotation * direction
+    }
+
+    /// Linearly interpolates between two transforms.
+    pub fn lerp(&self, other: &Self, t: f32) -> Self {
+        Self {
+            translation: self.translation.lerp(other.translation, t),
+            rotation: self.rotation.slerp(other.rotation, t),
+            scale: self.scale.lerp(other.scale, t),
+        }
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+impl std::fmt::Display for Transform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Transform(pos={}, rot={}, scale={})", 
+            self.translation, self.rotation, self.scale)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Node {
     pub name: String,
     pub transform: Transform,
@@ -37,6 +140,7 @@ pub struct Node {
 }
 
 impl Node {
+    /// Creates a new node with the given name.
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -44,20 +148,130 @@ impl Node {
             children: Vec::new(),
         }
     }
+
+    /// Creates a new node with a transform.
+    pub fn with_transform(name: impl Into<String>, transform: Transform) -> Self {
+        Self {
+            name: name.into(),
+            transform,
+            children: Vec::new(),
+        }
+    }
+
+    /// Returns true if this node has children.
+    #[inline]
+    pub fn has_children(&self) -> bool {
+        !self.children.is_empty()
+    }
+
+    /// Returns the number of direct children.
+    #[inline]
+    pub fn child_count(&self) -> usize {
+        self.children.len()
+    }
+
+    /// Returns the total number of descendants (recursive).
+    pub fn descendant_count(&self) -> usize {
+        self.children.iter().map(|c| 1 + c.descendant_count()).sum()
+    }
+
+    /// Returns true if this is a leaf node (no children).
+    #[inline]
+    pub fn is_leaf(&self) -> bool {
+        self.children.is_empty()
+    }
+
+    /// Adds a child node.
+    pub fn add_child(&mut self, child: Node) {
+        self.children.push(child);
+    }
+
+    /// Finds a child by name (non-recursive).
+    pub fn find_child(&self, name: &str) -> Option<&Node> {
+        self.children.iter().find(|c| c.name == name)
+    }
+
+    /// Finds a child by name (non-recursive, mutable).
+    pub fn find_child_mut(&mut self, name: &str) -> Option<&mut Node> {
+        self.children.iter_mut().find(|c| c.name == name)
+    }
+
+    /// Finds a descendant by name (recursive depth-first).
+    pub fn find_descendant(&self, name: &str) -> Option<&Node> {
+        for child in &self.children {
+            if child.name == name {
+                return Some(child);
+            }
+            if let Some(found) = child.find_descendant(name) {
+                return Some(found);
+            }
+        }
+        None
+    }
+
+    /// Returns the depth of this node's subtree.
+    pub fn depth(&self) -> usize {
+        if self.children.is_empty() {
+            0
+        } else {
+            1 + self.children.iter().map(|c| c.depth()).max().unwrap_or(0)
+        }
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+impl std::fmt::Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.children.is_empty() {
+            write!(f, "Node(\"{}\")", self.name)
+        } else {
+            write!(f, "Node(\"{}\", {} children)", self.name, self.children.len())
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Scene {
     pub root: Node,
 }
 
 impl Scene {
+    /// Creates a new scene with a default root node.
     pub fn new() -> Self {
         Self {
             root: Node::new("root"),
         }
     }
 
+    /// Creates a scene with a custom root node.
+    pub fn with_root(root: Node) -> Self {
+        Self { root }
+    }
+
+    /// Returns the total number of nodes in the scene (including root).
+    pub fn node_count(&self) -> usize {
+        1 + self.root.descendant_count()
+    }
+
+    /// Returns true if the scene only has the root node.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.root.children.is_empty()
+    }
+
+    /// Returns the maximum depth of the scene graph.
+    pub fn depth(&self) -> usize {
+        self.root.depth()
+    }
+
+    /// Finds a node by name in the entire scene.
+    pub fn find_node(&self, name: &str) -> Option<&Node> {
+        if self.root.name == name {
+            return Some(&self.root);
+        }
+        self.root.find_descendant(name)
+    }
+
+    /// Traverses the scene graph depth-first with world transforms.
     pub fn traverse<'a>(&'a self, f: &mut impl FnMut(&'a Node, Mat4)) {
         fn walk<'a>(n: &'a Node, parent: Mat4, f: &mut impl FnMut(&'a Node, Mat4)) {
             let world = parent * n.transform.matrix();
@@ -67,6 +281,27 @@ impl Scene {
             }
         }
         walk(&self.root, Mat4::IDENTITY, f);
+    }
+
+    /// Traverses with path tracking (node names from root).
+    pub fn traverse_with_path<'a>(&'a self, f: &mut impl FnMut(&'a Node, Mat4, &[&str])) {
+        fn walk<'a>(n: &'a Node, parent: Mat4, path: &mut Vec<&'a str>, f: &mut impl FnMut(&'a Node, Mat4, &[&str])) {
+            let world = parent * n.transform.matrix();
+            path.push(&n.name);
+            f(n, world, path);
+            for c in &n.children {
+                walk(c, world, path, f);
+            }
+            path.pop();
+        }
+        let mut path = Vec::new();
+        walk(&self.root, Mat4::IDENTITY, &mut path, f);
+    }
+}
+
+impl std::fmt::Display for Scene {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Scene({} nodes, depth={})", self.node_count(), self.depth())
     }
 }
 
@@ -135,15 +370,61 @@ pub mod ecs {
     }
 
     /// Animation playback state
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     pub enum PlaybackState {
         Playing,
         Paused,
         Stopped,
     }
 
+    impl PlaybackState {
+        /// Returns the name of this playback state.
+        pub fn name(&self) -> &'static str {
+            match self {
+                Self::Playing => "Playing",
+                Self::Paused => "Paused",
+                Self::Stopped => "Stopped",
+            }
+        }
+
+        /// Returns true if the animation is playing.
+        #[inline]
+        pub fn is_playing(&self) -> bool {
+            matches!(self, Self::Playing)
+        }
+
+        /// Returns true if the animation is paused.
+        #[inline]
+        pub fn is_paused(&self) -> bool {
+            matches!(self, Self::Paused)
+        }
+
+        /// Returns true if the animation is stopped.
+        #[inline]
+        pub fn is_stopped(&self) -> bool {
+            matches!(self, Self::Stopped)
+        }
+
+        /// Returns true if the animation is active (playing or paused).
+        #[inline]
+        pub fn is_active(&self) -> bool {
+            !self.is_stopped()
+        }
+
+        /// Returns all playback states.
+        pub fn all() -> [PlaybackState; 3] {
+            [Self::Playing, Self::Paused, Self::Stopped]
+        }
+    }
+
+    impl std::fmt::Display for PlaybackState {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.name())
+        }
+    }
+
     /// Animator component (per-entity animation state)
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, PartialEq)]
     pub struct CAnimator {
         pub clip_index: usize,
         pub time: f32,
@@ -161,6 +442,97 @@ pub mod ecs {
                 state: PlaybackState::Stopped,
                 looping: true,
             }
+        }
+    }
+
+    impl CAnimator {
+        /// Creates a new animator for the given clip.
+        pub fn new(clip_index: usize) -> Self {
+            Self {
+                clip_index,
+                ..Default::default()
+            }
+        }
+
+        /// Starts playing the animation.
+        pub fn play(&mut self) {
+            self.state = PlaybackState::Playing;
+        }
+
+        /// Pauses the animation.
+        pub fn pause(&mut self) {
+            if self.state == PlaybackState::Playing {
+                self.state = PlaybackState::Paused;
+            }
+        }
+
+        /// Stops the animation and resets to the beginning.
+        pub fn stop(&mut self) {
+            self.state = PlaybackState::Stopped;
+            self.time = 0.0;
+        }
+
+        /// Toggles between playing and paused.
+        pub fn toggle_pause(&mut self) {
+            match self.state {
+                PlaybackState::Playing => self.pause(),
+                PlaybackState::Paused => self.play(),
+                PlaybackState::Stopped => self.play(),
+            }
+        }
+
+        /// Sets the animation speed.
+        pub fn with_speed(mut self, speed: f32) -> Self {
+            self.speed = speed;
+            self
+        }
+
+        /// Sets whether the animation loops.
+        pub fn with_looping(mut self, looping: bool) -> Self {
+            self.looping = looping;
+            self
+        }
+
+        /// Resets the animation time to the beginning.
+        pub fn reset(&mut self) {
+            self.time = 0.0;
+        }
+
+        /// Returns true if the animation is playing.
+        #[inline]
+        pub fn is_playing(&self) -> bool {
+            self.state.is_playing()
+        }
+
+        /// Returns true if the animation is paused.
+        #[inline]
+        pub fn is_paused(&self) -> bool {
+            self.state.is_paused()
+        }
+
+        /// Returns true if the animation is stopped.
+        #[inline]
+        pub fn is_stopped(&self) -> bool {
+            self.state.is_stopped()
+        }
+
+        /// Returns the normalized time (0.0 to 1.0) given a clip duration.
+        pub fn normalized_time(&self, duration: f32) -> f32 {
+            if duration <= 0.0 {
+                return 0.0;
+            }
+            (self.time / duration).clamp(0.0, 1.0)
+        }
+    }
+
+    impl std::fmt::Display for CAnimator {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "CAnimator(clip={}, t={:.2}, speed={}, {}{})", 
+                self.clip_index, 
+                self.time, 
+                self.speed,
+                self.state,
+                if self.looping { ", looping" } else { "" })
         }
     }
 
@@ -852,6 +1224,272 @@ mod tests {
         // After 90° rotation around Y, X becomes Z
         // Child at local (10, 0, 0) should be at world (0, 0, -10)
         assert!((child_world_pos - Vec3::new(0.0, 0.0, -10.0)).length() < 0.001);
+    }
+
+    // ===== New Transform Helper Tests =====
+
+    #[test]
+    fn test_transform_new() {
+        let t = Transform::new(
+            Vec3::new(1.0, 2.0, 3.0),
+            Quat::from_rotation_x(0.5),
+            Vec3::new(2.0, 2.0, 2.0),
+        );
+        assert_eq!(t.translation, Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(t.scale, Vec3::new(2.0, 2.0, 2.0));
+    }
+
+    #[test]
+    fn test_transform_identity() {
+        let t = Transform::identity();
+        assert!(t.is_identity());
+    }
+
+    #[test]
+    fn test_transform_from_translation() {
+        let t = Transform::from_translation(Vec3::new(5.0, 10.0, 15.0));
+        assert_eq!(t.translation, Vec3::new(5.0, 10.0, 15.0));
+        assert_eq!(t.rotation, Quat::IDENTITY);
+        assert_eq!(t.scale, Vec3::ONE);
+    }
+
+    #[test]
+    fn test_transform_from_rotation() {
+        let rot = Quat::from_rotation_y(PI / 2.0);
+        let t = Transform::from_rotation(rot);
+        assert_eq!(t.translation, Vec3::ZERO);
+        assert_eq!(t.scale, Vec3::ONE);
+    }
+
+    #[test]
+    fn test_transform_from_scale() {
+        let t = Transform::from_scale(3.0);
+        assert_eq!(t.scale, Vec3::new(3.0, 3.0, 3.0));
+    }
+
+    #[test]
+    fn test_transform_from_scale_vec() {
+        let t = Transform::from_scale_vec(Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(t.scale, Vec3::new(1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn test_transform_is_identity() {
+        assert!(Transform::default().is_identity());
+        assert!(!Transform::from_translation(Vec3::X).is_identity());
+    }
+
+    #[test]
+    fn test_transform_is_uniform_scale() {
+        assert!(Transform::from_scale(2.0).is_uniform_scale());
+        assert!(!Transform::from_scale_vec(Vec3::new(1.0, 2.0, 3.0)).is_uniform_scale());
+    }
+
+    #[test]
+    fn test_transform_uniform_scale() {
+        let t = Transform::from_scale_vec(Vec3::new(3.0, 6.0, 9.0));
+        assert!((t.uniform_scale() - 6.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_transform_directions() {
+        let t = Transform::identity();
+        assert!((t.forward() - Vec3::NEG_Z).length() < 0.001);
+        assert!((t.right() - Vec3::X).length() < 0.001);
+        assert!((t.up() - Vec3::Y).length() < 0.001);
+    }
+
+    #[test]
+    fn test_transform_transform_point() {
+        let t = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
+        let p = t.transform_point(Vec3::ZERO);
+        assert!((p - Vec3::new(10.0, 0.0, 0.0)).length() < 0.001);
+    }
+
+    #[test]
+    fn test_transform_transform_direction() {
+        let t = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
+        let d = t.transform_direction(Vec3::X);
+        // Direction should ignore translation
+        assert!((d - Vec3::X).length() < 0.001);
+    }
+
+    #[test]
+    fn test_transform_lerp() {
+        let a = Transform::from_translation(Vec3::ZERO);
+        let b = Transform::from_translation(Vec3::new(10.0, 0.0, 0.0));
+        let mid = a.lerp(&b, 0.5);
+        assert!((mid.translation - Vec3::new(5.0, 0.0, 0.0)).length() < 0.001);
+    }
+
+    #[test]
+    fn test_transform_display() {
+        let t = Transform::from_translation(Vec3::new(1.0, 2.0, 3.0));
+        let s = format!("{}", t);
+        assert!(s.contains("Transform"));
+        assert!(s.contains("pos="));
+    }
+
+    // ===== New Node Helper Tests =====
+
+    #[test]
+    fn test_node_with_transform_constructor() {
+        let t = Transform::from_translation(Vec3::X);
+        let node = Node::with_transform("moved", t);
+        assert_eq!(node.name, "moved");
+        assert_eq!(node.transform.translation, Vec3::X);
+    }
+
+    #[test]
+    fn test_node_has_children() {
+        let mut node = Node::new("parent");
+        assert!(!node.has_children());
+        node.add_child(Node::new("child"));
+        assert!(node.has_children());
+    }
+
+    #[test]
+    fn test_node_child_count() {
+        let mut node = Node::new("parent");
+        assert_eq!(node.child_count(), 0);
+        node.add_child(Node::new("child1"));
+        node.add_child(Node::new("child2"));
+        assert_eq!(node.child_count(), 2);
+    }
+
+    #[test]
+    fn test_node_descendant_count() {
+        let mut root = Node::new("root");
+        let mut child = Node::new("child");
+        child.add_child(Node::new("grandchild"));
+        root.add_child(child);
+        root.add_child(Node::new("child2"));
+        // 2 children + 1 grandchild = 3 descendants
+        assert_eq!(root.descendant_count(), 3);
+    }
+
+    #[test]
+    fn test_node_is_leaf() {
+        let mut node = Node::new("test");
+        assert!(node.is_leaf());
+        node.add_child(Node::new("child"));
+        assert!(!node.is_leaf());
+    }
+
+    #[test]
+    fn test_node_find_child() {
+        let mut node = Node::new("parent");
+        node.add_child(Node::new("child1"));
+        node.add_child(Node::new("child2"));
+        assert!(node.find_child("child1").is_some());
+        assert!(node.find_child("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_node_find_child_mut() {
+        let mut node = Node::new("parent");
+        node.add_child(Node::new("child1"));
+        if let Some(child) = node.find_child_mut("child1") {
+            child.name = "renamed".to_string();
+        }
+        assert!(node.find_child("renamed").is_some());
+    }
+
+    #[test]
+    fn test_node_find_descendant() {
+        let mut root = Node::new("root");
+        let mut child = Node::new("child");
+        child.add_child(Node::new("grandchild"));
+        root.add_child(child);
+        assert!(root.find_descendant("grandchild").is_some());
+        assert!(root.find_descendant("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_node_depth() {
+        let mut root = Node::new("root");
+        assert_eq!(root.depth(), 0);
+        let mut child = Node::new("child");
+        child.add_child(Node::new("grandchild"));
+        root.add_child(child);
+        assert_eq!(root.depth(), 2);
+    }
+
+    #[test]
+    fn test_node_display() {
+        let node = Node::new("test");
+        assert!(format!("{}", node).contains("Node(\"test\")"));
+        
+        let mut parent = Node::new("parent");
+        parent.add_child(Node::new("child"));
+        assert!(format!("{}", parent).contains("1 children"));
+    }
+
+    // ===== New Scene Helper Tests =====
+
+    #[test]
+    fn test_scene_with_root() {
+        let root = Node::new("custom_root");
+        let scene = Scene::with_root(root);
+        assert_eq!(scene.root.name, "custom_root");
+    }
+
+    #[test]
+    fn test_scene_node_count() {
+        let mut scene = Scene::new();
+        assert_eq!(scene.node_count(), 1); // Just root
+        scene.root.add_child(Node::new("child1"));
+        scene.root.add_child(Node::new("child2"));
+        assert_eq!(scene.node_count(), 3);
+    }
+
+    #[test]
+    fn test_scene_is_empty() {
+        let scene = Scene::new();
+        assert!(scene.is_empty());
+        let mut non_empty = Scene::new();
+        non_empty.root.add_child(Node::new("child"));
+        assert!(!non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_scene_depth() {
+        let mut scene = Scene::new();
+        assert_eq!(scene.depth(), 0);
+        let mut child = Node::new("child");
+        child.add_child(Node::new("grandchild"));
+        scene.root.add_child(child);
+        assert_eq!(scene.depth(), 2);
+    }
+
+    #[test]
+    fn test_scene_find_node() {
+        let mut scene = Scene::new();
+        scene.root.add_child(Node::new("child"));
+        assert!(scene.find_node("root").is_some());
+        assert!(scene.find_node("child").is_some());
+        assert!(scene.find_node("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_scene_traverse_with_path() {
+        let mut scene = Scene::new();
+        scene.root.add_child(Node::new("child"));
+        
+        let mut paths: Vec<String> = Vec::new();
+        scene.traverse_with_path(&mut |_node, _mat, path| {
+            paths.push(path.join("/"));
+        });
+        assert!(paths.contains(&"root".to_string()));
+        assert!(paths.contains(&"root/child".to_string()));
+    }
+
+    #[test]
+    fn test_scene_display() {
+        let scene = Scene::new();
+        let s = format!("{}", scene);
+        assert!(s.contains("Scene("));
+        assert!(s.contains("nodes"));
     }
 }
 

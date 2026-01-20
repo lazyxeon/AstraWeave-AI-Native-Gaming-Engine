@@ -23,6 +23,90 @@ pub enum ToolVerb {
     Rally,
 }
 
+impl std::fmt::Display for ToolVerb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ToolVerb::MoveTo => write!(f, "MoveTo"),
+            ToolVerb::Throw => write!(f, "Throw"),
+            ToolVerb::CoverFire => write!(f, "CoverFire"),
+            ToolVerb::Revive => write!(f, "Revive"),
+            ToolVerb::Interact => write!(f, "Interact"),
+            ToolVerb::UseItem => write!(f, "UseItem"),
+            ToolVerb::Stay => write!(f, "Stay"),
+            ToolVerb::Wander => write!(f, "Wander"),
+            ToolVerb::Hide => write!(f, "Hide"),
+            ToolVerb::Rally => write!(f, "Rally"),
+        }
+    }
+}
+
+impl ToolVerb {
+    /// Check if this verb is a movement-related action.
+    #[must_use]
+    pub fn is_movement(&self) -> bool {
+        matches!(self, ToolVerb::MoveTo | ToolVerb::Wander | ToolVerb::Hide | ToolVerb::Stay)
+    }
+
+    /// Check if this verb is a combat-related action.
+    #[must_use]
+    pub fn is_combat(&self) -> bool {
+        matches!(self, ToolVerb::Throw | ToolVerb::CoverFire)
+    }
+
+    /// Check if this verb is a support action.
+    #[must_use]
+    pub fn is_support(&self) -> bool {
+        matches!(self, ToolVerb::Revive | ToolVerb::Rally)
+    }
+
+    /// Check if this verb requires a target position.
+    #[must_use]
+    pub fn requires_target_position(&self) -> bool {
+        matches!(self, ToolVerb::MoveTo | ToolVerb::Throw | ToolVerb::CoverFire | ToolVerb::Revive | ToolVerb::Hide)
+    }
+
+    /// Check if this verb requires ammo.
+    #[must_use]
+    pub fn requires_ammo(&self) -> bool {
+        matches!(self, ToolVerb::Throw | ToolVerb::CoverFire)
+    }
+
+    /// Check if this verb requires line of sight validation.
+    #[must_use]
+    pub fn requires_line_of_sight(&self) -> bool {
+        matches!(self, ToolVerb::Throw | ToolVerb::CoverFire)
+    }
+
+    /// Get the primary validation category for this verb.
+    #[must_use]
+    pub fn primary_validation_category(&self) -> ValidationCategory {
+        match self {
+            ToolVerb::MoveTo | ToolVerb::Wander | ToolVerb::Hide => ValidationCategory::Nav,
+            ToolVerb::Throw | ToolVerb::CoverFire => ValidationCategory::Visibility,
+            ToolVerb::Revive | ToolVerb::UseItem => ValidationCategory::Resources,
+            ToolVerb::Interact => ValidationCategory::Physics,
+            ToolVerb::Stay | ToolVerb::Rally => ValidationCategory::Cooldown,
+        }
+    }
+
+    /// Get all tool verbs.
+    #[must_use]
+    pub fn all() -> &'static [ToolVerb] {
+        &[
+            ToolVerb::MoveTo,
+            ToolVerb::Throw,
+            ToolVerb::CoverFire,
+            ToolVerb::Revive,
+            ToolVerb::Interact,
+            ToolVerb::UseItem,
+            ToolVerb::Stay,
+            ToolVerb::Wander,
+            ToolVerb::Hide,
+            ToolVerb::Rally,
+        ]
+    }
+}
+
 /// Validation categories for each verb
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ValidationCategory {
@@ -33,8 +117,40 @@ pub enum ValidationCategory {
     Cooldown,
 }
 
+impl std::fmt::Display for ValidationCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ValidationCategory::Nav => write!(f, "Nav"),
+            ValidationCategory::Physics => write!(f, "Physics"),
+            ValidationCategory::Resources => write!(f, "Resources"),
+            ValidationCategory::Visibility => write!(f, "Visibility"),
+            ValidationCategory::Cooldown => write!(f, "Cooldown"),
+        }
+    }
+}
+
+impl ValidationCategory {
+    /// Get all validation categories.
+    #[must_use]
+    pub fn all() -> &'static [ValidationCategory] {
+        &[
+            ValidationCategory::Nav,
+            ValidationCategory::Physics,
+            ValidationCategory::Resources,
+            ValidationCategory::Visibility,
+            ValidationCategory::Cooldown,
+        ]
+    }
+
+    /// Check if this category requires external systems (nav mesh or physics).
+    #[must_use]
+    pub fn requires_external_system(&self) -> bool {
+        matches!(self, ValidationCategory::Nav | ValidationCategory::Physics)
+    }
+}
+
 /// Error taxonomy for tool validation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ToolError {
     OutOfBounds,
     Cooldown,
@@ -60,6 +176,79 @@ impl fmt::Display for ToolError {
             ToolError::Unknown => "Unknown",
         };
         write!(f, "{}", s)
+    }
+}
+
+impl ToolError {
+    /// Check if this error is related to navigation.
+    #[must_use]
+    pub fn is_nav_error(&self) -> bool {
+        matches!(self, ToolError::OutOfBounds | ToolError::NoPath)
+    }
+
+    /// Check if this error is related to physics.
+    #[must_use]
+    pub fn is_physics_error(&self) -> bool {
+        matches!(self, ToolError::PhysicsBlocked)
+    }
+
+    /// Check if this error is related to resources.
+    #[must_use]
+    pub fn is_resource_error(&self) -> bool {
+        matches!(self, ToolError::InsufficientResource)
+    }
+
+    /// Check if this error is related to visibility.
+    #[must_use]
+    pub fn is_visibility_error(&self) -> bool {
+        matches!(self, ToolError::NoLineOfSight)
+    }
+
+    /// Check if this error is related to targeting.
+    #[must_use]
+    pub fn is_target_error(&self) -> bool {
+        matches!(self, ToolError::InvalidTarget)
+    }
+
+    /// Check if this error is a timing/cooldown error.
+    #[must_use]
+    pub fn is_timing_error(&self) -> bool {
+        matches!(self, ToolError::Cooldown)
+    }
+
+    /// Check if this is a recoverable error (can retry after some time).
+    #[must_use]
+    pub fn is_recoverable(&self) -> bool {
+        matches!(self, ToolError::Cooldown | ToolError::NoLineOfSight)
+    }
+
+    /// Get the validation category this error belongs to.
+    #[must_use]
+    pub fn category(&self) -> ValidationCategory {
+        match self {
+            ToolError::OutOfBounds | ToolError::NoPath => ValidationCategory::Nav,
+            ToolError::PhysicsBlocked => ValidationCategory::Physics,
+            ToolError::InsufficientResource => ValidationCategory::Resources,
+            ToolError::NoLineOfSight => ValidationCategory::Visibility,
+            ToolError::InvalidTarget => ValidationCategory::Resources,
+            ToolError::Cooldown => ValidationCategory::Cooldown,
+            ToolError::Unknown => ValidationCategory::Resources,
+        }
+    }
+
+    /// Get all tool errors.
+    #[must_use]
+    pub fn all() -> &'static [ToolError] {
+        &[
+            ToolError::OutOfBounds,
+            ToolError::Cooldown,
+            ToolError::NoLineOfSight,
+            ToolError::InsufficientResource,
+            ToolError::InvalidTarget,
+            ToolError::PhysicsBlocked,
+            ToolError::NoPath,
+            ToolError::Unknown,
+        ]
     }
 }
 
@@ -102,6 +291,47 @@ impl<'a> ValidationContext<'a> {
         self.rigid_body_set = Some(bodies);
         self.collider_set = Some(colliders);
         self
+    }
+
+    /// Check if nav mesh is available for path validation.
+    #[must_use]
+    pub fn has_nav(&self) -> bool {
+        self.nav_mesh.is_some()
+    }
+
+    /// Check if physics is available for collision validation.
+    #[must_use]
+    pub fn has_physics(&self) -> bool {
+        self.physics_pipeline.is_some() && self.rigid_body_set.is_some() && self.collider_set.is_some()
+    }
+
+    /// Check if all validation systems are available.
+    #[must_use]
+    pub fn is_complete(&self) -> bool {
+        self.has_nav() && self.has_physics()
+    }
+
+    /// Check if validation context is empty (no systems available).
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        !self.has_nav() && !self.has_physics()
+    }
+
+    /// Get a list of available validation categories.
+    #[must_use]
+    pub fn available_categories(&self) -> Vec<ValidationCategory> {
+        let mut categories = vec![
+            ValidationCategory::Resources,
+            ValidationCategory::Visibility,
+            ValidationCategory::Cooldown,
+        ];
+        if self.has_nav() {
+            categories.push(ValidationCategory::Nav);
+        }
+        if self.has_physics() {
+            categories.push(ValidationCategory::Physics);
+        }
+        categories
     }
 }
 
@@ -1214,5 +1444,302 @@ mod tests {
         assert!(context.physics_pipeline.is_none());
         assert!(context.rigid_body_set.is_none());
         assert!(context.collider_set.is_none());
+    }
+
+    // ========================================
+    // ToolVerb Display and Helper Tests
+    // ========================================
+
+    #[test]
+    fn test_tool_verb_display() {
+        assert_eq!(format!("{}", ToolVerb::MoveTo), "MoveTo");
+        assert_eq!(format!("{}", ToolVerb::Throw), "Throw");
+        assert_eq!(format!("{}", ToolVerb::CoverFire), "CoverFire");
+        assert_eq!(format!("{}", ToolVerb::Revive), "Revive");
+        assert_eq!(format!("{}", ToolVerb::Interact), "Interact");
+        assert_eq!(format!("{}", ToolVerb::UseItem), "UseItem");
+        assert_eq!(format!("{}", ToolVerb::Stay), "Stay");
+        assert_eq!(format!("{}", ToolVerb::Wander), "Wander");
+        assert_eq!(format!("{}", ToolVerb::Hide), "Hide");
+        assert_eq!(format!("{}", ToolVerb::Rally), "Rally");
+    }
+
+    #[test]
+    fn test_tool_verb_is_movement() {
+        assert!(ToolVerb::MoveTo.is_movement());
+        assert!(ToolVerb::Wander.is_movement());
+        assert!(ToolVerb::Hide.is_movement());
+        assert!(ToolVerb::Stay.is_movement());
+        assert!(!ToolVerb::Throw.is_movement());
+        assert!(!ToolVerb::CoverFire.is_movement());
+        assert!(!ToolVerb::Revive.is_movement());
+    }
+
+    #[test]
+    fn test_tool_verb_is_combat() {
+        assert!(ToolVerb::Throw.is_combat());
+        assert!(ToolVerb::CoverFire.is_combat());
+        assert!(!ToolVerb::MoveTo.is_combat());
+        assert!(!ToolVerb::Revive.is_combat());
+        assert!(!ToolVerb::Rally.is_combat());
+    }
+
+    #[test]
+    fn test_tool_verb_is_support() {
+        assert!(ToolVerb::Revive.is_support());
+        assert!(ToolVerb::Rally.is_support());
+        assert!(!ToolVerb::MoveTo.is_support());
+        assert!(!ToolVerb::Throw.is_support());
+        assert!(!ToolVerb::CoverFire.is_support());
+    }
+
+    #[test]
+    fn test_tool_verb_requires_target_position() {
+        assert!(ToolVerb::MoveTo.requires_target_position());
+        assert!(ToolVerb::Throw.requires_target_position());
+        assert!(ToolVerb::CoverFire.requires_target_position());
+        assert!(ToolVerb::Revive.requires_target_position());
+        assert!(ToolVerb::Hide.requires_target_position());
+        assert!(!ToolVerb::Stay.requires_target_position());
+        assert!(!ToolVerb::Wander.requires_target_position());
+        assert!(!ToolVerb::Rally.requires_target_position());
+    }
+
+    #[test]
+    fn test_tool_verb_requires_ammo() {
+        assert!(ToolVerb::Throw.requires_ammo());
+        assert!(ToolVerb::CoverFire.requires_ammo());
+        assert!(!ToolVerb::MoveTo.requires_ammo());
+        assert!(!ToolVerb::Revive.requires_ammo());
+        assert!(!ToolVerb::Stay.requires_ammo());
+    }
+
+    #[test]
+    fn test_tool_verb_requires_line_of_sight() {
+        assert!(ToolVerb::Throw.requires_line_of_sight());
+        assert!(ToolVerb::CoverFire.requires_line_of_sight());
+        assert!(!ToolVerb::MoveTo.requires_line_of_sight());
+        assert!(!ToolVerb::Revive.requires_line_of_sight());
+        assert!(!ToolVerb::Stay.requires_line_of_sight());
+    }
+
+    #[test]
+    fn test_tool_verb_primary_validation_category() {
+        assert_eq!(ToolVerb::MoveTo.primary_validation_category(), ValidationCategory::Nav);
+        assert_eq!(ToolVerb::Wander.primary_validation_category(), ValidationCategory::Nav);
+        assert_eq!(ToolVerb::Hide.primary_validation_category(), ValidationCategory::Nav);
+        assert_eq!(ToolVerb::Throw.primary_validation_category(), ValidationCategory::Visibility);
+        assert_eq!(ToolVerb::CoverFire.primary_validation_category(), ValidationCategory::Visibility);
+        assert_eq!(ToolVerb::Revive.primary_validation_category(), ValidationCategory::Resources);
+        assert_eq!(ToolVerb::UseItem.primary_validation_category(), ValidationCategory::Resources);
+        assert_eq!(ToolVerb::Interact.primary_validation_category(), ValidationCategory::Physics);
+        assert_eq!(ToolVerb::Stay.primary_validation_category(), ValidationCategory::Cooldown);
+        assert_eq!(ToolVerb::Rally.primary_validation_category(), ValidationCategory::Cooldown);
+    }
+
+    #[test]
+    fn test_tool_verb_all() {
+        let all = ToolVerb::all();
+        assert_eq!(all.len(), 10);
+        assert!(all.contains(&ToolVerb::MoveTo));
+        assert!(all.contains(&ToolVerb::Throw));
+        assert!(all.contains(&ToolVerb::CoverFire));
+        assert!(all.contains(&ToolVerb::Rally));
+    }
+
+    // ========================================
+    // ValidationCategory Display and Helper Tests
+    // ========================================
+
+    #[test]
+    fn test_validation_category_display() {
+        assert_eq!(format!("{}", ValidationCategory::Nav), "Nav");
+        assert_eq!(format!("{}", ValidationCategory::Physics), "Physics");
+        assert_eq!(format!("{}", ValidationCategory::Resources), "Resources");
+        assert_eq!(format!("{}", ValidationCategory::Visibility), "Visibility");
+        assert_eq!(format!("{}", ValidationCategory::Cooldown), "Cooldown");
+    }
+
+    #[test]
+    fn test_validation_category_all() {
+        let all = ValidationCategory::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&ValidationCategory::Nav));
+        assert!(all.contains(&ValidationCategory::Physics));
+        assert!(all.contains(&ValidationCategory::Resources));
+        assert!(all.contains(&ValidationCategory::Visibility));
+        assert!(all.contains(&ValidationCategory::Cooldown));
+    }
+
+    #[test]
+    fn test_validation_category_requires_external_system() {
+        assert!(ValidationCategory::Nav.requires_external_system());
+        assert!(ValidationCategory::Physics.requires_external_system());
+        assert!(!ValidationCategory::Resources.requires_external_system());
+        assert!(!ValidationCategory::Visibility.requires_external_system());
+        assert!(!ValidationCategory::Cooldown.requires_external_system());
+    }
+
+    // ========================================
+    // ToolError Helper Tests
+    // ========================================
+
+    #[test]
+    fn test_tool_error_is_nav_error() {
+        assert!(ToolError::OutOfBounds.is_nav_error());
+        assert!(ToolError::NoPath.is_nav_error());
+        assert!(!ToolError::Cooldown.is_nav_error());
+        assert!(!ToolError::PhysicsBlocked.is_nav_error());
+    }
+
+    #[test]
+    fn test_tool_error_is_physics_error() {
+        assert!(ToolError::PhysicsBlocked.is_physics_error());
+        assert!(!ToolError::OutOfBounds.is_physics_error());
+        assert!(!ToolError::Cooldown.is_physics_error());
+    }
+
+    #[test]
+    fn test_tool_error_is_resource_error() {
+        assert!(ToolError::InsufficientResource.is_resource_error());
+        assert!(!ToolError::OutOfBounds.is_resource_error());
+        assert!(!ToolError::Cooldown.is_resource_error());
+    }
+
+    #[test]
+    fn test_tool_error_is_visibility_error() {
+        assert!(ToolError::NoLineOfSight.is_visibility_error());
+        assert!(!ToolError::OutOfBounds.is_visibility_error());
+        assert!(!ToolError::Cooldown.is_visibility_error());
+    }
+
+    #[test]
+    fn test_tool_error_is_target_error() {
+        assert!(ToolError::InvalidTarget.is_target_error());
+        assert!(!ToolError::OutOfBounds.is_target_error());
+        assert!(!ToolError::Cooldown.is_target_error());
+    }
+
+    #[test]
+    fn test_tool_error_is_timing_error() {
+        assert!(ToolError::Cooldown.is_timing_error());
+        assert!(!ToolError::OutOfBounds.is_timing_error());
+        assert!(!ToolError::NoPath.is_timing_error());
+    }
+
+    #[test]
+    fn test_tool_error_is_recoverable() {
+        assert!(ToolError::Cooldown.is_recoverable());
+        assert!(ToolError::NoLineOfSight.is_recoverable());
+        assert!(!ToolError::OutOfBounds.is_recoverable());
+        assert!(!ToolError::NoPath.is_recoverable());
+        assert!(!ToolError::PhysicsBlocked.is_recoverable());
+    }
+
+    #[test]
+    fn test_tool_error_category() {
+        assert_eq!(ToolError::OutOfBounds.category(), ValidationCategory::Nav);
+        assert_eq!(ToolError::NoPath.category(), ValidationCategory::Nav);
+        assert_eq!(ToolError::PhysicsBlocked.category(), ValidationCategory::Physics);
+        assert_eq!(ToolError::InsufficientResource.category(), ValidationCategory::Resources);
+        assert_eq!(ToolError::NoLineOfSight.category(), ValidationCategory::Visibility);
+        assert_eq!(ToolError::Cooldown.category(), ValidationCategory::Cooldown);
+        assert_eq!(ToolError::InvalidTarget.category(), ValidationCategory::Resources);
+        assert_eq!(ToolError::Unknown.category(), ValidationCategory::Resources);
+    }
+
+    #[test]
+    fn test_tool_error_all() {
+        let all = ToolError::all();
+        assert_eq!(all.len(), 8);
+        assert!(all.contains(&ToolError::OutOfBounds));
+        assert!(all.contains(&ToolError::Cooldown));
+        assert!(all.contains(&ToolError::NoLineOfSight));
+        assert!(all.contains(&ToolError::Unknown));
+    }
+
+    #[test]
+    fn test_tool_error_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ToolError::OutOfBounds);
+        set.insert(ToolError::Cooldown);
+        set.insert(ToolError::NoPath);
+        assert_eq!(set.len(), 3);
+    }
+
+    // ========================================
+    // ValidationContext Helper Tests
+    // ========================================
+
+    #[test]
+    fn test_validation_context_has_nav() {
+        let context_empty = ValidationContext::new();
+        assert!(!context_empty.has_nav());
+
+        // Note: We can't easily test with_nav since NavMesh isn't easy to construct in tests
+    }
+
+    #[test]
+    fn test_validation_context_has_physics() {
+        let context_empty = ValidationContext::new();
+        assert!(!context_empty.has_physics());
+
+        // Test with physics
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
+        let physics_pipeline = PhysicsPipeline::new();
+        let context_with_physics = ValidationContext::new()
+            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        assert!(context_with_physics.has_physics());
+    }
+
+    #[test]
+    fn test_validation_context_is_complete() {
+        let context_empty = ValidationContext::new();
+        assert!(!context_empty.is_complete());
+
+        // Context with only physics is not complete
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
+        let physics_pipeline = PhysicsPipeline::new();
+        let context_physics_only = ValidationContext::new()
+            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        assert!(!context_physics_only.is_complete());
+    }
+
+    #[test]
+    fn test_validation_context_is_empty() {
+        let context_empty = ValidationContext::new();
+        assert!(context_empty.is_empty());
+
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
+        let physics_pipeline = PhysicsPipeline::new();
+        let context_with_physics = ValidationContext::new()
+            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        assert!(!context_with_physics.is_empty());
+    }
+
+    #[test]
+    fn test_validation_context_available_categories() {
+        let context_empty = ValidationContext::new();
+        let cats_empty = context_empty.available_categories();
+        // Should have Resources, Visibility, Cooldown
+        assert!(cats_empty.contains(&ValidationCategory::Resources));
+        assert!(cats_empty.contains(&ValidationCategory::Visibility));
+        assert!(cats_empty.contains(&ValidationCategory::Cooldown));
+        assert!(!cats_empty.contains(&ValidationCategory::Nav));
+        assert!(!cats_empty.contains(&ValidationCategory::Physics));
+
+        // With physics
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
+        let physics_pipeline = PhysicsPipeline::new();
+        let context_with_physics = ValidationContext::new()
+            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        let cats_physics = context_with_physics.available_categories();
+        assert!(cats_physics.contains(&ValidationCategory::Physics));
+        assert!(!cats_physics.contains(&ValidationCategory::Nav));
     }
 }

@@ -29,6 +29,32 @@ pub trait Orchestrator {
 /// Else: advance towards nearest enemy.
 pub struct RuleOrchestrator;
 
+impl std::fmt::Display for RuleOrchestrator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "RuleOrchestrator")
+    }
+}
+
+impl RuleOrchestrator {
+    /// Create a new rule-based orchestrator.
+    #[must_use]
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Get the name of this orchestrator.
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        "RuleOrchestrator"
+    }
+}
+
+impl Default for RuleOrchestrator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Orchestrator for RuleOrchestrator {
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent {
         #[cfg(feature = "profiling")]
@@ -116,6 +142,32 @@ impl OrchestratorAsync for RuleOrchestrator {
 /// - Otherwise move closer to nearest enemy; if very close (<3), add brief cover fire
 pub struct UtilityOrchestrator;
 
+impl std::fmt::Display for UtilityOrchestrator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "UtilityOrchestrator")
+    }
+}
+
+impl UtilityOrchestrator {
+    /// Create a new utility-based orchestrator.
+    #[must_use]
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Get the name of this orchestrator.
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        "UtilityOrchestrator"
+    }
+}
+
+impl Default for UtilityOrchestrator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Orchestrator for UtilityOrchestrator {
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent {
         let plan_id = format!("util-{}", (snap.t * 1000.0) as i64);
@@ -186,6 +238,32 @@ impl OrchestratorAsync for UtilityOrchestrator {
 /// Minimal GOAP-style orchestrator for MoveTo -> CoverFire chain towards first enemy.
 /// Preconditions: enemy exists. Goal: be within 2 cells and apply CoverFire for 1.5s.
 pub struct GoapOrchestrator;
+
+impl std::fmt::Display for GoapOrchestrator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GoapOrchestrator")
+    }
+}
+
+impl GoapOrchestrator {
+    /// Create a new GOAP-style orchestrator.
+    #[must_use]
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Get the name of this orchestrator.
+    #[must_use]
+    pub fn orchestrator_name(&self) -> &'static str {
+        "GoapOrchestrator"
+    }
+}
+
+impl Default for GoapOrchestrator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl GoapOrchestrator {
     /// Fast-path action selection without full plan generation.
@@ -1260,6 +1338,135 @@ mod tests {
         assert!(
             goap_name.contains("GoapOrchestrator"),
             "Default name() should return type name"
+        );
+    }
+
+    // ========================================
+    // Orchestrator Display Trait Tests
+    // ========================================
+
+    #[test]
+    fn rule_orchestrator_display_format() {
+        let rule = RuleOrchestrator;
+        let display = format!("{}", rule);
+        assert_eq!(display, "RuleOrchestrator");
+    }
+
+    #[test]
+    fn utility_orchestrator_display_format() {
+        let util = UtilityOrchestrator;
+        let display = format!("{}", util);
+        assert_eq!(display, "UtilityOrchestrator");
+    }
+
+    #[test]
+    fn goap_orchestrator_display_format() {
+        let goap = GoapOrchestrator;
+        let display = format!("{}", goap);
+        assert_eq!(display, "GoapOrchestrator");
+    }
+
+    // ========================================
+    // Orchestrator Factory and Helper Methods
+    // ========================================
+
+    #[test]
+    fn rule_orchestrator_new_creates_instance() {
+        let rule = RuleOrchestrator::new();
+        // Verify it works by calling propose_plan
+        let snap = snap_basic(0, 0, 5, 0, 5.0);
+        let plan = rule.propose_plan(&snap);
+        assert!(plan.plan_id.starts_with("plan-"));
+    }
+
+    #[test]
+    fn rule_orchestrator_name_method() {
+        let rule = RuleOrchestrator::new();
+        assert_eq!(rule.name(), "RuleOrchestrator");
+    }
+
+    #[test]
+    fn rule_orchestrator_default_impl() {
+        let rule1 = RuleOrchestrator::default();
+        let rule2 = RuleOrchestrator::new();
+        // Both should produce same results
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+        let plan1 = rule1.propose_plan(&snap);
+        let plan2 = rule2.propose_plan(&snap);
+        assert_eq!(plan1.steps.len(), plan2.steps.len());
+    }
+
+    #[test]
+    fn utility_orchestrator_new_creates_instance() {
+        let util = UtilityOrchestrator::new();
+        // Verify it works by calling propose_plan
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+        let plan = util.propose_plan(&snap);
+        assert!(plan.plan_id.starts_with("util-"));
+    }
+
+    #[test]
+    fn utility_orchestrator_name_method() {
+        let util = UtilityOrchestrator::new();
+        assert_eq!(util.name(), "UtilityOrchestrator");
+    }
+
+    #[test]
+    fn utility_orchestrator_default_impl() {
+        let util1 = UtilityOrchestrator::default();
+        let util2 = UtilityOrchestrator::new();
+        // Both should produce same results for same input
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+        let plan1 = util1.propose_plan(&snap);
+        let plan2 = util2.propose_plan(&snap);
+        assert_eq!(plan1.steps.len(), plan2.steps.len());
+    }
+
+    #[test]
+    fn goap_orchestrator_new_creates_instance() {
+        let goap = GoapOrchestrator::new();
+        // Verify it works by calling next_action
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+        let action = goap.next_action(&snap);
+        assert!(matches!(action, ActionStep::MoveTo { .. } | ActionStep::CoverFire { .. }));
+    }
+
+    #[test]
+    fn goap_orchestrator_name_method() {
+        let goap = GoapOrchestrator::new();
+        assert_eq!(goap.orchestrator_name(), "GoapOrchestrator");
+    }
+
+    #[test]
+    fn goap_orchestrator_default_impl() {
+        let goap1 = GoapOrchestrator::default();
+        let goap2 = GoapOrchestrator::new();
+        // Both should produce same results
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+        let plan1 = goap1.propose_plan(&snap);
+        let plan2 = goap2.propose_plan(&snap);
+        assert_eq!(plan1.steps.len(), plan2.steps.len());
+    }
+
+    #[test]
+    fn all_orchestrators_have_consistent_display() {
+        // Test that all concrete orchestrator types have consistent Display output
+        let rule = RuleOrchestrator;
+        let util = UtilityOrchestrator;
+        let goap = GoapOrchestrator;
+
+        // Each display should end with "Orchestrator"
+        assert!(
+            format!("{}", rule).contains("Orchestrator"),
+            "RuleOrchestrator Display should contain 'Orchestrator'"
+        );
+        assert!(
+            format!("{}", util).contains("Orchestrator"),
+            "UtilityOrchestrator Display should contain 'Orchestrator'"
+        );
+        assert!(
+            format!("{}", goap).contains("Orchestrator"),
+            "GoapOrchestrator Display should contain 'Orchestrator'"
         );
     }
 }

@@ -38,13 +38,61 @@ impl Default for AnimationClip {
 }
 
 /// Loop mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LoopMode {
     Once,
     #[default]
     Loop,
     PingPong,
     ClampForever,
+}
+
+impl std::fmt::Display for LoopMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LoopMode {
+    pub fn all() -> &'static [LoopMode] {
+        &[
+            LoopMode::Once,
+            LoopMode::Loop,
+            LoopMode::PingPong,
+            LoopMode::ClampForever,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LoopMode::Once => "Once",
+            LoopMode::Loop => "Loop",
+            LoopMode::PingPong => "Ping-Pong",
+            LoopMode::ClampForever => "Clamp Forever",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LoopMode::Once => "▶️",
+            LoopMode::Loop => "🔁",
+            LoopMode::PingPong => "🔀",
+            LoopMode::ClampForever => "⏸️",
+        }
+    }
+
+    pub fn is_looping(&self) -> bool {
+        matches!(self, LoopMode::Loop | LoopMode::PingPong)
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            LoopMode::Once => "Play once and stop",
+            LoopMode::Loop => "Loop continuously",
+            LoopMode::PingPong => "Play forward then backward",
+            LoopMode::ClampForever => "Hold last frame forever",
+        }
+    }
 }
 
 /// Animation event
@@ -75,7 +123,7 @@ pub struct Keyframe {
     pub tangent_mode: TangentMode,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum TangentMode {
     #[default]
     Auto,
@@ -83,6 +131,52 @@ pub enum TangentMode {
     Constant,
     Free,
     Broken,
+}
+
+impl std::fmt::Display for TangentMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl TangentMode {
+    pub fn all() -> &'static [TangentMode] {
+        &[
+            TangentMode::Auto,
+            TangentMode::Linear,
+            TangentMode::Constant,
+            TangentMode::Free,
+            TangentMode::Broken,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            TangentMode::Auto => "Auto",
+            TangentMode::Linear => "Linear",
+            TangentMode::Constant => "Constant",
+            TangentMode::Free => "Free",
+            TangentMode::Broken => "Broken",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            TangentMode::Auto => "🔄",
+            TangentMode::Linear => "📈",
+            TangentMode::Constant => "⏸️",
+            TangentMode::Free => "✏️",
+            TangentMode::Broken => "💔",
+        }
+    }
+
+    pub fn is_smooth(&self) -> bool {
+        matches!(self, TangentMode::Auto | TangentMode::Free)
+    }
+
+    pub fn is_editable(&self) -> bool {
+        matches!(self, TangentMode::Free | TangentMode::Broken)
+    }
 }
 
 /// Animation state in a state machine
@@ -145,7 +239,7 @@ pub struct TransitionCondition {
     pub threshold: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ConditionType {
     #[default]
     Greater,
@@ -154,6 +248,55 @@ pub enum ConditionType {
     NotEquals,
     True,
     False,
+}
+
+impl std::fmt::Display for ConditionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.symbol(), self.name())
+    }
+}
+
+impl ConditionType {
+    pub fn all() -> &'static [ConditionType] {
+        &[
+            ConditionType::Greater,
+            ConditionType::Less,
+            ConditionType::Equals,
+            ConditionType::NotEquals,
+            ConditionType::True,
+            ConditionType::False,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ConditionType::Greater => "Greater",
+            ConditionType::Less => "Less",
+            ConditionType::Equals => "Equals",
+            ConditionType::NotEquals => "Not Equals",
+            ConditionType::True => "True",
+            ConditionType::False => "False",
+        }
+    }
+
+    pub fn symbol(&self) -> &'static str {
+        match self {
+            ConditionType::Greater => ">",
+            ConditionType::Less => "<",
+            ConditionType::Equals => "=",
+            ConditionType::NotEquals => "≠",
+            ConditionType::True => "✓",
+            ConditionType::False => "✗",
+        }
+    }
+
+    pub fn is_comparison(&self) -> bool {
+        matches!(self, ConditionType::Greater | ConditionType::Less | ConditionType::Equals | ConditionType::NotEquals)
+    }
+
+    pub fn is_boolean(&self) -> bool {
+        matches!(self, ConditionType::True | ConditionType::False)
+    }
 }
 
 /// Animation parameter
@@ -165,7 +308,7 @@ pub struct AnimationParameter {
     pub default_value: ParameterValue,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ParameterType {
     #[default]
     Float,
@@ -174,12 +317,127 @@ pub enum ParameterType {
     Trigger,
 }
 
-#[derive(Debug, Clone)]
+impl std::fmt::Display for ParameterType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ParameterType {
+    pub fn all() -> &'static [ParameterType] {
+        &[
+            ParameterType::Float,
+            ParameterType::Int,
+            ParameterType::Bool,
+            ParameterType::Trigger,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParameterType::Float => "Float",
+            ParameterType::Int => "Int",
+            ParameterType::Bool => "Bool",
+            ParameterType::Trigger => "Trigger",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ParameterType::Float => "🔢",
+            ParameterType::Int => "#️⃣",
+            ParameterType::Bool => "☑️",
+            ParameterType::Trigger => "⚡",
+        }
+    }
+
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, ParameterType::Float | ParameterType::Int)
+    }
+
+    pub fn is_instant(&self) -> bool {
+        matches!(self, ParameterType::Trigger)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum ParameterValue {
     Float(f32),
     Int(i32),
     Bool(bool),
     Trigger,
+}
+
+impl std::fmt::Display for ParameterValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ParameterValue {
+    /// Returns all parameter type variant names
+    pub fn all_variants() -> &'static [&'static str] {
+        &["Float", "Int", "Bool", "Trigger"]
+    }
+
+    /// Returns the name of this parameter value type
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParameterValue::Float(_) => "Float",
+            ParameterValue::Int(_) => "Int",
+            ParameterValue::Bool(_) => "Bool",
+            ParameterValue::Trigger => "Trigger",
+        }
+    }
+
+    /// Returns the icon for this parameter value type
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ParameterValue::Float(_) => "🔢",
+            ParameterValue::Int(_) => "🔟",
+            ParameterValue::Bool(_) => "✓",
+            ParameterValue::Trigger => "⚡",
+        }
+    }
+
+    /// Returns true if this is a numeric value (Float or Int)
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, ParameterValue::Float(_) | ParameterValue::Int(_))
+    }
+
+    /// Returns true if this is a boolean value
+    pub fn is_bool(&self) -> bool {
+        matches!(self, ParameterValue::Bool(_))
+    }
+
+    /// Returns true if this is a trigger
+    pub fn is_trigger(&self) -> bool {
+        matches!(self, ParameterValue::Trigger)
+    }
+
+    /// Returns the float value if this is a Float variant
+    pub fn as_float(&self) -> Option<f32> {
+        match self {
+            ParameterValue::Float(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the int value if this is an Int variant
+    pub fn as_int(&self) -> Option<i32> {
+        match self {
+            ParameterValue::Int(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the bool value if this is a Bool variant
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            ParameterValue::Bool(v) => Some(*v),
+            _ => None,
+        }
+    }
 }
 
 impl Default for ParameterValue {
@@ -189,7 +447,7 @@ impl Default for ParameterValue {
 }
 
 /// Blend tree node type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BlendTreeType {
     #[default]
     Simple1D,
@@ -197,6 +455,55 @@ pub enum BlendTreeType {
     FreeformDirectional,
     FreeformCartesian,
     Direct,
+}
+
+impl std::fmt::Display for BlendTreeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl BlendTreeType {
+    pub fn all() -> &'static [BlendTreeType] {
+        &[
+            BlendTreeType::Simple1D,
+            BlendTreeType::Simple2D,
+            BlendTreeType::FreeformDirectional,
+            BlendTreeType::FreeformCartesian,
+            BlendTreeType::Direct,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            BlendTreeType::Simple1D => "Simple 1D",
+            BlendTreeType::Simple2D => "Simple 2D",
+            BlendTreeType::FreeformDirectional => "Freeform Directional",
+            BlendTreeType::FreeformCartesian => "Freeform Cartesian",
+            BlendTreeType::Direct => "Direct",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BlendTreeType::Simple1D => "↔️",
+            BlendTreeType::Simple2D => "🔀",
+            BlendTreeType::FreeformDirectional => "🧭",
+            BlendTreeType::FreeformCartesian => "📊",
+            BlendTreeType::Direct => "▶️",
+        }
+    }
+
+    pub fn dimensions(&self) -> u8 {
+        match self {
+            BlendTreeType::Simple1D | BlendTreeType::Direct => 1,
+            BlendTreeType::Simple2D | BlendTreeType::FreeformDirectional | BlendTreeType::FreeformCartesian => 2,
+        }
+    }
+
+    pub fn is_freeform(&self) -> bool {
+        matches!(self, BlendTreeType::FreeformDirectional | BlendTreeType::FreeformCartesian)
+    }
 }
 
 /// Blend tree
@@ -256,11 +563,47 @@ impl Default for AnimationLayer {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BlendingMode {
     #[default]
     Override,
     Additive,
+}
+
+impl std::fmt::Display for BlendingMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl BlendingMode {
+    pub fn all() -> &'static [BlendingMode] {
+        &[
+            BlendingMode::Override,
+            BlendingMode::Additive,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            BlendingMode::Override => "Override",
+            BlendingMode::Additive => "Additive",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BlendingMode::Override => "🔄",
+            BlendingMode::Additive => "➕",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            BlendingMode::Override => "Replace base layer animation",
+            BlendingMode::Additive => "Add to base layer animation",
+        }
+    }
 }
 
 /// IK settings
@@ -339,7 +682,7 @@ impl Default for AnimationController {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AnimationTab {
     #[default]
     Clips,
@@ -349,6 +692,62 @@ pub enum AnimationTab {
     Parameters,
     IK,
     Preview,
+}
+
+impl std::fmt::Display for AnimationTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl AnimationTab {
+    pub fn all() -> &'static [AnimationTab] {
+        &[
+            AnimationTab::Clips,
+            AnimationTab::StateMachine,
+            AnimationTab::BlendTrees,
+            AnimationTab::Layers,
+            AnimationTab::Parameters,
+            AnimationTab::IK,
+            AnimationTab::Preview,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            AnimationTab::Clips => "Clips",
+            AnimationTab::StateMachine => "State Machine",
+            AnimationTab::BlendTrees => "Blend Trees",
+            AnimationTab::Layers => "Layers",
+            AnimationTab::Parameters => "Parameters",
+            AnimationTab::IK => "IK",
+            AnimationTab::Preview => "Preview",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AnimationTab::Clips => "🎬",
+            AnimationTab::StateMachine => "🔀",
+            AnimationTab::BlendTrees => "🌳",
+            AnimationTab::Layers => "📚",
+            AnimationTab::Parameters => "⚙️",
+            AnimationTab::IK => "🦴",
+            AnimationTab::Preview => "👁️",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            AnimationTab::Clips => "Edit animation clips and keyframes",
+            AnimationTab::StateMachine => "Design animation state machines",
+            AnimationTab::BlendTrees => "Configure animation blend trees",
+            AnimationTab::Layers => "Manage animation layers",
+            AnimationTab::Parameters => "Define animation parameters",
+            AnimationTab::IK => "Configure inverse kinematics",
+            AnimationTab::Preview => "Preview animations in real-time",
+        }
+    }
 }
 
 /// Main Animation Panel
@@ -1887,5 +2286,429 @@ mod tests {
         };
         let cloned = cond.clone();
         assert_eq!(cloned.parameter, "IsJumping");
+    }
+
+    // ============================================================
+    // LOOP MODE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_loop_mode_display() {
+        for mode in LoopMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+            assert!(display.contains(mode.icon()));
+        }
+    }
+
+    #[test]
+    fn test_loop_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(LoopMode::Loop);
+        set.insert(LoopMode::Once);
+        assert!(set.contains(&LoopMode::Loop));
+        assert!(!set.contains(&LoopMode::PingPong));
+    }
+
+    #[test]
+    fn test_loop_mode_all() {
+        let all = LoopMode::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&LoopMode::Once));
+        assert!(all.contains(&LoopMode::Loop));
+        assert!(all.contains(&LoopMode::PingPong));
+        assert!(all.contains(&LoopMode::ClampForever));
+    }
+
+    #[test]
+    fn test_loop_mode_is_looping() {
+        assert!(!LoopMode::Once.is_looping());
+        assert!(LoopMode::Loop.is_looping());
+        assert!(LoopMode::PingPong.is_looping());
+        assert!(!LoopMode::ClampForever.is_looping());
+    }
+
+    #[test]
+    fn test_loop_mode_description() {
+        assert!(!LoopMode::Once.description().is_empty());
+        assert!(LoopMode::Loop.description().contains("Loop"));
+    }
+
+    // ============================================================
+    // TANGENT MODE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_tangent_mode_display() {
+        for mode in TangentMode::all() {
+            let display = format!("{}", mode);
+            assert!(display.contains(mode.name()));
+            assert!(display.contains(mode.icon()));
+        }
+    }
+
+    #[test]
+    fn test_tangent_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(TangentMode::Auto);
+        set.insert(TangentMode::Linear);
+        assert!(set.contains(&TangentMode::Auto));
+        assert!(!set.contains(&TangentMode::Constant));
+    }
+
+    #[test]
+    fn test_tangent_mode_all() {
+        let all = TangentMode::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&TangentMode::Auto));
+        assert!(all.contains(&TangentMode::Broken));
+    }
+
+    #[test]
+    fn test_tangent_mode_is_smooth() {
+        assert!(TangentMode::Auto.is_smooth());
+        assert!(!TangentMode::Linear.is_smooth());
+        assert!(!TangentMode::Constant.is_smooth());
+        assert!(TangentMode::Free.is_smooth());
+        assert!(!TangentMode::Broken.is_smooth());
+    }
+
+    #[test]
+    fn test_tangent_mode_is_editable() {
+        assert!(!TangentMode::Auto.is_editable());
+        assert!(!TangentMode::Linear.is_editable());
+        assert!(TangentMode::Free.is_editable());
+        assert!(TangentMode::Broken.is_editable());
+    }
+
+    // ============================================================
+    // CONDITION TYPE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_condition_type_display() {
+        for ct in ConditionType::all() {
+            let display = format!("{}", ct);
+            assert!(display.contains(ct.name()));
+            assert!(display.contains(ct.symbol()));
+        }
+    }
+
+    #[test]
+    fn test_condition_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ConditionType::Greater);
+        set.insert(ConditionType::Less);
+        assert!(set.contains(&ConditionType::Greater));
+        assert!(!set.contains(&ConditionType::Equals));
+    }
+
+    #[test]
+    fn test_condition_type_all() {
+        let all = ConditionType::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_condition_type_is_comparison() {
+        assert!(ConditionType::Greater.is_comparison());
+        assert!(ConditionType::Less.is_comparison());
+        assert!(ConditionType::Equals.is_comparison());
+        assert!(ConditionType::NotEquals.is_comparison());
+        assert!(!ConditionType::True.is_comparison());
+        assert!(!ConditionType::False.is_comparison());
+    }
+
+    #[test]
+    fn test_condition_type_is_boolean() {
+        assert!(!ConditionType::Greater.is_boolean());
+        assert!(ConditionType::True.is_boolean());
+        assert!(ConditionType::False.is_boolean());
+    }
+
+    // ============================================================
+    // PARAMETER TYPE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_parameter_type_display() {
+        for pt in ParameterType::all() {
+            let display = format!("{}", pt);
+            assert!(display.contains(pt.name()));
+            assert!(display.contains(pt.icon()));
+        }
+    }
+
+    #[test]
+    fn test_parameter_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ParameterType::Float);
+        set.insert(ParameterType::Int);
+        assert!(set.contains(&ParameterType::Float));
+        assert!(!set.contains(&ParameterType::Bool));
+    }
+
+    #[test]
+    fn test_parameter_type_all() {
+        let all = ParameterType::all();
+        assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn test_parameter_type_is_numeric() {
+        assert!(ParameterType::Float.is_numeric());
+        assert!(ParameterType::Int.is_numeric());
+        assert!(!ParameterType::Bool.is_numeric());
+        assert!(!ParameterType::Trigger.is_numeric());
+    }
+
+    #[test]
+    fn test_parameter_type_is_instant() {
+        assert!(!ParameterType::Float.is_instant());
+        assert!(!ParameterType::Bool.is_instant());
+        assert!(ParameterType::Trigger.is_instant());
+    }
+
+    // ============================================================
+    // BLEND TREE TYPE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_blend_tree_type_display() {
+        for btt in BlendTreeType::all() {
+            let display = format!("{}", btt);
+            assert!(display.contains(btt.name()));
+            assert!(display.contains(btt.icon()));
+        }
+    }
+
+    #[test]
+    fn test_blend_tree_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(BlendTreeType::Simple1D);
+        set.insert(BlendTreeType::Simple2D);
+        assert!(set.contains(&BlendTreeType::Simple1D));
+        assert!(!set.contains(&BlendTreeType::Direct));
+    }
+
+    #[test]
+    fn test_blend_tree_type_all() {
+        let all = BlendTreeType::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_blend_tree_type_dimensions() {
+        assert_eq!(BlendTreeType::Simple1D.dimensions(), 1);
+        assert_eq!(BlendTreeType::Simple2D.dimensions(), 2);
+        assert_eq!(BlendTreeType::FreeformDirectional.dimensions(), 2);
+        assert_eq!(BlendTreeType::FreeformCartesian.dimensions(), 2);
+        assert_eq!(BlendTreeType::Direct.dimensions(), 1);
+    }
+
+    #[test]
+    fn test_blend_tree_type_is_freeform() {
+        assert!(!BlendTreeType::Simple1D.is_freeform());
+        assert!(!BlendTreeType::Simple2D.is_freeform());
+        assert!(BlendTreeType::FreeformDirectional.is_freeform());
+        assert!(BlendTreeType::FreeformCartesian.is_freeform());
+        assert!(!BlendTreeType::Direct.is_freeform());
+    }
+
+    // ============================================================
+    // BLENDING MODE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_blending_mode_display() {
+        for bm in BlendingMode::all() {
+            let display = format!("{}", bm);
+            assert!(display.contains(bm.name()));
+            assert!(display.contains(bm.icon()));
+        }
+    }
+
+    #[test]
+    fn test_blending_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(BlendingMode::Override);
+        assert!(set.contains(&BlendingMode::Override));
+        assert!(!set.contains(&BlendingMode::Additive));
+    }
+
+    #[test]
+    fn test_blending_mode_all() {
+        let all = BlendingMode::all();
+        assert_eq!(all.len(), 2);
+        assert!(all.contains(&BlendingMode::Override));
+        assert!(all.contains(&BlendingMode::Additive));
+    }
+
+    #[test]
+    fn test_blending_mode_description() {
+        assert!(BlendingMode::Override.description().contains("Replace"));
+        assert!(BlendingMode::Additive.description().contains("Add"));
+    }
+
+    // ============================================================
+    // ANIMATION TAB DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_animation_tab_display() {
+        for tab in AnimationTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+            assert!(display.contains(tab.icon()));
+        }
+    }
+
+    #[test]
+    fn test_animation_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(AnimationTab::Clips);
+        set.insert(AnimationTab::StateMachine);
+        assert!(set.contains(&AnimationTab::Clips));
+        assert!(!set.contains(&AnimationTab::IK));
+    }
+
+    #[test]
+    fn test_animation_tab_all() {
+        let all = AnimationTab::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&AnimationTab::Preview));
+    }
+
+    #[test]
+    fn test_animation_tab_description() {
+        for tab in AnimationTab::all() {
+            assert!(!tab.description().is_empty());
+        }
+    }
+
+    // ============================================================
+    // PARAMETER VALUE DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_parameter_value_display() {
+        let float_val = ParameterValue::Float(1.5);
+        let display = format!("{}", float_val);
+        assert!(display.contains(float_val.name()));
+
+        let int_val = ParameterValue::Int(42);
+        let display = format!("{}", int_val);
+        assert!(display.contains(int_val.name()));
+
+        let bool_val = ParameterValue::Bool(true);
+        let display = format!("{}", bool_val);
+        assert!(display.contains(bool_val.name()));
+
+        let trigger = ParameterValue::Trigger;
+        let display = format!("{}", trigger);
+        assert!(display.contains(trigger.name()));
+    }
+
+    #[test]
+    fn test_parameter_value_all_variants() {
+        let all = ParameterValue::all_variants();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&"Float"));
+        assert!(all.contains(&"Int"));
+        assert!(all.contains(&"Bool"));
+        assert!(all.contains(&"Trigger"));
+    }
+
+    #[test]
+    fn test_parameter_value_names() {
+        assert_eq!(ParameterValue::Float(0.0).name(), "Float");
+        assert_eq!(ParameterValue::Int(0).name(), "Int");
+        assert_eq!(ParameterValue::Bool(false).name(), "Bool");
+        assert_eq!(ParameterValue::Trigger.name(), "Trigger");
+    }
+
+    #[test]
+    fn test_parameter_value_icons() {
+        assert_eq!(ParameterValue::Float(0.0).icon(), "🔢");
+        assert_eq!(ParameterValue::Int(0).icon(), "🔟");
+        assert_eq!(ParameterValue::Bool(false).icon(), "✓");
+        assert_eq!(ParameterValue::Trigger.icon(), "⚡");
+    }
+
+    #[test]
+    fn test_parameter_value_is_numeric() {
+        assert!(ParameterValue::Float(1.5).is_numeric());
+        assert!(ParameterValue::Int(42).is_numeric());
+        assert!(!ParameterValue::Bool(true).is_numeric());
+        assert!(!ParameterValue::Trigger.is_numeric());
+    }
+
+    #[test]
+    fn test_parameter_value_is_bool() {
+        assert!(!ParameterValue::Float(1.5).is_bool());
+        assert!(!ParameterValue::Int(42).is_bool());
+        assert!(ParameterValue::Bool(true).is_bool());
+        assert!(!ParameterValue::Trigger.is_bool());
+    }
+
+    #[test]
+    fn test_parameter_value_is_trigger() {
+        assert!(!ParameterValue::Float(1.5).is_trigger());
+        assert!(!ParameterValue::Int(42).is_trigger());
+        assert!(!ParameterValue::Bool(true).is_trigger());
+        assert!(ParameterValue::Trigger.is_trigger());
+    }
+
+    #[test]
+    fn test_parameter_value_as_float() {
+        assert_eq!(ParameterValue::Float(3.14).as_float(), Some(3.14));
+        assert_eq!(ParameterValue::Int(42).as_float(), None);
+        assert_eq!(ParameterValue::Bool(true).as_float(), None);
+        assert_eq!(ParameterValue::Trigger.as_float(), None);
+    }
+
+    #[test]
+    fn test_parameter_value_as_int() {
+        assert_eq!(ParameterValue::Float(3.14).as_int(), None);
+        assert_eq!(ParameterValue::Int(42).as_int(), Some(42));
+        assert_eq!(ParameterValue::Bool(true).as_int(), None);
+        assert_eq!(ParameterValue::Trigger.as_int(), None);
+    }
+
+    #[test]
+    fn test_parameter_value_as_bool() {
+        assert_eq!(ParameterValue::Float(3.14).as_bool(), None);
+        assert_eq!(ParameterValue::Int(42).as_bool(), None);
+        assert_eq!(ParameterValue::Bool(true).as_bool(), Some(true));
+        assert_eq!(ParameterValue::Bool(false).as_bool(), Some(false));
+        assert_eq!(ParameterValue::Trigger.as_bool(), None);
+    }
+
+    #[test]
+    fn test_parameter_value_partial_eq() {
+        let f1 = ParameterValue::Float(1.0);
+        let f2 = ParameterValue::Float(1.0);
+        let f3 = ParameterValue::Float(2.0);
+        assert_eq!(f1, f2);
+        assert_ne!(f1, f3);
+
+        let i1 = ParameterValue::Int(42);
+        let i2 = ParameterValue::Int(42);
+        assert_eq!(i1, i2);
+        assert_ne!(i1, f1);
+    }
+
+    #[test]
+    fn test_parameter_value_default_is_float() {
+        let default = ParameterValue::default();
+        assert!(default.is_numeric());
+        assert_eq!(default.as_float(), Some(0.0));
     }
 }

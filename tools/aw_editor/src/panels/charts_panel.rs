@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 /// Chart type enum for switching visualization modes
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChartType {
     Line,
     Bar,
@@ -30,9 +30,15 @@ pub enum ChartType {
     Normalized,
 }
 
+impl std::fmt::Display for ChartType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl ChartType {
-    pub fn all() -> Vec<ChartType> {
-        vec![
+    pub fn all() -> &'static [ChartType] {
+        &[
             ChartType::Line,
             ChartType::Bar,
             ChartType::Scatter,
@@ -60,10 +66,17 @@ impl ChartType {
             ChartType::Normalized => "💯",
         }
     }
+
+    pub fn is_bar_variant(&self) -> bool {
+        matches!(
+            self,
+            ChartType::Bar | ChartType::Stacked | ChartType::Normalized
+        )
+    }
 }
 
 /// Data source for charts
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DataSource {
     FrameTiming,
     EntityCounts,
@@ -74,9 +87,15 @@ pub enum DataSource {
     Custom,
 }
 
+impl std::fmt::Display for DataSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl DataSource {
-    pub fn all() -> Vec<DataSource> {
-        vec![
+    pub fn all() -> &'static [DataSource] {
+        &[
             DataSource::FrameTiming,
             DataSource::EntityCounts,
             DataSource::SpatialDistribution,
@@ -98,19 +117,60 @@ impl DataSource {
             DataSource::Custom => "Custom Data",
         }
     }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            DataSource::FrameTiming => "⏱️",
+            DataSource::EntityCounts => "🔢",
+            DataSource::SpatialDistribution => "📍",
+            DataSource::MemoryUsage => "🧠",
+            DataSource::CpuLoad => "💻",
+            DataSource::GpuUtilization => "🎮",
+            DataSource::Custom => "✨",
+        }
+    }
+
+    pub fn is_hardware_metric(&self) -> bool {
+        matches!(
+            self,
+            DataSource::MemoryUsage | DataSource::CpuLoad | DataSource::GpuUtilization
+        )
+    }
 }
 
 /// Export format options
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ExportFormat {
     Csv,
     Json,
     Png,
 }
 
+impl std::fmt::Display for ExportFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl ExportFormat {
-    pub fn all() -> Vec<ExportFormat> {
-        vec![ExportFormat::Csv, ExportFormat::Json, ExportFormat::Png]
+    pub fn all() -> &'static [ExportFormat] {
+        &[ExportFormat::Csv, ExportFormat::Json, ExportFormat::Png]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ExportFormat::Csv => "CSV",
+            ExportFormat::Json => "JSON",
+            ExportFormat::Png => "PNG Image",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ExportFormat::Csv => "📋",
+            ExportFormat::Json => "🔧",
+            ExportFormat::Png => "🖼️",
+        }
     }
 
     pub fn extension(&self) -> &'static str {
@@ -119,6 +179,10 @@ impl ExportFormat {
             ExportFormat::Json => "json",
             ExportFormat::Png => "png",
         }
+    }
+
+    pub fn is_text_format(&self) -> bool {
+        matches!(self, ExportFormat::Csv | ExportFormat::Json)
     }
 }
 
@@ -482,7 +546,7 @@ impl ChartsPanel {
     fn render_chart_selector(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label("📊 Chart Type:");
-            for chart_type in ChartType::all() {
+            for chart_type in ChartType::all().iter().copied() {
                 if ui
                     .selectable_label(
                         self.active_chart_type == chart_type,
@@ -502,7 +566,7 @@ impl ChartsPanel {
             egui::ComboBox::from_id_salt("data_source")
                 .selected_text(self.active_data_source.name())
                 .show_ui(ui, |ui| {
-                    for source in DataSource::all() {
+                    for source in DataSource::all().iter().copied() {
                         ui.selectable_value(&mut self.active_data_source, source, source.name());
                     }
                 });
@@ -1287,5 +1351,122 @@ mod tests {
         
         panel.active_data_source = DataSource::MemoryUsage;
         assert_eq!(panel.active_data_source, DataSource::MemoryUsage);
+    }
+
+    // ============================================================
+    // SESSION 6: ENUM DISPLAY & HELPER TESTS
+    // ============================================================
+
+    #[test]
+    fn test_chart_type_display() {
+        assert_eq!(format!("{}", ChartType::Line), "📈 Line Chart");
+        assert_eq!(format!("{}", ChartType::Bar), "📊 Bar Chart");
+        assert_eq!(format!("{}", ChartType::Scatter), "⚫ Scatter Plot");
+        assert_eq!(format!("{}", ChartType::Stacked), "▬ Stacked Bar");
+        assert_eq!(format!("{}", ChartType::Normalized), "💯 Normalized %");
+    }
+
+    #[test]
+    fn test_chart_type_all_static() {
+        let all = ChartType::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&ChartType::Line));
+        assert!(all.contains(&ChartType::Normalized));
+    }
+
+    #[test]
+    fn test_chart_type_is_bar_variant() {
+        assert!(!ChartType::Line.is_bar_variant());
+        assert!(!ChartType::Scatter.is_bar_variant());
+        assert!(ChartType::Bar.is_bar_variant());
+        assert!(ChartType::Stacked.is_bar_variant());
+        assert!(ChartType::Normalized.is_bar_variant());
+    }
+
+    #[test]
+    fn test_chart_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ChartType::Line);
+        set.insert(ChartType::Bar);
+        assert!(set.contains(&ChartType::Line));
+        assert!(!set.contains(&ChartType::Scatter));
+    }
+
+    #[test]
+    fn test_data_source_display() {
+        assert_eq!(format!("{}", DataSource::FrameTiming), "⏱️ Frame Timing");
+        assert_eq!(format!("{}", DataSource::EntityCounts), "🔢 Entity Counts");
+        assert_eq!(format!("{}", DataSource::MemoryUsage), "🧠 Memory Usage");
+        assert_eq!(format!("{}", DataSource::CpuLoad), "💻 CPU Load");
+        assert_eq!(format!("{}", DataSource::GpuUtilization), "🎮 GPU Utilization");
+        assert_eq!(format!("{}", DataSource::Custom), "✨ Custom Data");
+    }
+
+    #[test]
+    fn test_data_source_all_static() {
+        let all = DataSource::all();
+        assert_eq!(all.len(), 7);
+        assert!(all.contains(&DataSource::FrameTiming));
+        assert!(all.contains(&DataSource::Custom));
+    }
+
+    #[test]
+    fn test_data_source_is_hardware_metric() {
+        assert!(!DataSource::FrameTiming.is_hardware_metric());
+        assert!(!DataSource::EntityCounts.is_hardware_metric());
+        assert!(DataSource::MemoryUsage.is_hardware_metric());
+        assert!(DataSource::CpuLoad.is_hardware_metric());
+        assert!(DataSource::GpuUtilization.is_hardware_metric());
+        assert!(!DataSource::Custom.is_hardware_metric());
+    }
+
+    #[test]
+    fn test_data_source_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(DataSource::FrameTiming);
+        set.insert(DataSource::MemoryUsage);
+        assert!(set.contains(&DataSource::FrameTiming));
+        assert!(!set.contains(&DataSource::CpuLoad));
+    }
+
+    #[test]
+    fn test_export_format_display() {
+        assert_eq!(format!("{}", ExportFormat::Csv), "📋 CSV");
+        assert_eq!(format!("{}", ExportFormat::Json), "🔧 JSON");
+        assert_eq!(format!("{}", ExportFormat::Png), "🖼️ PNG Image");
+    }
+
+    #[test]
+    fn test_export_format_all_static() {
+        let all = ExportFormat::all();
+        assert_eq!(all.len(), 3);
+        assert!(all.contains(&ExportFormat::Csv));
+        assert!(all.contains(&ExportFormat::Png));
+    }
+
+    #[test]
+    fn test_export_format_extension() {
+        assert_eq!(ExportFormat::Csv.extension(), "csv");
+        assert_eq!(ExportFormat::Json.extension(), "json");
+        assert_eq!(ExportFormat::Png.extension(), "png");
+    }
+
+    #[test]
+    fn test_export_format_is_text_format() {
+        assert!(ExportFormat::Csv.is_text_format());
+        assert!(ExportFormat::Json.is_text_format());
+        assert!(!ExportFormat::Png.is_text_format());
+    }
+
+    #[test]
+    fn test_export_format_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ExportFormat::Csv);
+        set.insert(ExportFormat::Json);
+        assert!(set.contains(&ExportFormat::Csv));
+        assert!(!set.contains(&ExportFormat::Png));
     }
 }

@@ -270,7 +270,7 @@ impl SceneData {
 }
 
 /// Scene validation issue types.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SceneValidationIssue {
     /// Critical issue that must be fixed
     Error(String),
@@ -278,10 +278,45 @@ pub enum SceneValidationIssue {
     Warning(String),
 }
 
+impl std::fmt::Display for SceneValidationIssue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SceneValidationIssue::Error(msg) => write!(f, "Error: {}", msg),
+            SceneValidationIssue::Warning(msg) => write!(f, "Warning: {}", msg),
+        }
+    }
+}
+
 impl SceneValidationIssue {
+    /// Returns a list of all variant names.
+    pub fn all_variants() -> &'static [&'static str] {
+        &["Error", "Warning"]
+    }
+
+    /// Returns the display name of this issue type.
+    pub fn name(&self) -> &'static str {
+        match self {
+            SceneValidationIssue::Error(_) => "Error",
+            SceneValidationIssue::Warning(_) => "Warning",
+        }
+    }
+
+    /// Returns an icon for this issue type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SceneValidationIssue::Error(_) => "❌",
+            SceneValidationIssue::Warning(_) => "⚠️",
+        }
+    }
+
     /// Check if this is an error (critical issue).
     pub fn is_error(&self) -> bool {
         matches!(self, SceneValidationIssue::Error(_))
+    }
+
+    /// Check if this is a warning.
+    pub fn is_warning(&self) -> bool {
+        matches!(self, SceneValidationIssue::Warning(_))
     }
 
     /// Get the message text.
@@ -289,6 +324,16 @@ impl SceneValidationIssue {
         match self {
             SceneValidationIssue::Error(msg) | SceneValidationIssue::Warning(msg) => msg,
         }
+    }
+
+    /// Create an error issue.
+    pub fn error(msg: impl Into<String>) -> Self {
+        SceneValidationIssue::Error(msg.into())
+    }
+
+    /// Create a warning issue.
+    pub fn warning(msg: impl Into<String>) -> Self {
+        SceneValidationIssue::Warning(msg.into())
     }
 }
 
@@ -931,5 +976,51 @@ mod tests {
         assert_eq!(stats.obstacle_count, 1);
         assert!(stats.has_behavior_graphs);
         assert_eq!(stats.total_cooldowns, 2);
+    }
+
+    // === SceneValidationIssue enum tests ===
+
+    #[test]
+    fn test_scene_validation_issue_display() {
+        let error = SceneValidationIssue::Error("Something went wrong".to_string());
+        let warning = SceneValidationIssue::Warning("Consider this".to_string());
+        
+        assert!(format!("{}", error).contains("Error"));
+        assert!(format!("{}", error).contains("Something went wrong"));
+        assert!(format!("{}", warning).contains("Warning"));
+        assert!(format!("{}", warning).contains("Consider this"));
+    }
+
+    #[test]
+    fn test_scene_validation_issue_all_variants() {
+        let variants = SceneValidationIssue::all_variants();
+        assert_eq!(variants.len(), 2);
+        assert!(variants.contains(&"Error"));
+        assert!(variants.contains(&"Warning"));
+    }
+
+    #[test]
+    fn test_scene_validation_issue_helpers() {
+        let error = SceneValidationIssue::error("Test error");
+        let warning = SceneValidationIssue::warning("Test warning");
+        
+        assert!(error.is_error());
+        assert!(!error.is_warning());
+        assert_eq!(error.name(), "Error");
+        assert_eq!(error.icon(), "❌");
+        
+        assert!(!warning.is_error());
+        assert!(warning.is_warning());
+        assert_eq!(warning.name(), "Warning");
+        assert_eq!(warning.icon(), "⚠️");
+    }
+
+    #[test]
+    fn test_scene_validation_issue_message() {
+        let error = SceneValidationIssue::Error("Error message".to_string());
+        let warning = SceneValidationIssue::Warning("Warning message".to_string());
+        
+        assert_eq!(error.message(), "Error message");
+        assert_eq!(warning.message(), "Warning message");
     }
 }

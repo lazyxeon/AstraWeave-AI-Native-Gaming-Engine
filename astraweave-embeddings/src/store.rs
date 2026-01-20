@@ -386,11 +386,12 @@ fn dot_product_distance(a: &[f32], b: &[f32]) -> f32 {
 }
 
 /// Get current Unix timestamp in seconds
+/// Returns 0 if system time is before UNIX_EPOCH (should never happen in practice)
 fn current_timestamp() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 #[cfg(test)]

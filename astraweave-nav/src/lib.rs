@@ -1,10 +1,107 @@
 use glam::Vec3;
+use std::fmt;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
     pub a: Vec3,
     pub b: Vec3,
     pub c: Vec3,
+}
+
+impl Triangle {
+    /// Creates a new triangle from three vertices.
+    #[must_use]
+    pub fn new(a: Vec3, b: Vec3, c: Vec3) -> Self {
+        Self { a, b, c }
+    }
+
+    /// Calculates the center (centroid) of the triangle.
+    #[must_use]
+    pub fn center(&self) -> Vec3 {
+        (self.a + self.b + self.c) / 3.0
+    }
+
+    /// Calculates the normal vector of the triangle (not normalized).
+    #[must_use]
+    pub fn normal(&self) -> Vec3 {
+        (self.b - self.a).cross(self.c - self.a)
+    }
+
+    /// Calculates the normalized normal vector of the triangle.
+    #[must_use]
+    pub fn normal_normalized(&self) -> Vec3 {
+        self.normal().normalize_or_zero()
+    }
+
+    /// Calculates the area of the triangle.
+    #[must_use]
+    pub fn area(&self) -> f32 {
+        self.normal().length() * 0.5
+    }
+
+    /// Returns true if the triangle is degenerate (has zero or near-zero area).
+    #[must_use]
+    pub fn is_degenerate(&self) -> bool {
+        self.area() < 1e-6
+    }
+
+    /// Calculates the perimeter of the triangle.
+    #[must_use]
+    pub fn perimeter(&self) -> f32 {
+        self.a.distance(self.b) + self.b.distance(self.c) + self.c.distance(self.a)
+    }
+
+    /// Returns the edge lengths as an array [ab, bc, ca].
+    #[must_use]
+    pub fn edge_lengths(&self) -> [f32; 3] {
+        [
+            self.a.distance(self.b),
+            self.b.distance(self.c),
+            self.c.distance(self.a),
+        ]
+    }
+
+    /// Returns the shortest edge length.
+    #[must_use]
+    pub fn min_edge_length(&self) -> f32 {
+        let edges = self.edge_lengths();
+        edges[0].min(edges[1]).min(edges[2])
+    }
+
+    /// Returns the longest edge length.
+    #[must_use]
+    pub fn max_edge_length(&self) -> f32 {
+        let edges = self.edge_lengths();
+        edges[0].max(edges[1]).max(edges[2])
+    }
+
+    /// Returns the vertices as an array.
+    #[must_use]
+    pub fn vertices(&self) -> [Vec3; 3] {
+        [self.a, self.b, self.c]
+    }
+
+    /// Creates a triangle from a vertex array.
+    #[must_use]
+    pub fn from_vertices(vertices: [Vec3; 3]) -> Self {
+        Self {
+            a: vertices[0],
+            b: vertices[1],
+            c: vertices[2],
+        }
+    }
+}
+
+impl fmt::Display for Triangle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Triangle({:.2}, {:.2}, {:.2})-({:.2}, {:.2}, {:.2})-({:.2}, {:.2}, {:.2})",
+            self.a.x, self.a.y, self.a.z,
+            self.b.x, self.b.y, self.b.z,
+            self.c.x, self.c.y, self.c.z
+        )
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -14,6 +111,97 @@ pub struct NavTri {
     pub normal: Vec3,
     pub center: Vec3,
     pub neighbors: Vec<usize>,
+}
+
+impl NavTri {
+    /// Creates a new navigation triangle.
+    #[must_use]
+    pub fn new(idx: usize, verts: [Vec3; 3], normal: Vec3, center: Vec3) -> Self {
+        Self {
+            idx,
+            verts,
+            normal,
+            center,
+            neighbors: Vec::new(),
+        }
+    }
+
+    /// Returns the number of neighbors.
+    #[must_use]
+    pub fn neighbor_count(&self) -> usize {
+        self.neighbors.len()
+    }
+
+    /// Returns true if this triangle has the specified neighbor.
+    #[must_use]
+    pub fn has_neighbor(&self, idx: usize) -> bool {
+        self.neighbors.contains(&idx)
+    }
+
+    /// Returns true if this triangle has no neighbors.
+    #[must_use]
+    pub fn is_isolated(&self) -> bool {
+        self.neighbors.is_empty()
+    }
+
+    /// Returns true if this is an edge triangle (has fewer than 3 neighbors).
+    #[must_use]
+    pub fn is_edge(&self) -> bool {
+        self.neighbors.len() < 3
+    }
+
+    /// Returns the area of the triangle.
+    #[must_use]
+    pub fn area(&self) -> f32 {
+        let a = self.verts[0];
+        let b = self.verts[1];
+        let c = self.verts[2];
+        (b - a).cross(c - a).length() * 0.5
+    }
+
+    /// Returns the perimeter of the triangle.
+    #[must_use]
+    pub fn perimeter(&self) -> f32 {
+        let a = self.verts[0];
+        let b = self.verts[1];
+        let c = self.verts[2];
+        a.distance(b) + b.distance(c) + c.distance(a)
+    }
+
+    /// Returns the distance from this triangle's center to another point.
+    #[must_use]
+    pub fn distance_to(&self, point: Vec3) -> f32 {
+        self.center.distance(point)
+    }
+
+    /// Returns the squared distance from this triangle's center to another point.
+    #[must_use]
+    pub fn distance_squared_to(&self, point: Vec3) -> f32 {
+        self.center.distance_squared(point)
+    }
+
+    /// Returns the slope angle in degrees (angle from vertical Y axis).
+    #[must_use]
+    pub fn slope_degrees(&self) -> f32 {
+        let dot = self.normal.dot(Vec3::Y).clamp(-1.0, 1.0);
+        dot.acos().to_degrees()
+    }
+
+    /// Returns true if the triangle is walkable (normal points upward).
+    #[must_use]
+    pub fn is_walkable(&self) -> bool {
+        self.normal.dot(Vec3::Y) > 0.0
+    }
+}
+
+impl fmt::Display for NavTri {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "NavTri[{}] center=({:.2}, {:.2}, {:.2}), {} neighbors",
+            self.idx, self.center.x, self.center.y, self.center.z, self.neighbor_count()
+        )
+    }
 }
 
 /// Axis-aligned bounding box for region invalidation
@@ -27,6 +215,33 @@ impl Aabb {
     /// Create a new AABB
     pub fn new(min: Vec3, max: Vec3) -> Self {
         Self { min, max }
+    }
+
+    /// Creates an AABB at the origin with zero size.
+    #[must_use]
+    pub fn zero() -> Self {
+        Self {
+            min: Vec3::ZERO,
+            max: Vec3::ZERO,
+        }
+    }
+
+    /// Creates a unit AABB from (0,0,0) to (1,1,1).
+    #[must_use]
+    pub fn unit() -> Self {
+        Self {
+            min: Vec3::ZERO,
+            max: Vec3::ONE,
+        }
+    }
+
+    /// Creates an AABB centered at a point with given half-extents.
+    #[must_use]
+    pub fn from_center_half_extents(center: Vec3, half_extents: Vec3) -> Self {
+        Self {
+            min: center - half_extents,
+            max: center + half_extents,
+        }
     }
 
     /// Check if this AABB contains a point
@@ -78,6 +293,84 @@ impl Aabb {
             tri.a.z.max(tri.b.z).max(tri.c.z),
         );
         Aabb { min, max }
+    }
+
+    /// Returns the center point of the AABB.
+    #[must_use]
+    pub fn center(&self) -> Vec3 {
+        (self.min + self.max) * 0.5
+    }
+
+    /// Returns the size (extent) of the AABB.
+    #[must_use]
+    pub fn size(&self) -> Vec3 {
+        self.max - self.min
+    }
+
+    /// Returns the half-extents of the AABB.
+    #[must_use]
+    pub fn half_extents(&self) -> Vec3 {
+        self.size() * 0.5
+    }
+
+    /// Returns the volume of the AABB.
+    #[must_use]
+    pub fn volume(&self) -> f32 {
+        let s = self.size();
+        s.x * s.y * s.z
+    }
+
+    /// Returns the surface area of the AABB.
+    #[must_use]
+    pub fn surface_area(&self) -> f32 {
+        let s = self.size();
+        2.0 * (s.x * s.y + s.y * s.z + s.z * s.x)
+    }
+
+    /// Returns true if the AABB has zero volume.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.min.x >= self.max.x || self.min.y >= self.max.y || self.min.z >= self.max.z
+    }
+
+    /// Returns the longest axis dimension.
+    #[must_use]
+    pub fn longest_axis(&self) -> f32 {
+        let s = self.size();
+        s.x.max(s.y).max(s.z)
+    }
+
+    /// Returns the shortest axis dimension.
+    #[must_use]
+    pub fn shortest_axis(&self) -> f32 {
+        let s = self.size();
+        s.x.min(s.y).min(s.z)
+    }
+
+    /// Expands the AABB by the given amount on all sides.
+    #[must_use]
+    pub fn expand(&self, amount: f32) -> Self {
+        Self {
+            min: self.min - Vec3::splat(amount),
+            max: self.max + Vec3::splat(amount),
+        }
+    }
+
+    /// Returns the distance from the AABB center to a point.
+    #[must_use]
+    pub fn distance_to_point(&self, point: Vec3) -> f32 {
+        self.center().distance(point)
+    }
+}
+
+impl fmt::Display for Aabb {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "AABB[({:.2}, {:.2}, {:.2}) - ({:.2}, {:.2}, {:.2})]",
+            self.min.x, self.min.y, self.min.z,
+            self.max.x, self.max.y, self.max.z
+        )
     }
 }
 
@@ -294,6 +587,90 @@ impl NavMesh {
             }
         }
         false
+    }
+
+    /// Returns the number of triangles in the NavMesh.
+    #[must_use]
+    pub fn triangle_count(&self) -> usize {
+        self.tris.len()
+    }
+
+    /// Returns true if the NavMesh is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.tris.is_empty()
+    }
+
+    /// Returns the total number of edges (neighbor connections).
+    #[must_use]
+    pub fn edge_count(&self) -> usize {
+        self.tris.iter().map(|t| t.neighbors.len()).sum::<usize>() / 2
+    }
+
+    /// Returns the average number of neighbors per triangle.
+    #[must_use]
+    pub fn average_neighbor_count(&self) -> f32 {
+        if self.tris.is_empty() {
+            return 0.0;
+        }
+        let total: usize = self.tris.iter().map(|t| t.neighbors.len()).sum();
+        total as f32 / self.tris.len() as f32
+    }
+
+    /// Returns the number of isolated triangles (no neighbors).
+    #[must_use]
+    pub fn isolated_count(&self) -> usize {
+        self.tris.iter().filter(|t| t.neighbors.is_empty()).count()
+    }
+
+    /// Returns the total surface area of all triangles.
+    #[must_use]
+    pub fn total_area(&self) -> f32 {
+        self.tris.iter().map(|t| t.area()).sum()
+    }
+
+    /// Returns the bounding box of the entire NavMesh.
+    #[must_use]
+    pub fn bounds(&self) -> Option<Aabb> {
+        if self.tris.is_empty() {
+            return None;
+        }
+
+        let mut min = Vec3::splat(f32::INFINITY);
+        let mut max = Vec3::splat(f32::NEG_INFINITY);
+
+        for tri in &self.tris {
+            for v in &tri.verts {
+                min = min.min(*v);
+                max = max.max(*v);
+            }
+        }
+
+        Some(Aabb::new(min, max))
+    }
+
+    /// Gets a triangle by index.
+    #[must_use]
+    pub fn get_triangle(&self, idx: usize) -> Option<&NavTri> {
+        self.tris.get(idx)
+    }
+
+    /// Returns a brief summary of the NavMesh.
+    #[must_use]
+    pub fn summary(&self) -> String {
+        format!(
+            "NavMesh: {} triangles, {} edges, max_step={:.2}, max_slope={:.1}°",
+            self.triangle_count(),
+            self.edge_count(),
+            self.max_step,
+            self.max_slope_deg
+        )
+    }
+}
+
+impl fmt::Display for NavMesh {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.summary())
     }
 }
 
@@ -1060,6 +1437,408 @@ mod tests {
         nav.clear_dirty_regions();
         assert!(!nav.needs_rebake());
         assert_eq!(nav.rebake_count(), 0); // Not rebaked, just cleared
+    }
+
+    // ===== Triangle Helper Tests =====
+
+    #[test]
+    fn test_triangle_new() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        assert_eq!(tri.a, Vec3::ZERO);
+        assert_eq!(tri.b, Vec3::X);
+        assert_eq!(tri.c, Vec3::Z);
+    }
+
+    #[test]
+    fn test_triangle_center() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::new(3.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 3.0));
+        let center = tri.center();
+        assert!((center.x - 1.0).abs() < 1e-5);
+        assert!((center.z - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_triangle_normal() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        let normal = tri.normal_normalized();
+        assert!((normal.y - (-1.0)).abs() < 1e-5 || (normal.y - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_triangle_area() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 2.0));
+        assert!((tri.area() - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_triangle_is_degenerate() {
+        let degenerate = Triangle::new(Vec3::ZERO, Vec3::ZERO, Vec3::ZERO);
+        assert!(degenerate.is_degenerate());
+
+        let valid = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        assert!(!valid.is_degenerate());
+    }
+
+    #[test]
+    fn test_triangle_perimeter() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        let perimeter = tri.perimeter();
+        assert!((perimeter - (1.0 + 1.0 + 2.0_f32.sqrt())).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_triangle_edge_lengths() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        let edges = tri.edge_lengths();
+        assert!((edges[0] - 1.0).abs() < 1e-5); // a to b
+        assert!((edges[1] - 2.0_f32.sqrt()).abs() < 1e-5); // b to c
+        assert!((edges[2] - 1.0).abs() < 1e-5); // c to a
+    }
+
+    #[test]
+    fn test_triangle_min_max_edge() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        assert!((tri.min_edge_length() - 1.0).abs() < 1e-5);
+        assert!((tri.max_edge_length() - 2.0_f32.sqrt()).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_triangle_vertices() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        let verts = tri.vertices();
+        assert_eq!(verts[0], Vec3::ZERO);
+        assert_eq!(verts[1], Vec3::X);
+        assert_eq!(verts[2], Vec3::Z);
+    }
+
+    #[test]
+    fn test_triangle_from_vertices() {
+        let tri = Triangle::from_vertices([Vec3::ZERO, Vec3::X, Vec3::Z]);
+        assert_eq!(tri.a, Vec3::ZERO);
+        assert_eq!(tri.b, Vec3::X);
+        assert_eq!(tri.c, Vec3::Z);
+    }
+
+    #[test]
+    fn test_triangle_display() {
+        let tri = Triangle::new(Vec3::ZERO, Vec3::X, Vec3::Z);
+        let display = format!("{}", tri);
+        assert!(display.contains("Triangle"));
+    }
+
+    // ===== NavTri Helper Tests =====
+
+    #[test]
+    fn test_navtri_new() {
+        let tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::new(0.33, 0.0, 0.33));
+        assert_eq!(tri.idx, 0);
+        assert!(tri.neighbors.is_empty());
+    }
+
+    #[test]
+    fn test_navtri_neighbor_count() {
+        let mut tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        assert_eq!(tri.neighbor_count(), 0);
+        tri.neighbors.push(1);
+        tri.neighbors.push(2);
+        assert_eq!(tri.neighbor_count(), 2);
+    }
+
+    #[test]
+    fn test_navtri_has_neighbor() {
+        let mut tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        tri.neighbors.push(5);
+        assert!(tri.has_neighbor(5));
+        assert!(!tri.has_neighbor(3));
+    }
+
+    #[test]
+    fn test_navtri_is_isolated() {
+        let tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        assert!(tri.is_isolated());
+
+        let mut connected = NavTri::new(1, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        connected.neighbors.push(0);
+        assert!(!connected.is_isolated());
+    }
+
+    #[test]
+    fn test_navtri_is_edge() {
+        let mut tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        assert!(tri.is_edge()); // 0 neighbors < 3
+
+        tri.neighbors = vec![1, 2];
+        assert!(tri.is_edge()); // 2 neighbors < 3
+
+        tri.neighbors.push(3);
+        assert!(!tri.is_edge()); // 3 neighbors = 3
+    }
+
+    #[test]
+    fn test_navtri_area() {
+        let tri = NavTri::new(
+            0,
+            [Vec3::ZERO, Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 2.0)],
+            Vec3::Y,
+            Vec3::ZERO,
+        );
+        assert!((tri.area() - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_navtri_perimeter() {
+        let tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        let expected = 1.0 + 2.0_f32.sqrt() + 1.0;
+        assert!((tri.perimeter() - expected).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_navtri_distance_to() {
+        let tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        assert!((tri.distance_to(Vec3::ONE) - 3.0_f32.sqrt()).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_navtri_slope_degrees() {
+        // Flat triangle (normal = Y)
+        let flat = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        assert!(flat.slope_degrees() < 1e-3);
+
+        // 45 degree slope
+        let slope45 = NavTri::new(
+            0,
+            [Vec3::ZERO, Vec3::X, Vec3::Z],
+            Vec3::new(0.0, 1.0, 1.0).normalize(),
+            Vec3::ZERO,
+        );
+        assert!((slope45.slope_degrees() - 45.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_navtri_is_walkable() {
+        let walkable = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
+        assert!(walkable.is_walkable());
+
+        let not_walkable = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::NEG_Y, Vec3::ZERO);
+        assert!(!not_walkable.is_walkable());
+    }
+
+    #[test]
+    fn test_navtri_display() {
+        let tri = NavTri::new(42, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::new(0.5, 0.0, 0.5));
+        let display = format!("{}", tri);
+        assert!(display.contains("NavTri[42]"));
+        assert!(display.contains("neighbors"));
+    }
+
+    // ===== Aabb Helper Tests =====
+
+    #[test]
+    fn test_aabb_zero() {
+        let aabb = Aabb::zero();
+        assert_eq!(aabb.min, Vec3::ZERO);
+        assert_eq!(aabb.max, Vec3::ZERO);
+    }
+
+    #[test]
+    fn test_aabb_unit() {
+        let aabb = Aabb::unit();
+        assert_eq!(aabb.min, Vec3::ZERO);
+        assert_eq!(aabb.max, Vec3::ONE);
+    }
+
+    #[test]
+    fn test_aabb_from_center_half_extents() {
+        let aabb = Aabb::from_center_half_extents(Vec3::new(5.0, 5.0, 5.0), Vec3::splat(2.0));
+        assert_eq!(aabb.min, Vec3::splat(3.0));
+        assert_eq!(aabb.max, Vec3::splat(7.0));
+    }
+
+    #[test]
+    fn test_aabb_center() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(4.0, 6.0, 8.0));
+        let center = aabb.center();
+        assert_eq!(center, Vec3::new(2.0, 3.0, 4.0));
+    }
+
+    #[test]
+    fn test_aabb_size() {
+        let aabb = Aabb::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(4.0, 7.0, 9.0));
+        let size = aabb.size();
+        assert_eq!(size, Vec3::new(3.0, 5.0, 6.0));
+    }
+
+    #[test]
+    fn test_aabb_half_extents() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(4.0, 6.0, 8.0));
+        let half = aabb.half_extents();
+        assert_eq!(half, Vec3::new(2.0, 3.0, 4.0));
+    }
+
+    #[test]
+    fn test_aabb_volume() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(2.0, 3.0, 4.0));
+        assert!((aabb.volume() - 24.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_aabb_surface_area() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(2.0, 3.0, 4.0));
+        // 2 * (2*3 + 3*4 + 4*2) = 2 * (6 + 12 + 8) = 52
+        assert!((aabb.surface_area() - 52.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_aabb_is_empty() {
+        let empty = Aabb::new(Vec3::splat(5.0), Vec3::splat(5.0));
+        assert!(empty.is_empty());
+
+        let non_empty = Aabb::new(Vec3::ZERO, Vec3::ONE);
+        assert!(!non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_aabb_longest_axis() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(2.0, 5.0, 3.0));
+        assert!((aabb.longest_axis() - 5.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_aabb_shortest_axis() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(2.0, 5.0, 3.0));
+        assert!((aabb.shortest_axis() - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_aabb_expand() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::ONE);
+        let expanded = aabb.expand(0.5);
+        assert_eq!(expanded.min, Vec3::splat(-0.5));
+        assert_eq!(expanded.max, Vec3::splat(1.5));
+    }
+
+    #[test]
+    fn test_aabb_distance_to_point() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::new(2.0, 2.0, 2.0));
+        let center = aabb.center();
+        let distance = aabb.distance_to_point(Vec3::new(5.0, 1.0, 1.0));
+        assert!((distance - center.distance(Vec3::new(5.0, 1.0, 1.0))).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_aabb_display() {
+        let aabb = Aabb::new(Vec3::ZERO, Vec3::ONE);
+        let display = format!("{}", aabb);
+        assert!(display.contains("AABB"));
+    }
+
+    // ===== NavMesh Helper Tests =====
+
+    #[test]
+    fn test_navmesh_triangle_count() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.triangle_count(), 2);
+    }
+
+    #[test]
+    fn test_navmesh_is_empty() {
+        let empty = NavMesh::bake(&[], 0.4, 60.0);
+        assert!(empty.is_empty());
+
+        let non_empty = NavMesh::bake(&[Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0))], 0.4, 60.0);
+        assert!(!non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_navmesh_edge_count() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.edge_count(), 1); // One shared edge
+    }
+
+    #[test]
+    fn test_navmesh_average_neighbor_count() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert!((nav.average_neighbor_count() - 1.0).abs() < 1e-5); // Each has 1 neighbor
+    }
+
+    #[test]
+    fn test_navmesh_isolated_count() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+            Triangle::new(Vec3::new(10.0, 0.0, 0.0), Vec3::new(10.0, 0.0, 1.0), Vec3::new(11.0, 0.0, 0.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.isolated_count(), 2); // Both isolated
+    }
+
+    #[test]
+    fn test_navmesh_total_area() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 2.0), Vec3::new(2.0, 0.0, 0.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert!((nav.total_area() - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_navmesh_bounds() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let bounds = nav.bounds().unwrap();
+        assert_eq!(bounds.min, Vec3::ZERO);
+        assert_eq!(bounds.max, Vec3::new(1.0, 0.0, 1.0));
+    }
+
+    #[test]
+    fn test_navmesh_bounds_empty() {
+        let nav = NavMesh::bake(&[], 0.4, 60.0);
+        assert!(nav.bounds().is_none());
+    }
+
+    #[test]
+    fn test_navmesh_get_triangle() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert!(nav.get_triangle(0).is_some());
+        assert!(nav.get_triangle(99).is_none());
+    }
+
+    #[test]
+    fn test_navmesh_summary() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let summary = nav.summary();
+        assert!(summary.contains("NavMesh"));
+        assert!(summary.contains("triangle"));
+    }
+
+    #[test]
+    fn test_navmesh_display() {
+        let tris = vec![
+            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let display = format!("{}", nav);
+        assert!(display.contains("NavMesh"));
     }
 }
 

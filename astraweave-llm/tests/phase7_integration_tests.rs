@@ -88,9 +88,9 @@ async fn test_phase7_hallucination_detection() {
             Ok(r#"{
                 "plan_id": "hallucinated-123",
                 "steps": [
-                    {"act": "Teleport", "x": 10, "y": 20},
-                    {"act": "LaserBeam", "target_id": 5},
-                    {"act": "TimeTravel", "seconds": -3600}
+                    {"act": "NonExistentTool1"},
+                    {"act": "NonExistentTool2"},
+                    {"act": "NonExistentTool3"}
                 ]
             }"#
             .to_string())

@@ -13,7 +13,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// LOD bias mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LodBiasMode {
     #[default]
     Auto,
@@ -21,6 +21,44 @@ pub enum LodBiasMode {
     Balanced,
     Performance,
     Custom,
+}
+
+impl std::fmt::Display for LodBiasMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LodBiasMode {
+    pub fn all() -> &'static [LodBiasMode] {
+        &[
+            LodBiasMode::Auto,
+            LodBiasMode::Quality,
+            LodBiasMode::Balanced,
+            LodBiasMode::Performance,
+            LodBiasMode::Custom,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LodBiasMode::Auto => "Auto",
+            LodBiasMode::Quality => "Quality",
+            LodBiasMode::Balanced => "Balanced",
+            LodBiasMode::Performance => "Performance",
+            LodBiasMode::Custom => "Custom",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LodBiasMode::Auto => "🤖",
+            LodBiasMode::Quality => "💎",
+            LodBiasMode::Balanced => "⚖️",
+            LodBiasMode::Performance => "⚡",
+            LodBiasMode::Custom => "🔧",
+        }
+    }
 }
 
 /// LOD level definition
@@ -72,13 +110,48 @@ pub struct LodGroup {
     pub current_level: u32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum FadeMode {
     #[default]
     None,
     CrossFade,
     SpeedTree,
     Dither,
+}
+
+impl std::fmt::Display for FadeMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl FadeMode {
+    pub fn all() -> &'static [FadeMode] {
+        &[
+            FadeMode::None,
+            FadeMode::CrossFade,
+            FadeMode::SpeedTree,
+            FadeMode::Dither,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            FadeMode::None => "None",
+            FadeMode::CrossFade => "Cross Fade",
+            FadeMode::SpeedTree => "SpeedTree",
+            FadeMode::Dither => "Dither",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            FadeMode::None => "⬛",
+            FadeMode::CrossFade => "🔀",
+            FadeMode::SpeedTree => "🌳",
+            FadeMode::Dither => "⊞",
+        }
+    }
 }
 
 impl Default for LodGroup {
@@ -159,13 +232,48 @@ pub struct LodGenerationSettings {
     pub weld_threshold: f32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ReductionMethod {
     #[default]
     QuadricErrorMetric,
     EdgeCollapse,
     VertexClustering,
     Simplygon,
+}
+
+impl std::fmt::Display for ReductionMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl ReductionMethod {
+    pub fn all() -> &'static [ReductionMethod] {
+        &[
+            ReductionMethod::QuadricErrorMetric,
+            ReductionMethod::EdgeCollapse,
+            ReductionMethod::VertexClustering,
+            ReductionMethod::Simplygon,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ReductionMethod::QuadricErrorMetric => "Quadric Error Metric",
+            ReductionMethod::EdgeCollapse => "Edge Collapse",
+            ReductionMethod::VertexClustering => "Vertex Clustering",
+            ReductionMethod::Simplygon => "Simplygon",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ReductionMethod::QuadricErrorMetric => "📐",
+            ReductionMethod::EdgeCollapse => "🔻",
+            ReductionMethod::VertexClustering => "⚫",
+            ReductionMethod::Simplygon => "🔧",
+        }
+    }
 }
 
 impl Default for LodGenerationSettings {
@@ -184,13 +292,48 @@ impl Default for LodGenerationSettings {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LodTab {
     #[default]
     Groups,
     Global,
     Generation,
     Statistics,
+}
+
+impl std::fmt::Display for LodTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl LodTab {
+    pub fn all() -> &'static [LodTab] {
+        &[
+            LodTab::Groups,
+            LodTab::Global,
+            LodTab::Generation,
+            LodTab::Statistics,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LodTab::Groups => "Groups",
+            LodTab::Global => "Global",
+            LodTab::Generation => "Generation",
+            LodTab::Statistics => "Statistics",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LodTab::Groups => "📦",
+            LodTab::Global => "🌍",
+            LodTab::Generation => "⚙️",
+            LodTab::Statistics => "📊",
+        }
+    }
 }
 
 /// Main LOD Configuration Panel
@@ -898,6 +1041,226 @@ mod tests {
         let mode = LodBiasMode::Quality;
         let cloned = mode;
         assert_eq!(mode, cloned);
+    }
+
+    // ============================================================
+    // Session 5: Enum Enhancement Tests
+    // ============================================================
+
+    // LodBiasMode tests (7 tests)
+    #[test]
+    fn test_lod_bias_mode_display() {
+        assert!(format!("{}", LodBiasMode::Auto).contains("Auto"));
+        assert!(format!("{}", LodBiasMode::Quality).contains("Quality"));
+        assert!(format!("{}", LodBiasMode::Balanced).contains("Balanced"));
+        assert!(format!("{}", LodBiasMode::Performance).contains("Performance"));
+    }
+
+    #[test]
+    fn test_lod_bias_mode_name() {
+        assert_eq!(LodBiasMode::Auto.name(), "Auto");
+        assert_eq!(LodBiasMode::Quality.name(), "Quality");
+        assert_eq!(LodBiasMode::Balanced.name(), "Balanced");
+        assert_eq!(LodBiasMode::Custom.name(), "Custom");
+    }
+
+    #[test]
+    fn test_lod_bias_mode_icon_present() {
+        assert!(!LodBiasMode::Auto.icon().is_empty());
+        assert!(!LodBiasMode::Quality.icon().is_empty());
+        assert!(!LodBiasMode::Balanced.icon().is_empty());
+        assert!(!LodBiasMode::Performance.icon().is_empty());
+    }
+
+    #[test]
+    fn test_lod_bias_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in LodBiasMode::all() {
+            assert!(set.insert(*mode));
+        }
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_lod_bias_mode_default_value() {
+        assert_eq!(LodBiasMode::default(), LodBiasMode::Auto);
+    }
+
+    #[test]
+    fn test_lod_bias_mode_all_have_names() {
+        for mode in LodBiasMode::all() {
+            assert!(!mode.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_lod_bias_mode_all_have_icons() {
+        for mode in LodBiasMode::all() {
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    // FadeMode tests (7 tests)
+    #[test]
+    fn test_fade_mode_display() {
+        assert!(format!("{}", FadeMode::None).contains("None"));
+        assert!(format!("{}", FadeMode::CrossFade).contains("Cross Fade"));
+        assert!(format!("{}", FadeMode::SpeedTree).contains("SpeedTree"));
+        assert!(format!("{}", FadeMode::Dither).contains("Dither"));
+    }
+
+    #[test]
+    fn test_fade_mode_name() {
+        assert_eq!(FadeMode::None.name(), "None");
+        assert_eq!(FadeMode::CrossFade.name(), "Cross Fade");
+        assert_eq!(FadeMode::SpeedTree.name(), "SpeedTree");
+        assert_eq!(FadeMode::Dither.name(), "Dither");
+    }
+
+    #[test]
+    fn test_fade_mode_icon_present() {
+        assert!(!FadeMode::None.icon().is_empty());
+        assert!(!FadeMode::CrossFade.icon().is_empty());
+        assert!(!FadeMode::SpeedTree.icon().is_empty());
+        assert!(!FadeMode::Dither.icon().is_empty());
+    }
+
+    #[test]
+    fn test_fade_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for mode in FadeMode::all() {
+            assert!(set.insert(*mode));
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_fade_mode_default_value() {
+        assert_eq!(FadeMode::default(), FadeMode::None);
+    }
+
+    #[test]
+    fn test_fade_mode_all_have_names() {
+        for mode in FadeMode::all() {
+            assert!(!mode.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_fade_mode_all_have_icons() {
+        for mode in FadeMode::all() {
+            assert!(!mode.icon().is_empty());
+        }
+    }
+
+    // ReductionMethod tests (7 tests)
+    #[test]
+    fn test_reduction_method_display() {
+        assert!(format!("{}", ReductionMethod::QuadricErrorMetric).contains("Quadric Error Metric"));
+        assert!(format!("{}", ReductionMethod::EdgeCollapse).contains("Edge Collapse"));
+        assert!(format!("{}", ReductionMethod::VertexClustering).contains("Vertex Clustering"));
+        assert!(format!("{}", ReductionMethod::Simplygon).contains("Simplygon"));
+    }
+
+    #[test]
+    fn test_reduction_method_name() {
+        assert_eq!(ReductionMethod::QuadricErrorMetric.name(), "Quadric Error Metric");
+        assert_eq!(ReductionMethod::EdgeCollapse.name(), "Edge Collapse");
+        assert_eq!(ReductionMethod::VertexClustering.name(), "Vertex Clustering");
+        assert_eq!(ReductionMethod::Simplygon.name(), "Simplygon");
+    }
+
+    #[test]
+    fn test_reduction_method_icon_present() {
+        assert!(!ReductionMethod::QuadricErrorMetric.icon().is_empty());
+        assert!(!ReductionMethod::EdgeCollapse.icon().is_empty());
+        assert!(!ReductionMethod::VertexClustering.icon().is_empty());
+        assert!(!ReductionMethod::Simplygon.icon().is_empty());
+    }
+
+    #[test]
+    fn test_reduction_method_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for method in ReductionMethod::all() {
+            assert!(set.insert(*method));
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_reduction_method_default_value() {
+        assert_eq!(ReductionMethod::default(), ReductionMethod::QuadricErrorMetric);
+    }
+
+    #[test]
+    fn test_reduction_method_all_have_names() {
+        for method in ReductionMethod::all() {
+            assert!(!method.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_reduction_method_all_have_icons() {
+        for method in ReductionMethod::all() {
+            assert!(!method.icon().is_empty());
+        }
+    }
+
+    // LodTab tests (7 tests)
+    #[test]
+    fn test_lod_tab_display() {
+        assert!(format!("{}", LodTab::Groups).contains("Groups"));
+        assert!(format!("{}", LodTab::Global).contains("Global"));
+        assert!(format!("{}", LodTab::Generation).contains("Generation"));
+        assert!(format!("{}", LodTab::Statistics).contains("Statistics"));
+    }
+
+    #[test]
+    fn test_lod_tab_name() {
+        assert_eq!(LodTab::Groups.name(), "Groups");
+        assert_eq!(LodTab::Global.name(), "Global");
+        assert_eq!(LodTab::Generation.name(), "Generation");
+        assert_eq!(LodTab::Statistics.name(), "Statistics");
+    }
+
+    #[test]
+    fn test_lod_tab_icon_present() {
+        assert!(!LodTab::Groups.icon().is_empty());
+        assert!(!LodTab::Global.icon().is_empty());
+        assert!(!LodTab::Generation.icon().is_empty());
+        assert!(!LodTab::Statistics.icon().is_empty());
+    }
+
+    #[test]
+    fn test_lod_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for tab in LodTab::all() {
+            assert!(set.insert(*tab));
+        }
+        assert_eq!(set.len(), 4);
+    }
+
+    #[test]
+    fn test_lod_tab_default_value() {
+        assert_eq!(LodTab::default(), LodTab::Groups);
+    }
+
+    #[test]
+    fn test_lod_tab_all_have_names() {
+        for tab in LodTab::all() {
+            assert!(!tab.name().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_lod_tab_all_have_icons() {
+        for tab in LodTab::all() {
+            assert!(!tab.icon().is_empty());
+        }
     }
 
     // ============================================================================

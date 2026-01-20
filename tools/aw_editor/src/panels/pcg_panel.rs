@@ -14,7 +14,7 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 /// PCG generation type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum GenerationType {
     #[default]
     Encounter,
@@ -26,7 +26,25 @@ pub enum GenerationType {
     NPC,
 }
 
+impl std::fmt::Display for GenerationType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl GenerationType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            GenerationType::Encounter => "Encounter",
+            GenerationType::Dungeon => "Dungeon",
+            GenerationType::Loot => "Loot",
+            GenerationType::Terrain => "Terrain",
+            GenerationType::Vegetation => "Vegetation",
+            GenerationType::Props => "Props",
+            GenerationType::NPC => "NPC",
+        }
+    }
+
     pub fn all() -> &'static [GenerationType] {
         &[
             GenerationType::Encounter,
@@ -53,7 +71,7 @@ impl GenerationType {
 }
 
 /// Encounter difficulty
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum EncounterDifficulty {
     Trivial,
     Easy,
@@ -64,7 +82,46 @@ pub enum EncounterDifficulty {
     Boss,
 }
 
+impl std::fmt::Display for EncounterDifficulty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl EncounterDifficulty {
+    pub fn all() -> &'static [EncounterDifficulty] {
+        &[
+            EncounterDifficulty::Trivial,
+            EncounterDifficulty::Easy,
+            EncounterDifficulty::Medium,
+            EncounterDifficulty::Hard,
+            EncounterDifficulty::Deadly,
+            EncounterDifficulty::Boss,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            EncounterDifficulty::Trivial => "Trivial",
+            EncounterDifficulty::Easy => "Easy",
+            EncounterDifficulty::Medium => "Medium",
+            EncounterDifficulty::Hard => "Hard",
+            EncounterDifficulty::Deadly => "Deadly",
+            EncounterDifficulty::Boss => "Boss",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            EncounterDifficulty::Trivial => "➖",
+            EncounterDifficulty::Easy => "🟢",
+            EncounterDifficulty::Medium => "🟡",
+            EncounterDifficulty::Hard => "🟠",
+            EncounterDifficulty::Deadly => "🔴",
+            EncounterDifficulty::Boss => "💀",
+        }
+    }
+
     pub fn color(&self) -> Color32 {
         match self {
             EncounterDifficulty::Trivial => Color32::from_rgb(150, 150, 150),
@@ -130,7 +187,7 @@ impl Default for EncounterConfig {
 }
 
 /// Room type for dungeon generation
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum RoomType {
     #[default]
     Normal,
@@ -143,7 +200,44 @@ pub enum RoomType {
     Corridor,
 }
 
+impl std::fmt::Display for RoomType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl RoomType {
+    pub fn all() -> &'static [RoomType] {
+        &[
+            RoomType::Normal,
+            RoomType::Entrance,
+            RoomType::Exit,
+            RoomType::Treasure,
+            RoomType::Boss,
+            RoomType::Shop,
+            RoomType::Secret,
+            RoomType::Corridor,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            RoomType::Normal => "Normal",
+            RoomType::Entrance => "Entrance",
+            RoomType::Exit => "Exit",
+            RoomType::Treasure => "Treasure",
+            RoomType::Boss => "Boss",
+            RoomType::Shop => "Shop",
+            RoomType::Secret => "Secret",
+            RoomType::Corridor => "Corridor",
+        }
+    }
+
+    /// Returns true if this room type is special (not a regular room or corridor)
+    pub fn is_special(&self) -> bool {
+        !matches!(self, RoomType::Normal | RoomType::Corridor)
+    }
+
     pub fn icon(&self) -> &'static str {
         match self {
             RoomType::Normal => "🚪",
@@ -213,7 +307,7 @@ impl Default for DungeonSettings {
 }
 
 /// Loot rarity
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum LootRarity {
     #[default]
     Common,
@@ -223,7 +317,43 @@ pub enum LootRarity {
     Legendary,
 }
 
+impl std::fmt::Display for LootRarity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl LootRarity {
+    pub fn all() -> &'static [LootRarity] {
+        &[
+            LootRarity::Common,
+            LootRarity::Uncommon,
+            LootRarity::Rare,
+            LootRarity::Epic,
+            LootRarity::Legendary,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            LootRarity::Common => "Common",
+            LootRarity::Uncommon => "Uncommon",
+            LootRarity::Rare => "Rare",
+            LootRarity::Epic => "Epic",
+            LootRarity::Legendary => "Legendary",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LootRarity::Common => "⚪",
+            LootRarity::Uncommon => "🟢",
+            LootRarity::Rare => "🔵",
+            LootRarity::Epic => "🟣",
+            LootRarity::Legendary => "🟠",
+        }
+    }
+
     pub fn color(&self) -> Color32 {
         match self {
             LootRarity::Common => Color32::from_rgb(180, 180, 180),
@@ -291,7 +421,7 @@ pub struct GenerationPreview {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum PcgTab {
     #[default]
     Seeds,
@@ -300,6 +430,47 @@ pub enum PcgTab {
     Loot,
     Preview,
     History,
+}
+
+impl std::fmt::Display for PcgTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PcgTab {
+    pub fn all() -> &'static [PcgTab] {
+        &[
+            PcgTab::Seeds,
+            PcgTab::Encounters,
+            PcgTab::Dungeons,
+            PcgTab::Loot,
+            PcgTab::Preview,
+            PcgTab::History,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            PcgTab::Seeds => "Seeds",
+            PcgTab::Encounters => "Encounters",
+            PcgTab::Dungeons => "Dungeons",
+            PcgTab::Loot => "Loot",
+            PcgTab::Preview => "Preview",
+            PcgTab::History => "History",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PcgTab::Seeds => "🌱",
+            PcgTab::Encounters => "⚔️",
+            PcgTab::Dungeons => "🏰",
+            PcgTab::Loot => "💎",
+            PcgTab::Preview => "👁️",
+            PcgTab::History => "📜",
+        }
+    }
 }
 
 /// Main PCG Panel
@@ -1110,5 +1281,154 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = PcgPanel::new();
         assert_eq!(panel.name(), "PCG");
+    }
+
+    // ========== GenerationType Tests ==========
+
+    #[test]
+    fn test_generation_type_display() {
+        for gen in GenerationType::all() {
+            let display = format!("{}", gen);
+            assert!(display.contains(gen.name()));
+        }
+    }
+
+    #[test]
+    fn test_generation_type_all_variants() {
+        let all = GenerationType::all();
+        assert_eq!(all.len(), 7);
+    }
+
+    #[test]
+    fn test_generation_type_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<GenerationType> = GenerationType::all().iter().copied().collect();
+        assert_eq!(set.len(), 7);
+    }
+
+    #[test]
+    fn test_generation_type_name() {
+        assert_eq!(GenerationType::Encounter.name(), "Encounter");
+        assert_eq!(GenerationType::Dungeon.name(), "Dungeon");
+        assert_eq!(GenerationType::NPC.name(), "NPC");
+    }
+
+    // ========== EncounterDifficulty Tests ==========
+
+    #[test]
+    fn test_encounter_difficulty_display() {
+        for diff in EncounterDifficulty::all() {
+            let display = format!("{}", diff);
+            assert!(display.contains(diff.name()));
+        }
+    }
+
+    #[test]
+    fn test_encounter_difficulty_all_variants() {
+        let all = EncounterDifficulty::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_encounter_difficulty_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<EncounterDifficulty> = EncounterDifficulty::all().iter().copied().collect();
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_encounter_difficulty_name() {
+        assert_eq!(EncounterDifficulty::Trivial.name(), "Trivial");
+        assert_eq!(EncounterDifficulty::Boss.name(), "Boss");
+    }
+
+    // ========== RoomType Tests ==========
+
+    #[test]
+    fn test_room_type_display() {
+        for room in RoomType::all() {
+            let display = format!("{}", room);
+            assert!(display.contains(room.name()));
+        }
+    }
+
+    #[test]
+    fn test_room_type_all_variants() {
+        let all = RoomType::all();
+        assert_eq!(all.len(), 8);
+    }
+
+    #[test]
+    fn test_room_type_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<RoomType> = RoomType::all().iter().copied().collect();
+        assert_eq!(set.len(), 8);
+    }
+
+    #[test]
+    fn test_room_type_is_special() {
+        assert!(!RoomType::Normal.is_special());
+        assert!(!RoomType::Corridor.is_special());
+        assert!(RoomType::Entrance.is_special());
+        assert!(RoomType::Boss.is_special());
+        assert!(RoomType::Treasure.is_special());
+        assert!(RoomType::Secret.is_special());
+    }
+
+    // ========== LootRarity Tests ==========
+
+    #[test]
+    fn test_loot_rarity_display() {
+        for rarity in LootRarity::all() {
+            let display = format!("{}", rarity);
+            assert!(display.contains(rarity.name()));
+        }
+    }
+
+    #[test]
+    fn test_loot_rarity_all_variants() {
+        let all = LootRarity::all();
+        assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn test_loot_rarity_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<LootRarity> = LootRarity::all().iter().copied().collect();
+        assert_eq!(set.len(), 5);
+    }
+
+    #[test]
+    fn test_loot_rarity_name() {
+        assert_eq!(LootRarity::Common.name(), "Common");
+        assert_eq!(LootRarity::Legendary.name(), "Legendary");
+    }
+
+    // ========== PcgTab Tests ==========
+
+    #[test]
+    fn test_pcg_tab_display() {
+        for tab in PcgTab::all() {
+            let display = format!("{}", tab);
+            assert!(display.contains(tab.name()));
+        }
+    }
+
+    #[test]
+    fn test_pcg_tab_all_variants() {
+        let all = PcgTab::all();
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn test_pcg_tab_hash() {
+        use std::collections::HashSet;
+        let set: HashSet<PcgTab> = PcgTab::all().iter().copied().collect();
+        assert_eq!(set.len(), 6);
+    }
+
+    #[test]
+    fn test_pcg_tab_default() {
+        assert_eq!(PcgTab::default(), PcgTab::Seeds);
     }
 }

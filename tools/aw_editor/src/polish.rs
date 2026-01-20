@@ -96,7 +96,7 @@ impl SplashSequence {
 }
 
 /// Loading screen style
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LoadingStyle {
     /// Simple centered spinner
     Spinner,
@@ -110,9 +110,71 @@ pub enum LoadingStyle {
     ArtworkWithTips,
 }
 
+impl std::fmt::Display for LoadingStyle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoadingStyle::Spinner => write!(f, "Spinner"),
+            LoadingStyle::ProgressBar => write!(f, "Progress Bar"),
+            LoadingStyle::FullScreen => write!(f, "Full Screen"),
+            LoadingStyle::Dots => write!(f, "Dots"),
+            LoadingStyle::ArtworkWithTips => write!(f, "Artwork With Tips"),
+        }
+    }
+}
+
 impl Default for LoadingStyle {
     fn default() -> Self {
         Self::ProgressBar
+    }
+}
+
+impl LoadingStyle {
+    /// Returns all loading styles.
+    pub fn all() -> &'static [Self] {
+        &[
+            LoadingStyle::Spinner,
+            LoadingStyle::ProgressBar,
+            LoadingStyle::FullScreen,
+            LoadingStyle::Dots,
+            LoadingStyle::ArtworkWithTips,
+        ]
+    }
+
+    /// Returns the display name of this style.
+    pub fn name(&self) -> &'static str {
+        match self {
+            LoadingStyle::Spinner => "Spinner",
+            LoadingStyle::ProgressBar => "Progress Bar",
+            LoadingStyle::FullScreen => "Full Screen",
+            LoadingStyle::Dots => "Dots",
+            LoadingStyle::ArtworkWithTips => "Artwork With Tips",
+        }
+    }
+
+    /// Returns an icon for this style.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            LoadingStyle::Spinner => "🔄",
+            LoadingStyle::ProgressBar => "█",
+            LoadingStyle::FullScreen => "🖼️",
+            LoadingStyle::Dots => "•••",
+            LoadingStyle::ArtworkWithTips => "🎨",
+        }
+    }
+
+    /// Returns true if this style shows a progress indicator.
+    pub fn shows_progress(&self) -> bool {
+        matches!(self, LoadingStyle::ProgressBar | LoadingStyle::FullScreen | LoadingStyle::ArtworkWithTips)
+    }
+
+    /// Returns true if this style is animated.
+    pub fn is_animated(&self) -> bool {
+        matches!(self, LoadingStyle::Spinner | LoadingStyle::Dots)
+    }
+
+    /// Returns true if this style supports background images.
+    pub fn supports_background(&self) -> bool {
+        matches!(self, LoadingStyle::FullScreen | LoadingStyle::ArtworkWithTips)
     }
 }
 
@@ -495,5 +557,50 @@ mod tests {
 
         assert_eq!(screen.tips.len(), 2);
         assert!(screen.show_percentage);
+    }
+
+    // === LoadingStyle Display & helper tests ===
+
+    #[test]
+    fn test_loading_style_display() {
+        assert_eq!(format!("{}", LoadingStyle::Spinner), "Spinner");
+        assert_eq!(format!("{}", LoadingStyle::ProgressBar), "Progress Bar");
+        assert_eq!(format!("{}", LoadingStyle::FullScreen), "Full Screen");
+        assert_eq!(format!("{}", LoadingStyle::ArtworkWithTips), "Artwork With Tips");
+    }
+
+    #[test]
+    fn test_loading_style_all() {
+        let all = LoadingStyle::all();
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&LoadingStyle::Spinner));
+        assert!(all.contains(&LoadingStyle::Dots));
+    }
+
+    #[test]
+    fn test_loading_style_default() {
+        assert_eq!(LoadingStyle::default(), LoadingStyle::ProgressBar);
+    }
+
+    #[test]
+    fn test_loading_style_helpers() {
+        assert!(LoadingStyle::ProgressBar.shows_progress());
+        assert!(LoadingStyle::FullScreen.shows_progress());
+        assert!(!LoadingStyle::Spinner.shows_progress());
+        
+        assert!(LoadingStyle::Spinner.is_animated());
+        assert!(LoadingStyle::Dots.is_animated());
+        assert!(!LoadingStyle::FullScreen.is_animated());
+        
+        assert!(LoadingStyle::FullScreen.supports_background());
+        assert!(LoadingStyle::ArtworkWithTips.supports_background());
+        assert!(!LoadingStyle::Spinner.supports_background());
+    }
+
+    #[test]
+    fn test_loading_style_name_and_icon() {
+        assert_eq!(LoadingStyle::Spinner.name(), "Spinner");
+        assert_eq!(LoadingStyle::Spinner.icon(), "🔄");
+        assert_eq!(LoadingStyle::ArtworkWithTips.icon(), "🎨");
     }
 }

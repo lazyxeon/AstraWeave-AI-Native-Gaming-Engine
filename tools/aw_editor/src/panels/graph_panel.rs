@@ -13,7 +13,24 @@ pub enum GraphType {
     Custom,
 }
 
+impl std::fmt::Display for GraphType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
 impl GraphType {
+    pub fn all() -> &'static [GraphType] {
+        &[
+            GraphType::BehaviorTree,
+            GraphType::Shader,
+            GraphType::Dialogue,
+            GraphType::StateMachine,
+            GraphType::Animation,
+            GraphType::Custom,
+        ]
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
             GraphType::BehaviorTree => "Behavior Tree",
@@ -1197,5 +1214,50 @@ mod tests {
         let id2 = panel.add_node_from_template(0, 50.0, 0.0).unwrap();
         
         assert!(id2 > id1);
+    }
+
+    // ===== GraphType Enum Tests =====
+
+    #[test]
+    fn test_graph_type_display() {
+        for graph_type in GraphType::all() {
+            let display = format!("{}", graph_type);
+            assert!(display.contains(graph_type.name()), "Display should contain name");
+        }
+    }
+
+    #[test]
+    fn test_graph_type_all_variants() {
+        let variants = GraphType::all();
+        assert_eq!(variants.len(), 6, "Expected 6 graph type variants");
+        assert!(variants.contains(&GraphType::BehaviorTree));
+        assert!(variants.contains(&GraphType::Shader));
+        assert!(variants.contains(&GraphType::Dialogue));
+        assert!(variants.contains(&GraphType::StateMachine));
+    }
+
+    #[test]
+    fn test_graph_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        for gt in GraphType::all() {
+            set.insert(*gt);
+        }
+        assert_eq!(set.len(), GraphType::all().len());
+    }
+
+    #[test]
+    fn test_graph_type_name() {
+        assert_eq!(GraphType::BehaviorTree.name(), "Behavior Tree");
+        assert_eq!(GraphType::Shader.name(), "Shader Graph");
+        assert_eq!(GraphType::Dialogue.name(), "Dialogue Graph");
+    }
+
+    #[test]
+    fn test_graph_type_icon() {
+        for gt in GraphType::all() {
+            let icon = gt.icon();
+            assert!(!icon.is_empty(), "Icon should not be empty");
+        }
     }
 }

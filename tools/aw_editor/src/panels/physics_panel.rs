@@ -15,7 +15,7 @@ use std::collections::VecDeque;
 use crate::panels::Panel;
 
 /// Physics visualization modes
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum PhysicsVisualization {
     #[default]
     None,
@@ -26,6 +26,12 @@ pub enum PhysicsVisualization {
     BroadPhase,
     Islands,
     All,
+}
+
+impl std::fmt::Display for PhysicsVisualization {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl PhysicsVisualization {
@@ -42,6 +48,32 @@ impl PhysicsVisualization {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            PhysicsVisualization::None => "None",
+            PhysicsVisualization::Colliders => "Colliders",
+            PhysicsVisualization::ContactPoints => "Contact Points",
+            PhysicsVisualization::Joints => "Joints",
+            PhysicsVisualization::VelocityVectors => "Velocity Vectors",
+            PhysicsVisualization::BroadPhase => "Broad Phase",
+            PhysicsVisualization::Islands => "Islands",
+            PhysicsVisualization::All => "All",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PhysicsVisualization::None => "⚫",
+            PhysicsVisualization::Colliders => "📦",
+            PhysicsVisualization::ContactPoints => "📍",
+            PhysicsVisualization::Joints => "🔗",
+            PhysicsVisualization::VelocityVectors => "➡️",
+            PhysicsVisualization::BroadPhase => "🗂️",
+            PhysicsVisualization::Islands => "🏝️",
+            PhysicsVisualization::All => "👁️",
+        }
+    }
+
     pub fn description(&self) -> &'static str {
         match self {
             PhysicsVisualization::None => "No debug visualization",
@@ -53,6 +85,10 @@ impl PhysicsVisualization {
             PhysicsVisualization::Islands => "Color bodies by simulation island",
             PhysicsVisualization::All => "Show all debug visualizations",
         }
+    }
+
+    pub fn is_visible(&self) -> bool {
+        !matches!(self, PhysicsVisualization::None)
     }
 }
 
@@ -66,7 +102,7 @@ pub struct CollisionLayer {
 }
 
 /// Physics simulation mode
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum SimulationMode {
     #[default]
     Running,
@@ -75,8 +111,56 @@ pub enum SimulationMode {
     SlowMotion,
 }
 
+impl std::fmt::Display for SimulationMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl SimulationMode {
+    pub fn all() -> &'static [SimulationMode] {
+        &[
+            SimulationMode::Running,
+            SimulationMode::Paused,
+            SimulationMode::StepOnce,
+            SimulationMode::SlowMotion,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            SimulationMode::Running => "Running",
+            SimulationMode::Paused => "Paused",
+            SimulationMode::StepOnce => "Step Once",
+            SimulationMode::SlowMotion => "Slow Motion",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SimulationMode::Running => "▶️",
+            SimulationMode::Paused => "⏸️",
+            SimulationMode::StepOnce => "⏭️",
+            SimulationMode::SlowMotion => "🐌",
+        }
+    }
+
+    pub fn is_active(&self) -> bool {
+        matches!(self, SimulationMode::Running | SimulationMode::SlowMotion)
+    }
+
+    pub fn time_scale(&self) -> f32 {
+        match self {
+            SimulationMode::Running => 1.0,
+            SimulationMode::Paused => 0.0,
+            SimulationMode::StepOnce => 0.0,
+            SimulationMode::SlowMotion => 0.2,
+        }
+    }
+}
+
 /// Ragdoll preset configuration
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum RagdollPreset {
     #[default]
     Humanoid,
@@ -84,6 +168,12 @@ pub enum RagdollPreset {
     Bird,
     Insect,
     Custom,
+}
+
+impl std::fmt::Display for RagdollPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl RagdollPreset {
@@ -95,6 +185,26 @@ impl RagdollPreset {
             RagdollPreset::Insect,
             RagdollPreset::Custom,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            RagdollPreset::Humanoid => "Humanoid",
+            RagdollPreset::Quadruped => "Quadruped",
+            RagdollPreset::Bird => "Bird",
+            RagdollPreset::Insect => "Insect",
+            RagdollPreset::Custom => "Custom",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            RagdollPreset::Humanoid => "🚶",
+            RagdollPreset::Quadruped => "🐕",
+            RagdollPreset::Bird => "🦅",
+            RagdollPreset::Insect => "🐛",
+            RagdollPreset::Custom => "⚙️",
+        }
     }
 
     pub fn bone_count(&self) -> usize {
@@ -109,7 +219,7 @@ impl RagdollPreset {
 }
 
 /// Vehicle type presets
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum VehicleType {
     #[default]
     Sedan,
@@ -118,6 +228,12 @@ pub enum VehicleType {
     Motorcycle,
     Tank,
     Custom,
+}
+
+impl std::fmt::Display for VehicleType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl VehicleType {
@@ -131,16 +247,54 @@ impl VehicleType {
             VehicleType::Custom,
         ]
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            VehicleType::Sedan => "Sedan",
+            VehicleType::SportsCar => "Sports Car",
+            VehicleType::Truck => "Truck",
+            VehicleType::Motorcycle => "Motorcycle",
+            VehicleType::Tank => "Tank",
+            VehicleType::Custom => "Custom",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            VehicleType::Sedan => "🚗",
+            VehicleType::SportsCar => "🏎️",
+            VehicleType::Truck => "🚚",
+            VehicleType::Motorcycle => "🏍️",
+            VehicleType::Tank => "🛡️",
+            VehicleType::Custom => "⚙️",
+        }
+    }
+
+    pub fn wheel_count(&self) -> u8 {
+        match self {
+            VehicleType::Sedan | VehicleType::SportsCar => 4,
+            VehicleType::Truck => 6,
+            VehicleType::Motorcycle => 2,
+            VehicleType::Tank => 0, // Tracks
+            VehicleType::Custom => 4,
+        }
+    }
 }
 
 /// Cloth simulation quality
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ClothQuality {
     Low,
     #[default]
     Medium,
     High,
     Ultra,
+}
+
+impl std::fmt::Display for ClothQuality {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 impl ClothQuality {
@@ -153,6 +307,15 @@ impl ClothQuality {
         ]
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            ClothQuality::Low => "Low",
+            ClothQuality::Medium => "Medium",
+            ClothQuality::High => "High",
+            ClothQuality::Ultra => "Ultra",
+        }
+    }
+
     pub fn iterations(&self) -> u32 {
         match self {
             ClothQuality::Low => 4,
@@ -161,10 +324,19 @@ impl ClothQuality {
             ClothQuality::Ultra => 32,
         }
     }
+
+    pub fn cpu_cost(&self) -> u8 {
+        match self {
+            ClothQuality::Low => 1,
+            ClothQuality::Medium => 2,
+            ClothQuality::High => 4,
+            ClothQuality::Ultra => 8,
+        }
+    }
 }
 
 /// Destruction pattern type
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum DestructionPattern {
     #[default]
     Voronoi,
@@ -172,6 +344,12 @@ pub enum DestructionPattern {
     Slice,
     Shatter,
     Crumble,
+}
+
+impl std::fmt::Display for DestructionPattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl DestructionPattern {
@@ -184,16 +362,52 @@ impl DestructionPattern {
             DestructionPattern::Crumble,
         ]
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DestructionPattern::Voronoi => "Voronoi",
+            DestructionPattern::Radial => "Radial",
+            DestructionPattern::Slice => "Slice",
+            DestructionPattern::Shatter => "Shatter",
+            DestructionPattern::Crumble => "Crumble",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            DestructionPattern::Voronoi => "⬡",
+            DestructionPattern::Radial => "💥",
+            DestructionPattern::Slice => "🔪",
+            DestructionPattern::Shatter => "💎",
+            DestructionPattern::Crumble => "🧱",
+        }
+    }
+
+    pub fn fragment_count_range(&self) -> (usize, usize) {
+        match self {
+            DestructionPattern::Voronoi => (10, 30),
+            DestructionPattern::Radial => (8, 16),
+            DestructionPattern::Slice => (2, 4),
+            DestructionPattern::Shatter => (20, 50),
+            DestructionPattern::Crumble => (30, 100),
+        }
+    }
 }
 
 /// Gravity zone shape
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum GravityZoneShape {
     #[default]
     Box,
     Sphere,
     Cylinder,
     Global,
+}
+
+impl std::fmt::Display for GravityZoneShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
 }
 
 impl GravityZoneShape {
@@ -204,6 +418,28 @@ impl GravityZoneShape {
             GravityZoneShape::Cylinder,
             GravityZoneShape::Global,
         ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            GravityZoneShape::Box => "Box",
+            GravityZoneShape::Sphere => "Sphere",
+            GravityZoneShape::Cylinder => "Cylinder",
+            GravityZoneShape::Global => "Global",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            GravityZoneShape::Box => "📦",
+            GravityZoneShape::Sphere => "⚪",
+            GravityZoneShape::Cylinder => "🛢️",
+            GravityZoneShape::Global => "🌍",
+        }
+    }
+
+    pub fn is_volumetric(&self) -> bool {
+        matches!(self, GravityZoneShape::Box | GravityZoneShape::Sphere | GravityZoneShape::Cylinder)
     }
 }
 
@@ -228,7 +464,7 @@ pub struct PhysicsStats {
 }
 
 /// Panel tabs
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum PhysicsTab {
     #[default]
     Overview,
@@ -238,6 +474,50 @@ pub enum PhysicsTab {
     Cloth,
     Destruction,
     Environment,
+}
+
+impl std::fmt::Display for PhysicsTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.icon(), self.name())
+    }
+}
+
+impl PhysicsTab {
+    pub fn all() -> &'static [PhysicsTab] {
+        &[
+            PhysicsTab::Overview,
+            PhysicsTab::Visualization,
+            PhysicsTab::Ragdoll,
+            PhysicsTab::Vehicle,
+            PhysicsTab::Cloth,
+            PhysicsTab::Destruction,
+            PhysicsTab::Environment,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            PhysicsTab::Overview => "Overview",
+            PhysicsTab::Visualization => "Visualization",
+            PhysicsTab::Ragdoll => "Ragdoll",
+            PhysicsTab::Vehicle => "Vehicle",
+            PhysicsTab::Cloth => "Cloth",
+            PhysicsTab::Destruction => "Destruction",
+            PhysicsTab::Environment => "Environment",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PhysicsTab::Overview => "📊",
+            PhysicsTab::Visualization => "👁️",
+            PhysicsTab::Ragdoll => "🚶",
+            PhysicsTab::Vehicle => "🚗",
+            PhysicsTab::Cloth => "👕",
+            PhysicsTab::Destruction => "💥",
+            PhysicsTab::Environment => "🌍",
+        }
+    }
 }
 
 /// Main Physics Debug Panel
@@ -1353,5 +1633,342 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = PhysicsPanel::new();
         assert_eq!(panel.name(), "Physics");
+    }
+
+    // NEW: PhysicsVisualization Display and helper tests
+    #[test]
+    fn test_physics_visualization_all() {
+        let modes = PhysicsVisualization::all();
+        assert_eq!(modes.len(), 8);
+    }
+
+    #[test]
+    fn test_physics_visualization_display() {
+        assert_eq!(format!("{}", PhysicsVisualization::Colliders), "📦 Colliders");
+        assert_eq!(format!("{}", PhysicsVisualization::Joints), "🔗 Joints");
+    }
+
+    #[test]
+    fn test_physics_visualization_name() {
+        assert_eq!(PhysicsVisualization::ContactPoints.name(), "Contact Points");
+        assert_eq!(PhysicsVisualization::VelocityVectors.name(), "Velocity Vectors");
+    }
+
+    #[test]
+    fn test_physics_visualization_icon() {
+        assert_eq!(PhysicsVisualization::BroadPhase.icon(), "🗂️");
+        assert_eq!(PhysicsVisualization::Islands.icon(), "🏝️");
+    }
+
+    #[test]
+    fn test_physics_visualization_is_visible() {
+        assert!(PhysicsVisualization::Colliders.is_visible());
+        assert!(PhysicsVisualization::All.is_visible());
+        assert!(!PhysicsVisualization::None.is_visible());
+    }
+
+    #[test]
+    fn test_physics_visualization_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(PhysicsVisualization::Colliders);
+        set.insert(PhysicsVisualization::Joints);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: SimulationMode Display and helper tests
+    #[test]
+    fn test_simulation_mode_all() {
+        let modes = SimulationMode::all();
+        assert_eq!(modes.len(), 4);
+    }
+
+    #[test]
+    fn test_simulation_mode_display() {
+        assert_eq!(format!("{}", SimulationMode::Running), "▶️ Running");
+        assert_eq!(format!("{}", SimulationMode::Paused), "⏸️ Paused");
+    }
+
+    #[test]
+    fn test_simulation_mode_name() {
+        assert_eq!(SimulationMode::StepOnce.name(), "Step Once");
+        assert_eq!(SimulationMode::SlowMotion.name(), "Slow Motion");
+    }
+
+    #[test]
+    fn test_simulation_mode_icon() {
+        assert_eq!(SimulationMode::StepOnce.icon(), "⏭️");
+        assert_eq!(SimulationMode::SlowMotion.icon(), "🐌");
+    }
+
+    #[test]
+    fn test_simulation_mode_is_active() {
+        assert!(SimulationMode::Running.is_active());
+        assert!(SimulationMode::SlowMotion.is_active());
+        assert!(!SimulationMode::Paused.is_active());
+    }
+
+    #[test]
+    fn test_simulation_mode_time_scale() {
+        assert_eq!(SimulationMode::Running.time_scale(), 1.0);
+        assert_eq!(SimulationMode::Paused.time_scale(), 0.0);
+        assert_eq!(SimulationMode::SlowMotion.time_scale(), 0.2);
+    }
+
+    #[test]
+    fn test_simulation_mode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(SimulationMode::Running);
+        set.insert(SimulationMode::Paused);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: RagdollPreset Display and helper tests
+    #[test]
+    fn test_ragdoll_preset_all() {
+        let presets = RagdollPreset::all();
+        assert_eq!(presets.len(), 5);
+    }
+
+    #[test]
+    fn test_ragdoll_preset_display() {
+        assert_eq!(format!("{}", RagdollPreset::Humanoid), "🚶 Humanoid");
+        assert_eq!(format!("{}", RagdollPreset::Quadruped), "🐕 Quadruped");
+    }
+
+    #[test]
+    fn test_ragdoll_preset_name() {
+        assert_eq!(RagdollPreset::Bird.name(), "Bird");
+        assert_eq!(RagdollPreset::Insect.name(), "Insect");
+    }
+
+    #[test]
+    fn test_ragdoll_preset_icon() {
+        assert_eq!(RagdollPreset::Bird.icon(), "🦅");
+        assert_eq!(RagdollPreset::Custom.icon(), "⚙️");
+    }
+
+    #[test]
+    fn test_ragdoll_preset_bone_count() {
+        assert_eq!(RagdollPreset::Humanoid.bone_count(), 15);
+        assert_eq!(RagdollPreset::Quadruped.bone_count(), 18);
+        assert_eq!(RagdollPreset::Custom.bone_count(), 0);
+    }
+
+    #[test]
+    fn test_ragdoll_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(RagdollPreset::Humanoid);
+        set.insert(RagdollPreset::Bird);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: VehicleType Display and helper tests
+    #[test]
+    fn test_vehicle_type_all() {
+        let types = VehicleType::all();
+        assert_eq!(types.len(), 6);
+    }
+
+    #[test]
+    fn test_vehicle_type_display() {
+        assert_eq!(format!("{}", VehicleType::Sedan), "🚗 Sedan");
+        assert_eq!(format!("{}", VehicleType::SportsCar), "🏎️ Sports Car");
+    }
+
+    #[test]
+    fn test_vehicle_type_name() {
+        assert_eq!(VehicleType::Motorcycle.name(), "Motorcycle");
+        assert_eq!(VehicleType::Tank.name(), "Tank");
+    }
+
+    #[test]
+    fn test_vehicle_type_icon() {
+        assert_eq!(VehicleType::Truck.icon(), "🚚");
+        assert_eq!(VehicleType::Motorcycle.icon(), "🏍️");
+    }
+
+    #[test]
+    fn test_vehicle_type_wheel_count() {
+        assert_eq!(VehicleType::Sedan.wheel_count(), 4);
+        assert_eq!(VehicleType::Motorcycle.wheel_count(), 2);
+        assert_eq!(VehicleType::Truck.wheel_count(), 6);
+        assert_eq!(VehicleType::Tank.wheel_count(), 0); // Tracks
+    }
+
+    #[test]
+    fn test_vehicle_type_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(VehicleType::Sedan);
+        set.insert(VehicleType::Tank);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: ClothQuality Display and helper tests
+    #[test]
+    fn test_cloth_quality_all() {
+        let qualities = ClothQuality::all();
+        assert_eq!(qualities.len(), 4);
+    }
+
+    #[test]
+    fn test_cloth_quality_display() {
+        assert_eq!(format!("{}", ClothQuality::Low), "Low");
+        assert_eq!(format!("{}", ClothQuality::Ultra), "Ultra");
+    }
+
+    #[test]
+    fn test_cloth_quality_name() {
+        assert_eq!(ClothQuality::Medium.name(), "Medium");
+        assert_eq!(ClothQuality::High.name(), "High");
+    }
+
+    #[test]
+    fn test_cloth_quality_iterations() {
+        assert_eq!(ClothQuality::Low.iterations(), 4);
+        assert_eq!(ClothQuality::Medium.iterations(), 8);
+        assert_eq!(ClothQuality::High.iterations(), 16);
+        assert_eq!(ClothQuality::Ultra.iterations(), 32);
+    }
+
+    #[test]
+    fn test_cloth_quality_cpu_cost() {
+        assert_eq!(ClothQuality::Low.cpu_cost(), 1);
+        assert_eq!(ClothQuality::Medium.cpu_cost(), 2);
+        assert_eq!(ClothQuality::High.cpu_cost(), 4);
+        assert_eq!(ClothQuality::Ultra.cpu_cost(), 8);
+    }
+
+    #[test]
+    fn test_cloth_quality_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ClothQuality::Low);
+        set.insert(ClothQuality::High);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: DestructionPattern Display and helper tests
+    #[test]
+    fn test_destruction_pattern_all() {
+        let patterns = DestructionPattern::all();
+        assert_eq!(patterns.len(), 5);
+    }
+
+    #[test]
+    fn test_destruction_pattern_display() {
+        assert_eq!(format!("{}", DestructionPattern::Voronoi), "⬡ Voronoi");
+        assert_eq!(format!("{}", DestructionPattern::Shatter), "💎 Shatter");
+    }
+
+    #[test]
+    fn test_destruction_pattern_name() {
+        assert_eq!(DestructionPattern::Radial.name(), "Radial");
+        assert_eq!(DestructionPattern::Crumble.name(), "Crumble");
+    }
+
+    #[test]
+    fn test_destruction_pattern_icon() {
+        assert_eq!(DestructionPattern::Slice.icon(), "🔪");
+        assert_eq!(DestructionPattern::Radial.icon(), "💥");
+    }
+
+    #[test]
+    fn test_destruction_pattern_fragment_count_range() {
+        let (min, max) = DestructionPattern::Voronoi.fragment_count_range();
+        assert_eq!(min, 10);
+        assert_eq!(max, 30);
+        
+        let (min, max) = DestructionPattern::Crumble.fragment_count_range();
+        assert_eq!(min, 30);
+        assert_eq!(max, 100);
+    }
+
+    #[test]
+    fn test_destruction_pattern_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(DestructionPattern::Voronoi);
+        set.insert(DestructionPattern::Shatter);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: GravityZoneShape Display and helper tests
+    #[test]
+    fn test_gravity_zone_shape_all() {
+        let shapes = GravityZoneShape::all();
+        assert_eq!(shapes.len(), 4);
+    }
+
+    #[test]
+    fn test_gravity_zone_shape_display() {
+        assert_eq!(format!("{}", GravityZoneShape::Box), "📦 Box");
+        assert_eq!(format!("{}", GravityZoneShape::Sphere), "⚪ Sphere");
+    }
+
+    #[test]
+    fn test_gravity_zone_shape_name() {
+        assert_eq!(GravityZoneShape::Cylinder.name(), "Cylinder");
+        assert_eq!(GravityZoneShape::Global.name(), "Global");
+    }
+
+    #[test]
+    fn test_gravity_zone_shape_icon() {
+        assert_eq!(GravityZoneShape::Cylinder.icon(), "🛢️");
+        assert_eq!(GravityZoneShape::Global.icon(), "🌍");
+    }
+
+    #[test]
+    fn test_gravity_zone_shape_is_volumetric() {
+        assert!(GravityZoneShape::Box.is_volumetric());
+        assert!(GravityZoneShape::Sphere.is_volumetric());
+        assert!(GravityZoneShape::Cylinder.is_volumetric());
+        assert!(!GravityZoneShape::Global.is_volumetric());
+    }
+
+    #[test]
+    fn test_gravity_zone_shape_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(GravityZoneShape::Box);
+        set.insert(GravityZoneShape::Sphere);
+        assert_eq!(set.len(), 2);
+    }
+
+    // NEW: PhysicsTab Display and helper tests
+    #[test]
+    fn test_physics_tab_all() {
+        let tabs = PhysicsTab::all();
+        assert_eq!(tabs.len(), 7);
+    }
+
+    #[test]
+    fn test_physics_tab_display() {
+        assert_eq!(format!("{}", PhysicsTab::Overview), "📊 Overview");
+        assert_eq!(format!("{}", PhysicsTab::Vehicle), "🚗 Vehicle");
+    }
+
+    #[test]
+    fn test_physics_tab_name() {
+        assert_eq!(PhysicsTab::Visualization.name(), "Visualization");
+        assert_eq!(PhysicsTab::Destruction.name(), "Destruction");
+    }
+
+    #[test]
+    fn test_physics_tab_icon() {
+        assert_eq!(PhysicsTab::Ragdoll.icon(), "🚶");
+        assert_eq!(PhysicsTab::Environment.icon(), "🌍");
+    }
+
+    #[test]
+    fn test_physics_tab_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(PhysicsTab::Overview);
+        set.insert(PhysicsTab::Vehicle);
+        assert_eq!(set.len(), 2);
     }
 }

@@ -26,7 +26,7 @@ pub struct Sky {
 }
 
 /// Biome paint brush types
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
 pub enum BiomePaint {
     #[serde(rename = "grass_dense")]
@@ -35,8 +35,50 @@ pub enum BiomePaint {
     MossPath { polyline: Vec<[i32; 2]> },
 }
 
+impl std::fmt::Display for BiomePaint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BiomePaint::GrassDense { .. } => write!(f, "Grass Dense"),
+            BiomePaint::MossPath { .. } => write!(f, "Moss Path"),
+        }
+    }
+}
+
+impl BiomePaint {
+    /// Returns a list of all variant names.
+    pub fn all_variants() -> &'static [&'static str] {
+        &["GrassDense", "MossPath"]
+    }
+
+    /// Returns the display name of this paint type.
+    pub fn name(&self) -> &'static str {
+        match self {
+            BiomePaint::GrassDense { .. } => "Grass Dense",
+            BiomePaint::MossPath { .. } => "Moss Path",
+        }
+    }
+
+    /// Returns an icon for this paint type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            BiomePaint::GrassDense { .. } => "🌿",
+            BiomePaint::MossPath { .. } => "🛤️",
+        }
+    }
+
+    /// Returns true if this paint type covers an area.
+    pub fn is_area(&self) -> bool {
+        matches!(self, BiomePaint::GrassDense { .. })
+    }
+
+    /// Returns true if this paint type is a path.
+    pub fn is_path(&self) -> bool {
+        matches!(self, BiomePaint::MossPath { .. })
+    }
+}
+
 /// Circle area definition
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct Circle {
     pub cx: i32,
     pub cz: i32,
@@ -93,6 +135,54 @@ impl Default for Trigger {
     }
 }
 
+impl std::fmt::Display for Trigger {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Trigger::EnterArea { radius, .. } => write!(f, "Enter Area (r={:.1})", radius),
+        }
+    }
+}
+
+impl Trigger {
+    /// Returns a list of all variant names.
+    pub fn all_variants() -> &'static [&'static str] {
+        &["EnterArea"]
+    }
+
+    /// Returns the display name of this trigger type.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Trigger::EnterArea { .. } => "Enter Area",
+        }
+    }
+
+    /// Returns an icon for this trigger type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Trigger::EnterArea { .. } => "🎯",
+        }
+    }
+
+    /// Returns true if this is a spatial trigger.
+    pub fn is_spatial(&self) -> bool {
+        matches!(self, Trigger::EnterArea { .. })
+    }
+
+    /// Returns the radius for area-based triggers.
+    pub fn radius(&self) -> Option<f32> {
+        match self {
+            Trigger::EnterArea { radius, .. } => Some(*radius),
+        }
+    }
+
+    /// Returns the center position for area-based triggers.
+    pub fn center(&self) -> Option<[f32; 3]> {
+        match self {
+            Trigger::EnterArea { center, .. } => Some(*center),
+        }
+    }
+}
+
 /// Director operation types
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(tag = "op")]
@@ -120,8 +210,63 @@ impl Default for DirectorOp {
     }
 }
 
+impl std::fmt::Display for DirectorOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DirectorOp::Fortify { .. } => write!(f, "Fortify"),
+            DirectorOp::Collapse { .. } => write!(f, "Collapse"),
+            DirectorOp::SpawnWave { archetype, count, .. } => {
+                write!(f, "Spawn Wave ({} x {})", count, archetype)
+            }
+        }
+    }
+}
+
+impl DirectorOp {
+    /// Returns a list of all variant names.
+    pub fn all_variants() -> &'static [&'static str] {
+        &["Fortify", "Collapse", "SpawnWave"]
+    }
+
+    /// Returns the display name of this operation type.
+    pub fn name(&self) -> &'static str {
+        match self {
+            DirectorOp::Fortify { .. } => "Fortify",
+            DirectorOp::Collapse { .. } => "Collapse",
+            DirectorOp::SpawnWave { .. } => "Spawn Wave",
+        }
+    }
+
+    /// Returns an icon for this operation type.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            DirectorOp::Fortify { .. } => "🏰",
+            DirectorOp::Collapse { .. } => "💥",
+            DirectorOp::SpawnWave { .. } => "👾",
+        }
+    }
+
+    /// Returns true if this operation modifies terrain.
+    pub fn is_terrain_op(&self) -> bool {
+        matches!(self, DirectorOp::Fortify { .. } | DirectorOp::Collapse { .. })
+    }
+
+    /// Returns true if this operation spawns entities.
+    pub fn is_spawn_op(&self) -> bool {
+        matches!(self, DirectorOp::SpawnWave { .. })
+    }
+
+    /// Returns the spawn count if this is a spawn operation.
+    pub fn spawn_count(&self) -> Option<u32> {
+        match self {
+            DirectorOp::SpawnWave { count, .. } => Some(*count),
+            _ => None,
+        }
+    }
+}
+
 /// Fortify region definition
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct FortRegion {
     pub cx: i32,
     pub cz: i32,
@@ -546,5 +691,105 @@ mod tests {
         
         let empty = doc.find_npcs_by_archetype("Mage");
         assert!(empty.is_empty());
+    }
+
+    // === BiomePaint enum tests ===
+
+    #[test]
+    fn test_biome_paint_display() {
+        let grass = BiomePaint::GrassDense { area: Circle { cx: 0, cz: 0, radius: 10 } };
+        let moss = BiomePaint::MossPath { polyline: vec![[0, 0], [1, 1]] };
+        
+        assert_eq!(format!("{}", grass), "Grass Dense");
+        assert_eq!(format!("{}", moss), "Moss Path");
+    }
+
+    #[test]
+    fn test_biome_paint_all_variants() {
+        let variants = BiomePaint::all_variants();
+        assert_eq!(variants.len(), 2);
+        assert!(variants.contains(&"GrassDense"));
+        assert!(variants.contains(&"MossPath"));
+    }
+
+    #[test]
+    fn test_biome_paint_helpers() {
+        let grass = BiomePaint::GrassDense { area: Circle { cx: 0, cz: 0, radius: 10 } };
+        let moss = BiomePaint::MossPath { polyline: vec![[0, 0], [1, 1]] };
+        
+        assert!(grass.is_area());
+        assert!(!grass.is_path());
+        assert!(!moss.is_area());
+        assert!(moss.is_path());
+        
+        assert_eq!(grass.name(), "Grass Dense");
+        assert_eq!(moss.icon(), "🛤️");
+    }
+
+    // === Trigger enum tests ===
+
+    #[test]
+    fn test_trigger_display() {
+        let trigger = Trigger::EnterArea { center: [1.0, 2.0, 3.0], radius: 10.5 };
+        assert!(format!("{}", trigger).contains("Enter Area"));
+        assert!(format!("{}", trigger).contains("10.5"));
+    }
+
+    #[test]
+    fn test_trigger_all_variants() {
+        let variants = Trigger::all_variants();
+        assert_eq!(variants.len(), 1);
+        assert!(variants.contains(&"EnterArea"));
+    }
+
+    #[test]
+    fn test_trigger_helpers() {
+        let trigger = Trigger::EnterArea { center: [1.0, 2.0, 3.0], radius: 10.0 };
+        
+        assert!(trigger.is_spatial());
+        assert_eq!(trigger.radius(), Some(10.0));
+        assert_eq!(trigger.center(), Some([1.0, 2.0, 3.0]));
+        assert_eq!(trigger.name(), "Enter Area");
+        assert_eq!(trigger.icon(), "🎯");
+    }
+
+    // === DirectorOp enum tests ===
+
+    #[test]
+    fn test_director_op_display() {
+        let fortify = DirectorOp::Fortify { area: FortRegion { cx: 0, cz: 0, r: 5 } };
+        let collapse = DirectorOp::Collapse { area: FortRegion { cx: 0, cz: 0, r: 5 } };
+        let spawn = DirectorOp::SpawnWave { archetype: "goblin".to_string(), count: 5, scatter: 2.0 };
+        
+        assert_eq!(format!("{}", fortify), "Fortify");
+        assert_eq!(format!("{}", collapse), "Collapse");
+        assert!(format!("{}", spawn).contains("5"));
+        assert!(format!("{}", spawn).contains("goblin"));
+    }
+
+    #[test]
+    fn test_director_op_all_variants() {
+        let variants = DirectorOp::all_variants();
+        assert_eq!(variants.len(), 3);
+        assert!(variants.contains(&"Fortify"));
+        assert!(variants.contains(&"Collapse"));
+        assert!(variants.contains(&"SpawnWave"));
+    }
+
+    #[test]
+    fn test_director_op_helpers() {
+        let fortify = DirectorOp::Fortify { area: FortRegion { cx: 0, cz: 0, r: 5 } };
+        let spawn = DirectorOp::SpawnWave { archetype: "goblin".to_string(), count: 5, scatter: 2.0 };
+        
+        assert!(fortify.is_terrain_op());
+        assert!(!fortify.is_spawn_op());
+        assert_eq!(fortify.spawn_count(), None);
+        
+        assert!(!spawn.is_terrain_op());
+        assert!(spawn.is_spawn_op());
+        assert_eq!(spawn.spawn_count(), Some(5));
+        
+        assert_eq!(fortify.icon(), "🏰");
+        assert_eq!(spawn.icon(), "👾");
     }
 }

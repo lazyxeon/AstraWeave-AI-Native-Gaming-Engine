@@ -250,10 +250,11 @@ fn test_perception_stress() {
     println!("   Last 100 frames: {:.3} ms avg", last_100_avg);
     println!("   Degradation: {:.2}%", degradation_percent);
 
-    // Validate <50% degradation (negative means performance IMPROVED - that's fine!)
+    // Validate <50% degradation (negative means performance IMPROVED - that's always fine!)
     // Performance can improve due to CPU warmup, cache effects, etc.
+    // Only fail if performance got significantly WORSE (positive degradation > 50%)
     assert!(
-        degradation_percent.abs() < 50.0,
+        degradation_percent < 50.0,
         "Performance degradation should be <50%, got {:.2}%",
         degradation_percent
     );
