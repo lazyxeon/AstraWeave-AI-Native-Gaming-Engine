@@ -276,3 +276,431 @@ impl<'a> HeuristicState<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
+    use std::collections::BTreeMap;
+
+    fn make_entity(id: u32) -> astraweave_core::Entity {
+        // Entity is a type alias for u32
+        id
+    }
+
+    fn make_enemy(id: u32, x: i32, y: i32, hp: i32) -> EnemyState {
+        EnemyState {
+            id: make_entity(id),
+            pos: IVec2 { x, y },
+            hp,
+            cover: "none".into(),
+            last_seen: 0.0,
+        }
+    }
+
+    fn minimal_snapshot() -> WorldSnapshot {
+        WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "idle".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 5,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 1, y: 1 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        }
+    }
+
+    // ==========================================================================
+    // VeilweaverCompanionOrchestrator Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_orchestrator_new() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        // Should have the expected number of actions and goals
+        assert_eq!(orch.actions.len(), 5, "Should have 5 GOAP actions");
+        assert_eq!(orch.goals.len(), 4, "Should have 4 GOAP goals");
+    }
+
+    #[test]
+    fn test_orchestrator_default() {
+        let orch = VeilweaverCompanionOrchestrator::default();
+        assert_eq!(orch.actions.len(), 5);
+        assert_eq!(orch.goals.len(), 4);
+    }
+
+    #[test]
+    fn test_orchestrator_implements_orchestrator_trait() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let snap = minimal_snapshot();
+        let plan = orch.propose_plan(&snap);
+        // Should return a valid plan
+        assert!(!plan.plan_id.is_empty());
+    }
+
+    #[test]
+    fn test_plan_with_no_enemies_idle_waits() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let snap = minimal_snapshot();
+        let plan = orch.propose_plan(&snap);
+        // With no enemies and no objectives, should idle or reposition
+        assert!(!plan.steps.is_empty());
+    }
+
+    #[test]
+    fn test_plan_when_player_low_hp() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let mut snap = minimal_snapshot();
+        snap.player.hp = 20; // Low HP triggers heal
+        let plan = orch.propose_plan(&snap);
+        // Should prioritize healing player
+        let has_heal = plan.steps.iter().any(|s| matches!(s, ActionStep::Heal { .. }));
+        assert!(has_heal, "Should heal when player HP is low");
+    }
+
+    #[test]
+    fn test_plan_when_anchor_unstable() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let mut snap = minimal_snapshot();
+        snap.objective = Some("anchor_unstable".into());
+        snap.me.ammo = 1; // Need echo (ammo) for stability pulse
+        let plan = orch.propose_plan(&snap);
+        // Should use defensive ability for stability
+        let has_defensive = plan.steps.iter().any(|s| matches!(s, ActionStep::UseDefensiveAbility { .. }));
+        assert!(has_defensive, "Should use stability pulse when anchor is unstable");
+    }
+
+    #[test]
+    fn test_plan_when_enemy_vulnerable() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let mut snap = minimal_snapshot();
+        // Add a vulnerable enemy (low HP)
+        snap.enemies.push(make_enemy(1, 2, 2, 10)); // Low HP = vulnerable
+        let plan = orch.propose_plan(&snap);
+        // Should attack the vulnerable enemy
+        let has_attack = plan.steps.iter().any(|s| {
+            matches!(s, ActionStep::CoordinateAttack { .. } | ActionStep::QuickAttack { .. })
+        });
+        assert!(has_attack, "Should attack vulnerable enemy");
+    }
+
+    #[test]
+    fn test_plan_when_position_is_bad() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let mut snap = minimal_snapshot();
+        // Position companion far from player
+        snap.me.pos = IVec2 { x: 100, y: 100 };
+        snap.player.pos = IVec2 { x: 0, y: 0 };
+        let plan = orch.propose_plan(&snap);
+        // Should reposition to be closer to player
+        let has_move = plan.steps.iter().any(|s| matches!(s, ActionStep::MoveTo { .. }));
+        assert!(has_move, "Should reposition when too far from player");
+    }
+
+    #[test]
+    fn test_plan_id_contains_timestamp() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let mut snap = minimal_snapshot();
+        snap.t = 1.234;
+        let plan = orch.propose_plan(&snap);
+        assert!(plan.plan_id.starts_with("vw-companion-"), "Plan ID should have correct prefix");
+    }
+
+    // ==========================================================================
+    // HeuristicState Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_heuristic_player_low_threshold() {
+        let mut snap = minimal_snapshot();
+        
+        // HP = 40 should be considered low
+        snap.player.hp = 40;
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(heuristics.player_low, "HP 40 should be considered low");
+        
+        // HP = 41 should not be considered low
+        snap.player.hp = 41;
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.player_low, "HP 41 should not be considered low");
+    }
+
+    #[test]
+    fn test_heuristic_anchor_unstable_detection() {
+        let mut snap = minimal_snapshot();
+        
+        snap.objective = Some("anchor_unstable".into());
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(heuristics.anchor_unstable);
+        
+        snap.objective = Some("stabilize_anchor".into());
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(heuristics.anchor_unstable);
+        
+        snap.objective = Some("collect_item".into());
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.anchor_unstable);
+        
+        snap.objective = None;
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.anchor_unstable);
+    }
+
+    #[test]
+    fn test_heuristic_has_echo() {
+        let mut snap = minimal_snapshot();
+        
+        snap.me.ammo = 5;
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(heuristics.has_echo);
+        
+        snap.me.ammo = 0;
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.has_echo);
+    }
+
+    #[test]
+    fn test_heuristic_closest_enemy() {
+        let mut snap = minimal_snapshot();
+        snap.me.pos = IVec2 { x: 0, y: 0 };
+        
+        // Add enemies at different distances
+        snap.enemies.push(make_enemy(1, 10, 10, 50));
+        snap.enemies.push(make_enemy(2, 2, 2, 50));
+        snap.enemies.push(make_enemy(3, 5, 5, 50));
+        
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let closest = heuristics.closest_enemy.unwrap();
+        assert_eq!(closest.pos.x, 2, "Closest enemy should be at (2,2)");
+        assert_eq!(closest.pos.y, 2);
+    }
+
+    #[test]
+    fn test_heuristic_enemy_vulnerable() {
+        let mut snap = minimal_snapshot();
+        
+        // No enemies - not vulnerable
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.enemy_vulnerable);
+        
+        // Enemy with HP > 30 - not vulnerable
+        snap.enemies.push(make_enemy(1, 1, 1, 50));
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.enemy_vulnerable);
+        
+        // Enemy with HP <= 30 - vulnerable
+        snap.enemies[0].hp = 30;
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(heuristics.enemy_vulnerable);
+    }
+
+    #[test]
+    fn test_heuristic_position_good_threshold() {
+        let mut snap = minimal_snapshot();
+        snap.player.pos = IVec2 { x: 0, y: 0 };
+        
+        // Distance <= 6 is good
+        snap.me.pos = IVec2 { x: 3, y: 3 }; // Manhattan distance = 6
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(heuristics.position_good, "Distance 6 should be good position");
+        
+        // Distance > 6 is bad
+        snap.me.pos = IVec2 { x: 4, y: 4 }; // Manhattan distance = 8
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(!heuristics.position_good, "Distance 8 should be bad position");
+    }
+
+    #[test]
+    fn test_heuristic_player_pos_average() {
+        let mut snap = minimal_snapshot();
+        snap.player.pos = IVec2 { x: 0, y: 0 };
+        snap.me.pos = IVec2 { x: 10, y: 20 };
+        
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let avg = heuristics.player_pos_average();
+        
+        assert_eq!(avg.x, 5, "Average X should be 5");
+        assert_eq!(avg.y, 10, "Average Y should be 10");
+    }
+
+    // ==========================================================================
+    // build_actions Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_build_actions_count() {
+        let actions = build_actions();
+        assert_eq!(actions.len(), 5);
+    }
+
+    #[test]
+    fn test_build_actions_names() {
+        let actions = build_actions();
+        let names: Vec<&str> = actions.iter().map(|a| a.name.as_str()).collect();
+        assert!(names.contains(&ACTION_STABILITY_PULSE));
+        assert!(names.contains(&ACTION_HEAL_PLAYER));
+        assert!(names.contains(&ACTION_EXECUTE_COMBO));
+        assert!(names.contains(&ACTION_MARK_TARGET));
+        assert!(names.contains(&ACTION_REPOSITION));
+    }
+
+    // ==========================================================================
+    // build_goals Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_build_goals_count() {
+        let goals = build_goals();
+        assert_eq!(goals.len(), 4);
+    }
+
+    #[test]
+    fn test_build_goals_priorities() {
+        let goals = build_goals();
+        // Find protect_player goal - should have highest priority
+        let protect = goals.iter().find(|g| g.name == "protect_player").unwrap();
+        assert_eq!(protect.priority, 3.0);
+        
+        // Find maintain_positioning - should have lowest priority
+        let position = goals.iter().find(|g| g.name == "maintain_positioning").unwrap();
+        assert_eq!(position.priority, 1.5);
+    }
+
+    // ==========================================================================
+    // map_action_to_steps Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_map_stability_pulse() {
+        let snap = minimal_snapshot();
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_STABILITY_PULSE, &heuristics);
+        
+        assert_eq!(steps.len(), 1);
+        assert!(matches!(steps[0], ActionStep::UseDefensiveAbility { .. }));
+    }
+
+    #[test]
+    fn test_map_heal_player() {
+        let snap = minimal_snapshot();
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_HEAL_PLAYER, &heuristics);
+        
+        assert_eq!(steps.len(), 1);
+        assert!(matches!(steps[0], ActionStep::Heal { target_id: None }));
+    }
+
+    #[test]
+    fn test_map_execute_combo_with_enemy() {
+        let mut snap = minimal_snapshot();
+        snap.enemies.push(make_enemy(42, 2, 2, 50));
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_EXECUTE_COMBO, &heuristics);
+        
+        assert_eq!(steps.len(), 2, "Combo should have 2 steps");
+        assert!(matches!(steps[0], ActionStep::CoordinateAttack { .. }));
+        assert!(matches!(steps[1], ActionStep::QuickAttack { .. }));
+    }
+
+    #[test]
+    fn test_map_execute_combo_no_enemy() {
+        let snap = minimal_snapshot();
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_EXECUTE_COMBO, &heuristics);
+        
+        assert_eq!(steps.len(), 1);
+        assert!(matches!(steps[0], ActionStep::Wait { duration } if duration == 0.3));
+    }
+
+    #[test]
+    fn test_map_mark_target_with_enemy() {
+        let mut snap = minimal_snapshot();
+        snap.enemies.push(make_enemy(42, 2, 2, 50));
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_MARK_TARGET, &heuristics);
+        
+        assert_eq!(steps.len(), 1);
+        assert!(matches!(steps[0], ActionStep::MarkTarget { .. }));
+    }
+
+    #[test]
+    fn test_map_mark_target_no_enemy() {
+        let snap = minimal_snapshot();
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_MARK_TARGET, &heuristics);
+        
+        assert!(steps.is_empty(), "No target to mark when no enemies");
+    }
+
+    #[test]
+    fn test_map_reposition() {
+        let mut snap = minimal_snapshot();
+        snap.player.pos = IVec2 { x: 10, y: 20 };
+        snap.me.pos = IVec2 { x: 0, y: 0 };
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps(ACTION_REPOSITION, &heuristics);
+        
+        assert_eq!(steps.len(), 1);
+        if let ActionStep::MoveTo { x, y, speed } = &steps[0] {
+            assert_eq!(*x, 5, "Should move to average X position");
+            assert_eq!(*y, 10, "Should move to average Y position");
+            assert_eq!(*speed, Some(MovementSpeed::Run));
+        } else {
+            panic!("Expected MoveTo action step");
+        }
+    }
+
+    #[test]
+    fn test_map_unknown_action() {
+        let snap = minimal_snapshot();
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let steps = map_action_to_steps("unknown_action", &heuristics);
+        
+        assert_eq!(steps.len(), 1);
+        assert!(matches!(steps[0], ActionStep::Wait { duration } if duration == 0.2));
+    }
+
+    // ==========================================================================
+    // Integration Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_full_planning_cycle_priority_order() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        
+        // Create scenario with multiple goals applicable
+        let mut snap = minimal_snapshot();
+        snap.player.hp = 20; // Low HP - protect_player (priority 3.0)
+        snap.objective = Some("anchor_unstable".into()); // stabilize_threads (priority 2.8)
+        snap.me.ammo = 1; // Has echo
+        snap.me.pos = IVec2 { x: 100, y: 100 }; // Bad position (priority 1.5)
+        
+        let plan = orch.propose_plan(&snap);
+        
+        // Should prioritize healing (protect_player has highest priority)
+        let first_step = &plan.steps[0];
+        assert!(matches!(first_step, ActionStep::Heal { .. }), 
+            "Should prioritize healing over other goals");
+    }
+
+    #[test]
+    fn test_heuristic_clone() {
+        let snap = minimal_snapshot();
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let cloned = heuristics.clone();
+        
+        assert_eq!(heuristics.player_low, cloned.player_low);
+        assert_eq!(heuristics.has_echo, cloned.has_echo);
+        assert_eq!(heuristics.position_good, cloned.position_good);
+    }
+}

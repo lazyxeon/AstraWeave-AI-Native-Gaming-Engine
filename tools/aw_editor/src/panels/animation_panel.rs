@@ -750,6 +750,90 @@ impl AnimationTab {
     }
 }
 
+/// External action events emitted by the animation panel.
+/// These represent high-level user actions that external systems can respond to.
+#[derive(Debug, Clone, PartialEq)]
+pub enum AnimationAction {
+    /// Play animation clip
+    PlayClip { clip_id: u32 },
+    /// Pause animation playback
+    PauseClip,
+    /// Stop animation and reset
+    StopClip,
+    /// Set playback speed
+    SetSpeed { speed: f32 },
+    /// Seek to time position
+    SeekTo { time: f32 },
+    /// Create new animation clip
+    CreateClip { name: String },
+    /// Delete animation clip
+    DeleteClip { clip_id: u32 },
+    /// Save animation clip
+    SaveClip { clip_id: u32 },
+    /// Add keyframe at current time
+    AddKeyframe { clip_id: u32, time: f32 },
+    /// Delete keyframe
+    DeleteKeyframe { clip_id: u32, keyframe_index: usize },
+    /// Create animation controller
+    CreateController { name: String },
+    /// Set loop mode for clip
+    SetLoopMode { clip_id: u32, loop_mode: LoopMode },
+    /// Trigger state transition
+    TriggerTransition { from_state: u32, to_state: u32 },
+}
+
+impl std::fmt::Display for AnimationAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl AnimationAction {
+    /// Returns the name of this action
+    pub fn name(&self) -> &'static str {
+        match self {
+            AnimationAction::PlayClip { .. } => "Play Clip",
+            AnimationAction::PauseClip => "Pause Clip",
+            AnimationAction::StopClip => "Stop Clip",
+            AnimationAction::SetSpeed { .. } => "Set Speed",
+            AnimationAction::SeekTo { .. } => "Seek To",
+            AnimationAction::CreateClip { .. } => "Create Clip",
+            AnimationAction::DeleteClip { .. } => "Delete Clip",
+            AnimationAction::SaveClip { .. } => "Save Clip",
+            AnimationAction::AddKeyframe { .. } => "Add Keyframe",
+            AnimationAction::DeleteKeyframe { .. } => "Delete Keyframe",
+            AnimationAction::CreateController { .. } => "Create Controller",
+            AnimationAction::SetLoopMode { .. } => "Set Loop Mode",
+            AnimationAction::TriggerTransition { .. } => "Trigger Transition",
+        }
+    }
+
+    /// Returns true if this is a playback control action
+    pub fn is_playback(&self) -> bool {
+        matches!(
+            self,
+            AnimationAction::PlayClip { .. }
+                | AnimationAction::PauseClip
+                | AnimationAction::StopClip
+                | AnimationAction::SetSpeed { .. }
+                | AnimationAction::SeekTo { .. }
+        )
+    }
+
+    /// Returns true if this is a clip editing action
+    pub fn is_clip_edit(&self) -> bool {
+        matches!(
+            self,
+            AnimationAction::CreateClip { .. }
+                | AnimationAction::DeleteClip { .. }
+                | AnimationAction::SaveClip { .. }
+                | AnimationAction::AddKeyframe { .. }
+                | AnimationAction::DeleteKeyframe { .. }
+                | AnimationAction::SetLoopMode { .. }
+        )
+    }
+}
+
 /// Main Animation Panel
 pub struct AnimationPanel {
     // Tab state
@@ -784,6 +868,9 @@ pub struct AnimationPanel {
     next_state_id: u32,
     next_transition_id: u32,
     next_parameter_id: u32,
+    
+    // Pending actions for external event handling
+    pending_actions: Vec<AnimationAction>,
 }
 
 impl Default for AnimationPanel {
@@ -814,6 +901,8 @@ impl Default for AnimationPanel {
             next_state_id: 1,
             next_transition_id: 1,
             next_parameter_id: 1,
+            
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -824,6 +913,37 @@ impl Default for AnimationPanel {
 impl AnimationPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions, leaving the queue empty.
+    /// External systems should call this each frame to retrieve actions.
+    pub fn take_actions(&mut self) -> Vec<AnimationAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions to process.
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for external handling.
+    fn queue_action(&mut self, action: AnimationAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Returns the preview speed.
+    pub fn preview_speed(&self) -> f32 {
+        self.preview_speed
+    }
+
+    /// Returns true if preview is playing.
+    pub fn is_playing(&self) -> bool {
+        self.preview_playing
+    }
+
+    /// Returns the current preview time.
+    pub fn preview_time(&self) -> f32 {
+        self.preview_time
     }
 
     fn create_sample_data(&mut self) {
@@ -2710,5 +2830,176 @@ mod tests {
         let default = ParameterValue::default();
         assert!(default.is_numeric());
         assert_eq!(default.as_float(), Some(0.0));
+    }
+
+    // ============================================================
+    // ANIMATION ACTION TESTS
+    // ============================================================
+
+    #[test]
+    fn test_action_system_initial_state() {
+        let panel = AnimationPanel::default();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_queue_and_take() {
+        let mut panel = AnimationPanel::default();
+        panel.queue_action(AnimationAction::PlayClip { clip_id: 1 });
+        panel.queue_action(AnimationAction::SetSpeed { speed: 1.5 });
+
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+
+        // Verify actions were drained
+        let empty = panel.take_actions();
+        assert!(empty.is_empty());
+    }
+
+    #[test]
+    fn test_action_names() {
+        let actions = vec![
+            (AnimationAction::PlayClip { clip_id: 1 }, "Play Clip"),
+            (AnimationAction::PauseClip, "Pause Clip"),
+            (AnimationAction::StopClip, "Stop Clip"),
+            (AnimationAction::SetSpeed { speed: 2.0 }, "Set Speed"),
+            (AnimationAction::SeekTo { time: 0.5 }, "Seek To"),
+            (AnimationAction::CreateClip { name: "new".to_string() }, "Create Clip"),
+            (AnimationAction::DeleteClip { clip_id: 1 }, "Delete Clip"),
+            (AnimationAction::SaveClip { clip_id: 1 }, "Save Clip"),
+            (AnimationAction::AddKeyframe { clip_id: 1, time: 0.0 }, "Add Keyframe"),
+            (AnimationAction::DeleteKeyframe { clip_id: 1, keyframe_index: 0 }, "Delete Keyframe"),
+            (AnimationAction::CreateController { name: "ctrl".to_string() }, "Create Controller"),
+            (AnimationAction::SetLoopMode { clip_id: 1, loop_mode: LoopMode::Loop }, "Set Loop Mode"),
+            (AnimationAction::TriggerTransition { from_state: 0, to_state: 1 }, "Trigger Transition"),
+        ];
+
+        for (action, expected_name) in actions {
+            assert_eq!(action.name(), expected_name);
+        }
+    }
+
+    #[test]
+    fn test_action_is_playback() {
+        assert!(AnimationAction::PlayClip { clip_id: 1 }.is_playback());
+        assert!(AnimationAction::PauseClip.is_playback());
+        assert!(AnimationAction::StopClip.is_playback());
+        assert!(AnimationAction::SetSpeed { speed: 1.0 }.is_playback());
+        assert!(AnimationAction::SeekTo { time: 0.0 }.is_playback());
+
+        assert!(!AnimationAction::SetLoopMode { clip_id: 1, loop_mode: LoopMode::Once }.is_playback());
+        assert!(!AnimationAction::CreateClip { name: "test".to_string() }.is_playback());
+        assert!(!AnimationAction::DeleteClip { clip_id: 1 }.is_playback());
+        assert!(!AnimationAction::SaveClip { clip_id: 1 }.is_playback());
+    }
+
+    #[test]
+    fn test_action_is_clip_edit() {
+        assert!(AnimationAction::CreateClip { name: "test".to_string() }.is_clip_edit());
+        assert!(AnimationAction::DeleteClip { clip_id: 1 }.is_clip_edit());
+        assert!(AnimationAction::SaveClip { clip_id: 1 }.is_clip_edit());
+        assert!(AnimationAction::AddKeyframe { clip_id: 1, time: 0.0 }.is_clip_edit());
+        assert!(AnimationAction::DeleteKeyframe { clip_id: 1, keyframe_index: 0 }.is_clip_edit());
+
+        assert!(!AnimationAction::PlayClip { clip_id: 1 }.is_clip_edit());
+        assert!(!AnimationAction::PauseClip.is_clip_edit());
+        assert!(!AnimationAction::SetSpeed { speed: 1.0 }.is_clip_edit());
+    }
+
+    #[test]
+    fn test_action_display() {
+        let action = AnimationAction::PlayClip { clip_id: 1 };
+        let display = format!("{}", action);
+        assert_eq!(display, "Play Clip");
+
+        let action = AnimationAction::SetSpeed { speed: 2.5 };
+        let display = format!("{}", action);
+        assert_eq!(display, "Set Speed");
+    }
+
+    #[test]
+    fn test_preview_speed_initial() {
+        let panel = AnimationPanel::default();
+        assert!((panel.preview_speed() - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_is_playing_initial() {
+        let panel = AnimationPanel::default();
+        assert!(!panel.is_playing());
+    }
+
+    #[test]
+    fn test_preview_time_initial() {
+        let panel = AnimationPanel::default();
+        assert!((panel.preview_time()).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_multiple_playback_actions() {
+        let mut panel = AnimationPanel::default();
+        panel.queue_action(AnimationAction::PlayClip { clip_id: 1 });
+        panel.queue_action(AnimationAction::SetSpeed { speed: 2.0 });
+        panel.queue_action(AnimationAction::SeekTo { time: 1.5 });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 3);
+        assert!(actions.iter().all(|a| a.is_playback()));
+    }
+
+    #[test]
+    fn test_multiple_clip_edit_actions() {
+        let mut panel = AnimationPanel::default();
+        panel.queue_action(AnimationAction::CreateClip { name: "new_clip".to_string() });
+        panel.queue_action(AnimationAction::AddKeyframe { clip_id: 1, time: 0.0 });
+        panel.queue_action(AnimationAction::AddKeyframe { clip_id: 1, time: 1.0 });
+        panel.queue_action(AnimationAction::SaveClip { clip_id: 1 });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 4);
+        assert!(actions.iter().all(|a| a.is_clip_edit()));
+    }
+
+    #[test]
+    fn test_mixed_action_types() {
+        let mut panel = AnimationPanel::default();
+        panel.queue_action(AnimationAction::PlayClip { clip_id: 1 });
+        panel.queue_action(AnimationAction::AddKeyframe { clip_id: 2, time: 0.5 });
+        panel.queue_action(AnimationAction::CreateController { name: "character".to_string() });
+        panel.queue_action(AnimationAction::TriggerTransition { from_state: 0, to_state: 1 });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 4);
+
+        // Check categories
+        let playback_count = actions.iter().filter(|a| a.is_playback()).count();
+        let edit_count = actions.iter().filter(|a| a.is_clip_edit()).count();
+
+        assert_eq!(playback_count, 1); // PlayClip
+        assert_eq!(edit_count, 1); // AddKeyframe
+    }
+
+    #[test]
+    fn test_action_with_transition() {
+        let action = AnimationAction::TriggerTransition {
+            from_state: 0,
+            to_state: 1,
+        };
+        assert_eq!(action.name(), "Trigger Transition");
+        assert!(!action.is_playback());
+        assert!(!action.is_clip_edit());
+    }
+
+    #[test]
+    fn test_action_with_controller() {
+        let action = AnimationAction::CreateController {
+            name: "player_controller".to_string(),
+        };
+        assert_eq!(action.name(), "Create Controller");
+        assert!(!action.is_playback());
+        assert!(!action.is_clip_edit());
     }
 }

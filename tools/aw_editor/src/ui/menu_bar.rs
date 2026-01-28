@@ -350,3 +350,426 @@ impl MenuBar {
             });
     }
 }
+
+impl AlignDirection {
+    /// Returns all align direction variants.
+    pub fn all() -> &'static [Self] {
+        &[
+            Self::Left,
+            Self::Right,
+            Self::Top,
+            Self::Bottom,
+            Self::CenterX,
+            Self::CenterZ,
+        ]
+    }
+
+    /// Returns the display name for this alignment.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Left => "Left",
+            Self::Right => "Right",
+            Self::Top => "Top",
+            Self::Bottom => "Bottom",
+            Self::CenterX => "Center X",
+            Self::CenterZ => "Center Z",
+        }
+    }
+
+    /// Returns the icon for this alignment.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Left => "⬅",
+            Self::Right => "➡",
+            Self::Top => "⬆",
+            Self::Bottom => "⬇",
+            Self::CenterX => "↔",
+            Self::CenterZ => "↕",
+        }
+    }
+
+    /// Returns true if this is a horizontal alignment.
+    pub fn is_horizontal(&self) -> bool {
+        matches!(self, Self::Left | Self::Right | Self::CenterX)
+    }
+
+    /// Returns true if this is a vertical alignment.
+    pub fn is_vertical(&self) -> bool {
+        matches!(self, Self::Top | Self::Bottom | Self::CenterZ)
+    }
+
+    /// Returns true if this is a center alignment.
+    pub fn is_center(&self) -> bool {
+        matches!(self, Self::CenterX | Self::CenterZ)
+    }
+
+    /// Returns the axis this alignment operates on ("X" or "Z").
+    pub fn axis(&self) -> &'static str {
+        match self {
+            Self::Left | Self::Right | Self::CenterX => "X",
+            Self::Top | Self::Bottom | Self::CenterZ => "Z",
+        }
+    }
+}
+
+impl std::fmt::Display for AlignDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl DistributeDirection {
+    /// Returns all distribute direction variants.
+    pub fn all() -> &'static [Self] {
+        &[Self::X, Self::Z]
+    }
+
+    /// Returns the display name for this distribution.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::X => "Distribute X",
+            Self::Z => "Distribute Z",
+        }
+    }
+
+    /// Returns the icon for this distribution.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::X => "↔",
+            Self::Z => "↕",
+        }
+    }
+
+    /// Returns the axis name.
+    pub fn axis(&self) -> &'static str {
+        match self {
+            Self::X => "X",
+            Self::Z => "Z",
+        }
+    }
+
+    /// Returns the keyboard shortcut hint.
+    pub fn shortcut_hint(&self) -> &'static str {
+        match self {
+            Self::X => "Ctrl+Shift+X",
+            Self::Z => "Ctrl+Shift+Z",
+        }
+    }
+}
+
+impl std::fmt::Display for DistributeDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+/// Layout preset names available in the editor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LayoutPreset {
+    Default,
+    Wide,
+    Compact,
+    Modeling,
+    Animation,
+    Debug,
+}
+
+impl LayoutPreset {
+    /// Returns all layout preset variants.
+    pub fn all() -> &'static [Self] {
+        &[
+            Self::Default,
+            Self::Wide,
+            Self::Compact,
+            Self::Modeling,
+            Self::Animation,
+            Self::Debug,
+        ]
+    }
+
+    /// Returns the display name for this preset.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Default => "Default",
+            Self::Wide => "Wide",
+            Self::Compact => "Compact",
+            Self::Modeling => "Modeling",
+            Self::Animation => "Animation",
+            Self::Debug => "Debug",
+        }
+    }
+
+    /// Returns the icon for this preset.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Default => "📊",
+            Self::Wide => "📐",
+            Self::Compact => "📦",
+            Self::Modeling => "🎨",
+            Self::Animation => "🎬",
+            Self::Debug => "🐛",
+        }
+    }
+
+    /// Returns a description of this preset.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::Default => "Standard editor layout with balanced panels",
+            Self::Wide => "Maximized viewport with side panels",
+            Self::Compact => "Minimal panel layout for smaller screens",
+            Self::Modeling => "Focused on 3D modeling with material and mesh tools",
+            Self::Animation => "Optimized for animation workflow with timeline",
+            Self::Debug => "Debugging layout with console and performance panels",
+        }
+    }
+
+    /// Parse a preset from a string name.
+    pub fn from_str(name: &str) -> Option<Self> {
+        match name {
+            "Default" => Some(Self::Default),
+            "Wide" => Some(Self::Wide),
+            "Compact" => Some(Self::Compact),
+            "Modeling" => Some(Self::Modeling),
+            "Animation" => Some(Self::Animation),
+            "Debug" => Some(Self::Debug),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for LayoutPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ========================================================================
+    // AlignDirection Tests
+    // ========================================================================
+
+    #[test]
+    fn test_align_direction_all() {
+        let all = AlignDirection::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&AlignDirection::Left));
+        assert!(all.contains(&AlignDirection::Right));
+        assert!(all.contains(&AlignDirection::Top));
+        assert!(all.contains(&AlignDirection::Bottom));
+        assert!(all.contains(&AlignDirection::CenterX));
+        assert!(all.contains(&AlignDirection::CenterZ));
+    }
+
+    #[test]
+    fn test_align_direction_name() {
+        assert_eq!(AlignDirection::Left.name(), "Left");
+        assert_eq!(AlignDirection::Right.name(), "Right");
+        assert_eq!(AlignDirection::Top.name(), "Top");
+        assert_eq!(AlignDirection::Bottom.name(), "Bottom");
+        assert_eq!(AlignDirection::CenterX.name(), "Center X");
+        assert_eq!(AlignDirection::CenterZ.name(), "Center Z");
+    }
+
+    #[test]
+    fn test_align_direction_icon() {
+        assert!(!AlignDirection::Left.icon().is_empty());
+        assert!(!AlignDirection::Right.icon().is_empty());
+        assert!(!AlignDirection::Top.icon().is_empty());
+        assert!(!AlignDirection::Bottom.icon().is_empty());
+        assert!(!AlignDirection::CenterX.icon().is_empty());
+        assert!(!AlignDirection::CenterZ.icon().is_empty());
+    }
+
+    #[test]
+    fn test_align_direction_is_horizontal() {
+        assert!(AlignDirection::Left.is_horizontal());
+        assert!(AlignDirection::Right.is_horizontal());
+        assert!(AlignDirection::CenterX.is_horizontal());
+        assert!(!AlignDirection::Top.is_horizontal());
+        assert!(!AlignDirection::Bottom.is_horizontal());
+        assert!(!AlignDirection::CenterZ.is_horizontal());
+    }
+
+    #[test]
+    fn test_align_direction_is_vertical() {
+        assert!(!AlignDirection::Left.is_vertical());
+        assert!(!AlignDirection::Right.is_vertical());
+        assert!(!AlignDirection::CenterX.is_vertical());
+        assert!(AlignDirection::Top.is_vertical());
+        assert!(AlignDirection::Bottom.is_vertical());
+        assert!(AlignDirection::CenterZ.is_vertical());
+    }
+
+    #[test]
+    fn test_align_direction_is_center() {
+        assert!(!AlignDirection::Left.is_center());
+        assert!(!AlignDirection::Right.is_center());
+        assert!(AlignDirection::CenterX.is_center());
+        assert!(!AlignDirection::Top.is_center());
+        assert!(!AlignDirection::Bottom.is_center());
+        assert!(AlignDirection::CenterZ.is_center());
+    }
+
+    #[test]
+    fn test_align_direction_axis() {
+        assert_eq!(AlignDirection::Left.axis(), "X");
+        assert_eq!(AlignDirection::Right.axis(), "X");
+        assert_eq!(AlignDirection::CenterX.axis(), "X");
+        assert_eq!(AlignDirection::Top.axis(), "Z");
+        assert_eq!(AlignDirection::Bottom.axis(), "Z");
+        assert_eq!(AlignDirection::CenterZ.axis(), "Z");
+    }
+
+    #[test]
+    fn test_align_direction_display() {
+        assert_eq!(format!("{}", AlignDirection::Left), "Left");
+        assert_eq!(format!("{}", AlignDirection::CenterX), "Center X");
+    }
+
+    #[test]
+    fn test_align_direction_equality() {
+        assert_eq!(AlignDirection::Left, AlignDirection::Left);
+        assert_ne!(AlignDirection::Left, AlignDirection::Right);
+    }
+
+    #[test]
+    fn test_align_direction_clone() {
+        let dir = AlignDirection::Top;
+        let cloned = dir;
+        assert_eq!(dir, cloned);
+    }
+
+    // ========================================================================
+    // DistributeDirection Tests
+    // ========================================================================
+
+    #[test]
+    fn test_distribute_direction_all() {
+        let all = DistributeDirection::all();
+        assert_eq!(all.len(), 2);
+        assert!(all.contains(&DistributeDirection::X));
+        assert!(all.contains(&DistributeDirection::Z));
+    }
+
+    #[test]
+    fn test_distribute_direction_name() {
+        assert_eq!(DistributeDirection::X.name(), "Distribute X");
+        assert_eq!(DistributeDirection::Z.name(), "Distribute Z");
+    }
+
+    #[test]
+    fn test_distribute_direction_icon() {
+        assert!(!DistributeDirection::X.icon().is_empty());
+        assert!(!DistributeDirection::Z.icon().is_empty());
+    }
+
+    #[test]
+    fn test_distribute_direction_axis() {
+        assert_eq!(DistributeDirection::X.axis(), "X");
+        assert_eq!(DistributeDirection::Z.axis(), "Z");
+    }
+
+    #[test]
+    fn test_distribute_direction_shortcut_hint() {
+        assert!(!DistributeDirection::X.shortcut_hint().is_empty());
+        assert!(!DistributeDirection::Z.shortcut_hint().is_empty());
+    }
+
+    #[test]
+    fn test_distribute_direction_display() {
+        assert_eq!(format!("{}", DistributeDirection::X), "Distribute X");
+        assert_eq!(format!("{}", DistributeDirection::Z), "Distribute Z");
+    }
+
+    #[test]
+    fn test_distribute_direction_equality() {
+        assert_eq!(DistributeDirection::X, DistributeDirection::X);
+        assert_ne!(DistributeDirection::X, DistributeDirection::Z);
+    }
+
+    // ========================================================================
+    // LayoutPreset Tests
+    // ========================================================================
+
+    #[test]
+    fn test_layout_preset_all() {
+        let all = LayoutPreset::all();
+        assert_eq!(all.len(), 6);
+        assert!(all.contains(&LayoutPreset::Default));
+        assert!(all.contains(&LayoutPreset::Wide));
+        assert!(all.contains(&LayoutPreset::Compact));
+        assert!(all.contains(&LayoutPreset::Modeling));
+        assert!(all.contains(&LayoutPreset::Animation));
+        assert!(all.contains(&LayoutPreset::Debug));
+    }
+
+    #[test]
+    fn test_layout_preset_name() {
+        assert_eq!(LayoutPreset::Default.name(), "Default");
+        assert_eq!(LayoutPreset::Wide.name(), "Wide");
+        assert_eq!(LayoutPreset::Compact.name(), "Compact");
+        assert_eq!(LayoutPreset::Modeling.name(), "Modeling");
+        assert_eq!(LayoutPreset::Animation.name(), "Animation");
+        assert_eq!(LayoutPreset::Debug.name(), "Debug");
+    }
+
+    #[test]
+    fn test_layout_preset_icon() {
+        for preset in LayoutPreset::all() {
+            assert!(!preset.icon().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_layout_preset_description() {
+        for preset in LayoutPreset::all() {
+            assert!(!preset.description().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_layout_preset_from_str() {
+        assert_eq!(LayoutPreset::from_str("Default"), Some(LayoutPreset::Default));
+        assert_eq!(LayoutPreset::from_str("Wide"), Some(LayoutPreset::Wide));
+        assert_eq!(LayoutPreset::from_str("Compact"), Some(LayoutPreset::Compact));
+        assert_eq!(LayoutPreset::from_str("Modeling"), Some(LayoutPreset::Modeling));
+        assert_eq!(LayoutPreset::from_str("Animation"), Some(LayoutPreset::Animation));
+        assert_eq!(LayoutPreset::from_str("Debug"), Some(LayoutPreset::Debug));
+        assert_eq!(LayoutPreset::from_str("InvalidPreset"), None);
+        assert_eq!(LayoutPreset::from_str(""), None);
+    }
+
+    #[test]
+    fn test_layout_preset_display() {
+        assert_eq!(format!("{}", LayoutPreset::Default), "Default");
+        assert_eq!(format!("{}", LayoutPreset::Animation), "Animation");
+    }
+
+    #[test]
+    fn test_layout_preset_equality() {
+        assert_eq!(LayoutPreset::Default, LayoutPreset::Default);
+        assert_ne!(LayoutPreset::Default, LayoutPreset::Wide);
+    }
+
+    #[test]
+    fn test_layout_preset_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(LayoutPreset::Default);
+        set.insert(LayoutPreset::Wide);
+        set.insert(LayoutPreset::Default); // Duplicate
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn test_layout_preset_roundtrip() {
+        for preset in LayoutPreset::all() {
+            let name = preset.name();
+            let parsed = LayoutPreset::from_str(name);
+            assert_eq!(parsed, Some(*preset));
+        }
+    }
+}

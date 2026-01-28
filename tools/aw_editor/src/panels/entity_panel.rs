@@ -62,6 +62,105 @@ impl PrefabAction {
     }
 }
 
+/// Actions that can be performed by the entity panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum EntityAction {
+    // Entity selection
+    SelectEntity(Entity),
+    DeselectEntity,
+    SelectMultiple(Vec<Entity>),
+    ClearSelection,
+    
+    // Entity creation
+    SpawnFromArchetype(EntityArchetype),
+    SpawnMultiple { archetype: EntityArchetype, count: usize },
+    DuplicateEntity(Entity),
+    DeleteEntity(Entity),
+    DeleteMultiple(Vec<Entity>),
+    
+    // Component operations
+    AddComponent { entity: Entity, component_name: String },
+    RemoveComponent { entity: Entity, component_name: String },
+    SetHealth { entity: Entity, hp: i32 },
+    SetPosition { entity: Entity, x: i32, y: i32 },
+    SetTeam { entity: Entity, team_id: u8 },
+    SetAmmo { entity: Entity, ammo: i32 },
+    
+    // Favorites
+    AddToFavorites(Entity),
+    RemoveFromFavorites(Entity),
+    ClearFavorites,
+    
+    // Validation
+    ValidateEntity(Entity),
+    ValidateAll,
+    ToggleAutoValidate(bool),
+    
+    // Filtering
+    SetFilterQuery(String),
+    SetFilterTeam(Option<u8>),
+    SetFilterHealthRange { min: Option<i32>, max: Option<i32> },
+    ClearFilters,
+    
+    // Bulk operations
+    SetTeamForAll { team_id: u8, entities: Vec<Entity> },
+    SetHealthForAll { hp: i32, entities: Vec<Entity> },
+    DeleteFiltered,
+    
+    // Statistics
+    ToggleStats(bool),
+    RefreshStats,
+    
+    // Prefab operations (wrapping PrefabAction for unified handling)
+    Prefab(PrefabAction),
+}
+
+impl std::fmt::Display for EntityAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SelectEntity(e) => write!(f, "Select entity {:?}", e),
+            Self::DeselectEntity => write!(f, "Deselect entity"),
+            Self::SelectMultiple(entities) => write!(f, "Select {} entities", entities.len()),
+            Self::ClearSelection => write!(f, "Clear selection"),
+            Self::SpawnFromArchetype(arch) => write!(f, "Spawn {}", arch.name()),
+            Self::SpawnMultiple { archetype, count } => write!(f, "Spawn {} {}s", count, archetype.name()),
+            Self::DuplicateEntity(e) => write!(f, "Duplicate entity {:?}", e),
+            Self::DeleteEntity(e) => write!(f, "Delete entity {:?}", e),
+            Self::DeleteMultiple(entities) => write!(f, "Delete {} entities", entities.len()),
+            Self::AddComponent { entity, component_name } => write!(f, "Add {} to {:?}", component_name, entity),
+            Self::RemoveComponent { entity, component_name } => write!(f, "Remove {} from {:?}", component_name, entity),
+            Self::SetHealth { entity, hp } => write!(f, "Set {:?} health to {}", entity, hp),
+            Self::SetPosition { entity, x, y } => write!(f, "Move {:?} to ({}, {})", entity, x, y),
+            Self::SetTeam { entity, team_id } => write!(f, "Set {:?} team to {}", entity, team_id),
+            Self::SetAmmo { entity, ammo } => write!(f, "Set {:?} ammo to {}", entity, ammo),
+            Self::AddToFavorites(e) => write!(f, "Add {:?} to favorites", e),
+            Self::RemoveFromFavorites(e) => write!(f, "Remove {:?} from favorites", e),
+            Self::ClearFavorites => write!(f, "Clear favorites"),
+            Self::ValidateEntity(e) => write!(f, "Validate {:?}", e),
+            Self::ValidateAll => write!(f, "Validate all entities"),
+            Self::ToggleAutoValidate(on) => write!(f, "Turn auto-validate {}", if *on { "on" } else { "off" }),
+            Self::SetFilterQuery(q) => write!(f, "Filter by '{}'", q),
+            Self::SetFilterTeam(Some(t)) => write!(f, "Filter by team {}", t),
+            Self::SetFilterTeam(None) => write!(f, "Clear team filter"),
+            Self::SetFilterHealthRange { min, max } => {
+                match (min, max) {
+                    (Some(mn), Some(mx)) => write!(f, "Filter health {}-{}", mn, mx),
+                    (Some(mn), None) => write!(f, "Filter health >= {}", mn),
+                    (None, Some(mx)) => write!(f, "Filter health <= {}", mx),
+                    (None, None) => write!(f, "Clear health filter"),
+                }
+            }
+            Self::ClearFilters => write!(f, "Clear all filters"),
+            Self::SetTeamForAll { team_id, entities } => write!(f, "Set team {} for {} entities", team_id, entities.len()),
+            Self::SetHealthForAll { hp, entities } => write!(f, "Set health {} for {} entities", hp, entities.len()),
+            Self::DeleteFiltered => write!(f, "Delete filtered entities"),
+            Self::ToggleStats(on) => write!(f, "Turn stats {}", if *on { "on" } else { "off" }),
+            Self::RefreshStats => write!(f, "Refresh statistics"),
+            Self::Prefab(action) => write!(f, "Prefab: {}", action),
+        }
+    }
+}
+
 /// Entity template archetype
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EntityArchetype {
@@ -257,6 +356,9 @@ pub struct EntityPanel {
     entity_stats: EntityStats,
     show_stats: bool,
     search_results: Vec<Entity>,
+    
+    // Action queue for external processing
+    pending_actions: Vec<EntityAction>,
 }
 
 impl EntityPanel {
@@ -272,7 +374,30 @@ impl EntityPanel {
             entity_stats: EntityStats::default(),
             show_stats: true,
             search_results: Vec::new(),
+            pending_actions: Vec::new(),
         }
+    }
+    
+    // ==================== Action Queue Methods ====================
+    
+    /// Takes all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<EntityAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+    
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+    
+    /// Queue an action for external processing
+    pub fn queue_action(&mut self, action: EntityAction) {
+        self.pending_actions.push(action);
+    }
+    
+    /// Returns a reference to pending actions
+    pub fn pending_actions(&self) -> &[EntityAction] {
+        &self.pending_actions
     }
 
     /// Update entity statistics
@@ -1911,5 +2036,178 @@ mod tests {
         assert!(ValidationSeverity::Error.is_serious());
         assert!(ValidationSeverity::Warning.is_serious());
         assert!(!ValidationSeverity::Info.is_serious());
+    }
+
+    // =====================================================================
+    // EntityAction Tests
+    // =====================================================================
+
+    #[test]
+    fn test_entity_action_display_selection() {
+        let action = EntityAction::SelectEntity(42);
+        assert!(format!("{}", action).contains("42"));
+        
+        let action = EntityAction::DeselectEntity;
+        assert!(format!("{}", action).contains("Deselect"));
+        
+        let action = EntityAction::ClearSelection;
+        assert!(format!("{}", action).contains("Clear"));
+    }
+
+    #[test]
+    fn test_entity_action_display_creation() {
+        let action = EntityAction::SpawnFromArchetype(EntityArchetype::Player);
+        assert!(format!("{}", action).contains("Player"));
+        
+        let action = EntityAction::SpawnMultiple { 
+            archetype: EntityArchetype::Enemy, 
+            count: 10 
+        };
+        let display = format!("{}", action);
+        assert!(display.contains("10"));
+        assert!(display.contains("Enemy"));
+    }
+
+    #[test]
+    fn test_entity_action_display_components() {
+        let action = EntityAction::AddComponent { 
+            entity: 1, 
+            component_name: "Health".to_string() 
+        };
+        assert!(format!("{}", action).contains("Health"));
+        
+        let action = EntityAction::SetHealth { entity: 1, hp: 100 };
+        assert!(format!("{}", action).contains("100"));
+        
+        let action = EntityAction::SetPosition { entity: 1, x: 10, y: 20 };
+        let display = format!("{}", action);
+        assert!(display.contains("10"));
+        assert!(display.contains("20"));
+    }
+
+    #[test]
+    fn test_entity_action_display_favorites() {
+        let action = EntityAction::AddToFavorites(5);
+        assert!(format!("{}", action).contains("favorites"));
+        
+        let action = EntityAction::RemoveFromFavorites(5);
+        assert!(format!("{}", action).contains("Remove"));
+        
+        let action = EntityAction::ClearFavorites;
+        assert!(format!("{}", action).contains("Clear"));
+    }
+
+    #[test]
+    fn test_entity_action_display_validation() {
+        let action = EntityAction::ValidateEntity(1);
+        assert!(format!("{}", action).contains("Validate"));
+        
+        let action = EntityAction::ValidateAll;
+        assert!(format!("{}", action).contains("all"));
+        
+        let action = EntityAction::ToggleAutoValidate(true);
+        assert!(format!("{}", action).contains("on"));
+    }
+
+    #[test]
+    fn test_entity_action_display_filtering() {
+        let action = EntityAction::SetFilterQuery("player".to_string());
+        assert!(format!("{}", action).contains("player"));
+        
+        let action = EntityAction::SetFilterTeam(Some(2));
+        assert!(format!("{}", action).contains("2"));
+        
+        let action = EntityAction::SetFilterTeam(None);
+        assert!(format!("{}", action).contains("Clear"));
+    }
+
+    #[test]
+    fn test_entity_action_display_health_range() {
+        let action = EntityAction::SetFilterHealthRange { min: Some(10), max: Some(100) };
+        let display = format!("{}", action);
+        assert!(display.contains("10"));
+        assert!(display.contains("100"));
+        
+        let action = EntityAction::SetFilterHealthRange { min: Some(50), max: None };
+        assert!(format!("{}", action).contains(">= 50"));
+        
+        let action = EntityAction::SetFilterHealthRange { min: None, max: Some(75) };
+        assert!(format!("{}", action).contains("<= 75"));
+    }
+
+    #[test]
+    fn test_entity_action_display_bulk() {
+        let action = EntityAction::SetTeamForAll { team_id: 1, entities: vec![1, 2, 3] };
+        assert!(format!("{}", action).contains("3 entities"));
+        
+        let action = EntityAction::DeleteFiltered;
+        assert!(format!("{}", action).contains("Delete"));
+    }
+
+    #[test]
+    fn test_entity_action_display_prefab() {
+        let action = EntityAction::Prefab(PrefabAction::RevertToOriginal(1));
+        assert!(format!("{}", action).contains("Prefab"));
+    }
+
+    #[test]
+    fn test_entity_panel_action_queue() {
+        let mut panel = EntityPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+        
+        panel.queue_action(EntityAction::SelectEntity(1));
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_entity_panel_take_actions() {
+        let mut panel = EntityPanel::new();
+        panel.queue_action(EntityAction::SpawnFromArchetype(EntityArchetype::Enemy));
+        panel.queue_action(EntityAction::SetHealth { entity: 1, hp: 50 });
+        
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_entity_panel_action_order() {
+        let mut panel = EntityPanel::new();
+        panel.queue_action(EntityAction::SpawnFromArchetype(EntityArchetype::Player));
+        panel.queue_action(EntityAction::SelectEntity(1));
+        panel.queue_action(EntityAction::SetTeam { entity: 1, team_id: 0 });
+        
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], EntityAction::SpawnFromArchetype(_)));
+        assert!(matches!(actions[1], EntityAction::SelectEntity(_)));
+        assert!(matches!(actions[2], EntityAction::SetTeam { .. }));
+    }
+
+    #[test]
+    fn test_entity_action_stats() {
+        let action = EntityAction::ToggleStats(true);
+        assert!(format!("{}", action).contains("on"));
+        
+        let action = EntityAction::RefreshStats;
+        assert!(format!("{}", action).contains("Refresh"));
+    }
+
+    #[test]
+    fn test_entity_action_equality() {
+        let a1 = EntityAction::SelectEntity(5);
+        let a2 = EntityAction::SelectEntity(5);
+        let a3 = EntityAction::SelectEntity(10);
+        
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+    }
+
+    #[test]
+    fn test_entity_action_clone() {
+        let action = EntityAction::SetFilterQuery("test".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
     }
 }

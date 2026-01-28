@@ -434,6 +434,9 @@ pub struct TerrainPanel {
     brush_radius: f32,
     brush_strength: f32,
     selected_material: usize,
+
+    /// Action queue
+    pending_actions: Vec<TerrainAction>,
 }
 
 /// Brush modes for terrain sculpting
@@ -484,6 +487,47 @@ impl BrushMode {
     }
 }
 
+/// Actions that can be performed on the terrain panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum TerrainAction {
+    /// Generate terrain with current settings
+    Generate,
+    /// Regenerate terrain with a new random seed
+    RandomizeSeed,
+    /// Set a specific seed value
+    SetSeed(u64),
+    /// Set the primary biome
+    SetBiome(String),
+    /// Set the chunk radius
+    SetChunkRadius(i32),
+    /// Apply an erosion preset
+    ApplyErosionPreset(ErosionPresetType),
+    /// Run hydraulic erosion
+    RunHydraulicErosion,
+    /// Run thermal erosion
+    RunThermalErosion,
+    /// Run wind erosion
+    RunWindErosion,
+    /// Set brush mode
+    SetBrushMode(BrushMode),
+    /// Set brush radius
+    SetBrushRadius(f32),
+    /// Set brush strength
+    SetBrushStrength(f32),
+    /// Apply brush at position
+    ApplyBrush { position: [f32; 3] },
+    /// Toggle fluid simulation
+    ToggleFluidSimulation(bool),
+    /// Reset fluid simulation
+    ResetFluidSimulation,
+    /// Export heightmap
+    ExportHeightmap { path: String },
+    /// Import heightmap
+    ImportHeightmap { path: String },
+    /// Toggle auto-regenerate
+    ToggleAutoRegenerate(bool),
+}
+
 #[derive(Default, Clone)]
 struct GenerationStats {
     chunks_generated: usize,
@@ -524,6 +568,7 @@ impl Default for TerrainPanel {
             brush_radius: 5.0,
             brush_strength: 0.5,
             selected_material: 0,
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -531,6 +576,21 @@ impl Default for TerrainPanel {
 impl TerrainPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions, leaving the queue empty
+    pub fn take_actions(&mut self) -> Vec<TerrainAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: TerrainAction) {
+        self.pending_actions.push(action);
     }
     
     /// Get reference to terrain state for rendering
@@ -1685,5 +1745,144 @@ mod tests {
             set.insert(*mode);
         }
         assert_eq!(set.len(), BrushMode::all().len());
+    }
+
+    // TerrainAction tests
+    #[test]
+    fn test_terrain_action_generate() {
+        let action = TerrainAction::Generate;
+        assert!(matches!(action, TerrainAction::Generate));
+    }
+
+    #[test]
+    fn test_terrain_action_set_seed() {
+        let action = TerrainAction::SetSeed(12345);
+        if let TerrainAction::SetSeed(seed) = action {
+            assert_eq!(seed, 12345);
+        } else {
+            panic!("Expected SetSeed action");
+        }
+    }
+
+    #[test]
+    fn test_terrain_action_set_biome() {
+        let action = TerrainAction::SetBiome("desert".to_string());
+        if let TerrainAction::SetBiome(biome) = action {
+            assert_eq!(biome, "desert");
+        } else {
+            panic!("Expected SetBiome action");
+        }
+    }
+
+    #[test]
+    fn test_terrain_action_chunk_radius() {
+        let action = TerrainAction::SetChunkRadius(3);
+        assert!(matches!(action, TerrainAction::SetChunkRadius(3)));
+    }
+
+    #[test]
+    fn test_terrain_action_erosion_preset() {
+        let action = TerrainAction::ApplyErosionPreset(ErosionPresetType::Mountain);
+        assert!(matches!(action, TerrainAction::ApplyErosionPreset(ErosionPresetType::Mountain)));
+    }
+
+    #[test]
+    fn test_terrain_action_run_erosion() {
+        let hydraulic = TerrainAction::RunHydraulicErosion;
+        let thermal = TerrainAction::RunThermalErosion;
+        let wind = TerrainAction::RunWindErosion;
+        
+        assert!(matches!(hydraulic, TerrainAction::RunHydraulicErosion));
+        assert!(matches!(thermal, TerrainAction::RunThermalErosion));
+        assert!(matches!(wind, TerrainAction::RunWindErosion));
+    }
+
+    #[test]
+    fn test_terrain_action_brush_mode() {
+        let action = TerrainAction::SetBrushMode(BrushMode::Sculpt);
+        assert!(matches!(action, TerrainAction::SetBrushMode(BrushMode::Sculpt)));
+    }
+
+    #[test]
+    fn test_terrain_action_brush_settings() {
+        let radius = TerrainAction::SetBrushRadius(10.0);
+        let strength = TerrainAction::SetBrushStrength(0.75);
+        
+        if let TerrainAction::SetBrushRadius(r) = radius {
+            assert!((r - 10.0).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SetBrushRadius");
+        }
+        
+        if let TerrainAction::SetBrushStrength(s) = strength {
+            assert!((s - 0.75).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SetBrushStrength");
+        }
+    }
+
+    #[test]
+    fn test_terrain_action_apply_brush() {
+        let action = TerrainAction::ApplyBrush { position: [1.0, 2.0, 3.0] };
+        if let TerrainAction::ApplyBrush { position } = action {
+            assert_eq!(position, [1.0, 2.0, 3.0]);
+        } else {
+            panic!("Expected ApplyBrush action");
+        }
+    }
+
+    #[test]
+    fn test_terrain_action_fluid_simulation() {
+        let toggle = TerrainAction::ToggleFluidSimulation(true);
+        let reset = TerrainAction::ResetFluidSimulation;
+        
+        assert!(matches!(toggle, TerrainAction::ToggleFluidSimulation(true)));
+        assert!(matches!(reset, TerrainAction::ResetFluidSimulation));
+    }
+
+    #[test]
+    fn test_terrain_action_export_import() {
+        let export = TerrainAction::ExportHeightmap { path: "/tmp/height.raw".to_string() };
+        let import = TerrainAction::ImportHeightmap { path: "/tmp/height.raw".to_string() };
+        
+        if let TerrainAction::ExportHeightmap { path } = export {
+            assert_eq!(path, "/tmp/height.raw");
+        } else {
+            panic!("Expected ExportHeightmap");
+        }
+        
+        if let TerrainAction::ImportHeightmap { path } = import {
+            assert_eq!(path, "/tmp/height.raw");
+        } else {
+            panic!("Expected ImportHeightmap");
+        }
+    }
+
+    #[test]
+    fn test_terrain_action_queue_and_take() {
+        let mut panel = TerrainPanel::new();
+        assert!(!panel.has_pending_actions());
+
+        panel.queue_action(TerrainAction::Generate);
+        panel.queue_action(TerrainAction::SetSeed(999));
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_terrain_action_equality() {
+        let a1 = TerrainAction::RandomizeSeed;
+        let a2 = TerrainAction::RandomizeSeed;
+        assert_eq!(a1, a2);
+    }
+
+    #[test]
+    fn test_terrain_action_debug() {
+        let action = TerrainAction::ToggleAutoRegenerate(true);
+        let debug_str = format!("{:?}", action);
+        assert!(debug_str.contains("ToggleAutoRegenerate"));
     }
 }

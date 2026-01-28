@@ -1,3 +1,8 @@
+//! Fluid Renderer
+//!
+//! GPU rendering pipeline for fluid particles with screen-space
+//! surface reconstruction, depth smoothing, and lighting.
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {

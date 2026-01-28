@@ -316,6 +316,97 @@ impl LocalizationTab {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════
+// ACTION SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the localization panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum LocalizationAction {
+    // Tab navigation
+    SetActiveTab(LocalizationTab),
+
+    // String operations
+    AddString,
+    RemoveString(u32),
+    SelectString(u32),
+    DuplicateString(u32),
+    SetStringKey(u32, String),
+    SetStringCategory(u32, StringCategory),
+    SetStringContext(u32, String),
+    SetTranslation(u32, Language, String),
+    MarkNeedsReview(u32, bool),
+
+    // Language operations
+    AddLanguage(Language),
+    RemoveLanguage(Language),
+    SetSourceLanguage(Language),
+    SetPreviewLanguage(Language),
+    ToggleLanguageEnabled(Language, bool),
+
+    // Filter operations
+    SetFilterText(String),
+    SetFilterCategory(Option<StringCategory>),
+    ToggleMissingOnly(bool),
+    ToggleNeedsReviewOnly(bool),
+    ClearFilters,
+
+    // Import/Export
+    SetExportFormat(ExportFormat),
+    AddExportLanguage(Language),
+    RemoveExportLanguage(Language),
+    Export,
+    Import(String),
+    SetImportPath(String),
+
+    // Batch operations
+    AutoTranslate(Language),
+    CopyFromLanguage(Language, Language),
+    ClearLanguage(Language),
+    ValidateStrings,
+    FindDuplicates,
+    RefreshStatistics,
+}
+
+impl std::fmt::Display for LocalizationAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LocalizationAction::SetActiveTab(tab) => write!(f, "Set tab: {}", tab),
+            LocalizationAction::AddString => write!(f, "Add string"),
+            LocalizationAction::RemoveString(id) => write!(f, "Remove string {}", id),
+            LocalizationAction::SelectString(id) => write!(f, "Select string {}", id),
+            LocalizationAction::DuplicateString(id) => write!(f, "Duplicate string {}", id),
+            LocalizationAction::SetStringKey(id, key) => write!(f, "Set string {} key: {}", id, key),
+            LocalizationAction::SetStringCategory(id, cat) => write!(f, "Set string {} category: {}", id, cat),
+            LocalizationAction::SetStringContext(id, ctx) => write!(f, "Set string {} context: {}", id, ctx),
+            LocalizationAction::SetTranslation(id, lang, _) => write!(f, "Set translation {} for {}", id, lang),
+            LocalizationAction::MarkNeedsReview(id, b) => write!(f, "Mark string {} review: {}", id, b),
+            LocalizationAction::AddLanguage(lang) => write!(f, "Add language: {}", lang),
+            LocalizationAction::RemoveLanguage(lang) => write!(f, "Remove language: {}", lang),
+            LocalizationAction::SetSourceLanguage(lang) => write!(f, "Set source: {}", lang),
+            LocalizationAction::SetPreviewLanguage(lang) => write!(f, "Preview: {}", lang),
+            LocalizationAction::ToggleLanguageEnabled(lang, b) => write!(f, "Toggle {} enabled: {}", lang, b),
+            LocalizationAction::SetFilterText(text) => write!(f, "Filter: {}", text),
+            LocalizationAction::SetFilterCategory(cat) => write!(f, "Filter category: {:?}", cat),
+            LocalizationAction::ToggleMissingOnly(b) => write!(f, "Missing only: {}", b),
+            LocalizationAction::ToggleNeedsReviewOnly(b) => write!(f, "Needs review only: {}", b),
+            LocalizationAction::ClearFilters => write!(f, "Clear filters"),
+            LocalizationAction::SetExportFormat(fmt) => write!(f, "Export format: {}", fmt),
+            LocalizationAction::AddExportLanguage(lang) => write!(f, "Add export lang: {}", lang),
+            LocalizationAction::RemoveExportLanguage(lang) => write!(f, "Remove export lang: {}", lang),
+            LocalizationAction::Export => write!(f, "Export"),
+            LocalizationAction::Import(path) => write!(f, "Import from: {}", path),
+            LocalizationAction::SetImportPath(path) => write!(f, "Set import path: {}", path),
+            LocalizationAction::AutoTranslate(lang) => write!(f, "Auto-translate to: {}", lang),
+            LocalizationAction::CopyFromLanguage(from, to) => write!(f, "Copy {} to {}", from, to),
+            LocalizationAction::ClearLanguage(lang) => write!(f, "Clear language: {}", lang),
+            LocalizationAction::ValidateStrings => write!(f, "Validate strings"),
+            LocalizationAction::FindDuplicates => write!(f, "Find duplicates"),
+            LocalizationAction::RefreshStatistics => write!(f, "Refresh statistics"),
+        }
+    }
+}
+
 /// Main Localization Panel
 pub struct LocalizationPanel {
     active_tab: LocalizationTab,
@@ -340,6 +431,9 @@ pub struct LocalizationPanel {
     export_format: ExportFormat,
     export_languages: Vec<Language>,
     import_path: String,
+
+    // Action system
+    actions: Vec<LocalizationAction>,
 }
 
 impl Default for LocalizationPanel {
@@ -369,6 +463,8 @@ impl Default for LocalizationPanel {
             export_format: ExportFormat::Csv,
             export_languages: vec![Language::English],
             import_path: String::new(),
+
+            actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -379,6 +475,30 @@ impl Default for LocalizationPanel {
 impl LocalizationPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Action System
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: LocalizationAction) {
+        self.actions.push(action);
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.actions.is_empty()
+    }
+
+    /// Get pending actions without consuming them
+    pub fn pending_actions(&self) -> &[LocalizationAction] {
+        &self.actions
+    }
+
+    /// Take all pending actions, clearing the queue
+    pub fn take_actions(&mut self) -> Vec<LocalizationAction> {
+        std::mem::take(&mut self.actions)
     }
 
     fn create_sample_data(&mut self) {
@@ -1680,5 +1800,175 @@ mod tests {
             let icon = tab.icon();
             assert!(!icon.is_empty(), "Tab icon should not be empty");
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // LocalizationAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_localization_action_display() {
+        let action = LocalizationAction::SetActiveTab(LocalizationTab::Strings);
+        let display = format!("{}", action);
+        assert!(display.contains("tab"));
+    }
+
+    #[test]
+    fn test_localization_action_display_all_variants() {
+        let actions = vec![
+            LocalizationAction::SetActiveTab(LocalizationTab::Languages),
+            LocalizationAction::AddString,
+            LocalizationAction::RemoveString(0),
+            LocalizationAction::SelectString(1),
+            LocalizationAction::AddLanguage(Language::French),
+            LocalizationAction::SetSourceLanguage(Language::English),
+            LocalizationAction::Export,
+            LocalizationAction::ValidateStrings,
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_localization_action_equality() {
+        let action1 = LocalizationAction::SelectString(5);
+        let action2 = LocalizationAction::SelectString(5);
+        let action3 = LocalizationAction::SelectString(10);
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_localization_action_clone() {
+        let action = LocalizationAction::SetFilterText("test".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_localization_panel_pending_actions_empty_by_default() {
+        let panel = LocalizationPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_localization_panel_queue_action() {
+        let mut panel = LocalizationPanel::new();
+        panel.queue_action(LocalizationAction::AddString);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_localization_panel_take_actions() {
+        let mut panel = LocalizationPanel::new();
+        panel.queue_action(LocalizationAction::AddString);
+        panel.queue_action(LocalizationAction::SetActiveTab(LocalizationTab::Languages));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_localization_panel_action_order_preserved() {
+        let mut panel = LocalizationPanel::new();
+        panel.queue_action(LocalizationAction::AddString);
+        panel.queue_action(LocalizationAction::SelectString(0));
+        panel.queue_action(LocalizationAction::RemoveString(0));
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], LocalizationAction::AddString));
+        assert!(matches!(actions[1], LocalizationAction::SelectString(_)));
+        assert!(matches!(actions[2], LocalizationAction::RemoveString(_)));
+    }
+
+    #[test]
+    fn test_localization_action_string_operations() {
+        let actions = vec![
+            LocalizationAction::AddString,
+            LocalizationAction::RemoveString(0),
+            LocalizationAction::DuplicateString(1),
+            LocalizationAction::SelectString(2),
+            LocalizationAction::SetStringKey(0, "key.test".to_string()),
+            LocalizationAction::SetStringCategory(0, StringCategory::Ui),
+            LocalizationAction::SetStringContext(0, "Test context".to_string()),
+            LocalizationAction::MarkNeedsReview(0, true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_localization_action_language_operations() {
+        let actions = vec![
+            LocalizationAction::AddLanguage(Language::German),
+            LocalizationAction::RemoveLanguage(Language::French),
+            LocalizationAction::SetSourceLanguage(Language::English),
+            LocalizationAction::SetPreviewLanguage(Language::Spanish),
+            LocalizationAction::ToggleLanguageEnabled(Language::Japanese, true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_localization_action_filter_operations() {
+        let actions = vec![
+            LocalizationAction::SetFilterText("search".to_string()),
+            LocalizationAction::SetFilterCategory(Some(StringCategory::Dialogue)),
+            LocalizationAction::ToggleMissingOnly(true),
+            LocalizationAction::ToggleNeedsReviewOnly(false),
+            LocalizationAction::ClearFilters,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("search"));
+        assert!(displays[4].contains("Clear"));
+    }
+
+    #[test]
+    fn test_localization_action_import_export() {
+        let actions = vec![
+            LocalizationAction::SetExportFormat(ExportFormat::Json),
+            LocalizationAction::AddExportLanguage(Language::French),
+            LocalizationAction::RemoveExportLanguage(Language::German),
+            LocalizationAction::Export,
+            LocalizationAction::Import("path/to/file.json".to_string()),
+            LocalizationAction::SetImportPath("path/to/folder".to_string()),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_localization_action_batch_operations() {
+        let actions = vec![
+            LocalizationAction::AutoTranslate(Language::French),
+            LocalizationAction::CopyFromLanguage(Language::English, Language::Spanish),
+            LocalizationAction::ClearLanguage(Language::German),
+            LocalizationAction::ValidateStrings,
+            LocalizationAction::FindDuplicates,
+            LocalizationAction::RefreshStatistics,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Auto-translate"));
+        assert!(displays[3].contains("Validate"));
     }
 }

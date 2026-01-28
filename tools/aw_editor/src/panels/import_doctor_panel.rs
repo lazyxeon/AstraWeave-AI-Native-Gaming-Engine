@@ -17,6 +17,40 @@ use std::path::PathBuf;
 use crate::panels::Panel;
 
 // ============================================================================
+// PANEL ACTIONS - Events produced by the panel for external handling
+// ============================================================================
+
+/// Actions emitted by the import doctor panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum ImportAction {
+    /// Apply a specific quick fix
+    ApplyQuickFix {
+        fix: QuickFix,
+        asset_path: PathBuf,
+    },
+    /// Apply all auto-fixable issues
+    ApplyAllFixes {
+        asset_path: PathBuf,
+    },
+    /// Import the asset with current settings
+    ImportAsset {
+        asset_path: PathBuf,
+        settings: ImportSettings,
+        applied_fixes: Vec<QuickFix>,
+    },
+    /// Clear the current selection
+    ClearSelection,
+    /// Request to scan an asset for issues
+    ScanAsset {
+        asset_path: PathBuf,
+    },
+    /// Request 3D preview of asset
+    PreviewAsset {
+        asset_path: PathBuf,
+    },
+}
+
+// ============================================================================
 // SOURCE ENGINE - What tool/engine created this asset
 // ============================================================================
 
@@ -486,6 +520,21 @@ impl IssueType {
             _ => None,
         }
     }
+
+    /// Get the suggested quick fix for this issue type
+    pub fn suggested_fix(&self) -> Option<QuickFix> {
+        match self {
+            IssueType::NormalMapFormat => Some(QuickFix::FlipGreenChannel),
+            IssueType::TexturePacking => Some(QuickFix::ConvertToORM),
+            IssueType::MissingTangents => Some(QuickFix::GenerateTangents),
+            IssueType::NonPowerOfTwo => Some(QuickFix::ResizePowerOfTwo),
+            IssueType::IncorrectScale => Some(QuickFix::FixScale),
+            IssueType::IncorrectOrientation => Some(QuickFix::FixOrientation),
+            IssueType::MissingLODs => Some(QuickFix::GenerateLODs),
+            IssueType::MissingCollider => Some(QuickFix::GenerateCollider),
+            _ => None,
+        }
+    }
 }
 
 // ============================================================================
@@ -646,7 +695,7 @@ impl QuickFix {
 // ============================================================================
 
 /// Import settings for the doctor wizard
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ImportSettings {
     pub auto_detect_source: bool,
     pub source_override: Option<SourceEngine>,
@@ -725,6 +774,8 @@ pub struct ImportDoctorPanel {
     pub scan_progress: f32,
     pub last_scan_time_ms: u64,
     pub quick_fixes_applied: Vec<QuickFix>,
+    // Pending actions to be consumed by the editor
+    pub pending_actions: Vec<ImportAction>,
 }
 
 impl Default for ImportDoctorPanel {
@@ -740,6 +791,7 @@ impl Default for ImportDoctorPanel {
             scan_progress: 0.0,
             last_scan_time_ms: 0,
             quick_fixes_applied: Vec::new(),
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -748,6 +800,26 @@ impl ImportDoctorPanel {
     /// Create a new import doctor panel
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions (clears the queue)
+    pub fn take_actions(&mut self) -> Vec<ImportAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an import action
+    fn queue_action(&mut self, action: ImportAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Get the current asset path (first selected file)
+    fn current_asset_path(&self) -> Option<PathBuf> {
+        self.selected_files.first().cloned()
     }
 
     /// Count issues by severity
@@ -806,7 +878,7 @@ impl ImportDoctorPanel {
         }
     }
 
-    fn render_issues_panel(&self, ui: &mut Ui) {
+    fn render_issues_panel(&mut self, ui: &mut Ui) {
         ui.heading("📋 Issues");
 
         // Summary
@@ -842,24 +914,45 @@ impl ImportDoctorPanel {
 
         ui.separator();
 
+        // Collect indices of issues to mark as fixed
+        let mut issues_to_fix: Vec<(usize, QuickFix)> = Vec::new();
+        let asset_path = self.current_asset_path();
+
         // Issue list
         egui::ScrollArea::vertical()
             .max_height(200.0)
             .show(ui, |ui| {
-                for issue in &self.issues {
+                for (idx, issue) in self.issues.iter().enumerate() {
                     ui.horizontal(|ui| {
                         ui.colored_label(issue.severity.color(), issue.severity.icon());
                         ui.label(&issue.message);
 
-                        if issue.can_auto_fix {
-                            let fix_text = if issue.fix_applied { "✅ Fixed" } else { "Fix" };
-                            if ui.small_button(fix_text).clicked() && !issue.fix_applied {
-                                // Would apply fix here
+                        if issue.can_auto_fix && !issue.fix_applied {
+                            if ui.small_button("Fix").clicked() {
+                                if let Some(fix) = issue.issue_type.suggested_fix() {
+                                    issues_to_fix.push((idx, fix));
+                                }
                             }
+                        } else if issue.fix_applied {
+                            ui.label("✅ Fixed");
                         }
                     });
                 }
             });
+
+        // Apply fixes and queue actions
+        for (idx, fix) in issues_to_fix {
+            if let Some(issue) = self.issues.get_mut(idx) {
+                issue.fix_applied = true;
+            }
+            self.quick_fixes_applied.push(fix);
+            if let Some(path) = &asset_path {
+                self.queue_action(ImportAction::ApplyQuickFix {
+                    fix,
+                    asset_path: path.clone(),
+                });
+            }
+        }
     }
 
     fn render_quick_fixes(&mut self, ui: &mut Ui) {
@@ -981,19 +1074,29 @@ impl ImportDoctorPanel {
         ui.checkbox(&mut self.settings.show_preview, "Show preview with lighting");
     }
 
-    fn render_preview(&self, ui: &mut Ui) {
+    fn render_preview(&mut self, ui: &mut Ui) {
         ui.heading("👁️ Preview");
 
-        let (rect, _response) = ui.allocate_exact_size(Vec2::new(200.0, 150.0), egui::Sense::hover());
+        let (rect, response) = ui.allocate_exact_size(Vec2::new(200.0, 150.0), egui::Sense::click());
 
         if self.preview_ready {
-            // Would render 3D preview here
+            // Preview is active - show placeholder with lighting
             ui.painter()
                 .rect_filled(rect, 8.0, Color32::from_rgb(40, 45, 50));
+            
+            // Draw a simple mesh icon to indicate 3D preview
+            let center = rect.center();
             ui.painter().text(
-                rect.center(),
+                center,
                 egui::Align2::CENTER_CENTER,
-                "🎭 3D Preview",
+                "🎭",
+                egui::FontId::proportional(48.0),
+                Color32::from_rgb(150, 150, 160),
+            );
+            ui.painter().text(
+                center + egui::vec2(0.0, 35.0),
+                egui::Align2::CENTER_CENTER,
+                "Preview Active",
                 egui::FontId::default(),
                 Color32::GRAY,
             );
@@ -1003,25 +1106,36 @@ impl ImportDoctorPanel {
             ui.painter().text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
-                "Drop asset to preview",
+                "Click to preview asset",
                 egui::FontId::default(),
                 Color32::DARK_GRAY,
             );
+
+            // Handle click to request preview
+            if response.clicked() {
+                if let Some(path) = self.current_asset_path() {
+                    self.queue_action(ImportAction::PreviewAsset {
+                        asset_path: path,
+                    });
+                    self.preview_ready = true;
+                }
+            }
         }
     }
 
-    fn render_action_buttons(&self, ui: &mut Ui) {
+    fn render_action_buttons(&mut self, ui: &mut Ui) {
         ui.separator();
 
-        ui.horizontal(|ui| {
-            let can_import = self.can_import();
+        let can_import = self.can_import();
+        let asset_path = self.current_asset_path();
+        let mut should_import = false;
+        let mut should_fix_all = false;
+        let mut should_clear = false;
 
+        ui.horizontal(|ui| {
             if can_import {
-                if ui
-                    .button(RichText::new("✅ Import").strong())
-                    .clicked()
-                {
-                    // Would trigger import
+                if ui.button(RichText::new("✅ Import").strong()).clicked() {
+                    should_import = true;
                 }
             } else {
                 ui.add_enabled(
@@ -1031,16 +1145,54 @@ impl ImportDoctorPanel {
             }
 
             if ui.button("🔧 Fix All").clicked() {
-                // Would apply all fixes
+                should_fix_all = true;
             }
 
             if ui.button("🗑️ Clear").clicked() {
-                // Would clear selection
+                should_clear = true;
             }
         });
 
+        // Process actions after UI rendering to avoid borrow issues
+        if should_import {
+            if let Some(path) = &asset_path {
+                self.queue_action(ImportAction::ImportAsset {
+                    asset_path: path.clone(),
+                    settings: self.settings.clone(),
+                    applied_fixes: self.quick_fixes_applied.clone(),
+                });
+            }
+        }
+
+        if should_fix_all {
+            // Mark all fixable issues as fixed
+            for issue in &mut self.issues {
+                if issue.can_auto_fix && !issue.fix_applied {
+                    issue.fix_applied = true;
+                    if let Some(fix) = issue.issue_type.suggested_fix() {
+                        self.quick_fixes_applied.push(fix);
+                    }
+                }
+            }
+            if let Some(path) = &asset_path {
+                self.queue_action(ImportAction::ApplyAllFixes {
+                    asset_path: path.clone(),
+                });
+            }
+        }
+
+        if should_clear {
+            self.selected_files.clear();
+            self.issues.clear();
+            self.quick_fixes_applied.clear();
+            self.preview_ready = false;
+            self.detected_source = SourceEngine::Unknown;
+            self.detected_packing = TexturePackingFormat::Separate;
+            self.queue_action(ImportAction::ClearSelection);
+        }
+
         // Status
-        if !self.can_import() {
+        if !can_import {
             ui.colored_label(
                 Color32::from_rgb(255, 100, 100),
                 "❌ Critical issues must be resolved before import",
@@ -1240,5 +1392,88 @@ mod tests {
         );
 
         assert!(!panel.can_import());
+    }
+
+    // ==========================================================================
+    // Action System Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_action_queue_initially_empty() {
+        let panel = ImportDoctorPanel::new();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_take_actions_drains_queue() {
+        let mut panel = ImportDoctorPanel::new();
+        panel.pending_actions.push(ImportAction::ClearSelection);
+        panel.pending_actions.push(ImportAction::ScanAsset {
+            asset_path: PathBuf::from("test.fbx"),
+        });
+
+        assert!(panel.has_pending_actions());
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_import_action_variants() {
+        use std::path::PathBuf;
+
+        let fix_action = ImportAction::ApplyQuickFix {
+            fix: QuickFix::FlipGreenChannel,
+            asset_path: PathBuf::from("test.fbx"),
+        };
+        assert!(matches!(fix_action, ImportAction::ApplyQuickFix { .. }));
+
+        let import_action = ImportAction::ImportAsset {
+            asset_path: PathBuf::from("test.fbx"),
+            settings: ImportSettings::default(),
+            applied_fixes: vec![QuickFix::GenerateTangents],
+        };
+        assert!(matches!(import_action, ImportAction::ImportAsset { .. }));
+    }
+
+    #[test]
+    fn test_issue_type_suggested_fix_mapping() {
+        assert_eq!(
+            IssueType::NormalMapFormat.suggested_fix(),
+            Some(QuickFix::FlipGreenChannel)
+        );
+        assert_eq!(
+            IssueType::MissingTangents.suggested_fix(),
+            Some(QuickFix::GenerateTangents)
+        );
+        assert_eq!(
+            IssueType::NonPowerOfTwo.suggested_fix(),
+            Some(QuickFix::ResizePowerOfTwo)
+        );
+        assert_eq!(
+            IssueType::IncorrectScale.suggested_fix(),
+            Some(QuickFix::FixScale)
+        );
+        assert_eq!(
+            IssueType::IncorrectOrientation.suggested_fix(),
+            Some(QuickFix::FixOrientation)
+        );
+        // Issues without auto-fix should return None
+        assert_eq!(IssueType::UnsupportedFormat.suggested_fix(), None);
+        assert_eq!(IssueType::MissingTexture.suggested_fix(), None);
+    }
+
+    #[test]
+    fn test_current_asset_path() {
+        let mut panel = ImportDoctorPanel::new();
+        assert!(panel.current_asset_path().is_none());
+
+        panel
+            .selected_files
+            .push(PathBuf::from("assets/model.fbx"));
+        assert_eq!(
+            panel.current_asset_path(),
+            Some(PathBuf::from("assets/model.fbx"))
+        );
     }
 }

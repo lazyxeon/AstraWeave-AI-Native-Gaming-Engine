@@ -197,3 +197,280 @@ pub fn register_api(engine: &mut Engine) {
     engine.register_type_with_name::<NavMeshProxy>("NavMesh")
         .register_fn("find_path", |n: &mut NavMeshProxy, start: Vec3, goal: Vec3| n.find_path(start, goal));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ScriptCommand tests
+    #[test]
+    fn test_script_command_spawn() {
+        let cmd = ScriptCommand::Spawn {
+            prefab: "enemy_goblin".to_string(),
+            position: Vec3::new(1.0, 2.0, 3.0),
+        };
+        if let ScriptCommand::Spawn { prefab, position } = cmd {
+            assert_eq!(prefab, "enemy_goblin");
+            assert_eq!(position, Vec3::new(1.0, 2.0, 3.0));
+        } else {
+            panic!("Expected Spawn");
+        }
+    }
+
+    #[test]
+    fn test_script_command_despawn() {
+        let cmd = ScriptCommand::Despawn { entity: 42 };
+        if let ScriptCommand::Despawn { entity } = cmd {
+            assert_eq!(entity, 42);
+        } else {
+            panic!("Expected Despawn");
+        }
+    }
+
+    #[test]
+    fn test_script_command_set_position() {
+        let cmd = ScriptCommand::SetPosition {
+            entity: 1,
+            position: Vec3::new(10.0, 20.0, 30.0),
+        };
+        if let ScriptCommand::SetPosition { entity, position } = cmd {
+            assert_eq!(entity, 1);
+            assert_eq!(position, Vec3::new(10.0, 20.0, 30.0));
+        } else {
+            panic!("Expected SetPosition");
+        }
+    }
+
+    #[test]
+    fn test_script_command_apply_damage() {
+        let cmd = ScriptCommand::ApplyDamage {
+            entity: 5,
+            amount: 50.5,
+        };
+        if let ScriptCommand::ApplyDamage { entity, amount } = cmd {
+            assert_eq!(entity, 5);
+            assert!((amount - 50.5).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected ApplyDamage");
+        }
+    }
+
+    #[test]
+    fn test_script_command_play_sound() {
+        let cmd = ScriptCommand::PlaySound {
+            path: "sounds/explosion.wav".to_string(),
+        };
+        if let ScriptCommand::PlaySound { path } = cmd {
+            assert_eq!(path, "sounds/explosion.wav");
+        } else {
+            panic!("Expected PlaySound");
+        }
+    }
+
+    #[test]
+    fn test_script_command_spawn_particle() {
+        let cmd = ScriptCommand::SpawnParticle {
+            effect: "fire_burst".to_string(),
+            position: Vec3::new(0.0, 5.0, 0.0),
+        };
+        if let ScriptCommand::SpawnParticle { effect, position } = cmd {
+            assert_eq!(effect, "fire_burst");
+            assert_eq!(position, Vec3::new(0.0, 5.0, 0.0));
+        } else {
+            panic!("Expected SpawnParticle");
+        }
+    }
+
+    #[test]
+    fn test_script_command_clone() {
+        let cmd = ScriptCommand::Spawn {
+            prefab: "test".to_string(),
+            position: Vec3::ZERO,
+        };
+        let cloned = cmd.clone();
+        if let ScriptCommand::Spawn { prefab, .. } = cloned {
+            assert_eq!(prefab, "test");
+        } else {
+            panic!("Expected Spawn");
+        }
+    }
+
+    #[test]
+    fn test_script_command_debug() {
+        let cmd = ScriptCommand::Despawn { entity: 1 };
+        let debug_str = format!("{:?}", cmd);
+        assert!(debug_str.contains("Despawn"));
+        assert!(debug_str.contains("1"));
+    }
+
+    // ScriptCommands tests
+    #[test]
+    fn test_script_commands_new() {
+        let cmds = ScriptCommands::new();
+        assert!(cmds.commands.is_empty());
+    }
+
+    #[test]
+    fn test_script_commands_default() {
+        let cmds = ScriptCommands::default();
+        assert!(cmds.commands.is_empty());
+    }
+
+    #[test]
+    fn test_script_commands_spawn() {
+        let mut cmds = ScriptCommands::new();
+        cmds.spawn("player", Vec3::new(0.0, 0.0, 0.0));
+        assert_eq!(cmds.commands.len(), 1);
+        if let ScriptCommand::Spawn { prefab, position } = &cmds.commands[0] {
+            assert_eq!(prefab, "player");
+            assert_eq!(*position, Vec3::ZERO);
+        } else {
+            panic!("Expected Spawn");
+        }
+    }
+
+    #[test]
+    fn test_script_commands_despawn() {
+        let mut cmds = ScriptCommands::new();
+        cmds.despawn(100);
+        assert_eq!(cmds.commands.len(), 1);
+        if let ScriptCommand::Despawn { entity } = &cmds.commands[0] {
+            assert_eq!(*entity, 100);
+        } else {
+            panic!("Expected Despawn");
+        }
+    }
+
+    #[test]
+    fn test_script_commands_set_position() {
+        let mut cmds = ScriptCommands::new();
+        cmds.set_position(1, Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(cmds.commands.len(), 1);
+        if let ScriptCommand::SetPosition { entity, position } = &cmds.commands[0] {
+            assert_eq!(*entity, 1);
+            assert_eq!(*position, Vec3::new(1.0, 2.0, 3.0));
+        } else {
+            panic!("Expected SetPosition");
+        }
+    }
+
+    #[test]
+    fn test_script_commands_apply_damage() {
+        let mut cmds = ScriptCommands::new();
+        cmds.apply_damage(5, 25.0);
+        assert_eq!(cmds.commands.len(), 1);
+        if let ScriptCommand::ApplyDamage { entity, amount } = &cmds.commands[0] {
+            assert_eq!(*entity, 5);
+            assert!((*amount - 25.0).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected ApplyDamage");
+        }
+    }
+
+    #[test]
+    fn test_script_commands_play_sound() {
+        let mut cmds = ScriptCommands::new();
+        cmds.play_sound("music/theme.mp3");
+        assert_eq!(cmds.commands.len(), 1);
+        if let ScriptCommand::PlaySound { path } = &cmds.commands[0] {
+            assert_eq!(path, "music/theme.mp3");
+        } else {
+            panic!("Expected PlaySound");
+        }
+    }
+
+    #[test]
+    fn test_script_commands_spawn_particle() {
+        let mut cmds = ScriptCommands::new();
+        cmds.spawn_particle("smoke", Vec3::new(1.0, 1.0, 1.0));
+        assert_eq!(cmds.commands.len(), 1);
+        if let ScriptCommand::SpawnParticle { effect, position } = &cmds.commands[0] {
+            assert_eq!(effect, "smoke");
+            assert_eq!(*position, Vec3::new(1.0, 1.0, 1.0));
+        } else {
+            panic!("Expected SpawnParticle");
+        }
+    }
+
+    #[test]
+    fn test_script_commands_multiple() {
+        let mut cmds = ScriptCommands::new();
+        cmds.spawn("enemy", Vec3::ZERO);
+        cmds.apply_damage(1, 10.0);
+        cmds.play_sound("hit.wav");
+        cmds.spawn_particle("blood", Vec3::new(0.0, 1.0, 0.0));
+        assert_eq!(cmds.commands.len(), 4);
+    }
+
+    #[test]
+    fn test_script_commands_order_preserved() {
+        let mut cmds = ScriptCommands::new();
+        cmds.spawn("a", Vec3::ZERO);
+        cmds.spawn("b", Vec3::ONE);
+        cmds.spawn("c", Vec3::new(2.0, 2.0, 2.0));
+
+        let prefabs: Vec<&str> = cmds
+            .commands
+            .iter()
+            .filter_map(|c| {
+                if let ScriptCommand::Spawn { prefab, .. } = c {
+                    Some(prefab.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        assert_eq!(prefabs, vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn test_script_commands_clone() {
+        let mut cmds = ScriptCommands::new();
+        cmds.spawn("test", Vec3::ZERO);
+        let cloned = cmds.clone();
+        assert_eq!(cloned.commands.len(), 1);
+    }
+
+    // RaycastHit tests
+    #[test]
+    fn test_raycast_hit_creation() {
+        let hit = RaycastHit {
+            entity_id: 42,
+            position: Vec3::new(1.0, 2.0, 3.0),
+            normal: Vec3::new(0.0, 1.0, 0.0),
+            distance: 5.5,
+        };
+        assert_eq!(hit.entity_id, 42);
+        assert_eq!(hit.position, Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(hit.normal, Vec3::new(0.0, 1.0, 0.0));
+        assert!((hit.distance - 5.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_raycast_hit_clone() {
+        let hit = RaycastHit {
+            entity_id: 1,
+            position: Vec3::ZERO,
+            normal: Vec3::Y,
+            distance: 1.0,
+        };
+        let cloned = hit.clone();
+        assert_eq!(cloned.entity_id, hit.entity_id);
+        assert_eq!(cloned.position, hit.position);
+    }
+
+    #[test]
+    fn test_raycast_hit_debug() {
+        let hit = RaycastHit {
+            entity_id: 10,
+            position: Vec3::ZERO,
+            normal: Vec3::Z,
+            distance: 2.5,
+        };
+        let debug_str = format!("{:?}", hit);
+        assert!(debug_str.contains("RaycastHit"));
+        assert!(debug_str.contains("entity_id"));
+        assert!(debug_str.contains("10"));
+    }
+}

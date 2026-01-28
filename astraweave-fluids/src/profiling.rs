@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 /// Timing statistics for fluid simulation profiling
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FluidTimingStats {
     /// Total time for the last simulation step (microseconds)
     pub total_step_us: u64,

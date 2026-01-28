@@ -14,6 +14,51 @@ use egui::{Color32, RichText, Ui, Vec2};
 use crate::panels::Panel;
 
 // ============================================================================
+// PANEL ACTIONS - Events produced by the panel for external handling
+// ============================================================================
+
+/// Actions emitted by the procedural filler panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum FillerAction {
+    /// Request to generate scatter objects
+    GenerateScatter {
+        seed: u64,
+        biome: BiomePreset,
+        area_radius: f32,
+        settings: Vec<ScatterSettings>,
+    },
+    /// Request to generate a spline road
+    GenerateRoad {
+        seed: u64,
+        preset: RoadPreset,
+        width: f32,
+        segments: u32,
+        smoothing: f32,
+    },
+    /// Request to generate terrain
+    GenerateTerrain {
+        seed: u64,
+        biome: BiomePreset,
+        area_radius: f32,
+    },
+    /// Request to apply environment preset
+    ApplyEnvironment {
+        preset: EnvironmentPreset,
+    },
+    /// Request to generate full scene
+    GenerateFullScene {
+        seed: u64,
+        biome: BiomePreset,
+        environment: EnvironmentPreset,
+        area_radius: f32,
+    },
+    /// Cancel current generation
+    CancelGeneration,
+    /// Clear all generated content
+    ClearGenerated,
+}
+
+// ============================================================================
 // FILLER MODE - What type of procedural content to generate
 // ============================================================================
 
@@ -692,7 +737,7 @@ impl RoadPreset {
 // ============================================================================
 
 /// Settings for procedural scatter operations
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ScatterSettings {
     pub enabled: bool,
     pub category: ScatterCategory,
@@ -764,6 +809,9 @@ pub struct ProceduralFillerPanel {
     // Statistics
     pub last_generated_count: u32,
     pub last_generation_time_ms: u64,
+
+    // Pending actions to be consumed by the editor
+    pub pending_actions: Vec<FillerAction>,
 }
 
 impl Default for ProceduralFillerPanel {
@@ -807,6 +855,8 @@ impl Default for ProceduralFillerPanel {
 
             last_generated_count: 0,
             last_generation_time_ms: 0,
+
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -815,6 +865,39 @@ impl ProceduralFillerPanel {
     /// Create a new procedural filler panel
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions (clears the queue)
+    pub fn take_actions(&mut self) -> Vec<FillerAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue a filler action
+    fn queue_action(&mut self, action: FillerAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Collect current scatter settings into a vec
+    fn collect_scatter_settings(&self) -> Vec<ScatterSettings> {
+        let mut settings = Vec::new();
+        if self.scatter_trees.enabled {
+            settings.push(self.scatter_trees.clone());
+        }
+        if self.scatter_rocks.enabled {
+            settings.push(self.scatter_rocks.clone());
+        }
+        if self.scatter_bushes.enabled {
+            settings.push(self.scatter_bushes.clone());
+        }
+        if self.scatter_grass.enabled {
+            settings.push(self.scatter_grass.clone());
+        }
+        settings
     }
 
     /// Apply biome preset to scatter settings
@@ -1055,13 +1138,45 @@ impl ProceduralFillerPanel {
             ui.add(egui::ProgressBar::new(self.generation_progress).text("Generating..."));
             if ui.button("Cancel").clicked() {
                 self.is_generating = false;
+                self.queue_action(FillerAction::CancelGeneration);
             }
         } else {
             let generate_text = format!("Generate {}", self.mode.name());
             if ui.button(RichText::new(generate_text).strong()).clicked() {
-                // Would trigger generation here
                 self.is_generating = true;
                 self.generation_progress = 0.0;
+
+                // Emit the appropriate action based on current mode
+                let action = match self.mode {
+                    FillerMode::ScatterFill => FillerAction::GenerateScatter {
+                        seed: self.seed,
+                        biome: self.biome_preset,
+                        area_radius: self.area_radius,
+                        settings: self.collect_scatter_settings(),
+                    },
+                    FillerMode::SplineRoad => FillerAction::GenerateRoad {
+                        seed: self.seed,
+                        preset: self.road_preset,
+                        width: self.road_width,
+                        segments: self.road_segments,
+                        smoothing: self.road_smoothing,
+                    },
+                    FillerMode::TerrainGen => FillerAction::GenerateTerrain {
+                        seed: self.seed,
+                        biome: self.biome_preset,
+                        area_radius: self.area_radius,
+                    },
+                    FillerMode::EnvironmentPreset => FillerAction::ApplyEnvironment {
+                        preset: self.environment_preset,
+                    },
+                    FillerMode::FullScene => FillerAction::GenerateFullScene {
+                        seed: self.seed,
+                        biome: self.biome_preset,
+                        environment: self.environment_preset,
+                        area_radius: self.area_radius,
+                    },
+                };
+                self.queue_action(action);
             }
         }
 
@@ -1260,5 +1375,80 @@ mod tests {
 
         assert!(panel.scatter_trees.density < 0.1); // Desert has very few trees
         assert_eq!(panel.environment_preset, EnvironmentPreset::GoldenHour);
+    }
+
+    // ==========================================================================
+    // Action System Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_action_queue_initially_empty() {
+        let panel = ProceduralFillerPanel::new();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_take_actions_drains_queue() {
+        let mut panel = ProceduralFillerPanel::new();
+        panel.pending_actions.push(FillerAction::CancelGeneration);
+        panel.pending_actions.push(FillerAction::ClearGenerated);
+
+        assert!(panel.has_pending_actions());
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_filler_action_variants() {
+        let scatter_action = FillerAction::GenerateScatter {
+            seed: 42,
+            biome: BiomePreset::TemperateForest,
+            area_radius: 100.0,
+            settings: vec![],
+        };
+        assert!(matches!(scatter_action, FillerAction::GenerateScatter { .. }));
+
+        let road_action = FillerAction::GenerateRoad {
+            seed: 123,
+            preset: RoadPreset::DirtPath,
+            width: 3.0,
+            segments: 10,
+            smoothing: 0.5,
+        };
+        assert!(matches!(road_action, FillerAction::GenerateRoad { .. }));
+
+        let terrain_action = FillerAction::GenerateTerrain {
+            seed: 99,
+            biome: BiomePreset::DesertDunes,
+            area_radius: 50.0,
+        };
+        assert!(matches!(terrain_action, FillerAction::GenerateTerrain { .. }));
+
+        let env_action = FillerAction::ApplyEnvironment {
+            preset: EnvironmentPreset::Night,
+        };
+        assert!(matches!(env_action, FillerAction::ApplyEnvironment { .. }));
+
+        let full_scene = FillerAction::GenerateFullScene {
+            seed: 1,
+            biome: BiomePreset::TropicalJungle,
+            environment: EnvironmentPreset::Sunset,
+            area_radius: 200.0,
+        };
+        assert!(matches!(full_scene, FillerAction::GenerateFullScene { .. }));
+    }
+
+    #[test]
+    fn test_collect_scatter_settings() {
+        let mut panel = ProceduralFillerPanel::new();
+        panel.scatter_trees.enabled = true;
+        panel.scatter_trees.density = 0.5;
+        panel.scatter_rocks.enabled = true;
+        panel.scatter_bushes.enabled = false;
+        panel.scatter_grass.enabled = false;
+
+        let settings = panel.collect_scatter_settings();
+        assert_eq!(settings.len(), 2); // Only enabled scatter layers
     }
 }

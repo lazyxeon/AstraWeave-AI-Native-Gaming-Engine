@@ -601,6 +601,157 @@ pub enum UiEditorTab {
     Preview,
 }
 
+/// Actions that can be performed by the UI editor panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum UiEditorAction {
+    // Canvas management
+    AddCanvas,
+    RemoveCanvas(u32),
+    SelectCanvas(u32),
+    DuplicateCanvas(u32),
+    SetCanvasName { id: u32, name: String },
+    SetCanvasResolution { id: u32, width: u32, height: u32 },
+    SetCanvasScaleMode { id: u32, mode: ScaleMode },
+    SetCanvasRenderOrder { id: u32, order: i32 },
+    
+    // Widget management
+    AddWidget { canvas_id: u32, widget_type: WidgetType },
+    RemoveWidget { canvas_id: u32, widget_id: u32 },
+    SelectWidget(u32),
+    DuplicateWidget(u32),
+    CopyWidget(u32),
+    PasteWidget(u32), // parent canvas id
+    CutWidget(u32),
+    
+    // Widget properties
+    SetWidgetName { id: u32, name: String },
+    SetWidgetPosition { id: u32, x: f32, y: f32 },
+    SetWidgetSize { id: u32, width: f32, height: f32 },
+    SetWidgetAnchor { id: u32, anchor: AnchorPreset },
+    SetWidgetPivot { id: u32, x: f32, y: f32 },
+    SetWidgetRotation { id: u32, rotation: f32 },
+    SetWidgetScale { id: u32, x: f32, y: f32 },
+    SetWidgetVisible { id: u32, visible: bool },
+    SetWidgetInteractable { id: u32, interactable: bool },
+    
+    // Widget styling
+    SetWidgetBackgroundColor { id: u32, color: [f32; 4] },
+    SetWidgetBorderColor { id: u32, color: [f32; 4] },
+    SetWidgetTextColor { id: u32, color: [f32; 4] },
+    SetWidgetCornerRadius { id: u32, radius: f32 },
+    SetWidgetBorderWidth { id: u32, width: f32 },
+    ApplyStyleToWidget { widget_id: u32, style_id: u32 },
+    
+    // Style management
+    AddStyle,
+    RemoveStyle(u32),
+    SelectStyle(u32),
+    DuplicateStyle(u32),
+    SetStyleName { id: u32, name: String },
+    SetStylePrimaryColor { id: u32, color: [f32; 4] },
+    SetStyleAccentColor { id: u32, color: [f32; 4] },
+    
+    // Animation management
+    AddAnimation,
+    RemoveAnimation(u32),
+    SelectAnimation(u32),
+    SetAnimationName { id: u32, name: String },
+    SetAnimationDuration { id: u32, duration: f32 },
+    SetAnimationEasing { id: u32, easing: EasingType },
+    AddKeyframe { animation_id: u32, time: f32 },
+    RemoveKeyframe { animation_id: u32, index: usize },
+    PlayAnimation(u32),
+    StopAnimation(u32),
+    
+    // Presets
+    ApplyPreset { canvas_id: u32, preset_name: String },
+    SaveAsPreset { canvas_id: u32, preset_name: String },
+    
+    // Editor state
+    ToggleGuides(bool),
+    ToggleSnapToGrid(bool),
+    SetGridSize(f32),
+    SetZoom(f32),
+    
+    // Preview
+    StartPreview,
+    StopPreview,
+    SetPreviewResolution(u32, u32),
+    
+    // Import/Export
+    ExportCanvas { id: u32, path: String },
+    ImportCanvas(String),
+}
+
+impl std::fmt::Display for UiEditorAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AddCanvas => write!(f, "Add canvas"),
+            Self::RemoveCanvas(id) => write!(f, "Remove canvas {}", id),
+            Self::SelectCanvas(id) => write!(f, "Select canvas {}", id),
+            Self::DuplicateCanvas(id) => write!(f, "Duplicate canvas {}", id),
+            Self::SetCanvasName { id, name } => write!(f, "Rename canvas {} to '{}'", id, name),
+            Self::SetCanvasResolution { id, width, height } => write!(f, "Set canvas {} to {}x{}", id, width, height),
+            Self::SetCanvasScaleMode { id, mode } => write!(f, "Set canvas {} scale to {}", id, mode),
+            Self::SetCanvasRenderOrder { id, order } => write!(f, "Set canvas {} order to {}", id, order),
+            Self::AddWidget { widget_type, .. } => write!(f, "Add {} widget", widget_type.name()),
+            Self::RemoveWidget { widget_id, .. } => write!(f, "Remove widget {}", widget_id),
+            Self::SelectWidget(id) => write!(f, "Select widget {}", id),
+            Self::DuplicateWidget(id) => write!(f, "Duplicate widget {}", id),
+            Self::CopyWidget(id) => write!(f, "Copy widget {}", id),
+            Self::PasteWidget(parent) => write!(f, "Paste widget to canvas {}", parent),
+            Self::CutWidget(id) => write!(f, "Cut widget {}", id),
+            Self::SetWidgetName { id, name } => write!(f, "Rename widget {} to '{}'", id, name),
+            Self::SetWidgetPosition { id, x, y } => write!(f, "Move widget {} to ({:.0}, {:.0})", id, x, y),
+            Self::SetWidgetSize { id, width, height } => write!(f, "Resize widget {} to {:.0}x{:.0}", id, width, height),
+            Self::SetWidgetAnchor { id, anchor } => write!(f, "Set widget {} anchor to {}", id, anchor),
+            Self::SetWidgetPivot { id, x, y } => write!(f, "Set widget {} pivot to ({:.2}, {:.2})", id, x, y),
+            Self::SetWidgetRotation { id, rotation } => write!(f, "Rotate widget {} to {:.1}°", id, rotation),
+            Self::SetWidgetScale { id, x, y } => write!(f, "Scale widget {} to ({:.2}, {:.2})", id, x, y),
+            Self::SetWidgetVisible { id, visible } => {
+                write!(f, "{} widget {}", if *visible { "Show" } else { "Hide" }, id)
+            }
+            Self::SetWidgetInteractable { id, interactable } => {
+                write!(f, "Set widget {} {}", id, if *interactable { "interactable" } else { "non-interactable" })
+            }
+            Self::SetWidgetBackgroundColor { id, .. } => write!(f, "Set widget {} background color", id),
+            Self::SetWidgetBorderColor { id, .. } => write!(f, "Set widget {} border color", id),
+            Self::SetWidgetTextColor { id, .. } => write!(f, "Set widget {} text color", id),
+            Self::SetWidgetCornerRadius { id, radius } => write!(f, "Set widget {} corner radius to {:.1}", id, radius),
+            Self::SetWidgetBorderWidth { id, width } => write!(f, "Set widget {} border width to {:.1}", id, width),
+            Self::ApplyStyleToWidget { widget_id, style_id } => write!(f, "Apply style {} to widget {}", style_id, widget_id),
+            Self::AddStyle => write!(f, "Add style"),
+            Self::RemoveStyle(id) => write!(f, "Remove style {}", id),
+            Self::SelectStyle(id) => write!(f, "Select style {}", id),
+            Self::DuplicateStyle(id) => write!(f, "Duplicate style {}", id),
+            Self::SetStyleName { id, name } => write!(f, "Rename style {} to '{}'", id, name),
+            Self::SetStylePrimaryColor { id, .. } => write!(f, "Set style {} primary color", id),
+            Self::SetStyleAccentColor { id, .. } => write!(f, "Set style {} accent color", id),
+            Self::AddAnimation => write!(f, "Add animation"),
+            Self::RemoveAnimation(id) => write!(f, "Remove animation {}", id),
+            Self::SelectAnimation(id) => write!(f, "Select animation {}", id),
+            Self::SetAnimationName { id, name } => write!(f, "Rename animation {} to '{}'", id, name),
+            Self::SetAnimationDuration { id, duration } => write!(f, "Set animation {} duration to {:.2}s", id, duration),
+            Self::SetAnimationEasing { id, easing } => write!(f, "Set animation {} easing to {:?}", id, easing),
+            Self::AddKeyframe { animation_id, time } => write!(f, "Add keyframe at {:.2}s to animation {}", time, animation_id),
+            Self::RemoveKeyframe { animation_id, index } => write!(f, "Remove keyframe {} from animation {}", index, animation_id),
+            Self::PlayAnimation(id) => write!(f, "Play animation {}", id),
+            Self::StopAnimation(id) => write!(f, "Stop animation {}", id),
+            Self::ApplyPreset { preset_name, .. } => write!(f, "Apply preset '{}'", preset_name),
+            Self::SaveAsPreset { preset_name, .. } => write!(f, "Save as preset '{}'", preset_name),
+            Self::ToggleGuides(on) => write!(f, "Turn guides {}", if *on { "on" } else { "off" }),
+            Self::ToggleSnapToGrid(on) => write!(f, "Turn snap to grid {}", if *on { "on" } else { "off" }),
+            Self::SetGridSize(size) => write!(f, "Set grid size to {:.0}", size),
+            Self::SetZoom(zoom) => write!(f, "Set zoom to {:.0}%", zoom * 100.0),
+            Self::StartPreview => write!(f, "Start preview"),
+            Self::StopPreview => write!(f, "Stop preview"),
+            Self::SetPreviewResolution(w, h) => write!(f, "Set preview to {}x{}", w, h),
+            Self::ExportCanvas { path, .. } => write!(f, "Export canvas to '{}'", path),
+            Self::ImportCanvas(path) => write!(f, "Import canvas from '{}'", path),
+        }
+    }
+}
+
 impl std::fmt::Display for UiEditorTab {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} {}", self.icon(), self.name())
@@ -682,6 +833,9 @@ pub struct UiEditorPanel {
     next_widget_id: u32,
     next_style_id: u32,
     next_animation_id: u32,
+    
+    // Action queue for external processing
+    pending_actions: Vec<UiEditorAction>,
 }
 
 impl Default for UiEditorPanel {
@@ -715,6 +869,8 @@ impl Default for UiEditorPanel {
             next_widget_id: 1,
             next_style_id: 1,
             next_animation_id: 1,
+            
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -725,6 +881,28 @@ impl Default for UiEditorPanel {
 impl UiEditorPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+    
+    // ==================== Action Queue Methods ====================
+    
+    /// Takes all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<UiEditorAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+    
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+    
+    /// Queue an action for external processing
+    pub fn queue_action(&mut self, action: UiEditorAction) {
+        self.pending_actions.push(action);
+    }
+    
+    /// Returns a reference to pending actions
+    pub fn pending_actions(&self) -> &[UiEditorAction] {
+        &self.pending_actions
     }
 
     fn create_sample_data(&mut self) {
@@ -2012,5 +2190,180 @@ mod tests {
     fn test_panel_trait_implementation() {
         let panel = UiEditorPanel::new();
         assert_eq!(panel.name(), "UI Editor");
+    }
+
+    // =====================================================================
+    // UiEditorAction Tests
+    // =====================================================================
+
+    #[test]
+    fn test_ui_editor_action_display_canvas() {
+        let action = UiEditorAction::AddCanvas;
+        assert!(format!("{}", action).contains("canvas"));
+        
+        let action = UiEditorAction::SetCanvasResolution { id: 1, width: 1920, height: 1080 };
+        let display = format!("{}", action);
+        assert!(display.contains("1920"));
+        assert!(display.contains("1080"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_widget_management() {
+        let action = UiEditorAction::AddWidget { canvas_id: 1, widget_type: WidgetType::Button };
+        assert!(format!("{}", action).contains("Button"));
+        
+        let action = UiEditorAction::SelectWidget(5);
+        assert!(format!("{}", action).contains("5"));
+        
+        let action = UiEditorAction::CopyWidget(3);
+        assert!(format!("{}", action).contains("Copy"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_widget_properties() {
+        let action = UiEditorAction::SetWidgetPosition { id: 1, x: 100.0, y: 200.0 };
+        let display = format!("{}", action);
+        assert!(display.contains("100"));
+        assert!(display.contains("200"));
+        
+        let action = UiEditorAction::SetWidgetVisible { id: 1, visible: true };
+        assert!(format!("{}", action).contains("Show"));
+        
+        let action = UiEditorAction::SetWidgetVisible { id: 1, visible: false };
+        assert!(format!("{}", action).contains("Hide"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_styling() {
+        let action = UiEditorAction::SetWidgetCornerRadius { id: 1, radius: 8.0 };
+        assert!(format!("{}", action).contains("8.0"));
+        
+        let action = UiEditorAction::ApplyStyleToWidget { widget_id: 1, style_id: 2 };
+        let display = format!("{}", action);
+        assert!(display.contains("1"));
+        assert!(display.contains("2"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_animation() {
+        let action = UiEditorAction::AddAnimation;
+        assert!(format!("{}", action).contains("animation"));
+        
+        let action = UiEditorAction::SetAnimationDuration { id: 1, duration: 0.5 };
+        assert!(format!("{}", action).contains("0.5"));
+        
+        let action = UiEditorAction::PlayAnimation(3);
+        assert!(format!("{}", action).contains("Play"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_presets() {
+        let action = UiEditorAction::ApplyPreset { canvas_id: 1, preset_name: "MainMenu".to_string() };
+        assert!(format!("{}", action).contains("MainMenu"));
+        
+        let action = UiEditorAction::SaveAsPreset { canvas_id: 1, preset_name: "HUD".to_string() };
+        assert!(format!("{}", action).contains("HUD"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_editor_state() {
+        let action = UiEditorAction::ToggleGuides(true);
+        assert!(format!("{}", action).contains("on"));
+        
+        let action = UiEditorAction::SetGridSize(10.0);
+        assert!(format!("{}", action).contains("10"));
+        
+        let action = UiEditorAction::SetZoom(2.0);
+        assert!(format!("{}", action).contains("200"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_display_preview() {
+        let action = UiEditorAction::StartPreview;
+        assert!(format!("{}", action).contains("Start"));
+        
+        let action = UiEditorAction::StopPreview;
+        assert!(format!("{}", action).contains("Stop"));
+        
+        let action = UiEditorAction::SetPreviewResolution(1280, 720);
+        let display = format!("{}", action);
+        assert!(display.contains("1280"));
+        assert!(display.contains("720"));
+    }
+
+    #[test]
+    fn test_ui_editor_panel_action_queue() {
+        let mut panel = UiEditorPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+        
+        panel.queue_action(UiEditorAction::AddCanvas);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_ui_editor_panel_take_actions() {
+        let mut panel = UiEditorPanel::new();
+        panel.queue_action(UiEditorAction::AddCanvas);
+        panel.queue_action(UiEditorAction::AddWidget { 
+            canvas_id: 1, 
+            widget_type: WidgetType::Button 
+        });
+        
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_ui_editor_panel_action_order() {
+        let mut panel = UiEditorPanel::new();
+        panel.queue_action(UiEditorAction::AddCanvas);
+        panel.queue_action(UiEditorAction::SelectCanvas(1));
+        panel.queue_action(UiEditorAction::SetCanvasName { id: 1, name: "Main".to_string() });
+        
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], UiEditorAction::AddCanvas));
+        assert!(matches!(actions[1], UiEditorAction::SelectCanvas(_)));
+        assert!(matches!(actions[2], UiEditorAction::SetCanvasName { .. }));
+    }
+
+    #[test]
+    fn test_ui_editor_action_widget_transform() {
+        let action = UiEditorAction::SetWidgetRotation { id: 1, rotation: 45.0 };
+        assert!(format!("{}", action).contains("45.0"));
+        
+        let action = UiEditorAction::SetWidgetScale { id: 1, x: 2.0, y: 2.0 };
+        assert!(format!("{}", action).contains("2.0"));
+        
+        let action = UiEditorAction::SetWidgetAnchor { id: 1, anchor: AnchorPreset::MiddleCenter };
+        assert!(format!("{}", action).contains("Middle"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_import_export() {
+        let action = UiEditorAction::ExportCanvas { id: 1, path: "/ui/canvas.json".to_string() };
+        assert!(format!("{}", action).contains("canvas.json"));
+        
+        let action = UiEditorAction::ImportCanvas("/ui/menu.json".to_string());
+        assert!(format!("{}", action).contains("menu.json"));
+    }
+
+    #[test]
+    fn test_ui_editor_action_equality() {
+        let a1 = UiEditorAction::AddCanvas;
+        let a2 = UiEditorAction::AddCanvas;
+        let a3 = UiEditorAction::AddStyle;
+        
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+    }
+
+    #[test]
+    fn test_ui_editor_action_clone() {
+        let action = UiEditorAction::SetWidgetName { id: 1, name: "HealthBar".to_string() };
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
     }
 }

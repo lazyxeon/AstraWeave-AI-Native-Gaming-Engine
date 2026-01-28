@@ -336,6 +336,99 @@ impl LodTab {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════
+// ACTION SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the LOD configuration panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum LodConfigAction {
+    // Tab navigation
+    SetActiveTab(LodTab),
+
+    // LOD group operations
+    AddGroup,
+    RemoveGroup(u32),
+    SelectGroup(u32),
+    DuplicateGroup(u32),
+    SetGroupName(u32, String),
+    SetGroupAssetPath(u32, String),
+    ToggleGroupEnabled(u32, bool),
+
+    // LOD level operations
+    AddLevel(u32),
+    RemoveLevel(u32, u32),
+    SetLevelDistance(u32, u32, f32),
+    SetLevelScreenCoverage(u32, u32, f32),
+    SetLevelMesh(u32, u32, String),
+
+    // Transition settings
+    SetFadeMode(u32, FadeMode),
+    SetFadeWidth(u32, f32),
+    ToggleCrossFade(u32, bool),
+    SetCullDistance(u32, f32),
+    SetShadowLodOffset(u32, i32),
+
+    // Global settings
+    SetBiasMode(LodBiasMode),
+    SetGlobalBias(f32),
+    SetMaxLodLevel(u32),
+    ToggleAutoLod(bool),
+    SetScreenSizeThreshold(f32),
+
+    // Generation settings
+    SetReductionMethod(ReductionMethod),
+    SetTargetTriangles(u32, f32),
+    GenerateLods(u32),
+    GenerateAllLods,
+
+    // Preview
+    SetPreviewDistance(f32),
+    ToggleLodColors(bool),
+
+    // Statistics
+    RefreshStatistics,
+    ExportReport,
+}
+
+impl std::fmt::Display for LodConfigAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LodConfigAction::SetActiveTab(tab) => write!(f, "Set tab: {}", tab),
+            LodConfigAction::AddGroup => write!(f, "Add LOD group"),
+            LodConfigAction::RemoveGroup(id) => write!(f, "Remove group {}", id),
+            LodConfigAction::SelectGroup(id) => write!(f, "Select group {}", id),
+            LodConfigAction::DuplicateGroup(id) => write!(f, "Duplicate group {}", id),
+            LodConfigAction::SetGroupName(id, name) => write!(f, "Set group {} name: {}", id, name),
+            LodConfigAction::SetGroupAssetPath(id, path) => write!(f, "Set group {} path: {}", id, path),
+            LodConfigAction::ToggleGroupEnabled(id, b) => write!(f, "Toggle group {} enabled: {}", id, b),
+            LodConfigAction::AddLevel(gid) => write!(f, "Add level to group {}", gid),
+            LodConfigAction::RemoveLevel(gid, lid) => write!(f, "Remove level {} from group {}", lid, gid),
+            LodConfigAction::SetLevelDistance(gid, lid, d) => write!(f, "Set group {} level {} distance: {:.1}", gid, lid, d),
+            LodConfigAction::SetLevelScreenCoverage(gid, lid, c) => write!(f, "Set group {} level {} coverage: {:.2}", gid, lid, c),
+            LodConfigAction::SetLevelMesh(gid, lid, m) => write!(f, "Set group {} level {} mesh: {}", gid, lid, m),
+            LodConfigAction::SetFadeMode(id, mode) => write!(f, "Set group {} fade: {:?}", id, mode),
+            LodConfigAction::SetFadeWidth(id, w) => write!(f, "Set group {} fade width: {:.2}", id, w),
+            LodConfigAction::ToggleCrossFade(id, b) => write!(f, "Toggle group {} crossfade: {}", id, b),
+            LodConfigAction::SetCullDistance(id, d) => write!(f, "Set group {} cull: {:.1}", id, d),
+            LodConfigAction::SetShadowLodOffset(id, o) => write!(f, "Set group {} shadow offset: {}", id, o),
+            LodConfigAction::SetBiasMode(mode) => write!(f, "Set bias mode: {}", mode),
+            LodConfigAction::SetGlobalBias(b) => write!(f, "Set global bias: {:.2}", b),
+            LodConfigAction::SetMaxLodLevel(l) => write!(f, "Set max LOD: {}", l),
+            LodConfigAction::ToggleAutoLod(b) => write!(f, "Toggle auto LOD: {}", b),
+            LodConfigAction::SetScreenSizeThreshold(t) => write!(f, "Set screen threshold: {:.2}", t),
+            LodConfigAction::SetReductionMethod(m) => write!(f, "Set reduction: {:?}", m),
+            LodConfigAction::SetTargetTriangles(id, t) => write!(f, "Set group {} target: {:.0}%", id, t),
+            LodConfigAction::GenerateLods(id) => write!(f, "Generate LODs for group {}", id),
+            LodConfigAction::GenerateAllLods => write!(f, "Generate all LODs"),
+            LodConfigAction::SetPreviewDistance(d) => write!(f, "Set preview distance: {:.1}", d),
+            LodConfigAction::ToggleLodColors(b) => write!(f, "Toggle LOD colors: {}", b),
+            LodConfigAction::RefreshStatistics => write!(f, "Refresh statistics"),
+            LodConfigAction::ExportReport => write!(f, "Export report"),
+        }
+    }
+}
+
 /// Main LOD Configuration Panel
 pub struct LodConfigPanel {
     active_tab: LodTab,
@@ -355,6 +448,9 @@ pub struct LodConfigPanel {
 
     // ID counter
     next_group_id: u32,
+
+    // Action system
+    actions: Vec<LodConfigAction>,
 }
 
 impl Default for LodConfigPanel {
@@ -373,6 +469,8 @@ impl Default for LodConfigPanel {
             show_lod_colors: true,
 
             next_group_id: 1,
+
+            actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -383,6 +481,30 @@ impl Default for LodConfigPanel {
 impl LodConfigPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Action System
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: LodConfigAction) {
+        self.actions.push(action);
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.actions.is_empty()
+    }
+
+    /// Get pending actions without consuming them
+    pub fn pending_actions(&self) -> &[LodConfigAction] {
+        &self.actions
+    }
+
+    /// Take all pending actions, clearing the queue
+    pub fn take_actions(&mut self) -> Vec<LodConfigAction> {
+        std::mem::take(&mut self.actions)
     }
 
     fn create_sample_data(&mut self) {
@@ -1653,6 +1775,186 @@ mod tests {
         // Verify triangle counts decrease
         for i in 1..char_group.levels.len() {
             assert!(char_group.levels[i].triangle_count <= char_group.levels[i-1].triangle_count);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // LodConfigAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_lod_config_action_display() {
+        let action = LodConfigAction::SetActiveTab(LodTab::Groups);
+        let display = format!("{}", action);
+        assert!(display.contains("tab"));
+    }
+
+    #[test]
+    fn test_lod_config_action_display_all_variants() {
+        let actions = vec![
+            LodConfigAction::SetActiveTab(LodTab::Global),
+            LodConfigAction::AddGroup,
+            LodConfigAction::RemoveGroup(0),
+            LodConfigAction::SelectGroup(1),
+            LodConfigAction::AddLevel(0),
+            LodConfigAction::SetGlobalBias(0.5),
+            LodConfigAction::GenerateLods(0),
+            LodConfigAction::SetPreviewDistance(50.0),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_lod_config_action_equality() {
+        let action1 = LodConfigAction::SelectGroup(5);
+        let action2 = LodConfigAction::SelectGroup(5);
+        let action3 = LodConfigAction::SelectGroup(10);
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_lod_config_action_clone() {
+        let action = LodConfigAction::SetGroupName(0, "TestGroup".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_lod_config_panel_pending_actions_empty_by_default() {
+        let panel = LodConfigPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_lod_config_panel_queue_action() {
+        let mut panel = LodConfigPanel::new();
+        panel.queue_action(LodConfigAction::AddGroup);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_lod_config_panel_take_actions() {
+        let mut panel = LodConfigPanel::new();
+        panel.queue_action(LodConfigAction::AddGroup);
+        panel.queue_action(LodConfigAction::SetActiveTab(LodTab::Global));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_lod_config_panel_action_order_preserved() {
+        let mut panel = LodConfigPanel::new();
+        panel.queue_action(LodConfigAction::AddGroup);
+        panel.queue_action(LodConfigAction::SelectGroup(0));
+        panel.queue_action(LodConfigAction::RemoveGroup(0));
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], LodConfigAction::AddGroup));
+        assert!(matches!(actions[1], LodConfigAction::SelectGroup(_)));
+        assert!(matches!(actions[2], LodConfigAction::RemoveGroup(_)));
+    }
+
+    #[test]
+    fn test_lod_config_action_group_operations() {
+        let actions = vec![
+            LodConfigAction::AddGroup,
+            LodConfigAction::RemoveGroup(0),
+            LodConfigAction::SelectGroup(1),
+            LodConfigAction::DuplicateGroup(2),
+            LodConfigAction::SetGroupName(0, "NewGroup".to_string()),
+            LodConfigAction::SetGroupAssetPath(0, "/assets/mesh.fbx".to_string()),
+            LodConfigAction::ToggleGroupEnabled(0, true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_lod_config_action_level_operations() {
+        let actions = vec![
+            LodConfigAction::AddLevel(0),
+            LodConfigAction::RemoveLevel(0, 1),
+            LodConfigAction::SetLevelDistance(0, 1, 50.0),
+            LodConfigAction::SetLevelScreenCoverage(0, 1, 0.25),
+            LodConfigAction::SetLevelMesh(0, 1, "mesh_lod1".to_string()),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_lod_config_action_transition_settings() {
+        let actions = vec![
+            LodConfigAction::SetFadeMode(0, FadeMode::CrossFade),
+            LodConfigAction::SetFadeWidth(0, 5.0),
+            LodConfigAction::ToggleCrossFade(0, true),
+            LodConfigAction::SetCullDistance(0, 1000.0),
+            LodConfigAction::SetShadowLodOffset(0, 2),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("CrossFade"));
+        assert!(displays[3].contains("cull"));
+    }
+
+    #[test]
+    fn test_lod_config_action_global_settings() {
+        let actions = vec![
+            LodConfigAction::SetBiasMode(LodBiasMode::Quality),
+            LodConfigAction::SetGlobalBias(1.5),
+            LodConfigAction::SetMaxLodLevel(4),
+            LodConfigAction::ToggleAutoLod(true),
+            LodConfigAction::SetScreenSizeThreshold(0.05),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Quality"));
+        assert!(displays[1].contains("1.5"));
+    }
+
+    #[test]
+    fn test_lod_config_action_generation() {
+        let actions = vec![
+            LodConfigAction::SetReductionMethod(ReductionMethod::QuadricErrorMetric),
+            LodConfigAction::SetTargetTriangles(0, 50.0),
+            LodConfigAction::GenerateLods(0),
+            LodConfigAction::GenerateAllLods,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Quadric"));
+        assert!(displays[2].contains("Generate"));
+    }
+
+    #[test]
+    fn test_lod_config_action_preview_and_stats() {
+        let actions = vec![
+            LodConfigAction::SetPreviewDistance(100.0),
+            LodConfigAction::ToggleLodColors(true),
+            LodConfigAction::RefreshStatistics,
+            LodConfigAction::ExportReport,
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
         }
     }
 }

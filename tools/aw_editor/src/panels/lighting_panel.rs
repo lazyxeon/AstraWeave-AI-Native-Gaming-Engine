@@ -709,6 +709,121 @@ pub enum LightingTab {
     Debug,
 }
 
+/// Actions that can be performed by the lighting panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum LightingAction {
+    // Light management
+    AddLight(LightType),
+    RemoveLight(u32),
+    SelectLight(u32),
+    DuplicateLight(u32),
+    
+    // Light properties
+    SetLightEnabled { id: u32, enabled: bool },
+    SetLightColor { id: u32, color: [f32; 3] },
+    SetLightIntensity { id: u32, intensity: f32 },
+    SetLightRange { id: u32, range: f32 },
+    SetLightPosition { id: u32, position: [f32; 3] },
+    SetLightRotation { id: u32, rotation: [f32; 3] },
+    SetSpotAngle { id: u32, angle: f32 },
+    SetAreaSize { id: u32, width: f32, height: f32 },
+    ToggleShadows { id: u32, enabled: bool },
+    SetShadowResolution { id: u32, resolution: u32 },
+    SetShadowBias { id: u32, bias: f32 },
+    
+    // Global shadow settings
+    SetShadowQuality(ShadowQuality),
+    SetShadowDistance(f32),
+    SetShadowCascades(u32),
+    
+    // GI settings
+    SetGiMode(GiMode),
+    SetIndirectIntensity(f32),
+    ToggleAmbientOcclusion(bool),
+    SetAoIntensity(f32),
+    BakeLightmaps,
+    ClearLightmaps,
+    
+    // Probes
+    AddLightProbe([f32; 3]),
+    AddReflectionProbe([f32; 3]),
+    RemoveLightProbe(u32),
+    RemoveReflectionProbe(u32),
+    SelectProbe(u32),
+    BakeProbes,
+    BakeSelectedProbe(u32),
+    
+    // Environment
+    SetSkyboxPath(String),
+    SetSkyboxRotation(f32),
+    SetAmbientColor([f32; 3]),
+    SetAmbientIntensity(f32),
+    SetFogEnabled(bool),
+    SetFogColor([f32; 3]),
+    SetFogDensity(f32),
+    SetFogStart(f32),
+    SetFogEnd(f32),
+    
+    // Debug
+    ToggleDebugShadows(bool),
+    ToggleDebugLightmaps(bool),
+    ToggleDebugProbes(bool),
+}
+
+impl std::fmt::Display for LightingAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AddLight(lt) => write!(f, "Add {} light", lt.name()),
+            Self::RemoveLight(id) => write!(f, "Remove light {}", id),
+            Self::SelectLight(id) => write!(f, "Select light {}", id),
+            Self::DuplicateLight(id) => write!(f, "Duplicate light {}", id),
+            Self::SetLightEnabled { id, enabled } => {
+                write!(f, "{} light {}", if *enabled { "Enable" } else { "Disable" }, id)
+            }
+            Self::SetLightColor { id, .. } => write!(f, "Set light {} color", id),
+            Self::SetLightIntensity { id, intensity } => write!(f, "Set light {} intensity to {:.1}", id, intensity),
+            Self::SetLightRange { id, range } => write!(f, "Set light {} range to {:.1}", id, range),
+            Self::SetLightPosition { id, .. } => write!(f, "Move light {}", id),
+            Self::SetLightRotation { id, .. } => write!(f, "Rotate light {}", id),
+            Self::SetSpotAngle { id, angle } => write!(f, "Set spot {} angle to {:.1}°", id, angle),
+            Self::SetAreaSize { id, width, height } => write!(f, "Set area {} size to {:.1}x{:.1}", id, width, height),
+            Self::ToggleShadows { id, enabled } => {
+                write!(f, "{} shadows for light {}", if *enabled { "Enable" } else { "Disable" }, id)
+            }
+            Self::SetShadowResolution { id, resolution } => write!(f, "Set light {} shadow res to {}", id, resolution),
+            Self::SetShadowBias { id, bias } => write!(f, "Set light {} shadow bias to {:.3}", id, bias),
+            Self::SetShadowQuality(q) => write!(f, "Set shadow quality to {}", q),
+            Self::SetShadowDistance(d) => write!(f, "Set shadow distance to {:.1}", d),
+            Self::SetShadowCascades(n) => write!(f, "Set shadow cascades to {}", n),
+            Self::SetGiMode(mode) => write!(f, "Set GI mode to {}", mode),
+            Self::SetIndirectIntensity(i) => write!(f, "Set indirect intensity to {:.2}", i),
+            Self::ToggleAmbientOcclusion(on) => write!(f, "Turn AO {}", if *on { "on" } else { "off" }),
+            Self::SetAoIntensity(i) => write!(f, "Set AO intensity to {:.2}", i),
+            Self::BakeLightmaps => write!(f, "Bake lightmaps"),
+            Self::ClearLightmaps => write!(f, "Clear lightmaps"),
+            Self::AddLightProbe(pos) => write!(f, "Add light probe at ({:.1}, {:.1}, {:.1})", pos[0], pos[1], pos[2]),
+            Self::AddReflectionProbe(pos) => write!(f, "Add reflection probe at ({:.1}, {:.1}, {:.1})", pos[0], pos[1], pos[2]),
+            Self::RemoveLightProbe(id) => write!(f, "Remove light probe {}", id),
+            Self::RemoveReflectionProbe(id) => write!(f, "Remove reflection probe {}", id),
+            Self::SelectProbe(id) => write!(f, "Select probe {}", id),
+            Self::BakeProbes => write!(f, "Bake all probes"),
+            Self::BakeSelectedProbe(id) => write!(f, "Bake probe {}", id),
+            Self::SetSkyboxPath(path) => write!(f, "Set skybox to '{}'", path),
+            Self::SetSkyboxRotation(r) => write!(f, "Set skybox rotation to {:.1}°", r),
+            Self::SetAmbientColor(_) => write!(f, "Set ambient color"),
+            Self::SetAmbientIntensity(i) => write!(f, "Set ambient intensity to {:.2}", i),
+            Self::SetFogEnabled(on) => write!(f, "Turn fog {}", if *on { "on" } else { "off" }),
+            Self::SetFogColor(_) => write!(f, "Set fog color"),
+            Self::SetFogDensity(d) => write!(f, "Set fog density to {:.3}", d),
+            Self::SetFogStart(s) => write!(f, "Set fog start to {:.1}", s),
+            Self::SetFogEnd(e) => write!(f, "Set fog end to {:.1}", e),
+            Self::ToggleDebugShadows(on) => write!(f, "Turn shadow debug {}", if *on { "on" } else { "off" }),
+            Self::ToggleDebugLightmaps(on) => write!(f, "Turn lightmap debug {}", if *on { "on" } else { "off" }),
+            Self::ToggleDebugProbes(on) => write!(f, "Turn probe debug {}", if *on { "on" } else { "off" }),
+        }
+    }
+}
+
 impl std::fmt::Display for LightingTab {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} {}", self.icon(), self.name())
@@ -781,6 +896,9 @@ pub struct LightingPanel {
     // ID counters
     next_light_id: u32,
     next_probe_id: u32,
+    
+    // Action queue for external processing
+    pending_actions: Vec<LightingAction>,
 }
 
 impl Default for LightingPanel {
@@ -806,6 +924,8 @@ impl Default for LightingPanel {
 
             next_light_id: 1,
             next_probe_id: 1,
+            
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -816,6 +936,28 @@ impl Default for LightingPanel {
 impl LightingPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+    
+    // ==================== Action Queue Methods ====================
+    
+    /// Takes all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<LightingAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+    
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+    
+    /// Queue an action for external processing
+    pub fn queue_action(&mut self, action: LightingAction) {
+        self.pending_actions.push(action);
+    }
+    
+    /// Returns a reference to pending actions
+    pub fn pending_actions(&self) -> &[LightingAction] {
+        &self.pending_actions
     }
 
     fn create_sample_data(&mut self) {
@@ -2548,5 +2690,165 @@ mod tests {
         assert_eq!(LightingTab::Probes.icon(), "🔮");
         assert_eq!(LightingTab::Environment.icon(), "🌍");
         assert_eq!(LightingTab::Debug.icon(), "🐛");
+    }
+
+    // =====================================================================
+    // LightingAction Tests
+    // =====================================================================
+
+    #[test]
+    fn test_lighting_action_display_light_management() {
+        let action = LightingAction::AddLight(LightType::Point);
+        assert!(format!("{}", action).contains("Point"));
+        
+        let action = LightingAction::RemoveLight(42);
+        assert!(format!("{}", action).contains("42"));
+        
+        let action = LightingAction::SelectLight(5);
+        assert!(format!("{}", action).contains("5"));
+    }
+
+    #[test]
+    fn test_lighting_action_display_light_properties() {
+        let action = LightingAction::SetLightEnabled { id: 1, enabled: true };
+        assert!(format!("{}", action).contains("Enable"));
+        
+        let action = LightingAction::SetLightEnabled { id: 1, enabled: false };
+        assert!(format!("{}", action).contains("Disable"));
+        
+        let action = LightingAction::SetLightIntensity { id: 1, intensity: 2.5 };
+        assert!(format!("{}", action).contains("2.5"));
+    }
+
+    #[test]
+    fn test_lighting_action_display_shadows() {
+        let action = LightingAction::ToggleShadows { id: 1, enabled: true };
+        assert!(format!("{}", action).contains("Enable"));
+        
+        let action = LightingAction::SetShadowResolution { id: 1, resolution: 2048 };
+        assert!(format!("{}", action).contains("2048"));
+        
+        let action = LightingAction::SetShadowQuality(ShadowQuality::High);
+        assert!(format!("{}", action).contains("High"));
+    }
+
+    #[test]
+    fn test_lighting_action_display_gi() {
+        let action = LightingAction::SetGiMode(GiMode::RealtimeGI);
+        assert!(format!("{}", action).contains("Realtime"));
+        
+        let action = LightingAction::BakeLightmaps;
+        assert!(format!("{}", action).contains("Bake"));
+        
+        let action = LightingAction::ToggleAmbientOcclusion(true);
+        assert!(format!("{}", action).contains("on"));
+    }
+
+    #[test]
+    fn test_lighting_action_display_probes() {
+        let action = LightingAction::AddLightProbe([1.0, 2.0, 3.0]);
+        assert!(format!("{}", action).contains("1.0"));
+        
+        let action = LightingAction::BakeProbes;
+        assert!(format!("{}", action).contains("Bake"));
+        
+        let action = LightingAction::RemoveReflectionProbe(5);
+        assert!(format!("{}", action).contains("5"));
+    }
+
+    #[test]
+    fn test_lighting_action_display_environment() {
+        let action = LightingAction::SetSkyboxPath("sky/cloudy.hdr".to_string());
+        assert!(format!("{}", action).contains("cloudy"));
+        
+        let action = LightingAction::SetFogEnabled(true);
+        assert!(format!("{}", action).contains("on"));
+        
+        let action = LightingAction::SetFogDensity(0.05);
+        assert!(format!("{}", action).contains("0.05"));
+    }
+
+    #[test]
+    fn test_lighting_action_display_debug() {
+        let action = LightingAction::ToggleDebugShadows(true);
+        assert!(format!("{}", action).contains("shadow"));
+        
+        let action = LightingAction::ToggleDebugLightmaps(false);
+        assert!(format!("{}", action).contains("off"));
+        
+        let action = LightingAction::ToggleDebugProbes(true);
+        assert!(format!("{}", action).contains("probe"));
+    }
+
+    #[test]
+    fn test_lighting_panel_action_queue() {
+        let mut panel = LightingPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+        
+        panel.queue_action(LightingAction::AddLight(LightType::Spot));
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_lighting_panel_take_actions() {
+        let mut panel = LightingPanel::new();
+        panel.queue_action(LightingAction::BakeLightmaps);
+        panel.queue_action(LightingAction::BakeProbes);
+        
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_lighting_panel_action_order() {
+        let mut panel = LightingPanel::new();
+        panel.queue_action(LightingAction::AddLight(LightType::Point));
+        panel.queue_action(LightingAction::SetLightIntensity { id: 1, intensity: 5.0 });
+        panel.queue_action(LightingAction::ToggleShadows { id: 1, enabled: true });
+        
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], LightingAction::AddLight(_)));
+        assert!(matches!(actions[1], LightingAction::SetLightIntensity { .. }));
+        assert!(matches!(actions[2], LightingAction::ToggleShadows { .. }));
+    }
+
+    #[test]
+    fn test_lighting_action_spot_properties() {
+        let action = LightingAction::SetSpotAngle { id: 1, angle: 45.0 };
+        assert!(format!("{}", action).contains("45.0"));
+        
+        let action = LightingAction::SetAreaSize { id: 2, width: 10.0, height: 5.0 };
+        let display = format!("{}", action);
+        assert!(display.contains("10.0"));
+        assert!(display.contains("5.0"));
+    }
+
+    #[test]
+    fn test_lighting_action_position_rotation() {
+        let action = LightingAction::SetLightPosition { id: 1, position: [1.0, 2.0, 3.0] };
+        assert!(format!("{}", action).contains("Move"));
+        
+        let action = LightingAction::SetLightRotation { id: 1, rotation: [0.0, 90.0, 0.0] };
+        assert!(format!("{}", action).contains("Rotate"));
+    }
+
+    #[test]
+    fn test_lighting_action_equality() {
+        let a1 = LightingAction::AddLight(LightType::Point);
+        let a2 = LightingAction::AddLight(LightType::Point);
+        let a3 = LightingAction::AddLight(LightType::Spot);
+        
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+    }
+
+    #[test]
+    fn test_lighting_action_clone() {
+        let action = LightingAction::SetSkyboxPath("/path/to/sky.hdr".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
     }
 }

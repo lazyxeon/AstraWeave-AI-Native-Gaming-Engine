@@ -488,6 +488,107 @@ impl MaterialTab {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════
+// ACTION SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the material editor panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum MaterialEditorAction {
+    // Tab navigation
+    SetActiveTab(MaterialTab),
+
+    // Material operations
+    AddMaterial,
+    RemoveMaterial(u32),
+    SelectMaterial(u32),
+    DuplicateMaterial(u32),
+    SetMaterialName(u32, String),
+    SetMaterialType(u32, MaterialType),
+
+    // Properties
+    SetBaseColor(u32, [f32; 4]),
+    SetMetallic(u32, f32),
+    SetRoughness(u32, f32),
+    SetNormalStrength(u32, f32),
+    SetAoStrength(u32, f32),
+    SetBlendMode(u32, BlendMode),
+
+    // Emissive
+    SetEmissiveColor(u32, [f32; 3]),
+    SetEmissiveIntensity(u32, f32),
+    ToggleEmissive(u32, bool),
+
+    // Textures
+    SetTexture(u32, TextureChannel, String),
+    RemoveTexture(u32, TextureChannel),
+    SetTextureScale(u32, f32, f32),
+    SetTextureOffset(u32, f32, f32),
+
+    // Advanced
+    ToggleTwoSided(u32, bool),
+    ToggleCastShadow(u32, bool),
+    ToggleReceiveShadow(u32, bool),
+    SetRenderQueue(u32, i32),
+
+    // Presets
+    ApplyPreset(String),
+    SaveAsPreset(u32, String),
+    SetPresetFilter(String),
+
+    // Preview
+    SetPreviewLighting(PreviewLighting),
+    SetPreviewRotation(f32),
+    SetPreviewZoom(f32),
+
+    // Library
+    SetLibraryPath(String),
+    RefreshLibrary,
+    ImportMaterial(String),
+    ExportMaterial(u32, String),
+}
+
+impl std::fmt::Display for MaterialEditorAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MaterialEditorAction::SetActiveTab(tab) => write!(f, "Set tab: {}", tab),
+            MaterialEditorAction::AddMaterial => write!(f, "Add material"),
+            MaterialEditorAction::RemoveMaterial(id) => write!(f, "Remove material {}", id),
+            MaterialEditorAction::SelectMaterial(id) => write!(f, "Select material {}", id),
+            MaterialEditorAction::DuplicateMaterial(id) => write!(f, "Duplicate material {}", id),
+            MaterialEditorAction::SetMaterialName(id, name) => write!(f, "Set material {} name: {}", id, name),
+            MaterialEditorAction::SetMaterialType(id, t) => write!(f, "Set material {} type: {}", id, t),
+            MaterialEditorAction::SetBaseColor(id, _) => write!(f, "Set material {} base color", id),
+            MaterialEditorAction::SetMetallic(id, v) => write!(f, "Set material {} metallic: {:.2}", id, v),
+            MaterialEditorAction::SetRoughness(id, v) => write!(f, "Set material {} roughness: {:.2}", id, v),
+            MaterialEditorAction::SetNormalStrength(id, v) => write!(f, "Set material {} normal: {:.2}", id, v),
+            MaterialEditorAction::SetAoStrength(id, v) => write!(f, "Set material {} AO: {:.2}", id, v),
+            MaterialEditorAction::SetBlendMode(id, m) => write!(f, "Set material {} blend: {}", id, m),
+            MaterialEditorAction::SetEmissiveColor(id, _) => write!(f, "Set material {} emissive color", id),
+            MaterialEditorAction::SetEmissiveIntensity(id, v) => write!(f, "Set material {} emissive: {:.2}", id, v),
+            MaterialEditorAction::ToggleEmissive(id, b) => write!(f, "Toggle material {} emissive: {}", id, b),
+            MaterialEditorAction::SetTexture(id, ch, _) => write!(f, "Set material {} texture {:?}", id, ch),
+            MaterialEditorAction::RemoveTexture(id, ch) => write!(f, "Remove material {} texture {:?}", id, ch),
+            MaterialEditorAction::SetTextureScale(id, u, v) => write!(f, "Set material {} tex scale: ({:.2}, {:.2})", id, u, v),
+            MaterialEditorAction::SetTextureOffset(id, u, v) => write!(f, "Set material {} tex offset: ({:.2}, {:.2})", id, u, v),
+            MaterialEditorAction::ToggleTwoSided(id, b) => write!(f, "Toggle material {} two-sided: {}", id, b),
+            MaterialEditorAction::ToggleCastShadow(id, b) => write!(f, "Toggle material {} cast shadow: {}", id, b),
+            MaterialEditorAction::ToggleReceiveShadow(id, b) => write!(f, "Toggle material {} receive shadow: {}", id, b),
+            MaterialEditorAction::SetRenderQueue(id, q) => write!(f, "Set material {} queue: {}", id, q),
+            MaterialEditorAction::ApplyPreset(name) => write!(f, "Apply preset: {}", name),
+            MaterialEditorAction::SaveAsPreset(id, name) => write!(f, "Save material {} as preset: {}", id, name),
+            MaterialEditorAction::SetPresetFilter(filter) => write!(f, "Filter presets: {}", filter),
+            MaterialEditorAction::SetPreviewLighting(l) => write!(f, "Set preview lighting: {:?}", l),
+            MaterialEditorAction::SetPreviewRotation(r) => write!(f, "Set preview rotation: {:.1}", r),
+            MaterialEditorAction::SetPreviewZoom(z) => write!(f, "Set preview zoom: {:.2}", z),
+            MaterialEditorAction::SetLibraryPath(path) => write!(f, "Set library path: {}", path),
+            MaterialEditorAction::RefreshLibrary => write!(f, "Refresh library"),
+            MaterialEditorAction::ImportMaterial(path) => write!(f, "Import material: {}", path),
+            MaterialEditorAction::ExportMaterial(id, path) => write!(f, "Export material {} to: {}", id, path),
+        }
+    }
+}
+
 /// Main Material Editor Panel
 pub struct MaterialEditorPanel {
     // Tab state
@@ -513,6 +614,9 @@ pub struct MaterialEditorPanel {
 
     // ID counter
     next_id: u32,
+
+    // Action system
+    actions: Vec<MaterialEditorAction>,
 }
 
 impl Default for MaterialEditorPanel {
@@ -535,6 +639,8 @@ impl Default for MaterialEditorPanel {
             library_materials: Vec::new(),
 
             next_id: 1,
+
+            actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -545,6 +651,30 @@ impl Default for MaterialEditorPanel {
 impl MaterialEditorPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Action System
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: MaterialEditorAction) {
+        self.actions.push(action);
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.actions.is_empty()
+    }
+
+    /// Get pending actions without consuming them
+    pub fn pending_actions(&self) -> &[MaterialEditorAction] {
+        &self.actions
+    }
+
+    /// Take all pending actions, clearing the queue
+    pub fn take_actions(&mut self) -> Vec<MaterialEditorAction> {
+        std::mem::take(&mut self.actions)
     }
 
     fn create_sample_data(&mut self) {
@@ -1594,5 +1724,183 @@ mod tests {
     #[test]
     fn test_material_tab_default() {
         assert_eq!(MaterialTab::default(), MaterialTab::Properties);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // MaterialEditorAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_material_editor_action_display() {
+        let action = MaterialEditorAction::SetActiveTab(MaterialTab::Properties);
+        let display = format!("{}", action);
+        assert!(display.contains("tab"));
+    }
+
+    #[test]
+    fn test_material_editor_action_display_all_variants() {
+        let actions = vec![
+            MaterialEditorAction::SetActiveTab(MaterialTab::Textures),
+            MaterialEditorAction::AddMaterial,
+            MaterialEditorAction::RemoveMaterial(0),
+            MaterialEditorAction::SelectMaterial(1),
+            MaterialEditorAction::SetBaseColor(0, [1.0, 0.5, 0.0, 1.0]),
+            MaterialEditorAction::SetMetallic(0, 0.8),
+            MaterialEditorAction::ApplyPreset("Metal".to_string()),
+            MaterialEditorAction::RefreshLibrary,
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_material_editor_action_equality() {
+        let action1 = MaterialEditorAction::SelectMaterial(5);
+        let action2 = MaterialEditorAction::SelectMaterial(5);
+        let action3 = MaterialEditorAction::SelectMaterial(10);
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_material_editor_action_clone() {
+        let action = MaterialEditorAction::SetMaterialName(0, "TestMaterial".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_material_editor_panel_pending_actions_empty_by_default() {
+        let panel = MaterialEditorPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_material_editor_panel_queue_action() {
+        let mut panel = MaterialEditorPanel::new();
+        panel.queue_action(MaterialEditorAction::AddMaterial);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_material_editor_panel_take_actions() {
+        let mut panel = MaterialEditorPanel::new();
+        panel.queue_action(MaterialEditorAction::AddMaterial);
+        panel.queue_action(MaterialEditorAction::SetActiveTab(MaterialTab::Textures));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_material_editor_panel_action_order_preserved() {
+        let mut panel = MaterialEditorPanel::new();
+        panel.queue_action(MaterialEditorAction::AddMaterial);
+        panel.queue_action(MaterialEditorAction::SelectMaterial(0));
+        panel.queue_action(MaterialEditorAction::RemoveMaterial(0));
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], MaterialEditorAction::AddMaterial));
+        assert!(matches!(actions[1], MaterialEditorAction::SelectMaterial(_)));
+        assert!(matches!(actions[2], MaterialEditorAction::RemoveMaterial(_)));
+    }
+
+    #[test]
+    fn test_material_editor_action_material_operations() {
+        let actions = vec![
+            MaterialEditorAction::AddMaterial,
+            MaterialEditorAction::RemoveMaterial(0),
+            MaterialEditorAction::SelectMaterial(1),
+            MaterialEditorAction::DuplicateMaterial(2),
+            MaterialEditorAction::SetMaterialName(0, "NewMaterial".to_string()),
+            MaterialEditorAction::SetMaterialType(0, MaterialType::StandardPBR),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_material_editor_action_property_operations() {
+        let actions = vec![
+            MaterialEditorAction::SetBaseColor(0, [1.0, 0.0, 0.0, 1.0]),
+            MaterialEditorAction::SetMetallic(0, 0.9),
+            MaterialEditorAction::SetRoughness(0, 0.3),
+            MaterialEditorAction::SetNormalStrength(0, 1.5),
+            MaterialEditorAction::SetAoStrength(0, 1.0),
+            MaterialEditorAction::SetBlendMode(0, BlendMode::Translucent),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("base color"));
+        assert!(displays[1].contains("0.9"));
+        assert!(displays[5].contains("Translucent"));
+    }
+
+    #[test]
+    fn test_material_editor_action_emissive_operations() {
+        let actions = vec![
+            MaterialEditorAction::SetEmissiveColor(0, [0.0, 1.0, 1.0]),
+            MaterialEditorAction::SetEmissiveIntensity(0, 5.0),
+            MaterialEditorAction::ToggleEmissive(0, true),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("emissive"));
+        assert!(displays[2].contains("emissive"));
+    }
+
+    #[test]
+    fn test_material_editor_action_texture_operations() {
+        let actions = vec![
+            MaterialEditorAction::SetTexture(0, TextureChannel::Albedo, "diffuse.png".to_string()),
+            MaterialEditorAction::RemoveTexture(0, TextureChannel::Normal),
+            MaterialEditorAction::SetTextureScale(0, 2.0, 2.0),
+            MaterialEditorAction::SetTextureOffset(0, 0.5, 0.0),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Albedo"));
+        assert!(displays[1].contains("Normal"));
+    }
+
+    #[test]
+    fn test_material_editor_action_advanced_operations() {
+        let actions = vec![
+            MaterialEditorAction::ToggleTwoSided(0, true),
+            MaterialEditorAction::ToggleCastShadow(0, false),
+            MaterialEditorAction::ToggleReceiveShadow(0, true),
+            MaterialEditorAction::SetRenderQueue(0, 2500),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("two-sided"));
+        assert!(displays[3].contains("2500"));
+    }
+
+    #[test]
+    fn test_material_editor_action_preset_and_library() {
+        let actions = vec![
+            MaterialEditorAction::ApplyPreset("Plastic".to_string()),
+            MaterialEditorAction::SaveAsPreset(0, "CustomMetal".to_string()),
+            MaterialEditorAction::RefreshLibrary,
+            MaterialEditorAction::ImportMaterial("material_123.mat".to_string()),
+            MaterialEditorAction::SetPreviewLighting(PreviewLighting::Studio),
+            MaterialEditorAction::SetPreviewRotation(45.0),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Plastic"));
+        assert!(displays[4].contains("preview"));
     }
 }

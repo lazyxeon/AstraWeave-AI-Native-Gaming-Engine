@@ -335,6 +335,59 @@ impl AudioTab {
     }
 }
 
+/// Actions that can be performed on the audio panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum AudioAction {
+    /// Set master volume
+    SetMasterVolume(f32),
+    /// Set music volume
+    SetMusicVolume(f32),
+    /// Set voice volume
+    SetVoiceVolume(f32),
+    /// Set SFX volume
+    SetSfxVolume(f32),
+    /// Toggle master mute
+    ToggleMasterMute(bool),
+    /// Toggle music mute
+    ToggleMusicMute(bool),
+    /// Toggle voice mute
+    ToggleVoiceMute(bool),
+    /// Toggle SFX mute
+    ToggleSfxMute(bool),
+    /// Play a music track
+    PlayTrack { index: usize },
+    /// Stop current music
+    StopMusic,
+    /// Set crossfade duration
+    SetCrossfadeDuration(f32),
+    /// Toggle playlist shuffle
+    ToggleShuffle(bool),
+    /// Toggle playlist loop
+    ToggleLoop(bool),
+    /// Set spatial audio preset
+    SetSpatialPreset(SpatialPreset),
+    /// Toggle HRTF
+    ToggleHrtf(bool),
+    /// Toggle Doppler effect
+    ToggleDoppler(bool),
+    /// Set distance model
+    SetDistanceModel(DistanceModel),
+    /// Set reverb environment
+    SetReverbEnvironment(ReverbEnvironment),
+    /// Toggle reverb
+    ToggleReverb(bool),
+    /// Toggle voice ducking
+    ToggleDucking(bool),
+    /// Add an audio emitter
+    AddEmitter { position: [f32; 3] },
+    /// Remove an audio emitter
+    RemoveEmitter { id: u64 },
+    /// Start audio preview
+    StartPreview,
+    /// Stop audio preview
+    StopPreview,
+}
+
 /// Main Audio Panel for editor
 pub struct AudioPanel {
     // Tab state
@@ -394,6 +447,9 @@ pub struct AudioPanel {
 
     // Status
     audio_stats: AudioStats,
+
+    // Action queue
+    pending_actions: Vec<AudioAction>,
 }
 
 /// Distance attenuation model
@@ -517,6 +573,9 @@ impl Default for AudioPanel {
                 latency_ms: 10.0,
                 ..Default::default()
             },
+
+            // Actions
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -524,6 +583,21 @@ impl Default for AudioPanel {
 impl AudioPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions, leaving the queue empty
+    pub fn take_actions(&mut self) -> Vec<AudioAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: AudioAction) {
+        self.pending_actions.push(action);
     }
 
     fn show_tab_bar(&mut self, ui: &mut Ui) {
@@ -1713,5 +1787,136 @@ mod tests {
         set.insert(AudioTab::Mixer);
         set.insert(AudioTab::Music);
         assert_eq!(set.len(), 2);
+    }
+
+    // AudioAction tests
+    #[test]
+    fn test_audio_action_volume() {
+        let action = AudioAction::SetMasterVolume(0.8);
+        if let AudioAction::SetMasterVolume(vol) = action {
+            assert!((vol - 0.8).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SetMasterVolume action");
+        }
+    }
+
+    #[test]
+    fn test_audio_action_music_volume() {
+        let action = AudioAction::SetMusicVolume(0.5);
+        assert!(matches!(action, AudioAction::SetMusicVolume(_)));
+    }
+
+    #[test]
+    fn test_audio_action_mute_toggles() {
+        let master = AudioAction::ToggleMasterMute(true);
+        let music = AudioAction::ToggleMusicMute(false);
+        assert!(matches!(master, AudioAction::ToggleMasterMute(true)));
+        assert!(matches!(music, AudioAction::ToggleMusicMute(false)));
+    }
+
+    #[test]
+    fn test_audio_action_play_track() {
+        let action = AudioAction::PlayTrack { index: 5 };
+        if let AudioAction::PlayTrack { index } = action {
+            assert_eq!(index, 5);
+        } else {
+            panic!("Expected PlayTrack action");
+        }
+    }
+
+    #[test]
+    fn test_audio_action_stop_music() {
+        let action = AudioAction::StopMusic;
+        assert!(matches!(action, AudioAction::StopMusic));
+    }
+
+    #[test]
+    fn test_audio_action_crossfade() {
+        let action = AudioAction::SetCrossfadeDuration(2.5);
+        if let AudioAction::SetCrossfadeDuration(duration) = action {
+            assert!((duration - 2.5).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SetCrossfadeDuration action");
+        }
+    }
+
+    #[test]
+    fn test_audio_action_spatial_preset() {
+        let action = AudioAction::SetSpatialPreset(SpatialPreset::Standard);
+        assert!(matches!(action, AudioAction::SetSpatialPreset(SpatialPreset::Standard)));
+    }
+
+    #[test]
+    fn test_audio_action_toggle_hrtf() {
+        let action = AudioAction::ToggleHrtf(true);
+        assert!(matches!(action, AudioAction::ToggleHrtf(true)));
+    }
+
+    #[test]
+    fn test_audio_action_distance_model() {
+        let action = AudioAction::SetDistanceModel(DistanceModel::Exponential);
+        assert!(matches!(action, AudioAction::SetDistanceModel(DistanceModel::Exponential)));
+    }
+
+    #[test]
+    fn test_audio_action_reverb() {
+        let env = AudioAction::SetReverbEnvironment(ReverbEnvironment::Cave);
+        let toggle = AudioAction::ToggleReverb(true);
+        assert!(matches!(env, AudioAction::SetReverbEnvironment(ReverbEnvironment::Cave)));
+        assert!(matches!(toggle, AudioAction::ToggleReverb(true)));
+    }
+
+    #[test]
+    fn test_audio_action_emitter() {
+        let add = AudioAction::AddEmitter { position: [1.0, 2.0, 3.0] };
+        let remove = AudioAction::RemoveEmitter { id: 42 };
+        
+        if let AudioAction::AddEmitter { position } = add {
+            assert_eq!(position, [1.0, 2.0, 3.0]);
+        } else {
+            panic!("Expected AddEmitter action");
+        }
+        
+        if let AudioAction::RemoveEmitter { id } = remove {
+            assert_eq!(id, 42);
+        } else {
+            panic!("Expected RemoveEmitter action");
+        }
+    }
+
+    #[test]
+    fn test_audio_action_preview() {
+        let start = AudioAction::StartPreview;
+        let stop = AudioAction::StopPreview;
+        assert!(matches!(start, AudioAction::StartPreview));
+        assert!(matches!(stop, AudioAction::StopPreview));
+    }
+
+    #[test]
+    fn test_audio_action_queue_and_take() {
+        let mut panel = AudioPanel::new();
+        assert!(!panel.has_pending_actions());
+
+        panel.queue_action(AudioAction::SetMasterVolume(0.9));
+        panel.queue_action(AudioAction::ToggleMusicMute(true));
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_audio_action_equality() {
+        let a1 = AudioAction::StopMusic;
+        let a2 = AudioAction::StopMusic;
+        assert_eq!(a1, a2);
+    }
+
+    #[test]
+    fn test_audio_action_debug() {
+        let action = AudioAction::ToggleDucking(true);
+        let debug_str = format!("{:?}", action);
+        assert!(debug_str.contains("ToggleDucking"));
     }
 }

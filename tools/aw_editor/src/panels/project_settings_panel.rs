@@ -692,6 +692,135 @@ pub enum SettingsTab {
     Build,
 }
 
+/// Actions that can be performed by the project settings panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProjectSettingsAction {
+    // Project settings
+    SetProjectName(String),
+    SetProjectVersion(String),
+    SetCompanyName(String),
+    SetDefaultScene(String),
+    
+    // Rendering settings
+    SetRendererBackend(RendererBackend),
+    ToggleHDR(bool),
+    ToggleBloom(bool),
+    SetBloomIntensity(f32),
+    SetTonemapping(TonemappingMode),
+    SetAmbientOcclusion(AoMode),
+    SetGlobalIllumination(GiMode),
+    SetReflectionMode(ReflectionMode),
+    SetShadowMode(ShadowMode),
+    
+    // Physics settings
+    SetGravity([f32; 3]),
+    SetFixedTimestep(f32),
+    SetDefaultFriction(f32),
+    SetDefaultRestitution(f32),
+    
+    // Audio settings
+    SetMasterVolume(f32),
+    SetMusicVolume(f32),
+    SetSfxVolume(f32),
+    SetVoiceVolume(f32),
+    SetAmbientVolume(f32),
+    SetMaxSimultaneousSounds(u32),
+    SetAudioBackend(AudioBackend),
+    
+    // Quality levels
+    AddQualityLevel,
+    RemoveQualityLevel(usize),
+    SelectQualityLevel(usize),
+    SetQualityLevelName { index: usize, name: String },
+    ApplyQualityLevel(usize),
+    
+    // Input actions
+    AddInputAction,
+    RemoveInputAction(usize),
+    SelectInputAction(usize),
+    SetInputActionName { index: usize, name: String },
+    SetInputActionKey { index: usize, key: String },
+    
+    // Tags and layers
+    AddTag(String),
+    RemoveTag(u32),
+    AddLayer(String),
+    RemoveLayer(u32),
+    
+    // Build
+    AddBuildConfig,
+    RemoveBuildConfig(usize),
+    SelectBuildConfig(usize),
+    SetBuildPlatform { index: usize, platform: TargetPlatform },
+    ToggleBuildDevelopment { index: usize, development: bool },
+    StartBuild(usize),
+    
+    // General
+    SaveSettings,
+    LoadSettings,
+    ResetToDefaults,
+    ExportSettings(String),
+    ImportSettings(String),
+}
+
+impl std::fmt::Display for ProjectSettingsAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SetProjectName(name) => write!(f, "Set project name to '{}'", name),
+            Self::SetProjectVersion(v) => write!(f, "Set version to '{}'", v),
+            Self::SetCompanyName(name) => write!(f, "Set company to '{}'", name),
+            Self::SetDefaultScene(s) => write!(f, "Set default scene to '{}'", s),
+            Self::SetRendererBackend(b) => write!(f, "Set renderer to {}", b),
+            Self::ToggleHDR(on) => write!(f, "Turn HDR {}", if *on { "on" } else { "off" }),
+            Self::ToggleBloom(on) => write!(f, "Turn bloom {}", if *on { "on" } else { "off" }),
+            Self::SetBloomIntensity(i) => write!(f, "Set bloom intensity to {:.2}", i),
+            Self::SetTonemapping(m) => write!(f, "Set tonemapping to {}", m),
+            Self::SetAmbientOcclusion(m) => write!(f, "Set AO to {}", m),
+            Self::SetGlobalIllumination(m) => write!(f, "Set GI to {}", m),
+            Self::SetReflectionMode(m) => write!(f, "Set reflections to {}", m),
+            Self::SetShadowMode(m) => write!(f, "Set shadows to {}", m),
+            Self::SetGravity(g) => write!(f, "Set gravity to ({:.1}, {:.1}, {:.1})", g[0], g[1], g[2]),
+            Self::SetFixedTimestep(t) => write!(f, "Set fixed timestep to {:.4}s", t),
+            Self::SetDefaultFriction(fr) => write!(f, "Set friction to {:.2}", fr),
+            Self::SetDefaultRestitution(r) => write!(f, "Set restitution to {:.2}", r),
+            Self::SetMasterVolume(v) => write!(f, "Set master volume to {:.0}%", v * 100.0),
+            Self::SetMusicVolume(v) => write!(f, "Set music volume to {:.0}%", v * 100.0),
+            Self::SetSfxVolume(v) => write!(f, "Set SFX volume to {:.0}%", v * 100.0),
+            Self::SetVoiceVolume(v) => write!(f, "Set voice volume to {:.0}%", v * 100.0),
+            Self::SetAmbientVolume(v) => write!(f, "Set ambient volume to {:.0}%", v * 100.0),
+            Self::SetMaxSimultaneousSounds(n) => write!(f, "Set max sounds to {}", n),
+            Self::SetAudioBackend(b) => write!(f, "Set audio backend to {}", b),
+            Self::AddQualityLevel => write!(f, "Add quality level"),
+            Self::RemoveQualityLevel(i) => write!(f, "Remove quality level {}", i),
+            Self::SelectQualityLevel(i) => write!(f, "Select quality level {}", i),
+            Self::SetQualityLevelName { index, name } => write!(f, "Rename quality {} to '{}'", index, name),
+            Self::ApplyQualityLevel(i) => write!(f, "Apply quality level {}", i),
+            Self::AddInputAction => write!(f, "Add input action"),
+            Self::RemoveInputAction(i) => write!(f, "Remove input action {}", i),
+            Self::SelectInputAction(i) => write!(f, "Select input action {}", i),
+            Self::SetInputActionName { index, name } => write!(f, "Rename action {} to '{}'", index, name),
+            Self::SetInputActionKey { index, key } => write!(f, "Set action {} key to '{}'", index, key),
+            Self::AddTag(name) => write!(f, "Add tag '{}'", name),
+            Self::RemoveTag(id) => write!(f, "Remove tag {}", id),
+            Self::AddLayer(name) => write!(f, "Add layer '{}'", name),
+            Self::RemoveLayer(id) => write!(f, "Remove layer {}", id),
+            Self::AddBuildConfig => write!(f, "Add build config"),
+            Self::RemoveBuildConfig(i) => write!(f, "Remove build config {}", i),
+            Self::SelectBuildConfig(i) => write!(f, "Select build config {}", i),
+            Self::SetBuildPlatform { platform, .. } => write!(f, "Set platform to {}", platform),
+            Self::ToggleBuildDevelopment { development, .. } => {
+                write!(f, "Set development mode {}", if *development { "on" } else { "off" })
+            }
+            Self::StartBuild(i) => write!(f, "Start build {}", i),
+            Self::SaveSettings => write!(f, "Save settings"),
+            Self::LoadSettings => write!(f, "Load settings"),
+            Self::ResetToDefaults => write!(f, "Reset to defaults"),
+            Self::ExportSettings(path) => write!(f, "Export settings to '{}'", path),
+            Self::ImportSettings(path) => write!(f, "Import settings from '{}'", path),
+        }
+    }
+}
+
 impl std::fmt::Display for SettingsTab {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} {}", self.icon(), self.name())
@@ -771,6 +900,9 @@ pub struct ProjectSettingsPanel {
     // Build
     build_configs: Vec<BuildConfig>,
     selected_build: usize,
+    
+    // Action queue for external processing
+    pending_actions: Vec<ProjectSettingsAction>,
 }
 
 impl Default for ProjectSettingsPanel {
@@ -800,6 +932,8 @@ impl Default for ProjectSettingsPanel {
 
             build_configs: Vec::new(),
             selected_build: 0,
+            
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -810,6 +944,28 @@ impl Default for ProjectSettingsPanel {
 impl ProjectSettingsPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+    
+    // ==================== Action Queue Methods ====================
+    
+    /// Takes all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<ProjectSettingsAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+    
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+    
+    /// Queue an action for external processing
+    pub fn queue_action(&mut self, action: ProjectSettingsAction) {
+        self.pending_actions.push(action);
+    }
+    
+    /// Returns a reference to pending actions
+    pub fn pending_actions(&self) -> &[ProjectSettingsAction] {
+        &self.pending_actions
     }
 
     fn create_sample_data(&mut self) {
@@ -2650,5 +2806,152 @@ mod tests {
             set.insert(*tab);
         }
         assert_eq!(set.len(), SettingsTab::all().len());
+    }
+
+    // =====================================================================
+    // ProjectSettingsAction Tests
+    // =====================================================================
+
+    #[test]
+    fn test_project_settings_action_display_project() {
+        let action = ProjectSettingsAction::SetProjectName("MyGame".to_string());
+        assert!(format!("{}", action).contains("MyGame"));
+        
+        let action = ProjectSettingsAction::SetProjectVersion("1.0.0".to_string());
+        assert!(format!("{}", action).contains("1.0.0"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_rendering() {
+        let action = ProjectSettingsAction::ToggleHDR(true);
+        assert!(format!("{}", action).contains("on"));
+        
+        let action = ProjectSettingsAction::ToggleBloom(false);
+        assert!(format!("{}", action).contains("off"));
+        
+        let action = ProjectSettingsAction::SetBloomIntensity(0.75);
+        assert!(format!("{}", action).contains("0.75"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_audio() {
+        let action = ProjectSettingsAction::SetMasterVolume(0.8);
+        assert!(format!("{}", action).contains("80"));
+        
+        let action = ProjectSettingsAction::SetMaxSimultaneousSounds(64);
+        assert!(format!("{}", action).contains("64"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_quality() {
+        let action = ProjectSettingsAction::AddQualityLevel;
+        assert!(format!("{}", action).contains("quality"));
+        
+        let action = ProjectSettingsAction::SelectQualityLevel(2);
+        assert!(format!("{}", action).contains("2"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_input() {
+        let action = ProjectSettingsAction::AddInputAction;
+        assert!(format!("{}", action).contains("input"));
+        
+        let action = ProjectSettingsAction::SetInputActionKey { index: 0, key: "Space".to_string() };
+        assert!(format!("{}", action).contains("Space"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_tags_layers() {
+        let action = ProjectSettingsAction::AddTag("Player".to_string());
+        assert!(format!("{}", action).contains("Player"));
+        
+        let action = ProjectSettingsAction::AddLayer("Ground".to_string());
+        assert!(format!("{}", action).contains("Ground"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_build() {
+        let action = ProjectSettingsAction::StartBuild(0);
+        assert!(format!("{}", action).contains("build"));
+        
+        let action = ProjectSettingsAction::SetBuildPlatform { 
+            index: 0, 
+            platform: TargetPlatform::Windows 
+        };
+        assert!(format!("{}", action).contains("Windows"));
+    }
+
+    #[test]
+    fn test_project_settings_action_display_general() {
+        let action = ProjectSettingsAction::SaveSettings;
+        assert!(format!("{}", action).contains("Save"));
+        
+        let action = ProjectSettingsAction::LoadSettings;
+        assert!(format!("{}", action).contains("Load"));
+        
+        let action = ProjectSettingsAction::ResetToDefaults;
+        assert!(format!("{}", action).contains("Reset"));
+    }
+
+    #[test]
+    fn test_project_settings_panel_action_queue() {
+        let mut panel = ProjectSettingsPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+        
+        panel.queue_action(ProjectSettingsAction::SaveSettings);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_project_settings_panel_take_actions() {
+        let mut panel = ProjectSettingsPanel::new();
+        panel.queue_action(ProjectSettingsAction::SetProjectName("Test".to_string()));
+        panel.queue_action(ProjectSettingsAction::ToggleHDR(true));
+        
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_project_settings_panel_action_order() {
+        let mut panel = ProjectSettingsPanel::new();
+        panel.queue_action(ProjectSettingsAction::SetMasterVolume(0.5));
+        panel.queue_action(ProjectSettingsAction::SetMusicVolume(0.7));
+        panel.queue_action(ProjectSettingsAction::SetSfxVolume(1.0));
+        
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], ProjectSettingsAction::SetMasterVolume(_)));
+        assert!(matches!(actions[1], ProjectSettingsAction::SetMusicVolume(_)));
+        assert!(matches!(actions[2], ProjectSettingsAction::SetSfxVolume(_)));
+    }
+
+    #[test]
+    fn test_project_settings_action_physics() {
+        let action = ProjectSettingsAction::SetGravity([0.0, -9.81, 0.0]);
+        let display = format!("{}", action);
+        assert!(display.contains("-9.8"));
+        
+        let action = ProjectSettingsAction::SetFixedTimestep(0.0166);
+        assert!(format!("{}", action).contains("0.016"));
+    }
+
+    #[test]
+    fn test_project_settings_action_equality() {
+        let a1 = ProjectSettingsAction::SetProjectName("A".to_string());
+        let a2 = ProjectSettingsAction::SetProjectName("A".to_string());
+        let a3 = ProjectSettingsAction::SetProjectName("B".to_string());
+        
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+    }
+
+    #[test]
+    fn test_project_settings_action_clone() {
+        let action = ProjectSettingsAction::ExportSettings("/path/to/settings".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
     }
 }

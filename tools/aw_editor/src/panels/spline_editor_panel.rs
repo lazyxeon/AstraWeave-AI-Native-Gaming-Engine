@@ -472,6 +472,163 @@ impl SplineTab {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════
+// SPLINE EDITOR ACTION
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the spline editor panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum SplineEditorAction {
+    // Tab navigation
+    SetActiveTab(SplineTab),
+
+    // Tool selection
+    SetTool(SplineTool),
+
+    // Spline management
+    CreateSpline,
+    DeleteSpline(u32),
+    DuplicateSpline(u32),
+    SelectSpline(u32),
+    DeselectSpline,
+    RenameSpline(u32, String),
+
+    // Spline properties
+    SetSplineType(u32, SplineType),
+    SetSplinePreset(u32, SplinePreset),
+    ToggleClosed(u32, bool),
+    SetSplineColor(u32, [f32; 3]),
+    SetSplineThickness(u32, f32),
+    ToggleShowPoints(u32, bool),
+    ToggleShowTangents(u32, bool),
+
+    // Point operations
+    AddPoint(u32, [f32; 3]),
+    InsertPoint(u32, usize, [f32; 3]),
+    DeletePoint(u32, u32),
+    SelectPoint(u32),
+    DeselectPoint,
+    SetPointPosition(u32, u32, [f32; 3]),
+    SetPointRotation(u32, u32, [f32; 3]),
+    SetPointScale(u32, u32, [f32; 3]),
+    SetPointTangentMode(u32, u32, TangentMode),
+    SetPointInTangent(u32, u32, [f32; 3]),
+    SetPointOutTangent(u32, u32, [f32; 3]),
+    SetPointRoll(u32, u32, f32),
+    SetPointWidth(u32, u32, f32),
+
+    // Mesh generation
+    ToggleGenerateMesh(u32, bool),
+    SetMeshProfile(u32, MeshProfile),
+    SetUvMode(u32, UvMode),
+    SetSegmentLength(u32, f32),
+    RebuildMesh(u32),
+
+    // Terrain deformation
+    ToggleDeformTerrain(u32, bool),
+    SetTerrainWidth(u32, f32),
+    SetTerrainFalloff(u32, f32),
+    SetTerrainHeightOffset(u32, f32),
+    ApplyTerrainDeformation(u32),
+
+    // Animation
+    SetAnimationDuration(u32, f32),
+    ToggleLoopAnimation(u32, bool),
+    PreviewAnimation(u32),
+    StopAnimationPreview,
+
+    // Custom profiles
+    AddCustomProfile,
+    DeleteCustomProfile(usize),
+    RenameProfile(usize, String),
+    AddProfilePoint(usize, f32, f32),
+    RemoveProfilePoint(usize, usize),
+
+    // Editor settings
+    ToggleSnapToGrid(bool),
+    SetGridSize(f32),
+    ToggleAutoSmooth(bool),
+    TogglePreviewMesh(bool),
+
+    // Bulk operations
+    SelectAllPoints(u32),
+    ReverseSpline(u32),
+    SimplifySpline(u32, f32),
+    SubdivideSpline(u32),
+    SmoothSpline(u32),
+
+    // Import/Export
+    ExportSpline(u32),
+    ImportSpline,
+    ExportAllSplines,
+}
+
+impl std::fmt::Display for SplineEditorAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SplineEditorAction::SetActiveTab(tab) => write!(f, "Set tab: {}", tab),
+            SplineEditorAction::SetTool(tool) => write!(f, "Set tool: {}", tool),
+            SplineEditorAction::CreateSpline => write!(f, "Create spline"),
+            SplineEditorAction::DeleteSpline(id) => write!(f, "Delete spline {}", id),
+            SplineEditorAction::DuplicateSpline(id) => write!(f, "Duplicate spline {}", id),
+            SplineEditorAction::SelectSpline(id) => write!(f, "Select spline {}", id),
+            SplineEditorAction::DeselectSpline => write!(f, "Deselect spline"),
+            SplineEditorAction::RenameSpline(id, n) => write!(f, "Rename spline {}: {}", id, n),
+            SplineEditorAction::SetSplineType(id, t) => write!(f, "Set spline {} type: {}", id, t),
+            SplineEditorAction::SetSplinePreset(id, p) => write!(f, "Set spline {} preset: {}", id, p),
+            SplineEditorAction::ToggleClosed(id, b) => write!(f, "Toggle spline {} closed: {}", id, b),
+            SplineEditorAction::SetSplineColor(id, _) => write!(f, "Set spline {} color", id),
+            SplineEditorAction::SetSplineThickness(id, t) => write!(f, "Set spline {} thickness: {:.1}", id, t),
+            SplineEditorAction::ToggleShowPoints(id, b) => write!(f, "Toggle spline {} points: {}", id, b),
+            SplineEditorAction::ToggleShowTangents(id, b) => write!(f, "Toggle spline {} tangents: {}", id, b),
+            SplineEditorAction::AddPoint(id, pos) => write!(f, "Add point to spline {} at ({:.1}, {:.1}, {:.1})", id, pos[0], pos[1], pos[2]),
+            SplineEditorAction::InsertPoint(id, i, _) => write!(f, "Insert point to spline {} at index {}", id, i),
+            SplineEditorAction::DeletePoint(sid, pid) => write!(f, "Delete point {} from spline {}", pid, sid),
+            SplineEditorAction::SelectPoint(id) => write!(f, "Select point {}", id),
+            SplineEditorAction::DeselectPoint => write!(f, "Deselect point"),
+            SplineEditorAction::SetPointPosition(sid, pid, _) => write!(f, "Set point {}/{} position", sid, pid),
+            SplineEditorAction::SetPointRotation(sid, pid, _) => write!(f, "Set point {}/{} rotation", sid, pid),
+            SplineEditorAction::SetPointScale(sid, pid, _) => write!(f, "Set point {}/{} scale", sid, pid),
+            SplineEditorAction::SetPointTangentMode(sid, pid, m) => write!(f, "Set point {}/{} tangent: {}", sid, pid, m),
+            SplineEditorAction::SetPointInTangent(sid, pid, _) => write!(f, "Set point {}/{} in-tangent", sid, pid),
+            SplineEditorAction::SetPointOutTangent(sid, pid, _) => write!(f, "Set point {}/{} out-tangent", sid, pid),
+            SplineEditorAction::SetPointRoll(sid, pid, r) => write!(f, "Set point {}/{} roll: {:.1}°", sid, pid, r),
+            SplineEditorAction::SetPointWidth(sid, pid, w) => write!(f, "Set point {}/{} width: {:.2}", sid, pid, w),
+            SplineEditorAction::ToggleGenerateMesh(id, b) => write!(f, "Toggle spline {} mesh gen: {}", id, b),
+            SplineEditorAction::SetMeshProfile(id, p) => write!(f, "Set spline {} profile: {}", id, p),
+            SplineEditorAction::SetUvMode(id, m) => write!(f, "Set spline {} UV mode: {}", id, m),
+            SplineEditorAction::SetSegmentLength(id, l) => write!(f, "Set spline {} segment: {:.2}", id, l),
+            SplineEditorAction::RebuildMesh(id) => write!(f, "Rebuild mesh for spline {}", id),
+            SplineEditorAction::ToggleDeformTerrain(id, b) => write!(f, "Toggle spline {} terrain: {}", id, b),
+            SplineEditorAction::SetTerrainWidth(id, w) => write!(f, "Set spline {} terrain width: {:.1}", id, w),
+            SplineEditorAction::SetTerrainFalloff(id, v) => write!(f, "Set spline {} terrain falloff: {:.1}", id, v),
+            SplineEditorAction::SetTerrainHeightOffset(id, h) => write!(f, "Set spline {} terrain height: {:.1}", id, h),
+            SplineEditorAction::ApplyTerrainDeformation(id) => write!(f, "Apply terrain deformation for spline {}", id),
+            SplineEditorAction::SetAnimationDuration(id, d) => write!(f, "Set spline {} anim duration: {:.1}s", id, d),
+            SplineEditorAction::ToggleLoopAnimation(id, b) => write!(f, "Toggle spline {} anim loop: {}", id, b),
+            SplineEditorAction::PreviewAnimation(id) => write!(f, "Preview animation for spline {}", id),
+            SplineEditorAction::StopAnimationPreview => write!(f, "Stop animation preview"),
+            SplineEditorAction::AddCustomProfile => write!(f, "Add custom profile"),
+            SplineEditorAction::DeleteCustomProfile(i) => write!(f, "Delete custom profile {}", i),
+            SplineEditorAction::RenameProfile(i, n) => write!(f, "Rename profile {}: {}", i, n),
+            SplineEditorAction::AddProfilePoint(i, _, _) => write!(f, "Add point to profile {}", i),
+            SplineEditorAction::RemoveProfilePoint(pi, pti) => write!(f, "Remove point {} from profile {}", pti, pi),
+            SplineEditorAction::ToggleSnapToGrid(b) => write!(f, "Toggle snap to grid: {}", b),
+            SplineEditorAction::SetGridSize(s) => write!(f, "Set grid size: {:.2}", s),
+            SplineEditorAction::ToggleAutoSmooth(b) => write!(f, "Toggle auto smooth: {}", b),
+            SplineEditorAction::TogglePreviewMesh(b) => write!(f, "Toggle preview mesh: {}", b),
+            SplineEditorAction::SelectAllPoints(id) => write!(f, "Select all points in spline {}", id),
+            SplineEditorAction::ReverseSpline(id) => write!(f, "Reverse spline {}", id),
+            SplineEditorAction::SimplifySpline(id, t) => write!(f, "Simplify spline {} (tolerance: {:.2})", id, t),
+            SplineEditorAction::SubdivideSpline(id) => write!(f, "Subdivide spline {}", id),
+            SplineEditorAction::SmoothSpline(id) => write!(f, "Smooth spline {}", id),
+            SplineEditorAction::ExportSpline(id) => write!(f, "Export spline {}", id),
+            SplineEditorAction::ImportSpline => write!(f, "Import spline"),
+            SplineEditorAction::ExportAllSplines => write!(f, "Export all splines"),
+        }
+    }
+}
+
 /// Main Spline Editor Panel
 pub struct SplineEditorPanel {
     active_tab: SplineTab,
@@ -500,6 +657,9 @@ pub struct SplineEditorPanel {
     // ID counters
     next_spline_id: u32,
     next_point_id: u32,
+
+    // Actions
+    pending_actions: Vec<SplineEditorAction>,
 }
 
 impl Default for SplineEditorPanel {
@@ -525,6 +685,8 @@ impl Default for SplineEditorPanel {
 
             next_spline_id: 1,
             next_point_id: 1,
+
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -535,6 +697,26 @@ impl Default for SplineEditorPanel {
 impl SplineEditorPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<SplineEditorAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: SplineEditorAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Get reference to pending actions without removing them
+    pub fn pending_actions(&self) -> &[SplineEditorAction] {
+        &self.pending_actions
     }
 
     fn create_sample_data(&mut self) {
@@ -1835,4 +2017,242 @@ mod tests {
         }
         assert_eq!(set.len(), SplineTab::all().len());
     }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SplineEditorAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_spline_editor_action_display() {
+        let action = SplineEditorAction::SetActiveTab(SplineTab::Splines);
+        let display = format!("{}", action);
+        assert!(display.contains("Splines") || display.contains("tab"));
+    }
+
+    #[test]
+    fn test_spline_editor_action_display_all_variants() {
+        let actions = vec![
+            SplineEditorAction::SetActiveTab(SplineTab::Points),
+            SplineEditorAction::SetTool(SplineTool::Select),
+            SplineEditorAction::CreateSpline,
+            SplineEditorAction::DeleteSpline(0),
+            SplineEditorAction::SelectSpline(0),
+            SplineEditorAction::AddPoint(0, [0.0, 0.0, 0.0]),
+            SplineEditorAction::DeletePoint(0, 0),
+            SplineEditorAction::ToggleClosed(0, true),
+            SplineEditorAction::ReverseSpline(0),
+            SplineEditorAction::SimplifySpline(0, 0.1),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_equality() {
+        let action1 = SplineEditorAction::SelectSpline(5);
+        let action2 = SplineEditorAction::SelectSpline(5);
+        let action3 = SplineEditorAction::SelectSpline(10);
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_spline_editor_action_clone() {
+        let action = SplineEditorAction::SetTool(SplineTool::Draw);
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_spline_editor_panel_pending_actions_empty_by_default() {
+        let panel = SplineEditorPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_spline_editor_panel_queue_action() {
+        let mut panel = SplineEditorPanel::new();
+        panel.queue_action(SplineEditorAction::CreateSpline);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_spline_editor_panel_take_actions() {
+        let mut panel = SplineEditorPanel::new();
+        panel.queue_action(SplineEditorAction::SelectSpline(0));
+        panel.queue_action(SplineEditorAction::AddPoint(0, [1.0, 2.0, 3.0]));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_spline_editor_panel_action_order_preserved() {
+        let mut panel = SplineEditorPanel::new();
+        panel.queue_action(SplineEditorAction::CreateSpline);
+        panel.queue_action(SplineEditorAction::AddPoint(0, [0.0, 0.0, 0.0]));
+        panel.queue_action(SplineEditorAction::AddPoint(0, [10.0, 0.0, 0.0]));
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], SplineEditorAction::CreateSpline));
+        assert!(matches!(actions[1], SplineEditorAction::AddPoint(..)));
+        assert!(matches!(actions[2], SplineEditorAction::AddPoint(..)));
+    }
+
+    #[test]
+    fn test_spline_editor_action_spline_operations() {
+        let actions = vec![
+            SplineEditorAction::CreateSpline,
+            SplineEditorAction::DeleteSpline(0),
+            SplineEditorAction::DuplicateSpline(1),
+            SplineEditorAction::SelectSpline(2),
+            SplineEditorAction::DeselectSpline,
+            SplineEditorAction::RenameSpline(0, "Path".to_string()),
+            SplineEditorAction::SetSplineColor(0, [1.0, 0.0, 0.0]),
+            SplineEditorAction::SetSplineType(0, SplineType::Bezier),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_point_operations() {
+        let actions = vec![
+            SplineEditorAction::AddPoint(0, [1.0, 2.0, 3.0]),
+            SplineEditorAction::DeletePoint(0, 0),
+            SplineEditorAction::SelectPoint(1),
+            SplineEditorAction::DeselectPoint,
+            SplineEditorAction::SetPointPosition(0, 0, [5.0, 5.0, 5.0]),
+            SplineEditorAction::SetPointTangentMode(0, 0, TangentMode::Auto),
+            SplineEditorAction::SetPointInTangent(0, 0, [1.0, 0.0, 0.0]),
+            SplineEditorAction::SetPointOutTangent(0, 0, [-1.0, 0.0, 0.0]),
+            SplineEditorAction::InsertPoint(0, 1, [2.0, 0.0, 0.0]),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Add") || displays[0].contains("point"));
+        assert!(displays[1].contains("Delete") || displays[1].contains("point"));
+    }
+
+    #[test]
+    fn test_spline_editor_action_mesh_generation() {
+        let actions = vec![
+            SplineEditorAction::ToggleGenerateMesh(0, true),
+            SplineEditorAction::SetMeshProfile(0, MeshProfile::Flat),
+            SplineEditorAction::SetSegmentLength(0, 1.0),
+            SplineEditorAction::SetUvMode(0, UvMode::Stretch),
+            SplineEditorAction::RebuildMesh(0),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_terrain_deformation() {
+        let actions = vec![
+            SplineEditorAction::ToggleDeformTerrain(0, true),
+            SplineEditorAction::SetTerrainWidth(0, 10.0),
+            SplineEditorAction::SetTerrainFalloff(0, 5.0),
+            SplineEditorAction::SetTerrainHeightOffset(0, -0.5),
+            SplineEditorAction::ApplyTerrainDeformation(0),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_animation() {
+        let actions = vec![
+            SplineEditorAction::SetAnimationDuration(0, 5.0),
+            SplineEditorAction::ToggleLoopAnimation(0, true),
+            SplineEditorAction::PreviewAnimation(0),
+            SplineEditorAction::StopAnimationPreview,
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_ui_toggles() {
+        let actions = vec![
+            SplineEditorAction::ToggleShowPoints(0, true),
+            SplineEditorAction::ToggleShowTangents(0, true),
+            SplineEditorAction::ToggleSnapToGrid(true),
+            SplineEditorAction::ToggleAutoSmooth(true),
+            SplineEditorAction::TogglePreviewMesh(true),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(display.contains("true"), "Display should contain 'true': {}", display);
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_spline_manipulation() {
+        let actions = vec![
+            SplineEditorAction::ToggleClosed(0, true),
+            SplineEditorAction::ReverseSpline(0),
+            SplineEditorAction::SimplifySpline(0, 0.5),
+            SplineEditorAction::SubdivideSpline(0),
+            SplineEditorAction::SmoothSpline(0),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[1].contains("Reverse") || displays[1].contains("spline"));
+        assert!(displays[2].contains("Simplify") || displays[2].contains("spline"));
+        assert!(displays[3].contains("Subdivide") || displays[3].contains("spline"));
+        assert!(displays[4].contains("Smooth") || displays[4].contains("spline"));
+    }
+
+    #[test]
+    fn test_spline_editor_action_custom_profiles() {
+        let actions = vec![
+            SplineEditorAction::AddCustomProfile,
+            SplineEditorAction::DeleteCustomProfile(0),
+            SplineEditorAction::RenameProfile(0, "River".to_string()),
+            SplineEditorAction::AddProfilePoint(0, 0.5, 1.0),
+            SplineEditorAction::RemoveProfilePoint(0, 1),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_spline_editor_action_import_export() {
+        let actions = vec![
+            SplineEditorAction::ExportSpline(0),
+            SplineEditorAction::ImportSpline,
+            SplineEditorAction::ExportAllSplines,
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
 }
+

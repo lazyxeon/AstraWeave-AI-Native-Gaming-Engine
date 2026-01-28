@@ -14,6 +14,44 @@ use egui::{Color32, RichText, Ui, Vec2};
 
 use crate::panels::Panel;
 
+// ============================================================================
+// PANEL ACTIONS - Events produced by the panel for external handling
+// ============================================================================
+
+/// Actions emitted by the input bindings panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum InputBindingAction {
+    /// Apply a new keybinding to an action
+    SetBinding {
+        action_index: usize,
+        target: InputTarget,
+        key: String, // Key name as string for flexibility
+    },
+    /// Clear all bindings for an action
+    ClearBindings {
+        action_index: usize,
+    },
+    /// Apply a binding preset
+    ApplyPreset {
+        preset: BindingPreset,
+    },
+    /// Save current bindings to file
+    SaveBindings,
+    /// Load bindings from file
+    LoadBindings,
+    /// Reset bindings to defaults
+    ResetToDefaults,
+    /// Update mouse sensitivity
+    SetMouseSensitivity {
+        sensitivity: f32,
+    },
+    /// Update gamepad rumble settings
+    SetRumble {
+        enabled: bool,
+        intensity: f32,
+    },
+}
+
 /// Input device type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum InputDevice {
@@ -618,6 +656,9 @@ pub struct InputBindingsPanel {
     last_input: String,
     input_history: Vec<String>,
     test_axis_values: [f32; 4], // Left X, Left Y, Right X, Right Y
+
+    // Pending actions for external consumption
+    pending_actions: Vec<InputBindingAction>,
 }
 
 impl Default for InputBindingsPanel {
@@ -652,7 +693,31 @@ impl Default for InputBindingsPanel {
             last_input: String::new(),
             input_history: Vec::new(),
             test_axis_values: [0.0; 4],
+
+            pending_actions: Vec::new(),
         }
+    }
+}
+
+impl InputBindingsPanel {
+    /// Drains and returns all pending actions
+    pub fn take_actions(&mut self) -> Vec<InputBindingAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queues an action for external handling
+    fn queue_action(&mut self, action: InputBindingAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Returns the rumble settings
+    pub fn rumble_settings(&self) -> (bool, f32) {
+        (self.rumble_enabled, self.rumble_intensity)
     }
 }
 
@@ -973,6 +1038,9 @@ impl InputBindingsPanel {
         ui.heading("⌨️ Action Bindings");
         ui.add_space(5.0);
 
+        // Track deferred clear action (to avoid borrow conflicts)
+        let mut clear_action_idx: Option<usize> = None;
+
         // Filters
         ui.horizontal(|ui| {
             ui.label("Filter:");
@@ -1111,7 +1179,7 @@ impl InputBindingsPanel {
 
                             // Clear button
                             if ui.small_button("🗑").clicked() {
-                                // Would clear bindings here
+                                clear_action_idx = Some(idx);
                             }
                         });
 
@@ -1121,11 +1189,25 @@ impl InputBindingsPanel {
                     });
                 }
             });
+
+        // Handle clear action outside borrow scope
+        if let Some(idx) = clear_action_idx {
+            if let Some(action) = self.actions.get_mut(idx) {
+                action.keyboard_primary = None;
+                action.keyboard_secondary = None;
+                action.mouse_button = None;
+                action.gamepad_button = None;
+            }
+            self.queue_action(InputBindingAction::ClearBindings { action_index: idx });
+        }
     }
 
     fn show_axes_tab(&mut self, ui: &mut Ui) {
         ui.heading("🕹️ Axis Configuration");
         ui.add_space(10.0);
+
+        // Track previous values for change detection
+        let prev_sensitivity = self.mouse_sensitivity;
 
         // Mouse settings
         ui.group(|ui| {
@@ -1143,6 +1225,13 @@ impl InputBindingsPanel {
             ui.checkbox(&mut self.mouse_invert_y, "Invert Y axis");
             ui.checkbox(&mut self.mouse_raw_input, "Raw input (no acceleration)");
         });
+
+        // Queue action if sensitivity changed
+        if (self.mouse_sensitivity - prev_sensitivity).abs() > 0.001 {
+            self.queue_action(InputBindingAction::SetMouseSensitivity {
+                sensitivity: self.mouse_sensitivity,
+            });
+        }
 
         ui.add_space(10.0);
 
@@ -1175,6 +1264,10 @@ impl InputBindingsPanel {
     fn show_gamepad_tab(&mut self, ui: &mut Ui) {
         ui.heading("🎮 Gamepad Settings");
         ui.add_space(10.0);
+
+        // Track previous values for change detection
+        let prev_rumble_enabled = self.rumble_enabled;
+        let prev_rumble_intensity = self.rumble_intensity;
 
         // Connection status
         ui.group(|ui| {
@@ -1211,14 +1304,24 @@ impl InputBindingsPanel {
 
                 ui.horizontal(|ui| {
                     if ui.button("Test Light").clicked() {
-                        // Test light rumble
+                        // Test light rumble - would trigger rumble effect
                     }
                     if ui.button("Test Heavy").clicked() {
-                        // Test heavy rumble
+                        // Test heavy rumble - would trigger rumble effect
                     }
                 });
             }
         });
+
+        // Queue action if rumble settings changed
+        if self.rumble_enabled != prev_rumble_enabled
+            || (self.rumble_intensity - prev_rumble_intensity).abs() > 0.001
+        {
+            self.queue_action(InputBindingAction::SetRumble {
+                enabled: self.rumble_enabled,
+                intensity: self.rumble_intensity,
+            });
+        }
 
         ui.add_space(10.0);
 
@@ -1317,6 +1420,12 @@ impl InputBindingsPanel {
         ui.heading("📋 Binding Presets");
         ui.add_space(10.0);
 
+        // Track selected preset for action queuing
+        let mut preset_changed: Option<BindingPreset> = None;
+        let mut save_bindings = false;
+        let mut load_bindings = false;
+        let mut reset_defaults = false;
+
         // Current preset
         ui.group(|ui| {
             ui.label(RichText::new("Current Preset").strong());
@@ -1327,8 +1436,7 @@ impl InputBindingsPanel {
                         .selectable_label(self.current_preset == *preset, format!("{:?}", preset))
                         .clicked()
                     {
-                        self.current_preset = *preset;
-                        self.apply_preset(*preset);
+                        preset_changed = Some(*preset);
                     }
                 }
             });
@@ -1361,20 +1469,38 @@ impl InputBindingsPanel {
 
             ui.horizontal(|ui| {
                 if ui.button("💾 Save as Custom").clicked() {
-                    self.current_preset = BindingPreset::Custom;
+                    save_bindings = true;
                 }
                 if ui.button("📥 Import").clicked() {
-                    // Import bindings from file
+                    load_bindings = true;
                 }
                 if ui.button("📤 Export").clicked() {
-                    // Export bindings to file
+                    save_bindings = true;
                 }
                 if ui.button("🔄 Reset to Default").clicked() {
-                    self.current_preset = BindingPreset::Default;
-                    self.apply_preset(BindingPreset::Default);
+                    reset_defaults = true;
                 }
             });
         });
+
+        // Handle deferred actions
+        if let Some(preset) = preset_changed {
+            self.current_preset = preset;
+            self.apply_preset(preset);
+            self.queue_action(InputBindingAction::ApplyPreset { preset });
+        }
+        if save_bindings {
+            self.current_preset = BindingPreset::Custom;
+            self.queue_action(InputBindingAction::SaveBindings);
+        }
+        if load_bindings {
+            self.queue_action(InputBindingAction::LoadBindings);
+        }
+        if reset_defaults {
+            self.current_preset = BindingPreset::Default;
+            self.apply_preset(BindingPreset::Default);
+            self.queue_action(InputBindingAction::ResetToDefaults);
+        }
 
         ui.add_space(10.0);
 
@@ -2084,5 +2210,101 @@ mod tests {
         let t3 = InputTarget::KeyboardPrimary(10);
         assert_eq!(t1, t2);
         assert_ne!(t1, t3);
+    }
+
+    // === Action System Tests ===
+
+    #[test]
+    fn test_action_queue_initially_empty() {
+        let panel = InputBindingsPanel::new();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_take_actions_drains_queue() {
+        let mut panel = InputBindingsPanel::new();
+        // Simulate an action by directly pushing (testing the mechanism)
+        panel.pending_actions.push(InputBindingAction::SaveBindings);
+        panel.pending_actions.push(InputBindingAction::LoadBindings);
+
+        assert!(panel.has_pending_actions());
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_clear_bindings_action() {
+        let action = InputBindingAction::ClearBindings { action_index: 5 };
+        assert_eq!(
+            action,
+            InputBindingAction::ClearBindings { action_index: 5 }
+        );
+    }
+
+    #[test]
+    fn test_apply_preset_action() {
+        let action = InputBindingAction::ApplyPreset {
+            preset: BindingPreset::FPS,
+        };
+        assert_eq!(
+            action,
+            InputBindingAction::ApplyPreset {
+                preset: BindingPreset::FPS
+            }
+        );
+    }
+
+    #[test]
+    fn test_set_mouse_sensitivity_action() {
+        let action = InputBindingAction::SetMouseSensitivity { sensitivity: 2.5 };
+        if let InputBindingAction::SetMouseSensitivity { sensitivity } = action {
+            assert!((sensitivity - 2.5).abs() < f32::EPSILON);
+        } else {
+            panic!("Wrong action type");
+        }
+    }
+
+    #[test]
+    fn test_set_rumble_action() {
+        let action = InputBindingAction::SetRumble {
+            enabled: true,
+            intensity: 0.75,
+        };
+        if let InputBindingAction::SetRumble { enabled, intensity } = action {
+            assert!(enabled);
+            assert!((intensity - 0.75).abs() < f32::EPSILON);
+        } else {
+            panic!("Wrong action type");
+        }
+    }
+
+    #[test]
+    fn test_set_binding_action() {
+        let action = InputBindingAction::SetBinding {
+            action_index: 3,
+            target: InputTarget::KeyboardPrimary(3),
+            key: "Space".to_string(),
+        };
+        if let InputBindingAction::SetBinding {
+            action_index,
+            target,
+            key,
+        } = action
+        {
+            assert_eq!(action_index, 3);
+            assert_eq!(target, InputTarget::KeyboardPrimary(3));
+            assert_eq!(key, "Space");
+        } else {
+            panic!("Wrong action type");
+        }
+    }
+
+    #[test]
+    fn test_rumble_settings_accessor() {
+        let panel = InputBindingsPanel::new();
+        let (enabled, intensity) = panel.rumble_settings();
+        assert!(enabled); // Default is enabled
+        assert!((intensity - 1.0).abs() < f32::EPSILON); // Default is 1.0
     }
 }

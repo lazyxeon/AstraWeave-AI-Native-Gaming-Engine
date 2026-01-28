@@ -54,6 +54,9 @@ pub mod sanitize;
 pub mod template;
 pub mod terrain_prompts; // Phase 10: AI-orchestrated terrain generation
 
+// Internal compatibility layer (not re-exported to avoid ambiguity)
+mod compat;
+
 pub use context::*;
 pub use engine::*;
 pub use helpers::*;
