@@ -432,6 +432,71 @@ impl PerfAlert {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
+// ACTION SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the performance panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum PerformanceAction {
+    // Display toggles
+    ToggleSubsystems(bool),
+    ToggleMemory(bool),
+    ToggleGpu(bool),
+    ToggleMetrics(bool),
+    ToggleAlerts(bool),
+    ToggleHistoryGraphs(bool),
+
+    // Category selection
+    SelectCategory(Option<PerfCategory>),
+
+    // Frame rate settings
+    SetTargetFps(f64),
+
+    // Metrics operations
+    ResetStatistics,
+    ClearAlerts,
+    ExportReport,
+
+    // Subsystem control
+    ToggleSubsystemProfiling(String, bool),
+    SetSubsystemBudget(String, f64),
+
+    // Memory operations
+    TriggerGarbageCollection,
+    SnapshotMemory,
+
+    // Recording
+    StartRecording,
+    StopRecording,
+    SaveRecording(String),
+}
+
+impl std::fmt::Display for PerformanceAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PerformanceAction::ToggleSubsystems(b) => write!(f, "Toggle subsystems: {}", b),
+            PerformanceAction::ToggleMemory(b) => write!(f, "Toggle memory: {}", b),
+            PerformanceAction::ToggleGpu(b) => write!(f, "Toggle GPU: {}", b),
+            PerformanceAction::ToggleMetrics(b) => write!(f, "Toggle metrics: {}", b),
+            PerformanceAction::ToggleAlerts(b) => write!(f, "Toggle alerts: {}", b),
+            PerformanceAction::ToggleHistoryGraphs(b) => write!(f, "Toggle history graphs: {}", b),
+            PerformanceAction::SelectCategory(cat) => write!(f, "Select category: {:?}", cat),
+            PerformanceAction::SetTargetFps(fps) => write!(f, "Set target FPS: {:.0}", fps),
+            PerformanceAction::ResetStatistics => write!(f, "Reset statistics"),
+            PerformanceAction::ClearAlerts => write!(f, "Clear alerts"),
+            PerformanceAction::ExportReport => write!(f, "Export report"),
+            PerformanceAction::ToggleSubsystemProfiling(name, b) => write!(f, "Toggle {} profiling: {}", name, b),
+            PerformanceAction::SetSubsystemBudget(name, budget) => write!(f, "Set {} budget: {:.2}ms", name, budget),
+            PerformanceAction::TriggerGarbageCollection => write!(f, "Trigger GC"),
+            PerformanceAction::SnapshotMemory => write!(f, "Snapshot memory"),
+            PerformanceAction::StartRecording => write!(f, "Start recording"),
+            PerformanceAction::StopRecording => write!(f, "Stop recording"),
+            PerformanceAction::SaveRecording(path) => write!(f, "Save recording: {}", path),
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════
 // PERFORMANCE PANEL
 // ═══════════════════════════════════════════════════════════════════════════════════
 
@@ -478,6 +543,9 @@ pub struct PerformancePanel {
     worst_frame_time_ms: f64,
     best_frame_time_ms: f64,
     session_start: std::time::Instant,
+
+    // Action system
+    actions: Vec<PerformanceAction>,
 }
 
 impl PerformancePanel {
@@ -507,10 +575,35 @@ impl PerformancePanel {
             worst_frame_time_ms: 0.0,
             best_frame_time_ms: f64::MAX,
             session_start: std::time::Instant::now(),
+            actions: Vec::new(),
         };
         panel.init_default_metrics();
         panel.init_default_subsystems();
         panel
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Action System
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: PerformanceAction) {
+        self.actions.push(action);
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.actions.is_empty()
+    }
+
+    /// Get pending actions without consuming them
+    pub fn pending_actions(&self) -> &[PerformanceAction] {
+        &self.actions
+    }
+
+    /// Take all pending actions, clearing the queue
+    pub fn take_actions(&mut self) -> Vec<PerformanceAction> {
+        std::mem::take(&mut self.actions)
     }
 
     fn init_default_metrics(&mut self) {
@@ -1552,5 +1645,161 @@ mod tests {
         assert_eq!(AlertSeverity::Info.name(), "Info");
         assert_eq!(AlertSeverity::Warning.name(), "Warning");
         assert_eq!(AlertSeverity::Critical.name(), "Critical");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // PerformanceAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_performance_action_display() {
+        let action = PerformanceAction::SelectCategory(Some(PerfCategory::Rendering));
+        let display = format!("{}", action);
+        assert!(display.contains("Rendering"));
+    }
+
+    #[test]
+    fn test_performance_action_display_all_variants() {
+        let actions = vec![
+            PerformanceAction::ToggleSubsystems(true),
+            PerformanceAction::ToggleMemory(true),
+            PerformanceAction::ToggleGpu(true),
+            PerformanceAction::SelectCategory(Some(PerfCategory::Physics)),
+            PerformanceAction::SetTargetFps(60.0),
+            PerformanceAction::ResetStatistics,
+            PerformanceAction::StartRecording,
+            PerformanceAction::SaveRecording("trace.json".to_string()),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_performance_action_equality() {
+        let action1 = PerformanceAction::SelectCategory(Some(PerfCategory::Audio));
+        let action2 = PerformanceAction::SelectCategory(Some(PerfCategory::Audio));
+        let action3 = PerformanceAction::SelectCategory(Some(PerfCategory::Ai));
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_performance_action_clone() {
+        let action = PerformanceAction::SaveRecording("output.trace".to_string());
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_performance_panel_pending_actions_empty_by_default() {
+        let panel = PerformancePanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_performance_panel_queue_action() {
+        let mut panel = PerformancePanel::new();
+        panel.queue_action(PerformanceAction::ResetStatistics);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_performance_panel_take_actions() {
+        let mut panel = PerformancePanel::new();
+        panel.queue_action(PerformanceAction::ResetStatistics);
+        panel.queue_action(PerformanceAction::ToggleGpu(true));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_performance_panel_action_order_preserved() {
+        let mut panel = PerformancePanel::new();
+        panel.queue_action(PerformanceAction::StartRecording);
+        panel.queue_action(PerformanceAction::SelectCategory(Some(PerfCategory::Network)));
+        panel.queue_action(PerformanceAction::StopRecording);
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], PerformanceAction::StartRecording));
+        assert!(matches!(actions[1], PerformanceAction::SelectCategory(_)));
+        assert!(matches!(actions[2], PerformanceAction::StopRecording));
+    }
+
+    #[test]
+    fn test_performance_action_display_toggles() {
+        let actions = vec![
+            PerformanceAction::ToggleSubsystems(true),
+            PerformanceAction::ToggleMemory(false),
+            PerformanceAction::ToggleGpu(true),
+            PerformanceAction::ToggleMetrics(false),
+            PerformanceAction::ToggleAlerts(true),
+            PerformanceAction::ToggleHistoryGraphs(false),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("true"));
+        assert!(displays[1].contains("false"));
+    }
+
+    #[test]
+    fn test_performance_action_metrics_operations() {
+        let actions = vec![
+            PerformanceAction::ResetStatistics,
+            PerformanceAction::ClearAlerts,
+            PerformanceAction::ExportReport,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Reset"));
+        assert!(displays[1].contains("Clear"));
+        assert!(displays[2].contains("report"));
+    }
+
+    #[test]
+    fn test_performance_action_subsystem_control() {
+        let actions = vec![
+            PerformanceAction::ToggleSubsystemProfiling("Rendering".to_string(), true),
+            PerformanceAction::ToggleSubsystemProfiling("Physics".to_string(), false),
+            PerformanceAction::SetSubsystemBudget("AI".to_string(), 5.0),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Rendering"));
+        assert!(displays[2].contains("5"));
+    }
+
+    #[test]
+    fn test_performance_action_memory_operations() {
+        let actions = vec![
+            PerformanceAction::TriggerGarbageCollection,
+            PerformanceAction::SnapshotMemory,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("GC"));
+        assert!(displays[1].contains("memory"));
+    }
+
+    #[test]
+    fn test_performance_action_recording() {
+        let actions = vec![
+            PerformanceAction::StartRecording,
+            PerformanceAction::StopRecording,
+            PerformanceAction::SaveRecording("trace_output.json".to_string()),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Start"));
+        assert!(displays[1].contains("Stop"));
+        assert!(displays[2].contains("trace_output"));
     }
 }

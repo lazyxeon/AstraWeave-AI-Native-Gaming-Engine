@@ -139,3 +139,4 @@ content/**/.autosave/
 
 # Networking persistence databases
 aw_net_server_db/
+mutants.out/

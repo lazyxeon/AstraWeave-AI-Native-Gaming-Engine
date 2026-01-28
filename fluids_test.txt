@@ -1,0 +1,37 @@
+
+running 358 tests
+test building::tests::test_dispenser_creates_water ... ok
+test building::tests::test_drain_removes_water ... ok
+test building::tests::test_gate_opens_closes ... ok
+test building::tests::test_water_wheel_no_flow ... ok
+test building::tests::test_building_manager ... ok
+test building::tests::test_gate_flow_multiplier ... ok
+test building::tests::test_gate_groups ... ok
+test building::tests::test_dispenser_auto_shutoff ... ok
+test caustics::tests::test_caustics_config_default ... ok
+test caustics::tests::test_caustics_config_presets ... ok
+test caustics::tests::test_caustics_uniforms ... ok
+test caustics::tests::test_caustics_uniforms_size ... ok
+test caustics::tests::test_chromatic_sample ... ok
+test caustics::tests::test_projector_bounds ... ok
+test caustics::tests::test_projector_creation ... ok
+test caustics::tests::test_sample_above_water ... ok
+test caustics::tests::test_sample_too_deep ... ok
+test caustics::tests::test_sample_underwater ... ok
+test caustics::tests::test_system_add_projector ... ok
+test caustics::tests::test_system_clear ... ok
+test caustics::tests::test_system_creation ... ok
+test caustics::tests::test_system_get_uniforms ... ok
+test caustics::tests::test_system_sample ... ok
+test caustics::tests::test_system_update ... ok
+test caustics::tests::test_wgsl_shader_exists ... ok
+test debug_viz::tests::test_debug_config_all_enabled ... ok
+test debug_viz::tests::test_debug_config_default ... ok
+test debug_viz::tests::test_debug_line_colors ... ok
+test debug_viz::tests::test_debug_line_creation ... ok
+test debug_viz::tests::test_debug_point_from_particle ... ok
+test debug_viz::tests::test_debug_vertex_from_line ... ok
+test debug_viz::tests::test_debug_vertex_from_point ... ok
+test debug_viz::tests::test_debug_vertex_size ... ok
+test debug_viz::tests::test_draw_list_add_circle ... ok
+test debug_viz::tests::test_draw_list_add_aabb ... 

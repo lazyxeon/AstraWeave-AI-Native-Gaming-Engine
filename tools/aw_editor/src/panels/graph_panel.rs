@@ -1,4 +1,4 @@
-use astract::graph::{ForceDirectedParams, GraphNode, NodeGraph, Port, PortType};
+use astract::graph::{ForceDirectedParams, GraphEdge, GraphNode, NodeGraph, Port, PortType};
 use egui::Ui;
 use std::collections::HashMap;
 
@@ -139,6 +139,9 @@ impl GraphStats {
             .map(|e| (e.source_node(), e.source_port()))
             .collect();
         
+        // Calculate max depth using BFS from root nodes (nodes with no incoming edges)
+        let max_depth = Self::calculate_max_depth(&nodes, &edges);
+        
         Self {
             node_count: nodes.len(),
             edge_count: edges.len(),
@@ -146,8 +149,66 @@ impl GraphStats {
             output_ports,
             unconnected_inputs: input_ports.saturating_sub(connected_inputs.len()),
             unconnected_outputs: output_ports.saturating_sub(connected_outputs.len()),
-            max_depth: 0, // Would need graph traversal to calculate
+            max_depth,
         }
+    }
+
+    /// Calculate the maximum depth of the graph using BFS from root nodes
+    fn calculate_max_depth(
+        nodes: &std::collections::HashMap<u64, GraphNode>,
+        edges: &[GraphEdge],
+    ) -> usize {
+        use std::collections::{HashMap, HashSet, VecDeque};
+        
+        if nodes.is_empty() {
+            return 0;
+        }
+        
+        // Build adjacency list (source -> targets)
+        let mut children: HashMap<u64, Vec<u64>> = HashMap::new();
+        let mut has_parent: HashSet<u64> = HashSet::new();
+        
+        for edge in edges {
+            children.entry(edge.source_node()).or_default().push(edge.target_node());
+            has_parent.insert(edge.target_node());
+        }
+        
+        // Find root nodes (nodes with no incoming edges)
+        let roots: Vec<u64> = nodes.keys()
+            .filter(|id| !has_parent.contains(id))
+            .copied()
+            .collect();
+        
+        // If no roots found (cyclic graph), use first node as root
+        let start_nodes = if roots.is_empty() {
+            nodes.keys().take(1).copied().collect()
+        } else {
+            roots
+        };
+        
+        // BFS to find max depth
+        let mut max_depth = 0;
+        let mut visited: HashSet<u64> = HashSet::new();
+        let mut queue: VecDeque<(u64, usize)> = VecDeque::new();
+        
+        for root in start_nodes {
+            queue.push_back((root, 1));
+            visited.insert(root);
+        }
+        
+        while let Some((node_id, depth)) = queue.pop_front() {
+            max_depth = max_depth.max(depth);
+            
+            if let Some(targets) = children.get(&node_id) {
+                for &target in targets {
+                    if visited.insert(target) {
+                        queue.push_back((target, depth + 1));
+                    }
+                }
+            }
+        }
+        
+        max_depth
     }
 }
 

@@ -1,0 +1,36 @@
+    Finished `bench` profile [optimized] target(s) in 1.89s
+     Running benches\fluids_adversarial.rs (target\release\deps\fluids_adversarial-42fd6b19fb6ae588.exe)
+Gnuplot not found, using plotters backend
+Benchmarking fluids_adversarial/parallel_operations/sequential_position_update_100k
+Benchmarking fluids_adversarial/parallel_operations/sequential_position_update_100k: Warming up for 3.0000 s
+Benchmarking fluids_adversarial/parallel_operations/sequential_position_update_100k: Collecting 50 samples in estimated 5.6770 s (6375 iterations)
+Benchmarking fluids_adversarial/parallel_operations/sequential_position_update_100k: Analyzing
+fluids_adversarial/parallel_operations/sequential_position_update_100k
+                        time:   [804.55 ┬╡s 822.94 ┬╡s 844.60 ┬╡s]
+                        change: [+8.6029% +13.186% +19.446%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 4 outliers among 50 measurements (8.00%)
+  2 (4.00%) high mild
+  2 (4.00%) high severe
+Benchmarking fluids_adversarial/parallel_operations/sequential_kernel_eval_10k
+Benchmarking fluids_adversarial/parallel_operations/sequential_kernel_eval_10k: Warming up for 3.0000 s
+Benchmarking fluids_adversarial/parallel_operations/sequential_kernel_eval_10k: Collecting 50 samples in estimated 5.0069 s (111k iterations)
+Benchmarking fluids_adversarial/parallel_operations/sequential_kernel_eval_10k: Analyzing
+fluids_adversarial/parallel_operations/sequential_kernel_eval_10k
+                        time:   [63.617 ┬╡s 67.878 ┬╡s 71.625 ┬╡s]
+                        change: [+32.912% +45.494% +58.189%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Benchmarking fluids_adversarial/parallel_operations/sequential_morton_codes_100k
+Benchmarking fluids_adversarial/parallel_operations/sequential_morton_codes_100k: Warming up for 3.0000 s
+
+Warning: Unable to complete 50 samples in 5.0s. You may wish to increase target time to 6.2s, enable flat sampling, or reduce sample count to 30.
+Benchmarking fluids_adversarial/parallel_operations/sequential_morton_codes_100k: Collecting 50 samples in estimated 6.2323 s (1275 iterations)
+Benchmarking fluids_adversarial/parallel_operations/sequential_morton_codes_100k: Analyzing
+fluids_adversarial/parallel_operations/sequential_morton_codes_100k
+                        time:   [3.1973 ms 3.5415 ms 4.0060 ms]
+                        change: [+55.609% +99.850% +146.85%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 6 outliers among 50 measurements (12.00%)
+  2 (4.00%) high mild
+  4 (8.00%) high severe
+

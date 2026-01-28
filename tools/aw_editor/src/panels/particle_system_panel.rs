@@ -750,6 +750,108 @@ impl ParticleTab {
     }
 }
 
+/// Actions that can be performed on the particle system panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum ParticleAction {
+    /// Play preview
+    Play,
+    /// Pause preview
+    Pause,
+    /// Stop and reset preview
+    Stop,
+    /// Restart preview from beginning
+    Restart,
+    /// Set preview playback speed
+    SetSpeed(f32),
+    /// Create a new particle system
+    CreateSystem { name: String },
+    /// Delete a particle system
+    DeleteSystem { id: u32 },
+    /// Duplicate a particle system
+    DuplicateSystem { id: u32 },
+    /// Select a particle system
+    SelectSystem { id: u32 },
+    /// Add emission burst
+    AddBurst { time: f32, count: u32 },
+    /// Remove emission burst
+    RemoveBurst { index: usize },
+    /// Add a module to the system
+    AddModule { module_type: ModuleType },
+    /// Remove a module from the system
+    RemoveModule { index: usize },
+    /// Apply a preset to the current system
+    ApplyPreset { preset_name: String },
+    /// Save current system as a preset
+    SaveAsPreset { name: String },
+    /// Set emitter shape
+    SetShape(EmitterShape),
+}
+
+impl std::fmt::Display for ParticleAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl ParticleAction {
+    /// Returns the name of this action
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParticleAction::Play => "Play",
+            ParticleAction::Pause => "Pause",
+            ParticleAction::Stop => "Stop",
+            ParticleAction::Restart => "Restart",
+            ParticleAction::SetSpeed(_) => "Set Speed",
+            ParticleAction::CreateSystem { .. } => "Create System",
+            ParticleAction::DeleteSystem { .. } => "Delete System",
+            ParticleAction::DuplicateSystem { .. } => "Duplicate System",
+            ParticleAction::SelectSystem { .. } => "Select System",
+            ParticleAction::AddBurst { .. } => "Add Burst",
+            ParticleAction::RemoveBurst { .. } => "Remove Burst",
+            ParticleAction::AddModule { .. } => "Add Module",
+            ParticleAction::RemoveModule { .. } => "Remove Module",
+            ParticleAction::ApplyPreset { .. } => "Apply Preset",
+            ParticleAction::SaveAsPreset { .. } => "Save As Preset",
+            ParticleAction::SetShape(_) => "Set Shape",
+        }
+    }
+
+    /// Returns true if this is a playback control action
+    pub fn is_playback(&self) -> bool {
+        matches!(
+            self,
+            ParticleAction::Play
+                | ParticleAction::Pause
+                | ParticleAction::Stop
+                | ParticleAction::Restart
+                | ParticleAction::SetSpeed(_)
+        )
+    }
+
+    /// Returns true if this is a system management action
+    pub fn is_system_management(&self) -> bool {
+        matches!(
+            self,
+            ParticleAction::CreateSystem { .. }
+                | ParticleAction::DeleteSystem { .. }
+                | ParticleAction::DuplicateSystem { .. }
+                | ParticleAction::SelectSystem { .. }
+        )
+    }
+
+    /// Returns true if this modifies the system configuration
+    pub fn is_config_change(&self) -> bool {
+        matches!(
+            self,
+            ParticleAction::AddBurst { .. }
+                | ParticleAction::RemoveBurst { .. }
+                | ParticleAction::AddModule { .. }
+                | ParticleAction::RemoveModule { .. }
+                | ParticleAction::SetShape(_)
+        )
+    }
+}
+
 /// Main Particle System Panel
 pub struct ParticleSystemPanel {
     // Tab state
@@ -774,6 +876,9 @@ pub struct ParticleSystemPanel {
 
     // ID counter
     next_id: u32,
+
+    // Action queue
+    pending_actions: Vec<ParticleAction>,
 }
 
 impl Default for ParticleSystemPanel {
@@ -802,6 +907,8 @@ impl Default for ParticleSystemPanel {
             },
 
             next_id: 1,
+
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -812,6 +919,41 @@ impl Default for ParticleSystemPanel {
 impl ParticleSystemPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions and clears the internal queue
+    pub fn take_actions(&mut self) -> Vec<ParticleAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for external processing
+    pub fn queue_action(&mut self, action: ParticleAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Returns the current preview playback speed
+    pub fn preview_speed(&self) -> f32 {
+        self.preview_speed
+    }
+
+    /// Returns true if the preview is currently playing
+    pub fn is_playing(&self) -> bool {
+        self.preview_playing
+    }
+
+    /// Returns the current preview time
+    pub fn preview_time(&self) -> f32 {
+        self.preview_time
+    }
+
+    /// Returns the currently selected system ID
+    pub fn selected_system(&self) -> Option<u32> {
+        self.selected_system
     }
 
     fn create_sample_data(&mut self) {
@@ -2376,5 +2518,191 @@ mod tests {
 
         assert_eq!(g1, g2);
         assert_ne!(g1, g3);
+    }
+
+    // ============================================================
+    // PARTICLE ACTION TESTS
+    // ============================================================
+
+    #[test]
+    fn test_action_system_initial_state() {
+        let panel = ParticleSystemPanel::default();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_queue_and_take() {
+        let mut panel = ParticleSystemPanel::default();
+        panel.queue_action(ParticleAction::Play);
+        panel.queue_action(ParticleAction::SetSpeed(2.0));
+
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+
+        // Verify actions were drained
+        let empty = panel.take_actions();
+        assert!(empty.is_empty());
+    }
+
+    #[test]
+    fn test_action_names() {
+        let actions = vec![
+            (ParticleAction::Play, "Play"),
+            (ParticleAction::Pause, "Pause"),
+            (ParticleAction::Stop, "Stop"),
+            (ParticleAction::Restart, "Restart"),
+            (ParticleAction::SetSpeed(1.5), "Set Speed"),
+            (ParticleAction::CreateSystem { name: "test".to_string() }, "Create System"),
+            (ParticleAction::DeleteSystem { id: 1 }, "Delete System"),
+            (ParticleAction::DuplicateSystem { id: 1 }, "Duplicate System"),
+            (ParticleAction::SelectSystem { id: 1 }, "Select System"),
+            (ParticleAction::AddBurst { time: 0.0, count: 10 }, "Add Burst"),
+            (ParticleAction::RemoveBurst { index: 0 }, "Remove Burst"),
+            (ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }, "Add Module"),
+            (ParticleAction::RemoveModule { index: 0 }, "Remove Module"),
+            (ParticleAction::ApplyPreset { preset_name: "fire".to_string() }, "Apply Preset"),
+            (ParticleAction::SaveAsPreset { name: "custom".to_string() }, "Save As Preset"),
+            (ParticleAction::SetShape(EmitterShape::Sphere), "Set Shape"),
+        ];
+
+        for (action, expected_name) in actions {
+            assert_eq!(action.name(), expected_name);
+        }
+    }
+
+    #[test]
+    fn test_action_is_playback() {
+        assert!(ParticleAction::Play.is_playback());
+        assert!(ParticleAction::Pause.is_playback());
+        assert!(ParticleAction::Stop.is_playback());
+        assert!(ParticleAction::Restart.is_playback());
+        assert!(ParticleAction::SetSpeed(1.0).is_playback());
+
+        assert!(!ParticleAction::CreateSystem { name: "test".to_string() }.is_playback());
+        assert!(!ParticleAction::DeleteSystem { id: 1 }.is_playback());
+        assert!(!ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }.is_playback());
+    }
+
+    #[test]
+    fn test_action_is_system_management() {
+        assert!(ParticleAction::CreateSystem { name: "test".to_string() }.is_system_management());
+        assert!(ParticleAction::DeleteSystem { id: 1 }.is_system_management());
+        assert!(ParticleAction::DuplicateSystem { id: 1 }.is_system_management());
+        assert!(ParticleAction::SelectSystem { id: 1 }.is_system_management());
+
+        assert!(!ParticleAction::Play.is_system_management());
+        assert!(!ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }.is_system_management());
+    }
+
+    #[test]
+    fn test_action_is_config_change() {
+        assert!(ParticleAction::AddBurst { time: 0.0, count: 10 }.is_config_change());
+        assert!(ParticleAction::RemoveBurst { index: 0 }.is_config_change());
+        assert!(ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }.is_config_change());
+        assert!(ParticleAction::RemoveModule { index: 0 }.is_config_change());
+        assert!(ParticleAction::SetShape(EmitterShape::Cone).is_config_change());
+
+        assert!(!ParticleAction::Play.is_config_change());
+        assert!(!ParticleAction::CreateSystem { name: "test".to_string() }.is_config_change());
+    }
+
+    #[test]
+    fn test_action_display() {
+        let action = ParticleAction::Play;
+        let display = format!("{}", action);
+        assert_eq!(display, "Play");
+
+        let action = ParticleAction::SetSpeed(2.5);
+        let display = format!("{}", action);
+        assert_eq!(display, "Set Speed");
+    }
+
+    #[test]
+    fn test_preview_speed_initial() {
+        let panel = ParticleSystemPanel::default();
+        assert!((panel.preview_speed() - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_is_playing_initial() {
+        let panel = ParticleSystemPanel::default();
+        assert!(!panel.is_playing());
+    }
+
+    #[test]
+    fn test_preview_time_initial() {
+        let panel = ParticleSystemPanel::default();
+        assert!((panel.preview_time()).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_selected_system_with_sample_data() {
+        let panel = ParticleSystemPanel::default();
+        // Default panel has sample data, so a system should be selected
+        assert!(panel.system_count() > 0);
+    }
+
+    #[test]
+    fn test_multiple_playback_actions() {
+        let mut panel = ParticleSystemPanel::default();
+        panel.queue_action(ParticleAction::Play);
+        panel.queue_action(ParticleAction::SetSpeed(2.0));
+        panel.queue_action(ParticleAction::Restart);
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 3);
+        assert!(actions.iter().all(|a| a.is_playback()));
+    }
+
+    #[test]
+    fn test_multiple_system_management_actions() {
+        let mut panel = ParticleSystemPanel::default();
+        panel.queue_action(ParticleAction::CreateSystem { name: "new_system".to_string() });
+        panel.queue_action(ParticleAction::SelectSystem { id: 1 });
+        panel.queue_action(ParticleAction::DuplicateSystem { id: 1 });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 3);
+        assert!(actions.iter().all(|a| a.is_system_management()));
+    }
+
+    #[test]
+    fn test_mixed_action_types() {
+        let mut panel = ParticleSystemPanel::default();
+        panel.queue_action(ParticleAction::Play);
+        panel.queue_action(ParticleAction::CreateSystem { name: "effect".to_string() });
+        panel.queue_action(ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: -1.0 } });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 3);
+
+        // Check categories
+        let playback_count = actions.iter().filter(|a| a.is_playback()).count();
+        let management_count = actions.iter().filter(|a| a.is_system_management()).count();
+        let config_count = actions.iter().filter(|a| a.is_config_change()).count();
+
+        assert_eq!(playback_count, 1);
+        assert_eq!(management_count, 1);
+        assert_eq!(config_count, 1);
+    }
+
+    #[test]
+    fn test_action_partial_eq() {
+        let a1 = ParticleAction::Play;
+        let a2 = ParticleAction::Play;
+        let a3 = ParticleAction::Pause;
+
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+
+        let s1 = ParticleAction::SetSpeed(1.0);
+        let s2 = ParticleAction::SetSpeed(1.0);
+        let s3 = ParticleAction::SetSpeed(2.0);
+
+        assert_eq!(s1, s2);
+        assert_ne!(s1, s3);
     }
 }

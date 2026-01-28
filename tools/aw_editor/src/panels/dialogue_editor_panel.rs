@@ -661,6 +661,86 @@ impl EditorAction {
     }
 }
 
+/// External action events emitted by the dialogue editor panel.
+/// These represent high-level user actions that external systems can respond to.
+#[derive(Debug, Clone, PartialEq)]
+pub enum DialogueEditorAction {
+    /// Export dialogue to file with specified format and path
+    ExportDialogue { format: ExportFormat, path: String },
+    /// Import dialogue from file path
+    ImportDialogue { path: String },
+    /// Save current dialogue graph
+    SaveGraph { graph_id: u32, name: String },
+    /// Load dialogue graph by ID
+    LoadGraph { graph_id: u32 },
+    /// Create new dialogue graph
+    CreateGraph { name: String },
+    /// Delete dialogue graph by ID
+    DeleteGraph { graph_id: u32 },
+    /// Add a speaker to the current graph
+    AddSpeaker { speaker: DialogueSpeaker },
+    /// Apply layout algorithm to graph
+    ApplyLayout { algorithm: LayoutAlgorithm },
+    /// Start dialogue preview from node
+    StartPreview { node_id: u32 },
+    /// Set the current localization language
+    SetLanguage { language: String },
+    /// Toggle collaboration mode
+    SetCollaboration { enabled: bool },
+    /// Run validation on current graph
+    RunValidation,
+}
+
+impl std::fmt::Display for DialogueEditorAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl DialogueEditorAction {
+    /// Returns the name of this action
+    pub fn name(&self) -> &'static str {
+        match self {
+            DialogueEditorAction::ExportDialogue { .. } => "Export Dialogue",
+            DialogueEditorAction::ImportDialogue { .. } => "Import Dialogue",
+            DialogueEditorAction::SaveGraph { .. } => "Save Graph",
+            DialogueEditorAction::LoadGraph { .. } => "Load Graph",
+            DialogueEditorAction::CreateGraph { .. } => "Create Graph",
+            DialogueEditorAction::DeleteGraph { .. } => "Delete Graph",
+            DialogueEditorAction::AddSpeaker { .. } => "Add Speaker",
+            DialogueEditorAction::ApplyLayout { .. } => "Apply Layout",
+            DialogueEditorAction::StartPreview { .. } => "Start Preview",
+            DialogueEditorAction::SetLanguage { .. } => "Set Language",
+            DialogueEditorAction::SetCollaboration { .. } => "Set Collaboration",
+            DialogueEditorAction::RunValidation => "Run Validation",
+        }
+    }
+
+    /// Returns true if this is an export/import action
+    pub fn is_io_action(&self) -> bool {
+        matches!(
+            self,
+            DialogueEditorAction::ExportDialogue { .. } | DialogueEditorAction::ImportDialogue { .. }
+        )
+    }
+
+    /// Returns true if this is a graph management action
+    pub fn is_graph_action(&self) -> bool {
+        matches!(
+            self,
+            DialogueEditorAction::SaveGraph { .. }
+                | DialogueEditorAction::LoadGraph { .. }
+                | DialogueEditorAction::CreateGraph { .. }
+                | DialogueEditorAction::DeleteGraph { .. }
+        )
+    }
+
+    /// Returns true if this affects the layout
+    pub fn is_layout_action(&self) -> bool {
+        matches!(self, DialogueEditorAction::ApplyLayout { .. })
+    }
+}
+
 /// Collaboration state
 #[derive(Debug, Clone)]
 pub struct CollaborationState {
@@ -733,6 +813,9 @@ pub struct DialogueEditorPanel {
 
     // ID counter
     next_id: u32,
+
+    // Pending actions for external event handling
+    pending_actions: Vec<DialogueEditorAction>,
 }
 
 impl Default for DialogueEditorPanel {
@@ -789,6 +872,8 @@ impl Default for DialogueEditorPanel {
             avg_branch_factor: 0.0,
 
             next_id: 1,
+
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_dialogue();
@@ -799,6 +884,52 @@ impl Default for DialogueEditorPanel {
 impl DialogueEditorPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions, leaving the queue empty.
+    /// External systems should call this each frame to retrieve actions.
+    pub fn take_actions(&mut self) -> Vec<DialogueEditorAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions to process.
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for external handling.
+    fn queue_action(&mut self, action: DialogueEditorAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Returns the current export format.
+    pub fn export_format(&self) -> ExportFormat {
+        self.export_format
+    }
+
+    /// Returns the current export path.
+    pub fn export_path(&self) -> &str {
+        &self.export_path
+    }
+
+    /// Returns the current import path.
+    pub fn import_path(&self) -> &str {
+        &self.import_path
+    }
+
+    /// Returns the current layout algorithm.
+    pub fn layout_algorithm(&self) -> LayoutAlgorithm {
+        self.layout_algorithm
+    }
+
+    /// Returns the current language.
+    pub fn current_language(&self) -> &str {
+        &self.current_language
+    }
+
+    /// Returns whether collaboration is enabled.
+    pub fn collaboration_enabled(&self) -> bool {
+        self.collaboration.enabled
     }
 
     fn create_sample_dialogue(&mut self) {
@@ -2103,13 +2234,20 @@ impl DialogueEditorPanel {
     // === Export/Import Methods ===
 
     fn export_dialogue(&mut self) {
-        // Placeholder - would write to file based on export_format
-        println!("Exporting dialogue to {} as {:?}", self.export_path, self.export_format);
+        // Queue export action for external handling (file I/O should be done externally)
+        self.queue_action(DialogueEditorAction::ExportDialogue {
+            format: self.export_format,
+            path: self.export_path.clone(),
+        });
     }
 
     fn import_dialogue(&mut self) {
-        // Placeholder - would read from file
-        println!("Importing dialogue from {}", self.import_path);
+        // Queue import action for external handling (file I/O should be done externally)
+        if !self.import_path.is_empty() {
+            self.queue_action(DialogueEditorAction::ImportDialogue {
+                path: self.import_path.clone(),
+            });
+        }
     }
 
     // === Statistics Methods ===
@@ -2171,8 +2309,108 @@ impl DialogueEditorPanel {
     }
 
     fn layout_force_directed(&mut self) {
-        // Placeholder for force-directed layout
-        self.layout_hierarchical();
+        // Force-directed layout using Fruchterman-Reingold algorithm
+        // Parameters
+        const ITERATIONS: usize = 50;
+        const REPULSION_CONSTANT: f32 = 10000.0;
+        const ATTRACTION_CONSTANT: f32 = 0.01;
+        const DAMPING: f32 = 0.85;
+        const MIN_DISTANCE: f32 = 1.0;
+
+        let node_count = self.current_graph.nodes.len();
+        if node_count == 0 {
+            return;
+        }
+
+        // Initialize positions if needed (spread nodes in a grid initially)
+        let sqrt_n = (node_count as f32).sqrt().ceil() as usize;
+        for (i, node) in self.current_graph.nodes.iter_mut().enumerate() {
+            let row = i / sqrt_n;
+            let col = i % sqrt_n;
+            node.position = (200.0 + col as f32 * 150.0, 100.0 + row as f32 * 150.0);
+        }
+
+        // Build edge list from choices
+        let mut edges: Vec<(usize, usize)> = Vec::new();
+        for (i, node) in self.current_graph.nodes.iter().enumerate() {
+            for choice in &node.choices {
+                if let Some(target_id) = choice.target_node_id {
+                    if let Some(j) = self.current_graph.nodes.iter().position(|n| n.id == target_id) {
+                        edges.push((i, j));
+                    }
+                }
+            }
+        }
+
+        // Velocity storage
+        let mut velocities: Vec<(f32, f32)> = vec![(0.0, 0.0); node_count];
+
+        // Iterate force simulation
+        for _ in 0..ITERATIONS {
+            // Calculate repulsive forces between all node pairs
+            let mut forces: Vec<(f32, f32)> = vec![(0.0, 0.0); node_count];
+
+            for i in 0..node_count {
+                for j in (i + 1)..node_count {
+                    let pos_i = self.current_graph.nodes[i].position;
+                    let pos_j = self.current_graph.nodes[j].position;
+
+                    let dx = pos_i.0 - pos_j.0;
+                    let dy = pos_i.1 - pos_j.1;
+                    let distance = (dx * dx + dy * dy).sqrt().max(MIN_DISTANCE);
+
+                    // Repulsive force (inverse square law)
+                    let repulsion = REPULSION_CONSTANT / (distance * distance);
+                    let fx = (dx / distance) * repulsion;
+                    let fy = (dy / distance) * repulsion;
+
+                    forces[i].0 += fx;
+                    forces[i].1 += fy;
+                    forces[j].0 -= fx;
+                    forces[j].1 -= fy;
+                }
+            }
+
+            // Calculate attractive forces along edges
+            for (i, j) in &edges {
+                let pos_i = self.current_graph.nodes[*i].position;
+                let pos_j = self.current_graph.nodes[*j].position;
+
+                let dx = pos_j.0 - pos_i.0;
+                let dy = pos_j.1 - pos_i.1;
+                let distance = (dx * dx + dy * dy).sqrt().max(MIN_DISTANCE);
+
+                // Attractive force (spring-like)
+                let attraction = distance * ATTRACTION_CONSTANT;
+                let fx = (dx / distance) * attraction;
+                let fy = (dy / distance) * attraction;
+
+                forces[*i].0 += fx;
+                forces[*i].1 += fy;
+                forces[*j].0 -= fx;
+                forces[*j].1 -= fy;
+            }
+
+            // Apply forces to velocities and positions
+            for i in 0..node_count {
+                velocities[i].0 = (velocities[i].0 + forces[i].0) * DAMPING;
+                velocities[i].1 = (velocities[i].1 + forces[i].1) * DAMPING;
+
+                // Limit velocity to prevent instability
+                let speed = (velocities[i].0 * velocities[i].0 + velocities[i].1 * velocities[i].1).sqrt();
+                if speed > 50.0 {
+                    velocities[i].0 = (velocities[i].0 / speed) * 50.0;
+                    velocities[i].1 = (velocities[i].1 / speed) * 50.0;
+                }
+
+                self.current_graph.nodes[i].position.0 += velocities[i].0;
+                self.current_graph.nodes[i].position.1 += velocities[i].1;
+
+                // Keep nodes within bounds
+                self.current_graph.nodes[i].position.0 = self.current_graph.nodes[i].position.0.clamp(50.0, 800.0);
+                self.current_graph.nodes[i].position.1 = self.current_graph.nodes[i].position.1.clamp(50.0, 600.0);
+            }
+        }
     }
 
     fn layout_tree(&mut self) {
@@ -3107,5 +3345,236 @@ mod tests {
         let a3 = EditorAction::DeleteNode(10);
         assert_eq!(a1, a2);
         assert_ne!(a1, a3);
+    }
+
+    // === DialogueEditorAction Tests ===
+
+    #[test]
+    fn test_action_system_initial_state() {
+        let panel = DialogueEditorPanel::new();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_system_take_actions_empty() {
+        let mut panel = DialogueEditorPanel::new();
+        let actions = panel.take_actions();
+        assert!(actions.is_empty());
+    }
+
+    #[test]
+    fn test_action_export_dialogue() {
+        let mut panel = DialogueEditorPanel::new();
+        panel.export_dialogue();
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 1);
+        assert!(matches!(
+            &actions[0],
+            DialogueEditorAction::ExportDialogue { format: ExportFormat::Json, path } if path == "dialogue_export.json"
+        ));
+    }
+
+    #[test]
+    fn test_action_import_dialogue() {
+        let mut panel = DialogueEditorPanel::new();
+        panel.import_path = "test_dialogue.json".to_string();
+        panel.import_dialogue();
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 1);
+        assert!(matches!(
+            &actions[0],
+            DialogueEditorAction::ImportDialogue { path } if path == "test_dialogue.json"
+        ));
+    }
+
+    #[test]
+    fn test_action_import_dialogue_empty_path() {
+        let mut panel = DialogueEditorPanel::new();
+        panel.import_path = String::new();
+        panel.import_dialogue();
+        // Should not queue action with empty path
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_take_clears_queue() {
+        let mut panel = DialogueEditorPanel::new();
+        panel.export_dialogue();
+        assert!(panel.has_pending_actions());
+
+        let _ = panel.take_actions();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_multiple_actions() {
+        let mut panel = DialogueEditorPanel::new();
+        panel.export_dialogue();
+        panel.import_path = "import.json".to_string();
+        panel.import_dialogue();
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+    }
+
+    #[test]
+    fn test_dialogue_editor_action_name() {
+        let export = DialogueEditorAction::ExportDialogue {
+            format: ExportFormat::Json,
+            path: "test.json".to_string(),
+        };
+        assert_eq!(export.name(), "Export Dialogue");
+
+        let import = DialogueEditorAction::ImportDialogue {
+            path: "test.json".to_string(),
+        };
+        assert_eq!(import.name(), "Import Dialogue");
+
+        let layout = DialogueEditorAction::ApplyLayout {
+            algorithm: LayoutAlgorithm::ForceDirected,
+        };
+        assert_eq!(layout.name(), "Apply Layout");
+    }
+
+    #[test]
+    fn test_dialogue_editor_action_is_io_action() {
+        let export = DialogueEditorAction::ExportDialogue {
+            format: ExportFormat::Json,
+            path: "test.json".to_string(),
+        };
+        assert!(export.is_io_action());
+
+        let import = DialogueEditorAction::ImportDialogue {
+            path: "test.json".to_string(),
+        };
+        assert!(import.is_io_action());
+
+        let layout = DialogueEditorAction::ApplyLayout {
+            algorithm: LayoutAlgorithm::ForceDirected,
+        };
+        assert!(!layout.is_io_action());
+    }
+
+    #[test]
+    fn test_dialogue_editor_action_is_graph_action() {
+        let save = DialogueEditorAction::SaveGraph {
+            graph_id: 1,
+            name: "Test".to_string(),
+        };
+        assert!(save.is_graph_action());
+
+        let load = DialogueEditorAction::LoadGraph { graph_id: 1 };
+        assert!(load.is_graph_action());
+
+        let create = DialogueEditorAction::CreateGraph {
+            name: "New".to_string(),
+        };
+        assert!(create.is_graph_action());
+
+        let delete = DialogueEditorAction::DeleteGraph { graph_id: 1 };
+        assert!(delete.is_graph_action());
+
+        let export = DialogueEditorAction::ExportDialogue {
+            format: ExportFormat::Json,
+            path: "test.json".to_string(),
+        };
+        assert!(!export.is_graph_action());
+    }
+
+    #[test]
+    fn test_dialogue_editor_action_is_layout_action() {
+        let layout = DialogueEditorAction::ApplyLayout {
+            algorithm: LayoutAlgorithm::ForceDirected,
+        };
+        assert!(layout.is_layout_action());
+
+        let export = DialogueEditorAction::ExportDialogue {
+            format: ExportFormat::Json,
+            path: "test.json".to_string(),
+        };
+        assert!(!export.is_layout_action());
+    }
+
+    #[test]
+    fn test_dialogue_editor_action_display() {
+        let export = DialogueEditorAction::ExportDialogue {
+            format: ExportFormat::Json,
+            path: "test.json".to_string(),
+        };
+        assert_eq!(format!("{}", export), "Export Dialogue");
+    }
+
+    #[test]
+    fn test_dialogue_editor_action_partial_eq() {
+        let a1 = DialogueEditorAction::RunValidation;
+        let a2 = DialogueEditorAction::RunValidation;
+        assert_eq!(a1, a2);
+
+        let b1 = DialogueEditorAction::SetLanguage {
+            language: "en".to_string(),
+        };
+        let b2 = DialogueEditorAction::SetLanguage {
+            language: "en".to_string(),
+        };
+        let b3 = DialogueEditorAction::SetLanguage {
+            language: "fr".to_string(),
+        };
+        assert_eq!(b1, b2);
+        assert_ne!(b1, b3);
+    }
+
+    #[test]
+    fn test_force_directed_layout() {
+        let mut panel = DialogueEditorPanel::new();
+        // Should have sample nodes
+        assert!(panel.node_count() >= 3);
+
+        // Store initial positions
+        let initial_positions: Vec<_> = panel
+            .current_graph
+            .nodes
+            .iter()
+            .map(|n| n.position)
+            .collect();
+
+        // Apply force-directed layout
+        panel.layout_algorithm = LayoutAlgorithm::ForceDirected;
+        panel.auto_layout();
+
+        // Positions should be within bounds
+        for node in &panel.current_graph.nodes {
+            assert!(node.position.0 >= 50.0 && node.position.0 <= 800.0);
+            assert!(node.position.1 >= 50.0 && node.position.1 <= 600.0);
+        }
+
+        // Positions should have changed from initial (layout was applied)
+        let final_positions: Vec<_> = panel
+            .current_graph
+            .nodes
+            .iter()
+            .map(|n| n.position)
+            .collect();
+
+        // At least some positions should differ
+        let changed = initial_positions
+            .iter()
+            .zip(&final_positions)
+            .any(|(a, b)| (a.0 - b.0).abs() > 0.01 || (a.1 - b.1).abs() > 0.01);
+        assert!(changed);
+    }
+
+    #[test]
+    fn test_helper_methods() {
+        let panel = DialogueEditorPanel::new();
+        assert_eq!(panel.export_format(), ExportFormat::Json);
+        assert_eq!(panel.export_path(), "dialogue_export.json");
+        assert_eq!(panel.import_path(), "");
+        assert_eq!(panel.layout_algorithm(), LayoutAlgorithm::Hierarchical);
+        assert_eq!(panel.current_language(), "en");
+        assert!(!panel.collaboration_enabled());
     }
 }

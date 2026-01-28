@@ -16,7 +16,9 @@ mod scenarios;
 mod skybox_renderer;
 
 use astraweave_fluids::renderer::CameraUniform;
-use astraweave_fluids::{FluidLodConfig, FluidLodManager, FluidRenderer, FluidSystem};
+use astraweave_fluids::{
+    FluidLodConfig, FluidLodManager, FluidOptimizationController, FluidRenderer, FluidSystem,
+};
 
 use scenarios::{LaboratoryScenario, OceanScenario, ScenarioManager};
 use skybox_renderer::SkyboxRenderer;
@@ -84,6 +86,12 @@ struct State {
     // Performance tracking
     frame_times: Vec<f32>,
     lod_manager: FluidLodManager,
+
+    // Optimization Controller (NEW)
+    optimization_controller: FluidOptimizationController,
+    show_optimization_overlay: bool,
+    use_controller_stepping: bool,
+    last_frame_time_ms: f32,
 
     // Simulation parameters (egui controlled)
     sim_speed: f32,
@@ -388,6 +396,18 @@ impl State {
             frame_times: Vec::with_capacity(60),
             lod_manager: FluidLodManager::new(FluidLodConfig::default()),
 
+            // Optimization Controller
+            optimization_controller: {
+                let mut controller = FluidOptimizationController::new();
+                controller.set_target_framerate(60.0);
+                controller.enable_lod([0.0, 5.0, 0.0]);
+                controller.set_auto_tune(true);
+                controller
+            },
+            show_optimization_overlay: false,
+            use_controller_stepping: false,
+            last_frame_time_ms: 16.67,
+
             // Simulation parameters
             sim_speed: 1.0,
             show_debug_panel: true,
@@ -504,8 +524,30 @@ impl State {
 
         // Update fluid simulation (only if LOD allows and sim_speed > 0)
         if should_simulate && self.sim_speed > 0.0 {
-            self.fluid_system
-                .step(&self.device, &mut encoder, &self.queue, dt);
+            if self.use_controller_stepping {
+                // Use FluidOptimizationController for auto-tuned stepping
+                let step_start = Instant::now();
+                let result = self.optimization_controller.step_with_budget(
+                    &mut self.fluid_system,
+                    &self.device,
+                    &mut encoder,
+                    &self.queue,
+                    dt,
+                    self.last_frame_time_ms,
+                    camera_pos,
+                );
+                self.last_frame_time_ms = step_start.elapsed().as_secs_f32() * 1000.0;
+                
+                // Auto-adjust quality preset based on controller tier
+                self.quality_preset = result.quality_tier as u32;
+            } else {
+                // Traditional direct stepping
+                self.fluid_system
+                    .step(&self.device, &mut encoder, &self.queue, dt);
+                    
+                // Still record frame for metrics display
+                self.optimization_controller.record_frame(raw_dt * 1000.0);
+            }
         }
 
         // Update current scenario
@@ -760,6 +802,31 @@ impl State {
 
                         ui.add_space(8.0);
 
+                        // Optimization Controller Section
+                        ui.heading("⚡ Optimization");
+                        ui.separator();
+                        
+                        ui.checkbox(&mut self.use_controller_stepping, "Auto-Tune Mode");
+                        ui.checkbox(&mut self.show_optimization_overlay, "Show Details (F2)");
+                        
+                        if self.use_controller_stepping {
+                            let status = self.optimization_controller.status();
+                            ui.label(format!("Quality Tier: {}", status.quality_tier));
+                            ui.label(format!("Iterations: {}", self.optimization_controller.recommended_iterations()));
+                            
+                            let headroom = self.optimization_controller.budget_headroom();
+                            let headroom_color = if headroom > 30.0 {
+                                egui::Color32::GREEN
+                            } else if headroom > 10.0 {
+                                egui::Color32::YELLOW
+                            } else {
+                                egui::Color32::RED
+                            };
+                            ui.colored_label(headroom_color, format!("Headroom: {:.1}%", headroom));
+                        }
+
+                        ui.add_space(8.0);
+
                         // Controls Help
                         ui.heading("🎮 Controls");
                         ui.separator();
@@ -769,7 +836,106 @@ impl State {
                         ui.small("Left Click - Spawn particles");
                         ui.small("Right Drag - Apply force");
                         ui.small("F1 - Toggle this panel");
+                        ui.small("F2 - Toggle optimization overlay");
                         ui.small("ESC - Exit");
+                    });
+            }
+
+            // Optimization Overlay (separate window)
+            if self.show_optimization_overlay {
+                egui::Window::new("⚡ Optimization Details")
+                    .anchor(egui::Align2::LEFT_TOP, [10.0, 10.0])
+                    .resizable(false)
+                    .collapsible(true)
+                    .show(ctx, |ui| {
+                        let status = self.optimization_controller.status();
+                        
+                        ui.heading("Performance Budget");
+                        ui.separator();
+                        
+                        // Progress bar for frame budget
+                        let budget_usage = if status.target_frame_time_ms > 0.0 {
+                            status.avg_frame_time_ms / status.target_frame_time_ms
+                        } else {
+                            0.0
+                        };
+                        ui.add(egui::ProgressBar::new(budget_usage.min(1.5) / 1.5)
+                            .text(format!("{:.2}ms / {:.2}ms", 
+                                status.avg_frame_time_ms, 
+                                status.target_frame_time_ms))
+                        );
+                        
+                        ui.add_space(4.0);
+                        
+                        ui.horizontal(|ui| {
+                            ui.label("Within Budget:");
+                            if status.within_budget {
+                                ui.colored_label(egui::Color32::GREEN, "✓ Yes");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "✗ No");
+                            }
+                        });
+                        
+                        ui.horizontal(|ui| {
+                            ui.label("Auto-Tune:");
+                            if status.auto_tune_enabled {
+                                ui.colored_label(egui::Color32::GREEN, "Enabled");
+                            } else {
+                                ui.colored_label(egui::Color32::GRAY, "Disabled");
+                            }
+                        });
+                        
+                        ui.add_space(8.0);
+                        ui.heading("Quality Settings");
+                        ui.separator();
+                        
+                        let tier_names = ["Ultra", "High", "Medium", "Low", "Potato"];
+                        let tier_name = tier_names.get(status.quality_tier as usize).unwrap_or(&"Unknown");
+                        ui.label(format!("Tier: {} ({})", status.quality_tier, tier_name));
+                        ui.label(format!("Iterations: {}", self.optimization_controller.recommended_iterations()));
+                        ui.label(format!("Frames Recorded: {}", status.frames_recorded));
+                        
+                        ui.add_space(8.0);
+                        ui.heading("Manual Controls");
+                        ui.separator();
+                        
+                        ui.horizontal(|ui| {
+                            if ui.button("⬆ Increase Quality").clicked() {
+                                let current = self.optimization_controller.quality_tier();
+                                if current > 0 {
+                                    self.optimization_controller.set_quality_tier(current - 1);
+                                }
+                            }
+                            if ui.button("⬇ Decrease Quality").clicked() {
+                                let current = self.optimization_controller.quality_tier();
+                                if current < 4 {
+                                    self.optimization_controller.set_quality_tier(current + 1);
+                                }
+                            }
+                        });
+                        
+                        if ui.button("Reset Metrics").clicked() {
+                            self.optimization_controller.reset_metrics();
+                        }
+                        
+                        ui.add_space(8.0);
+                        ui.heading("Target Framerate");
+                        ui.separator();
+                        
+                        ui.horizontal(|ui| {
+                            if ui.selectable_label(status.target_frame_time_ms > 30.0, "30").clicked() {
+                                self.optimization_controller.set_target_framerate(30.0);
+                            }
+                            if ui.selectable_label((status.target_frame_time_ms - 16.67).abs() < 1.0, "60").clicked() {
+                                self.optimization_controller.set_target_framerate(60.0);
+                            }
+                            if ui.selectable_label((status.target_frame_time_ms - 8.33).abs() < 1.0, "120").clicked() {
+                                self.optimization_controller.set_target_framerate(120.0);
+                            }
+                            if ui.selectable_label(status.target_frame_time_ms < 7.0, "144").clicked() {
+                                self.optimization_controller.set_target_framerate(144.0);
+                            }
+                        });
                     });
             }
         });
@@ -890,6 +1056,18 @@ impl ApplicationHandler for App {
                         ..
                     } => {
                         state.show_debug_panel = !state.show_debug_panel;
+                    }
+                    // F2 - Toggle optimization overlay
+                    WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: ElementState::Pressed,
+                                physical_key: PhysicalKey::Code(KeyCode::F2),
+                                ..
+                            },
+                        ..
+                    } => {
+                        state.show_optimization_overlay = !state.show_optimization_overlay;
                     }
                     // R - Reset camera
                     WindowEvent::KeyboardInput {

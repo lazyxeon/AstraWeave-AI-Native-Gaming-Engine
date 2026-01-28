@@ -14,9 +14,39 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-use egui::{Color32, RichText, Ui, Vec2};
+use egui::{Color32, RichText, Ui};
 
 use crate::panels::Panel;
+
+// ============================================================================
+// PANEL ACTIONS - Events produced by the panel for external handling
+// ============================================================================
+
+/// Actions emitted by the ready asset store panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum AssetStoreAction {
+    /// Spawn the asset in the current scene
+    SpawnAsset {
+        asset_id: u64,
+        asset_path: PathBuf,
+    },
+    /// Request to preview the asset in 3D viewer
+    PreviewAsset {
+        asset_id: u64,
+        asset_path: PathBuf,
+    },
+    /// Filter by tag
+    FilterByTag {
+        tag: String,
+    },
+    /// Request to refresh the asset list
+    RefreshAssets,
+    /// Request to validate an asset's checklist
+    ValidateAsset {
+        asset_id: u64,
+        asset_path: PathBuf,
+    },
+}
 
 // ============================================================================
 // ASSET READINESS LEVEL - How ready is this asset for production use
@@ -505,6 +535,8 @@ pub struct ReadyAssetStorePanel {
     pub show_details: bool,
     pub sort_by: SortBy,
     pub grid_view: bool,
+    /// Actions queued for external processing
+    pending_actions: Vec<AssetStoreAction>,
 }
 
 /// Sort options for asset list
@@ -557,6 +589,7 @@ impl Default for ReadyAssetStorePanel {
             show_details: true,
             sort_by: SortBy::Name,
             grid_view: true,
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -565,6 +598,26 @@ impl ReadyAssetStorePanel {
     /// Create a new ready asset store panel
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions (drains the queue)
+    pub fn take_actions(&mut self) -> Vec<AssetStoreAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    fn queue_action(&mut self, action: AssetStoreAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Get the currently selected asset, if any
+    pub fn selected_asset(&self) -> Option<&ReadyAsset> {
+        self.selected_asset.and_then(|idx| self.assets.get(idx))
     }
 
     /// Get filtered assets based on current settings
@@ -656,14 +709,22 @@ impl ReadyAssetStorePanel {
     }
 
     fn render_asset_grid(&mut self, ui: &mut Ui) {
-        let filtered = self.filtered_assets();
+        // Collect data needed for rendering first to avoid borrowing issues
+        let filtered_data: Vec<_> = self.filtered_assets()
+            .iter()
+            .enumerate()
+            .map(|(idx, asset)| (idx, asset.name.clone(), asset.category, asset.readiness()))
+            .collect();
 
-        if filtered.is_empty() {
+        if filtered_data.is_empty() {
             ui.centered_and_justified(|ui| {
                 ui.label("No assets match your filters");
             });
             return;
         }
+
+        let current_selected = self.selected_asset;
+        let mut clicked_idx: Option<usize> = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             let available_width = ui.available_width();
@@ -674,13 +735,13 @@ impl ReadyAssetStorePanel {
                 .num_columns(columns)
                 .spacing([8.0, 8.0])
                 .show(ui, |ui| {
-                    for (idx, asset) in filtered.iter().enumerate() {
-                        let selected = self.selected_asset == Some(idx);
+                    for (idx, name, category, readiness) in filtered_data.iter() {
+                        let selected = current_selected == Some(*idx);
 
                         ui.vertical(|ui| {
                             // Thumbnail area
                             let (rect, response) = ui.allocate_exact_size(
-                                Vec2::new(100.0, 100.0),
+                                egui::Vec2::new(100.0, 100.0),
                                 egui::Sense::click(),
                             );
 
@@ -698,29 +759,29 @@ impl ReadyAssetStorePanel {
                             ui.painter().text(
                                 rect.center(),
                                 egui::Align2::CENTER_CENTER,
-                                asset.category.icon(),
+                                category.icon(),
                                 egui::FontId::proportional(32.0),
                                 Color32::WHITE,
                             );
 
                             // Readiness badge
-                            let badge_pos = rect.right_top() + Vec2::new(-20.0, 5.0);
+                            let badge_pos = rect.right_top() + egui::Vec2::new(-20.0, 5.0);
                             ui.painter().text(
                                 badge_pos,
                                 egui::Align2::CENTER_CENTER,
-                                asset.readiness().icon(),
+                                readiness.icon(),
                                 egui::FontId::proportional(14.0),
-                                asset.readiness().color(),
+                                readiness.color(),
                             );
 
                             if response.clicked() {
-                                self.selected_asset = Some(idx);
+                                clicked_idx = Some(*idx);
                             }
 
                             // Name
                             ui.add(
                                 egui::Label::new(
-                                    RichText::new(&asset.name)
+                                    RichText::new(name)
                                         .small()
                                         .color(Color32::WHITE),
                                 )
@@ -728,45 +789,73 @@ impl ReadyAssetStorePanel {
                             );
                         });
 
-                        if (idx + 1) % columns == 0 {
+                        if (*idx + 1) % columns == 0 {
                             ui.end_row();
                         }
                     }
                 });
         });
+
+        if let Some(idx) = clicked_idx {
+            self.selected_asset = Some(idx);
+        }
     }
 
     fn render_asset_list(&mut self, ui: &mut Ui) {
-        let filtered = self.filtered_assets();
+        // Collect data needed for rendering first to avoid borrowing issues
+        let filtered_data: Vec<_> = self.filtered_assets()
+            .iter()
+            .enumerate()
+            .map(|(idx, asset)| {
+                (
+                    idx,
+                    asset.name.clone(),
+                    asset.category,
+                    asset.readiness(),
+                    asset.triangle_count,
+                    asset.formatted_size(),
+                )
+            })
+            .collect();
 
-        if filtered.is_empty() {
+        if filtered_data.is_empty() {
             ui.centered_and_justified(|ui| {
                 ui.label("No assets match your filters");
             });
             return;
         }
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            for (idx, asset) in filtered.iter().enumerate() {
-                let selected = self.selected_asset == Some(idx);
+        let current_selected = self.selected_asset;
+        let mut clicked_idx: Option<usize> = None;
 
-                let response = ui.selectable_label(selected, format!(
-                    "{} {} {} • {} tris • {}",
-                    asset.readiness().icon(),
-                    asset.category.icon(),
-                    asset.name,
-                    asset.triangle_count,
-                    asset.formatted_size()
-                ));
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            for (idx, name, category, readiness, tris, size) in filtered_data.iter() {
+                let selected = current_selected == Some(*idx);
+
+                let response = ui.selectable_label(
+                    selected,
+                    format!(
+                        "{} {} {} • {} tris • {}",
+                        readiness.icon(),
+                        category.icon(),
+                        name,
+                        tris,
+                        size
+                    ),
+                );
 
                 if response.clicked() {
-                    self.selected_asset = Some(idx);
+                    clicked_idx = Some(*idx);
                 }
             }
         });
+
+        if let Some(idx) = clicked_idx {
+            self.selected_asset = Some(idx);
+        }
     }
 
-    fn render_asset_details(&self, ui: &mut Ui) {
+    fn render_asset_details(&mut self, ui: &mut Ui) {
         let Some(idx) = self.selected_asset else {
             ui.centered_and_justified(|ui| {
                 ui.label("Select an asset to view details");
@@ -775,9 +864,15 @@ impl ReadyAssetStorePanel {
         };
 
         let filtered = self.filtered_assets();
-        let Some(asset) = filtered.get(idx) else {
+        let Some(asset) = filtered.get(idx).cloned() else {
             return;
         };
+
+        // Flags for deferred actions (cannot mutate self inside closures)
+        let mut should_spawn = false;
+        let mut should_preview = false;
+        let asset_id = asset.id;
+        let asset_path = asset.path.clone();
 
         ui.heading(format!("{} {}", asset.category.icon(), asset.name));
 
@@ -824,7 +919,7 @@ impl ReadyAssetStorePanel {
         ui.label("Tags:");
         ui.horizontal_wrapped(|ui| {
             for tag in &asset.tags {
-                ui.small_button(format!("#{}", tag));
+                let _ = ui.small_button(format!("#{}", tag));
             }
         });
 
@@ -846,12 +941,26 @@ impl ReadyAssetStorePanel {
         // Actions
         ui.horizontal(|ui| {
             if ui.button("📦 Add to Scene").clicked() {
-                // Would spawn prefab
+                should_spawn = true;
             }
             if ui.button("👁️ Preview").clicked() {
-                // Would show 3D preview
+                should_preview = true;
             }
         });
+
+        // Queue actions outside of nested UI context
+        if should_spawn {
+            self.queue_action(AssetStoreAction::SpawnAsset {
+                asset_id,
+                asset_path: asset_path.clone(),
+            });
+        }
+        if should_preview {
+            self.queue_action(AssetStoreAction::PreviewAsset {
+                asset_id,
+                asset_path,
+            });
+        }
     }
 }
 
@@ -1072,5 +1181,94 @@ mod tests {
         assert_eq!(panel.selected_category, AssetStoreCategory::All);
         assert_eq!(panel.min_readiness, ReadinessLevel::Standard);
         assert!(panel.grid_view);
+    }
+
+    // ==========================================================================
+    // Action System Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_action_queue_initially_empty() {
+        let panel = ReadyAssetStorePanel::new();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_take_actions_drains_queue() {
+        let mut panel = ReadyAssetStorePanel::new();
+        panel.pending_actions.push(AssetStoreAction::RefreshAssets);
+        panel
+            .pending_actions
+            .push(AssetStoreAction::FilterByTag { tag: "tree".into() });
+
+        assert!(panel.has_pending_actions());
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_asset_store_action_variants() {
+        use std::path::PathBuf;
+
+        let spawn_action = AssetStoreAction::SpawnAsset {
+            asset_id: 42,
+            asset_path: PathBuf::from("assets/tree.prefab"),
+        };
+        assert!(matches!(spawn_action, AssetStoreAction::SpawnAsset { .. }));
+
+        let preview_action = AssetStoreAction::PreviewAsset {
+            asset_id: 42,
+            asset_path: PathBuf::from("assets/tree.prefab"),
+        };
+        assert!(matches!(
+            preview_action,
+            AssetStoreAction::PreviewAsset { .. }
+        ));
+
+        let filter_action = AssetStoreAction::FilterByTag {
+            tag: "nature".into(),
+        };
+        assert!(matches!(filter_action, AssetStoreAction::FilterByTag { .. }));
+
+        let validate_action = AssetStoreAction::ValidateAsset {
+            asset_id: 1,
+            asset_path: PathBuf::from("assets/rock.prefab"),
+        };
+        assert!(matches!(
+            validate_action,
+            AssetStoreAction::ValidateAsset { .. }
+        ));
+    }
+
+    #[test]
+    fn test_selected_asset_accessor() {
+        let mut panel = ReadyAssetStorePanel::new();
+        assert!(panel.selected_asset().is_none());
+
+        // Add an asset and select it
+        panel.assets.push(ReadyAsset {
+            id: 1,
+            name: "Test Asset".into(),
+            path: PathBuf::from("test.prefab"),
+            category: AssetStoreCategory::Nature,
+            tags: vec!["test".into()],
+            checklist: AssetChecklist::default(),
+            thumbnail_path: None,
+            vertex_count: 100,
+            triangle_count: 50,
+            lod_count: 3,
+            material_count: 1,
+            texture_count: 2,
+            author: String::new(),
+            license: String::new(),
+            created_date: String::new(),
+            file_size_bytes: 1024,
+        });
+        panel.selected_asset = Some(0);
+
+        let selected = panel.selected_asset();
+        assert!(selected.is_some());
+        assert_eq!(selected.unwrap().name, "Test Asset");
     }
 }

@@ -90,6 +90,133 @@ impl BuildProfile {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
+// DISTRIBUTION ACTION
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the distribution panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum DistributionAction {
+    // Configuration
+    SetGameName(String),
+    SetVersion(String),
+    SetDescription(String),
+    SetAuthor(String),
+    SetExecutableName(String),
+    SetIconPath(String),
+    SetSteamAppId(Option<u32>),
+
+    // Build settings
+    SetBuildProfile(BuildProfile),
+    SetTargetPlatform(TargetPlatform),
+    SetDistributionFormat(DistributionFormat),
+    SetBuildDirectory(String),
+    SetOutputDirectory(String),
+
+    // Build options
+    ToggleStripSymbols(bool),
+    ToggleCompressAssets(bool),
+    ToggleEmbedRuntime(bool),
+    ToggleSignBinary(bool),
+    ToggleNotarizeMacOS(bool),
+    ToggleCreateInstaller(bool),
+    ToggleGenerateChecksums(bool),
+    ToggleIncludeDebugSymbols(bool),
+    ToggleRunTestsBeforeBuild(bool),
+    ToggleCleanBeforeBuild(bool),
+
+    // Asset options
+    ToggleCompressTextures(bool),
+    ToggleCompressAudio(bool),
+    ToggleCompressMeshes(bool),
+    TogglePackIntoArchives(bool),
+    ToggleEncryptAssets(bool),
+    ToggleGenerateManifests(bool),
+    SetTextureFormat(TextureFormat),
+    SetAudioFormat(AudioFormat),
+    SetMaxTextureSize(u32),
+
+    // Build operations
+    StartBuild,
+    CancelBuild,
+    Validate,
+    ClearValidation,
+
+    // History
+    ClearHistory,
+    RemoveHistoryEntry(usize),
+    OpenBuildOutput(String),
+
+    // UI state
+    ToggleBuildOptions(bool),
+    ToggleAssetOptions(bool),
+    ToggleValidation(bool),
+    ToggleHistory(bool),
+    ToggleProgress(bool),
+    ToggleAutoValidate(bool),
+
+    // General
+    RefreshStatus,
+    ResetToDefaults,
+    SaveConfiguration,
+    LoadConfiguration(String),
+}
+
+impl std::fmt::Display for DistributionAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DistributionAction::SetGameName(name) => write!(f, "Set game name: {}", name),
+            DistributionAction::SetVersion(v) => write!(f, "Set version: {}", v),
+            DistributionAction::SetDescription(d) => write!(f, "Set description: {}...", d.chars().take(30).collect::<String>()),
+            DistributionAction::SetAuthor(a) => write!(f, "Set author: {}", a),
+            DistributionAction::SetExecutableName(n) => write!(f, "Set executable: {}", n),
+            DistributionAction::SetIconPath(p) => write!(f, "Set icon: {}", p),
+            DistributionAction::SetSteamAppId(id) => write!(f, "Set Steam App ID: {:?}", id),
+            DistributionAction::SetBuildProfile(p) => write!(f, "Set profile: {}", p),
+            DistributionAction::SetTargetPlatform(p) => write!(f, "Set platform: {}", p),
+            DistributionAction::SetDistributionFormat(fmt) => write!(f, "Set format: {:?}", fmt),
+            DistributionAction::SetBuildDirectory(d) => write!(f, "Set build dir: {}", d),
+            DistributionAction::SetOutputDirectory(d) => write!(f, "Set output dir: {}", d),
+            DistributionAction::ToggleStripSymbols(b) => write!(f, "Toggle strip symbols: {}", b),
+            DistributionAction::ToggleCompressAssets(b) => write!(f, "Toggle compress assets: {}", b),
+            DistributionAction::ToggleEmbedRuntime(b) => write!(f, "Toggle embed runtime: {}", b),
+            DistributionAction::ToggleSignBinary(b) => write!(f, "Toggle sign binary: {}", b),
+            DistributionAction::ToggleNotarizeMacOS(b) => write!(f, "Toggle notarize macOS: {}", b),
+            DistributionAction::ToggleCreateInstaller(b) => write!(f, "Toggle create installer: {}", b),
+            DistributionAction::ToggleGenerateChecksums(b) => write!(f, "Toggle generate checksums: {}", b),
+            DistributionAction::ToggleIncludeDebugSymbols(b) => write!(f, "Toggle debug symbols: {}", b),
+            DistributionAction::ToggleRunTestsBeforeBuild(b) => write!(f, "Toggle run tests: {}", b),
+            DistributionAction::ToggleCleanBeforeBuild(b) => write!(f, "Toggle clean build: {}", b),
+            DistributionAction::ToggleCompressTextures(b) => write!(f, "Toggle compress textures: {}", b),
+            DistributionAction::ToggleCompressAudio(b) => write!(f, "Toggle compress audio: {}", b),
+            DistributionAction::ToggleCompressMeshes(b) => write!(f, "Toggle compress meshes: {}", b),
+            DistributionAction::TogglePackIntoArchives(b) => write!(f, "Toggle pack archives: {}", b),
+            DistributionAction::ToggleEncryptAssets(b) => write!(f, "Toggle encrypt assets: {}", b),
+            DistributionAction::ToggleGenerateManifests(b) => write!(f, "Toggle generate manifests: {}", b),
+            DistributionAction::SetTextureFormat(fmt) => write!(f, "Set texture format: {}", fmt),
+            DistributionAction::SetAudioFormat(fmt) => write!(f, "Set audio format: {}", fmt),
+            DistributionAction::SetMaxTextureSize(s) => write!(f, "Set max texture size: {}", s),
+            DistributionAction::StartBuild => write!(f, "Start build"),
+            DistributionAction::CancelBuild => write!(f, "Cancel build"),
+            DistributionAction::Validate => write!(f, "Validate configuration"),
+            DistributionAction::ClearValidation => write!(f, "Clear validation"),
+            DistributionAction::ClearHistory => write!(f, "Clear history"),
+            DistributionAction::RemoveHistoryEntry(i) => write!(f, "Remove history entry {}", i),
+            DistributionAction::OpenBuildOutput(p) => write!(f, "Open output: {}", p),
+            DistributionAction::ToggleBuildOptions(b) => write!(f, "Toggle build options: {}", b),
+            DistributionAction::ToggleAssetOptions(b) => write!(f, "Toggle asset options: {}", b),
+            DistributionAction::ToggleValidation(b) => write!(f, "Toggle validation: {}", b),
+            DistributionAction::ToggleHistory(b) => write!(f, "Toggle history: {}", b),
+            DistributionAction::ToggleProgress(b) => write!(f, "Toggle progress: {}", b),
+            DistributionAction::ToggleAutoValidate(b) => write!(f, "Toggle auto-validate: {}", b),
+            DistributionAction::RefreshStatus => write!(f, "Refresh status"),
+            DistributionAction::ResetToDefaults => write!(f, "Reset to defaults"),
+            DistributionAction::SaveConfiguration => write!(f, "Save configuration"),
+            DistributionAction::LoadConfiguration(p) => write!(f, "Load configuration: {}", p),
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════
 // TARGET PLATFORM
 // ═══════════════════════════════════════════════════════════════════════════════════
 
@@ -624,6 +751,9 @@ pub struct DistributionPanel {
     // File dialog state
     pending_build_dir: Option<PathBuf>,
     pending_output_dir: Option<PathBuf>,
+
+    // Actions
+    pending_actions: Vec<DistributionAction>,
 }
 
 impl Default for DistributionPanel {
@@ -651,6 +781,7 @@ impl Default for DistributionPanel {
             show_progress: true,
             pending_build_dir: None,
             pending_output_dir: None,
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -658,6 +789,26 @@ impl Default for DistributionPanel {
 impl DistributionPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<DistributionAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: DistributionAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Get reference to pending actions without removing them
+    pub fn pending_actions(&self) -> &[DistributionAction] {
+        &self.pending_actions
     }
 
     fn validate(&mut self) {
@@ -1815,5 +1966,181 @@ mod tests {
         set.insert(BuildStep::Complete);
         assert!(set.contains(&BuildStep::Preparing));
         assert!(!set.contains(&BuildStep::Failed));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // DistributionAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_distribution_action_display() {
+        let action = DistributionAction::SetGameName("TestGame".to_string());
+        let display = format!("{}", action);
+        assert!(display.contains("TestGame"));
+        assert!(display.contains("game name"));
+    }
+
+    #[test]
+    fn test_distribution_action_display_all_variants() {
+        // Test a representative sample of actions
+        let actions = vec![
+            DistributionAction::SetGameName("Test".to_string()),
+            DistributionAction::SetVersion("1.0.0".to_string()),
+            DistributionAction::SetBuildProfile(BuildProfile::Release),
+            DistributionAction::SetTargetPlatform(TargetPlatform::Windows64),
+            DistributionAction::StartBuild,
+            DistributionAction::CancelBuild,
+            DistributionAction::Validate,
+            DistributionAction::ClearHistory,
+            DistributionAction::ToggleStripSymbols(true),
+            DistributionAction::SetMaxTextureSize(2048),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_distribution_action_equality() {
+        let action1 = DistributionAction::SetGameName("Game1".to_string());
+        let action2 = DistributionAction::SetGameName("Game1".to_string());
+        let action3 = DistributionAction::SetGameName("Game2".to_string());
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_distribution_action_clone() {
+        let action = DistributionAction::SetBuildProfile(BuildProfile::ReleaseOptimized);
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_distribution_panel_pending_actions_empty_by_default() {
+        let panel = DistributionPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_distribution_panel_queue_action() {
+        let mut panel = DistributionPanel::new();
+        panel.queue_action(DistributionAction::StartBuild);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_distribution_panel_take_actions() {
+        let mut panel = DistributionPanel::new();
+        panel.queue_action(DistributionAction::Validate);
+        panel.queue_action(DistributionAction::StartBuild);
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_distribution_panel_action_order_preserved() {
+        let mut panel = DistributionPanel::new();
+        panel.queue_action(DistributionAction::SetGameName("First".to_string()));
+        panel.queue_action(DistributionAction::SetVersion("1.0".to_string()));
+        panel.queue_action(DistributionAction::StartBuild);
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], DistributionAction::SetGameName(_)));
+        assert!(matches!(actions[1], DistributionAction::SetVersion(_)));
+        assert!(matches!(actions[2], DistributionAction::StartBuild));
+    }
+
+    #[test]
+    fn test_distribution_action_build_options() {
+        let actions = vec![
+            DistributionAction::ToggleStripSymbols(true),
+            DistributionAction::ToggleCompressAssets(true),
+            DistributionAction::ToggleEmbedRuntime(false),
+            DistributionAction::ToggleSignBinary(true),
+            DistributionAction::ToggleNotarizeMacOS(true),
+            DistributionAction::ToggleCreateInstaller(false),
+            DistributionAction::ToggleGenerateChecksums(true),
+            DistributionAction::ToggleRunTestsBeforeBuild(true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(display.contains("Toggle"), "Expected 'Toggle' in: {}", display);
+        }
+    }
+
+    #[test]
+    fn test_distribution_action_asset_options() {
+        let actions = vec![
+            DistributionAction::ToggleCompressTextures(true),
+            DistributionAction::ToggleCompressAudio(true),
+            DistributionAction::TogglePackIntoArchives(true),
+            DistributionAction::ToggleEncryptAssets(false),
+            DistributionAction::SetTextureFormat(TextureFormat::BC7),
+            DistributionAction::SetAudioFormat(AudioFormat::Vorbis),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_distribution_action_ui_toggles() {
+        let actions = vec![
+            DistributionAction::ToggleBuildOptions(true),
+            DistributionAction::ToggleAssetOptions(true),
+            DistributionAction::ToggleValidation(true),
+            DistributionAction::ToggleHistory(true),
+            DistributionAction::ToggleProgress(true),
+            DistributionAction::ToggleAutoValidate(true),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(display.contains("true"), "Display should contain 'true': {}", display);
+        }
+    }
+
+    #[test]
+    fn test_distribution_action_history_operations() {
+        let actions = vec![
+            DistributionAction::ClearHistory,
+            DistributionAction::RemoveHistoryEntry(5),
+            DistributionAction::OpenBuildOutput("/path/to/output".to_string()),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Clear"));
+        assert!(displays[1].contains("5"));
+        assert!(displays[2].contains("output"));
+    }
+
+    #[test]
+    fn test_distribution_action_configuration_operations() {
+        let actions = vec![
+            DistributionAction::ResetToDefaults,
+            DistributionAction::SaveConfiguration,
+            DistributionAction::LoadConfiguration("config.toml".to_string()),
+            DistributionAction::RefreshStatus,
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+
+        let load_display = format!("{}", DistributionAction::LoadConfiguration("test.toml".to_string()));
+        assert!(load_display.contains("test.toml"));
     }
 }

@@ -185,3 +185,300 @@ impl GizmoHarness {
             .map_err(|e| format!("Redo failed: {}", e))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use astraweave_core::{Team, World};
+
+    fn create_test_world() -> World {
+        World::default()
+    }
+
+    fn create_world_with_entity() -> (World, Entity) {
+        let mut world = World::default();
+        let entity = world.spawn("test_entity", IVec2::new(0, 0), Team { id: 1 }, 100, 50);
+        (world, entity)
+    }
+
+    // === GizmoHarness Construction Tests ===
+
+    #[test]
+    fn test_gizmo_harness_new() {
+        let world = create_test_world();
+        let harness = GizmoHarness::new(world);
+        assert!(harness.undo_stack().is_empty());
+    }
+
+    #[test]
+    fn test_gizmo_harness_world_access() {
+        let world = create_test_world();
+        let harness = GizmoHarness::new(world);
+        // Just verify we can access the world
+        let _ = harness.world();
+    }
+
+    #[test]
+    fn test_gizmo_harness_world_mut_access() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        let entity = harness.world_mut().spawn("entity", IVec2::new(0, 0), Team { id: 1 }, 100, 50);
+        // Just verify we can spawn an entity and get its pose back
+        let pose = harness.world().pose(entity);
+        assert!(pose.is_some());
+    }
+
+    #[test]
+    fn test_gizmo_harness_into_world() {
+        let world = create_test_world();
+        let harness = GizmoHarness::new(world);
+        let _world = harness.into_world();
+    }
+
+    #[test]
+    fn test_gizmo_harness_undo_stack_access() {
+        let world = create_test_world();
+        let harness = GizmoHarness::new(world);
+        let stack = harness.undo_stack();
+        assert_eq!(stack.cursor(), 0);
+    }
+
+    // === Selection Tests ===
+
+    #[test]
+    fn test_gizmo_harness_select_entity() {
+        let (world, entity) = create_world_with_entity();
+        let _guard = telemetry::enable_capture();
+        let mut harness = GizmoHarness::new(world);
+        
+        harness.select(entity);
+        
+        let events = telemetry::drain_captured_events();
+        assert_eq!(events.len(), 1);
+        match &events[0] {
+            EditorTelemetryEvent::SelectionChanged { primary, count } => {
+                assert_eq!(*primary, Some(entity));
+                assert_eq!(*count, 1);
+            }
+            _ => panic!("Expected SelectionChanged event"),
+        }
+    }
+
+    // === Translate Operation Tests ===
+
+    #[test]
+    fn test_gizmo_harness_begin_translate_without_selection() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        
+        let result = harness.begin_translate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_gizmo_harness_begin_translate_with_selection() {
+        let (world, entity) = create_world_with_entity();
+        let _guard = telemetry::enable_capture();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        
+        let result = harness.begin_translate();
+        assert!(result.is_ok());
+        
+        let events = telemetry::drain_captured_events();
+        assert!(events.len() >= 2); // Selection + GizmoStarted
+        let gizmo_started = events.iter().find(|e| matches!(e, EditorTelemetryEvent::GizmoStarted { .. }));
+        assert!(gizmo_started.is_some());
+    }
+
+    #[test]
+    fn test_gizmo_harness_drag_translate() {
+        let (world, entity) = create_world_with_entity();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        harness.begin_translate().unwrap();
+        
+        let initial_pos = harness.world().pose(entity).map(|p| p.pos);
+        let result = harness.drag_translate(IVec2::new(10, 5));
+        assert!(result.is_ok());
+        
+        let new_pos = harness.world().pose(entity).map(|p| p.pos);
+        if let (Some(initial), Some(new)) = (initial_pos, new_pos) {
+            assert_eq!(new.x, initial.x + 10);
+            assert_eq!(new.y, initial.y + 5);
+        }
+    }
+
+    #[test]
+    fn test_gizmo_harness_drag_translate_with_grid_snapping() {
+        let (world, entity) = create_world_with_entity();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        harness.snapping_config_mut().grid_enabled = true;
+        harness.snapping_config_mut().grid_size = 10.0;
+        harness.begin_translate().unwrap();
+        
+        let result = harness.drag_translate(IVec2::new(7, 13));
+        assert!(result.is_ok());
+        
+        // With grid size 10, 7 rounds to 10 and 13 rounds to 10
+        let new_pos = harness.world().pose(entity).map(|p| p.pos);
+        if let Some(pos) = new_pos {
+            // Grid snapping rounds to nearest grid point
+            assert_eq!(pos.x % 10, 0);
+            assert_eq!(pos.y % 10, 0);
+        }
+    }
+
+    // === Rotate Operation Tests ===
+
+    #[test]
+    fn test_gizmo_harness_begin_rotate_without_selection() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        
+        let result = harness.begin_rotate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_gizmo_harness_begin_rotate_with_selection() {
+        let (world, entity) = create_world_with_entity();
+        let _guard = telemetry::enable_capture();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        
+        let result = harness.begin_rotate();
+        assert!(result.is_ok());
+        
+        let events = telemetry::drain_captured_events();
+        let gizmo_started = events.iter().find(|e| matches!(e, EditorTelemetryEvent::GizmoStarted { operation: GizmoOperationKind::Rotate, .. }));
+        assert!(gizmo_started.is_some());
+    }
+
+    #[test]
+    fn test_gizmo_harness_drag_rotate() {
+        let (world, entity) = create_world_with_entity();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        harness.begin_rotate().unwrap();
+        
+        let initial_rotation = harness.world().pose(entity).map(|p| p.rotation).unwrap_or(0.0);
+        let result = harness.drag_rotate(std::f32::consts::FRAC_PI_4); // 45 degrees
+        assert!(result.is_ok());
+        
+        let new_rotation = harness.world().pose(entity).map(|p| p.rotation).unwrap_or(0.0);
+        assert!((new_rotation - initial_rotation - std::f32::consts::FRAC_PI_4).abs() < 0.01 || 
+                harness.snapping_config_mut().angle_enabled);
+    }
+
+    // === Scale Operation Tests ===
+
+    #[test]
+    fn test_gizmo_harness_begin_scale_without_selection() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        
+        let result = harness.begin_scale();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_gizmo_harness_begin_scale_with_selection() {
+        let (world, entity) = create_world_with_entity();
+        let _guard = telemetry::enable_capture();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        
+        let result = harness.begin_scale();
+        assert!(result.is_ok());
+        
+        let events = telemetry::drain_captured_events();
+        let gizmo_started = events.iter().find(|e| matches!(e, EditorTelemetryEvent::GizmoStarted { operation: GizmoOperationKind::Scale, .. }));
+        assert!(gizmo_started.is_some());
+    }
+
+    #[test]
+    fn test_gizmo_harness_drag_scale() {
+        let (world, entity) = create_world_with_entity();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        harness.begin_scale().unwrap();
+        
+        let initial_scale = harness.world().pose(entity).map(|p| p.scale).unwrap_or(1.0);
+        let result = harness.drag_scale(2.0);
+        assert!(result.is_ok());
+        
+        let new_scale = harness.world().pose(entity).map(|p| p.scale).unwrap_or(1.0);
+        assert!((new_scale - initial_scale * 2.0).abs() < 0.01);
+    }
+
+    // === Confirm/Cancel Tests ===
+
+    #[test]
+    fn test_gizmo_harness_confirm() {
+        let (world, entity) = create_world_with_entity();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        harness.begin_translate().unwrap();
+        harness.drag_translate(IVec2::new(5, 5)).unwrap();
+        
+        let result = harness.confirm();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_gizmo_harness_cancel() {
+        let (world, entity) = create_world_with_entity();
+        let mut harness = GizmoHarness::new(world);
+        harness.select(entity);
+        harness.begin_translate().unwrap();
+        harness.drag_translate(IVec2::new(5, 5)).unwrap();
+        
+        let result = harness.cancel();
+        assert!(result.is_ok());
+    }
+
+    // === Snapping Config Tests ===
+
+    #[test]
+    fn test_gizmo_harness_snapping_config_mut() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        
+        harness.snapping_config_mut().grid_enabled = true;
+        harness.snapping_config_mut().grid_size = 5.0;
+        
+        assert!(harness.snapping_config_mut().grid_enabled);
+        assert_eq!(harness.snapping_config_mut().grid_size, 5.0);
+    }
+
+    // === Undo/Redo Tests ===
+
+    #[test]
+    fn test_gizmo_harness_undo_depth_initial() {
+        let world = create_test_world();
+        let harness = GizmoHarness::new(world);
+        assert_eq!(harness.undo_depth(), 0);
+    }
+
+    #[test]
+    fn test_gizmo_harness_undo_on_empty_stack() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        
+        // On empty stack, undo returns Ok() (no-op)
+        let result = harness.undo_last();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_gizmo_harness_redo_on_empty_stack() {
+        let world = create_test_world();
+        let mut harness = GizmoHarness::new(world);
+        
+        // On empty stack, redo returns Ok() (no-op)
+        let result = harness.redo_last();
+        assert!(result.is_ok());
+    }
+}

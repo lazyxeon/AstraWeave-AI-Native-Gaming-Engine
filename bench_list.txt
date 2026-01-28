@@ -1,0 +1,1 @@
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)

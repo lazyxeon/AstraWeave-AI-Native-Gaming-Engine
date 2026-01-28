@@ -345,6 +345,49 @@ impl NetworkTab {
     }
 }
 
+/// Actions that can be performed on the networking panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum NetworkAction {
+    /// Start server on specified port
+    StartServer { port: u16 },
+    /// Stop the server
+    StopServer,
+    /// Connect to a remote server
+    Connect { address: String, port: u16 },
+    /// Disconnect from current server
+    Disconnect,
+    /// Kick a client from the server
+    KickClient { client_id: u64, reason: String },
+    /// Ban a client from the server
+    BanClient { client_id: u64, duration_seconds: Option<u64> },
+    /// Set the network role
+    SetRole(NetworkRole),
+    /// Set the interest management policy
+    SetInterestPolicy(InterestPolicy),
+    /// Set the compression level
+    SetCompressionLevel(CompressionLevel),
+    /// Set the tick rate
+    SetTickRate(u32),
+    /// Set the snapshot rate
+    SetSnapshotRate(u32),
+    /// Toggle lag simulation
+    ToggleLagSimulation(bool),
+    /// Set lag simulation latency
+    SetSimulatedLatency(u32),
+    /// Set lag simulation packet loss
+    SetSimulatedPacketLoss(f32),
+    /// Toggle network overlay display
+    ToggleNetworkOverlay(bool),
+    /// Toggle packet logging
+    TogglePacketLogging(bool),
+    /// Clear packet log
+    ClearPacketLog,
+    /// Send test packet to validate connection
+    SendTestPacket,
+    /// Request server statistics refresh
+    RefreshStats,
+}
+
 /// Lag simulation settings for testing
 #[derive(Debug, Clone, Default)]
 pub struct LagSimulationSettings {
@@ -400,6 +443,9 @@ pub struct NetworkingPanel {
     // Status
     error_message: Option<String>,
     uptime_seconds: f32,
+
+    // Action queue
+    pending_actions: Vec<NetworkAction>,
 }
 
 impl Default for NetworkingPanel {
@@ -440,6 +486,8 @@ impl Default for NetworkingPanel {
 
             error_message: None,
             uptime_seconds: 0.0,
+
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -447,6 +495,21 @@ impl Default for NetworkingPanel {
 impl NetworkingPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions, leaving the queue empty
+    pub fn take_actions(&mut self) -> Vec<NetworkAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: NetworkAction) {
+        self.pending_actions.push(action);
     }
 
     fn show_tab_bar(&mut self, ui: &mut Ui) {
@@ -1926,5 +1989,118 @@ mod tests {
         set.insert(NetworkTab::Connection);
         set.insert(NetworkTab::Statistics);
         assert_eq!(set.len(), 2);
+    }
+
+    // NetworkAction tests
+    #[test]
+    fn test_network_action_start_server() {
+        let action = NetworkAction::StartServer { port: 7777 };
+        assert!(matches!(action, NetworkAction::StartServer { port: 7777 }));
+    }
+
+    #[test]
+    fn test_network_action_connect() {
+        let action = NetworkAction::Connect {
+            address: "127.0.0.1".to_string(),
+            port: 7777,
+        };
+        if let NetworkAction::Connect { address, port } = action {
+            assert_eq!(address, "127.0.0.1");
+            assert_eq!(port, 7777);
+        } else {
+            panic!("Expected Connect action");
+        }
+    }
+
+    #[test]
+    fn test_network_action_kick_client() {
+        let action = NetworkAction::KickClient {
+            client_id: 42,
+            reason: "Cheating".to_string(),
+        };
+        if let NetworkAction::KickClient { client_id, reason } = action {
+            assert_eq!(client_id, 42);
+            assert_eq!(reason, "Cheating");
+        } else {
+            panic!("Expected KickClient action");
+        }
+    }
+
+    #[test]
+    fn test_network_action_ban_client() {
+        let action = NetworkAction::BanClient {
+            client_id: 99,
+            duration_seconds: Some(3600),
+        };
+        if let NetworkAction::BanClient { client_id, duration_seconds } = action {
+            assert_eq!(client_id, 99);
+            assert_eq!(duration_seconds, Some(3600));
+        } else {
+            panic!("Expected BanClient action");
+        }
+    }
+
+    #[test]
+    fn test_network_action_set_role() {
+        let action = NetworkAction::SetRole(NetworkRole::Server);
+        assert!(matches!(action, NetworkAction::SetRole(NetworkRole::Server)));
+    }
+
+    #[test]
+    fn test_network_action_set_interest_policy() {
+        let action = NetworkAction::SetInterestPolicy(InterestPolicy::Radius);
+        assert!(matches!(action, NetworkAction::SetInterestPolicy(InterestPolicy::Radius)));
+    }
+
+    #[test]
+    fn test_network_action_toggle_lag_simulation() {
+        let action = NetworkAction::ToggleLagSimulation(true);
+        assert!(matches!(action, NetworkAction::ToggleLagSimulation(true)));
+    }
+
+    #[test]
+    fn test_network_action_set_simulated_latency() {
+        let action = NetworkAction::SetSimulatedLatency(100);
+        assert!(matches!(action, NetworkAction::SetSimulatedLatency(100)));
+    }
+
+    #[test]
+    fn test_network_action_equality() {
+        let a1 = NetworkAction::StopServer;
+        let a2 = NetworkAction::StopServer;
+        assert_eq!(a1, a2);
+    }
+
+    #[test]
+    fn test_network_action_queue_and_take() {
+        let mut panel = NetworkingPanel::new();
+        assert!(!panel.has_pending_actions());
+
+        panel.queue_action(NetworkAction::StartServer { port: 8080 });
+        panel.queue_action(NetworkAction::SetTickRate(60));
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_network_action_send_test_packet() {
+        let action = NetworkAction::SendTestPacket;
+        assert!(matches!(action, NetworkAction::SendTestPacket));
+    }
+
+    #[test]
+    fn test_network_action_refresh_stats() {
+        let action = NetworkAction::RefreshStats;
+        assert!(matches!(action, NetworkAction::RefreshStats));
+    }
+
+    #[test]
+    fn test_network_action_debug() {
+        let action = NetworkAction::TogglePacketLogging(true);
+        let debug_str = format!("{:?}", action);
+        assert!(debug_str.contains("TogglePacketLogging"));
     }
 }

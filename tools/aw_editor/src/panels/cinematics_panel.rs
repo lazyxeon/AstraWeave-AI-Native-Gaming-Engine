@@ -390,6 +390,49 @@ impl CinematicsTab {
     }
 }
 
+/// Actions that can be performed on the cinematics panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum CinematicsAction {
+    /// Start playback
+    Play,
+    /// Pause playback
+    Pause,
+    /// Stop and reset to start
+    Stop,
+    /// Seek to specific time
+    SeekTo(f32),
+    /// Set playback speed
+    SetSpeed(PlaybackSpeed),
+    /// Add a new track
+    AddTrack(TrackType),
+    /// Remove a track
+    RemoveTrack { track_id: u32 },
+    /// Add a clip to track
+    AddClip { track_id: u32, start_time: f32 },
+    /// Remove a clip
+    RemoveClip { clip_id: u32 },
+    /// Move a clip to new time
+    MoveClip { clip_id: u32, new_time: f32 },
+    /// Add a camera keyframe
+    AddCameraKeyframe { time: f32 },
+    /// Remove a camera keyframe
+    RemoveCameraKeyframe { index: usize },
+    /// Set camera interpolation mode
+    SetCameraInterpolation(CameraInterpolation),
+    /// Add a timeline marker
+    AddMarker { time: f32, name: String },
+    /// Remove a marker
+    RemoveMarker { index: usize },
+    /// Toggle camera preview
+    ToggleCameraPreview(bool),
+    /// Export the sequence
+    Export { format: String },
+    /// Set timeline duration
+    SetDuration(f32),
+    /// Set loop mode
+    SetLoopPlayback(bool),
+}
+
 /// Main Cinematics Panel
 pub struct CinematicsPanel {
     // Tab state
@@ -423,6 +466,9 @@ pub struct CinematicsPanel {
 
     // Timeline ID counter
     next_id: u32,
+
+    // Action queue
+    pending_actions: Vec<CinematicsAction>,
 }
 
 impl Default for CinematicsPanel {
@@ -452,6 +498,8 @@ impl Default for CinematicsPanel {
             drag_offset: 0.0,
 
             next_id: 1,
+
+            pending_actions: Vec::new(),
         };
 
         // Add default tracks
@@ -464,6 +512,21 @@ impl Default for CinematicsPanel {
 impl CinematicsPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions, leaving the queue empty
+    pub fn take_actions(&mut self) -> Vec<CinematicsAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: CinematicsAction) {
+        self.pending_actions.push(action);
     }
 
     fn add_default_tracks(&mut self) {
@@ -1790,5 +1853,147 @@ mod tests {
     #[test]
     fn test_cinematics_tab_default() {
         assert_eq!(CinematicsTab::default(), CinematicsTab::Timeline);
+    }
+
+    // CinematicsAction tests
+    #[test]
+    fn test_cinematics_action_playback() {
+        let play = CinematicsAction::Play;
+        let pause = CinematicsAction::Pause;
+        let stop = CinematicsAction::Stop;
+        assert!(matches!(play, CinematicsAction::Play));
+        assert!(matches!(pause, CinematicsAction::Pause));
+        assert!(matches!(stop, CinematicsAction::Stop));
+    }
+
+    #[test]
+    fn test_cinematics_action_seek() {
+        let action = CinematicsAction::SeekTo(5.5);
+        if let CinematicsAction::SeekTo(time) = action {
+            assert!((time - 5.5).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SeekTo action");
+        }
+    }
+
+    #[test]
+    fn test_cinematics_action_set_speed() {
+        let action = CinematicsAction::SetSpeed(PlaybackSpeed::Double);
+        assert!(matches!(action, CinematicsAction::SetSpeed(PlaybackSpeed::Double)));
+    }
+
+    #[test]
+    fn test_cinematics_action_add_track() {
+        let action = CinematicsAction::AddTrack(TrackType::Camera);
+        assert!(matches!(action, CinematicsAction::AddTrack(TrackType::Camera)));
+    }
+
+    #[test]
+    fn test_cinematics_action_remove_track() {
+        let action = CinematicsAction::RemoveTrack { track_id: 42 };
+        if let CinematicsAction::RemoveTrack { track_id } = action {
+            assert_eq!(track_id, 42);
+        } else {
+            panic!("Expected RemoveTrack action");
+        }
+    }
+
+    #[test]
+    fn test_cinematics_action_add_clip() {
+        let action = CinematicsAction::AddClip { track_id: 1, start_time: 2.5 };
+        if let CinematicsAction::AddClip { track_id, start_time } = action {
+            assert_eq!(track_id, 1);
+            assert!((start_time - 2.5).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected AddClip action");
+        }
+    }
+
+    #[test]
+    fn test_cinematics_action_move_clip() {
+        let action = CinematicsAction::MoveClip { clip_id: 5, new_time: 10.0 };
+        if let CinematicsAction::MoveClip { clip_id, new_time } = action {
+            assert_eq!(clip_id, 5);
+            assert!((new_time - 10.0).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected MoveClip action");
+        }
+    }
+
+    #[test]
+    fn test_cinematics_action_camera_keyframe() {
+        let add = CinematicsAction::AddCameraKeyframe { time: 3.0 };
+        let remove = CinematicsAction::RemoveCameraKeyframe { index: 2 };
+        
+        if let CinematicsAction::AddCameraKeyframe { time } = add {
+            assert!((time - 3.0).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected AddCameraKeyframe");
+        }
+        
+        if let CinematicsAction::RemoveCameraKeyframe { index } = remove {
+            assert_eq!(index, 2);
+        } else {
+            panic!("Expected RemoveCameraKeyframe");
+        }
+    }
+
+    #[test]
+    fn test_cinematics_action_camera_interpolation() {
+        let action = CinematicsAction::SetCameraInterpolation(CameraInterpolation::Bezier);
+        assert!(matches!(action, CinematicsAction::SetCameraInterpolation(CameraInterpolation::Bezier)));
+    }
+
+    #[test]
+    fn test_cinematics_action_marker() {
+        let add = CinematicsAction::AddMarker { time: 5.0, name: "Start".to_string() };
+        let remove = CinematicsAction::RemoveMarker { index: 0 };
+        
+        if let CinematicsAction::AddMarker { time, name } = add {
+            assert!((time - 5.0).abs() < f32::EPSILON);
+            assert_eq!(name, "Start");
+        } else {
+            panic!("Expected AddMarker");
+        }
+        
+        assert!(matches!(remove, CinematicsAction::RemoveMarker { index: 0 }));
+    }
+
+    #[test]
+    fn test_cinematics_action_export() {
+        let action = CinematicsAction::Export { format: "mp4".to_string() };
+        if let CinematicsAction::Export { format } = action {
+            assert_eq!(format, "mp4");
+        } else {
+            panic!("Expected Export action");
+        }
+    }
+
+    #[test]
+    fn test_cinematics_action_queue_and_take() {
+        let mut panel = CinematicsPanel::new();
+        assert!(!panel.has_pending_actions());
+
+        panel.queue_action(CinematicsAction::Play);
+        panel.queue_action(CinematicsAction::SeekTo(2.0));
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_cinematics_action_equality() {
+        let a1 = CinematicsAction::Stop;
+        let a2 = CinematicsAction::Stop;
+        assert_eq!(a1, a2);
+    }
+
+    #[test]
+    fn test_cinematics_action_debug() {
+        let action = CinematicsAction::ToggleCameraPreview(true);
+        let debug_str = format!("{:?}", action);
+        assert!(debug_str.contains("ToggleCameraPreview"));
     }
 }

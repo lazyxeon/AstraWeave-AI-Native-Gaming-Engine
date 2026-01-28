@@ -13,6 +13,7 @@ pub mod stats;
 pub mod types;
 pub mod veilweaver_slice;
 pub mod veilweaver_tutorial;
+pub mod water_movement;
 pub mod weaving;
 
 pub use biome::*;
@@ -30,6 +31,7 @@ pub use stats::*;
 pub use types::*;
 pub use veilweaver_slice::*;
 pub use veilweaver_tutorial::*;
+pub use water_movement::*;
 pub use weaving::*;
 
 pub mod weave_portals;

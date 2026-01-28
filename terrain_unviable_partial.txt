@@ -1,0 +1,61 @@
+astraweave-terrain/src/lib.rs:152:9: replace WorldGenerator::generate_chunk_with_scatter -> anyhow::Result<(TerrainChunk, ScatterResult)> with Ok((Default::default(), Default::default()))
+astraweave-terrain/src/lib.rs:165:9: replace WorldGenerator::scatter_chunk_content -> anyhow::Result<ScatterResult> with Ok(Default::default())
+astraweave-terrain/src/lib.rs:216:9: replace WorldGenerator::generate_chunk -> anyhow::Result<TerrainChunk> with Ok(Default::default())
+astraweave-terrain/src/lib.rs:258:9: replace WorldGenerator::generate_and_register_chunk -> anyhow::Result<TerrainChunk> with Ok(Default::default())
+astraweave-terrain/src/lib.rs:265:9: replace WorldGenerator::get_chunk -> Option<&TerrainChunk> with Some(Box::leak(Box::new(Default::default())))
+astraweave-terrain/src/lib.rs:270:9: replace WorldGenerator::stream_chunks -> anyhow::Result<Vec<ChunkId>> with Ok(vec![Default::default()])
+astraweave-terrain/src/lib.rs:294:9: replace WorldGenerator::assign_biomes -> anyhow::Result<Vec<BiomeType>> with Ok(vec![Default::default()])
+astraweave-terrain/src/lib.rs:307:9: replace WorldGenerator::find_best_biome -> BiomeType with Default::default()
+astraweave-terrain/src/background_loader.rs:33:9: replace <impl Ord for ChunkPriority>::cmp -> Ordering with Default::default()
+astraweave-terrain/src/background_loader.rs:47:9: replace <impl PartialOrd for ChunkPriority>::partial_cmp -> Option<Ordering> with Some(Default::default())
+astraweave-terrain/src/background_loader.rs:68:9: replace <impl Ord for ChunkLoadRequest>::cmp -> Ordering with Default::default()
+astraweave-terrain/src/background_loader.rs:74:9: replace <impl PartialOrd for ChunkLoadRequest>::partial_cmp -> Option<Ordering> with Some(Default::default())
+astraweave-terrain/src/background_loader.rs:594:9: replace BackgroundChunkLoader::get_chunk -> Option<TerrainChunk> with Some(Default::default())
+astraweave-terrain/src/background_loader.rs:604:9: replace BackgroundChunkLoader::get_loaded_chunk_ids -> Vec<ChunkId> with vec![Default::default()]
+astraweave-terrain/src/background_loader.rs:661:9: replace BackgroundChunkLoader::queue_terrain_task -> TerrainTaskResult with Default::default()
+astraweave-terrain/src/biome.rs:39:9: replace BiomeType::parse -> Option<Self> with Some(Default::default())
+astraweave-terrain/src/biome.rs:44:9: replace BiomeType::all -> &'static[BiomeType] with Vec::leak(vec![Default::default()])
+astraweave-terrain/src/biome.rs:72:9: replace <impl FromStr for BiomeType>::from_str -> Result<Self, Self::Err> with Ok(Default::default())
+astraweave-terrain/src/biome.rs:245:9: replace BiomeConfig::grassland -> Self with Default::default()
+astraweave-terrain/src/biome.rs:309:9: replace BiomeConfig::desert -> Self with Default::default()
+astraweave-terrain/src/biome.rs:366:9: replace BiomeConfig::forest -> Self with Default::default()
+astraweave-terrain/src/biome.rs:438:9: replace BiomeConfig::mountain -> Self with Default::default()
+astraweave-terrain/src/biome.rs:502:9: replace BiomeConfig::tundra -> Self with Default::default()
+astraweave-terrain/src/biome.rs:550:9: replace BiomeConfig::swamp -> Self with Default::default()
+astraweave-terrain/src/biome.rs:605:9: replace BiomeConfig::beach -> Self with Default::default()
+astraweave-terrain/src/biome.rs:651:9: replace BiomeConfig::river -> Self with Default::default()
+astraweave-terrain/src/biome.rs:787:9: replace Biome::resource_weights -> &[(ResourceKind, f32)] with Vec::leak(vec![(Default::default(), 1.0)])
+astraweave-terrain/src/biome.rs:787:9: replace Biome::resource_weights -> &[(ResourceKind, f32)] with Vec::leak(vec![(Default::default(), 0.0)])
+astraweave-terrain/src/biome.rs:792:9: replace Biome::to_biome_rule -> BiomeRule with Default::default()
+astraweave-terrain/src/biome.rs:787:9: replace Biome::resource_weights -> &[(ResourceKind, f32)] with Vec::leak(vec![(Default::default(), -1.0)])
+astraweave-terrain/src/biome_blending.rs:78:9: replace PackedBiomeBlend::dominant_biome -> BiomeType with Default::default()
+astraweave-terrain/src/biome_blending.rs:251:9: replace BiomeBlender::gather_neighbor_biomes -> Vec<(Vec2, BiomeType)> with vec![(Default::default(), Default::default())]
+astraweave-terrain/src/chunk.rs:23:9: replace ChunkId::from_world_pos -> Self with Default::default()
+astraweave-terrain/src/chunk.rs:41:9: replace ChunkId::get_chunks_in_radius -> Vec<ChunkId> with vec![Default::default()]
+astraweave-terrain/src/chunk.rs:84:9: replace TerrainChunk::id -> ChunkId with Default::default()
+astraweave-terrain/src/chunk.rs:89:9: replace TerrainChunk::heightmap -> &Heightmap with Box::leak(Box::new(Default::default()))
+astraweave-terrain/src/chunk.rs:94:9: replace TerrainChunk::biome_map -> &[BiomeType] with Vec::leak(vec![Default::default()])
+astraweave-terrain/src/chunk.rs:138:9: replace TerrainChunk::get_biome_at_world_pos -> Option<BiomeType> with Some(Default::default())
+astraweave-terrain/src/chunk.rs:199:9: replace ChunkManager::get_chunk -> Option<&TerrainChunk> with Some(Box::leak(Box::new(Default::default())))
+astraweave-terrain/src/chunk.rs:204:9: replace ChunkManager::get_chunk_mut -> Option<&mut TerrainChunk> with Some(Box::leak(Box::new(Default::default())))
+astraweave-terrain/src/chunk.rs:214:9: replace ChunkManager::get_chunks_in_radius -> Vec<ChunkId> with vec![Default::default()]
+astraweave-terrain/src/chunk.rs:243:9: replace ChunkManager::get_biome_at_world_pos -> Option<BiomeType> with Some(Default::default())
+astraweave-terrain/src/chunk.rs:250:9: replace ChunkManager::loaded_chunks -> Vec<ChunkId> with vec![Default::default()]
+astraweave-terrain/src/climate.rs:225:9: replace utils::classify_whittaker_biome -> BiomeType with Default::default()
+astraweave-terrain/src/climate.rs:270:9: replace utils::generate_biome_classification_map -> Vec<BiomeType> with vec![Default::default()]
+astraweave-terrain/src/climate.rs:299:9: replace utils::calculate_climate_stats -> ClimateStats with Default::default()
+astraweave-terrain/src/heightmap.rs:53:9: replace Heightmap::from_data -> anyhow::Result<Self> with Ok(Default::default())
+astraweave-terrain/src/lod_blending.rs:118:9: replace LodBlender::morph_vertices -> MorphedMesh with Default::default()
+astraweave-terrain/src/lod_blending.rs:170:9: replace LodBlender::find_vertex_correspondence -> HashMap<usize, VertexCorrespondence> with HashMap::from_iter([(0, Default::default())])
+astraweave-terrain/src/lod_blending.rs:170:9: replace LodBlender::find_vertex_correspondence -> HashMap<usize, VertexCorrespondence> with HashMap::from_iter([(1, Default::default())])
+astraweave-terrain/src/lod_blending.rs:262:9: replace LodBlender::create_transition_mesh -> MorphedMesh with Default::default()
+astraweave-terrain/src/lod_blending.rs:313:9: replace MorphingLodManager::get_mesh_for_distance -> MorphedMesh with Default::default()
+astraweave-terrain/src/lod_manager.rs:34:9: replace LodLevel::skip_factor -> usize with 1
+astraweave-terrain/src/lod_manager.rs:44:9: replace LodLevel::lower -> Option<LodLevel> with Some(Default::default())
+astraweave-terrain/src/lod_manager.rs:44:9: replace LodLevel::lower -> Option<LodLevel> with None
+astraweave-terrain/src/lod_manager.rs:54:9: replace LodLevel::higher -> Option<LodLevel> with None
+astraweave-terrain/src/lod_manager.rs:54:9: replace LodLevel::higher -> Option<LodLevel> with Some(Default::default())
+astraweave-terrain/src/lod_manager.rs:95:9: replace LodConfig::get_threshold -> f32 with 1.0
+astraweave-terrain/src/lod_manager.rs:96:13: delete match arm (LodLevel::Full, LodLevel::Half) |(LodLevel::Half, LodLevel::Full) in LodConfig::get_threshold
+astraweave-terrain/src/lod_manager.rs:95:9: replace LodConfig::get_threshold -> f32 with -1.0
+astraweave-terrain/src/lod_manager.rs:95:9: replace LodConfig::get_threshold -> f32 with 0.0

@@ -357,6 +357,173 @@ impl Default for NavDebugOptions {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════
+// NAVIGATION ACTION
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the navigation panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum NavigationAction {
+    // Tab navigation
+    SetActiveTab(NavigationTab),
+
+    // NavMesh operations
+    BakeNavMesh,
+    ClearNavMesh,
+    RebakeRegion(u32),
+    ValidateNavMesh,
+
+    // Agent management
+    AddAgent,
+    RemoveAgent(usize),
+    SelectAgent(usize),
+    DeselectAgent,
+    SetAgentName(usize, String),
+    SetAgentRadius(usize, f32),
+    SetAgentHeight(usize, f32),
+    SetAgentMaxSlope(usize, f32),
+    SetAgentStepHeight(usize, f32),
+    SetAgentJumpDistance(usize, f32),
+    SetAgentFallDistance(usize, f32),
+    DuplicateAgent(usize),
+
+    // Obstacle management
+    AddObstacle,
+    RemoveObstacle(u32),
+    SelectObstacle(u32),
+    DeselectObstacle,
+    SetObstacleName(u32, String),
+    SetObstaclePosition(u32, (f32, f32, f32)),
+    SetObstacleSize(u32, (f32, f32, f32)),
+    ToggleObstacleDynamic(u32, bool),
+    ToggleObstacleCarve(u32, bool),
+
+    // Nav link management
+    AddNavLink,
+    RemoveNavLink(u32),
+    SelectNavLink(u32),
+    DeselectNavLink,
+    SetNavLinkName(u32, String),
+    SetNavLinkStart(u32, (f32, f32, f32)),
+    SetNavLinkEnd(u32, (f32, f32, f32)),
+    ToggleNavLinkBidirectional(u32, bool),
+    SetNavLinkCost(u32, Option<f32>),
+    SetNavLinkType(u32, NavLinkType),
+
+    // Path testing
+    SetPathStart((f32, f32, f32)),
+    SetPathEnd((f32, f32, f32)),
+    TestPath,
+    ClearPathResult,
+    ToggleAutoUpdatePath(bool),
+
+    // Bake settings
+    SetCellSize(f32),
+    SetCellHeight(f32),
+    SetAgentMaxClimb(f32),
+    SetRegionMinSize(u32),
+    SetRegionMergeSize(u32),
+    SetEdgeMaxLen(f32),
+    SetEdgeMaxError(f32),
+    SetVertsPerPoly(u32),
+    SetDetailSampleDist(f32),
+    SetDetailSampleMaxError(f32),
+    ResetBakeSettings,
+
+    // Debug options
+    ToggleShowTriangles(bool),
+    ToggleShowEdges(bool),
+    ToggleShowVertices(bool),
+    ToggleShowRegions(bool),
+    ToggleShowConnections(bool),
+    ToggleShowOffMeshLinks(bool),
+    ToggleShowObstacles(bool),
+    ToggleShowPath(bool),
+    ToggleWireframeMode(bool),
+
+    // Region management
+    SetRegionAreaType(u32, NavAreaType),
+    InvalidateRegion(u32),
+
+    // General
+    RefreshStats,
+    ExportNavMesh,
+    ImportNavMesh,
+}
+
+impl std::fmt::Display for NavigationAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NavigationAction::SetActiveTab(tab) => write!(f, "Set tab: {}", tab),
+            NavigationAction::BakeNavMesh => write!(f, "Bake NavMesh"),
+            NavigationAction::ClearNavMesh => write!(f, "Clear NavMesh"),
+            NavigationAction::RebakeRegion(id) => write!(f, "Rebake region {}", id),
+            NavigationAction::ValidateNavMesh => write!(f, "Validate NavMesh"),
+            NavigationAction::AddAgent => write!(f, "Add agent config"),
+            NavigationAction::RemoveAgent(i) => write!(f, "Remove agent {}", i),
+            NavigationAction::SelectAgent(i) => write!(f, "Select agent {}", i),
+            NavigationAction::DeselectAgent => write!(f, "Deselect agent"),
+            NavigationAction::SetAgentName(i, n) => write!(f, "Set agent {} name: {}", i, n),
+            NavigationAction::SetAgentRadius(i, r) => write!(f, "Set agent {} radius: {:.2}", i, r),
+            NavigationAction::SetAgentHeight(i, h) => write!(f, "Set agent {} height: {:.2}", i, h),
+            NavigationAction::SetAgentMaxSlope(i, s) => write!(f, "Set agent {} max slope: {:.1}°", i, s),
+            NavigationAction::SetAgentStepHeight(i, h) => write!(f, "Set agent {} step height: {:.2}", i, h),
+            NavigationAction::SetAgentJumpDistance(i, d) => write!(f, "Set agent {} jump dist: {:.2}", i, d),
+            NavigationAction::SetAgentFallDistance(i, d) => write!(f, "Set agent {} fall dist: {:.2}", i, d),
+            NavigationAction::DuplicateAgent(i) => write!(f, "Duplicate agent {}", i),
+            NavigationAction::AddObstacle => write!(f, "Add obstacle"),
+            NavigationAction::RemoveObstacle(id) => write!(f, "Remove obstacle {}", id),
+            NavigationAction::SelectObstacle(id) => write!(f, "Select obstacle {}", id),
+            NavigationAction::DeselectObstacle => write!(f, "Deselect obstacle"),
+            NavigationAction::SetObstacleName(id, n) => write!(f, "Set obstacle {} name: {}", id, n),
+            NavigationAction::SetObstaclePosition(id, _) => write!(f, "Set obstacle {} position", id),
+            NavigationAction::SetObstacleSize(id, _) => write!(f, "Set obstacle {} size", id),
+            NavigationAction::ToggleObstacleDynamic(id, b) => write!(f, "Toggle obstacle {} dynamic: {}", id, b),
+            NavigationAction::ToggleObstacleCarve(id, b) => write!(f, "Toggle obstacle {} carve: {}", id, b),
+            NavigationAction::AddNavLink => write!(f, "Add nav link"),
+            NavigationAction::RemoveNavLink(id) => write!(f, "Remove nav link {}", id),
+            NavigationAction::SelectNavLink(id) => write!(f, "Select nav link {}", id),
+            NavigationAction::DeselectNavLink => write!(f, "Deselect nav link"),
+            NavigationAction::SetNavLinkName(id, n) => write!(f, "Set nav link {} name: {}", id, n),
+            NavigationAction::SetNavLinkStart(id, _) => write!(f, "Set nav link {} start", id),
+            NavigationAction::SetNavLinkEnd(id, _) => write!(f, "Set nav link {} end", id),
+            NavigationAction::ToggleNavLinkBidirectional(id, b) => write!(f, "Toggle nav link {} bidirectional: {}", id, b),
+            NavigationAction::SetNavLinkCost(id, c) => write!(f, "Set nav link {} cost: {:?}", id, c),
+            NavigationAction::SetNavLinkType(id, t) => write!(f, "Set nav link {} type: {}", id, t),
+            NavigationAction::SetPathStart(_) => write!(f, "Set path start"),
+            NavigationAction::SetPathEnd(_) => write!(f, "Set path end"),
+            NavigationAction::TestPath => write!(f, "Test path"),
+            NavigationAction::ClearPathResult => write!(f, "Clear path result"),
+            NavigationAction::ToggleAutoUpdatePath(b) => write!(f, "Toggle auto update path: {}", b),
+            NavigationAction::SetCellSize(v) => write!(f, "Set cell size: {:.2}", v),
+            NavigationAction::SetCellHeight(v) => write!(f, "Set cell height: {:.2}", v),
+            NavigationAction::SetAgentMaxClimb(v) => write!(f, "Set agent max climb: {:.2}", v),
+            NavigationAction::SetRegionMinSize(v) => write!(f, "Set region min size: {}", v),
+            NavigationAction::SetRegionMergeSize(v) => write!(f, "Set region merge size: {}", v),
+            NavigationAction::SetEdgeMaxLen(v) => write!(f, "Set edge max len: {:.1}", v),
+            NavigationAction::SetEdgeMaxError(v) => write!(f, "Set edge max error: {:.2}", v),
+            NavigationAction::SetVertsPerPoly(v) => write!(f, "Set verts per poly: {}", v),
+            NavigationAction::SetDetailSampleDist(v) => write!(f, "Set detail sample dist: {:.1}", v),
+            NavigationAction::SetDetailSampleMaxError(v) => write!(f, "Set detail sample max error: {:.2}", v),
+            NavigationAction::ResetBakeSettings => write!(f, "Reset bake settings"),
+            NavigationAction::ToggleShowTriangles(b) => write!(f, "Toggle show triangles: {}", b),
+            NavigationAction::ToggleShowEdges(b) => write!(f, "Toggle show edges: {}", b),
+            NavigationAction::ToggleShowVertices(b) => write!(f, "Toggle show vertices: {}", b),
+            NavigationAction::ToggleShowRegions(b) => write!(f, "Toggle show regions: {}", b),
+            NavigationAction::ToggleShowConnections(b) => write!(f, "Toggle show connections: {}", b),
+            NavigationAction::ToggleShowOffMeshLinks(b) => write!(f, "Toggle show off-mesh links: {}", b),
+            NavigationAction::ToggleShowObstacles(b) => write!(f, "Toggle show obstacles: {}", b),
+            NavigationAction::ToggleShowPath(b) => write!(f, "Toggle show path: {}", b),
+            NavigationAction::ToggleWireframeMode(b) => write!(f, "Toggle wireframe: {}", b),
+            NavigationAction::SetRegionAreaType(id, t) => write!(f, "Set region {} area type: {}", id, t),
+            NavigationAction::InvalidateRegion(id) => write!(f, "Invalidate region {}", id),
+            NavigationAction::RefreshStats => write!(f, "Refresh stats"),
+            NavigationAction::ExportNavMesh => write!(f, "Export NavMesh"),
+            NavigationAction::ImportNavMesh => write!(f, "Import NavMesh"),
+        }
+    }
+}
+
 /// Main Navigation Panel
 pub struct NavigationPanel {
     // Tab state
@@ -392,6 +559,9 @@ pub struct NavigationPanel {
 
     // ID counter
     next_id: u32,
+
+    // Actions
+    pending_actions: Vec<NavigationAction>,
 }
 
 impl Default for NavigationPanel {
@@ -422,6 +592,8 @@ impl Default for NavigationPanel {
             debug_options: NavDebugOptions::default(),
 
             next_id: 1,
+
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -432,6 +604,26 @@ impl Default for NavigationPanel {
 impl NavigationPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<NavigationAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: NavigationAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Get reference to pending actions without removing them
+    pub fn pending_actions(&self) -> &[NavigationAction] {
+        &self.pending_actions
     }
 
     fn create_sample_data(&mut self) {
@@ -1773,5 +1965,221 @@ mod tests {
             assert!(!tab.name().is_empty());
             assert!(!tab.icon().is_empty());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // NavigationAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_navigation_action_display() {
+        let action = NavigationAction::SetActiveTab(NavigationTab::Mesh);
+        let display = format!("{}", action);
+        assert!(display.contains("Mesh"));
+        assert!(display.contains("tab"));
+    }
+
+    #[test]
+    fn test_navigation_action_display_all_variants() {
+        let actions = vec![
+            NavigationAction::SetActiveTab(NavigationTab::Agents),
+            NavigationAction::BakeNavMesh,
+            NavigationAction::ClearNavMesh,
+            NavigationAction::AddAgent,
+            NavigationAction::RemoveAgent(0),
+            NavigationAction::AddObstacle,
+            NavigationAction::RemoveObstacle(0),
+            NavigationAction::AddNavLink,
+            NavigationAction::TestPath,
+            NavigationAction::ClearPathResult,
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_navigation_action_equality() {
+        let action1 = NavigationAction::SelectAgent(3);
+        let action2 = NavigationAction::SelectAgent(3);
+        let action3 = NavigationAction::SelectAgent(5);
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_navigation_action_clone() {
+        let action = NavigationAction::SetCellSize(0.3);
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_navigation_panel_pending_actions_empty_by_default() {
+        let panel = NavigationPanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_navigation_panel_queue_action() {
+        let mut panel = NavigationPanel::new();
+        panel.queue_action(NavigationAction::BakeNavMesh);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_navigation_panel_take_actions() {
+        let mut panel = NavigationPanel::new();
+        panel.queue_action(NavigationAction::AddAgent);
+        panel.queue_action(NavigationAction::SetAgentRadius(0, 0.5));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_navigation_panel_action_order_preserved() {
+        let mut panel = NavigationPanel::new();
+        panel.queue_action(NavigationAction::SetCellSize(0.25));
+        panel.queue_action(NavigationAction::SetCellHeight(0.2));
+        panel.queue_action(NavigationAction::BakeNavMesh);
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], NavigationAction::SetCellSize(_)));
+        assert!(matches!(actions[1], NavigationAction::SetCellHeight(_)));
+        assert!(matches!(actions[2], NavigationAction::BakeNavMesh));
+    }
+
+    #[test]
+    fn test_navigation_action_bake_settings() {
+        let actions = vec![
+            NavigationAction::SetCellSize(0.3),
+            NavigationAction::SetCellHeight(0.2),
+            NavigationAction::SetAgentMaxClimb(0.5),
+            NavigationAction::SetRegionMinSize(8),
+            NavigationAction::SetRegionMergeSize(20),
+            NavigationAction::SetEdgeMaxLen(12.0),
+            NavigationAction::SetEdgeMaxError(1.3),
+            NavigationAction::SetVertsPerPoly(6),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_navigation_action_agent_operations() {
+        let actions = vec![
+            NavigationAction::AddAgent,
+            NavigationAction::RemoveAgent(0),
+            NavigationAction::SelectAgent(1),
+            NavigationAction::SetAgentName(0, "Guard".to_string()),
+            NavigationAction::SetAgentRadius(0, 0.4),
+            NavigationAction::SetAgentHeight(0, 2.0),
+            NavigationAction::SetAgentMaxSlope(0, 45.0),
+            NavigationAction::SetAgentStepHeight(0, 0.4),
+            NavigationAction::DuplicateAgent(0),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Add"));
+        assert!(displays[1].contains("Remove") || displays[1].contains("agent"));
+        assert!(displays[3].contains("Guard"));
+    }
+
+    #[test]
+    fn test_navigation_action_obstacle_operations() {
+        let actions = vec![
+            NavigationAction::AddObstacle,
+            NavigationAction::RemoveObstacle(0),
+            NavigationAction::SelectObstacle(1),
+            NavigationAction::SetObstacleName(0, "Wall".to_string()),
+            NavigationAction::SetObstaclePosition(0, (5.0, 0.0, 5.0)),
+            NavigationAction::SetObstacleSize(0, (2.0, 3.0, 1.0)),
+            NavigationAction::ToggleObstacleDynamic(0, true),
+            NavigationAction::ToggleObstacleCarve(0, true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_navigation_action_navlink_operations() {
+        let actions = vec![
+            NavigationAction::AddNavLink,
+            NavigationAction::RemoveNavLink(0),
+            NavigationAction::SelectNavLink(1),
+            NavigationAction::SetNavLinkStart(0, (0.0, 0.0, 0.0)),
+            NavigationAction::SetNavLinkEnd(0, (5.0, 2.0, 0.0)),
+            NavigationAction::SetNavLinkCost(0, Some(2.0)),
+            NavigationAction::SetNavLinkType(0, NavLinkType::Jump),
+            NavigationAction::ToggleNavLinkBidirectional(0, true),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Add"));
+        assert!(displays[6].contains("Jump"));
+    }
+
+    #[test]
+    fn test_navigation_action_path_testing() {
+        let actions = vec![
+            NavigationAction::SetPathStart((0.0, 0.0, 0.0)),
+            NavigationAction::SetPathEnd((10.0, 0.0, 10.0)),
+            NavigationAction::TestPath,
+            NavigationAction::ClearPathResult,
+            NavigationAction::ToggleAutoUpdatePath(true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+
+        let test_display = format!("{}", NavigationAction::TestPath);
+        assert!(test_display.contains("Test") || test_display.contains("path"));
+    }
+
+    #[test]
+    fn test_navigation_action_debug_visualization() {
+        let actions = vec![
+            NavigationAction::ToggleShowTriangles(true),
+            NavigationAction::ToggleShowEdges(true),
+            NavigationAction::ToggleShowVertices(true),
+            NavigationAction::ToggleShowObstacles(true),
+            NavigationAction::ToggleShowOffMeshLinks(true),
+            NavigationAction::ToggleShowRegions(true),
+            NavigationAction::ToggleShowPath(true),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(display.contains("true"), "Display should contain 'true': {}", display);
+        }
+    }
+
+    #[test]
+    fn test_navigation_action_region_operations() {
+        let actions = vec![
+            NavigationAction::SetRegionAreaType(0, NavAreaType::Water),
+            NavigationAction::InvalidateRegion(0),
+            NavigationAction::RebakeRegion(1),
+            NavigationAction::ValidateNavMesh,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Water") || displays[0].contains("area"));
     }
 }

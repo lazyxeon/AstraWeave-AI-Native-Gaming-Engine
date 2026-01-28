@@ -520,6 +520,112 @@ impl PhysicsTab {
     }
 }
 
+/// Actions that can be performed on the physics panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum PhysicsAction {
+    /// Start physics simulation
+    Play,
+    /// Pause physics simulation
+    Pause,
+    /// Step simulation by one frame
+    Step,
+    /// Reset simulation to initial state
+    Reset,
+    /// Set time scale
+    SetTimeScale(f32),
+    /// Set simulation mode
+    SetSimulationMode(SimulationMode),
+    /// Set visualization mode
+    SetVisualization(PhysicsVisualization),
+    /// Apply ragdoll preset
+    ApplyRagdollPreset(RagdollPreset),
+    /// Spawn test ragdoll
+    SpawnTestRagdoll,
+    /// Apply test impulse
+    ApplyTestImpulse { strength: f32 },
+    /// Set vehicle type
+    SetVehicleType(VehicleType),
+    /// Set cloth quality
+    SetClothQuality(ClothQuality),
+    /// Set destruction pattern
+    SetDestructionPattern(DestructionPattern),
+    /// Add gravity zone
+    AddGravityZone { name: String },
+    /// Remove gravity zone
+    RemoveGravityZone { index: usize },
+    /// Toggle wind
+    ToggleWind(bool),
+}
+
+impl std::fmt::Display for PhysicsAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl PhysicsAction {
+    /// Returns the name of this action
+    pub fn name(&self) -> &'static str {
+        match self {
+            PhysicsAction::Play => "Play",
+            PhysicsAction::Pause => "Pause",
+            PhysicsAction::Step => "Step",
+            PhysicsAction::Reset => "Reset",
+            PhysicsAction::SetTimeScale(_) => "Set Time Scale",
+            PhysicsAction::SetSimulationMode(_) => "Set Simulation Mode",
+            PhysicsAction::SetVisualization(_) => "Set Visualization",
+            PhysicsAction::ApplyRagdollPreset(_) => "Apply Ragdoll Preset",
+            PhysicsAction::SpawnTestRagdoll => "Spawn Test Ragdoll",
+            PhysicsAction::ApplyTestImpulse { .. } => "Apply Test Impulse",
+            PhysicsAction::SetVehicleType(_) => "Set Vehicle Type",
+            PhysicsAction::SetClothQuality(_) => "Set Cloth Quality",
+            PhysicsAction::SetDestructionPattern(_) => "Set Destruction Pattern",
+            PhysicsAction::AddGravityZone { .. } => "Add Gravity Zone",
+            PhysicsAction::RemoveGravityZone { .. } => "Remove Gravity Zone",
+            PhysicsAction::ToggleWind(_) => "Toggle Wind",
+        }
+    }
+
+    /// Returns true if this is a simulation control action
+    pub fn is_simulation_control(&self) -> bool {
+        matches!(
+            self,
+            PhysicsAction::Play
+                | PhysicsAction::Pause
+                | PhysicsAction::Step
+                | PhysicsAction::Reset
+                | PhysicsAction::SetTimeScale(_)
+                | PhysicsAction::SetSimulationMode(_)
+        )
+    }
+
+    /// Returns true if this is a visualization action
+    pub fn is_visualization(&self) -> bool {
+        matches!(self, PhysicsAction::SetVisualization(_))
+    }
+
+    /// Returns true if this is a system configuration action
+    pub fn is_system_config(&self) -> bool {
+        matches!(
+            self,
+            PhysicsAction::ApplyRagdollPreset(_)
+                | PhysicsAction::SetVehicleType(_)
+                | PhysicsAction::SetClothQuality(_)
+                | PhysicsAction::SetDestructionPattern(_)
+        )
+    }
+
+    /// Returns true if this is an environment action
+    pub fn is_environment(&self) -> bool {
+        matches!(
+            self,
+            PhysicsAction::AddGravityZone { .. }
+                | PhysicsAction::RemoveGravityZone { .. }
+                | PhysicsAction::ToggleWind(_)
+        )
+    }
+}
+
 /// Main Physics Debug Panel
 pub struct PhysicsPanel {
     // Tab state
@@ -586,6 +692,9 @@ pub struct PhysicsPanel {
     // Test tools
     spawn_test_objects: bool,
     test_impulse_strength: f32,
+
+    // Action queue
+    pending_actions: Vec<PhysicsAction>,
 }
 
 /// Gravity zone configuration
@@ -702,6 +811,8 @@ impl Default for PhysicsPanel {
 
             spawn_test_objects: false,
             test_impulse_strength: 500.0,
+
+            pending_actions: Vec::new(),
         }
     }
 }
@@ -709,6 +820,31 @@ impl Default for PhysicsPanel {
 impl PhysicsPanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Takes all pending actions and clears the internal queue
+    pub fn take_actions(&mut self) -> Vec<PhysicsAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for external processing
+    pub fn queue_action(&mut self, action: PhysicsAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Returns the current time scale
+    pub fn time_scale(&self) -> f32 {
+        self.time_scale
+    }
+
+    /// Returns true if wind is enabled
+    pub fn wind_enabled(&self) -> bool {
+        self.wind_enabled
     }
 
     fn show_tab_bar(&mut self, ui: &mut Ui) {
@@ -1970,5 +2106,176 @@ mod tests {
         set.insert(PhysicsTab::Overview);
         set.insert(PhysicsTab::Vehicle);
         assert_eq!(set.len(), 2);
+    }
+
+    // ============================================================
+    // PHYSICS ACTION TESTS
+    // ============================================================
+
+    #[test]
+    fn test_action_system_initial_state() {
+        let panel = PhysicsPanel::default();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_queue_and_take() {
+        let mut panel = PhysicsPanel::default();
+        panel.queue_action(PhysicsAction::Play);
+        panel.queue_action(PhysicsAction::SetTimeScale(2.0));
+
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+
+        // Verify actions were drained
+        let empty = panel.take_actions();
+        assert!(empty.is_empty());
+    }
+
+    #[test]
+    fn test_action_names() {
+        let actions = vec![
+            (PhysicsAction::Play, "Play"),
+            (PhysicsAction::Pause, "Pause"),
+            (PhysicsAction::Step, "Step"),
+            (PhysicsAction::Reset, "Reset"),
+            (PhysicsAction::SetTimeScale(1.5), "Set Time Scale"),
+            (PhysicsAction::SetSimulationMode(SimulationMode::Running), "Set Simulation Mode"),
+            (PhysicsAction::SetVisualization(PhysicsVisualization::Colliders), "Set Visualization"),
+            (PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid), "Apply Ragdoll Preset"),
+            (PhysicsAction::SpawnTestRagdoll, "Spawn Test Ragdoll"),
+            (PhysicsAction::ApplyTestImpulse { strength: 100.0 }, "Apply Test Impulse"),
+            (PhysicsAction::SetVehicleType(VehicleType::Sedan), "Set Vehicle Type"),
+            (PhysicsAction::SetClothQuality(ClothQuality::High), "Set Cloth Quality"),
+            (PhysicsAction::SetDestructionPattern(DestructionPattern::Voronoi), "Set Destruction Pattern"),
+            (PhysicsAction::AddGravityZone { name: "zone".to_string() }, "Add Gravity Zone"),
+            (PhysicsAction::RemoveGravityZone { index: 0 }, "Remove Gravity Zone"),
+            (PhysicsAction::ToggleWind(true), "Toggle Wind"),
+        ];
+
+        for (action, expected_name) in actions {
+            assert_eq!(action.name(), expected_name);
+        }
+    }
+
+    #[test]
+    fn test_action_is_simulation_control() {
+        assert!(PhysicsAction::Play.is_simulation_control());
+        assert!(PhysicsAction::Pause.is_simulation_control());
+        assert!(PhysicsAction::Step.is_simulation_control());
+        assert!(PhysicsAction::Reset.is_simulation_control());
+        assert!(PhysicsAction::SetTimeScale(1.0).is_simulation_control());
+        assert!(PhysicsAction::SetSimulationMode(SimulationMode::Paused).is_simulation_control());
+
+        assert!(!PhysicsAction::SetVisualization(PhysicsVisualization::All).is_simulation_control());
+        assert!(!PhysicsAction::SpawnTestRagdoll.is_simulation_control());
+    }
+
+    #[test]
+    fn test_action_is_visualization() {
+        assert!(PhysicsAction::SetVisualization(PhysicsVisualization::Colliders).is_visualization());
+        assert!(PhysicsAction::SetVisualization(PhysicsVisualization::All).is_visualization());
+
+        assert!(!PhysicsAction::Play.is_visualization());
+        assert!(!PhysicsAction::SetTimeScale(1.0).is_visualization());
+    }
+
+    #[test]
+    fn test_action_is_system_config() {
+        assert!(PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid).is_system_config());
+        assert!(PhysicsAction::SetVehicleType(VehicleType::Truck).is_system_config());
+        assert!(PhysicsAction::SetClothQuality(ClothQuality::Low).is_system_config());
+        assert!(PhysicsAction::SetDestructionPattern(DestructionPattern::Shatter).is_system_config());
+
+        assert!(!PhysicsAction::Play.is_system_config());
+        assert!(!PhysicsAction::AddGravityZone { name: "test".to_string() }.is_system_config());
+    }
+
+    #[test]
+    fn test_action_is_environment() {
+        assert!(PhysicsAction::AddGravityZone { name: "zone".to_string() }.is_environment());
+        assert!(PhysicsAction::RemoveGravityZone { index: 0 }.is_environment());
+        assert!(PhysicsAction::ToggleWind(true).is_environment());
+
+        assert!(!PhysicsAction::Play.is_environment());
+        assert!(!PhysicsAction::SetClothQuality(ClothQuality::Medium).is_environment());
+    }
+
+    #[test]
+    fn test_action_display() {
+        let action = PhysicsAction::Play;
+        let display = format!("{}", action);
+        assert_eq!(display, "Play");
+
+        let action = PhysicsAction::SetTimeScale(2.5);
+        let display = format!("{}", action);
+        assert_eq!(display, "Set Time Scale");
+    }
+
+    #[test]
+    fn test_time_scale_initial() {
+        let panel = PhysicsPanel::default();
+        assert!((panel.time_scale() - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_wind_enabled_initial() {
+        let panel = PhysicsPanel::default();
+        assert!(!panel.wind_enabled());
+    }
+
+    #[test]
+    fn test_multiple_simulation_actions() {
+        let mut panel = PhysicsPanel::default();
+        panel.queue_action(PhysicsAction::Play);
+        panel.queue_action(PhysicsAction::SetTimeScale(2.0));
+        panel.queue_action(PhysicsAction::Pause);
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 3);
+        assert!(actions.iter().all(|a| a.is_simulation_control()));
+    }
+
+    #[test]
+    fn test_mixed_action_types() {
+        let mut panel = PhysicsPanel::default();
+        panel.queue_action(PhysicsAction::Play);
+        panel.queue_action(PhysicsAction::SetVisualization(PhysicsVisualization::Colliders));
+        panel.queue_action(PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid));
+        panel.queue_action(PhysicsAction::ToggleWind(true));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 4);
+
+        // Check categories
+        let sim_count = actions.iter().filter(|a| a.is_simulation_control()).count();
+        let vis_count = actions.iter().filter(|a| a.is_visualization()).count();
+        let config_count = actions.iter().filter(|a| a.is_system_config()).count();
+        let env_count = actions.iter().filter(|a| a.is_environment()).count();
+
+        assert_eq!(sim_count, 1);
+        assert_eq!(vis_count, 1);
+        assert_eq!(config_count, 1);
+        assert_eq!(env_count, 1);
+    }
+
+    #[test]
+    fn test_action_partial_eq() {
+        let a1 = PhysicsAction::Play;
+        let a2 = PhysicsAction::Play;
+        let a3 = PhysicsAction::Pause;
+
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+
+        let s1 = PhysicsAction::SetTimeScale(1.0);
+        let s2 = PhysicsAction::SetTimeScale(1.0);
+        let s3 = PhysicsAction::SetTimeScale(2.0);
+
+        assert_eq!(s1, s2);
+        assert_ne!(s1, s3);
     }
 }

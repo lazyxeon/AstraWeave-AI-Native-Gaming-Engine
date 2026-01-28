@@ -1,0 +1,72 @@
+astraweave-core/src/ecs_adapter.rs:129 - sys_sync_to_legacy - ()
+astraweave-core/src/ecs_adapter.rs:90 - sys_refresh_los - ()
+astraweave-core/src/perception.rs:53 - build_snapshot - +
+astraweave-core/src/perception.rs:53 - build_snapshot - +
+astraweave-core/src/schema.rs:257 - PlanIntent::empty - Default::default()
+astraweave-core/src/schema.rs:382 - CardinalDirection::to_unit_vector - 
+astraweave-core/src/schema.rs:384 - CardinalDirection::to_unit_vector - 
+astraweave-core/src/schema.rs:384 - CardinalDirection::to_unit_vector - 
+astraweave-core/src/schema.rs:386 - CardinalDirection::to_unit_vector - 
+astraweave-core/src/schema.rs:502 - TerrainGenerationRequest::validate - <=
+astraweave-core/src/schema.rs:502 - TerrainGenerationRequest::validate - >=
+astraweave-core/src/schema.rs:507 - TerrainGenerationRequest::validate - >=
+astraweave-core/src/schema.rs:830 - ActionStep::target_entity - 
+astraweave-core/src/schema.rs:831 - ActionStep::target_entity - 
+astraweave-core/src/tools.rs:111 - path_exists - 
+astraweave-core/src/tools.rs:112 - path_exists - -
+astraweave-core/src/tools.rs:113 - path_exists - -
+astraweave-core/src/tools.rs:114 - path_exists - <=
+astraweave-core/src/tools.rs:114 - path_exists - <=
+astraweave-core/src/tools.rs:114 - path_exists - ==
+astraweave-core/src/tools.rs:114 - path_exists - ==
+astraweave-core/src/tools.rs:114 - path_exists - ==
+astraweave-core/src/tools.rs:114 - path_exists - >=
+astraweave-core/src/tools.rs:114 - path_exists - >=
+astraweave-core/src/tools.rs:160 - astar_path - -
+astraweave-core/src/tools.rs:160 - astar_path - *
+astraweave-core/src/tools.rs:160 - astar_path - /
+astraweave-core/src/tools.rs:160 - astar_path - +
+astraweave-core/src/tools.rs:160 - astar_path - +
+astraweave-core/src/tools.rs:192 - astar_path - 
+astraweave-core/src/tools.rs:193 - astar_path - -
+astraweave-core/src/tools.rs:194 - astar_path - -
+astraweave-core/src/tools.rs:195 - astar_path - ==
+astraweave-core/src/tools.rs:195 - astar_path - ==
+astraweave-core/src/tools.rs:195 - astar_path - >=
+astraweave-core/src/tools.rs:195 - astar_path - >=
+astraweave-core/src/tools.rs:201 - astar_path - *
+astraweave-core/src/tools.rs:203 - astar_path - <=
+astraweave-core/src/tools.rs:206 - astar_path - -
+astraweave-core/src/tools.rs:206 - astar_path - *
+astraweave-core/src/tools.rs:236 - find_cover_positions - -
+astraweave-core/src/tools.rs:237 - find_cover_positions - -
+astraweave-core/src/tools.rs:237 - find_cover_positions - *
+astraweave-core/src/tools.rs:238 - find_cover_positions - &&
+astraweave-core/src/tools.rs:238 - find_cover_positions - &&
+astraweave-core/src/tools.rs:238 - find_cover_positions - &&
+astraweave-core/src/tools.rs:238 - find_cover_positions - <=
+astraweave-core/src/tools.rs:238 - find_cover_positions - <=
+astraweave-core/src/tools.rs:238 - find_cover_positions - ==
+astraweave-core/src/tools.rs:238 - find_cover_positions - ==
+astraweave-core/src/tools.rs:238 - find_cover_positions - ==
+astraweave-core/src/tools.rs:238 - find_cover_positions - ==
+astraweave-core/src/tools.rs:238 - find_cover_positions - >=
+astraweave-core/src/tools.rs:238 - find_cover_positions - >=
+astraweave-core/src/validation.rs:323 - validate_and_execute - /
+astraweave-core/src/validation.rs:323 - validate_and_execute - +
+astraweave-core/src/validation.rs:324 - validate_and_execute - /=
+astraweave-core/src/validation.rs:381 - draw_line_obs - +
+astraweave-core/src/validation.rs:382 - draw_line_obs - +
+astraweave-core/src/validation.rs:383 - draw_line_obs - &&
+astraweave-core/src/validation.rs:439 - apply_director_plan - -
+astraweave-core/src/validation.rs:439 - apply_director_plan - *
+astraweave-core/src/validation.rs:439 - apply_director_plan - /
+astraweave-core/src/validation.rs:439 - apply_director_plan - /
+astraweave-core/src/validation.rs:439 - apply_director_plan - +
+astraweave-core/src/validation.rs:439 - apply_director_plan - +
+astraweave-core/src/validation.rs:440 - apply_director_plan - -
+astraweave-core/src/validation.rs:440 - apply_director_plan - *
+astraweave-core/src/validation.rs:440 - apply_director_plan - *
+astraweave-core/src/validation.rs:440 - apply_director_plan - %
+astraweave-core/src/world.rs:153 - World::team_mut - None
+astraweave-core/src/world.rs:174 - World::behavior_graph_mut - None

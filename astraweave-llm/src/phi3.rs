@@ -500,3 +500,155 @@ mod tests {
         }
     }
 }
+
+// Tests that don't require the phi3 feature
+#[cfg(test)]
+mod config_tests {
+    use super::*;
+
+    // ====================================================================
+    // Phi3Config Tests
+    // ====================================================================
+
+    #[test]
+    fn test_phi3_config_default() {
+        let config = Phi3Config::default();
+        assert_eq!(config.max_tokens, 512);
+        assert!((config.temperature - 0.7).abs() < 0.001);
+        assert!((config.top_p - 0.9).abs() < 0.001);
+        assert!((config.repeat_penalty - 1.1).abs() < 0.001);
+        assert!(config.use_kv_cache);
+    }
+
+    #[test]
+    fn test_phi3_config_clone() {
+        let config = Phi3Config::default();
+        let cloned = config.clone();
+        assert_eq!(config.max_tokens, cloned.max_tokens);
+        assert_eq!(config.temperature, cloned.temperature);
+    }
+
+    #[test]
+    fn test_phi3_config_debug() {
+        let config = Phi3Config::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("Phi3Config"));
+        assert!(debug_str.contains("max_tokens"));
+        assert!(debug_str.contains("temperature"));
+    }
+
+    #[test]
+    fn test_phi3_config_custom_values() {
+        let config = Phi3Config {
+            max_tokens: 1024,
+            temperature: 0.5,
+            top_p: 0.8,
+            repeat_penalty: 1.2,
+            device: Phi3Device::Cpu,
+            use_kv_cache: false,
+        };
+        assert_eq!(config.max_tokens, 1024);
+        assert!((config.temperature - 0.5).abs() < 0.001);
+        assert!(!config.use_kv_cache);
+    }
+
+    #[test]
+    fn test_phi3_config_max_tokens_zero() {
+        let config = Phi3Config {
+            max_tokens: 0,
+            ..Default::default()
+        };
+        assert_eq!(config.max_tokens, 0);
+    }
+
+    #[test]
+    fn test_phi3_config_temperature_extremes() {
+        // Deterministic
+        let config = Phi3Config {
+            temperature: 0.0,
+            ..Default::default()
+        };
+        assert_eq!(config.temperature, 0.0);
+
+        // Creative
+        let config = Phi3Config {
+            temperature: 1.0,
+            ..Default::default()
+        };
+        assert_eq!(config.temperature, 1.0);
+    }
+
+    // ====================================================================
+    // Phi3Device Tests
+    // ====================================================================
+
+    #[test]
+    fn test_phi3_device_auto() {
+        let device = Phi3Device::Auto;
+        assert_eq!(device, Phi3Device::Auto);
+    }
+
+    #[test]
+    fn test_phi3_device_cpu() {
+        let device = Phi3Device::Cpu;
+        assert_eq!(device, Phi3Device::Cpu);
+    }
+
+    #[test]
+    fn test_phi3_device_equality() {
+        assert_eq!(Phi3Device::Auto, Phi3Device::Auto);
+        assert_eq!(Phi3Device::Cpu, Phi3Device::Cpu);
+        assert_ne!(Phi3Device::Auto, Phi3Device::Cpu);
+    }
+
+    #[test]
+    fn test_phi3_device_debug() {
+        let device = Phi3Device::Auto;
+        let debug_str = format!("{:?}", device);
+        assert!(debug_str.contains("Auto"));
+    }
+
+    #[test]
+    fn test_phi3_device_clone() {
+        let device = Phi3Device::Cpu;
+        let cloned = device.clone();
+        assert_eq!(device, cloned);
+    }
+
+    #[test]
+    fn test_phi3_device_copy() {
+        let device = Phi3Device::Auto;
+        let copied = device; // Copy trait
+        assert_eq!(device, copied);
+    }
+
+    // ====================================================================
+    // Default Config Integration Tests
+    // ====================================================================
+
+    #[test]
+    fn test_phi3_config_default_is_sensible() {
+        let config = Phi3Config::default();
+
+        // Max tokens should be reasonable (at least 1, no more than context)
+        assert!(config.max_tokens >= 1);
+        assert!(config.max_tokens <= 128000);
+
+        // Temperature between 0 and 2 (extended range for some models)
+        assert!(config.temperature >= 0.0);
+        assert!(config.temperature <= 2.0);
+
+        // Top-p between 0 and 1
+        assert!(config.top_p >= 0.0);
+        assert!(config.top_p <= 1.0);
+
+        // Repeat penalty at least 1.0
+        assert!(config.repeat_penalty >= 1.0);
+    }
+
+    #[test]
+    fn test_phi3_device_default_is_auto() {
+        let config = Phi3Config::default();
+        assert_eq!(config.device, Phi3Device::Auto);
+    }
+}

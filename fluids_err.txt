@@ -1,0 +1,276 @@
+    Blocking waiting for file lock on build directory
+   Compiling astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\foam.rs:263:63
+    |
+263 |                 self.spawn_foam(pos, splash_velocity * (0.5 + self.next_random()), FoamSource::Shore);
+    |                 ---- ----------                               ^^^^ second mutable borrow occurs here
+    |                 |    |
+    |                 |    first borrow later used by call
+    |                 first mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\foam.rs:263:63
+    |
+263 |                 self.spawn_foam(pos, splash_velocity * (0.5 + self.next_random()), FoamSource::Shore);
+    |                                                               ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\foam.rs:263:17
+    |
+263 |                 self.spawn_foam(pos, splash_velocity * (0.5 + self.next_random()), FoamSource::Shore);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:220:18
+    |
+217 |         self.bubbles.push(UnderwaterParticle {
+    |         ------------ ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+220 |                 (self.next_random() - 0.5) * 0.1,
+    |                  ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:220:18
+    |
+220 |                 (self.next_random() - 0.5) * 0.1,
+    |                  ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:217:9
+    |
+217 | /         self.bubbles.push(UnderwaterParticle {
+218 | |             position,
+219 | |             velocity: Vec3::new(
+220 | |                 (self.next_random() - 0.5) * 0.1,
+...   |
+228 | |             phase: self.next_random() * std::f32::consts::TAU,
+229 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:221:56
+    |
+217 |         self.bubbles.push(UnderwaterParticle {
+    |         ------------ ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+221 |                 self.config.bubble_rise_speed * (0.8 + self.next_random() * 0.4),
+    |                                                        ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:221:56
+    |
+221 |                 self.config.bubble_rise_speed * (0.8 + self.next_random() * 0.4),
+    |                                                        ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:217:9
+    |
+217 | /         self.bubbles.push(UnderwaterParticle {
+218 | |             position,
+219 | |             velocity: Vec3::new(
+220 | |                 (self.next_random() - 0.5) * 0.1,
+...   |
+228 | |             phase: self.next_random() * std::f32::consts::TAU,
+229 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:222:18
+    |
+217 |         self.bubbles.push(UnderwaterParticle {
+    |         ------------ ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+222 |                 (self.next_random() - 0.5) * 0.1,
+    |                  ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:222:18
+    |
+222 |                 (self.next_random() - 0.5) * 0.1,
+    |                  ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:217:9
+    |
+217 | /         self.bubbles.push(UnderwaterParticle {
+218 | |             position,
+219 | |             velocity: Vec3::new(
+220 | |                 (self.next_random() - 0.5) * 0.1,
+...   |
+228 | |             phase: self.next_random() * std::f32::consts::TAU,
+229 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:228:20
+    |
+217 |         self.bubbles.push(UnderwaterParticle {
+    |         ------------ ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+228 |             phase: self.next_random() * std::f32::consts::TAU,
+    |                    ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:228:20
+    |
+228 |             phase: self.next_random() * std::f32::consts::TAU,
+    |                    ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:217:9
+    |
+217 | /         self.bubbles.push(UnderwaterParticle {
+218 | |             position,
+219 | |             velocity: Vec3::new(
+220 | |                 (self.next_random() - 0.5) * 0.1,
+...   |
+228 | |             phase: self.next_random() * std::f32::consts::TAU,
+229 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:268:18
+    |
+265 |         self.debris.push(UnderwaterParticle {
+    |         ----------- ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+268 |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+    |                  ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:268:18
+    |
+268 |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+    |                  ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:265:9
+    |
+265 | /         self.debris.push(UnderwaterParticle {
+266 | |             position,
+267 | |             velocity: Vec3::new(
+268 | |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+...   |
+276 | |             phase: self.next_random() * std::f32::consts::TAU,
+277 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:270:18
+    |
+265 |         self.debris.push(UnderwaterParticle {
+    |         ----------- ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+270 |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+    |                  ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:270:18
+    |
+270 |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+    |                  ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:265:9
+    |
+265 | /         self.debris.push(UnderwaterParticle {
+266 | |             position,
+267 | |             velocity: Vec3::new(
+268 | |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+...   |
+276 | |             phase: self.next_random() * std::f32::consts::TAU,
+277 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\underwater_particles.rs:276:20
+    |
+265 |         self.debris.push(UnderwaterParticle {
+    |         ----------- ---- first borrow later used by call
+    |         |
+    |         first mutable borrow occurs here
+...
+276 |             phase: self.next_random() * std::f32::consts::TAU,
+    |                    ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\underwater_particles.rs:276:20
+    |
+276 |             phase: self.next_random() * std::f32::consts::TAU,
+    |                    ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\underwater_particles.rs:265:9
+    |
+265 | /         self.debris.push(UnderwaterParticle {
+266 | |             position,
+267 | |             velocity: Vec3::new(
+268 | |                 (self.next_random() - 0.5) * self.config.debris_drift_speed,
+...   |
+276 | |             phase: self.next_random() * std::f32::consts::TAU,
+277 | |         });
+    | |__________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\waterfall.rs:503:34
+    |
+500 |                 self.particles.push(WaterParticle {
+    |                 -------------- ---- first borrow later used by call
+    |                 |
+    |                 first mutable borrow occurs here
+...
+503 |                     size: 0.03 + self.next_random() * 0.05,
+    |                                  ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\waterfall.rs:503:34
+    |
+503 |                     size: 0.03 + self.next_random() * 0.05,
+    |                                  ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\waterfall.rs:500:17
+    |
+500 | /                 self.particles.push(WaterParticle {
+501 | |                     position,
+502 | |                     velocity: flow_velocity + turb,
+503 | |                     size: 0.03 + self.next_random() * 0.05,
+...   |
+506 | |                     particle_type: WaterParticleType::Spray,
+507 | |                 });
+    | |__________________^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> astraweave-fluids\src\waterfall.rs:504:37
+    |
+500 |                 self.particles.push(WaterParticle {
+    |                 -------------- ---- first borrow later used by call
+    |                 |
+    |                 first mutable borrow occurs here
+...
+504 |                     lifetime: 0.5 + self.next_random() * 1.0,
+    |                                     ^^^^ second mutable borrow occurs here
+    |
+help: try adding a local storing this argument...
+   --> astraweave-fluids\src\waterfall.rs:504:37
+    |
+504 |                     lifetime: 0.5 + self.next_random() * 1.0,
+    |                                     ^^^^^^^^^^^^^^^^^^
+help: ...and then using that local as the argument to this call
+   --> astraweave-fluids\src\waterfall.rs:500:17
+    |
+500 | /                 self.particles.push(WaterParticle {
+501 | |                     position,
+502 | |                     velocity: flow_velocity + turb,
+503 | |                     size: 0.03 + self.next_random() * 0.05,
+...   |
+506 | |                     particle_type: WaterParticleType::Spray,
+507 | |                 });
+    | |__________________^
+
+For more information about this error, try `rustc --explain E0499`.
+error: could not compile `astraweave-fluids` (lib test) due to 10 previous errors

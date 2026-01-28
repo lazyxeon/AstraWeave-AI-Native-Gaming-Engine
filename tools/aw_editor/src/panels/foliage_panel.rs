@@ -384,6 +384,177 @@ impl FoliageTab {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════
+// FOLIAGE ACTION
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+/// Actions that can be triggered from the foliage panel
+#[derive(Debug, Clone, PartialEq)]
+pub enum FoliageAction {
+    // Tab navigation
+    SetActiveTab(FoliageTab),
+
+    // Brush tools
+    SetBrushTool(BrushTool),
+    SetBrushRadius(f32),
+    SetBrushFalloff(f32),
+    SetBrushDensity(f32),
+    SetBrushFlow(f32),
+    ToggleBrushMask(bool),
+    SetBrushMaskChannel(u8),
+
+    // Foliage type management
+    AddFoliageType,
+    RemoveFoliageType(u32),
+    DuplicateFoliageType(u32),
+    SelectFoliageType(u32),
+    DeselectFoliageType(u32),
+    SelectAllTypes,
+    DeselectAllTypes,
+    ToggleFoliageTypeEnabled(u32, bool),
+
+    // Foliage type properties
+    SetFoliageTypeName(u32, String),
+    SetFoliageTypeCategory(u32, FoliageCategory),
+    SetFoliageTypeMesh(u32, String),
+    SetFoliageTypeDensity(u32, f32),
+    SetFoliageTypeScaleRange(u32, f32, f32),
+    ToggleRandomRotation(u32, bool),
+    ToggleAlignToNormal(u32, bool),
+    SetNormalAlignment(u32, f32),
+
+    // Placement rules
+    SetSlopeRange(u32, f32, f32),
+    SetAltitudeRange(u32, f32, f32),
+    SetPlacementJitter(u32, f32),
+    SetExclusionRadius(u32, f32),
+
+    // LOD settings
+    ToggleLodEnabled(u32, bool),
+    SetLodDistances(u32, [f32; 4]),
+    SetCullDistance(u32, f32),
+
+    // Wind settings
+    ToggleWindEnabled(u32, bool),
+    SetWindStrength(u32, f32),
+    SetWindFrequency(u32, f32),
+
+    // Collision/rendering
+    ToggleCollision(u32, bool),
+    ToggleCastShadow(u32, bool),
+    ToggleAffectLighting(u32, bool),
+    ToggleAffectNavigation(u32, bool),
+
+    // Layer management
+    AddLayer,
+    RemoveLayer(u32),
+    SelectLayer(u32),
+    SetLayerName(u32, String),
+    ToggleLayerVisible(u32, bool),
+    ToggleLayerLocked(u32, bool),
+    AddTypeToLayer(u32, u32),
+    RemoveTypeFromLayer(u32, u32),
+
+    // Procedural rules
+    AddProceduralRule,
+    RemoveProceduralRule(u32),
+    ToggleProceduralRule(u32, bool),
+    SetRuleName(u32, String),
+    SetRuleDistribution(u32, DistributionType),
+    SetRuleNoiseSettings(u32, f32, f32),
+    ExecuteProceduralRule(u32),
+    ExecuteAllRules,
+
+    // Painting operations
+    StartPainting,
+    StopPainting,
+    ClearAllInstances,
+    ClearSelectedInstances,
+    RefillSelectedArea,
+
+    // Preview
+    TogglePreview(bool),
+    SetPreviewDensity(f32),
+
+    // General
+    RefreshStatistics,
+    OptimizeInstances,
+    ExportFoliageData,
+    ImportFoliageData,
+}
+
+impl std::fmt::Display for FoliageAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FoliageAction::SetActiveTab(tab) => write!(f, "Set tab: {}", tab),
+            FoliageAction::SetBrushTool(tool) => write!(f, "Set brush: {}", tool),
+            FoliageAction::SetBrushRadius(r) => write!(f, "Set radius: {:.1}", r),
+            FoliageAction::SetBrushFalloff(v) => write!(f, "Set falloff: {:.2}", v),
+            FoliageAction::SetBrushDensity(d) => write!(f, "Set density: {:.2}", d),
+            FoliageAction::SetBrushFlow(v) => write!(f, "Set flow: {:.2}", v),
+            FoliageAction::ToggleBrushMask(b) => write!(f, "Toggle mask: {}", b),
+            FoliageAction::SetBrushMaskChannel(c) => write!(f, "Set mask channel: {}", c),
+            FoliageAction::AddFoliageType => write!(f, "Add foliage type"),
+            FoliageAction::RemoveFoliageType(id) => write!(f, "Remove type {}", id),
+            FoliageAction::DuplicateFoliageType(id) => write!(f, "Duplicate type {}", id),
+            FoliageAction::SelectFoliageType(id) => write!(f, "Select type {}", id),
+            FoliageAction::DeselectFoliageType(id) => write!(f, "Deselect type {}", id),
+            FoliageAction::SelectAllTypes => write!(f, "Select all types"),
+            FoliageAction::DeselectAllTypes => write!(f, "Deselect all types"),
+            FoliageAction::ToggleFoliageTypeEnabled(id, b) => write!(f, "Toggle type {} enabled: {}", id, b),
+            FoliageAction::SetFoliageTypeName(id, n) => write!(f, "Set type {} name: {}", id, n),
+            FoliageAction::SetFoliageTypeCategory(id, c) => write!(f, "Set type {} category: {}", id, c),
+            FoliageAction::SetFoliageTypeMesh(id, m) => write!(f, "Set type {} mesh: {}", id, m),
+            FoliageAction::SetFoliageTypeDensity(id, d) => write!(f, "Set type {} density: {:.1}", id, d),
+            FoliageAction::SetFoliageTypeScaleRange(id, min, max) => write!(f, "Set type {} scale: {:.2}-{:.2}", id, min, max),
+            FoliageAction::ToggleRandomRotation(id, b) => write!(f, "Toggle type {} rotation: {}", id, b),
+            FoliageAction::ToggleAlignToNormal(id, b) => write!(f, "Toggle type {} align: {}", id, b),
+            FoliageAction::SetNormalAlignment(id, v) => write!(f, "Set type {} normal align: {:.2}", id, v),
+            FoliageAction::SetSlopeRange(id, min, max) => write!(f, "Set type {} slope: {:.1}°-{:.1}°", id, min, max),
+            FoliageAction::SetAltitudeRange(id, min, max) => write!(f, "Set type {} altitude: {:.1}-{:.1}", id, min, max),
+            FoliageAction::SetPlacementJitter(id, v) => write!(f, "Set type {} jitter: {:.2}", id, v),
+            FoliageAction::SetExclusionRadius(id, v) => write!(f, "Set type {} exclusion: {:.2}", id, v),
+            FoliageAction::ToggleLodEnabled(id, b) => write!(f, "Toggle type {} LOD: {}", id, b),
+            FoliageAction::SetLodDistances(id, _) => write!(f, "Set type {} LOD distances", id),
+            FoliageAction::SetCullDistance(id, d) => write!(f, "Set type {} cull: {:.1}", id, d),
+            FoliageAction::ToggleWindEnabled(id, b) => write!(f, "Toggle type {} wind: {}", id, b),
+            FoliageAction::SetWindStrength(id, v) => write!(f, "Set type {} wind strength: {:.2}", id, v),
+            FoliageAction::SetWindFrequency(id, v) => write!(f, "Set type {} wind freq: {:.2}", id, v),
+            FoliageAction::ToggleCollision(id, b) => write!(f, "Toggle type {} collision: {}", id, b),
+            FoliageAction::ToggleCastShadow(id, b) => write!(f, "Toggle type {} shadow: {}", id, b),
+            FoliageAction::ToggleAffectLighting(id, b) => write!(f, "Toggle type {} lighting: {}", id, b),
+            FoliageAction::ToggleAffectNavigation(id, b) => write!(f, "Toggle type {} nav: {}", id, b),
+            FoliageAction::AddLayer => write!(f, "Add layer"),
+            FoliageAction::RemoveLayer(id) => write!(f, "Remove layer {}", id),
+            FoliageAction::SelectLayer(id) => write!(f, "Select layer {}", id),
+            FoliageAction::SetLayerName(id, n) => write!(f, "Set layer {} name: {}", id, n),
+            FoliageAction::ToggleLayerVisible(id, b) => write!(f, "Toggle layer {} visible: {}", id, b),
+            FoliageAction::ToggleLayerLocked(id, b) => write!(f, "Toggle layer {} locked: {}", id, b),
+            FoliageAction::AddTypeToLayer(lid, tid) => write!(f, "Add type {} to layer {}", tid, lid),
+            FoliageAction::RemoveTypeFromLayer(lid, tid) => write!(f, "Remove type {} from layer {}", tid, lid),
+            FoliageAction::AddProceduralRule => write!(f, "Add procedural rule"),
+            FoliageAction::RemoveProceduralRule(id) => write!(f, "Remove rule {}", id),
+            FoliageAction::ToggleProceduralRule(id, b) => write!(f, "Toggle rule {}: {}", id, b),
+            FoliageAction::SetRuleName(id, n) => write!(f, "Set rule {} name: {}", id, n),
+            FoliageAction::SetRuleDistribution(id, d) => write!(f, "Set rule {} distribution: {}", id, d),
+            FoliageAction::SetRuleNoiseSettings(id, _, _) => write!(f, "Set rule {} noise", id),
+            FoliageAction::ExecuteProceduralRule(id) => write!(f, "Execute rule {}", id),
+            FoliageAction::ExecuteAllRules => write!(f, "Execute all rules"),
+            FoliageAction::StartPainting => write!(f, "Start painting"),
+            FoliageAction::StopPainting => write!(f, "Stop painting"),
+            FoliageAction::ClearAllInstances => write!(f, "Clear all instances"),
+            FoliageAction::ClearSelectedInstances => write!(f, "Clear selected instances"),
+            FoliageAction::RefillSelectedArea => write!(f, "Refill selected area"),
+            FoliageAction::TogglePreview(b) => write!(f, "Toggle preview: {}", b),
+            FoliageAction::SetPreviewDensity(d) => write!(f, "Set preview density: {:.2}", d),
+            FoliageAction::RefreshStatistics => write!(f, "Refresh statistics"),
+            FoliageAction::OptimizeInstances => write!(f, "Optimize instances"),
+            FoliageAction::ExportFoliageData => write!(f, "Export foliage data"),
+            FoliageAction::ImportFoliageData => write!(f, "Import foliage data"),
+        }
+    }
+}
+
 /// Main Foliage Panel
 pub struct FoliagePanel {
     active_tab: FoliageTab,
@@ -417,6 +588,9 @@ pub struct FoliagePanel {
     next_type_id: u32,
     next_layer_id: u32,
     next_rule_id: u32,
+
+    // Actions
+    pending_actions: Vec<FoliageAction>,
 }
 
 impl Default for FoliagePanel {
@@ -446,6 +620,8 @@ impl Default for FoliagePanel {
             next_type_id: 1,
             next_layer_id: 1,
             next_rule_id: 1,
+
+            pending_actions: Vec::new(),
         };
 
         panel.create_sample_data();
@@ -456,6 +632,26 @@ impl Default for FoliagePanel {
 impl FoliagePanel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Take all pending actions, leaving the internal queue empty
+    pub fn take_actions(&mut self) -> Vec<FoliageAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Check if there are pending actions
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for later processing
+    pub fn queue_action(&mut self, action: FoliageAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Get reference to pending actions without removing them
+    pub fn pending_actions(&self) -> &[FoliageAction] {
+        &self.pending_actions
     }
 
     fn create_sample_data(&mut self) {
@@ -1864,5 +2060,203 @@ mod tests {
         assert!(ft.min_slope <= ft.max_slope);
         assert!(ft.min_slope >= 0.0);
         assert!(ft.max_slope <= 90.0);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // FoliageAction Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_foliage_action_display() {
+        let action = FoliageAction::SetActiveTab(FoliageTab::Paint);
+        let display = format!("{}", action);
+        assert!(display.contains("Paint"));
+        assert!(display.contains("tab"));
+    }
+
+    #[test]
+    fn test_foliage_action_display_all_variants() {
+        let actions = vec![
+            FoliageAction::SetActiveTab(FoliageTab::Types),
+            FoliageAction::SetBrushTool(BrushTool::Paint),
+            FoliageAction::SetBrushRadius(50.0),
+            FoliageAction::SetBrushFlow(0.5),
+            FoliageAction::SetBrushDensity(0.8),
+            FoliageAction::AddFoliageType,
+            FoliageAction::RemoveFoliageType(0),
+            FoliageAction::ClearAllInstances,
+            FoliageAction::TogglePreview(true),
+            FoliageAction::ExecuteAllRules,
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+        }
+    }
+
+    #[test]
+    fn test_foliage_action_equality() {
+        let action1 = FoliageAction::SetBrushRadius(25.0);
+        let action2 = FoliageAction::SetBrushRadius(25.0);
+        let action3 = FoliageAction::SetBrushRadius(50.0);
+
+        assert_eq!(action1, action2);
+        assert_ne!(action1, action3);
+    }
+
+    #[test]
+    fn test_foliage_action_clone() {
+        let action = FoliageAction::SetBrushTool(BrushTool::Erase);
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_foliage_panel_pending_actions_empty_by_default() {
+        let panel = FoliagePanel::new();
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_foliage_panel_queue_action() {
+        let mut panel = FoliagePanel::new();
+        panel.queue_action(FoliageAction::AddFoliageType);
+        assert!(panel.has_pending_actions());
+        assert_eq!(panel.pending_actions().len(), 1);
+    }
+
+    #[test]
+    fn test_foliage_panel_take_actions() {
+        let mut panel = FoliagePanel::new();
+        panel.queue_action(FoliageAction::SetBrushRadius(30.0));
+        panel.queue_action(FoliageAction::SetBrushFlow(0.7));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 2);
+        assert!(!panel.has_pending_actions());
+        assert!(panel.pending_actions().is_empty());
+    }
+
+    #[test]
+    fn test_foliage_panel_action_order_preserved() {
+        let mut panel = FoliagePanel::new();
+        panel.queue_action(FoliageAction::SetActiveTab(FoliageTab::Paint));
+        panel.queue_action(FoliageAction::SetBrushTool(BrushTool::Paint));
+        panel.queue_action(FoliageAction::SetBrushRadius(40.0));
+
+        let actions = panel.take_actions();
+        assert!(matches!(actions[0], FoliageAction::SetActiveTab(_)));
+        assert!(matches!(actions[1], FoliageAction::SetBrushTool(_)));
+        assert!(matches!(actions[2], FoliageAction::SetBrushRadius(_)));
+    }
+
+    #[test]
+    fn test_foliage_action_brush_settings() {
+        let actions = vec![
+            FoliageAction::SetBrushRadius(100.0),
+            FoliageAction::SetBrushFlow(1.0),
+            FoliageAction::SetBrushDensity(0.9),
+            FoliageAction::SetBrushFalloff(0.5),
+            FoliageAction::SetBrushTool(BrushTool::Paint),
+            FoliageAction::SetBrushTool(BrushTool::Erase),
+            FoliageAction::SetBrushTool(BrushTool::Select),
+            FoliageAction::ToggleBrushMask(true),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_foliage_action_type_operations() {
+        let actions = vec![
+            FoliageAction::AddFoliageType,
+            FoliageAction::RemoveFoliageType(0),
+            FoliageAction::DuplicateFoliageType(1),
+            FoliageAction::SelectFoliageType(2),
+            FoliageAction::SetFoliageTypeName(0, "Test".to_string()),
+            FoliageAction::SetFoliageTypeDensity(0, 0.5),
+            FoliageAction::SetFoliageTypeMesh(0, "mesh.glb".to_string()),
+            FoliageAction::SetFoliageTypeCategory(0, FoliageCategory::Trees),
+            FoliageAction::ToggleFoliageTypeEnabled(0, true),
+            FoliageAction::ToggleCollision(0, true),
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Add"));
+        assert!(displays[1].contains("Remove"));
+        assert!(displays[2].contains("Duplicate"));
+    }
+
+    #[test]
+    fn test_foliage_action_layer_operations() {
+        let actions = vec![
+            FoliageAction::AddLayer,
+            FoliageAction::RemoveLayer(0),
+            FoliageAction::SelectLayer(1),
+            FoliageAction::SetLayerName(0, "Ground Cover".to_string()),
+            FoliageAction::ToggleLayerVisible(0, true),
+            FoliageAction::ToggleLayerLocked(0, false),
+            FoliageAction::AddTypeToLayer(2, 3),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(!display.is_empty());
+        }
+
+        let name_display = format!("{}", FoliageAction::SetLayerName(0, "Test Layer".to_string()));
+        assert!(name_display.contains("Test Layer"));
+    }
+
+    #[test]
+    fn test_foliage_action_procedural_rules() {
+        let actions = vec![
+            FoliageAction::AddProceduralRule,
+            FoliageAction::RemoveProceduralRule(0),
+            FoliageAction::SetRuleName(0, "Scatter Rule".to_string()),
+            FoliageAction::SetRuleDistribution(0, DistributionType::Random),
+            FoliageAction::ToggleProceduralRule(0, true),
+            FoliageAction::SetRuleNoiseSettings(0, 1.0, 0.5),
+            FoliageAction::ExecuteProceduralRule(0),
+            FoliageAction::ExecuteAllRules,
+        ];
+
+        let displays: Vec<_> = actions.iter().map(|a| format!("{}", a)).collect();
+        assert!(displays[0].contains("Add"));
+        assert!(displays[7].contains("Execute all"));
+    }
+
+    #[test]
+    fn test_foliage_action_wind_settings() {
+        let actions = vec![
+            FoliageAction::ToggleWindEnabled(0, true),
+            FoliageAction::SetWindStrength(0, 0.8),
+            FoliageAction::SetWindFrequency(0, 1.5),
+        ];
+
+        for action in &actions {
+            let display = format!("{}", action);
+            assert!(display.to_lowercase().contains("wind"));
+        }
+    }
+
+    #[test]
+    fn test_foliage_action_ui_toggles() {
+        let actions = vec![
+            FoliageAction::TogglePreview(true),
+            FoliageAction::ToggleCastShadow(0, true),
+            FoliageAction::ToggleRandomRotation(0, true),
+            FoliageAction::ToggleBrushMask(true),
+        ];
+
+        for action in actions {
+            let display = format!("{}", action);
+            assert!(display.contains("true") || display.contains("Toggle"), "Display should contain toggle info: {}", display);
+        }
     }
 }

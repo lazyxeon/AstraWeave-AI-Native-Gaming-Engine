@@ -236,6 +236,52 @@ impl ChartStats {
     }
 }
 
+/// External action events emitted by the charts panel.
+/// These represent high-level user actions that external systems can respond to.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ChartsAction {
+    /// Export chart data to CSV format
+    ExportCsv { data: String },
+    /// Export chart data to JSON format
+    ExportJson { data: String },
+    /// Export chart as PNG image (clipboard or file)
+    ExportPng,
+    /// Change the active chart type
+    SetChartType { chart_type: ChartType },
+    /// Change the active data source
+    SetDataSource { source: DataSource },
+    /// Clear chart history
+    ClearHistory,
+}
+
+impl std::fmt::Display for ChartsAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl ChartsAction {
+    /// Returns the name of this action
+    pub fn name(&self) -> &'static str {
+        match self {
+            ChartsAction::ExportCsv { .. } => "Export CSV",
+            ChartsAction::ExportJson { .. } => "Export JSON",
+            ChartsAction::ExportPng => "Export PNG",
+            ChartsAction::SetChartType { .. } => "Set Chart Type",
+            ChartsAction::SetDataSource { .. } => "Set Data Source",
+            ChartsAction::ClearHistory => "Clear History",
+        }
+    }
+
+    /// Returns true if this is an export action
+    pub fn is_export(&self) -> bool {
+        matches!(
+            self,
+            ChartsAction::ExportCsv { .. } | ChartsAction::ExportJson { .. } | ChartsAction::ExportPng
+        )
+    }
+}
+
 /// Panel demonstrating chart widgets with game engine metrics.
 pub struct ChartsPanel {
     start_time: Instant,
@@ -257,6 +303,9 @@ pub struct ChartsPanel {
     memory_history: Vec<(f64, f64)>, // (time, mb)
     cpu_history: Vec<(f64, f64)>,    // (time, percent)
     gpu_history: Vec<(f64, f64)>,    // (time, percent)
+    
+    // Pending actions for external event handling
+    pending_actions: Vec<ChartsAction>,
 }
 
 impl Default for ChartsPanel {
@@ -286,10 +335,38 @@ impl ChartsPanel {
             memory_history: Vec::new(),
             cpu_history: Vec::new(),
             gpu_history: Vec::new(),
+            
+            pending_actions: Vec::new(),
         };
 
         panel.initialize_data();
         panel
+    }
+
+    /// Takes all pending actions, leaving the queue empty.
+    /// External systems should call this each frame to retrieve actions.
+    pub fn take_actions(&mut self) -> Vec<ChartsAction> {
+        std::mem::take(&mut self.pending_actions)
+    }
+
+    /// Returns true if there are pending actions to process.
+    pub fn has_pending_actions(&self) -> bool {
+        !self.pending_actions.is_empty()
+    }
+
+    /// Queue an action for external handling.
+    fn queue_action(&mut self, action: ChartsAction) {
+        self.pending_actions.push(action);
+    }
+
+    /// Returns the current chart type.
+    pub fn chart_type(&self) -> ChartType {
+        self.active_chart_type
+    }
+
+    /// Returns the current data source.
+    pub fn data_source(&self) -> DataSource {
+        self.active_data_source
     }
 
     fn initialize_data(&mut self) {
@@ -591,22 +668,22 @@ impl ChartsPanel {
         });
     }
 
-    fn render_export_buttons(&self, ui: &mut Ui) {
+    fn render_export_buttons(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label("💾 Export:");
 
             if ui.button("📄 CSV").clicked() {
                 let csv = self.export_to_csv();
-                println!("📄 Exported CSV ({} bytes):\n{}", csv.len(), &csv[..csv.len().min(200)]);
+                self.pending_actions.push(ChartsAction::ExportCsv { data: csv });
             }
 
             if ui.button("📦 JSON").clicked() {
                 let json = self.export_to_json();
-                println!("📦 Exported JSON ({} bytes):\n{}", json.len(), &json[..json.len().min(200)]);
+                self.pending_actions.push(ChartsAction::ExportJson { data: json });
             }
 
             if ui.button("📷 PNG").clicked() {
-                println!("📷 PNG export would capture current chart view to clipboard/file");
+                self.pending_actions.push(ChartsAction::ExportPng);
             }
         });
     }
@@ -1468,5 +1545,151 @@ mod tests {
         set.insert(ExportFormat::Json);
         assert!(set.contains(&ExportFormat::Csv));
         assert!(!set.contains(&ExportFormat::Png));
+    }
+
+    // === ChartsAction Tests ===
+
+    #[test]
+    fn test_action_system_initial_state() {
+        let panel = ChartsPanel::new();
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_system_take_actions_empty() {
+        let mut panel = ChartsPanel::new();
+        let actions = panel.take_actions();
+        assert!(actions.is_empty());
+    }
+
+    #[test]
+    fn test_action_queue_and_take() {
+        let mut panel = ChartsPanel::new();
+        panel.queue_action(ChartsAction::ExportPng);
+        assert!(panel.has_pending_actions());
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 1);
+        assert!(matches!(actions[0], ChartsAction::ExportPng));
+        assert!(!panel.has_pending_actions());
+    }
+
+    #[test]
+    fn test_action_export_csv() {
+        let mut panel = ChartsPanel::new();
+        panel.queue_action(ChartsAction::ExportCsv {
+            data: "time,value\n0,1\n1,2".to_string(),
+        });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 1);
+        if let ChartsAction::ExportCsv { data } = &actions[0] {
+            assert!(data.contains("time,value"));
+        } else {
+            panic!("Expected ExportCsv action");
+        }
+    }
+
+    #[test]
+    fn test_action_export_json() {
+        let mut panel = ChartsPanel::new();
+        panel.queue_action(ChartsAction::ExportJson {
+            data: r#"{"frames": []}"#.to_string(),
+        });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 1);
+        if let ChartsAction::ExportJson { data } = &actions[0] {
+            assert!(data.contains("frames"));
+        } else {
+            panic!("Expected ExportJson action");
+        }
+    }
+
+    #[test]
+    fn test_action_multiple_queued() {
+        let mut panel = ChartsPanel::new();
+        panel.queue_action(ChartsAction::ExportPng);
+        panel.queue_action(ChartsAction::ClearHistory);
+        panel.queue_action(ChartsAction::SetChartType {
+            chart_type: ChartType::Bar,
+        });
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 3);
+    }
+
+    #[test]
+    fn test_charts_action_name() {
+        assert_eq!(
+            ChartsAction::ExportCsv {
+                data: String::new()
+            }
+            .name(),
+            "Export CSV"
+        );
+        assert_eq!(
+            ChartsAction::ExportJson {
+                data: String::new()
+            }
+            .name(),
+            "Export JSON"
+        );
+        assert_eq!(ChartsAction::ExportPng.name(), "Export PNG");
+        assert_eq!(
+            ChartsAction::SetChartType {
+                chart_type: ChartType::Line
+            }
+            .name(),
+            "Set Chart Type"
+        );
+        assert_eq!(
+            ChartsAction::SetDataSource {
+                source: DataSource::FrameTiming
+            }
+            .name(),
+            "Set Data Source"
+        );
+        assert_eq!(ChartsAction::ClearHistory.name(), "Clear History");
+    }
+
+    #[test]
+    fn test_charts_action_is_export() {
+        assert!(ChartsAction::ExportCsv {
+            data: String::new()
+        }
+        .is_export());
+        assert!(ChartsAction::ExportJson {
+            data: String::new()
+        }
+        .is_export());
+        assert!(ChartsAction::ExportPng.is_export());
+        assert!(!ChartsAction::ClearHistory.is_export());
+        assert!(!ChartsAction::SetChartType {
+            chart_type: ChartType::Line
+        }
+        .is_export());
+    }
+
+    #[test]
+    fn test_charts_action_display() {
+        let action = ChartsAction::ClearHistory;
+        assert_eq!(format!("{}", action), "Clear History");
+    }
+
+    #[test]
+    fn test_charts_action_partial_eq() {
+        let a1 = ChartsAction::ExportPng;
+        let a2 = ChartsAction::ExportPng;
+        let a3 = ChartsAction::ClearHistory;
+        assert_eq!(a1, a2);
+        assert_ne!(a1, a3);
+    }
+
+    #[test]
+    fn test_helper_methods() {
+        let panel = ChartsPanel::new();
+        assert_eq!(panel.chart_type(), ChartType::Line);
+        assert_eq!(panel.data_source(), DataSource::FrameTiming);
     }
 }

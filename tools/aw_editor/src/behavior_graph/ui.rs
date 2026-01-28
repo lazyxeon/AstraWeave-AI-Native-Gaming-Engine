@@ -349,7 +349,7 @@ fn count_runtime_nodes(node: &BehaviorNode) -> usize {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NodeTemplate {
     Action,
     Condition,
@@ -490,5 +490,428 @@ fn format_decorator_label(kind: &DecoratorKind) -> String {
         DecoratorKind::Failer => "Failer".into(),
         DecoratorKind::Repeat(max) => format!("Repeat ({max})"),
         DecoratorKind::Retry(max) => format!("Retry ({max})"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // === NodeTemplate Tests ===
+
+    #[test]
+    fn test_node_template_all_contains_expected_count() {
+        assert_eq!(NodeTemplate::ALL.len(), 10);
+    }
+
+    #[test]
+    fn test_node_template_all_contains_all_variants() {
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::Action));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::Condition));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::Sequence));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::Selector));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::Parallel));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::DecoratorInverter));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::DecoratorSucceeder));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::DecoratorFailer));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::DecoratorRepeat));
+        assert!(NodeTemplate::ALL.contains(&NodeTemplate::DecoratorRetry));
+    }
+
+    #[test]
+    fn test_node_template_label_action() {
+        assert_eq!(NodeTemplate::Action.label(), "Action");
+    }
+
+    #[test]
+    fn test_node_template_label_condition() {
+        assert_eq!(NodeTemplate::Condition.label(), "Condition");
+    }
+
+    #[test]
+    fn test_node_template_label_sequence() {
+        assert_eq!(NodeTemplate::Sequence.label(), "Sequence");
+    }
+
+    #[test]
+    fn test_node_template_label_selector() {
+        assert_eq!(NodeTemplate::Selector.label(), "Selector");
+    }
+
+    #[test]
+    fn test_node_template_label_parallel() {
+        assert_eq!(NodeTemplate::Parallel.label(), "Parallel");
+    }
+
+    #[test]
+    fn test_node_template_label_decorator_inverter() {
+        assert_eq!(NodeTemplate::DecoratorInverter.label(), "Decorator • Inverter");
+    }
+
+    #[test]
+    fn test_node_template_label_decorator_succeeder() {
+        assert_eq!(NodeTemplate::DecoratorSucceeder.label(), "Decorator • Succeeder");
+    }
+
+    #[test]
+    fn test_node_template_label_decorator_failer() {
+        assert_eq!(NodeTemplate::DecoratorFailer.label(), "Decorator • Failer");
+    }
+
+    #[test]
+    fn test_node_template_label_decorator_repeat() {
+        assert_eq!(NodeTemplate::DecoratorRepeat.label(), "Decorator • Repeat");
+    }
+
+    #[test]
+    fn test_node_template_label_decorator_retry() {
+        assert_eq!(NodeTemplate::DecoratorRetry.label(), "Decorator • Retry");
+    }
+
+    #[test]
+    fn test_node_template_default_label_action_with_name() {
+        let label = NodeTemplate::Action.default_label("attack", 1);
+        assert_eq!(label, "Action: attack");
+    }
+
+    #[test]
+    fn test_node_template_default_label_action_empty_name() {
+        let label = NodeTemplate::Action.default_label("", 1);
+        assert_eq!(label, "Action: action");
+    }
+
+    #[test]
+    fn test_node_template_default_label_condition_with_name() {
+        let label = NodeTemplate::Condition.default_label("is_alive", 1);
+        assert_eq!(label, "Condition: is_alive");
+    }
+
+    #[test]
+    fn test_node_template_default_label_condition_empty_name() {
+        let label = NodeTemplate::Condition.default_label("", 1);
+        assert_eq!(label, "Condition: condition");
+    }
+
+    #[test]
+    fn test_node_template_default_label_sequence() {
+        let label = NodeTemplate::Sequence.default_label("", 5);
+        assert_eq!(label, "Sequence 5");
+    }
+
+    #[test]
+    fn test_node_template_default_label_selector() {
+        let label = NodeTemplate::Selector.default_label("", 3);
+        assert_eq!(label, "Selector 3");
+    }
+
+    #[test]
+    fn test_node_template_default_label_parallel() {
+        let label = NodeTemplate::Parallel.default_label("", 2);
+        assert_eq!(label, "Parallel 2");
+    }
+
+    #[test]
+    fn test_node_template_default_label_decorator() {
+        let label = NodeTemplate::DecoratorInverter.default_label("", 7);
+        assert_eq!(label, "Decorator 7");
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_action() {
+        let kind = NodeTemplate::Action.kind_for_input("my_action");
+        match kind {
+            BehaviorGraphNodeKind::Action { name } => assert_eq!(name, "my_action"),
+            _ => panic!("Expected Action kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_condition() {
+        let kind = NodeTemplate::Condition.kind_for_input("check_health");
+        match kind {
+            BehaviorGraphNodeKind::Condition { name } => assert_eq!(name, "check_health"),
+            _ => panic!("Expected Condition kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_sequence() {
+        let kind = NodeTemplate::Sequence.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Sequence { children } => assert!(children.is_empty()),
+            _ => panic!("Expected Sequence kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_selector() {
+        let kind = NodeTemplate::Selector.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Selector { children } => assert!(children.is_empty()),
+            _ => panic!("Expected Selector kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_parallel() {
+        let kind = NodeTemplate::Parallel.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Parallel {
+                children,
+                success_threshold,
+            } => {
+                assert!(children.is_empty());
+                assert_eq!(success_threshold, 1);
+            }
+            _ => panic!("Expected Parallel kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_decorator_inverter() {
+        let kind = NodeTemplate::DecoratorInverter.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Decorator(node) => {
+                assert_eq!(node.decorator, DecoratorKind::Inverter);
+            }
+            _ => panic!("Expected Decorator kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_decorator_succeeder() {
+        let kind = NodeTemplate::DecoratorSucceeder.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Decorator(node) => {
+                assert_eq!(node.decorator, DecoratorKind::Succeeder);
+            }
+            _ => panic!("Expected Decorator kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_decorator_failer() {
+        let kind = NodeTemplate::DecoratorFailer.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Decorator(node) => {
+                assert_eq!(node.decorator, DecoratorKind::Failer);
+            }
+            _ => panic!("Expected Decorator kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_decorator_repeat() {
+        let kind = NodeTemplate::DecoratorRepeat.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Decorator(node) => {
+                assert_eq!(node.decorator, DecoratorKind::Repeat(2));
+            }
+            _ => panic!("Expected Decorator kind"),
+        }
+    }
+
+    #[test]
+    fn test_node_template_kind_for_input_decorator_retry() {
+        let kind = NodeTemplate::DecoratorRetry.kind_for_input("");
+        match kind {
+            BehaviorGraphNodeKind::Decorator(node) => {
+                assert_eq!(node.decorator, DecoratorKind::Retry(2));
+            }
+            _ => panic!("Expected Decorator kind"),
+        }
+    }
+
+    // === NodeTemplate Equality Tests ===
+
+    #[test]
+    fn test_node_template_equality() {
+        assert_eq!(NodeTemplate::Action, NodeTemplate::Action);
+        assert_ne!(NodeTemplate::Action, NodeTemplate::Condition);
+    }
+
+    #[test]
+    fn test_node_template_copy() {
+        let template = NodeTemplate::Sequence;
+        let copied = template;
+        assert_eq!(template, copied);
+    }
+
+    // === fallback_name Tests ===
+
+    #[test]
+    fn test_fallback_name_with_value() {
+        assert_eq!(fallback_name("hello", "default"), "hello");
+    }
+
+    #[test]
+    fn test_fallback_name_empty() {
+        assert_eq!(fallback_name("", "default"), "default");
+    }
+
+    #[test]
+    fn test_fallback_name_whitespace_only() {
+        assert_eq!(fallback_name("   ", "default"), "default");
+    }
+
+    #[test]
+    fn test_fallback_name_with_leading_trailing_whitespace() {
+        assert_eq!(fallback_name("  value  ", "default"), "value");
+    }
+
+    // === DecoratorKindOption Tests ===
+
+    #[test]
+    fn test_decorator_kind_option_all_count() {
+        assert_eq!(DecoratorKindOption::ALL.len(), 5);
+    }
+
+    #[test]
+    fn test_decorator_kind_option_labels() {
+        let labels: Vec<&str> = DecoratorKindOption::ALL.iter().map(|o| o.label).collect();
+        assert!(labels.contains(&"Inverter"));
+        assert!(labels.contains(&"Succeeder"));
+        assert!(labels.contains(&"Failer"));
+        assert!(labels.contains(&"Repeat"));
+        assert!(labels.contains(&"Retry"));
+    }
+
+    // === format_decorator_label Tests ===
+
+    #[test]
+    fn test_format_decorator_label_inverter() {
+        assert_eq!(format_decorator_label(&DecoratorKind::Inverter), "Inverter");
+    }
+
+    #[test]
+    fn test_format_decorator_label_succeeder() {
+        assert_eq!(format_decorator_label(&DecoratorKind::Succeeder), "Succeeder");
+    }
+
+    #[test]
+    fn test_format_decorator_label_failer() {
+        assert_eq!(format_decorator_label(&DecoratorKind::Failer), "Failer");
+    }
+
+    #[test]
+    fn test_format_decorator_label_repeat() {
+        assert_eq!(format_decorator_label(&DecoratorKind::Repeat(3)), "Repeat (3)");
+    }
+
+    #[test]
+    fn test_format_decorator_label_retry() {
+        assert_eq!(format_decorator_label(&DecoratorKind::Retry(5)), "Retry (5)");
+    }
+
+    // === count_runtime_nodes Tests ===
+
+    #[test]
+    fn test_count_runtime_nodes_action() {
+        let node = BehaviorNode::Action("test".into());
+        assert_eq!(count_runtime_nodes(&node), 1);
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_condition() {
+        let node = BehaviorNode::Condition("is_ready".into());
+        assert_eq!(count_runtime_nodes(&node), 1);
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_sequence_empty() {
+        let node = BehaviorNode::Sequence(vec![]);
+        assert_eq!(count_runtime_nodes(&node), 1);
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_sequence_with_children() {
+        let node = BehaviorNode::Sequence(vec![
+            BehaviorNode::Action("a".into()),
+            BehaviorNode::Action("b".into()),
+        ]);
+        assert_eq!(count_runtime_nodes(&node), 3); // sequence + 2 actions
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_selector_empty() {
+        let node = BehaviorNode::Selector(vec![]);
+        assert_eq!(count_runtime_nodes(&node), 1);
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_selector_with_children() {
+        let node = BehaviorNode::Selector(vec![
+            BehaviorNode::Condition("c1".into()),
+            BehaviorNode::Action("a1".into()),
+        ]);
+        assert_eq!(count_runtime_nodes(&node), 3); // selector + 2 children
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_parallel_empty() {
+        let node = BehaviorNode::Parallel(vec![], 1);
+        assert_eq!(count_runtime_nodes(&node), 1);
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_parallel_with_children() {
+        let node = BehaviorNode::Parallel(
+            vec![
+                BehaviorNode::Action("a".into()),
+                BehaviorNode::Action("b".into()),
+                BehaviorNode::Action("c".into()),
+            ],
+            2,
+        );
+        assert_eq!(count_runtime_nodes(&node), 4); // parallel + 3 actions
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_decorator() {
+        let node = BehaviorNode::Decorator(
+            astraweave_behavior::DecoratorType::Inverter,
+            Box::new(BehaviorNode::Action("test".into())),
+        );
+        assert_eq!(count_runtime_nodes(&node), 2); // decorator + child
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_nested() {
+        // Build a tree: Sequence [ Selector [ Action, Action ], Action ]
+        let node = BehaviorNode::Sequence(vec![
+            BehaviorNode::Selector(vec![
+                BehaviorNode::Action("a1".into()),
+                BehaviorNode::Action("a2".into()),
+            ]),
+            BehaviorNode::Action("a3".into()),
+        ]);
+        // sequence(1) + selector(1) + action(1) + action(1) + action(1) = 5
+        assert_eq!(count_runtime_nodes(&node), 5);
+    }
+
+    #[test]
+    fn test_count_runtime_nodes_deeply_nested() {
+        // Decorator wrapping Sequence wrapping two Actions
+        let node = BehaviorNode::Decorator(
+            astraweave_behavior::DecoratorType::Repeat(3),
+            Box::new(BehaviorNode::Sequence(vec![
+                BehaviorNode::Action("a1".into()),
+                BehaviorNode::Action("a2".into()),
+            ])),
+        );
+        // decorator(1) + sequence(1) + action(1) + action(1) = 4
+        assert_eq!(count_runtime_nodes(&node), 4);
+    }
+
+    // === BehaviorGraphEditorUi Tests ===
+
+    #[test]
+    fn test_behavior_graph_editor_ui_default() {
+        let ui = BehaviorGraphEditorUi::default();
+        assert!(ui.selected_node.is_none());
+        assert_eq!(ui.new_node_kind, NodeTemplate::Action);
+        assert_eq!(ui.new_node_label, "new_action");
+        assert_eq!(ui.path_input, "content/sample.behavior.ron");
+        assert!(ui.status_line.is_none());
     }
 }
