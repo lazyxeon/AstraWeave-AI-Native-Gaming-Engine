@@ -73,6 +73,9 @@ pub use cloth::{
     DistanceConstraint,
 };
 
+#[cfg(test)]
+mod mutation_tests;
+
 pub type BodyId = u64;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -1123,7 +1126,7 @@ impl PhysicsWorld {
         }
 
         // Check Jump
-        let can_jump = ctrl.time_since_grounded < ctrl.coyote_time_limit;
+        let can_jump = ctrl.time_since_grounded == /* ~ changed by cargo-mutants ~ */ ctrl.coyote_time_limit;
         let wants_jump = ctrl.jump_buffer_timer > 0.0;
         
         if can_jump && wants_jump && !_climb {

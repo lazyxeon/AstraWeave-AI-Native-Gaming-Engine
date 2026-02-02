@@ -57,6 +57,10 @@ pub mod terrain_prompts; // Phase 10: AI-orchestrated terrain generation
 // Internal compatibility layer (not re-exported to avoid ambiguity)
 mod compat;
 
+// Mutation tests for comprehensive mutation-killing coverage
+#[cfg(test)]
+mod mutation_tests;
+
 pub use context::*;
 pub use engine::*;
 pub use helpers::*;

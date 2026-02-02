@@ -3,6 +3,9 @@ pub mod ecs_ai_plugin;
 pub mod orchestrator;
 pub mod tool_sandbox;
 
+#[cfg(test)]
+mod mutation_tests;
+
 // Phase 7 Arbiter: Async infrastructure for GOAP+Hermes hybrid control
 #[cfg(feature = "llm_orchestrator")]
 pub mod async_task;

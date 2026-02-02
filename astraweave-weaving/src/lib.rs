@@ -29,6 +29,8 @@ pub mod ui;
 
 #[cfg(test)]
 mod integration_tests;
+#[cfg(test)]
+mod mutation_tests;
 
 pub use adjudicator::{WeaveAdjudicator, WeaveConfig};
 pub use anchor::{AbilityType, Anchor, AnchorVfxState};

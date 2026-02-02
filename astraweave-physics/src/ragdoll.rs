@@ -968,4 +968,265 @@ mod tests {
         let at_rest = ragdoll.is_at_rest(&physics, 0.1);
         assert!(at_rest);
     }
+
+    // ============================================================================
+    // JOINT LIMIT TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_hinge_joint_limits_validation() {
+        let joint = BoneJointType::Hinge {
+            axis: Vec3::X,
+            limits: Some((0.0, std::f32::consts::PI)),
+        };
+
+        if let BoneJointType::Hinge { limits, .. } = joint {
+            let (min, max) = limits.unwrap();
+            assert!(min < max);
+            assert!(min >= 0.0);
+            assert!(max <= std::f32::consts::PI);
+        }
+    }
+
+    #[test]
+    fn test_spherical_swing_limit() {
+        let joint = BoneJointType::Spherical {
+            swing_limit: Some(std::f32::consts::FRAC_PI_4),
+            twist_limit: None,
+        };
+
+        if let BoneJointType::Spherical { swing_limit, .. } = joint {
+            assert!(swing_limit.unwrap() > 0.0);
+            assert!(swing_limit.unwrap() < std::f32::consts::PI);
+        }
+    }
+
+    #[test]
+    fn test_spherical_twist_limit() {
+        let joint = BoneJointType::Spherical {
+            swing_limit: None,
+            twist_limit: Some((-0.5, 0.5)),
+        };
+
+        if let BoneJointType::Spherical { twist_limit, .. } = joint {
+            let (min, max) = twist_limit.unwrap();
+            assert!(min < max);
+        }
+    }
+
+    #[test]
+    fn test_fixed_joint() {
+        let joint = BoneJointType::Fixed;
+        assert!(matches!(joint, BoneJointType::Fixed));
+    }
+
+    #[test]
+    fn test_knee_joint_realistic_limits() {
+        // Knee can bend 0-135 degrees roughly
+        let knee = BoneJointType::Hinge {
+            axis: Vec3::X,
+            limits: Some((0.0, 2.356)), // ~135 degrees in radians
+        };
+
+        if let BoneJointType::Hinge { limits, axis } = knee {
+            let (min, max) = limits.unwrap();
+            assert!(max > 2.0); // At least 115 degrees
+            assert_eq!(axis, Vec3::X);
+        }
+    }
+
+    // ============================================================================
+    // POSE BLENDING TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_blend_state_to_physics() {
+        let state = RagdollState::BlendingToPhysics { progress_percent: 0 };
+        assert!(matches!(state, RagdollState::BlendingToPhysics { .. }));
+
+        // Progress validation
+        for progress in [0, 25, 50, 75, 100] {
+            let s = RagdollState::BlendingToPhysics { progress_percent: progress };
+            if let RagdollState::BlendingToPhysics { progress_percent } = s {
+                assert!(progress_percent <= 100);
+            }
+        }
+    }
+
+    #[test]
+    fn test_blend_state_to_animation() {
+        let state = RagdollState::BlendingToAnimation { progress_percent: 50 };
+        
+        if let RagdollState::BlendingToAnimation { progress_percent } = state {
+            assert_eq!(progress_percent, 50);
+        } else {
+            panic!("Expected BlendingToAnimation");
+        }
+    }
+
+    #[test]
+    fn test_state_transitions() {
+        // Valid state flow: Disabled -> BlendingToPhysics -> Active
+        let states = [
+            RagdollState::Disabled,
+            RagdollState::BlendingToPhysics { progress_percent: 50 },
+            RagdollState::Active,
+        ];
+
+        for (i, state) in states.iter().enumerate() {
+            match i {
+                0 => assert_eq!(*state, RagdollState::Disabled),
+                1 => assert!(matches!(*state, RagdollState::BlendingToPhysics { .. })),
+                2 => assert_eq!(*state, RagdollState::Active),
+                _ => {}
+            }
+        }
+    }
+
+    // ============================================================================
+    // FALL RECOVERY TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_ragdoll_bone_count() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut builder = RagdollPresets::humanoid(RagdollConfig::default());
+        let ragdoll = builder.build(&mut physics, Vec3::ZERO);
+
+        assert_eq!(ragdoll.bone_defs.len(), 12);
+        assert_eq!(ragdoll.bone_bodies.len(), 12);
+    }
+
+    #[test]
+    fn test_ragdoll_joint_hierarchy() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut builder = RagdollPresets::humanoid(RagdollConfig::default());
+        let ragdoll = builder.build(&mut physics, Vec3::ZERO);
+
+        // All non-root bones should have joints
+        let non_root_count = ragdoll.bone_defs.iter()
+            .filter(|b| b.parent.is_some())
+            .count();
+        
+        assert_eq!(ragdoll.bone_joints.len(), non_root_count);
+    }
+
+    // ============================================================================
+    // EDGE CASE TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_bone_def_default() {
+        let def = BoneDef::default();
+        
+        assert!(def.name.is_empty());
+        assert!(def.parent.is_none());
+        assert_eq!(def.offset, Vec3::ZERO);
+        assert_eq!(def.rotation, Quat::IDENTITY);
+        assert_eq!(def.mass, 1.0);
+    }
+
+    #[test]
+    fn test_config_joint_stiffness_range() {
+        let config = RagdollConfig::default();
+        assert!(config.joint_stiffness >= 0.0 && config.joint_stiffness <= 1.0);
+    }
+
+    #[test]
+    fn test_config_damping_values() {
+        let config = RagdollConfig::default();
+        assert!(config.linear_damping > 0.0);
+        assert!(config.angular_damping > 0.0);
+        assert!(config.joint_damping > 0.0);
+    }
+
+    #[test]
+    fn test_empty_ragdoll_builder() {
+        let builder = RagdollBuilder::new(RagdollConfig::default());
+        assert!(builder.bones.is_empty());
+    }
+
+    #[test]
+    fn test_single_bone_ragdoll() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut builder = RagdollBuilder::new(RagdollConfig::default());
+
+        builder.add_bone("only", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.5 }, 5.0);
+
+        let ragdoll = builder.build(&mut physics, Vec3::ZERO);
+
+        assert_eq!(ragdoll.bone_bodies.len(), 1);
+        assert_eq!(ragdoll.bone_joints.len(), 0); // No joints for single bone
+    }
+
+    #[test]
+    fn test_bone_shape_volume_zero_radius() {
+        let sphere = BoneShape::Sphere { radius: 0.0 };
+        assert_eq!(sphere.volume(), 0.0);
+
+        let capsule = BoneShape::Capsule { radius: 0.0, half_height: 1.0 };
+        assert_eq!(capsule.volume(), 0.0);
+
+        let box_shape = BoneShape::Box { half_extents: Vec3::ZERO };
+        assert_eq!(box_shape.volume(), 0.0);
+    }
+
+    #[test]
+    fn test_quadruped_structure() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut builder = RagdollPresets::quadruped(RagdollConfig::default());
+        let ragdoll = builder.build(&mut physics, Vec3::ZERO);
+
+        // Should have body as root
+        assert_eq!(ragdoll.root_bone, "body");
+        
+        // Should have 7 bones
+        assert_eq!(ragdoll.bone_bodies.len(), 7);
+        
+        // Should have 6 joints (all except root)
+        assert_eq!(ragdoll.bone_joints.len(), 6);
+    }
+
+    #[test]
+    fn test_ragdoll_spawn_position() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut builder = RagdollBuilder::new(RagdollConfig::default());
+        
+        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+
+        let spawn_pos = Vec3::new(10.0, 20.0, 30.0);
+        let ragdoll = builder.build(&mut physics, spawn_pos);
+        let com = ragdoll.center_of_mass(&physics);
+
+        // Center of mass should be near spawn position
+        assert!((com - spawn_pos).length() < 1.0);
+    }
+
+    #[test]
+    fn test_custom_mass_scale() {
+        let config = RagdollConfig {
+            mass_scale: 0.5,
+            ..Default::default()
+        };
+        
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone("test", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 10.0);
+
+        // Mass should be halved
+        assert!((builder.bones[0].mass - 5.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_ccd_enabled_by_default() {
+        let config = RagdollConfig::default();
+        assert!(config.enable_ccd);
+    }
+
+    #[test]
+    fn test_max_angular_velocity() {
+        let config = RagdollConfig::default();
+        assert!(config.max_angular_velocity > 0.0);
+        assert!(config.max_angular_velocity < 100.0); // Reasonable limit
+    }
 }
+

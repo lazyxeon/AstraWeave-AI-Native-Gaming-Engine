@@ -434,6 +434,8 @@ mod llm_validation_tests;
 mod script_sandbox_tests;
 #[cfg(test)]
 mod signature_tests;
+#[cfg(test)]
+mod mutation_tests;
 
 #[cfg(test)]
 mod tests {

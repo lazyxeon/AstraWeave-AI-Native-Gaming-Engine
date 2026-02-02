@@ -43,3 +43,23 @@ harness = false
 name = "physics_async"
 harness = false
 required-features = ["async-physics"]
+
+[[bench]]
+name = "cloth"
+harness = false
+
+[[bench]]
+name = "vehicle"
+harness = false
+
+[[bench]]
+name = "destruction"
+harness = false
+
+[[bench]]
+name = "ragdoll"
+harness = false
+
+[[bench]]
+name = "gravity"
+harness = false

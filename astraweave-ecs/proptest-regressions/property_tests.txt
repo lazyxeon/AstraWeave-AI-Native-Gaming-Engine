@@ -5,3 +5,5 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 751accc6ffde2549523d7a668fc75e923b44813f3a61ad90de35666f2feabd32 # shrinks to spawn_count = 2
+cc 117009d5aeec5f11e988d5750c20e467bc88fb0964be808f9d1e007939b0da7d # shrinks to spawn_count = 1, remove_count = 1
+cc cf91e1e767f4f21090c9f8eb06b8f3267178b25d8877bcb49977c27ab85baf07 # shrinks to spawn_count = 1, insert_count = 1, x = 0, y = 0

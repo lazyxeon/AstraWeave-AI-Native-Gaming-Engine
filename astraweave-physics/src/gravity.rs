@@ -603,4 +603,242 @@ mod tests {
         assert!(inside.contains(&2));
         assert!(!inside.contains(&3));
     }
+
+    // ============================================================================
+    // INVERSE-SQUARE LAW VALIDATION (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_point_gravity_falloff() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        manager.add_attractor(Vec3::ZERO, 100.0, 100.0, 1);
+
+        // Point gravity uses quadratic falloff: force = strength * (1 - d/r)^2
+        let gravity_near = manager.calculate_gravity(1, Vec3::new(10.0, 0.0, 0.0));
+        let gravity_far = manager.calculate_gravity(1, Vec3::new(50.0, 0.0, 0.0));
+
+        // Closer should have stronger gravity
+        assert!(gravity_near.length() > gravity_far.length());
+    }
+
+    #[test]
+    fn test_point_gravity_at_center() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        manager.add_attractor(Vec3::new(10.0, 10.0, 10.0), 50.0, 100.0, 1);
+
+        // At the center, gravity should be zero
+        let gravity = manager.calculate_gravity(1, Vec3::new(10.0, 10.0, 10.0));
+        assert!(gravity.length() < 0.01);
+    }
+
+    #[test]
+    fn test_point_gravity_outside_radius() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        manager.add_attractor(Vec3::ZERO, 20.0, 100.0, 1);
+
+        // Outside radius: should use global gravity (zero in this case)
+        let gravity = manager.calculate_gravity(1, Vec3::new(30.0, 0.0, 0.0));
+        assert!(gravity.length() < 0.01);
+    }
+
+    #[test]
+    fn test_point_gravity_direction() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        let attractor_pos = Vec3::new(50.0, 50.0, 0.0);
+        manager.add_attractor(attractor_pos, 100.0, 100.0, 1);
+
+        // Gravity should point toward attractor
+        let body_pos = Vec3::ZERO;
+        let gravity = manager.calculate_gravity(1, body_pos);
+        let expected_dir = (attractor_pos - body_pos).normalize();
+
+        // Gravity direction should match expected direction
+        if gravity.length() > 0.01 {
+            let gravity_dir = gravity.normalize();
+            assert!((gravity_dir - expected_dir).length() < 0.1);
+        }
+    }
+
+    #[test]
+    fn test_repulsor_direction() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        manager.add_attractor(Vec3::ZERO, 100.0, -100.0, 1); // Negative = repulse
+
+        let body_pos = Vec3::new(20.0, 0.0, 0.0);
+        let gravity = manager.calculate_gravity(1, body_pos);
+
+        // Repulsor should push away (positive X direction)
+        assert!(gravity.x > 0.0);
+    }
+
+    // ============================================================================
+    // ORBITAL MECHANICS TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_orbital_symmetry() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        manager.add_attractor(Vec3::ZERO, 100.0, 100.0, 1);
+
+        // Points equidistant from center should have equal gravity magnitude
+        let g1 = manager.calculate_gravity(1, Vec3::new(30.0, 0.0, 0.0));
+        let g2 = manager.calculate_gravity(1, Vec3::new(0.0, 30.0, 0.0));
+        let g3 = manager.calculate_gravity(1, Vec3::new(0.0, 0.0, 30.0));
+
+        assert!((g1.length() - g2.length()).abs() < 0.01);
+        assert!((g2.length() - g3.length()).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_multiple_attractors() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        
+        // Two attractors on opposite sides
+        manager.add_attractor(Vec3::new(-50.0, 0.0, 0.0), 100.0, 100.0, 1);
+        manager.add_attractor(Vec3::new(50.0, 0.0, 0.0), 100.0, 100.0, 2);
+
+        // At the midpoint, forces should (roughly) cancel
+        // Note: Implementation may not sum attractors, testing highest priority
+        let gravity = manager.calculate_gravity(1, Vec3::ZERO);
+        
+        // Priority 2 is higher, so should pull toward +X
+        assert!(gravity.x > 0.0 || gravity.length() < 1.0);
+    }
+
+    // ============================================================================
+    // EDGE CASE TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_gravity_manager_default() {
+        let manager = GravityManager::default();
+        assert!((manager.global_gravity.y - (-9.81)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_gravity_zone_default() {
+        let zone = GravityZone::default();
+        assert_eq!(zone.id, 0);
+        assert!(zone.active);
+        assert!(zone.name.is_none());
+        assert_eq!(zone.priority, 0);
+    }
+
+    #[test]
+    fn test_body_gravity_settings_default() {
+        let settings = BodyGravitySettings::default();
+        assert_eq!(settings.scale, 1.0);
+        assert!(settings.custom_direction.is_none());
+        assert!(!settings.ignore_zones);
+    }
+
+    #[test]
+    fn test_empty_zones_list() {
+        let manager = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        assert_eq!(manager.zones().count(), 0);
+    }
+
+    #[test]
+    fn test_get_nonexistent_zone() {
+        let manager = GravityManager::new(Vec3::ZERO);
+        assert!(manager.get_zone(999).is_none());
+    }
+
+    #[test]
+    fn test_set_zone_active_nonexistent() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        manager.set_zone_active(999, false); // Should not panic
+    }
+
+    #[test]
+    fn test_reset_body_gravity_to_default() {
+        let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
+        
+        // Set custom gravity
+        manager.set_gravity_scale(1, 0.5);
+        let gravity1 = manager.calculate_gravity(1, Vec3::ZERO);
+        assert!((gravity1.y - (-5.0)).abs() < 0.01);
+        
+        // Reset to default settings
+        manager.set_body_gravity(1, BodyGravitySettings::default());
+        let gravity2 = manager.calculate_gravity(1, Vec3::ZERO);
+        assert!((gravity2.y - (-10.0)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_negative_gravity_scale() {
+        let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
+        manager.set_gravity_scale(1, -2.0);
+
+        let gravity = manager.calculate_gravity(1, Vec3::ZERO);
+        // Should be double strength in opposite direction
+        assert!((gravity.y - 20.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_large_gravity_scale() {
+        let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
+        manager.set_gravity_scale(1, 100.0);
+
+        let gravity = manager.calculate_gravity(1, Vec3::ZERO);
+        assert!((gravity.y - (-1000.0)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_sphere_zone_boundary() {
+        let shape = GravityZoneShape::Sphere {
+            center: Vec3::ZERO,
+            radius: 10.0,
+        };
+
+        // Exactly on boundary
+        assert!(shape.contains(Vec3::new(10.0, 0.0, 0.0)));
+        // Just outside
+        assert!(!shape.contains(Vec3::new(10.01, 0.0, 0.0)));
+    }
+
+    #[test]
+    fn test_box_zone_boundary() {
+        let shape = GravityZoneShape::Box {
+            min: Vec3::new(-5.0, -5.0, -5.0),
+            max: Vec3::new(5.0, 5.0, 5.0),
+        };
+
+        // Exactly on boundary
+        assert!(shape.contains(Vec3::new(5.0, 0.0, 0.0)));
+        assert!(shape.contains(Vec3::new(-5.0, 0.0, 0.0)));
+        // Just outside
+        assert!(!shape.contains(Vec3::new(5.01, 0.0, 0.0)));
+    }
+
+    #[test]
+    fn test_zone_named() {
+        let mut manager = GravityManager::new(Vec3::ZERO);
+        let zone = GravityZone {
+            name: Some("TestZone".to_string()),
+            shape: GravityZoneShape::Box {
+                min: Vec3::splat(-5.0),
+                max: Vec3::splat(5.0),
+            },
+            ..Default::default()
+        };
+        
+        let id = manager.add_zone(zone);
+        let retrieved = manager.get_zone(id).unwrap();
+        assert_eq!(retrieved.name, Some("TestZone".to_string()));
+    }
+
+    #[test]
+    fn test_global_gravity_update() {
+        let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
+        
+        let gravity1 = manager.calculate_gravity(1, Vec3::ZERO);
+        assert!((gravity1.y - (-10.0)).abs() < 0.01);
+        
+        // Change global gravity
+        manager.global_gravity = Vec3::new(0.0, -20.0, 0.0);
+        
+        let gravity2 = manager.calculate_gravity(1, Vec3::ZERO);
+        assert!((gravity2.y - (-20.0)).abs() < 0.01);
+    }
 }

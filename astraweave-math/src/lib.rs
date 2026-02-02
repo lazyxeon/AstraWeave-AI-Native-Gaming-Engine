@@ -70,6 +70,9 @@ pub mod simd_movement;
 pub mod simd_quat;
 pub mod simd_vec;
 
+#[cfg(test)]
+mod mutation_tests;
+
 // Re-exports for convenience
 pub use simd_vec::{cross_simd, dot_simd, length_simd, length_squared_simd, normalize_simd};
 

@@ -44,6 +44,9 @@ pub mod vertex_compression; // Week 5 Action 19: Vertex compression // Week 5 Ac
 #[cfg(test)]
 mod animation_extra_tests; // Phase 7: Additional animation tests
 
+#[cfg(test)]
+mod mutation_tests; // Phase 10B: Comprehensive mutation-killing tests
+
 // Nanite virtualized geometry system
 #[cfg(feature = "nanite")]
 pub mod nanite_gpu_culling;

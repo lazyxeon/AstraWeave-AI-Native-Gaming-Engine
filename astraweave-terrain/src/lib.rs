@@ -75,6 +75,8 @@ use serde::{Deserialize, Serialize};
 mod chunk_tests;
 #[cfg(test)]
 mod voxel_data_tests;
+#[cfg(test)]
+mod mutation_tests; // Phase 10B: Comprehensive mutation-killing tests
 
 /// Configuration for the world generator
 #[derive(Debug, Clone, Serialize, Deserialize)]

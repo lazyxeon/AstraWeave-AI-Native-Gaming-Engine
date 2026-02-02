@@ -38,6 +38,8 @@ mod tests_dock_layout;
 mod tests_asset_pack;
 #[cfg(test)]
 mod tests_polish;
+#[cfg(test)]
+mod mutation_tests;
 
 // Re-export level document types
 pub use level_doc::{

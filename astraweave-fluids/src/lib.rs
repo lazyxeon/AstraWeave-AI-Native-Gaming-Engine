@@ -68,7 +68,40 @@ pub use building::{
     FlowDirection, WaterBuildingManager, WaterBuildingStats, WaterDispenser, WaterDrain as VolumetricDrain,
     WaterGate, WaterWheel, WheelAxis,
 };
-pub use editor::FluidEditorConfig;
+pub use editor::{
+    FluidEditorConfig, WaterBodyPreset, QualityPreset as EditorQualityPreset,
+    PhysicsConfig, ThermalConfig, RenderingConfig, LodConfig as EditorLodConfig,
+    CausticsEditorConfig, GodRaysEditorConfig, FoamEditorConfig,
+    ReflectionEditorConfig, UnderwaterEditorConfig, WaterfallEditorConfig,
+    EmitterEditorConfig, EmitterShapeType, DrainEditorConfig,
+    WaveConfig, FlowConfig,
+    // Widget metadata for UI generation
+    WidgetType, FieldMetadata, EditorMetadata,
+    // History & undo/redo support
+    ConfigHistory,
+    // Scene integration
+    FluidAABB, FluidScenePlacement,
+    // Performance profiling
+    FluidPerformanceMetrics,
+    // Accessibility
+    ColorblindPalette, AccessibilitySettings,
+    // Real-time preview hints
+    PreviewHint,
+    // Batch operations for multi-select
+    BatchOperation,
+    // Validation system
+    ValidationSeverity, ValidationIssue, ConfigValidator,
+    // Animation easing
+    EasingFunction, ConfigTransition,
+    // Debug visualization
+    DebugVisualization,
+    // Keyboard shortcuts
+    KeyboardShortcut, editor_shortcuts,
+    // Preset export/import
+    ExportedPreset,
+    // Clipboard support
+    ConfigClipboard,
+};
 pub use emitter::{EmitterShape, FluidDrain, FluidEmitter};
 pub use foam::{FoamConfig, FoamParticle, FoamSource, FoamSystem, FoamTrail, GpuFoamParticle};
 pub use gpu_volume::{GpuWaterCell, WaterSurfaceVertex, WaterVolumeGpu, WaterVolumeUniforms};
@@ -1230,7 +1263,7 @@ impl FluidSystem {
     /// Set the number of solver iterations per frame.
     /// Higher values improve simulation accuracy but cost more GPU time.
     pub fn set_iterations(&mut self, iterations: u32) {
-        self.iterations = iterations.max(1).min(16); // Clamp to reasonable range
+        self.iterations = iterations.clamp(1, 16); // Clamp to reasonable range
     }
 
     /// Get current iteration count.

@@ -1,6 +1,9 @@
 use glam::Vec3;
 use std::fmt;
 
+#[cfg(test)]
+mod mutation_tests;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
     pub a: Vec3,

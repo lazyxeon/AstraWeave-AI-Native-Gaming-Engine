@@ -330,6 +330,10 @@ pub struct SpatialHashStats {
 mod tests {
     use super::*;
 
+    // ============================================================================
+    // BASIC AABB TESTS (Original)
+    // ============================================================================
+
     #[test]
     fn test_aabb_intersection() {
         let aabb1 = AABB::from_sphere(Vec3::ZERO, 1.0);
@@ -456,4 +460,389 @@ mod tests {
         assert_eq!(stats.object_count, 3);
         assert!(stats.average_objects_per_cell >= 3.0);
     }
+
+    // ============================================================================
+    // STRESS TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_stress_1000_entities() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Insert 1000 entities spread across space
+        for i in 0..1000 {
+            let x = (i % 100) as f32 * 5.0;
+            let y = ((i / 100) % 10) as f32 * 5.0;
+            let z = (i / 1000) as f32 * 5.0;
+            grid.insert(i, AABB::from_sphere(Vec3::new(x, y, z), 1.0));
+        }
+
+        assert_eq!(grid.object_count(), 1000);
+        
+        // Verify queries return reasonable results
+        let results = grid.query(AABB::from_sphere(Vec3::new(25.0, 25.0, 0.0), 5.0));
+        assert!(!results.is_empty(), "Query should find nearby entities");
+    }
+
+    #[test]
+    fn test_stress_10000_entities() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Insert 10000 entities spread across space
+        for i in 0..10000 {
+            let x = (i % 100) as f32 * 2.0;
+            let y = ((i / 100) % 100) as f32 * 2.0;
+            let z = (i / 10000) as f32 * 2.0;
+            grid.insert(i, AABB::from_sphere(Vec3::new(x, y, z), 0.5));
+        }
+
+        assert_eq!(grid.object_count(), 10000);
+        
+        let stats = grid.stats();
+        // With good distribution, average should be reasonable
+        assert!(stats.average_objects_per_cell < 50.0, 
+            "Cell density should stay manageable: {}", stats.average_objects_per_cell);
+    }
+
+    #[test]
+    fn test_stress_clustered_entities() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // All 500 entities in same cell
+        for i in 0..500 {
+            grid.insert(i, AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 0.1));
+        }
+
+        let stats = grid.stats();
+        assert_eq!(stats.max_objects_per_cell, 500);
+        
+        // Query should find all entities
+        let results = grid.query(AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 0.5));
+        assert_eq!(results.len(), 500);
+    }
+
+    #[test]
+    fn test_stress_query_performance_linear() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Insert 1000 scattered entities
+        for i in 0..1000 {
+            let x = (i % 100) as f32 * 10.0;
+            let y = (i / 100) as f32 * 10.0;
+            grid.insert(i, AABB::from_sphere(Vec3::new(x, y, 0.0), 1.0));
+        }
+
+        // Query a small area - should NOT return all 1000
+        let results = grid.query(AABB::from_sphere(Vec3::new(50.0, 50.0, 0.0), 5.0));
+        
+        // With O(n log n), we should only get nearby entities
+        assert!(results.len() < 100, 
+            "Query should be localized, got {} results", results.len());
+    }
+
+    // ============================================================================
+    // EDGE CASES (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_edge_case_zero_size_aabb() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Zero-size AABB (point)
+        let point_aabb = AABB {
+            min: Vec3::new(5.0, 5.0, 5.0),
+            max: Vec3::new(5.0, 5.0, 5.0),
+        };
+
+        grid.insert(1, point_aabb);
+        assert_eq!(grid.object_count(), 1);
+
+        let results = grid.query(point_aabb);
+        assert!(results.contains(&1));
+    }
+
+    #[test]
+    fn test_edge_case_negative_coordinates() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Entities in negative space
+        grid.insert(1, AABB::from_sphere(Vec3::new(-50.0, -50.0, -50.0), 1.0));
+        grid.insert(2, AABB::from_sphere(Vec3::new(-5.0, -5.0, -5.0), 1.0));
+        grid.insert(3, AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 1.0));
+
+        assert_eq!(grid.object_count(), 3);
+
+        // Query in negative space
+        let results = grid.query(AABB::from_sphere(Vec3::new(-50.0, -50.0, -50.0), 5.0));
+        assert!(results.contains(&1));
+        assert!(!results.contains(&3));
+    }
+
+    #[test]
+    fn test_edge_case_cell_boundary_exact() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Entity exactly on cell boundary
+        grid.insert(1, AABB::from_sphere(Vec3::new(10.0, 10.0, 10.0), 0.5));
+
+        // Query from adjacent cell
+        let results = grid.query(AABB::from_sphere(Vec3::new(9.0, 9.0, 9.0), 2.0));
+        
+        // Should find entity spanning boundary
+        assert!(results.contains(&1), "Should find entity on boundary");
+    }
+
+    #[test]
+    fn test_edge_case_entity_spanning_boundary() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Entity spanning cell boundary
+        let boundary_aabb = AABB {
+            min: Vec3::new(8.0, 8.0, 8.0),
+            max: Vec3::new(12.0, 12.0, 12.0),
+        };
+        grid.insert(1, boundary_aabb);
+
+        // Should be in multiple cells
+        assert!(grid.cell_count() >= 8, 
+            "Boundary-spanning entity should be in multiple cells: {}", grid.cell_count());
+    }
+
+    #[test]
+    fn test_edge_case_very_large_aabb() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Massive AABB spanning 100 cells in each dimension
+        let huge_aabb = AABB {
+            min: Vec3::new(-500.0, -500.0, -500.0),
+            max: Vec3::new(500.0, 500.0, 500.0),
+        };
+        grid.insert(1, huge_aabb);
+
+        // Should span 100×100×100 = 1,000,000 cells
+        let expected_cells = 100 * 100 * 100;
+        assert!(grid.cell_count() >= expected_cells - 1, 
+            "Huge AABB should span many cells: {} vs expected {}", 
+            grid.cell_count(), expected_cells);
+    }
+
+    #[test]
+    fn test_edge_case_very_small_cell_size() {
+        let mut grid = SpatialHash::<u32>::new(0.1); // Very small cells
+
+        grid.insert(1, AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 1.0));
+
+        // 2-unit diameter sphere should span 20×20×20 = 8000 cells
+        let stats = grid.stats();
+        assert!(stats.cell_count >= 8000, 
+            "Small cells should result in many cells: {}", stats.cell_count);
+    }
+
+    #[test]
+    fn test_edge_case_very_large_cell_size() {
+        let mut grid = SpatialHash::<u32>::new(1000.0); // Very large cells
+
+        // Insert many entities - all should fit in few cells
+        for i in 0..100 {
+            let x = (i % 10) as f32 * 10.0;
+            let y = (i / 10) as f32 * 10.0;
+            grid.insert(i, AABB::from_sphere(Vec3::new(x, y, 0.0), 1.0));
+        }
+
+        // With large cells, all entities should be in very few cells
+        assert!(grid.cell_count() <= 8, 
+            "Large cells should contain entities in few cells: {}", grid.cell_count());
+    }
+
+    // ============================================================================
+    // CELL BOUNDARY TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_cell_boundary_query_finds_adjacent() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Entity just inside cell (0,0,0)
+        grid.insert(1, AABB::from_sphere(Vec3::new(9.5, 9.5, 9.5), 1.0));
+        
+        // Entity just inside cell (1,1,1)
+        grid.insert(2, AABB::from_sphere(Vec3::new(10.5, 10.5, 10.5), 1.0));
+
+        // Query spanning the boundary
+        let results = grid.query_unique(AABB {
+            min: Vec3::new(8.0, 8.0, 8.0),
+            max: Vec3::new(12.0, 12.0, 12.0),
+        });
+
+        assert!(results.contains(&1), "Should find entity 1 near boundary");
+        assert!(results.contains(&2), "Should find entity 2 near boundary");
+    }
+
+    #[test]
+    fn test_cell_boundary_entity_at_origin() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Entity exactly at origin (spans negative and positive cells)
+        grid.insert(1, AABB::from_sphere(Vec3::ZERO, 1.0));
+
+        // Check it's in multiple cells around origin
+        assert!(grid.cell_count() >= 8, 
+            "Origin entity should span 8 cells: {}", grid.cell_count());
+    }
+
+    #[test]
+    fn test_cell_boundary_negative_positive_transition() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Entity at negative cell
+        grid.insert(1, AABB::from_sphere(Vec3::new(-5.0, 0.0, 0.0), 1.0));
+        
+        // Entity at positive cell
+        grid.insert(2, AABB::from_sphere(Vec3::new(5.0, 0.0, 0.0), 1.0));
+
+        // Query spanning both cells
+        let results = grid.query_unique(AABB {
+            min: Vec3::new(-10.0, -1.0, -1.0),
+            max: Vec3::new(10.0, 1.0, 1.0),
+        });
+
+        assert!(results.contains(&1), "Should find negative cell entity");
+        assert!(results.contains(&2), "Should find positive cell entity");
+    }
+
+    // ============================================================================
+    // AABB HELPER TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_aabb_center() {
+        let aabb = AABB {
+            min: Vec3::new(0.0, 0.0, 0.0),
+            max: Vec3::new(10.0, 20.0, 30.0),
+        };
+
+        let center = aabb.center();
+        assert!((center.x - 5.0).abs() < 0.001);
+        assert!((center.y - 10.0).abs() < 0.001);
+        assert!((center.z - 15.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_aabb_half_extents() {
+        let aabb = AABB {
+            min: Vec3::new(0.0, 0.0, 0.0),
+            max: Vec3::new(10.0, 20.0, 30.0),
+        };
+
+        let half_extents = aabb.half_extents();
+        assert!((half_extents.x - 5.0).abs() < 0.001);
+        assert!((half_extents.y - 10.0).abs() < 0.001);
+        assert!((half_extents.z - 15.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_aabb_from_center_extents() {
+        let aabb = AABB::from_center_extents(Vec3::new(5.0, 10.0, 15.0), Vec3::new(5.0, 10.0, 15.0));
+
+        assert!((aabb.min.x - 0.0).abs() < 0.001);
+        assert!((aabb.min.y - 0.0).abs() < 0.001);
+        assert!((aabb.min.z - 0.0).abs() < 0.001);
+        assert!((aabb.max.x - 10.0).abs() < 0.001);
+        assert!((aabb.max.y - 20.0).abs() < 0.001);
+        assert!((aabb.max.z - 30.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_aabb_intersection_touching() {
+        // AABBs touching exactly at edge
+        let aabb1 = AABB {
+            min: Vec3::new(0.0, 0.0, 0.0),
+            max: Vec3::new(10.0, 10.0, 10.0),
+        };
+        let aabb2 = AABB {
+            min: Vec3::new(10.0, 0.0, 0.0),
+            max: Vec3::new(20.0, 10.0, 10.0),
+        };
+
+        assert!(aabb1.intersects(&aabb2), "Edge-touching AABBs should intersect");
+    }
+
+    #[test]
+    fn test_aabb_intersection_corner() {
+        // AABBs touching at corner
+        let aabb1 = AABB {
+            min: Vec3::new(0.0, 0.0, 0.0),
+            max: Vec3::new(10.0, 10.0, 10.0),
+        };
+        let aabb2 = AABB {
+            min: Vec3::new(10.0, 10.0, 10.0),
+            max: Vec3::new(20.0, 20.0, 20.0),
+        };
+
+        assert!(aabb1.intersects(&aabb2), "Corner-touching AABBs should intersect");
+    }
+
+    #[test]
+    fn test_aabb_self_intersection() {
+        let aabb = AABB::from_sphere(Vec3::ZERO, 5.0);
+        assert!(aabb.intersects(&aabb), "AABB should intersect itself");
+    }
+
+    // ============================================================================
+    // COLLISION PAIR REDUCTION VALIDATION (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_collision_pair_reduction() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Insert 100 entities scattered across 100×100 unit space
+        for i in 0..100 {
+            let x = (i % 10) as f32 * 10.0;
+            let y = (i / 10) as f32 * 10.0;
+            grid.insert(i, AABB::from_sphere(Vec3::new(x, y, 0.0), 1.0));
+        }
+
+        // Count collision pairs using grid vs naive O(n²)
+        let mut grid_pairs = 0;
+        for i in 0..100u32 {
+            let x = (i % 10) as f32 * 10.0;
+            let y = (i / 10) as f32 * 10.0;
+            let candidates = grid.query(AABB::from_sphere(Vec3::new(x, y, 0.0), 1.0));
+            grid_pairs += candidates.len();
+        }
+
+        let naive_pairs = 100 * 99; // O(n²) pairs to test
+
+        // Grid should significantly reduce pairs (at least 2× improvement)
+        assert!(grid_pairs < naive_pairs / 2, 
+            "Grid should reduce pairs: {} vs naive {}", grid_pairs, naive_pairs);
+    }
+
+    #[test]
+    fn test_empty_grid_query() {
+        let grid = SpatialHash::<u32>::new(10.0);
+        let results = grid.query(AABB::from_sphere(Vec3::ZERO, 5.0));
+        assert!(results.is_empty(), "Empty grid should return empty query");
+    }
+
+    #[test]
+    fn test_multiple_insertions_same_id() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Insert same ID multiple times
+        grid.insert(1, AABB::from_sphere(Vec3::new(0.0, 0.0, 0.0), 1.0));
+        grid.insert(1, AABB::from_sphere(Vec3::new(20.0, 20.0, 20.0), 1.0));
+
+        // Object count is 2 (we track insertions, not unique IDs)
+        assert_eq!(grid.object_count(), 2);
+
+        // Both positions should be queryable
+        let results1 = grid.query(AABB::from_sphere(Vec3::ZERO, 2.0));
+        let results2 = grid.query(AABB::from_sphere(Vec3::new(20.0, 20.0, 20.0), 2.0));
+        
+        assert!(results1.contains(&1));
+        assert!(results2.contains(&1));
+    }
 }
+

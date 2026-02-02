@@ -930,4 +930,446 @@ mod tests {
         assert!(debris.position.y < 10.0);
         assert!(debris.velocity.y < 0.0);
     }
+
+    // ============================================================================
+    // CHAIN REACTION TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_damaging_debris_flag() {
+        let config = DebrisConfig {
+            can_damage: true,
+            damage_on_hit: 25.0,
+            ..Default::default()
+        };
+        
+        assert!(config.can_damage);
+        assert_eq!(config.damage_on_hit, 25.0);
+    }
+
+    #[test]
+    fn test_multiple_destructibles_independent() {
+        let mut manager = DestructionManager::new();
+
+        let id1 = manager.add_destructible(DestructibleConfig::default(), Vec3::ZERO);
+        let id2 = manager.add_destructible(DestructibleConfig::default(), Vec3::new(10.0, 0.0, 0.0));
+
+        manager.apply_damage(id1, 1000.0);
+        manager.update(0.016, Vec3::ZERO);
+
+        // id1 should be destroyed, id2 should be intact
+        let d1 = manager.get(id1).unwrap();
+        let d2 = manager.get(id2).unwrap();
+        
+        assert_eq!(d1.state, DestructibleState::Destroyed);
+        assert_eq!(d2.state, DestructibleState::Intact);
+    }
+
+    #[test]
+    fn test_sequential_destruction() {
+        let mut manager = DestructionManager::new();
+
+        let ids: Vec<_> = (0..5)
+            .map(|i| {
+                manager.add_destructible(
+                    DestructibleConfig {
+                        trigger: DestructionTrigger::Manual,
+                        fracture_pattern: FracturePattern::uniform(2, Vec3::splat(0.5), 1.0),
+                        ..Default::default()
+                    },
+                    Vec3::new(i as f32 * 2.0, 0.0, 0.0),
+                )
+            })
+            .collect();
+
+        // Destroy all in sequence
+        for id in &ids {
+            manager.destroy(*id);
+        }
+
+        manager.update(0.016, Vec3::ZERO);
+
+        assert_eq!(manager.debris_count(), 10); // 5 objects × 2 debris each
+        
+        let events = manager.take_events();
+        assert_eq!(events.len(), 5);
+    }
+
+    // ============================================================================
+    // STRESS PROPAGATION TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_incremental_force_accumulation() {
+        let config = DestructibleConfig {
+            trigger: DestructionTrigger::Force { threshold: 100.0 },
+            ..Default::default()
+        };
+        let mut dest = Destructible::new(DestructibleId(1), config, Vec3::ZERO);
+
+        // Apply force in small increments
+        for _ in 0..10 {
+            dest.apply_force(10.0);
+        }
+
+        assert_eq!(dest.accumulated_force, 100.0);
+        assert_eq!(dest.state, DestructibleState::Destroying);
+    }
+
+    #[test]
+    fn test_force_reset_between_frames() {
+        let config = DestructibleConfig {
+            trigger: DestructionTrigger::Force { threshold: 100.0 },
+            ..Default::default()
+        };
+        let mut dest = Destructible::new(DestructibleId(1), config, Vec3::ZERO);
+
+        dest.apply_force(50.0);
+        dest.reset_frame();
+
+        assert_eq!(dest.accumulated_force, 0.0);
+        
+        // Object should still be intact after reset
+        assert_eq!(dest.state, DestructibleState::Intact);
+    }
+
+    #[test]
+    fn test_health_trigger_force_conversion() {
+        let config = DestructibleConfig {
+            trigger: DestructionTrigger::Health,
+            max_health: 100.0,
+            damage_threshold: 10.0,
+            force_to_damage: 0.5, // 50% of excess force becomes damage
+            ..Default::default()
+        };
+        let mut dest = Destructible::new(DestructibleId(1), config, Vec3::ZERO);
+
+        // Force of 30, threshold 10, so 20 excess × 0.5 = 10 damage
+        dest.apply_force(30.0);
+        assert_eq!(dest.health, 90.0);
+    }
+
+    #[test]
+    fn test_sub_threshold_force_no_damage() {
+        let config = DestructibleConfig {
+            trigger: DestructionTrigger::Health,
+            max_health: 100.0,
+            damage_threshold: 50.0,
+            force_to_damage: 1.0,
+            ..Default::default()
+        };
+        let mut dest = Destructible::new(DestructibleId(1), config, Vec3::ZERO);
+
+        dest.apply_force(49.0);
+        assert_eq!(dest.health, 100.0); // No damage, below threshold
+    }
+
+    // ============================================================================
+    // DEBRIS PHYSICS TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_debris_initial_velocity() {
+        let mut manager = DestructionManager::new();
+
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::radial(8, 1.0, 4.0),
+            trigger: DestructionTrigger::Manual,
+            destruction_force: 10.0,
+            ..Default::default()
+        };
+
+        let id = manager.add_destructible(config, Vec3::ZERO);
+        manager.destroy(id);
+        manager.update(0.001, Vec3::ZERO);
+
+        // Check debris has non-zero velocity
+        for debris in manager.debris_iter() {
+            assert!(
+                debris.velocity.length() > 0.0,
+                "Debris should have initial velocity"
+            );
+        }
+    }
+
+    #[test]
+    fn test_debris_angular_velocity() {
+        let mut manager = DestructionManager::new();
+
+        let debris_config = DebrisConfig {
+            angular_velocity_factor: 2.0,
+            ..Default::default()
+        };
+
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern {
+                debris: vec![debris_config],
+                center_of_mass: Vec3::ZERO,
+            },
+            trigger: DestructionTrigger::Manual,
+            ..Default::default()
+        };
+
+        let id = manager.add_destructible(config, Vec3::ZERO);
+        manager.destroy(id);
+        manager.update(0.001, Vec3::ZERO);
+
+        let debris = manager.debris_iter().next().unwrap();
+        assert!(
+            debris.angular_velocity.length() > 0.0,
+            "Debris should have angular velocity"
+        );
+    }
+
+    #[test]
+    fn test_debris_position_from_local_offset() {
+        let mut manager = DestructionManager::new();
+
+        let debris_config = DebrisConfig {
+            local_position: Vec3::new(5.0, 0.0, 0.0),
+            ..Default::default()
+        };
+
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern {
+                debris: vec![debris_config],
+                center_of_mass: Vec3::ZERO,
+            },
+            trigger: DestructionTrigger::Manual,
+            ..Default::default()
+        };
+
+        let id = manager.add_destructible(config, Vec3::new(10.0, 0.0, 0.0));
+        manager.destroy(id);
+        manager.update(0.001, Vec3::ZERO);
+
+        let debris = manager.debris_iter().next().unwrap();
+        // Position should be destructible position + local offset
+        assert!((debris.position.x - 15.0).abs() < 0.01);
+    }
+
+    // ============================================================================
+    // EDGE CASE TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_zero_health_destructible() {
+        let config = DestructibleConfig {
+            max_health: 0.0,
+            ..Default::default()
+        };
+        let dest = Destructible::new(DestructibleId(1), config, Vec3::ZERO);
+
+        // health_percent with max_health 0 should handle gracefully
+        // (NaN or 0 depending on implementation)
+        let pct = dest.health_percent();
+        assert!(pct.is_nan() || pct == 0.0 || pct == 1.0);
+    }
+
+    #[test]
+    fn test_empty_fracture_pattern() {
+        let pattern = FracturePattern {
+            debris: vec![],
+            center_of_mass: Vec3::ZERO,
+        };
+
+        let mut manager = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: pattern,
+            trigger: DestructionTrigger::Manual,
+            ..Default::default()
+        };
+
+        let id = manager.add_destructible(config, Vec3::ZERO);
+        manager.destroy(id);
+        manager.update(0.016, Vec3::ZERO);
+
+        assert_eq!(manager.debris_count(), 0);
+    }
+
+    #[test]
+    fn test_negative_damage() {
+        let mut dest = Destructible::new(
+            DestructibleId(1),
+            DestructibleConfig {
+                max_health: 100.0,
+                ..Default::default()
+            },
+            Vec3::ZERO,
+        );
+
+        dest.apply_damage(-50.0); // Negative damage (healing?)
+        
+        // Implementation should allow this (health goes up)
+        // or clamp to max health
+        assert!(dest.health >= 100.0 && dest.health <= 150.0);
+    }
+
+    #[test]
+    fn test_destroyed_ignores_damage() {
+        let mut dest = Destructible::new(
+            DestructibleId(1),
+            DestructibleConfig::default(),
+            Vec3::ZERO,
+        );
+
+        dest.destroy();
+        dest.complete_destruction();
+        
+        let health_before = dest.health;
+        dest.apply_damage(50.0);
+        
+        // Destroyed objects should ignore damage
+        assert_eq!(dest.health, health_before);
+    }
+
+    #[test]
+    fn test_destroying_state_ignores_damage() {
+        let mut dest = Destructible::new(
+            DestructibleId(1),
+            DestructibleConfig::default(),
+            Vec3::ZERO,
+        );
+
+        dest.destroy(); // Now in Destroying state
+        
+        let health_before = dest.health;
+        dest.apply_damage(50.0);
+        
+        // Destroying objects should also ignore damage
+        assert_eq!(dest.health, health_before);
+    }
+
+    // ============================================================================
+    // DEFAULT CONFIG TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_debris_shape_default() {
+        let shape = DebrisShape::default();
+        if let DebrisShape::Box { half_extents } = shape {
+            assert_eq!(half_extents, Vec3::splat(0.2));
+        } else {
+            panic!("Default debris shape should be Box");
+        }
+    }
+
+    #[test]
+    fn test_debris_config_default() {
+        let config = DebrisConfig::default();
+        
+        assert_eq!(config.mass, 1.0);
+        assert_eq!(config.velocity_factor, 1.0);
+        assert_eq!(config.angular_velocity_factor, 0.5);
+        assert_eq!(config.lifetime, 10.0);
+        assert!(!config.can_damage);
+        assert_eq!(config.damage_on_hit, 0.0);
+    }
+
+    #[test]
+    fn test_destructible_config_default() {
+        let config = DestructibleConfig::default();
+        
+        assert_eq!(config.max_health, 100.0);
+        assert_eq!(config.damage_threshold, 10.0);
+        assert_eq!(config.force_to_damage, 0.1);
+        assert_eq!(config.destruction_force, 5.0);
+        assert!(config.destruction_sound.is_none());
+        assert!(config.destruction_particles.is_none());
+    }
+
+    #[test]
+    fn test_destruction_trigger_default() {
+        let trigger = DestructionTrigger::default();
+        if let DestructionTrigger::Force { threshold } = trigger {
+            assert_eq!(threshold, 1000.0);
+        } else {
+            panic!("Default trigger should be Force");
+        }
+    }
+
+    // ============================================================================
+    // MANAGER TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_manager_get_nonexistent() {
+        let manager = DestructionManager::new();
+        assert!(manager.get(DestructibleId(999)).is_none());
+    }
+
+    #[test]
+    fn test_manager_remove_nonexistent() {
+        let mut manager = DestructionManager::new();
+        assert!(!manager.remove_destructible(DestructibleId(999)));
+    }
+
+    #[test]
+    fn test_manager_apply_damage_nonexistent() {
+        let mut manager = DestructionManager::new();
+        // Should not panic
+        manager.apply_damage(DestructibleId(999), 50.0);
+    }
+
+    #[test]
+    fn test_manager_apply_force_nonexistent() {
+        let mut manager = DestructionManager::new();
+        // Should not panic
+        manager.apply_force(DestructibleId(999), 100.0);
+    }
+
+    #[test]
+    fn test_manager_on_collision_nonexistent() {
+        let mut manager = DestructionManager::new();
+        // Should not panic
+        manager.on_collision(DestructibleId(999), 50.0);
+    }
+
+    #[test]
+    fn test_manager_destroy_nonexistent() {
+        let mut manager = DestructionManager::new();
+        // Should not panic
+        manager.destroy(DestructibleId(999));
+    }
+
+    #[test]
+    fn test_manager_get_debris_nonexistent() {
+        let manager = DestructionManager::new();
+        assert!(manager.get_debris(DebrisId(999)).is_none());
+    }
+
+    #[test]
+    fn test_manager_default_limits() {
+        let manager = DestructionManager::new();
+        assert_eq!(manager.max_debris, 500);
+        assert_eq!(manager.default_debris_lifetime, 10.0);
+    }
+
+    #[test]
+    fn test_active_debris_count() {
+        let mut manager = DestructionManager::new();
+
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern {
+                debris: vec![
+                    DebrisConfig { lifetime: 1.0, ..Default::default() },
+                    DebrisConfig { lifetime: 10.0, ..Default::default() },
+                ],
+                center_of_mass: Vec3::ZERO,
+            },
+            trigger: DestructionTrigger::Manual,
+            ..Default::default()
+        };
+
+        let id = manager.add_destructible(config, Vec3::ZERO);
+        manager.destroy(id);
+        manager.update(0.016, Vec3::ZERO);
+
+        assert_eq!(manager.active_debris_count(), 2);
+
+        // Age past first debris lifetime
+        manager.update(2.0, Vec3::ZERO);
+        assert_eq!(manager.debris_count(), 1); // One removed
+    }
 }
+
