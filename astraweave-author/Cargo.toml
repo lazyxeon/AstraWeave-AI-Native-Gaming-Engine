@@ -12,7 +12,7 @@ rhai = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.7"
 
 [[bench]]
 name = "author_adversarial"

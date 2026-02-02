@@ -17,13 +17,13 @@ astraweave-prompts = { path = "../astraweave-prompts" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 futures = "0.3"
-uuid = { version = "1.0", features = ["v4"] }
+uuid = { version = "1.20", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 rand.workspace = true  # Phase 10: Terrain quest triggers
 
 [dev-dependencies]
 astraweave-embeddings = { path = "../astraweave-embeddings" }
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 
 [[bench]]
 name = "quest_bench"

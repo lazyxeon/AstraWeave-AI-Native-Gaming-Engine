@@ -14,7 +14,7 @@ astraweave-observability = { path = "../astraweave-observability" }
 async-trait = "0.1"
 tokio = { workspace = true }
 futures-util = { workspace = true }
-uuid = { version = "1.0", features = ["v4"] }
+uuid = { version = "1.20", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
 dashmap = "6.1"
@@ -22,9 +22,9 @@ rand = "0.9"
 lazy_static = "1.4"
 
 # Phi-3 Medium Q4 inference (optional - requires GPU or CPU with AVX2)
-candle-core = { version = "0.8", optional = true }
-candle-nn = { version = "0.8", optional = true }
-candle-transformers = { version = "0.8", optional = true }
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+candle-transformers = { version = "0.9", optional = true }
 tokenizers = { version = "0.22", optional = true }
 hf-hub = { version = "0.4", optional = true, features = ["tokio"] }
 
@@ -32,8 +32,8 @@ hf-hub = { version = "0.4", optional = true, features = ["tokio"] }
 tokio = { workspace = true }
 criterion = { version = "0.7", features = ["async_tokio"] }
 env_logger = "0.11"
-mockito = "1.0"
-proptest = "1.5"
+mockito = "1.7"
+proptest = "1.9"
 
 [[bench]]
 name = "llm_benchmarks"
