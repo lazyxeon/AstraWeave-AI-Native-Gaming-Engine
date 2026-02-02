@@ -355,7 +355,7 @@ impl ViscosityGpuSystem {
     
     /// Compute workgroup dispatch count
     pub fn workgroup_count(&self) -> u32 {
-        (self.particle_count + VISCOSITY_WORKGROUP_SIZE - 1) / VISCOSITY_WORKGROUP_SIZE
+        self.particle_count.div_ceil(VISCOSITY_WORKGROUP_SIZE)
     }
     
     /// Generate GPU params for shader

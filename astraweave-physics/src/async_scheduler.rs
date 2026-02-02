@@ -218,6 +218,10 @@ pub mod parallel {
 mod tests {
     use super::*;
 
+    // ============================================================================
+    // PHYSICS STEP PROFILE TESTS
+    // ============================================================================
+
     #[test]
     fn profile_percentages_sum_to_100() {
         let profile = PhysicsStepProfile {
@@ -239,6 +243,139 @@ mod tests {
     }
 
     #[test]
+    fn profile_default_values() {
+        let profile = PhysicsStepProfile::default();
+        
+        assert_eq!(profile.total_duration, Duration::ZERO);
+        assert_eq!(profile.broad_phase_duration, Duration::ZERO);
+        assert_eq!(profile.narrow_phase_duration, Duration::ZERO);
+        assert_eq!(profile.integration_duration, Duration::ZERO);
+        assert_eq!(profile.active_body_count, 0);
+        assert_eq!(profile.collision_pair_count, 0);
+        assert_eq!(profile.solver_iterations, 0);
+    }
+
+    #[test]
+    fn profile_new_equals_default() {
+        let profile_new = PhysicsStepProfile::new();
+        let profile_default = PhysicsStepProfile::default();
+        
+        assert_eq!(profile_new.total_duration, profile_default.total_duration);
+        assert_eq!(profile_new.active_body_count, profile_default.active_body_count);
+    }
+
+    #[test]
+    fn profile_percentages_zero_total_duration() {
+        let profile = PhysicsStepProfile {
+            total_duration: Duration::ZERO,
+            broad_phase_duration: Duration::from_millis(4),
+            narrow_phase_duration: Duration::from_millis(3),
+            integration_duration: Duration::from_millis(3),
+            active_body_count: 100,
+            collision_pair_count: 50,
+            solver_iterations: 4,
+        };
+
+        // Should not panic on divide by zero
+        assert_eq!(profile.broad_phase_percent(), 0.0);
+        assert_eq!(profile.narrow_phase_percent(), 0.0);
+        assert_eq!(profile.integration_percent(), 0.0);
+    }
+
+    #[test]
+    fn profile_percentages_single_phase_dominance() {
+        // All time in integration
+        let profile = PhysicsStepProfile {
+            total_duration: Duration::from_millis(10),
+            broad_phase_duration: Duration::ZERO,
+            narrow_phase_duration: Duration::ZERO,
+            integration_duration: Duration::from_millis(10),
+            active_body_count: 100,
+            collision_pair_count: 50,
+            solver_iterations: 4,
+        };
+
+        assert!((profile.integration_percent() - 100.0).abs() < 0.01);
+        assert_eq!(profile.broad_phase_percent(), 0.0);
+        assert_eq!(profile.narrow_phase_percent(), 0.0);
+    }
+
+    #[test]
+    fn profile_very_small_durations() {
+        // Nanosecond precision
+        let profile = PhysicsStepProfile {
+            total_duration: Duration::from_nanos(1000),
+            broad_phase_duration: Duration::from_nanos(333),
+            narrow_phase_duration: Duration::from_nanos(333),
+            integration_duration: Duration::from_nanos(334),
+            active_body_count: 10,
+            collision_pair_count: 5,
+            solver_iterations: 1,
+        };
+
+        let total_percent = profile.broad_phase_percent()
+            + profile.narrow_phase_percent()
+            + profile.integration_percent();
+
+        // Should sum close to 100%
+        assert!((total_percent - 100.0).abs() < 1.0, 
+            "Got {}% total", total_percent);
+    }
+
+    #[test]
+    fn profile_very_large_durations() {
+        // Hours of physics simulation (stress test)
+        let profile = PhysicsStepProfile {
+            total_duration: Duration::from_secs(3600),
+            broad_phase_duration: Duration::from_secs(1200),
+            narrow_phase_duration: Duration::from_secs(1200),
+            integration_duration: Duration::from_secs(1200),
+            active_body_count: 1_000_000,
+            collision_pair_count: 5_000_000,
+            solver_iterations: 10,
+        };
+
+        let total_percent = profile.broad_phase_percent()
+            + profile.narrow_phase_percent()
+            + profile.integration_percent();
+
+        assert!((total_percent - 100.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn profile_clone() {
+        let profile = PhysicsStepProfile {
+            total_duration: Duration::from_millis(10),
+            broad_phase_duration: Duration::from_millis(4),
+            narrow_phase_duration: Duration::from_millis(3),
+            integration_duration: Duration::from_millis(3),
+            active_body_count: 100,
+            collision_pair_count: 50,
+            solver_iterations: 4,
+        };
+
+        let cloned = profile.clone();
+        assert_eq!(cloned.total_duration, profile.total_duration);
+        assert_eq!(cloned.active_body_count, profile.active_body_count);
+    }
+
+    #[test]
+    fn profile_copy() {
+        let profile = PhysicsStepProfile {
+            total_duration: Duration::from_millis(10),
+            active_body_count: 100,
+            ..Default::default()
+        };
+
+        let copied = profile; // Copy, not move
+        assert_eq!(copied.total_duration, profile.total_duration);
+    }
+
+    // ============================================================================
+    // ASYNC PHYSICS SCHEDULER TESTS (Feature-gated)
+    // ============================================================================
+
+    #[test]
     #[cfg(feature = "async-physics")]
     fn scheduler_default_creation() {
         let scheduler = AsyncPhysicsScheduler::new();
@@ -255,6 +392,131 @@ mod tests {
 
     #[test]
     #[cfg(feature = "async-physics")]
+    fn scheduler_with_zero_threads() {
+        let scheduler = AsyncPhysicsScheduler::with_threads(0);
+        assert_eq!(scheduler.thread_count, 0);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_with_many_threads() {
+        // Stress test: Unrealistic thread count
+        let scheduler = AsyncPhysicsScheduler::with_threads(1000);
+        assert_eq!(scheduler.thread_count, 1000);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_get_last_profile_initial() {
+        let scheduler = AsyncPhysicsScheduler::new();
+        let profile = scheduler.get_last_profile();
+        
+        // Should be default (no steps yet)
+        assert_eq!(profile.total_duration, Duration::ZERO);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_record_step_telemetry() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        
+        scheduler.record_step_telemetry(Duration::from_millis(16));
+        
+        let profile = scheduler.get_last_profile();
+        assert_eq!(profile.total_duration, Duration::from_millis(16));
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_record_telemetry_disabled() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        scheduler.enable_profiling = false;
+        
+        scheduler.record_step_telemetry(Duration::from_millis(16));
+        
+        // Should not record when disabled
+        let profile = scheduler.get_last_profile();
+        assert_eq!(profile.total_duration, Duration::ZERO);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_step_parallel_simple() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        
+        let profile = scheduler.step_parallel(|| {
+            std::thread::sleep(Duration::from_millis(10));
+            PhysicsStepProfile {
+                active_body_count: 42,
+                collision_pair_count: 21,
+                solver_iterations: 4,
+                ..Default::default()
+            }
+        });
+
+        assert!(profile.total_duration >= Duration::from_millis(10));
+        assert_eq!(profile.active_body_count, 42);
+        assert_eq!(profile.collision_pair_count, 21);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_step_parallel_profiling_recorded() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        
+        scheduler.step_parallel(|| {
+            PhysicsStepProfile {
+                active_body_count: 100,
+                ..Default::default()
+            }
+        });
+
+        let recorded = scheduler.get_last_profile();
+        assert_eq!(recorded.active_body_count, 100);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_step_parallel_profiling_disabled() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        scheduler.enable_profiling = false;
+        
+        scheduler.step_parallel(|| {
+            PhysicsStepProfile {
+                active_body_count: 100,
+                ..Default::default()
+            }
+        });
+
+        let recorded = scheduler.get_last_profile();
+        // Should not update when profiling disabled
+        assert_eq!(recorded.active_body_count, 0);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn scheduler_multiple_steps() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        
+        for i in 1..=5 {
+            scheduler.step_parallel(|| {
+                PhysicsStepProfile {
+                    active_body_count: i * 10,
+                    ..Default::default()
+                }
+            });
+            
+            let profile = scheduler.get_last_profile();
+            assert_eq!(profile.active_body_count, i * 10);
+        }
+    }
+
+    // ============================================================================
+    // PARALLEL HELPERS TESTS (Feature-gated)
+    // ============================================================================
+
+    #[test]
+    #[cfg(feature = "async-physics")]
     fn parallel_body_processing_deterministic() {
         use super::parallel::par_process_bodies;
 
@@ -266,4 +528,76 @@ mod tests {
             assert_eq!(val, (i as i32) * 2);
         }
     }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn parallel_body_processing_empty() {
+        use super::parallel::par_process_bodies;
+
+        let bodies: Vec<i32> = vec![];
+        let processed = par_process_bodies(&bodies, |&x| x * 2);
+
+        assert!(processed.is_empty());
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn parallel_body_processing_single() {
+        use super::parallel::par_process_bodies;
+
+        let bodies: Vec<i32> = vec![42];
+        let processed = par_process_bodies(&bodies, |&x| x * 2);
+
+        assert_eq!(processed.len(), 1);
+        assert_eq!(processed[0], 84);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn parallel_body_processing_large() {
+        use super::parallel::par_process_bodies;
+
+        let bodies: Vec<i32> = (0..10000).collect();
+        let processed = par_process_bodies(&bodies, |&x| x + 1);
+
+        assert_eq!(processed.len(), 10000);
+        
+        // Verify all processed correctly
+        for (i, &val) in processed.iter().enumerate() {
+            assert_eq!(val, (i as i32) + 1);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn parallel_collision_pairs_execution() {
+        use super::parallel::par_process_collision_pairs;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let pairs: Vec<i32> = (0..100).collect();
+        let counter = AtomicUsize::new(0);
+
+        par_process_collision_pairs(&pairs, |_| {
+            counter.fetch_add(1, Ordering::SeqCst);
+        });
+
+        assert_eq!(counter.load(Ordering::SeqCst), 100);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn parallel_collision_pairs_empty() {
+        use super::parallel::par_process_collision_pairs;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let pairs: Vec<i32> = vec![];
+        let counter = AtomicUsize::new(0);
+
+        par_process_collision_pairs(&pairs, |_| {
+            counter.fetch_add(1, Ordering::SeqCst);
+        });
+
+        assert_eq!(counter.load(Ordering::SeqCst), 0);
+    }
 }
+

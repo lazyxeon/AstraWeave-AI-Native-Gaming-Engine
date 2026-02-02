@@ -913,9 +913,9 @@ impl PcisphSystem {
         // Update simulation parameters
         self.update_params(dt);
 
-        let workgroup_count = (self.particle_count + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE;
+        let workgroup_count = self.particle_count.div_ceil(WORKGROUP_SIZE);
         let grid_total = self.grid_size.0 * self.grid_size.1 * self.grid_size.2;
-        let grid_workgroup_count = (grid_total + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE;
+        let grid_workgroup_count = grid_total.div_ceil(WORKGROUP_SIZE);
 
         // Create command encoder
         let mut encoder = self

@@ -6,6 +6,9 @@ pub mod partitioned_scene;
 pub mod streaming;
 pub mod world_partition;
 
+#[cfg(test)]
+mod mutation_tests;
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Transform {
     pub translation: Vec3,

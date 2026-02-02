@@ -490,7 +490,7 @@ impl ShiftingQualityMetrics {
         // Uniformity: inverse of coefficient of variation
         let std_dev = variance.sqrt();
         let cv = if mean_d > 1e-10 { std_dev / mean_d } else { 1.0 };
-        let uniformity = (1.0 - cv).max(0.0).min(1.0);
+        let uniformity = (1.0 - cv).clamp(0.0, 1.0);
         
         // Surface preservation: check shift magnitudes for surface particles
         let h = params.smoothing_radius;

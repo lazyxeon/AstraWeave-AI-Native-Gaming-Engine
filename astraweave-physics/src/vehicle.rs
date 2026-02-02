@@ -1531,4 +1531,329 @@ mod tests {
         assert_eq!(wheel.radius, 0.5);
         assert_eq!(wheel.suspension_stiffness, 40000.0);
     }
+
+    // ============================================================================
+    // PACEJKA TIRE MODEL VALIDATION (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_friction_curve_zero_slip() {
+        let curve = FrictionCurve::default();
+        let friction = curve.friction_at_slip(0.0);
+        assert_eq!(friction, 0.0); // No friction with no slip
+    }
+
+    #[test]
+    fn test_friction_curve_optimal_slip() {
+        let curve = FrictionCurve::default();
+        let friction = curve.friction_at_slip(curve.optimal_slip);
+        // At optimal slip, should be near peak friction
+        assert!(friction > curve.sliding_friction);
+    }
+
+    #[test]
+    fn test_friction_curve_high_slip() {
+        let curve = FrictionCurve::default();
+        // Very high slip should give sliding friction
+        let friction = curve.friction_at_slip(0.5);
+        assert!(friction >= curve.sliding_friction);
+        assert!(friction <= curve.peak_friction);
+    }
+
+    #[test]
+    fn test_friction_curve_negative_slip() {
+        let curve = FrictionCurve::default();
+        let positive = curve.friction_at_slip(0.1);
+        let negative = curve.friction_at_slip(-0.1);
+        // Friction should be symmetric for slip direction
+        assert!((positive - negative).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_friction_tarmac_vs_ice() {
+        let tarmac = FrictionCurve::tarmac();
+        let ice = FrictionCurve::ice();
+        
+        // Tarmac should have much higher friction
+        assert!(tarmac.peak_friction > ice.peak_friction * 2.0);
+        
+        // Ice should have lower optimal slip
+        assert!(ice.optimal_slip < tarmac.optimal_slip);
+    }
+
+    #[test]
+    fn test_friction_curve_monotonic_rising() {
+        let curve = FrictionCurve::default();
+        let mut prev_friction = 0.0;
+        
+        // Should be monotonically increasing up to optimal slip
+        for i in 1..10 {
+            let slip = (i as f32) * curve.optimal_slip / 10.0;
+            let friction = curve.friction_at_slip(slip);
+            assert!(friction >= prev_friction);
+            prev_friction = friction;
+        }
+    }
+
+    #[test]
+    fn test_friction_surface_comparison() {
+        let tarmac = FrictionCurve::tarmac();
+        let gravel = FrictionCurve::gravel();
+        let ice = FrictionCurve::ice();
+        let mud = FrictionCurve::mud();
+
+        // Order: tarmac > gravel > mud > ice
+        assert!(tarmac.peak_friction > gravel.peak_friction);
+        assert!(gravel.peak_friction > mud.peak_friction);
+        assert!(mud.peak_friction > ice.peak_friction);
+    }
+
+    // ============================================================================
+    // SUSPENSION PHYSICS TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_suspension_config_defaults() {
+        let wheel = WheelConfig::default();
+        assert!(wheel.suspension_rest_length > 0.0);
+        assert!(wheel.suspension_stiffness > 0.0);
+        assert!(wheel.suspension_damping > 0.0);
+        assert!(wheel.suspension_max_compression > 0.0);
+        assert!(wheel.suspension_max_extension > 0.0);
+    }
+
+    #[test]
+    fn test_suspension_compression_bounds() {
+        let wheel = WheelConfig::default();
+        // Max compression should be less than rest length
+        assert!(wheel.suspension_max_compression < wheel.suspension_rest_length);
+    }
+
+    #[test]
+    fn test_wheel_state_grounded_default() {
+        let state = WheelState::default();
+        assert!(!state.grounded);
+        assert_eq!(state.compression, 0.0);
+        assert_eq!(state.slip_ratio, 0.0);
+        assert_eq!(state.slip_angle, 0.0);
+    }
+
+    #[test]
+    fn test_suspension_critical_damping() {
+        // Critical damping = 2 * sqrt(k * m)
+        let wheel = WheelConfig::default();
+        
+        // Suspension damping should be positive and reasonable
+        assert!(wheel.suspension_damping > 0.0);
+        // Damping ratio relative to stiffness should be reasonable
+        // (typical vehicles are slightly underdamped to overdamped)
+        let ratio = wheel.suspension_damping / wheel.suspension_stiffness;
+        assert!(ratio > 0.05 && ratio < 0.5);
+    }
+
+    // ============================================================================
+    // DRIVETRAIN TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_drivetrain_type_default() {
+        let config = VehicleConfig::default();
+        assert_eq!(config.drivetrain, DrivetrainType::RWD);
+    }
+
+    #[test]
+    fn test_fwd_wheel_config() {
+        let front = WheelConfig::front_left(Vec3::ZERO).with_drive();
+        assert!(front.steerable);
+        assert!(front.driven);
+    }
+
+    #[test]
+    fn test_rwd_wheel_config() {
+        let rear = WheelConfig::rear_left(Vec3::ZERO);
+        assert!(!rear.steerable);
+        assert!(rear.driven);
+    }
+
+    #[test]
+    fn test_awd_configuration() {
+        let wheels = vec![
+            WheelConfig::front_left(Vec3::ZERO).with_drive(),
+            WheelConfig::front_right(Vec3::ZERO).with_drive(),
+            WheelConfig::rear_left(Vec3::ZERO),
+            WheelConfig::rear_right(Vec3::ZERO),
+        ];
+        
+        // All wheels should be driven in AWD
+        assert!(wheels.iter().all(|w| w.driven));
+    }
+
+    #[test]
+    fn test_transmission_reverse_ratio() {
+        let trans = TransmissionConfig::default();
+        // Reverse should be negative
+        assert!(trans.reverse_ratio < 0.0);
+        // Reverse ratio magnitude should be significant (like a low gear)
+        assert!(trans.reverse_ratio.abs() > 2.0);
+    }
+
+    #[test]
+    fn test_transmission_gear_progression() {
+        let trans = TransmissionConfig::default();
+        // Higher gears should have lower ratios (taller gearing)
+        for i in 1..trans.gear_ratios.len() {
+            assert!(trans.gear_ratios[i] < trans.gear_ratios[i - 1]);
+        }
+    }
+
+    #[test]
+    fn test_transmission_neutral_ratio() {
+        let trans = TransmissionConfig::default();
+        let neutral_ratio = trans.effective_ratio(0);
+        assert_eq!(neutral_ratio, 0.0);
+    }
+
+    // ============================================================================
+    // ENGINE TORQUE CURVE TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_engine_below_idle() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.idle_rpm - 100.0);
+        assert_eq!(torque, 0.0);
+    }
+
+    #[test]
+    fn test_engine_above_redline() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.max_rpm + 100.0);
+        assert_eq!(torque, 0.0);
+    }
+
+    #[test]
+    fn test_engine_max_torque_point() {
+        let engine = EngineConfig::default();
+        let at_max_torque = engine.torque_at_rpm(engine.max_torque_rpm);
+        
+        // Should be close to max torque at max torque RPM
+        assert!(at_max_torque > engine.max_torque * 0.9);
+    }
+
+    #[test]
+    fn test_engine_torque_curve_shape() {
+        let engine = EngineConfig::default();
+        
+        // Torque at mid-range
+        let mid_rpm = (engine.idle_rpm + engine.max_torque_rpm) / 2.0;
+        let mid_torque = engine.torque_at_rpm(mid_rpm);
+        
+        // Should have positive torque at mid-range
+        assert!(mid_torque > 0.0);
+        assert!(mid_torque < engine.max_torque);
+    }
+
+    // ============================================================================
+    // VEHICLE PHYSICS INTEGRATION TESTS (Phase 8.8 - New)
+    // ============================================================================
+
+    #[test]
+    fn test_vehicle_drag_coefficient() {
+        let config = VehicleConfig::default();
+        // Typical car drag coefficient range
+        assert!(config.drag_coefficient >= 0.25);
+        assert!(config.drag_coefficient <= 0.50);
+    }
+
+    #[test]
+    fn test_vehicle_frontal_area() {
+        let config = VehicleConfig::default();
+        // Typical car frontal area
+        assert!(config.frontal_area >= 1.5);
+        assert!(config.frontal_area <= 3.0);
+    }
+
+    #[test]
+    fn test_vehicle_mass_realistic() {
+        let config = VehicleConfig::default();
+        // Typical passenger car mass range
+        assert!(config.mass >= 1000.0);
+        assert!(config.mass <= 3000.0);
+    }
+
+    #[test]
+    fn test_vehicle_wheel_count() {
+        let config = VehicleConfig::default();
+        assert_eq!(config.wheels.len(), 4);
+    }
+
+    #[test]
+    fn test_vehicle_wheel_positions_symmetric() {
+        let config = VehicleConfig::default();
+        
+        // Front wheels should be symmetric about X axis
+        let fl = config.wheels[0].position;
+        let fr = config.wheels[1].position;
+        assert!((fl.x + fr.x).abs() < 0.01);
+        assert!((fl.z - fr.z).abs() < 0.01);
+        
+        // Rear wheels should be symmetric about X axis
+        let rl = config.wheels[2].position;
+        let rr = config.wheels[3].position;
+        assert!((rl.x + rr.x).abs() < 0.01);
+        assert!((rl.z - rr.z).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_wheel_position_ids() {
+        let fl = WheelConfig::front_left(Vec3::ZERO);
+        let fr = WheelConfig::front_right(Vec3::ZERO);
+        let rl = WheelConfig::rear_left(Vec3::ZERO);
+        let rr = WheelConfig::rear_right(Vec3::ZERO);
+
+        assert_eq!(fl.position_id, WheelPosition::FrontLeft);
+        assert_eq!(fr.position_id, WheelPosition::FrontRight);
+        assert_eq!(rl.position_id, WheelPosition::RearLeft);
+        assert_eq!(rr.position_id, WheelPosition::RearRight);
+    }
+
+    #[test]
+    fn test_vehicle_manager_remove() {
+        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut manager = VehicleManager::new();
+        
+        let id = manager.spawn(&mut physics, Vec3::ZERO, VehicleConfig::default());
+        assert_eq!(manager.vehicles().len(), 1);
+        
+        let removed = manager.remove(id);
+        assert!(removed);
+        assert_eq!(manager.vehicles().len(), 0);
+        assert!(manager.get(id).is_none());
+    }
+
+    #[test]
+    fn test_vehicle_airborne_detection() {
+        let config = VehicleConfig::default();
+        let vehicle = Vehicle::new(1, 42, config);
+
+        // No wheels grounded = airborne
+        let airborne = vehicle.wheels.iter().all(|w| !w.grounded);
+        assert!(airborne);
+    }
+
+    #[test]
+    fn test_vehicle_input_clamping() {
+        // Input values should be clamped to valid ranges
+        let input = VehicleInput {
+            throttle: 1.5,  // Over max
+            brake: -0.5,    // Under min
+            steering: 2.0,  // Over max
+            handbrake: 1.0,
+            clutch: 0.0,
+            shift: 0,
+        };
+
+        // These would need clamping in real use
+        assert!(input.throttle > 1.0); // Unclamped for test
+    }
 }

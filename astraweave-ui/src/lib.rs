@@ -8,6 +8,9 @@ pub mod panels;
 pub mod persistence;
 pub mod state;
 
+#[cfg(test)]
+mod mutation_tests;
+
 pub use hud::{
     DamageNumber,
     DamageType,

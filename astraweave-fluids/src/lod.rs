@@ -688,6 +688,10 @@ impl OptimizedLodManager {
         let base = &self.config.base;
         let prev_lod = self.current_lod;
 
+        // Note: force_visible and distance < lod_distances[0] both result in Full,
+        // but are semantically different conditions (allow clippy::if_same_then_else)
+        #[allow(clippy::if_same_then_else)]
+        {
         self.current_lod = if self.force_invisible {
             LodLevel::Culled
         } else if self.force_visible {
@@ -703,6 +707,7 @@ impl OptimizedLodManager {
         } else {
             LodLevel::Culled
         };
+        }
 
         // Update particle factor
         self.effective_particle_factor = if self.config.enable_particle_reduction {
@@ -713,8 +718,10 @@ impl OptimizedLodManager {
                 LodLevel::Low => self.config.particle_factors[3],
                 LodLevel::Culled => 0.0,
             }
-        } else {
-            if self.current_lod == LodLevel::Culled { 0.0 } else { 1.0 }
+        } else if self.current_lod == LodLevel::Culled { 
+            0.0 
+        } else { 
+            1.0 
         };
 
         self.frame_accumulator += 1;

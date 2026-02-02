@@ -15,6 +15,9 @@ pub mod util;
 pub mod validation;
 pub mod world;
 
+#[cfg(test)]
+mod mutation_tests;
+
 pub use perception::*;
 pub use schema::*;
 pub use sim::*;

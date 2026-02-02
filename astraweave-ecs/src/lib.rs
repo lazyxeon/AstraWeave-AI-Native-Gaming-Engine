@@ -67,6 +67,9 @@ mod determinism_tests;
 #[cfg(test)]
 mod property_tests;
 
+#[cfg(test)]
+mod mutation_tests;
+
 use std::any::TypeId;
 use std::collections::HashMap;
 

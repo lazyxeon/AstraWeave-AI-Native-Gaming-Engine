@@ -41,3 +41,6 @@ pub use weave_telemetry::*;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod mutation_tests;

@@ -1,0 +1,1425 @@
+astraweave-render/src/camera.rs:15:9: replace Camera::view_matrix -> Mat4 with Default::default()
+astraweave-render/src/camera.rs:17:46: delete - in Camera::view_matrix
+astraweave-render/src/camera.rs:21:9: replace Camera::proj_matrix -> Mat4 with Default::default()
+astraweave-render/src/camera.rs:25:9: replace Camera::vp -> Mat4 with Default::default()
+astraweave-render/src/camera.rs:25:28: replace * with + in Camera::vp
+astraweave-render/src/camera.rs:34:22: replace * with / in Camera::dir
+astraweave-render/src/camera.rs:107:9: replace CameraController::is_dragging -> bool with true
+astraweave-render/src/camera.rs:114:13: delete match arm winit::keyboard::KeyCode::KeyS in CameraController::process_keyboard
+astraweave-render/src/camera.rs:115:13: delete match arm winit::keyboard::KeyCode::KeyA in CameraController::process_keyboard
+astraweave-render/src/camera.rs:116:13: delete match arm winit::keyboard::KeyCode::KeyD in CameraController::process_keyboard
+astraweave-render/src/camera.rs:118:13: delete match arm winit::keyboard::KeyCode::Space | winit::keyboard::KeyCode::KeyE in CameraController::process_keyboard
+astraweave-render/src/camera.rs:120:13: delete match arm winit::keyboard::KeyCode::KeyQ | winit::keyboard::KeyCode::KeyC in CameraController::process_keyboard
+astraweave-render/src/camera.rs:125:13: delete match arm winit::keyboard::KeyCode::ControlLeft | winit::keyboard::KeyCode::ControlRight in CameraController::process_keyboard
+astraweave-render/src/camera.rs:122:13: delete match arm winit::keyboard::KeyCode::ShiftLeft | winit::keyboard::KeyCode::ShiftRight in CameraController::process_keyboard
+astraweave-render/src/camera.rs:142:9: replace CameraController::process_mouse_move with ()
+astraweave-render/src/camera.rs:135:16: delete ! in CameraController::process_mouse_button
+astraweave-render/src/camera.rs:148:42: replace * with / in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:148:42: replace * with + in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:148:34: replace - with / in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:148:34: replace - with + in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:155:33: replace -= with += in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:155:33: replace -= with /= in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:156:56: replace - with + in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:156:56: replace - with / in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:156:73: delete - in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:165:52: replace && with || in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:165:30: replace < with == in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:165:30: replace < with > in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:165:30: replace < with <= in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:165:69: replace < with == in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:165:69: replace < with > in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:165:69: replace < with <= in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:168:38: replace * with + in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:168:38: replace * with / in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:169:16: delete ! in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:182:9: replace CameraController::begin_frame with ()
+astraweave-render/src/camera.rs:189:39: replace * with + in CameraController::process_scroll
+astraweave-render/src/camera.rs:189:39: replace * with / in CameraController::process_scroll
+astraweave-render/src/camera.rs:194:60: replace - with / in CameraController::process_scroll
+astraweave-render/src/camera.rs:194:68: replace * with + in CameraController::process_scroll
+astraweave-render/src/camera.rs:194:68: replace * with / in CameraController::process_scroll
+astraweave-render/src/camera.rs:206:64: replace * with / in CameraController::toggle_mode
+astraweave-render/src/camera.rs:206:64: replace * with + in CameraController::toggle_mode
+astraweave-render/src/camera.rs:216:9: replace CameraController::set_orbit_target with ()
+astraweave-render/src/camera.rs:224:45: replace - with / in CameraController::update_orbit_position
+astraweave-render/src/camera.rs:224:45: replace - with + in CameraController::update_orbit_position
+astraweave-render/src/camera.rs:224:51: replace * with / in CameraController::update_orbit_position
+astraweave-render/src/camera.rs:236:21: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:236:21: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:236:43: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:236:43: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:237:66: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:237:52: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:238:75: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:238:59: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:243:23: replace *= with += in CameraController::update_camera
+astraweave-render/src/camera.rs:243:23: replace *= with /= in CameraController::update_camera
+astraweave-render/src/camera.rs:246:23: replace *= with += in CameraController::update_camera
+astraweave-render/src/camera.rs:246:23: replace *= with /= in CameraController::update_camera
+astraweave-render/src/camera.rs:253:39: delete - in CameraController::update_camera
+astraweave-render/src/camera.rs:254:26: delete - in CameraController::update_camera
+astraweave-render/src/camera.rs:257:21: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:257:28: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:257:28: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:257:40: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:258:21: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:258:30: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:258:44: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:259:21: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:259:27: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:259:40: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:260:41: replace > with >= in CameraController::update_camera
+astraweave-render/src/camera.rs:261:37: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:261:68: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:261:68: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:261:56: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:261:56: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:268:39: delete - in CameraController::update_camera
+astraweave-render/src/camera.rs:270:26: delete - in CameraController::update_camera
+astraweave-render/src/camera.rs:273:39: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:273:39: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:273:51: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:274:28: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:274:37: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:274:51: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:275:28: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:275:47: replace - with + in CameraController::update_camera
+astraweave-render/src/camera.rs:277:48: replace > with >= in CameraController::update_camera
+astraweave-render/src/camera.rs:278:39: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:278:65: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:278:77: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:278:65: replace * with / in CameraController::update_camera
+astraweave-render/src/clustered.rs:20:5: replace clamp_u32 -> u32 with 0
+astraweave-render/src/clustered.rs:43:38: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:43:38: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:44:18: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:44:18: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:44:25: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:44:25: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:45:17: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:45:17: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:46:32: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:46:32: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:47:33: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:47:33: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:54:34: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:54:34: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:55:25: replace > with == in bin_lights_cpu
+astraweave-render/src/clustered.rs:55:25: replace > with >= in bin_lights_cpu
+astraweave-render/src/clustered.rs:55:14: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:55:14: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:59:35: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:59:35: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:59:30: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:59:30: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:60:35: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:60:35: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:38: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:25: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:25: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:63:38: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:63:25: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:41: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:41: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:36: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:36: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:31: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:31: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:57: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:57: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:41: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:36: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:31: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:31: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:58: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:58: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:67:26: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:67:26: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:68:26: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:69:26: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:69:26: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:70:26: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:71:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:71:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:72:36: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:72:36: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:72:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:72:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:73:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:74:36: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:73:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:74:36: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:74:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:74:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:76:23: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:77:23: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:51: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:27: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:42: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:42: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:83:39: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:83:39: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:51: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:35: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:35: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:27: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:27: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:42: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:86:39: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:86:39: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:108:34: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:108:34: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:109:25: replace > with == in bin_lights_cpu
+astraweave-render/src/clustered.rs:109:25: replace > with < in bin_lights_cpu
+astraweave-render/src/clustered.rs:109:25: replace > with >= in bin_lights_cpu
+astraweave-render/src/clustered.rs:109:14: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:109:14: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:112:35: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:113:35: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:114:38: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:114:31: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:114:31: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:115:38: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:115:31: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:115:31: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:115:25: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:116:41: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:116:36: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:117:41: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:117:36: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:118:26: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:118:26: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:119:26: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:120:26: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:120:26: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:121:26: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:122:36: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:122:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:122:36: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:122:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:123:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:123:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:124:36: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:124:36: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:124:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:124:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:125:70: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:126:23: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:125:70: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:127:23: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:126:23: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:128:17: replace >= with < in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:51: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:51: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:35: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:35: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:27: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:27: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:42: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:131:42: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:133:39: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:133:39: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:134:51: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:134:27: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:134:42: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:134:42: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:136:39: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:136:39: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:143:33: replace += with *= in bin_lights_cpu
+astraweave-render/src/clustered_forward.rs:341:9: replace ClusteredForwardRenderer::update_lights with ()
+astraweave-render/src/clustered_forward.rs:353:9: replace ClusteredForwardRenderer::build_clusters with ()
+astraweave-render/src/clustered_forward.rs:353:12: delete ! in ClusteredForwardRenderer::build_clusters
+astraweave-render/src/clustered_forward.rs:374:9: replace ClusteredForwardRenderer::build_clusters_with_encoder with ()
+astraweave-render/src/clustered_forward.rs:374:12: delete ! in ClusteredForwardRenderer::build_clusters_with_encoder
+astraweave-render/src/clustered_forward.rs:379:41: delete ! in ClusteredForwardRenderer::build_clusters_with_encoder
+astraweave-render/src/clustered_forward.rs:379:38: replace && with || in ClusteredForwardRenderer::build_clusters_with_encoder
+astraweave-render/src/clustered_forward.rs:405:60: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:405:60: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:401:9: replace ClusteredForwardRenderer::build_clusters_cpu with ()
+astraweave-render/src/clustered_forward.rs:405:36: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:405:36: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:414:81: replace - with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:414:81: replace - with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:414:75: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:414:75: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:414:43: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:414:43: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:87: replace - with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:87: replace - with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:81: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:81: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:49: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:49: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:37: replace + with - in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:415:37: replace + with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:416:81: replace - with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:416:81: replace - with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:416:75: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:416:75: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:416:43: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:416:43: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:87: replace - with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:87: replace - with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:81: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:81: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:49: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:49: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:37: replace + with - in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:417:37: replace + with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:422:38: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:422:38: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:422:45: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:422:45: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:422:67: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:422:67: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:30: replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:30: replace * with / in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:37: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:65: replace / with % in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:37: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:53: replace + with - in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:65: replace / with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:437:27: replace && with || in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:424:53: replace + with * in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:438:29: replace < with > in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:438:29: replace < with == in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:438:29: replace < with <= in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:441:68: replace += with -= in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:441:68: replace += with *= in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:454:12: delete ! in ClusteredForwardRenderer::build_clusters_cpu
+astraweave-render/src/clustered_forward.rs:475:9: replace ClusteredForwardRenderer::build_clusters_gpu -> Result<(), Box<dyn std::error::Error>> with Ok(())
+astraweave-render/src/clustered_forward.rs:481:81: replace - with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:481:75: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:481:81: replace - with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:481:75: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:481:43: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:481:43: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:87: replace - with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:87: replace - with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:81: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:81: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:49: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:49: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:37: replace + with - in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:482:37: replace + with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:483:81: replace - with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:483:81: replace - with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:483:75: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:483:75: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:87: replace - with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:483:43: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:87: replace - with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:81: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:49: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:81: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:37: replace + with - in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:49: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:484:37: replace + with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:488:38: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:488:45: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:488:38: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:488:67: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:488:45: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:30: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:488:67: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:30: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:37: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:37: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:65: replace / with % in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:65: replace / with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:53: replace + with - in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:490:53: replace + with * in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:524:76: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:524:76: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:524:52: replace * with + in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:524:52: replace * with / in ClusteredForwardRenderer::build_clusters_gpu
+astraweave-render/src/clustered_forward.rs:566:9: replace ClusteredForwardRenderer::cluster_index -> usize with 0
+astraweave-render/src/clustered_forward.rs:566:40: replace + with - in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:9: replace ClusteredForwardRenderer::cluster_index -> usize with 1
+astraweave-render/src/clustered_forward.rs:566:40: replace + with * in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:12: replace + with - in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:12: replace + with * in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:16: replace * with + in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:16: replace * with / in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:68: replace * with + in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:68: replace * with / in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:44: replace * with + in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:566:44: replace * with / in ClusteredForwardRenderer::cluster_index
+astraweave-render/src/clustered_forward.rs:577:9: replace ClusteredForwardRenderer::light_intersects_cluster -> bool with true
+astraweave-render/src/clustered_forward.rs:577:9: replace ClusteredForwardRenderer::light_intersects_cluster -> bool with false
+astraweave-render/src/clustered_forward.rs:596:43: replace - with + in ClusteredForwardRenderer::light_intersects_cluster
+astraweave-render/src/clustered_forward.rs:596:43: replace - with / in ClusteredForwardRenderer::light_intersects_cluster
+astraweave-render/src/clustered_forward.rs:597:21: replace <= with > in ClusteredForwardRenderer::light_intersects_cluster
+astraweave-render/src/clustered_forward.rs:597:31: replace * with + in ClusteredForwardRenderer::light_intersects_cluster
+astraweave-render/src/clustered_forward.rs:597:31: replace * with / in ClusteredForwardRenderer::light_intersects_cluster
+astraweave-render/src/clustered_forward.rs:617:9: replace ClusteredForwardRenderer::light_count -> usize with 0
+astraweave-render/src/clustered_forward.rs:612:9: replace ClusteredForwardRenderer::config -> &ClusterConfig with Box::leak(Box::new(Default::default()))
+astraweave-render/src/clustered_megalights.rs:347:9: replace MegaLightsRenderer::update_bind_groups with ()
+astraweave-render/src/clustered_forward.rs:617:9: replace ClusteredForwardRenderer::light_count -> usize with 1
+astraweave-render/src/clustered_megalights.rs:428:9: replace MegaLightsRenderer::dispatch -> Result<()> with Ok(())
+astraweave-render/src/clustered_megalights.rs:448:73: replace * with + in MegaLightsRenderer::dispatch
+astraweave-render/src/clustered_megalights.rs:448:73: replace * with / in MegaLightsRenderer::dispatch
+astraweave-render/src/clustered_megalights.rs:448:51: replace * with + in MegaLightsRenderer::dispatch
+astraweave-render/src/clustered_megalights.rs:448:51: replace * with / in MegaLightsRenderer::dispatch
+astraweave-render/src/debug_quad.rs:32:5: replace create_screen_quad -> Vec<DebugQuadVertex> with vec![]
+astraweave-render/src/depth.rs:22:59: replace | with ^ in Depth::create
+astraweave-render/src/environment.rs:50:9: replace TimeOfDay::update with ()
+astraweave-render/src/environment.rs:51:54: replace / with % in TimeOfDay::update
+astraweave-render/src/environment.rs:51:54: replace / with * in TimeOfDay::update
+astraweave-render/src/environment.rs:51:35: replace * with / in TimeOfDay::update
+astraweave-render/src/environment.rs:51:35: replace * with + in TimeOfDay::update
+astraweave-render/src/environment.rs:52:62: replace % with / in TimeOfDay::update
+astraweave-render/src/environment.rs:52:62: replace % with + in TimeOfDay::update
+astraweave-render/src/environment.rs:52:48: replace + with - in TimeOfDay::update
+astraweave-render/src/environment.rs:52:48: replace + with * in TimeOfDay::update
+astraweave-render/src/environment.rs:61:77: replace / with % in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:61:77: replace / with * in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:61:54: replace * with + in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:61:54: replace * with / in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:61:46: replace - with + in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:61:46: replace - with / in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:67:29: replace < with == in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:67:29: replace < with <= in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:73:35: replace * with + in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:73:35: replace * with / in TimeOfDay::get_sun_position
+astraweave-render/src/environment.rs:89:22: replace > with >= in TimeOfDay::get_light_direction
+astraweave-render/src/environment.rs:92:13: delete - in TimeOfDay::get_light_direction
+astraweave-render/src/environment.rs:100:23: replace > with == in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:100:23: replace > with < in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:100:23: replace > with >= in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:102:48: replace / with % in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:102:48: replace / with * in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:102:41: replace - with / in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:102:41: replace - with + in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:103:34: replace * with / in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:103:34: replace * with + in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:103:41: replace + with - in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:103:47: replace * with + in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:103:47: replace * with / in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:104:30: replace > with == in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:104:30: replace > with < in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:104:30: replace > with >= in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:106:48: replace / with % in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:104:32: delete - in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:106:48: replace / with * in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:106:41: replace + with * in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:107:33: replace * with + in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:106:41: replace + with - in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:107:33: replace * with / in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:107:40: replace + with - in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:107:40: replace + with * in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:107:46: replace * with + in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:107:46: replace * with / in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:110:33: replace * with + in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:110:33: replace * with / in TimeOfDay::get_light_color
+astraweave-render/src/environment.rs:116:9: replace TimeOfDay::get_ambient_color -> Vec3 with Default::default()
+astraweave-render/src/environment.rs:118:23: replace > with < in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:118:23: replace > with == in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:118:23: replace > with >= in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:121:33: replace * with + in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:121:33: replace * with / in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:121:40: replace + with - in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:121:40: replace + with * in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:121:46: replace * with + in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:121:46: replace * with / in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:124:34: replace * with + in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:124:34: replace * with / in TimeOfDay::get_ambient_color
+astraweave-render/src/environment.rs:130:35: replace > with >= in TimeOfDay::is_day
+astraweave-render/src/environment.rs:135:35: replace < with <= in TimeOfDay::is_night
+astraweave-render/src/environment.rs:135:37: delete - in TimeOfDay::is_night
+astraweave-render/src/environment.rs:140:9: replace TimeOfDay::is_twilight -> bool with true
+astraweave-render/src/environment.rs:221:9: replace SkyRenderer::init_gpu_resources -> Result<()> with Ok(())
+astraweave-render/src/environment.rs:245:48: replace | with ^ in SkyRenderer::init_gpu_resources
+astraweave-render/src/environment.rs:515:9: replace SkyRenderer::update with ()
+astraweave-render/src/environment.rs:530:9: replace SkyRenderer::render -> Result<()> with Ok(())
+astraweave-render/src/environment.rs:591:21: delete field mag_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:590:21: delete field label from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:592:21: delete field min_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:593:21: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:594:21: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:595:21: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:628:12: delete ! in SkyRenderer::render
+astraweave-render/src/environment.rs:635:25: delete field label from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:636:25: delete field mag_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:637:25: delete field min_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:672:12: delete ! in SkyRenderer::render
+astraweave-render/src/environment.rs:638:25: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+astraweave-render/src/environment.rs:691:9: replace SkyRenderer::time_of_day_mut -> &mut TimeOfDay with Box::leak(Box::new(Default::default()))
+astraweave-render/src/environment.rs:686:9: replace SkyRenderer::time_of_day -> &TimeOfDay with Box::leak(Box::new(Default::default()))
+astraweave-render/src/environment.rs:696:9: replace SkyRenderer::config -> &SkyConfig with Box::leak(Box::new(Default::default()))
+astraweave-render/src/environment.rs:701:9: replace SkyRenderer::set_config with ()
+astraweave-render/src/environment.rs:708:9: replace SkyRenderer::create_skybox_vertices -> Vec<SkyVertex> with vec![]
+astraweave-render/src/environment.rs:712:44: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:712:56: replace / with % in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:712:44: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:712:56: replace / with * in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:714:56: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:714:50: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:714:50: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:714:56: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:714:68: replace / with % in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:714:68: replace / with * in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:717:39: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:717:39: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:717:27: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:717:27: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:718:27: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:718:27: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:719:39: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:719:39: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:719:27: replace * with + in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:719:27: replace * with / in SkyRenderer::create_skybox_vertices
+astraweave-render/src/environment.rs:729:9: replace SkyRenderer::create_skybox_indices -> Vec<u16> with vec![]
+astraweave-render/src/environment.rs:729:9: replace SkyRenderer::create_skybox_indices -> Vec<u16> with vec![0]
+astraweave-render/src/environment.rs:729:9: replace SkyRenderer::create_skybox_indices -> Vec<u16> with vec![1]
+astraweave-render/src/environment.rs:734:50: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:734:33: replace * with + in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:734:50: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:734:33: replace * with / in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:734:45: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:47: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:734:45: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:30: replace * with + in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:47: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:42: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:30: replace * with / in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:52: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:42: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:735:52: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:55: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:38: replace * with + in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:55: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:33: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:38: replace * with / in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:50: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:33: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:736:50: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:60: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:60: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:43: replace * with + in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:38: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:43: replace * with / in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:38: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:55: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:55: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:65: replace + with - in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:737:65: replace + with * in SkyRenderer::create_skybox_indices
+astraweave-render/src/environment.rs:765:40: replace / with % in SkyRenderer::create_sky_uniforms
+astraweave-render/src/environment.rs:765:40: replace / with * in SkyRenderer::create_sky_uniforms
+astraweave-render/src/environment.rs:765:33: replace + with - in SkyRenderer::create_sky_uniforms
+astraweave-render/src/environment.rs:765:33: replace + with * in SkyRenderer::create_sky_uniforms
+astraweave-render/src/environment.rs:1073:9: replace WeatherSystem::update with ()
+astraweave-render/src/environment.rs:1076:33: replace != with == in WeatherSystem::update
+astraweave-render/src/environment.rs:1077:38: replace += with -= in WeatherSystem::update
+astraweave-render/src/environment.rs:1077:38: replace += with *= in WeatherSystem::update
+astraweave-render/src/environment.rs:1077:52: replace / with % in WeatherSystem::update
+astraweave-render/src/environment.rs:1077:52: replace / with * in WeatherSystem::update
+astraweave-render/src/environment.rs:1089:85: replace * with + in WeatherSystem::update
+astraweave-render/src/environment.rs:1079:41: replace >= with < in WeatherSystem::update
+astraweave-render/src/environment.rs:1089:85: replace * with / in WeatherSystem::update
+astraweave-render/src/environment.rs:1089:72: replace * with + in WeatherSystem::update
+astraweave-render/src/environment.rs:1089:72: replace * with / in WeatherSystem::update
+astraweave-render/src/environment.rs:1091:18: replace + with - in WeatherSystem::update
+astraweave-render/src/environment.rs:1091:18: replace + with * in WeatherSystem::update
+astraweave-render/src/environment.rs:1093:18: replace + with - in WeatherSystem::update
+astraweave-render/src/environment.rs:1093:18: replace + with * in WeatherSystem::update
+astraweave-render/src/environment.rs:1127:9: replace WeatherSystem::get_rain_intensity -> f32 with 1.0
+astraweave-render/src/environment.rs:1132:9: replace WeatherSystem::get_snow_intensity -> f32 with 1.0
+astraweave-render/src/environment.rs:1132:9: replace WeatherSystem::get_snow_intensity -> f32 with 0.0
+astraweave-render/src/environment.rs:1132:9: replace WeatherSystem::get_snow_intensity -> f32 with -1.0
+astraweave-render/src/environment.rs:1137:9: replace WeatherSystem::get_fog_density -> f32 with 0.0
+astraweave-render/src/environment.rs:1137:9: replace WeatherSystem::get_fog_density -> f32 with 1.0
+astraweave-render/src/environment.rs:1142:9: replace WeatherSystem::get_wind_strength -> f32 with 0.0
+astraweave-render/src/environment.rs:1137:9: replace WeatherSystem::get_fog_density -> f32 with -1.0
+astraweave-render/src/environment.rs:1142:9: replace WeatherSystem::get_wind_strength -> f32 with 1.0
+astraweave-render/src/environment.rs:1142:9: replace WeatherSystem::get_wind_strength -> f32 with -1.0
+astraweave-render/src/environment.rs:1147:9: replace WeatherSystem::get_wind_direction -> Vec3 with Default::default()
+astraweave-render/src/environment.rs:1152:9: replace WeatherSystem::is_raining -> bool with false
+astraweave-render/src/environment.rs:1153:13: replace && with || in WeatherSystem::is_raining
+astraweave-render/src/environment.rs:1153:36: replace > with == in WeatherSystem::is_raining
+astraweave-render/src/environment.rs:1153:36: replace > with < in WeatherSystem::is_raining
+astraweave-render/src/environment.rs:1153:36: replace > with >= in WeatherSystem::is_raining
+astraweave-render/src/environment.rs:1158:9: replace WeatherSystem::is_snowing -> bool with false
+astraweave-render/src/environment.rs:1158:51: replace && with || in WeatherSystem::is_snowing
+astraweave-render/src/environment.rs:1158:30: replace == with != in WeatherSystem::is_snowing
+astraweave-render/src/environment.rs:1158:74: replace > with == in WeatherSystem::is_snowing
+astraweave-render/src/environment.rs:1158:74: replace > with >= in WeatherSystem::is_snowing
+astraweave-render/src/environment.rs:1158:74: replace > with < in WeatherSystem::is_snowing
+astraweave-render/src/environment.rs:1163:9: replace WeatherSystem::is_foggy -> bool with false
+astraweave-render/src/environment.rs:1163:9: replace WeatherSystem::is_foggy -> bool with true
+astraweave-render/src/environment.rs:1163:26: replace > with == in WeatherSystem::is_foggy
+astraweave-render/src/environment.rs:1163:26: replace > with < in WeatherSystem::is_foggy
+astraweave-render/src/environment.rs:1168:9: replace WeatherSystem::get_terrain_color_modifier -> Vec3 with Default::default()
+astraweave-render/src/environment.rs:1163:26: replace > with >= in WeatherSystem::is_foggy
+astraweave-render/src/environment.rs:1173:51: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1173:51: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1175:25: replace - with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1175:25: replace - with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1175:35: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1175:35: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1176:25: replace - with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1176:25: replace - with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1176:35: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1176:35: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1177:25: replace - with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1177:25: replace - with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1177:35: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1177:35: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1182:54: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1182:54: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1184:25: replace + with - in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1184:25: replace + with * in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1184:38: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1184:38: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1185:25: replace + with - in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1185:25: replace + with * in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1185:38: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1185:38: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1186:25: replace + with - in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1186:25: replace + with * in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1186:38: replace * with / in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1186:38: replace * with + in WeatherSystem::get_terrain_color_modifier
+astraweave-render/src/environment.rs:1196:9: replace WeatherSystem::get_light_attenuation -> f32 with 0.0
+astraweave-render/src/environment.rs:1196:9: replace WeatherSystem::get_light_attenuation -> f32 with 1.0
+astraweave-render/src/environment.rs:1196:9: replace WeatherSystem::get_light_attenuation -> f32 with -1.0
+astraweave-render/src/environment.rs:1209:9: replace WeatherSystem::get_biome_appropriate_weather -> Vec<WeatherType> with vec![]
+astraweave-render/src/environment.rs:1242:76: replace < with == in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1242:76: replace < with > in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1242:76: replace < with <= in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1257:44: replace + with - in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1257:75: replace * with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1257:75: replace * with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1257:59: replace - with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1257:59: replace - with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1258:44: replace + with - in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1258:44: replace + with * in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1258:75: replace * with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1258:75: replace * with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1258:59: replace - with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1258:59: replace - with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1259:40: replace + with * in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1259:40: replace + with - in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1259:69: replace * with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1259:69: replace * with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1259:54: replace - with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1259:54: replace - with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1260:43: replace + with * in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1260:43: replace + with - in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1260:74: replace * with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1260:74: replace * with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1260:58: replace - with + in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1260:58: replace - with / in WeatherSystem::update_weather_parameters
+astraweave-render/src/environment.rs:1311:9: replace WeatherParticles::rain_particles -> &[WeatherParticle] with Vec::leak(Vec::new())
+astraweave-render/src/environment.rs:1295:9: replace WeatherParticles::update with ()
+astraweave-render/src/environment.rs:1316:9: replace WeatherParticles::snow_particles -> &[WeatherParticle] with Vec::leak(Vec::new())
+astraweave-render/src/environment.rs:1327:9: replace WeatherParticles::update_rain_particles with ()
+astraweave-render/src/environment.rs:1327:55: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1327:55: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1330:41: replace < with == in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1330:41: replace < with > in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1330:41: replace < with <= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1332:47: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1332:40: replace - with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1332:47: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1332:40: replace - with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1333:46: replace + with - in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1333:46: replace + with * in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1333:39: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1333:39: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1334:47: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1334:40: replace - with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1334:47: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1334:40: replace - with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1337:53: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1337:53: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1340:38: replace + with - in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1340:38: replace + with * in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1341:39: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1341:39: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1341:46: delete - in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1341:60: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1341:60: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1350:27: replace += with -= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1350:27: replace += with *= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1351:31: replace += with -= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1351:31: replace += with *= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1351:52: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1351:52: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:17: replace && with || in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1354:27: replace < with == in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1354:27: replace < with <= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1354:27: replace < with > in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:62: replace < with == in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:62: replace < with > in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:62: replace < with <= in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:39: replace - with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:39: replace - with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:83: replace * with + in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1355:83: replace * with / in WeatherParticles::update_rain_particles
+astraweave-render/src/environment.rs:1365:9: replace WeatherParticles::update_snow_particles with ()
+astraweave-render/src/environment.rs:1365:55: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1365:55: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1368:41: replace < with == in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1368:41: replace < with > in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1368:41: replace < with <= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1370:47: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1370:47: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1370:40: replace - with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1370:40: replace - with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1371:46: replace + with - in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1371:46: replace + with * in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1371:39: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1371:39: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1372:47: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1372:47: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1372:40: replace - with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1372:40: replace - with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1375:53: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1375:53: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1378:38: replace + with * in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1378:38: replace + with - in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1379:40: delete - in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1388:27: replace += with -= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1388:27: replace += with *= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1389:31: replace += with -= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1389:31: replace += with *= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1389:52: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1389:52: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1392:33: replace += with -= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1392:33: replace += with *= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1392:66: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1392:59: replace - with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1392:66: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1392:59: replace - with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1393:33: replace += with -= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1393:66: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1393:33: replace += with *= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1393:66: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1393:59: replace - with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1393:59: replace - with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:17: replace && with || in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1396:27: replace < with == in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1396:27: replace < with > in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:62: replace < with == in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1396:27: replace < with <= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:62: replace < with <= in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:62: replace < with > in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:39: replace - with + in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:39: replace - with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:83: replace * with / in WeatherParticles::update_snow_particles
+astraweave-render/src/environment.rs:1397:83: replace * with + in WeatherParticles::update_snow_particles
+astraweave-render/src/ibl.rs:47:9: replace IblQuality::brdf_lut_size -> u32 with 0
+astraweave-render/src/ibl.rs:47:9: replace IblQuality::brdf_lut_size -> u32 with 1
+astraweave-render/src/ibl.rs:476:9: replace IblManager::ensure_brdf_lut -> Result<wgpu::TextureView> with Ok(Default::default())
+astraweave-render/src/ibl.rs:496:9: replace IblManager::ensure_irradiance -> Result<wgpu::TextureView> with Ok(Default::default())
+astraweave-render/src/ibl.rs:505:17: delete field dimension from struct wgpu::TextureViewDescriptor expression in IblManager::ensure_irradiance
+astraweave-render/src/ibl.rs:519:9: replace IblManager::ensure_prefiltered_env -> Result<wgpu::TextureView> with Ok(Default::default())
+astraweave-render/src/ibl.rs:529:17: delete field dimension from struct wgpu::TextureViewDescriptor expression in IblManager::ensure_prefiltered_env
+astraweave-render/src/ibl.rs:530:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in IblManager::ensure_prefiltered_env
+astraweave-render/src/ibl.rs:531:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in IblManager::ensure_prefiltered_env
+astraweave-render/src/ibl.rs:561:59: replace | with & in IblManager::bake_environment
+astraweave-render/src/ibl.rs:575:59: replace | with & in IblManager::bake_environment
+astraweave-render/src/ibl.rs:561:59: replace | with ^ in IblManager::bake_environment
+astraweave-render/src/ibl.rs:575:59: replace | with ^ in IblManager::bake_environment
+astraweave-render/src/ibl.rs:589:59: replace | with & in IblManager::bake_environment
+astraweave-render/src/ibl.rs:589:59: replace | with ^ in IblManager::bake_environment
+astraweave-render/src/ibl.rs:603:59: replace | with & in IblManager::bake_environment
+astraweave-render/src/ibl.rs:603:59: replace | with ^ in IblManager::bake_environment
+astraweave-render/src/ibl.rs:609:13: delete field usage from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:610:13: delete field label from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:611:13: delete field dimension from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:615:13: delete field usage from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:617:13: delete field dimension from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:616:13: delete field label from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:621:13: delete field usage from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:622:13: delete field label from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:624:13: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:625:13: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:623:13: delete field dimension from struct wgpu::TextureViewDescriptor expression in IblManager::bake_environment
+astraweave-render/src/ibl.rs:867:46: replace / with % in IblManager::bake_environment
+astraweave-render/src/ibl.rs:867:60: replace - with + in IblManager::bake_environment
+astraweave-render/src/ibl.rs:867:60: replace - with / in IblManager::bake_environment
+astraweave-render/src/ibl.rs:867:46: replace / with * in IblManager::bake_environment
+astraweave-render/src/ibl.rs:871:32: replace == with != in IblManager::bake_environment
+astraweave-render/src/ibl.rs:878:32: replace == with != in IblManager::bake_environment
+astraweave-render/src/ibl.rs:885:32: replace == with != in IblManager::bake_environment
+astraweave-render/src/ibl.rs:1246:5: replace load_hdr_equirectangular -> Result<image::DynamicImage> with Ok(Default::default())
+astraweave-render/src/ibl.rs:1263:9: delete match arm image::DynamicImage::ImageRgba32F(buf) in create_hdr2d
+astraweave-render/src/ibl.rs:1259:9: delete match arm image::DynamicImage::ImageRgb32F(buf) in create_hdr2d
+astraweave-render/src/ibl.rs:1296:53: replace | with & in create_hdr2d
+astraweave-render/src/ibl.rs:1296:53: replace | with ^ in create_hdr2d
+astraweave-render/src/ibl.rs:1309:35: replace * with / in create_hdr2d
+astraweave-render/src/ibl.rs:1309:35: replace * with + in create_hdr2d
+astraweave-render/src/ibl.rs:1320:9: delete field label from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/ibl.rs:1321:9: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/ibl.rs:1322:9: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/ibl.rs:1323:9: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/ibl.rs:1324:9: delete field mag_filter from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/ibl.rs:1325:9: delete field min_filter from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/ibl.rs:1326:9: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in create_hdr2d
+astraweave-render/src/mesh.rs:94:22: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:95:22: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:96:24: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:97:24: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:98:21: replace / with * in compute_tangents
+astraweave-render/src/mesh.rs:98:40: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:98:40: replace - with / in compute_tangents
+astraweave-render/src/mesh.rs:98:31: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:98:31: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:98:49: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:98:49: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:99:50: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:99:50: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:99:34: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:99:25: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:99:25: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:99:40: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:100:50: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:100:50: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:100:34: replace - with / in compute_tangents
+astraweave-render/src/mesh.rs:100:34: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:100:25: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:100:25: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:100:40: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:100:40: replace * with / in compute_tangents
+astraweave-render/src/mesh.rs:101:18: replace += with -= in compute_tangents
+astraweave-render/src/mesh.rs:102:18: replace += with -= in compute_tangents
+astraweave-render/src/mesh.rs:103:18: replace += with -= in compute_tangents
+astraweave-render/src/mesh.rs:104:18: replace += with -= in compute_tangents
+astraweave-render/src/mesh.rs:104:18: replace += with *= in compute_tangents
+astraweave-render/src/mesh.rs:105:18: replace += with -= in compute_tangents
+astraweave-render/src/mesh.rs:105:18: replace += with *= in compute_tangents
+astraweave-render/src/mesh.rs:106:18: replace += with *= in compute_tangents
+astraweave-render/src/mesh.rs:106:18: replace += with -= in compute_tangents
+astraweave-render/src/mesh.rs:111:26: replace - with + in compute_tangents
+astraweave-render/src/mesh.rs:111:30: replace * with + in compute_tangents
+astraweave-render/src/mesh.rs:112:44: replace < with > in compute_tangents
+astraweave-render/src/mesh.rs:112:44: replace < with == in compute_tangents
+astraweave-render/src/mesh.rs:113:13: delete - in compute_tangents
+astraweave-render/src/mesh.rs:112:44: replace < with <= in compute_tangents
+astraweave-render/src/mesh_registry.rs:48:9: replace MeshRegistry::get -> Option<MeshHandle> with None
+astraweave-render/src/mesh_registry.rs:62:22: replace += with -= in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:62:22: replace += with *= in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:67:41: replace | with & in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:67:41: replace | with ^ in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:73:41: replace | with & in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:73:41: replace | with ^ in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:78:40: replace | with ^ in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:78:40: replace | with & in MeshRegistry::fetch_or_upload
+astraweave-render/src/mesh_registry.rs:93:9: replace MeshRegistry::get_gpu -> Option<&GpuMesh> with None
+astraweave-render/src/mesh_registry.rs:97:9: replace MeshRegistry::get_mesh -> Option<Arc<GpuMesh>> with None
+astraweave-render/src/mesh_registry.rs:103:9: replace MeshRegistry::prune -> usize with 0
+astraweave-render/src/mesh_registry.rs:103:9: replace MeshRegistry::prune -> usize with 1
+astraweave-render/src/mesh_registry.rs:108:44: replace == with != in MeshRegistry::prune
+astraweave-render/src/mesh_registry.rs:121:39: replace != with == in MeshRegistry::prune
+astraweave-render/src/post.rs:362:9: replace BloomPipeline::config -> &BloomConfig with Box::leak(Box::new(Default::default()))
+astraweave-render/src/post.rs:376:9: replace BloomPipeline::execute -> Result<wgpu::TextureView> with Ok(Default::default())
+astraweave-render/src/post.rs:392:59: replace | with & in BloomPipeline::execute
+astraweave-render/src/post.rs:392:59: replace | with ^ in BloomPipeline::execute
+astraweave-render/src/post.rs:408:59: replace | with & in BloomPipeline::execute
+astraweave-render/src/post.rs:408:59: replace | with ^ in BloomPipeline::execute
+astraweave-render/src/post.rs:417:48: replace | with & in BloomPipeline::execute
+astraweave-render/src/post.rs:417:48: replace | with ^ in BloomPipeline::execute
+astraweave-render/src/post.rs:429:48: replace | with & in BloomPipeline::execute
+astraweave-render/src/post.rs:429:48: replace | with ^ in BloomPipeline::execute
+astraweave-render/src/post.rs:445:17: delete field usage from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:446:17: delete field label from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:447:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:448:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:492:17: delete field label from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:491:17: delete field usage from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:494:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:493:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:493:37: replace - with + in BloomPipeline::execute
+astraweave-render/src/post.rs:493:37: replace - with / in BloomPipeline::execute
+astraweave-render/src/post.rs:498:17: delete field usage from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:499:17: delete field label from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:501:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:500:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:539:35: replace - with + in BloomPipeline::execute
+astraweave-render/src/post.rs:539:35: replace - with / in BloomPipeline::execute
+astraweave-render/src/post.rs:541:17: delete field usage from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:542:17: delete field label from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:543:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:544:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:543:37: replace + with - in BloomPipeline::execute
+astraweave-render/src/post.rs:543:37: replace + with * in BloomPipeline::execute
+astraweave-render/src/post.rs:548:17: delete field usage from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:549:17: delete field label from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:550:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:551:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:590:17: delete field usage from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:591:17: delete field label from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:593:17: delete field mip_level_count from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/post.rs:592:17: delete field base_mip_level from struct wgpu::TextureViewDescriptor expression in BloomPipeline::execute
+astraweave-render/src/primitives.rs:10:16: delete - in cube
+astraweave-render/src/primitives.rs:11:21: delete - in cube
+astraweave-render/src/primitives.rs:10:22: delete - in cube
+astraweave-render/src/primitives.rs:15:11: delete - in cube
+astraweave-render/src/primitives.rs:13:16: delete - in cube
+astraweave-render/src/primitives.rs:15:17: delete - in cube
+astraweave-render/src/primitives.rs:16:11: delete - in cube
+astraweave-render/src/primitives.rs:17:11: delete - in cube
+astraweave-render/src/primitives.rs:17:22: delete - in cube
+astraweave-render/src/primitives.rs:18:11: delete - in cube
+astraweave-render/src/primitives.rs:18:17: delete - in cube
+astraweave-render/src/primitives.rs:18:23: delete - in cube
+astraweave-render/src/primitives.rs:20:11: delete - in cube
+astraweave-render/src/primitives.rs:20:22: delete - in cube
+astraweave-render/src/primitives.rs:21:21: delete - in cube
+astraweave-render/src/primitives.rs:23:11: delete - in cube
+astraweave-render/src/primitives.rs:25:11: delete - in cube
+astraweave-render/src/primitives.rs:25:17: delete - in cube
+astraweave-render/src/primitives.rs:26:16: delete - in cube
+astraweave-render/src/primitives.rs:27:16: delete - in cube
+astraweave-render/src/primitives.rs:27:22: delete - in cube
+astraweave-render/src/primitives.rs:28:11: delete - in cube
+astraweave-render/src/primitives.rs:28:17: delete - in cube
+astraweave-render/src/primitives.rs:28:23: delete - in cube
+astraweave-render/src/primitives.rs:30:11: delete - in cube
+astraweave-render/src/primitives.rs:30:17: delete - in cube
+astraweave-render/src/primitives.rs:33:16: delete - in cube
+astraweave-render/src/primitives.rs:31:11: delete - in cube
+astraweave-render/src/primitives.rs:35:16: delete - in cube
+astraweave-render/src/primitives.rs:35:22: delete - in cube
+astraweave-render/src/primitives.rs:36:21: delete - in cube
+astraweave-render/src/primitives.rs:37:11: delete - in cube
+astraweave-render/src/primitives.rs:37:22: delete - in cube
+astraweave-render/src/primitives.rs:38:11: delete - in cube
+astraweave-render/src/primitives.rs:38:17: delete - in cube
+astraweave-render/src/primitives.rs:38:23: delete - in cube
+astraweave-render/src/primitives.rs:58:35: replace - with / in cube
+astraweave-render/src/primitives.rs:59:46: replace + with * in cube
+astraweave-render/src/primitives.rs:108:21: replace * with + in sphere
+astraweave-render/src/primitives.rs:108:21: replace * with / in sphere
+astraweave-render/src/primitives.rs:113:50: replace * with + in sphere
+astraweave-render/src/primitives.rs:113:50: replace * with / in sphere
+astraweave-render/src/primitives.rs:113:27: replace * with + in sphere
+astraweave-render/src/primitives.rs:113:27: replace * with / in sphere
+astraweave-render/src/primitives.rs:124:22: delete - in sphere
+astraweave-render/src/primitives.rs:138:22: replace + with - in sphere
+astraweave-render/src/primitives.rs:138:22: replace + with * in sphere
+astraweave-render/src/primitives.rs:141:23: replace * with + in sphere
+astraweave-render/src/primitives.rs:141:23: replace * with / in sphere
+astraweave-render/src/primitives.rs:142:23: replace + with * in sphere
+astraweave-render/src/primitives.rs:143:35: replace + with - in sphere
+astraweave-render/src/primitives.rs:143:29: replace * with + in sphere
+astraweave-render/src/primitives.rs:143:29: replace * with / in sphere
+astraweave-render/src/primitives.rs:144:23: replace + with - in sphere
+astraweave-render/src/primitives.rs:143:24: replace + with * in sphere
+astraweave-render/src/primitives.rs:144:23: replace + with * in sphere
+astraweave-render/src/renderer.rs:452:17: replace += with -= in Renderer::shader_from_material_package
+astraweave-render/src/renderer.rs:457:17: replace += with -= in Renderer::shader_from_material_package
+astraweave-render/src/renderer.rs:452:17: replace += with *= in Renderer::shader_from_material_package
+astraweave-render/src/renderer.rs:457:17: replace += with *= in Renderer::shader_from_material_package
+astraweave-render/src/renderer.rs:576:49: replace | with & in Renderer::new_from_device
+astraweave-render/src/renderer.rs:576:49: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:592:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:637:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:670:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:672:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:674:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:675:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:691:59: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:708:59: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:725:59: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1286:17: delete field topology from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1287:17: delete field front_face from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1288:17: delete field cull_mode from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1363:59: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1402:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1404:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1405:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1414:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1511:17: delete field cull_mode from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1546:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1541:57: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1548:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1547:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1550:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1549:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1551:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1552:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1578:23: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1578:23: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1579:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1595:57: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1600:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1601:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1602:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1603:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1605:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1604:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1606:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1644:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1639:57: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1645:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1646:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1648:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1647:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1649:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1650:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1712:23: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1712:23: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1713:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1924:17: delete field topology from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1925:17: delete field front_face from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1926:17: delete field cull_mode from struct wgpu::PrimitiveState expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1952:57: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1957:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1958:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1959:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1960:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1961:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1962:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1963:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:1996:57: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2001:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2002:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2003:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2004:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2005:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2006:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2007:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2088:17: replace | with & in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2088:17: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2087:17: replace | with & in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2087:17: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2108:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2112:22: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2112:22: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2113:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2116:67: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2116:67: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2116:48: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2116:48: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2119:41: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2119:41: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2119:36: replace + with - in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2119:36: replace + with * in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2120:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2125:35: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2125:35: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2126:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2132:28: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2132:28: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2132:23: replace * with / in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2132:23: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2133:48: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2257:72: delete - in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2258:13: replace * with + in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2268:47: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2381:25: replace - with + in Renderer::apply_camera_key
+astraweave-render/src/renderer.rs:2379:9: replace Renderer::apply_camera_key with ()
+astraweave-render/src/renderer.rs:2381:25: replace - with / in Renderer::apply_camera_key
+astraweave-render/src/renderer.rs:2383:33: delete - in Renderer::apply_camera_key
+astraweave-render/src/renderer.rs:2391:9: replace Renderer::load_timeline_json -> Result<()> with Ok(())
+astraweave-render/src/renderer.rs:2398:9: replace Renderer::save_timeline_json -> Option<String> with None
+astraweave-render/src/renderer.rs:2398:9: replace Renderer::save_timeline_json -> Option<String> with Some(String::new())
+astraweave-render/src/renderer.rs:2398:9: replace Renderer::save_timeline_json -> Option<String> with Some("xyzzy".into())
+astraweave-render/src/renderer.rs:2404:9: replace Renderer::play_timeline with ()
+astraweave-render/src/renderer.rs:2407:9: replace Renderer::stop_timeline with ()
+astraweave-render/src/renderer.rs:2410:9: replace Renderer::seek_timeline with ()
+astraweave-render/src/renderer.rs:2415:9: replace Renderer::tick_cinematics -> Vec<awc::SequencerEvent> with vec![]
+astraweave-render/src/renderer.rs:2416:12: delete ! in Renderer::tick_cinematics
+astraweave-render/src/renderer.rs:2423:25: delete match arm awc::SequencerEvent::CameraKey(k) in Renderer::tick_cinematics
+astraweave-render/src/renderer.rs:2424:25: delete match arm awc::SequencerEvent::FxTrigger{name, params} in Renderer::tick_cinematics
+astraweave-render/src/renderer.rs:2426:37: replace == with != in Renderer::tick_cinematics
+astraweave-render/src/renderer.rs:2445:9: replace Renderer::bake_environment -> Result<()> with Ok(())
+astraweave-render/src/renderer.rs:2453:23: replace || with && in Renderer::resize
+astraweave-render/src/renderer.rs:2475:59: replace | with ^ in Renderer::resize
+astraweave-render/src/renderer.rs:2518:9: replace Renderer::update_camera with ()
+astraweave-render/src/renderer.rs:2528:35: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2528:35: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:19: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:19: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:29: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:24: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:29: replace * with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:24: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:34: replace / with % in Renderer::update_camera
+astraweave-render/src/renderer.rs:2531:34: replace / with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2532:19: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2532:19: replace * with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2532:24: replace / with % in Renderer::update_camera
+astraweave-render/src/renderer.rs:2532:36: replace / with % in Renderer::update_camera
+astraweave-render/src/renderer.rs:2532:24: replace / with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2532:36: replace / with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:32: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:23: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:32: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:23: replace * with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:36: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:36: replace * with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:43: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2534:43: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2546:52: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2546:52: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2546:64: replace * with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2546:64: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2547:52: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2547:52: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2547:64: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2547:64: replace * with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2554:20: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2555:20: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2555:20: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2556:20: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2556:20: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2557:22: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2557:22: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2557:14: delete - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2558:31: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2558:22: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2558:22: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2558:14: delete - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2561:20: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2561:20: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2562:20: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2562:20: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2563:20: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2564:20: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2564:20: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2565:22: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2566:31: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2566:31: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2566:22: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2568:31: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2566:14: delete - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2569:31: replace * with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2585:9: replace Renderer::set_cascade_splits with ()
+astraweave-render/src/renderer.rs:2586:46: replace + with - in Renderer::set_cascade_splits
+astraweave-render/src/renderer.rs:2589:9: replace Renderer::set_cascade_extents with ()
+astraweave-render/src/renderer.rs:2590:65: replace + with - in Renderer::set_cascade_extents
+astraweave-render/src/renderer.rs:2595:9: replace Renderer::set_cascade_lambda with ()
+astraweave-render/src/renderer.rs:2590:65: replace + with * in Renderer::set_cascade_extents
+astraweave-render/src/renderer.rs:2600:9: replace Renderer::set_shadow_filter with ()
+astraweave-render/src/renderer.rs:2607:9: replace Renderer::set_material_params with ()
+astraweave-render/src/renderer.rs:2632:33: replace + with - in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:33: replace + with * in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:27: replace * with + in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:27: replace * with / in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:51: replace + with * in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:51: replace + with - in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:45: replace * with / in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2632:45: replace * with + in Renderer::create_mesh_from_arrays
+astraweave-render/src/renderer.rs:2711:9: replace Renderer::set_external_mesh with ()
+astraweave-render/src/renderer.rs:2720:17: replace > with >= in Renderer::update_instances
+astraweave-render/src/renderer.rs:2726:21: replace | with ^ in Renderer::update_instances
+astraweave-render/src/renderer.rs:2725:21: replace | with ^ in Renderer::update_instances
+astraweave-render/src/renderer.rs:2773:9: replace Renderer::set_weather with ()
+astraweave-render/src/renderer.rs:2782:9: replace Renderer::tick_environment with ()
+astraweave-render/src/renderer.rs:2777:9: replace Renderer::tick_weather with ()
+astraweave-render/src/renderer.rs:2787:9: replace Renderer::time_of_day -> &crate::environment::TimeOfDay with Box::leak(Box::new(Default::default()))
+astraweave-render/src/renderer.rs:2791:9: replace Renderer::time_of_day_mut -> &mut crate::environment::TimeOfDay with Box::leak(Box::new(Default::default()))
+astraweave-render/src/renderer.rs:2795:9: replace Renderer::sky_config -> crate::environment::SkyConfig with Default::default()
+astraweave-render/src/renderer.rs:2804:9: replace Renderer::shadows_enabled -> bool with true
+astraweave-render/src/renderer.rs:2799:9: replace Renderer::set_sky_config with ()
+astraweave-render/src/renderer.rs:2809:9: replace Renderer::set_shadows_enabled with ()
+astraweave-render/src/renderer.rs:2804:9: replace Renderer::shadows_enabled -> bool with false
+astraweave-render/src/renderer.rs:2819:9: replace Renderer::update_water with ()
+astraweave-render/src/renderer.rs:2814:9: replace Renderer::set_water_renderer with ()
+astraweave-render/src/renderer.rs:2878:42: delete - in Renderer::render
+astraweave-render/src/renderer.rs:2825:9: replace Renderer::render -> Result<()> with Ok(())
+astraweave-render/src/renderer.rs:2904:16: delete ! in Renderer::render
+astraweave-render/src/renderer.rs:2918:64: replace * with + in Renderer::render
+astraweave-render/src/renderer.rs:2918:64: replace * with / in Renderer::render
+astraweave-render/src/renderer.rs:2918:40: replace * with / in Renderer::render
+astraweave-render/src/renderer.rs:2956:22: replace > with == in Renderer::render
+astraweave-render/src/renderer.rs:2956:22: replace > with < in Renderer::render
+astraweave-render/src/renderer.rs:2956:22: replace > with >= in Renderer::render
+astraweave-render/src/renderer.rs:3008:27: replace > with == in Renderer::render
+astraweave-render/src/renderer.rs:2966:30: replace == with != in Renderer::render
+astraweave-render/src/renderer.rs:3008:27: replace > with < in Renderer::render
+astraweave-render/src/renderer.rs:3008:27: replace > with >= in Renderer::render
+astraweave-render/src/renderer.rs:3094:27: replace > with == in Renderer::render
+astraweave-render/src/renderer.rs:3094:27: replace > with < in Renderer::render
+astraweave-render/src/renderer.rs:3094:27: replace > with >= in Renderer::render
+astraweave-render/src/renderer.rs:3215:9: replace Renderer::draw_into -> Result<()> with Ok(())
+astraweave-render/src/renderer.rs:3221:38: delete - in Renderer::draw_into
+astraweave-render/src/renderer.rs:3245:12: delete ! in Renderer::draw_into
+astraweave-render/src/renderer.rs:3258:60: replace * with + in Renderer::draw_into
+astraweave-render/src/renderer.rs:3258:36: replace * with + in Renderer::draw_into
+astraweave-render/src/renderer.rs:3258:60: replace * with / in Renderer::draw_into
+astraweave-render/src/renderer.rs:3258:36: replace * with / in Renderer::draw_into
+astraweave-render/src/renderer.rs:3277:13: replace * with + in Renderer::draw_into
+astraweave-render/src/renderer.rs:3276:66: delete - in Renderer::draw_into
+astraweave-render/src/renderer.rs:3294:22: replace > with == in Renderer::draw_into
+astraweave-render/src/renderer.rs:3294:22: replace > with < in Renderer::draw_into
+astraweave-render/src/renderer.rs:3294:22: replace > with >= in Renderer::draw_into
+astraweave-render/src/renderer.rs:3357:35: replace * with + in Renderer::draw_into
+astraweave-render/src/renderer.rs:3304:30: replace == with != in Renderer::draw_into
+astraweave-render/src/renderer.rs:3424:27: replace > with == in Renderer::draw_into
+astraweave-render/src/renderer.rs:3424:27: replace > with < in Renderer::draw_into
+astraweave-render/src/renderer.rs:3424:27: replace > with >= in Renderer::draw_into
+astraweave-render/src/renderer.rs:3433:40: replace > with == in Renderer::draw_into
+astraweave-render/src/renderer.rs:3433:40: replace > with < in Renderer::draw_into
+astraweave-render/src/renderer.rs:3433:40: replace > with >= in Renderer::draw_into
+astraweave-render/src/renderer.rs:3440:41: replace > with == in Renderer::draw_into
+astraweave-render/src/renderer.rs:3440:41: replace > with < in Renderer::draw_into
+astraweave-render/src/renderer.rs:3440:41: replace > with >= in Renderer::draw_into
+astraweave-render/src/renderer.rs:3472:9: replace Renderer::surface_size -> (u32, u32) with (0, 0)
+astraweave-render/src/renderer.rs:3472:9: replace Renderer::surface_size -> (u32, u32) with (0, 1)
+astraweave-render/src/renderer.rs:3472:9: replace Renderer::surface_size -> (u32, u32) with (1, 0)
+astraweave-render/src/renderer.rs:3472:9: replace Renderer::surface_size -> (u32, u32) with (1, 1)
+astraweave-render/src/renderer.rs:3484:9: replace Renderer::surface -> Option<&wgpu::Surface<'static>> with None
+astraweave-render/src/renderer.rs:3505:9: replace Renderer::render_with -> Result<()> with Ok(())
+astraweave-render/src/renderer.rs:3549:9: replace Renderer::render_with_simple -> Result<()> with Ok(())
+astraweave-render/src/renderer.rs:3611:21: replace += with -= in Renderer::bgl_from_material_package
+astraweave-render/src/renderer.rs:3611:21: replace += with *= in Renderer::bgl_from_material_package
+astraweave-render/src/renderer.rs:3618:21: replace += with -= in Renderer::bgl_from_material_package
+astraweave-render/src/renderer.rs:3618:21: replace += with *= in Renderer::bgl_from_material_package
+astraweave-render/src/renderer.rs:3671:9: replace Renderer::build_visible_instances -> (Vec<InstanceRaw>, usize) with (vec![], 1)
+astraweave-render/src/renderer.rs:3671:9: replace Renderer::build_visible_instances -> (Vec<InstanceRaw>, usize) with (vec![], 0)
+astraweave-render/src/renderer.rs:3678:16: replace + with - in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3678:16: replace + with * in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3679:16: replace - with + in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3679:16: replace - with / in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3680:16: replace + with - in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3680:16: replace + with * in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3681:16: replace - with + in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3681:16: replace - with / in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3682:16: replace + with - in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3682:16: replace + with * in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3683:16: replace - with + in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3683:16: replace - with / in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3690:20: replace / with % in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3690:20: replace / with * in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3690:31: replace / with * in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3690:31: replace / with % in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3701:30: replace * with + in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3701:30: replace * with / in Renderer::build_visible_instances
+astraweave-render/src/renderer.rs:3716:73: replace == with != in Renderer::set_smoke_test_texture
+astraweave-render/src/renderer.rs:3711:9: replace Renderer::set_smoke_test_texture with ()
+astraweave-render/src/renderer.rs:3744:9: replace Renderer::set_albedo_from_rgba8 with ()
+astraweave-render/src/renderer.rs:3757:57: replace | with & in Renderer::set_albedo_from_rgba8
+astraweave-render/src/renderer.rs:3757:57: replace | with ^ in Renderer::set_albedo_from_rgba8
+astraweave-render/src/renderer.rs:3773:43: replace * with + in Renderer::set_albedo_from_rgba8
+astraweave-render/src/renderer.rs:3820:9: replace Renderer::set_metallic_roughness_from_rgba8 with ()
+astraweave-render/src/renderer.rs:3773:43: replace * with / in Renderer::set_albedo_from_rgba8
+astraweave-render/src/renderer.rs:3832:57: replace | with ^ in Renderer::set_metallic_roughness_from_rgba8
+astraweave-render/src/renderer.rs:3832:57: replace | with & in Renderer::set_metallic_roughness_from_rgba8
+astraweave-render/src/renderer.rs:3848:43: replace * with / in Renderer::set_metallic_roughness_from_rgba8
+astraweave-render/src/renderer.rs:3848:43: replace * with + in Renderer::set_metallic_roughness_from_rgba8
+astraweave-render/src/renderer.rs:3907:57: replace | with & in Renderer::set_normal_from_rgba8
+astraweave-render/src/renderer.rs:3895:9: replace Renderer::set_normal_from_rgba8 with ()
+astraweave-render/src/renderer.rs:3923:43: replace * with + in Renderer::set_normal_from_rgba8
+astraweave-render/src/renderer.rs:3923:43: replace * with / in Renderer::set_normal_from_rgba8
+astraweave-render/src/renderer.rs:3907:57: replace | with ^ in Renderer::set_normal_from_rgba8
+astraweave-render/src/renderer.rs:3971:9: replace Renderer::set_skinned_mesh with ()
+astraweave-render/src/renderer.rs:3991:9: replace Renderer::update_skin_palette with ()
+astraweave-render/src/renderer.rs:4002:9: replace Renderer::clear_external_mesh with ()
+astraweave-render/src/renderer.rs:4009:9: replace Renderer::set_external_instances with ()
+astraweave-render/src/renderer.rs:4029:9: replace Renderer::has_external_mesh -> bool with true
+astraweave-render/src/renderer.rs:4029:9: replace Renderer::has_external_mesh -> bool with false
+astraweave-render/src/renderer.rs:4035:9: replace Renderer::add_model with ()
+astraweave-render/src/renderer.rs:4053:9: replace Renderer::clear_model with ()
+astraweave-render/src/renderer.rs:4058:9: replace Renderer::has_model -> bool with false
+astraweave-render/src/renderer.rs:4058:9: replace Renderer::has_model -> bool with true
+astraweave-render/src/renderer.rs:4063:9: replace Renderer::model_count -> usize with 0
+astraweave-render/src/renderer.rs:4063:9: replace Renderer::model_count -> usize with 1
+astraweave-render/src/renderer.rs:4068:9: replace Renderer::model_names -> Vec<String> with vec![]
+astraweave-render/src/renderer.rs:4068:9: replace Renderer::model_names -> Vec<String> with vec![String::new()]
+astraweave-render/src/renderer.rs:4068:9: replace Renderer::model_names -> Vec<String> with vec!["xyzzy".into()]
+astraweave-render/src/renderer.rs:4134:30: replace < with <= in inside_frustum_sphere
+astraweave-render/src/renderer.rs:4146:41: replace * with + in frustum_corners_ws
+astraweave-render/src/renderer.rs:4146:41: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4146:28: replace * with + in frustum_corners_ws
+astraweave-render/src/renderer.rs:4146:28: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4147:25: replace * with + in frustum_corners_ws
+astraweave-render/src/renderer.rs:4147:25: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4148:40: replace * with + in frustum_corners_ws
+astraweave-render/src/renderer.rs:4148:27: replace * with + in frustum_corners_ws
+astraweave-render/src/renderer.rs:4148:40: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4148:27: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4149:23: replace * with + in frustum_corners_ws
+astraweave-render/src/renderer.rs:4149:23: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4150:31: replace + with - in frustum_corners_ws
+astraweave-render/src/renderer.rs:4150:31: replace + with * in frustum_corners_ws
+astraweave-render/src/renderer.rs:4150:37: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4151:30: replace + with * in frustum_corners_ws
+astraweave-render/src/renderer.rs:4151:36: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4153:21: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4153:38: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4154:21: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4154:38: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4155:21: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4155:38: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4156:21: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4156:38: replace * with / in frustum_corners_ws
+astraweave-render/src/renderer.rs:4169:9: replace / with % in frustum_center
+astraweave-render/src/renderer.rs:4169:9: replace / with * in frustum_center
+astraweave-render/src/shadow_csm.rs:480:34: replace * with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:465:9: replace CsmRenderer::update_cascades with ()
+astraweave-render/src/shadow_csm.rs:480:34: replace * with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:480:41: replace / with % in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:480:41: replace / with * in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:480:58: replace / with % in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:38: replace + with - in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:480:58: replace / with * in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:38: replace + with * in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:53: replace * with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:53: replace * with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:45: replace - with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:45: replace - with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:60: replace / with % in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:41: replace + with - in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:483:60: replace / with * in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:41: replace + with * in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:29: replace * with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:29: replace * with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:58: replace * with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:58: replace * with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:48: replace - with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:492:45: replace + with - in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:486:48: replace - with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:498:42: replace - with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:492:45: replace + with * in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:498:67: replace * with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:498:42: replace - with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:498:67: replace * with / in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:503:43: replace > with == in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:503:43: replace > with < in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:503:43: replace > with >= in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:517:18: replace == with != in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:529:17: delete - in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:531:17: delete - in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:537:60: replace * with + in CsmRenderer::update_cascades
+astraweave-render/src/shadow_csm.rs:546:9: replace CsmRenderer::upload_to_gpu with ()
+astraweave-render/src/shadow_csm.rs:613:9: replace CsmRenderer::render_shadow_maps with ()
+astraweave-render/src/shadow_csm.rs:656:57: replace + with - in CsmRenderer::render_shadow_maps
+astraweave-render/src/shadow_csm.rs:656:57: replace + with * in CsmRenderer::render_shadow_maps
+astraweave-render/src/terrain.rs:79:36: replace / with % in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:79:36: replace / with * in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:79:50: replace - with + in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:84:46: replace + with - in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:79:50: replace - with / in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:84:46: replace + with * in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:84:57: replace * with + in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:84:57: replace * with / in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:85:46: replace + with - in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:85:57: replace * with + in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:85:46: replace + with * in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:85:57: replace * with / in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:95:34: replace / with % in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:95:34: replace / with * in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:95:48: replace - with + in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:95:48: replace - with / in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:96:34: replace / with % in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:96:34: replace / with * in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:96:48: replace - with + in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:96:48: replace - with / in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:100:68: replace + with * in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:100:46: replace * with + in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:100:46: replace * with / in TerrainRenderer::create_terrain_mesh
+astraweave-render/src/terrain.rs:189:9: replace TerrainRenderer::create_vegetation_instances -> Vec<VegetationRenderInstance> with vec![]
+astraweave-render/src/terrain.rs:209:13: delete match arm "grass_cluster" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:211:13: delete match arm "wildflowers" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:212:13: delete match arm "cactus" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:214:13: delete match arm "pine_tree" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:213:13: delete match arm "desert_shrub" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:216:13: delete match arm "fern" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:215:13: delete match arm "birch_tree" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:218:13: delete match arm "alpine_tree" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:217:13: delete match arm "mushroom" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:219:13: delete match arm "mountain_grass" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:220:13: delete match arm "boulder" in TerrainRenderer::vegetation_type_to_id
+astraweave-render/src/terrain.rs:257:40: replace / with % in generate_terrain_preview
+astraweave-render/src/terrain.rs:257:40: replace / with * in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:63: replace * with + in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:63: replace * with / in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:37: replace / with * in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:37: replace / with % in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:30: replace * with + in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:30: replace * with / in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:89: replace - with + in generate_terrain_preview
+astraweave-render/src/terrain.rs:260:89: replace - with / in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:63: replace * with + in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:63: replace * with / in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:37: replace / with % in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:37: replace / with * in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:30: replace * with + in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:30: replace * with / in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:89: replace - with + in generate_terrain_preview
+astraweave-render/src/terrain.rs:261:89: replace - with / in generate_terrain_preview
+astraweave-render/src/texture.rs:34:9: replace TextureUsage::needs_mipmaps -> bool with false
+astraweave-render/src/texture.rs:34:9: replace TextureUsage::needs_mipmaps -> bool with true
+astraweave-render/src/texture.rs:42:9: replace TextureUsage::description -> &'static str with "xyzzy"
+astraweave-render/src/texture.rs:42:9: replace TextureUsage::description -> &'static str with ""
+astraweave-render/src/texture.rs:78:57: replace | with ^ in Texture::create_default_white
+astraweave-render/src/texture.rs:129:57: replace | with ^ in Texture::create_default_normal
+astraweave-render/src/texture.rs:179:12: delete ! in Texture::from_file_with_usage
+astraweave-render/src/texture.rs:249:57: replace | with ^ in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:271:23: replace > with == in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:271:23: replace > with < in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:271:23: replace > with >= in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:277:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:278:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:279:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:280:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:281:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:282:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:282:42: replace > with == in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:282:42: replace > with < in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:282:42: replace > with >= in Texture::from_bytes_with_usage
+astraweave-render/src/texture.rs:382:57: replace | with & in Texture::load_texture_async
+astraweave-render/src/texture.rs:382:57: replace | with ^ in Texture::load_texture_async
+astraweave-render/src/texture.rs:397:39: replace * with + in Texture::load_texture_async
+astraweave-render/src/texture.rs:397:39: replace * with / in Texture::load_texture_async
+astraweave-render/src/texture.rs:404:23: replace > with == in Texture::load_texture_async
+astraweave-render/src/texture.rs:404:23: replace > with < in Texture::load_texture_async
+astraweave-render/src/texture.rs:404:23: replace > with >= in Texture::load_texture_async
+astraweave-render/src/texture.rs:410:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Texture::load_texture_async
+astraweave-render/src/texture.rs:411:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Texture::load_texture_async
+astraweave-render/src/texture.rs:412:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Texture::load_texture_async
+astraweave-render/src/texture.rs:413:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Texture::load_texture_async
+astraweave-render/src/texture.rs:414:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Texture::load_texture_async
+astraweave-render/src/texture.rs:415:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Texture::load_texture_async
+astraweave-render/src/texture.rs:415:42: replace > with == in Texture::load_texture_async
+astraweave-render/src/texture.rs:415:42: replace > with < in Texture::load_texture_async
+astraweave-render/src/texture.rs:415:42: replace > with >= in Texture::load_texture_async
+astraweave-render/src/texture.rs:463:57: replace | with & in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:477:39: replace * with + in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:477:39: replace * with / in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:463:57: replace | with ^ in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:483:23: replace > with == in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:489:13: delete field address_mode_u from struct wgpu::SamplerDescriptor expression in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:483:23: replace > with >= in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:490:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:491:13: delete field address_mode_w from struct wgpu::SamplerDescriptor expression in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:492:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:493:13: delete field min_filter from struct wgpu::SamplerDescriptor expression in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:494:13: delete field mipmap_filter from struct wgpu::SamplerDescriptor expression in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:494:42: replace > with == in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:494:42: replace > with < in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:494:42: replace > with >= in Texture::from_image_with_usage
+astraweave-render/src/texture.rs:513:5: replace calculate_mip_levels -> u32 with 1
+astraweave-render/src/texture.rs:514:42: replace + with - in calculate_mip_levels
+astraweave-render/src/texture.rs:526:5: replace generate_and_upload_mipmaps -> Result<()> with Ok(())
+astraweave-render/src/texture.rs:514:42: replace + with * in calculate_mip_levels
+astraweave-render/src/texture.rs:551:39: replace * with / in generate_and_upload_mipmaps
+astraweave-render/src/texture.rs:551:39: replace * with + in generate_and_upload_mipmaps
+astraweave-render/src/texture.rs:578:33: replace += with *= in validate_texture_assets
+astraweave-render/src/texture.rs:595:20: replace > with < in validate_texture_assets
+astraweave-render/src/types.rs:249:41: replace / with % in cluster_index
+astraweave-render/src/types.rs:249:41: replace / with * in cluster_index
+astraweave-render/src/types.rs:249:25: replace * with + in cluster_index
+astraweave-render/src/types.rs:249:25: replace * with / in cluster_index
+astraweave-render/src/types.rs:250:41: replace / with % in cluster_index
+astraweave-render/src/types.rs:250:25: replace * with + in cluster_index
+astraweave-render/src/types.rs:250:41: replace / with * in cluster_index
+astraweave-render/src/types.rs:250:25: replace * with / in cluster_index
+astraweave-render/src/types.rs:252:25: replace - with + in cluster_index
+astraweave-render/src/types.rs:252:40: replace - with + in cluster_index
+astraweave-render/src/types.rs:254:13: replace * with + in cluster_index
+astraweave-render/src/types.rs:254:13: replace * with / in cluster_index
+astraweave-render/src/types.rs:254:30: replace * with + in cluster_index
+astraweave-render/src/animation.rs:128:25: delete field translation from struct Transform expression in AnimationClip::sample
+astraweave-render/src/animation.rs:172:29: replace || with && in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:185:33: replace - with + in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:185:33: replace - with / in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:186:41: replace < with <= in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:187:43: replace / with * in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:233:26: replace > with >= in AnimationState::update
+astraweave-render/src/animation.rs:236:26: replace < with <= in AnimationState::update

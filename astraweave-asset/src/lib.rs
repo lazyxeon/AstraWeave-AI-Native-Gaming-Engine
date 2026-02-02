@@ -14,6 +14,10 @@ pub mod nanite_preprocess;
 // World Partition cell loader
 pub mod cell_loader;
 
+// Mutation tests
+#[cfg(test)]
+mod mutation_tests;
+
 // Blender .blend file import support
 #[cfg(feature = "blend")]
 pub mod blend_import {

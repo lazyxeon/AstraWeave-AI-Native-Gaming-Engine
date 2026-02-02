@@ -16,7 +16,7 @@ pub struct ListenerPose {
 }
 
 /// How to spatialize when using non-spatial SFX.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PanMode {
     /// Stereo balance by angle; distance -> volume attenuation.
     StereoAngle,
