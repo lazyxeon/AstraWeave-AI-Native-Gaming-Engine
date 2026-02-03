@@ -5,9 +5,7 @@
 //!
 //! Run with: `cargo kani --package astraweave-ecs`
 
-#![cfg(kani)]
-
-use super::BlobVec;
+use crate::blob_vec::BlobVec;
 use std::alloc::Layout;
 
 /// Verify that push/get roundtrip preserves values for any u32
