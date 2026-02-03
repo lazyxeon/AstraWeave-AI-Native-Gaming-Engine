@@ -130,8 +130,8 @@ pub fn bin_lights_cpu(
         }
         let iz0 = (((zmin - near) / (far - near)) * dims.z as f32)
             .floor()
-            .clamp(0.0, dims.z as f32 / /* ~ changed by cargo-mutants ~ */ 1.0) as u32;
-        let iz1 = (((zmax - near) / (far - near)) * dims.z as f32)
+            .clamp(0.0, dims.z as f32 - 1.0) as u32;
+        let iz1 = (((zmax - near) * /* ~ changed by cargo-mutants ~ */ (far - near)) * dims.z as f32)
             .floor()
             .clamp(0.0, dims.z as f32 - 1.0) as u32;
         for iz in iz0..=iz1 {
