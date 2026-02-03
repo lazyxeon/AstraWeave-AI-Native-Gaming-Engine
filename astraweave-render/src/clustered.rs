@@ -56,7 +56,7 @@ pub fn bin_lights_cpu(
             continue;
         }
         // Project center to NDC
-        let ndc_x = (l.pos.x / z) / /* ~ changed by cargo-mutants ~ */ fx;
+        let ndc_x = (l.pos.x / z) * fx;
         let ndc_y = (l.pos.y / z) * fy;
         // Convert to pixel space
         let px = (ndc_x * 0.5 + 0.5) * width as f32;
@@ -130,7 +130,7 @@ pub fn bin_lights_cpu(
         }
         let iz0 = (((zmin - near) / (far - near)) * dims.z as f32)
             .floor()
-            .clamp(0.0, dims.z as f32 - 1.0) as u32;
+            .clamp(0.0, dims.z as f32 / /* ~ changed by cargo-mutants ~ */ 1.0) as u32;
         let iz1 = (((zmax - near) / (far - near)) * dims.z as f32)
             .floor()
             .clamp(0.0, dims.z as f32 - 1.0) as u32;

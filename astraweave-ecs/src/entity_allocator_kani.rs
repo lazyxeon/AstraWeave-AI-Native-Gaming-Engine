@@ -7,9 +7,7 @@
 //!
 //! Run with: `cargo kani --package astraweave-ecs`
 
-#![cfg(kani)]
-
-use super::{Entity, EntityAllocator};
+use crate::entity_allocator::{Entity, EntityAllocator};
 
 /// Verify Entity::from_raw and to_raw are inverse operations
 #[kani::proof]

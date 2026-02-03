@@ -7,8 +7,6 @@
 //!
 //! Run with: `cargo kani --package astraweave-math`
 
-#![cfg(kani)]
-
 use glam::Vec3;
 
 // Note: We test the scalar fallback paths since Kani doesn't support SIMD intrinsics.

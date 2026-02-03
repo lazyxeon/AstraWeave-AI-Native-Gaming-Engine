@@ -7,12 +7,8 @@
 //!
 //! Run with: `cargo kani --package astraweave-sdk`
 
-#![cfg(kani)]
-
-use std::ffi::CStr;
-
 // Import the FFI functions
-use super::{aw_version, aw_version_string, AWVersion};
+use crate::{aw_version, aw_version_string, AWVersion};
 
 /// Verify aw_version returns valid version struct
 #[kani::proof]
