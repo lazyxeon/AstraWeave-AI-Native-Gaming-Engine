@@ -1,4 +1,4 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.83s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.99s
      Running unittests src\lib.rs (target\miri\x86_64-pc-windows-msvc\debug\deps\astraweave_ecs-0c738e343e41511d.exe)
 warning: variable does not need to be mutable
    --> astraweave-ecs\src\mutation_tests.rs:801:13
@@ -11,7 +11,7 @@ warning: variable does not need to be mutable
     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
 
-running 300 tests
+running 271 tests
 test archetype::tests::test_archetype_entity_operations ... ok
 test archetype::tests::test_archetype_iter_components ... ok
 test archetype::tests::test_archetype_remove_entity ... ok
@@ -132,75 +132,3 @@ test mutation_tests::boundary_condition_tests::frame_counter_at_one_after_update
 test mutation_tests::boundary_condition_tests::frame_counter_starts_at_zero ... ok
 test mutation_tests::boundary_condition_tests::gen_bool_at_half_probability_has_variance ... ok
 test mutation_tests::boundary_condition_tests::gen_bool_at_near_one_mostly_true ... ok
-test mutation_tests::boundary_condition_tests::gen_bool_at_near_zero_mostly_false ... ok
-test mutation_tests::boundary_condition_tests::gen_bool_at_one_probability_always_true ... ok
-test mutation_tests::boundary_condition_tests::gen_bool_at_zero_probability_always_false ... ok
-test mutation_tests::boundary_condition_tests::gen_range_f32_at_lower_bound ... ok
-test mutation_tests::boundary_condition_tests::gen_range_f32_at_upper_bound ... ok
-test mutation_tests::boundary_condition_tests::gen_range_f32_never_reaches_upper_bound ... ok
-test mutation_tests::boundary_condition_tests::gen_range_u32_at_lower_bound ... ok
-test mutation_tests::boundary_condition_tests::gen_range_u32_at_upper_bound_minus_one ... ok
-test mutation_tests::comparison_operator_tests::alive_entity_is_alive ... ok
-test mutation_tests::comparison_operator_tests::component_present_vs_absent ... ok
-test mutation_tests::comparison_operator_tests::dead_entity_is_not_alive ... ok
-test mutation_tests::comparison_operator_tests::different_seeds_produce_different_first_value ... ok
-test mutation_tests::comparison_operator_tests::entity_equal_when_same ... ok
-test mutation_tests::comparison_operator_tests::entity_not_equal_when_different ... ok
-test mutation_tests::comparison_operator_tests::frame_equal_to_self ... ok
-test mutation_tests::comparison_operator_tests::frame_not_equal_after_update ... ok
-test mutation_tests::comparison_operator_tests::same_seed_produces_same_first_value ... ok
-test mutation_tests::events_tests::clear_all_clears_everything ... ok
-test mutation_tests::events_tests::clear_removes_all_events ... ok
-test mutation_tests::events_tests::different_event_types_are_independent ... ok
-test mutation_tests::events_tests::drain_removes_events ... ok
-test mutation_tests::events_tests::is_empty_reflects_event_count ... ok
-test mutation_tests::events_tests::new_events_has_zero_frame ... ok
-test mutation_tests::events_tests::read_returns_all_sent_events ... ok
-test mutation_tests::events_tests::send_increases_len ... ok
-test mutation_tests::events_tests::update_increments_frame ... ok
-test mutation_tests::rng_tests::cloned_rng_produces_same_sequence ... ok
-test mutation_tests::rng_tests::different_seeds_produce_different_sequences ... ok
-test mutation_tests::rng_tests::gen_bool_returns_false_at_zero_probability ... ok
-test mutation_tests::rng_tests::gen_bool_returns_true_at_high_probability ... ok
-test mutation_tests::rng_tests::gen_bool_returns_true_at_one_probability ... ok
-test mutation_tests::rng_tests::gen_range_stays_within_bounds_f32 ... ok
-test mutation_tests::rng_tests::gen_range_stays_within_bounds_u32 ... ok
-test mutation_tests::rng_tests::same_seed_produces_same_sequence ... ok
-test mutation_tests::rng_tests::seed_getter_returns_initialization_seed ... ok
-test mutation_tests::rng_tests::serialization_preserves_seed ... ok
-test mutation_tests::system_stage_tests::ai_planning_is_exactly_ai_planning ... ok
-test mutation_tests::system_stage_tests::perception_is_exactly_perception ... ok
-test mutation_tests::system_stage_tests::physics_is_exactly_physics ... ok
-test mutation_tests::system_stage_tests::post_simulation_is_exactly_post_simulation ... ok
-test mutation_tests::system_stage_tests::pre_simulation_is_exactly_pre_simulation ... ok
-test mutation_tests::system_stage_tests::presentation_is_exactly_presentation ... ok
-test mutation_tests::system_stage_tests::simulation_is_exactly_simulation ... ok
-test mutation_tests::world_tests::despawn_makes_entity_not_alive ... ok
-test mutation_tests::world_tests::get_mut_allows_modification ... ok
-test mutation_tests::world_tests::get_returns_none_for_missing_component ... ok
-test mutation_tests::world_tests::insert_adds_component ... ok
-test mutation_tests::world_tests::multiple_components_on_same_entity ... ok
-test mutation_tests::world_tests::remove_removes_component ... ok
-test mutation_tests::world_tests::spawn_returns_entity ... ok
-test mutation_tests::world_tests::spawn_returns_unique_entities ... ok
-test property_tests::config_tests::test_components_defined ... ok
-test property_tests::config_tests::test_proptest_basic ... ok
-test property_tests::config_tests::test_proptest_config ... ok
-test property_tests::prop_archetype_migration_on_add ... ok
-test property_tests::prop_archetype_migration_on_remove ... ok
-test property_tests::prop_component_combinations_distinct ... ok
-test property_tests::prop_component_data_preserved_during_transition ... ok
-test property_tests::prop_component_insertion_idempotent ... ok
-test property_tests::prop_component_removal_isolation ... ok
-test property_tests::prop_count_consistent_across_operations ... ok
-test property_tests::prop_despawned_entities_invalid ... ok
-test property_tests::prop_empty_world_operations_safe ... ok
-test property_tests::prop_entities_with_accurate ... ok
-test property_tests::prop_entities_with_returns_correct_entities ... ok
-test property_tests::prop_entity_count_invariant ... ok
-test property_tests::prop_entity_ids_unique ... ok
-test property_tests::prop_entity_recycling_safe ... ok
-test property_tests::prop_has_consistent_with_entities_with ... ok
-test property_tests::prop_has_consistent_with_get ... ok
-test property_tests::prop_interleaved_spawn_despawn ... ok
-test property_tests::prop_is_alive_consistent ... ok

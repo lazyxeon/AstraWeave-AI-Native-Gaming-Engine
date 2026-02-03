@@ -8,25 +8,26 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 1.649006,
+          "duration": 86.6753823,
           "process_status": "Success",
           "argv": [
             "C:\\Users\\pv2br\\.rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
             "test",
             "--no-run",
             "--verbose",
-            "--package=astraweave-physics@0.1.0"
+            "--package=astraweave-render@0.1.0"
           ]
         },
         {
           "phase": "Test",
-          "duration": 120.0289824,
+          "duration": 60.0858019,
           "process_status": "Timeout",
           "argv": [
             "C:\\Users\\pv2br\\.rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
             "test",
             "--verbose",
-            "--package=astraweave-physics@0.1.0"
+            "--package=astraweave-render@0.1.0",
+            "--lib"
           ]
         }
       ]
@@ -38,7 +39,7 @@
   "timeout": 0,
   "unviable": 0,
   "success": 0,
-  "start_time": "2026-02-01T23:21:09.6187501Z",
-  "end_time": "2026-02-01T23:23:11.3333388Z",
+  "start_time": "2026-02-03T15:46:18.7805214Z",
+  "end_time": "2026-02-03T15:48:45.7372727Z",
   "cargo_mutants_version": "26.1.2"
 }

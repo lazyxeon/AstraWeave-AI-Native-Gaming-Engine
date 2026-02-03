@@ -1,0 +1,8 @@
+{
+  "tick": 1,
+  "world": {
+    "t": 1.0,
+    "next_id": 1,
+    "obstacles": []
+  }
+}

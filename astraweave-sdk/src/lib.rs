@@ -9,6 +9,10 @@ use astraweave_core::{
     IVec2, PlanIntent, Team, World,
 };
 
+// Kani formal verification proofs
+#[cfg(kani)]
+mod lib_kani;
+
 #[derive(thiserror::Error, Debug)]
 pub enum SdkError {
     #[error("schema mismatch: {0}")]

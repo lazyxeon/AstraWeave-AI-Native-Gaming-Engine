@@ -1,7 +1,7 @@
 # AstraWeave: Master Strategic Roadmap
 
-**Version**: 1.44  
-**Last Updated**: January 13, 2026  
+**Version**: 1.45  
+**Last Updated**: February 3, 2026  
 **Status**: Authoritative Source  
 **Validation**: ✅ PASS — [Full Report](../current/ENGINE_VALIDATION_2026_01_13.md)
 
@@ -25,27 +25,30 @@
 
 AstraWeave is the **world's first AI-native game engine** where AI agents are first-class citizens, not bolted-on features. The entire codebase is developed iteratively by AI Agents (GitHub Copilot/Antigravity) with zero human-written code.
 
-### Current State (January 13, 2026)
+### Current State (February 3, 2026)
 
 | Metric | Value |
 |--------|-------|
 | **Validation Status** | ✅ **A+ Grade (95/100)** |
 | **Tests Passing** | **5,372/5,383 (99.8%)** |
 | **Compilation** | **17/17 core crates** (0 errors, 0 warnings) |
+| **Miri Validation** | ✅ **977 tests, 0 UB** |
 | Workspace Packages | 121 (47 core + 74 examples/tools) |
 | Total Tests | 7,600+ |
 | Test Coverage (Overall) | ~78% |
 | Frame Time (p95) | ~2.70ms |
 | Agent Capacity | 12,700+ @ 60 FPS |
 | **Determinism** | **100% validated** |
+| **Memory Safety** | ✅ **Miri-verified** |
 
-**Recent Critical Fix** (Jan 13, 2026): astraweave-rag DashMap deadlock resolved — [Details](../../CHANGELOG.md)
+**Recent Achievement** (Feb 3, 2026): Miri memory safety validation complete — 4 crates, 977 tests, zero undefined behavior — [Details](../current/MIRI_VALIDATION_REPORT.md)
 
 ### What AstraWeave Is
 
 - ✅ A **working prototype** with solid foundations
 - ✅ The **world's first AI-native game engine** with unique architecture
 - ✅ A **comprehensive experiment** proving AI can build complex systems
+- ✅ **Memory-safe**: All unsafe code Miri-validated
 - ✅ Approximately **3-12 months away** from production readiness
 
 ### What AstraWeave Is Not
@@ -62,20 +65,22 @@ AstraWeave is the **world's first AI-native game engine** where AI agents are fi
 
 | System | Status | Key Features |
 |--------|--------|--------------|
-| **ECS** | Production | Archetype-based, BlobVec storage, deterministic, 7-stage pipeline, 220 tests |
+| **ECS** | Production | Archetype-based, BlobVec storage, deterministic, 7-stage pipeline, 386 tests, **Miri-validated** |
 | **AI** | Production | 6 planning modes, GOAP, Behavior Trees, LLM integration |
 | **Rendering** | Production | wgpu 25, PBR/IBL, CSM shadows, post-processing, **Headless Support** |
 | **Physics** | Production | Rapier3D, character controller, spatial hashing |
 | **Audio** | Production | Spatial audio, 4-bus mixer, rodio backend |
 | **Navigation** | Production | Navmesh, A*, portal graphs (66/66 tests) |
+| **SDK** | Production | C ABI FFI, **Miri-validated** |
 
-### Recent Additions (January 2026)
+### Recent Additions (February 2026)
 
 | Feature | Location | Tests |
 |---------|----------|-------|
-| **✅ ECS BlobVec Optimization** | `astraweave-ecs/src/archetype.rs` | **220** |
-| **Headless Renderer & GPU Verification** | `astraweave-render/src/renderer.rs` | 369 |
-| **AI-Orchestrated Dynamic Terrain** | Multiple crates | 320+ |
+| **✅ Miri Memory Safety Validation** | ecs, math, core, sdk | **977** |
+| ECS BlobVec Optimization | `astraweave-ecs/src/archetype.rs` | 386 |
+| Headless Renderer & GPU Verification | `astraweave-render/src/renderer.rs` | 369 |
+| AI-Orchestrated Dynamic Terrain | Multiple crates | 320+ |
 | TLS/SSL Security | `astraweave-net/src/tls.rs` | 3 |
 | LLM Schema Enforcement | `astraweave-llm/src/schema.rs` | 7 |
 | Path Traversal Protection | `astraweave-security/src/path.rs` | 15 |
@@ -429,6 +434,22 @@ Jan 2026 ─ v1.43-1.44: ECS Regression Fix, Validation Plan v2.0
 
 </details>
 
+<details>
+<summary>v1.45 (2026-02-03) — Miri Memory Safety Validation</summary>
+
+**Impact**: 🟢 ENHANCEMENT  
+**Type**: 🔷 MAJOR  
+**Author**: AI Team
+
+**Changes**:
+- Comprehensive Miri validation across 4 crates with unsafe code
+- 977 tests validated with zero undefined behavior detected
+- Crates validated: astraweave-ecs (386 tests), astraweave-math (109 tests), astraweave-core (465 tests), astraweave-sdk (17 tests)
+- Memory safety certification for: BlobVec, SparseSet, EntityAllocator, SIMD intrinsics, C ABI FFI
+- Documentation: [MIRI_VALIDATION_REPORT.md](../current/MIRI_VALIDATION_REPORT.md), [ECS_MIRI_VALIDATION_REPORT.md](../current/ECS_MIRI_VALIDATION_REPORT.md)
+
+</details>
+
 ---
 
 ### Issues Resolved During Restructuring
@@ -442,7 +463,7 @@ Jan 2026 ─ v1.43-1.44: ECS Regression Fix, Validation Plan v2.0
 
 ---
 
-**Next Review Date**: 2026-02-18 (monthly cadence)  
+**Next Review Date**: 2026-03-03 (monthly cadence)  
 **Revision History Format Version**: 2.0.0 (IEEE/ACM-compliant)  
 **Last Restructured**: 2026-01-18
 

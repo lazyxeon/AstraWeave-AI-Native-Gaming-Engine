@@ -1,0 +1,226 @@
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.33s
+     Running unittests src\lib.rs (target\miri\x86_64-pc-windows-msvc\debug\deps\astraweave_ecs-0c738e343e41511d.exe)
+error[E0433]: failed to resolve: could not find `proptest_config` in `proptest`
+  --> astraweave-ecs\src\property_tests.rs:32:11
+   |
+32 | proptest::proptest_config! {
+   |           ^^^^^^^^^^^^^^^ could not find `proptest_config` in `proptest`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+  --> astraweave-ecs\src\property_tests.rs:66:24
+   |
+66 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+   |                        ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:381:24
+    |
+381 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:381:24
+    |
+381 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:381:24
+    |
+381 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:381:24
+    |
+381 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:525:24
+    |
+525 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:525:24
+    |
+525 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:525:24
+    |
+525 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:653:24
+    |
+653 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:653:24
+    |
+653 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:653:24
+    |
+653 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:653:24
+    |
+653 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:653:24
+    |
+653 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:781:24
+    |
+781 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:781:24
+    |
+781 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:781:24
+    |
+781 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+error[E0425]: cannot find value `MIRI_SAFE_CONFIG` in this scope
+   --> astraweave-ecs\src\property_tests.rs:781:24
+    |
+781 |     #![proptest_config(MIRI_SAFE_CONFIG)]
+    |                        ^^^^^^^^^^^^^^^^ not found in this scope
+    |
+    = note: duplicate diagnostic emitted due to `-Z deduplicate-diagnostics=no`
+
+warning: variable does not need to be mutable
+   --> astraweave-ecs\src\mutation_tests.rs:801:13
+    |
+801 |         let mut world = World::new();
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error: aborting due to 27 previous errors; 1 warning emitted
+
+Some errors have detailed explanations: E0425, E0433.
+For more information about an error, try `rustc --explain E0425`.
+error: test failed, to rerun pass `-p astraweave-ecs --lib`
+
+Caused by:
+  process didn't exit successfully: `C:\Users\pv2br\.rustup\toolchains\nightly-x86_64-pc-windows-msvc\bin\cargo-miri.exe runner C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\miri\x86_64-pc-windows-msvc\debug\deps\astraweave_ecs-0c738e343e41511d.exe` (exit code: 1)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.
