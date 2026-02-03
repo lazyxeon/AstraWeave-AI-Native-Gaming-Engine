@@ -189,6 +189,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_creates_file() {
         let temp_path = "test_capture_state.json";
         let mut w = World::new();
@@ -207,6 +208,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_file_content() {
         let temp_path = "test_capture_content.json";
         let mut w = World::new();
@@ -230,6 +232,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_overwrites_existing() {
         let temp_path = "test_capture_overwrite.json";
 
@@ -254,6 +257,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_loads_file() {
         let temp_path = "test_replay_load.json";
         let mut w = World::new();
@@ -277,6 +281,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_with_steps() {
         let temp_path = "test_replay_steps.json";
         let mut w = World::new();
@@ -296,6 +301,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_zero_steps() {
         let temp_path = "test_replay_zero.json";
         let mut w = World::new();
@@ -314,6 +320,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_nonexistent_file() {
         let cfg = SimConfig { dt: 0.1 };
         let result = replay_state("nonexistent_file_12345.json", 0, &cfg);
@@ -322,6 +329,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_invalid_json() {
         let temp_path = "test_replay_invalid.json";
         fs::write(temp_path, b"{ invalid json ").unwrap();
@@ -336,6 +344,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_wrong_structure() {
         let temp_path = "test_replay_wrong.json";
         fs::write(temp_path, br#"{"tick": 1}"#).unwrap();
@@ -350,6 +359,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_replay_roundtrip_with_entities() {
         let temp_path = "test_roundtrip_entities.json";
 
@@ -385,6 +395,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_determinism_verification() {
         let temp_path = "test_determinism.json";
 
@@ -410,6 +421,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_with_empty_world() {
         let temp_path = "test_empty_world.json";
         let w = World::new();
@@ -427,6 +439,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_with_many_obstacles() {
         let temp_path = "test_many_obstacles.json";
         let mut w = World::new();

@@ -73,6 +73,10 @@ pub mod simd_vec;
 #[cfg(test)]
 mod mutation_tests;
 
+// Kani formal verification proofs
+#[cfg(kani)]
+mod simd_vec_kani;
+
 // Re-exports for convenience
 pub use simd_vec::{cross_simd, dot_simd, length_simd, length_squared_simd, normalize_simd};
 

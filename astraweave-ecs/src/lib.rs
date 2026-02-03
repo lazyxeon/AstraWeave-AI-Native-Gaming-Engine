@@ -70,6 +70,13 @@ mod property_tests;
 #[cfg(test)]
 mod mutation_tests;
 
+// Kani formal verification proofs
+#[cfg(kani)]
+mod blob_vec_kani;
+
+#[cfg(kani)]
+mod entity_allocator_kani;
+
 use std::any::TypeId;
 use std::collections::HashMap;
 

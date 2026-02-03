@@ -8,6 +8,30 @@
 use crate::{World, Entity, Rng, Events, Event, SystemStage};
 
 // =============================================================================
+// Miri-Compatible Iteration Constants
+// =============================================================================
+// Miri runs ~100× slower than native execution, so we reduce iteration counts
+// to keep tests practical while still exercising the same code paths.
+
+/// Small iteration count: 1000 normally, 10 under Miri
+#[cfg(miri)]
+const ITER_SMALL: usize = 10;
+#[cfg(not(miri))]
+const ITER_SMALL: usize = 1000;
+
+/// Medium iteration count: 10000 normally, 100 under Miri
+#[cfg(miri)]
+const ITER_MEDIUM: usize = 100;
+#[cfg(not(miri))]
+const ITER_MEDIUM: usize = 10000;
+
+/// Large iteration count: 100000 normally, 1000 under Miri
+#[cfg(miri)]
+const ITER_LARGE: usize = 1000;
+#[cfg(not(miri))]
+const ITER_LARGE: usize = 100000;
+
+// =============================================================================
 // Rng Determinism Tests - Verify exact reproducible values
 // =============================================================================
 
@@ -45,7 +69,7 @@ mod rng_tests {
     #[test]
     fn gen_range_stays_within_bounds_u32() {
         let mut rng = Rng::from_seed(1000);
-        for _ in 0..1000 {
+        for _ in 0..ITER_SMALL {
             let val = rng.gen_range(10_u32..20);
             assert!(val >= 10 && val < 20, "gen_range must stay within [10, 20)");
         }
@@ -54,7 +78,7 @@ mod rng_tests {
     #[test]
     fn gen_range_stays_within_bounds_f32() {
         let mut rng = Rng::from_seed(2000);
-        for _ in 0..1000 {
+        for _ in 0..ITER_SMALL {
             let val = rng.gen_range(0.0_f32..1.0);
             assert!(val >= 0.0 && val < 1.0, "gen_range f32 must stay within [0.0, 1.0)");
         }
@@ -378,13 +402,13 @@ mod behavioral_correctness_tests {
         let mut min = u32::MAX;
         let mut max = u32::MIN;
         
-        for _ in 0..10000 {
+        for _ in 0..ITER_MEDIUM {
             let val = rng.gen_u32();
             min = min.min(val);
             max = max.max(val);
         }
         
-        // With 10k samples, we should hit at least 10% of the range
+        // With 10k samples (100 under Miri), we should hit at least 10% of the range
         assert!(max - min > u32::MAX / 10, "RNG should cover significant portion of u32 range");
     }
 
@@ -394,7 +418,7 @@ mod behavioral_correctness_tests {
         let mut world = World::new();
         let mut ids = std::collections::HashSet::new();
         
-        for _ in 0..1000 {
+        for _ in 0..ITER_SMALL {
             let e = world.spawn();
             assert!(ids.insert(e.id()), "Entity IDs must be unique");
         }
@@ -484,7 +508,7 @@ mod behavioral_correctness_tests {
     #[test]
     fn gen_range_exclusive_upper_bound() {
         let mut rng = Rng::from_seed(8888);
-        for _ in 0..10000 {
+        for _ in 0..ITER_MEDIUM {
             let val = rng.gen_range(0_u32..10);
             assert!(val < 10, "gen_range exclusive upper bound must never be returned");
         }
@@ -505,7 +529,7 @@ mod boundary_condition_tests {
         let mut rng = Rng::from_seed(1234);
         // With enough iterations, we should hit the lower bound
         let mut hit_lower = false;
-        for _ in 0..100000 {
+        for _ in 0..ITER_LARGE {
             let val = rng.gen_range(0_u32..10);
             if val == 0 {
                 hit_lower = true;
@@ -520,7 +544,7 @@ mod boundary_condition_tests {
         let mut rng = Rng::from_seed(5678);
         // With enough iterations, we should hit upper_bound - 1
         let mut hit_upper = false;
-        for _ in 0..100000 {
+        for _ in 0..ITER_LARGE {
             let val = rng.gen_range(0_u32..10);
             if val == 9 {
                 hit_upper = true;
@@ -534,7 +558,7 @@ mod boundary_condition_tests {
     fn gen_range_f32_at_lower_bound() {
         let mut rng = Rng::from_seed(2222);
         let mut found_near_zero = false;
-        for _ in 0..10000 {
+        for _ in 0..ITER_MEDIUM {
             let val = rng.gen_range(0.0_f32..1.0);
             if val < 0.01 {
                 found_near_zero = true;
@@ -547,7 +571,7 @@ mod boundary_condition_tests {
     fn gen_range_f32_at_upper_bound() {
         let mut rng = Rng::from_seed(3333);
         let mut found_near_one = false;
-        for _ in 0..10000 {
+        for _ in 0..ITER_MEDIUM {
             let val = rng.gen_range(0.0_f32..1.0);
             if val > 0.99 {
                 found_near_one = true;
@@ -559,7 +583,7 @@ mod boundary_condition_tests {
     #[test]
     fn gen_range_f32_never_reaches_upper_bound() {
         let mut rng = Rng::from_seed(4444);
-        for _ in 0..100000 {
+        for _ in 0..ITER_LARGE {
             let val = rng.gen_range(0.0_f32..1.0);
             assert!(val < 1.0, "gen_range f32 should never equal upper bound");
         }
@@ -570,7 +594,7 @@ mod boundary_condition_tests {
     #[test]
     fn gen_bool_at_zero_probability_always_false() {
         let mut rng = Rng::from_seed(5555);
-        for _ in 0..1000 {
+        for _ in 0..ITER_SMALL {
             assert!(!rng.gen_bool(0.0), "gen_bool(0.0) must always return false");
         }
     }
@@ -578,7 +602,7 @@ mod boundary_condition_tests {
     #[test]
     fn gen_bool_at_one_probability_always_true() {
         let mut rng = Rng::from_seed(6666);
-        for _ in 0..1000 {
+        for _ in 0..ITER_SMALL {
             assert!(rng.gen_bool(1.0), "gen_bool(1.0) must always return true");
         }
     }
@@ -798,7 +822,7 @@ mod boolean_return_path_tests {
 
     #[test]
     fn is_alive_returns_false_for_invalid_entity() {
-        let mut world = World::new();
+        let world = World::new();
         // Create a null entity (not spawned in this world)
         let invalid = Entity::null();
         assert!(!world.is_alive(invalid));

@@ -205,6 +205,7 @@ fn action_to_velocity(action: &AIAction, current: &Position, target: Option<&Pos
 // =============================================================================
 
 #[test]
+#[cfg_attr(miri, ignore)] // Miri is ~100x slower, timing assertions are meaningless
 fn test_ecs_ai_physics_loop_basic() {
     //! Tests the fundamental ECS → AI → Physics → ECS loop
     //! with 10 agents running for 60 frames
@@ -444,6 +445,7 @@ fn test_determinism_3_runs() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)] // Miri is ~100x slower, timing assertions are meaningless
 fn test_1000_agents_at_60fps() {
     //! Performance test: 1000 agents should complete 60 frames in <1 second
     //! This validates the system can handle large-scale battles

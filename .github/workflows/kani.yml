@@ -1,0 +1,118 @@
+# AstraWeave Kani Formal Verification Workflow
+# Runs Kani model checker on critical crates to formally verify correctness properties
+# Schedule: Weekly (Sunday 3 AM UTC)
+#
+# Kani verifies:
+# - Memory safety with exhaustive symbolic analysis
+# - Mathematical properties (e.g., commutative operations)
+# - Buffer overflow protection in FFI code
+# - Algorithmic correctness (e.g., data structure invariants)
+#
+# Unlike testing, Kani PROVES properties hold for ALL possible inputs.
+
+name: Kani Formal Verification
+
+on:
+  schedule:
+    # Run weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      crates:
+        description: 'Comma-separated list of crates to verify'
+        required: false
+        default: 'astraweave-ecs,astraweave-math,astraweave-sdk'
+      timeout:
+        description: 'Timeout per harness in seconds'
+        required: false
+        default: '300'
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  kani-ecs:
+    name: Kani - astraweave-ecs
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Kani Verification
+        uses: model-checking/kani-github-action@v1
+        with:
+          working-directory: .
+          args: --package astraweave-ecs --harness-timeout ${{ github.event.inputs.timeout || '300' }}
+      
+      - name: Upload Kani Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kani-report-ecs
+          path: target/kani/
+          retention-days: 30
+
+  kani-math:
+    name: Kani - astraweave-math
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Kani Verification
+        uses: model-checking/kani-github-action@v1
+        with:
+          working-directory: .
+          args: --package astraweave-math --harness-timeout ${{ github.event.inputs.timeout || '300' }}
+      
+      - name: Upload Kani Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kani-report-math
+          path: target/kani/
+          retention-days: 30
+
+  kani-sdk:
+    name: Kani - astraweave-sdk
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Kani Verification
+        uses: model-checking/kani-github-action@v1
+        with:
+          working-directory: .
+          args: --package astraweave-sdk --harness-timeout ${{ github.event.inputs.timeout || '300' }}
+      
+      - name: Upload Kani Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kani-report-sdk
+          path: target/kani/
+          retention-days: 30
+
+  summary:
+    name: Kani Summary
+    runs-on: ubuntu-latest
+    needs: [kani-ecs, kani-math, kani-sdk]
+    if: always()
+    steps:
+      - name: Check Results
+        run: |
+          echo "## Kani Verification Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Crate | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-ecs | ${{ needs.kani-ecs.result == 'success' && '✅ VERIFIED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-math | ${{ needs.kani-math.result == 'success' && '✅ VERIFIED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| astraweave-sdk | ${{ needs.kani-sdk.result == 'success' && '✅ VERIFIED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Kani** provides formal mathematical proofs of correctness, not just testing." >> $GITHUB_STEP_SUMMARY
+          
+      - name: Fail if any verification failed
+        if: ${{ needs.kani-ecs.result != 'success' || needs.kani-math.result != 'success' || needs.kani-sdk.result != 'success' }}
+        run: exit 1

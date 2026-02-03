@@ -7,6 +7,18 @@
 //! **Phase 4.1 Focus**: Demonstrate proptest integration with simplified tests
 //! that match the actual World API. Phase 4.2 will expand with more comprehensive
 //! test coverage once this foundation is proven.
+//!
+//! # Miri Compatibility
+//!
+//! Property tests are skipped under Miri because:
+//! 1. Miri runs ~100× slower than native execution
+//! 2. Proptest generates many test cases (256 by default)
+//! 3. Total time: 256 × 100 = 7+ hours per property test!
+//!
+//! The non-property tests in other modules exercise the same unsafe code paths
+//! and are validated by Miri. Property tests are validated in normal test runs.
+
+#![cfg(not(miri))]
 
 use crate::*;
 use proptest::prelude::*;
@@ -37,7 +49,7 @@ struct PropHealth {
 // ============================================================================
 
 proptest! {
-    /// Property: Entity count equals number of spawns minus number of despawns
+        /// Property: Entity count equals number of spawns minus number of despawns
     #[test]
     fn prop_entity_count_invariant(spawn_count in 1usize..100, despawn_ratio in 0.0f32..1.0f32) {
         let mut world = World::new();
@@ -350,7 +362,7 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// Property: Adding a component triggers archetype migration
+        /// Property: Adding a component triggers archetype migration
     #[test]
     fn prop_archetype_migration_on_add(spawn_count in 1usize..50) {
         let mut world = World::new();
@@ -492,7 +504,7 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// Property: Adding multiple components in sequence preserves all data
+        /// Property: Adding multiple components in sequence preserves all data
     #[test]
     fn prop_multi_component_add_preserves_data(
         pos_x in any::<i32>(),
@@ -618,7 +630,7 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// Property: Operations on NULL entity fail gracefully
+        /// Property: Operations on NULL entity fail gracefully
     #[test]
     fn prop_null_entity_operations_safe(_dummy in 0..100u32) {
         let mut world = World::new();
@@ -744,7 +756,7 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// Property: count() consistent across operations
+        /// Property: count() consistent across operations
     #[test]
     fn prop_count_consistent_across_operations(
         spawn_count in 1usize..50,
