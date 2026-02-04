@@ -28,25 +28,27 @@ cargo run -p hello_companion --release
 
 [→ Detailed walkthrough](./hello-companion.md)
 
-### Adaptive Boss ⚠️
+### Adaptive Boss ✅
 **Location**: `examples/adaptive_boss`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
-Multi-phase boss that adapts its strategy based on player behavior.
+Multi-phase boss with Director AI that adapts tactics based on player behavior.
 
 ```bash
 cargo run -p adaptive_boss --release
 ```
 
 **What it demonstrates:**
-- Director system for complex AI behavior
-- Phase-based AI state machines
-- Dynamic strategy adaptation
-- Boss pattern recognition
+- BossDirector for dynamic encounter planning
+- Budget-constrained AI decisions
+- Telegraph system for attack warnings
+- Phase-based combat behavior
 
-### Companion Profile ⚠️
+[→ Detailed walkthrough](./adaptive-boss.md)
+
+### Companion Profile ✅
 **Location**: `examples/companion_profile`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
 Demonstrates persistent AI profiles that learn and adapt.
 
@@ -64,53 +66,98 @@ cargo run -p companion_profile --release
 
 These examples showcase fundamental engine systems:
 
-### Physics Demo 3D ⚠️
-**Location**: `examples/physics_demo3d`  
-**Status**: ⚠️ Check compilation
+### Fluids Demo ✅
+**Location**: `examples/fluids_demo`  
+**Status**: ✅ Working
 
-Demonstrates the Rapier3D physics integration.
+Interactive fluid simulation with PCISPH physics and multiple scenarios.
+
+```bash
+cargo run -p fluids_demo --release
+```
+
+**What it demonstrates:**
+- Real-time particle-based fluid simulation
+- Multiple scenarios (laboratory, ocean, waterfall, splash)
+- Interactive particle spawning (click to add water)
+- LOD optimization for performance scaling
+- egui debug panel with live parameters
+
+[→ Detailed walkthrough](./fluids-demo.md)
+
+### Unified Showcase ✅
+**Location**: `examples/unified_showcase`  
+**Status**: ✅ Working
+
+Comprehensive rendering demo with shadows, terrain, GLTF models, and skybox.
+
+```bash
+cargo run -p unified_showcase --release
+```
+
+**What it demonstrates:**
+- Shadow mapping with 2048×2048 depth textures
+- GLTF model loading with materials
+- Procedural terrain with multi-texture blending
+- HDR skybox rendering
+- 4× MSAA antialiasing
+
+[→ Detailed walkthrough](./unified-showcase.md)
+
+### Physics Demo 3D ✅
+**Location**: `examples/physics_demo3d`  
+**Status**: ✅ Working
+
+Demonstrates the Rapier3D physics integration with character controllers, destructibles, and environmental forces.
 
 ```bash
 cargo run -p physics_demo3d --release
 ```
 
 **What it demonstrates:**
-- 3D physics simulation
-- Character controller integration
-- Collision detection and response
-- Physics-based AI movement
+- 3D physics simulation with Rapier3D
+- Character controller with slope handling
+- Destructible objects that shatter
+- Water buoyancy and wind forces
+- Collision layer filtering
 
-### Navmesh Demo ⚠️
+[→ Detailed walkthrough](./physics-demo.md)
+
+### Navmesh Demo ✅
 **Location**: `examples/navmesh_demo`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
-Shows navigation mesh generation and pathfinding.
+Shows navigation mesh baking and A* pathfinding.
 
 ```bash
 cargo run -p navmesh_demo --release
 ```
 
 **What it demonstrates:**
-- Automatic navmesh generation
-- A* pathfinding
-- Dynamic obstacle avoidance
-- AI navigation coordination
+- NavMesh baking from triangle geometry
+- Slope-based walkability filtering
+- A* pathfinding with path visualization
+- Agent radius margin calculation
 
-### Audio Spatial Demo ⚠️
+[→ Detailed walkthrough](./navmesh-demo.md)
+
+### Audio Spatial Demo ✅
 **Location**: `examples/audio_spatial_demo`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
-Spatial audio system with 3D positioning.
+Spatial audio system with 3D positioning and music crossfading.
 
 ```bash
 cargo run -p audio_spatial_demo --release
 ```
 
 **What it demonstrates:**
-- 3D positional audio
-- Dynamic audio sources
-- Environmental audio effects
-- Audio-based AI perception
+- 3D positional audio (left/center/right beeps)
+- Music playback with crossfading
+- Listener tracking tied to camera
+- Volume bus control (master/music/SFX)
+
+[→ Detailed walkthrough](./audio-spatial.md)
 
 ## Networking Examples
 
@@ -132,9 +179,9 @@ cargo run -p ipc_loopback --release
 - IPC message passing
 - AI model hot-swapping
 
-### Coop Server/Client ⚠️
+### Coop Server/Client ✅
 **Location**: `examples/coop_server`, `examples/coop_client`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
 Basic multiplayer client-server architecture.
 
@@ -156,9 +203,9 @@ cargo run -p coop_client --release
 
 These examples focus on AI planning and tool usage:
 
-### LLM Tool Call ⚠️
+### LLM Tool Call ✅
 **Location**: `examples/llm_toolcall`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
 Direct demonstration of LLM tool calling.
 
@@ -172,9 +219,9 @@ cargo run -p llm_toolcall --release
 - Structured AI responses
 - Planning validation
 
-### Phase Director ⚠️
+### Phase Director ✅
 **Location**: `examples/phase_director`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
 Complex AI director managing multiple phases.
 
@@ -200,9 +247,9 @@ Debug UI overlay for development.
 
 **Known issues**: egui API mismatches with current version.
 
-### Persona Loader ⚠️
+### Persona Loader ✅
 **Location**: `examples/persona_loader`  
-**Status**: ⚠️ Check compilation
+**Status**: ✅ Working
 
 Loading and managing AI personas from files.
 
