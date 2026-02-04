@@ -7,13 +7,15 @@
 //! 4. Latency budgets and graceful degradation
 //!
 //! Part of Phase 1: Core Pipeline Integration (Bulletproof Validation Plan)
+//!
+//! NOTE: Each test clears the global cache to ensure test isolation.
 
 use anyhow::Result;
 use astraweave_core::{
     ActionStep, CompanionState, Constraints, EnemyState, IVec2, PlayerState, 
     ToolRegistry, ToolSpec, WorldSnapshot,
 };
-use astraweave_llm::{plan_from_llm, LlmClient, PlanSource};
+use astraweave_llm::{clear_global_cache, plan_from_llm, LlmClient, PlanSource};
 use async_trait::async_trait;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -210,6 +212,7 @@ impl LlmClient for StreamingClient {
 #[tokio::test]
 async fn test_fallback_chain_success_first_try() {
     //! Tests that successful LLM response is used directly
+    clear_global_cache(); // Ensure test isolation
     
     let client = SuccessClient;
     let snap = create_test_snapshot();
@@ -234,6 +237,7 @@ async fn test_fallback_chain_success_first_try() {
 #[tokio::test]
 async fn test_fallback_chain_after_failures() {
     //! Tests that system retries and eventually uses fallback after repeated failures
+    clear_global_cache(); // Ensure test isolation
     
     let client = RetryClient::new(10); // Will fail more than retry limit
     let snap = create_test_snapshot();
@@ -258,6 +262,7 @@ async fn test_fallback_chain_after_failures() {
 #[tokio::test]
 async fn test_fallback_chain_malformed_json() {
     //! Tests fallback when LLM returns malformed JSON
+    clear_global_cache(); // Ensure test isolation
     
     let client = MalformedJsonClient;
     let snap = create_test_snapshot();
@@ -283,6 +288,7 @@ async fn test_fallback_chain_malformed_json() {
 #[tokio::test]
 async fn test_fallback_chain_hallucinated_tools() {
     //! Tests fallback when LLM returns non-existent tools
+    clear_global_cache(); // Ensure test isolation
     
     let client = HallucinatedToolClient;
     let snap = create_test_snapshot();
@@ -316,6 +322,7 @@ async fn test_fallback_chain_hallucinated_tools() {
 #[tokio::test]
 async fn test_fallback_latency_budget() {
     //! Tests that slow LLM responses trigger fallback within latency budget
+    clear_global_cache(); // Ensure test isolation
     
     let client = SlowClient { delay_ms: 100 }; // 100ms delay
     let snap = create_test_snapshot();
@@ -337,6 +344,7 @@ async fn test_fallback_latency_budget() {
 #[tokio::test]
 async fn test_streaming_parser_assembly() {
     //! Tests that streaming responses are correctly assembled
+    clear_global_cache(); // Ensure test isolation
     
     let client = StreamingClient::new();
     let snap = create_test_snapshot();
@@ -359,6 +367,7 @@ async fn test_streaming_parser_assembly() {
 #[tokio::test]
 async fn test_fallback_plan_validity() {
     //! Tests that fallback plans are always valid and executable
+    clear_global_cache(); // Ensure test isolation
     
     // Force fallback with always-failing client
     struct AlwaysFailClient;
@@ -396,6 +405,7 @@ async fn test_fallback_plan_validity() {
 #[tokio::test]
 async fn test_concurrent_fallback_requests() {
     //! Tests that multiple concurrent fallback requests don't interfere
+    clear_global_cache(); // Ensure test isolation
     
     let client = Arc::new(RetryClient::new(5));
     let snap = create_test_snapshot();
@@ -431,6 +441,7 @@ async fn test_concurrent_fallback_requests() {
 #[tokio::test]
 async fn test_fallback_preserves_context() {
     //! Tests that fallback plans consider the world state
+    clear_global_cache(); // Ensure test isolation
     
     struct ContextAwareFailClient;
     
@@ -464,6 +475,7 @@ async fn test_fallback_preserves_context() {
 #[tokio::test]
 async fn test_fallback_tier_progression() {
     //! Tests that fallback progresses through tiers correctly
+    clear_global_cache(); // Ensure test isolation
     
     let call_count = Arc::new(AtomicUsize::new(0));
     let call_count_clone = Arc::clone(&call_count);
