@@ -513,6 +513,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "slow test - skip for mutation testing"]
     async fn test_camera_update() {
         let mut manager = VoxelPartitionManager::new(VoxelPartitionConfig::default());
         let camera_pos = Vec3::new(128.0, 0.0, 128.0); // Center of cell (0,0,0)

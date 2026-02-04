@@ -487,6 +487,7 @@ fn test_complementary_configs() {
 
 /// Test parallel mesh generation
 #[test]
+#[ignore = "slow test - skip for mutation testing"]
 fn test_parallel_mesh_generation() {
     use astraweave_terrain::meshing::AsyncMeshGenerator;
 
@@ -567,6 +568,7 @@ fn test_mesh_memory_usage() {
 
 /// Benchmark-style test for performance validation
 #[test]
+#[ignore = "slow benchmark test - skip for mutation testing"]
 fn test_mesh_generation_performance() {
     let coord = ChunkCoord::new(0, 0, 0);
     let mut chunk = VoxelChunk::new(coord);

@@ -634,6 +634,7 @@ mod tests {
     #[cfg(feature = "llm_orchestrator")]
     #[tokio::test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     async fn llm_orchestrator_respects_timeout_env_var() {
         // Test that LLM_TIMEOUT_MS environment variable overrides budget_ms
         std::env::set_var("LLM_TIMEOUT_MS", "5000");
@@ -656,6 +657,7 @@ mod tests {
     #[cfg(feature = "llm_orchestrator")]
     #[tokio::test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     async fn llm_orchestrator_uses_budget_when_env_missing() {
         // Ensure env var is not set
         std::env::remove_var("LLM_TIMEOUT_MS");
@@ -676,6 +678,7 @@ mod tests {
     #[cfg(feature = "llm_orchestrator")]
     #[tokio::test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     async fn llm_orchestrator_enforces_minimum_timeout() {
         // Test that timeout has a minimum of 50ms
         std::env::remove_var("LLM_TIMEOUT_MS");
@@ -722,6 +725,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn system_orchestrator_config_default_parses_env() {
         // Test default config parsing - ensure clean environment first
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
@@ -737,6 +741,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn system_orchestrator_config_respects_use_llm_env() {
         // Test ASTRAWEAVE_USE_LLM=1
         std::env::set_var("ASTRAWEAVE_USE_LLM", "1");
@@ -763,6 +768,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn system_orchestrator_config_respects_ollama_url_env() {
         // Clean environment first
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
@@ -777,6 +783,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn system_orchestrator_config_respects_ollama_model_env() {
         // Clean environment first, then set specific var
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
@@ -791,6 +798,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn make_system_orchestrator_returns_utility_when_llm_disabled() {
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
 
@@ -812,6 +820,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn make_system_orchestrator_uses_default_config_when_none() {
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
 
@@ -1279,6 +1288,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[cfg_attr(miri, ignore)] // serial_test depends on scc crate which has UB under Miri
     fn system_orchestrator_config_handles_empty_env_vars() {
         // unwrap_or_else only triggers if var is NOT SET (Err), not if it's empty string
         // Empty strings ARE valid values and get used as-is
