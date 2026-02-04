@@ -1,0 +1,33 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace ChunkManager::unload_distant_chunks with ()
+@@ -211,29 +211,17 @@
+ 
+     /// Get all chunk IDs within a radius of a center position
+     pub fn get_chunks_in_radius(&self, center: Vec3, radius: u32) -> Vec<ChunkId> {
+         ChunkId::get_chunks_in_radius(center, radius, self.chunk_size)
+     }
+ 
+     /// Unload chunks that are too far from the center
+     pub fn unload_distant_chunks(&mut self, center: Vec3, max_radius: u32) {
+-        let center_chunk = ChunkId::from_world_pos(center, self.chunk_size);
+-        let max_distance = max_radius as f32;
+-
+-        let to_remove: Vec<ChunkId> = self
+-            .chunks
+-            .keys()
+-            .filter(|&&chunk_id| chunk_id.distance_to(center_chunk) > max_distance)
+-            .copied()
+-            .collect();
+-
+-        for chunk_id in to_remove {
+-            self.chunks.remove(&chunk_id);
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get the height at a world position by finding the appropriate chunk
+     pub fn get_height_at_world_pos(&self, world_pos: Vec3) -> Option<f32> {
+         let chunk_id = ChunkId::from_world_pos(world_pos, self.chunk_size);
+         self.get_chunk(chunk_id)?
+             .get_height_at_world_pos(world_pos, self.chunk_size)
+     }

@@ -1,0 +1,21 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace >= with < in ChunkManager::add_chunk
+@@ -179,17 +179,17 @@
+             heightmap_resolution,
+             max_loaded_chunks: 256, // Limit memory usage
+         }
+     }
+ 
+     /// Add a chunk to the manager
+     pub fn add_chunk(&mut self, chunk: TerrainChunk) {
+         // If we're at capacity, remove the oldest chunk
+-        if self.chunks.len() >= self.max_loaded_chunks {
++        if self.chunks.len() < /* ~ changed by cargo-mutants ~ */ self.max_loaded_chunks {
+             // Simple LRU: remove a random chunk (in production, use proper LRU)
+             if let Some(&chunk_id) = self.chunks.keys().next() {
+                 self.chunks.remove(&chunk_id);
+             }
+         }
+ 
+         self.chunks.insert(chunk.id(), chunk);
+     }

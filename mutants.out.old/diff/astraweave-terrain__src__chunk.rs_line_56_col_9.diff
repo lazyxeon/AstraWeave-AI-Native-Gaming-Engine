@@ -1,0 +1,23 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace ChunkId::distance_to -> f32 with 0.0
+@@ -48,19 +48,17 @@
+             }
+         }
+ 
+         chunks
+     }
+ 
+     /// Calculate distance to another chunk (in chunk units)
+     pub fn distance_to(self, other: ChunkId) -> f32 {
+-        let dx = (self.x - other.x) as f32;
+-        let dz = (self.z - other.z) as f32;
+-        (dx * dx + dz * dz).sqrt()
++        0.0 /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// A single terrain chunk containing heightmap and biome data
+ #[derive(Debug, Clone)]
+ pub struct TerrainChunk {
+     id: ChunkId,
+     heightmap: Heightmap,

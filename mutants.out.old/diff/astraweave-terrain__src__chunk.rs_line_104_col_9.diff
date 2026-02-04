@@ -1,0 +1,21 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace TerrainChunk::mark_mesh_clean with ()
+@@ -96,17 +96,17 @@
+ 
+     /// Check if the mesh needs to be regenerated
+     pub fn is_mesh_dirty(&self) -> bool {
+         self.mesh_dirty
+     }
+ 
+     /// Mark the mesh as clean (after regeneration)
+     pub fn mark_mesh_clean(&mut self) {
+-        self.mesh_dirty = false;
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Apply hydraulic erosion to the chunk
+     pub fn apply_erosion(&mut self, strength: f32) -> anyhow::Result<()> {
+         self.heightmap.apply_hydraulic_erosion(strength)?;
+         self.mesh_dirty = true;
+         Ok(())
+     }

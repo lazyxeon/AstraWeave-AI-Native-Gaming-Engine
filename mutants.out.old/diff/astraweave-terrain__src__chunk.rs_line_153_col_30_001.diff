@@ -1,0 +1,21 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace / with * in TerrainChunk::get_biome_at_world_pos
+@@ -145,17 +145,17 @@
+             || local_pos.z >= chunk_size
+         {
+             return None;
+         }
+ 
+         // Convert to biome map coordinates
+         let resolution = self.heightmap.resolution() as f32;
+         let u = (local_pos.x / chunk_size) * (resolution - 1.0);
+-        let v = (local_pos.z / chunk_size) * (resolution - 1.0);
++        let v = (local_pos.z * /* ~ changed by cargo-mutants ~ */ chunk_size) * (resolution - 1.0);
+ 
+         let x = u.round() as usize;
+         let z = v.round() as usize;
+         let index = z * self.heightmap.resolution() as usize + x;
+ 
+         self.biome_map.get(index).copied()
+     }
+ }

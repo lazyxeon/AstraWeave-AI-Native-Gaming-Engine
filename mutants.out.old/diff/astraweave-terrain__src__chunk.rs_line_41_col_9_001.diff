@@ -1,0 +1,31 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace ChunkId::get_chunks_in_radius -> Vec<ChunkId> with vec![Default::default()]
+@@ -33,27 +33,17 @@
+     /// Get the center world position of the chunk
+     pub fn to_center_pos(self, chunk_size: f32) -> Vec3 {
+         let origin = self.to_world_pos(chunk_size);
+         origin + Vec3::new(chunk_size * 0.5, 0.0, chunk_size * 0.5)
+     }
+ 
+     /// Get all chunk IDs within a given radius
+     pub fn get_chunks_in_radius(center: Vec3, radius: u32, chunk_size: f32) -> Vec<ChunkId> {
+-        let center_chunk = ChunkId::from_world_pos(center, chunk_size);
+-        let mut chunks = Vec::new();
+-
+-        let radius = radius as i32;
+-        for dx in -radius..=radius {
+-            for dz in -radius..=radius {
+-                chunks.push(ChunkId::new(center_chunk.x + dx, center_chunk.z + dz));
+-            }
+-        }
+-
+-        chunks
++        vec![Default::default()] /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Calculate distance to another chunk (in chunk units)
+     pub fn distance_to(self, other: ChunkId) -> f32 {
+         let dx = (self.x - other.x) as f32;
+         let dz = (self.z - other.z) as f32;
+         (dx * dx + dz * dz).sqrt()
+     }

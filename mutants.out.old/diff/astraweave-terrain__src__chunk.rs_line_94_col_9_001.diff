@@ -1,0 +1,21 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace TerrainChunk::biome_map -> &[BiomeType] with Vec::leak(vec![Default::default()])
+@@ -86,17 +86,17 @@
+ 
+     /// Get the heightmap
+     pub fn heightmap(&self) -> &Heightmap {
+         &self.heightmap
+     }
+ 
+     /// Get the biome map
+     pub fn biome_map(&self) -> &[BiomeType] {
+-        &self.biome_map
++        Vec::leak(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Check if the mesh needs to be regenerated
+     pub fn is_mesh_dirty(&self) -> bool {
+         self.mesh_dirty
+     }
+ 
+     /// Mark the mesh as clean (after regeneration)

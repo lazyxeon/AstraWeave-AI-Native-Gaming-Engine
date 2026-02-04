@@ -1,0 +1,21 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace ChunkManager::has_chunk -> bool with true
+@@ -201,17 +201,17 @@
+ 
+     /// Get a mutable chunk by ID
+     pub fn get_chunk_mut(&mut self, chunk_id: ChunkId) -> Option<&mut TerrainChunk> {
+         self.chunks.get_mut(&chunk_id)
+     }
+ 
+     /// Check if a chunk is loaded
+     pub fn has_chunk(&self, chunk_id: ChunkId) -> bool {
+-        self.chunks.contains_key(&chunk_id)
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get all chunk IDs within a radius of a center position
+     pub fn get_chunks_in_radius(&self, center: Vec3, radius: u32) -> Vec<ChunkId> {
+         ChunkId::get_chunks_in_radius(center, radius, self.chunk_size)
+     }
+ 
+     /// Unload chunks that are too far from the center

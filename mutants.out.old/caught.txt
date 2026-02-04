@@ -1,0 +1,82 @@
+astraweave-terrain/src/chunk.rs:23:36: replace / with % in ChunkId::from_world_pos
+astraweave-terrain/src/chunk.rs:23:36: replace / with * in ChunkId::from_world_pos
+astraweave-terrain/src/chunk.rs:24:36: replace / with % in ChunkId::from_world_pos
+astraweave-terrain/src/chunk.rs:24:36: replace / with * in ChunkId::from_world_pos
+astraweave-terrain/src/chunk.rs:30:9: replace ChunkId::to_world_pos -> Vec3 with Default::default()
+astraweave-terrain/src/chunk.rs:30:33: replace * with + in ChunkId::to_world_pos
+astraweave-terrain/src/chunk.rs:30:33: replace * with / in ChunkId::to_world_pos
+astraweave-terrain/src/chunk.rs:30:66: replace * with + in ChunkId::to_world_pos
+astraweave-terrain/src/chunk.rs:30:66: replace * with / in ChunkId::to_world_pos
+astraweave-terrain/src/chunk.rs:35:9: replace ChunkId::to_center_pos -> Vec3 with Default::default()
+astraweave-terrain/src/chunk.rs:36:16: replace + with - in ChunkId::to_center_pos
+astraweave-terrain/src/chunk.rs:36:16: replace + with * in ChunkId::to_center_pos
+astraweave-terrain/src/chunk.rs:36:39: replace * with + in ChunkId::to_center_pos
+astraweave-terrain/src/chunk.rs:36:39: replace * with / in ChunkId::to_center_pos
+astraweave-terrain/src/chunk.rs:36:62: replace * with + in ChunkId::to_center_pos
+astraweave-terrain/src/chunk.rs:36:62: replace * with / in ChunkId::to_center_pos
+astraweave-terrain/src/chunk.rs:41:9: replace ChunkId::get_chunks_in_radius -> Vec<ChunkId> with vec![]
+astraweave-terrain/src/chunk.rs:45:19: delete - in ChunkId::get_chunks_in_radius
+astraweave-terrain/src/chunk.rs:46:23: delete - in ChunkId::get_chunks_in_radius
+astraweave-terrain/src/chunk.rs:47:57: replace + with * in ChunkId::get_chunks_in_radius
+astraweave-terrain/src/chunk.rs:47:78: replace + with * in ChunkId::get_chunks_in_radius
+astraweave-terrain/src/chunk.rs:56:9: replace ChunkId::distance_to -> f32 with 0.0
+astraweave-terrain/src/chunk.rs:56:9: replace ChunkId::distance_to -> f32 with 1.0
+astraweave-terrain/src/chunk.rs:56:9: replace ChunkId::distance_to -> f32 with -1.0
+astraweave-terrain/src/chunk.rs:56:26: replace - with + in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:56:26: replace - with / in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:57:26: replace - with + in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:57:26: replace - with / in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:58:18: replace + with - in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:58:18: replace + with * in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:58:13: replace * with + in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:58:13: replace * with / in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:58:23: replace * with + in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:58:23: replace * with / in ChunkId::distance_to
+astraweave-terrain/src/chunk.rs:94:9: replace TerrainChunk::biome_map -> &[BiomeType] with Vec::leak(Vec::new())
+astraweave-terrain/src/chunk.rs:99:9: replace TerrainChunk::is_mesh_dirty -> bool with true
+astraweave-terrain/src/chunk.rs:99:9: replace TerrainChunk::is_mesh_dirty -> bool with false
+astraweave-terrain/src/chunk.rs:104:9: replace TerrainChunk::mark_mesh_clean with ()
+astraweave-terrain/src/chunk.rs:109:9: replace TerrainChunk::apply_erosion -> anyhow::Result<()> with Ok(())
+astraweave-terrain/src/chunk.rs:116:9: replace TerrainChunk::get_height_at_world_pos -> Option<f32> with None
+astraweave-terrain/src/chunk.rs:116:9: replace TerrainChunk::get_height_at_world_pos -> Option<f32> with Some(0.0)
+astraweave-terrain/src/chunk.rs:116:9: replace TerrainChunk::get_height_at_world_pos -> Option<f32> with Some(1.0)
+astraweave-terrain/src/chunk.rs:116:9: replace TerrainChunk::get_height_at_world_pos -> Option<f32> with Some(-1.0)
+astraweave-terrain/src/chunk.rs:117:35: replace - with / in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:123:13: replace || with && in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:121:13: replace || with && in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:120:24: replace < with == in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:120:24: replace < with > in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:121:28: replace >= with < in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:122:28: replace < with > in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:123:28: replace >= with < in TerrainChunk::get_height_at_world_pos
+astraweave-terrain/src/chunk.rs:138:9: replace TerrainChunk::get_biome_at_world_pos -> Option<BiomeType> with None
+astraweave-terrain/src/chunk.rs:139:35: replace - with / in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:142:24: replace < with > in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:143:28: replace >= with < in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:144:28: replace < with > in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:145:28: replace >= with < in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:152:30: replace / with % in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:152:30: replace / with * in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:153:44: replace * with + in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:153:30: replace / with % in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:153:30: replace / with * in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:157:62: replace + with * in TerrainChunk::get_biome_at_world_pos
+astraweave-terrain/src/chunk.rs:187:9: replace ChunkManager::add_chunk with ()
+astraweave-terrain/src/chunk.rs:187:30: replace >= with < in ChunkManager::add_chunk
+astraweave-terrain/src/chunk.rs:199:9: replace ChunkManager::get_chunk -> Option<&TerrainChunk> with None
+astraweave-terrain/src/chunk.rs:204:9: replace ChunkManager::get_chunk_mut -> Option<&mut TerrainChunk> with None
+astraweave-terrain/src/chunk.rs:209:9: replace ChunkManager::has_chunk -> bool with true
+astraweave-terrain/src/chunk.rs:209:9: replace ChunkManager::has_chunk -> bool with false
+astraweave-terrain/src/chunk.rs:214:9: replace ChunkManager::get_chunks_in_radius -> Vec<ChunkId> with vec![]
+astraweave-terrain/src/chunk.rs:219:9: replace ChunkManager::unload_distant_chunks with ()
+astraweave-terrain/src/chunk.rs:225:69: replace > with == in ChunkManager::unload_distant_chunks
+astraweave-terrain/src/chunk.rs:225:69: replace > with < in ChunkManager::unload_distant_chunks
+astraweave-terrain/src/chunk.rs:236:9: replace ChunkManager::get_height_at_world_pos -> Option<f32> with None
+astraweave-terrain/src/chunk.rs:236:9: replace ChunkManager::get_height_at_world_pos -> Option<f32> with Some(0.0)
+astraweave-terrain/src/chunk.rs:236:9: replace ChunkManager::get_height_at_world_pos -> Option<f32> with Some(1.0)
+astraweave-terrain/src/chunk.rs:236:9: replace ChunkManager::get_height_at_world_pos -> Option<f32> with Some(-1.0)
+astraweave-terrain/src/chunk.rs:243:9: replace ChunkManager::get_biome_at_world_pos -> Option<BiomeType> with None
+astraweave-terrain/src/chunk.rs:250:9: replace ChunkManager::loaded_chunks -> Vec<ChunkId> with vec![]
+astraweave-terrain/src/chunk.rs:255:9: replace ChunkManager::chunk_count -> usize with 0
+astraweave-terrain/src/chunk.rs:255:9: replace ChunkManager::chunk_count -> usize with 1
+astraweave-terrain/src/chunk.rs:260:9: replace ChunkManager::set_max_loaded_chunks with ()

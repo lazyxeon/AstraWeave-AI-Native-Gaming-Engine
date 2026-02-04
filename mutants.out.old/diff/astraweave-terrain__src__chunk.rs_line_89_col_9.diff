@@ -1,0 +1,21 @@
+--- astraweave-terrain/src/chunk.rs
++++ replace TerrainChunk::heightmap -> &Heightmap with Box::leak(Box::new(Default::default()))
+@@ -81,17 +81,17 @@
+ 
+     /// Get the chunk ID
+     pub fn id(&self) -> ChunkId {
+         self.id
+     }
+ 
+     /// Get the heightmap
+     pub fn heightmap(&self) -> &Heightmap {
+-        &self.heightmap
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get the biome map
+     pub fn biome_map(&self) -> &[BiomeType] {
+         &self.biome_map
+     }
+ 
+     /// Check if the mesh needs to be regenerated
