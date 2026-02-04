@@ -412,7 +412,7 @@ impl ClusteredForwardRenderer {
 
                     // Calculate cluster bounds
                     let min_x = (x as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
-                    let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+                    let max_x = ((x + 1) as f32 * /* ~ changed by cargo-mutants ~ */ self.config.cluster_x as f32) * 2.0 - 1.0;
                     let min_y = (y as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
                     let max_y = ((y + 1) as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
 
