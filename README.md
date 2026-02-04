@@ -27,7 +27,7 @@ Built in Rust, designed for massive-scale intelligent worlds with production-gra
 
 📚 [Documentation](docs/) • 📊 [Benchmarks](docs/masters/MASTER_BENCHMARK_REPORT.md) • 🗺️ [Roadmap](docs/masters/MASTER_ROADMAP.md) • 🧪 [Coverage](docs/masters/MASTER_COVERAGE_REPORT.md)
 
-**[Interactive Benchmark Dashboard](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Local: `.\scripts\run_benchmark_dashboard.ps1`
+**[Github Pages](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Interactive Benchmark Dashboard Local: `.\scripts\run_benchmark_dashboard.ps1`
 
 ---
 
