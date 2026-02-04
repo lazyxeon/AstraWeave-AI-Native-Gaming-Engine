@@ -285,7 +285,7 @@ impl PlanIntent {
 
     /// Returns `true` if the plan contains any offensive actions.
     pub fn has_offensive(&self) -> bool {
-        true /* ~ changed by cargo-mutants ~ */
+        self.steps.iter().any(|s| s.is_offensive())
     }
 }
 
