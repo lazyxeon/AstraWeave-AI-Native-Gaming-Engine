@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ delete ! in ClusteredForwardRenderer::build_clusters_cpu
+@@ -446,17 +446,17 @@
+         }
+ 
+         // Upload cluster data and light indices to GPU
+         queue.write_buffer(
+             &self.cluster_buffer,
+             0,
+             bytemuck::cast_slice(&self.clusters),
+         );
+-        if !self.light_indices.is_empty() {
++        if  /* ~ changed by cargo-mutants ~ */self.light_indices.is_empty() {
+             queue.write_buffer(
+                 &self.light_indices_buffer,
+                 0,
+                 bytemuck::cast_slice(&self.light_indices),
+             );
+         }
+     }
+ 

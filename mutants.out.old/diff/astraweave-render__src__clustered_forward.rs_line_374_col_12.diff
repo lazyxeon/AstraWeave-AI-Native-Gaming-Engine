@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ delete ! in ClusteredForwardRenderer::build_clusters_with_encoder
+@@ -366,17 +366,17 @@
+         device: &wgpu::Device,
+         queue: &wgpu::Queue,
+         encoder: &mut wgpu::CommandEncoder,
+         view_matrix: Mat4,
+         _proj_matrix: Mat4,
+         screen_size: (u32, u32),
+     ) {
+         // Upload lights to GPU
+-        if !self.lights.is_empty() {
++        if  /* ~ changed by cargo-mutants ~ */self.lights.is_empty() {
+             queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&self.lights));
+         }
+ 
+         // Try GPU path if MegaLights available
+         if self.megalights.is_some() && !self.lights.is_empty() {
+             if self
+                 .build_clusters_gpu(device, queue, encoder, view_matrix, screen_size)
+                 .is_ok()

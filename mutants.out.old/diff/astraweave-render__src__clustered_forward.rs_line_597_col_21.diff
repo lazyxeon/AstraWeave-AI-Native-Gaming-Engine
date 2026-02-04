@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace <= with > in ClusteredForwardRenderer::light_intersects_cluster
+@@ -589,17 +589,17 @@
+                 .y
+                 .clamp(cluster.min_bounds[1], cluster.max_bounds[1]),
+             light_pos_view
+                 .z
+                 .clamp(cluster.min_bounds[2], cluster.max_bounds[2]),
+         );
+ 
+         let distance_sq = (light_pos_view - closest_point).length_squared();
+-        distance_sq <= radius * radius
++        distance_sq > /* ~ changed by cargo-mutants ~ */ radius * radius
+     }
+ 
+     /// Get the bind group layout
+     pub fn bind_group_layout(&self) -> &wgpu::BindGroupLayout {
+         &self.cluster_bind_group_layout
+     }
+ 
+     /// Get the bind group

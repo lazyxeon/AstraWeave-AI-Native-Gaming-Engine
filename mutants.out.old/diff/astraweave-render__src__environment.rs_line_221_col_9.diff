@@ -1,0 +1,310 @@
+--- astraweave-render/src/environment.rs
++++ replace SkyRenderer::init_gpu_resources -> Result<()> with Ok(())
+@@ -213,306 +213,17 @@
+ 
+     /// Initialize GPU resources for sky rendering
+     pub fn init_gpu_resources(
+         &mut self,
+         device: &wgpu::Device,
+         format: wgpu::TextureFormat,
+     ) -> Result<()> {
+         // Create skybox geometry (inverted cube)
+-        let vertices = self.create_skybox_vertices();
+-        let indices = self.create_skybox_indices();
+-        self.index_count = indices.len() as u32;
+-
+-        self.skybox_vertices = Some(
+-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+-                label: Some("Skybox Vertices"),
+-                contents: bytemuck::cast_slice(&vertices),
+-                usage: wgpu::BufferUsages::VERTEX,
+-            }),
+-        );
+-
+-        self.skybox_indices = Some(
+-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+-                label: Some("Skybox Indices"),
+-                contents: bytemuck::cast_slice(&indices),
+-                usage: wgpu::BufferUsages::INDEX,
+-            }),
+-        );
+-
+-        // Create uniform buffer for sky parameters
+-        self.uniform_buffer = Some(device.create_buffer(&wgpu::BufferDescriptor {
+-            label: Some("Sky Uniform Buffer"),
+-            size: std::mem::size_of::<SkyUniforms>() as u64,
+-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+-            mapped_at_creation: false,
+-        }));
+-
+-        // Create bind group layout and bind group
+-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+-            label: Some("Sky Bind Group Layout"),
+-            entries: &[wgpu::BindGroupLayoutEntry {
+-                binding: 0,
+-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+-                ty: wgpu::BindingType::Buffer {
+-                    ty: wgpu::BufferBindingType::Uniform,
+-                    has_dynamic_offset: false,
+-                    min_binding_size: None,
+-                },
+-                count: None,
+-            }],
+-        });
+-
+-        self.bind_group = Some(
+-            device.create_bind_group(&wgpu::BindGroupDescriptor {
+-                label: Some("Sky Bind Group"),
+-                layout: &bind_group_layout,
+-                entries: &[wgpu::BindGroupEntry {
+-                    binding: 0,
+-                    resource: self
+-                        .uniform_buffer
+-                        .as_ref()
+-                        .expect("BUG: uniform_buffer should be Some after creation above")
+-                        .as_entire_binding(),
+-                }],
+-            }),
+-        );
+-
+-        // Create render pipeline
+-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Sky Shader"),
+-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SKY_SHADER_SOURCE)),
+-        });
+-
+-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+-            label: Some("Sky Pipeline Layout"),
+-            bind_group_layouts: &[&bind_group_layout],
+-            push_constant_ranges: &[],
+-        });
+-
+-        self.skybox_pipeline = Some(device.create_render_pipeline(
+-            &wgpu::RenderPipelineDescriptor {
+-                label: Some("Sky Pipeline"),
+-                layout: Some(&pipeline_layout),
+-                vertex: wgpu::VertexState {
+-                    module: &shader,
+-                    entry_point: Some("vs_main"),
+-                    buffers: &[SkyVertex::desc()],
+-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+-                },
+-                fragment: Some(wgpu::FragmentState {
+-                    module: &shader,
+-                    entry_point: Some("fs_main"),
+-                    targets: &[Some(wgpu::ColorTargetState {
+-                        format,
+-                        blend: Some(wgpu::BlendState::REPLACE),
+-                        write_mask: wgpu::ColorWrites::ALL,
+-                    })],
+-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+-                }),
+-                primitive: wgpu::PrimitiveState {
+-                    topology: wgpu::PrimitiveTopology::TriangleList,
+-                    strip_index_format: None,
+-                    front_face: wgpu::FrontFace::Ccw,
+-                    cull_mode: None, // No culling for skybox
+-                    polygon_mode: wgpu::PolygonMode::Fill,
+-                    unclipped_depth: false,
+-                    conservative: false,
+-                },
+-                depth_stencil: Some(wgpu::DepthStencilState {
+-                    format: wgpu::TextureFormat::Depth32Float,
+-                    depth_write_enabled: false, // Skybox should not write depth
+-                    depth_compare: wgpu::CompareFunction::LessEqual,
+-                    stencil: wgpu::StencilState::default(),
+-                    bias: wgpu::DepthBiasState::default(),
+-                }),
+-                multisample: wgpu::MultisampleState::default(),
+-                multiview: None,
+-                cache: None,
+-            },
+-        ));
+-
+-        // Create textured skybox pipeline
+-        let texture_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+-            label: Some("Textured Sky BGL"),
+-            entries: &[
+-                // Uniforms (ViewProj)
+-                wgpu::BindGroupLayoutEntry {
+-                    binding: 0,
+-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+-                    ty: wgpu::BindingType::Buffer {
+-                        ty: wgpu::BufferBindingType::Uniform,
+-                        has_dynamic_offset: false,
+-                        min_binding_size: None,
+-                    },
+-                    count: None,
+-                },
+-                // Texture Cube
+-                wgpu::BindGroupLayoutEntry {
+-                    binding: 1,
+-                    visibility: wgpu::ShaderStages::FRAGMENT,
+-                    ty: wgpu::BindingType::Texture {
+-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+-                        view_dimension: wgpu::TextureViewDimension::Cube,
+-                        multisampled: false,
+-                    },
+-                    count: None,
+-                },
+-                // Sampler
+-                wgpu::BindGroupLayoutEntry {
+-                    binding: 2,
+-                    visibility: wgpu::ShaderStages::FRAGMENT,
+-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+-                    count: None,
+-                },
+-            ],
+-        });
+-
+-        let texture_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Textured Sky Shader"),
+-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(TEXTURED_SKY_SHADER_SOURCE)),
+-        });
+-
+-        let texture_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+-            label: Some("Textured Sky Pipeline Layout"),
+-            bind_group_layouts: &[&texture_bgl],
+-            push_constant_ranges: &[],
+-        });
+-
+-        self.texture_pipeline = Some(device.create_render_pipeline(
+-            &wgpu::RenderPipelineDescriptor {
+-                label: Some("Textured Sky Pipeline"),
+-                layout: Some(&texture_pl),
+-                vertex: wgpu::VertexState {
+-                    module: &texture_shader,
+-                    entry_point: Some("vs_main"),
+-                    buffers: &[SkyVertex::desc()],
+-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+-                },
+-                fragment: Some(wgpu::FragmentState {
+-                    module: &texture_shader,
+-                    entry_point: Some("fs_main"),
+-                    targets: &[Some(wgpu::ColorTargetState {
+-                        format,
+-                        blend: Some(wgpu::BlendState::REPLACE),
+-                        write_mask: wgpu::ColorWrites::ALL,
+-                    })],
+-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+-                }),
+-                primitive: wgpu::PrimitiveState {
+-                    topology: wgpu::PrimitiveTopology::TriangleList,
+-                    strip_index_format: None,
+-                    front_face: wgpu::FrontFace::Ccw,
+-                    cull_mode: None,
+-                    polygon_mode: wgpu::PolygonMode::Fill,
+-                    unclipped_depth: false,
+-                    conservative: false,
+-                },
+-                depth_stencil: Some(wgpu::DepthStencilState {
+-                    format: wgpu::TextureFormat::Depth32Float,
+-                    depth_write_enabled: false,
+-                    depth_compare: wgpu::CompareFunction::LessEqual,
+-                    stencil: wgpu::StencilState::default(),
+-                    bias: wgpu::DepthBiasState::default(),
+-                }),
+-                multisample: wgpu::MultisampleState::default(),
+-                multiview: None,
+-                cache: None,
+-            },
+-        ));
+-        self.texture_bgl = Some(texture_bgl);
+-
+-        // Initialize Equirect pipeline
+-        let equirect_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+-            label: Some("Equirect Sky BGL"),
+-            entries: &[
+-                wgpu::BindGroupLayoutEntry {
+-                    binding: 0,
+-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+-                    ty: wgpu::BindingType::Buffer {
+-                        ty: wgpu::BufferBindingType::Uniform,
+-                        has_dynamic_offset: false,
+-                        min_binding_size: None,
+-                    },
+-                    count: None,
+-                },
+-                wgpu::BindGroupLayoutEntry {
+-                    binding: 1,
+-                    visibility: wgpu::ShaderStages::FRAGMENT,
+-                    ty: wgpu::BindingType::Texture {
+-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+-                        view_dimension: wgpu::TextureViewDimension::D2,
+-                        multisampled: false,
+-                    },
+-                    count: None,
+-                },
+-                wgpu::BindGroupLayoutEntry {
+-                    binding: 2,
+-                    visibility: wgpu::ShaderStages::FRAGMENT,
+-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+-                    count: None,
+-                },
+-            ],
+-        });
+-
+-        let equirect_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Equirect Sky Shader"),
+-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(EQUIRECT_SKY_SHADER_SOURCE)),
+-        });
+-
+-        let equirect_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+-            label: Some("Equirect Sky Layout"),
+-            bind_group_layouts: &[&equirect_bgl],
+-            push_constant_ranges: &[],
+-        });
+-
+-        self.equirect_pipeline = Some(device.create_render_pipeline(
+-            &wgpu::RenderPipelineDescriptor {
+-                label: Some("Equirect Sky Pipeline"),
+-                layout: Some(&equirect_pl),
+-                vertex: wgpu::VertexState {
+-                    module: &equirect_shader,
+-                    entry_point: Some("vs_main"),
+-                    buffers: &[SkyVertex::desc()],
+-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+-                },
+-                fragment: Some(wgpu::FragmentState {
+-                    module: &equirect_shader,
+-                    entry_point: Some("fs_main"),
+-                    targets: &[Some(wgpu::ColorTargetState {
+-                        format,
+-                        blend: Some(wgpu::BlendState::REPLACE),
+-                        write_mask: wgpu::ColorWrites::ALL,
+-                    })],
+-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+-                }),
+-                primitive: wgpu::PrimitiveState {
+-                    topology: wgpu::PrimitiveTopology::TriangleList,
+-                    strip_index_format: None,
+-                    front_face: wgpu::FrontFace::Ccw,
+-                    cull_mode: None,
+-                    polygon_mode: wgpu::PolygonMode::Fill,
+-                    unclipped_depth: false,
+-                    conservative: false,
+-                },
+-                depth_stencil: Some(wgpu::DepthStencilState {
+-                    format: wgpu::TextureFormat::Depth32Float,
+-                    depth_write_enabled: false,
+-                    depth_compare: wgpu::CompareFunction::LessEqual,
+-                    stencil: wgpu::StencilState::default(),
+-                    bias: wgpu::DepthBiasState::default(),
+-                }),
+-                multisample: wgpu::MultisampleState::default(),
+-                multiview: None,
+-                cache: None,
+-            },
+-        ));
+-        self.equirect_bgl = Some(equirect_bgl);
+-
+-        Ok(())
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Update the time of day and sky state
+     pub fn update(&mut self, _delta_time: f32) {
+         self.time_of_day.update();
+     }
+ 
+     #[allow(clippy::too_many_arguments)]

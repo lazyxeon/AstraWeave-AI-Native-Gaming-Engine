@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace * with / in WeatherSystem::get_terrain_color_modifier
+@@ -1178,17 +1178,17 @@
+                 )
+             }
+             WeatherType::Snow => {
+                 // Snow makes terrain whiter
+                 let snow_cover = self.snow_intensity * 0.8;
+                 vec3(
+                     1.0 + snow_cover * 0.5,
+                     1.0 + snow_cover * 0.5,
+-                    1.0 + snow_cover * 0.6,
++                    1.0 + snow_cover / /* ~ changed by cargo-mutants ~ */ 0.6,
+                 )
+             }
+             WeatherType::Fog => vec3(0.9, 0.9, 1.0),
+             WeatherType::Sandstorm => vec3(1.0, 0.8, 0.6),
+         }
+     }
+ 
+     /// Get light attenuation due to weather

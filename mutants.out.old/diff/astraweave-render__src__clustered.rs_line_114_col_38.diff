@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered.rs
++++ replace * with + in bin_lights_cpu
+@@ -106,17 +106,17 @@
+     let mut cursors = vec![0u32; clusters];
+     for (li, l) in lights.iter().enumerate() {
+         let z = l.pos.z.max(near + 1e-4);
+         if z - l.radius > far {
+             continue;
+         }
+         let ndc_x = (l.pos.x / z) * fx;
+         let ndc_y = (l.pos.y / z) * fy;
+-        let px = (ndc_x * 0.5 + 0.5) * width as f32;
++        let px = (ndc_x * 0.5 + 0.5) + /* ~ changed by cargo-mutants ~ */ width as f32;
+         let py = (ndc_y * 0.5 + 0.5) * height as f32;
+         let rpx_x = (l.radius / z) * fx * (width as f32 * 0.5);
+         let rpx_y = (l.radius / z) * fy * (height as f32 * 0.5);
+         let min_px = (px - rpx_x).floor() as i32;
+         let max_px = (px + rpx_x).ceil() as i32;
+         let min_py = (py - rpx_y).floor() as i32;
+         let max_py = (py + rpx_y).ceil() as i32;
+         let ix0 = clamp_u32(min_px / tile_w as i32, 0, dims.x as i32 - 1);

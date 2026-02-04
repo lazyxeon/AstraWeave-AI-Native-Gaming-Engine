@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ delete ! in SkyRenderer::render
+@@ -620,17 +620,17 @@
+                 render_pass.set_vertex_buffer(0, vertices.slice(..));
+                 render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);
+                 render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+                 drawn = true;
+             }
+         }
+ 
+         // 2. Try Textured Cube (Fallback)
+-        if !drawn {
++        if  /* ~ changed by cargo-mutants ~ */drawn {
+             if let Some(tex) = sky_texture {
+                 if let (Some(tex_pipeline), Some(tex_bgl)) =
+                     (&self.texture_pipeline, &self.texture_bgl)
+                 {
+                     // Create sampler
+                     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                         label: Some("Skybox Sampler"),
+                         mag_filter: wgpu::FilterMode::Linear,

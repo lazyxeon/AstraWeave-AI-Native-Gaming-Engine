@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace > with < in WeatherSystem::is_raining
+@@ -1145,17 +1145,17 @@
+     /// Get current wind direction
+     pub fn get_wind_direction(&self) -> Vec3 {
+         self.wind_direction
+     }
+ 
+     /// Check if it's currently raining
+     pub fn is_raining(&self) -> bool {
+         matches!(self.current_weather, WeatherType::Rain | WeatherType::Storm)
+-            && self.rain_intensity > 0.1
++            && self.rain_intensity < /* ~ changed by cargo-mutants ~ */ 0.1
+     }
+ 
+     /// Check if it's currently snowing
+     pub fn is_snowing(&self) -> bool {
+         self.current_weather == WeatherType::Snow && self.snow_intensity > 0.1
+     }
+ 
+     /// Check if there's fog

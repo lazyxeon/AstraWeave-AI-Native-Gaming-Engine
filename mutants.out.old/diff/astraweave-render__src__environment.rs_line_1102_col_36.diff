@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace <= with > in WeatherSystem::set_weather
+@@ -1094,17 +1094,17 @@
+         )
+         .normalize();
+     }
+ 
+     /// Set target weather with transition duration
+     pub fn set_weather(&mut self, weather: WeatherType, transition_duration: f32) {
+         if weather != self.current_weather {
+             self.target_weather = weather;
+-            if transition_duration <= 0.0 {
++            if transition_duration > /* ~ changed by cargo-mutants ~ */ 0.0 {
+                 // Instant weather change
+                 self.current_weather = weather;
+                 self.transition_progress = 1.0;
+                 self.update_weather_parameters();
+             } else {
+                 // Gradual transition
+                 self.transition_duration = transition_duration;
+                 self.transition_progress = 0.0;

@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace | with ^ in SkyRenderer::init_gpu_resources
+@@ -237,17 +237,17 @@
+                 usage: wgpu::BufferUsages::INDEX,
+             }),
+         );
+ 
+         // Create uniform buffer for sky parameters
+         self.uniform_buffer = Some(device.create_buffer(&wgpu::BufferDescriptor {
+             label: Some("Sky Uniform Buffer"),
+             size: std::mem::size_of::<SkyUniforms>() as u64,
+-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
++            usage: wgpu::BufferUsages::UNIFORM ^ /* ~ changed by cargo-mutants ~ */ wgpu::BufferUsages::COPY_DST,
+             mapped_at_creation: false,
+         }));
+ 
+         // Create bind group layout and bind group
+         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+             label: Some("Sky Bind Group Layout"),
+             entries: &[wgpu::BindGroupLayoutEntry {
+                 binding: 0,

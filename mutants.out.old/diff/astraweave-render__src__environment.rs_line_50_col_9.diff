@@ -1,0 +1,24 @@
+--- astraweave-render/src/environment.rs
++++ replace TimeOfDay::update with ()
+@@ -42,20 +42,17 @@
+             time_scale,
+             start_time: Instant::now(),
+             day_length: 1440.0,
+         }
+     }
+ 
+     /// Update the time based on real elapsed time
+     pub fn update(&mut self) {
+-        let elapsed = self.start_time.elapsed().as_secs_f32();
+-        let game_hours = (elapsed * self.time_scale) / 3600.0;
+-        self.current_time = (self.current_time + game_hours) % 24.0;
+-        self.start_time = Instant::now();
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get the sun position in the sky (-1 to 1 range)
+     pub fn get_sun_position(&self) -> Vec3 {
+         // Sun rises at 6am, peaks at noon, sets at 6pm
+         let sun_angle = (self.current_time - 6.0) * std::f32::consts::PI / 12.0;
+         let sun_height = sun_angle.sin();
+         let sun_azimuth = (self.current_time - 12.0) * std::f32::consts::PI / 12.0;

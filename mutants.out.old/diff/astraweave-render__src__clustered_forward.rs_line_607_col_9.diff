@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace ClusteredForwardRenderer::bind_group -> &wgpu::BindGroup with Box::leak(Box::new(Default::default()))
+@@ -599,17 +599,17 @@
+ 
+     /// Get the bind group layout
+     pub fn bind_group_layout(&self) -> &wgpu::BindGroupLayout {
+         &self.cluster_bind_group_layout
+     }
+ 
+     /// Get the bind group
+     pub fn bind_group(&self) -> &wgpu::BindGroup {
+-        &self.cluster_bind_group
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get configuration
+     pub fn config(&self) -> &ClusterConfig {
+         &self.config
+     }
+ 
+     /// Get light count

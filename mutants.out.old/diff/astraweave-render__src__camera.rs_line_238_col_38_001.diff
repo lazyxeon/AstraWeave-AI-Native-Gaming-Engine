@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace + with * in CameraController::update_camera
+@@ -230,17 +230,17 @@
+             self.yaw_target = camera.yaw;
+             self.pitch_target = camera.pitch;
+             self.targets_initialized = true;
+         }
+ 
+         // Exponential smoothing toward targets; dt-aware
+         let t = 1.0 - (-self.mouse_smooth * dt.max(1e-4)).exp();
+         camera.yaw = camera.yaw + (self.yaw_target - camera.yaw) * t;
+-        camera.pitch = (camera.pitch + (self.pitch_target - camera.pitch) * t).clamp(-1.54, 1.54);
++        camera.pitch = (camera.pitch * /* ~ changed by cargo-mutants ~ */ (self.pitch_target - camera.pitch) * t).clamp(-1.54, 1.54);
+ 
+         // Effective speed with runtime modifiers
+         let mut eff_speed = self.speed;
+         if self.sprint_active {
+             eff_speed *= self.sprint_mult;
+         }
+         if self.precision_active {
+             eff_speed *= self.precision_mult;

@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace SkyRenderer::time_of_day_mut -> &mut TimeOfDay with Box::leak(Box::new(Default::default()))
+@@ -683,17 +683,17 @@
+ 
+     /// Get the current time of day system
+     pub fn time_of_day(&self) -> &TimeOfDay {
+         &self.time_of_day
+     }
+ 
+     /// Get mutable reference to time of day system
+     pub fn time_of_day_mut(&mut self) -> &mut TimeOfDay {
+-        &mut self.time_of_day
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get current sky configuration
+     pub fn config(&self) -> &SkyConfig {
+         &self.config
+     }
+ 
+     /// Update sky configuration

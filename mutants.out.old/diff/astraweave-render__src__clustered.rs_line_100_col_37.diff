@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered.rs
++++ replace + with - in bin_lights_cpu
+@@ -92,17 +92,17 @@
+                 }
+             }
+         }
+     }
+ 
+     // Exclusive scan to offsets
+     let mut offsets = vec![0u32; clusters + 1];
+     for i in 0..clusters {
+-        offsets[i + 1] = offsets[i] + counts[i];
++        offsets[i + 1] = offsets[i] - /* ~ changed by cargo-mutants ~ */ counts[i];
+     }
+ 
+     // Second pass: fill indices using running write cursors
+     let total = offsets[clusters] as usize;
+     let mut indices = vec![0u32; total];
+     let mut cursors = vec![0u32; clusters];
+     for (li, l) in lights.iter().enumerate() {
+         let z = l.pos.z.max(near + 1e-4);

@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace SkyRenderer::set_config with ()
+@@ -693,17 +693,17 @@
+ 
+     /// Get current sky configuration
+     pub fn config(&self) -> &SkyConfig {
+         &self.config
+     }
+ 
+     /// Update sky configuration
+     pub fn set_config(&mut self, config: SkyConfig) {
+-        self.config = config;
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     // Private helper methods
+ 
+     fn create_skybox_vertices(&self) -> Vec<SkyVertex> {
+         // Create a sphere for skybox to avoid corner artifacts
+         let rings = 16;
+         let segments = 32;

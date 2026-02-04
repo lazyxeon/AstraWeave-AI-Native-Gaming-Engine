@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace > with == in WeatherSystem::is_foggy
+@@ -1155,17 +1155,17 @@
+ 
+     /// Check if it's currently snowing
+     pub fn is_snowing(&self) -> bool {
+         self.current_weather == WeatherType::Snow && self.snow_intensity > 0.1
+     }
+ 
+     /// Check if there's fog
+     pub fn is_foggy(&self) -> bool {
+-        self.fog_density > 0.1
++        self.fog_density == /* ~ changed by cargo-mutants ~ */ 0.1
+     }
+ 
+     /// Get weather-based terrain color modifier
+     pub fn get_terrain_color_modifier(&self) -> Vec3 {
+         match self.current_weather {
+             WeatherType::Clear => vec3(1.0, 1.0, 1.0),
+             WeatherType::Cloudy => vec3(0.8, 0.8, 0.9),
+             WeatherType::Rain | WeatherType::Storm => {

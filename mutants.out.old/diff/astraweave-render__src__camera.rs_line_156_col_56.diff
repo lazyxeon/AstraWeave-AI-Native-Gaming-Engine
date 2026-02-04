@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace - with + in CameraController::process_mouse_move
+@@ -148,17 +148,17 @@
+                 let delta = (pos - last) * self.sensitivity;
+                 // Update smooth targets (actual camera moves toward these in update_camera)
+                 if !self.targets_initialized {
+                     self.yaw_target = camera.yaw;
+                     self.pitch_target = camera.pitch;
+                     self.targets_initialized = true;
+                 }
+                 self.yaw_target -= delta.x;
+-                self.pitch_target = (self.pitch_target - delta.y).clamp(-1.54, 1.54);
++                self.pitch_target = (self.pitch_target + /* ~ changed by cargo-mutants ~ */ delta.y).clamp(-1.54, 1.54);
+             }
+             self.last_mouse = Some(pos);
+         }
+     }
+ 
+     pub fn process_mouse_delta(&mut self, camera: &mut Camera, delta: Vec2) {
+         if self.dragging {
+             // Apply deadzone to raw deltas to avoid drift

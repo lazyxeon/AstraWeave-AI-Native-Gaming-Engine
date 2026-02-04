@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace + with * in WeatherSystem::update
+@@ -1085,17 +1085,17 @@
+         // Update weather parameters based on current state
+         self.update_weather_parameters();
+ 
+         // Animate wind direction slightly
+         let wind_variation = (self.last_update.elapsed().as_secs_f32() * 0.5).sin() * 0.1;
+         self.wind_direction = vec3(
+             (1.0 + wind_variation).cos(),
+             0.0,
+-            (1.0 + wind_variation).sin(),
++            (1.0 * /* ~ changed by cargo-mutants ~ */ wind_variation).sin(),
+         )
+         .normalize();
+     }
+ 
+     /// Set target weather with transition duration
+     pub fn set_weather(&mut self, weather: WeatherType, transition_duration: f32) {
+         if weather != self.current_weather {
+             self.target_weather = weather;

@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace * with / in TimeOfDay::get_light_color
+@@ -99,17 +99,17 @@
+ 
+         if sun_height > 0.2 {
+             // Daytime - warm yellow/white sunlight
+             let intensity = (sun_height - 0.2) / 0.8;
+             vec3(1.0, 0.95, 0.8) * (0.8 + 0.2 * intensity)
+         } else if sun_height > -0.2 {
+             // Twilight - orange/red sunset/sunrise
+             let intensity = (sun_height + 0.2) / 0.4;
+-            vec3(1.0, 0.6, 0.3) * (0.3 + 0.5 * intensity)
++            vec3(1.0, 0.6, 0.3) * (0.3 + 0.5 / /* ~ changed by cargo-mutants ~ */ intensity)
+         } else {
+             // Night - cool blue moonlight
+             vec3(0.3, 0.4, 0.8) * 0.15
+         }
+     }
+ 
+     /// Get ambient light color
+     pub fn get_ambient_color(&self) -> Vec3 {

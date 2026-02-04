@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace WeatherSystem::get_rain_intensity -> f32 with 1.0
+@@ -1119,17 +1119,17 @@
+ 
+     /// Get the target weather type
+     pub fn target_weather(&self) -> WeatherType {
+         self.target_weather
+     }
+ 
+     /// Get current rain intensity (0.0 to 1.0)
+     pub fn get_rain_intensity(&self) -> f32 {
+-        self.rain_intensity
++        1.0 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get current snow intensity (0.0 to 1.0)
+     pub fn get_snow_intensity(&self) -> f32 {
+         self.snow_intensity
+     }
+ 
+     /// Get current fog density (0.0 to 1.0)

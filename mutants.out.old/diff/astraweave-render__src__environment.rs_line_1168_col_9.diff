@@ -1,0 +1,44 @@
+--- astraweave-render/src/environment.rs
++++ replace WeatherSystem::get_terrain_color_modifier -> Vec3 with Default::default()
+@@ -1160,40 +1160,17 @@
+ 
+     /// Check if there's fog
+     pub fn is_foggy(&self) -> bool {
+         self.fog_density > 0.1
+     }
+ 
+     /// Get weather-based terrain color modifier
+     pub fn get_terrain_color_modifier(&self) -> Vec3 {
+-        match self.current_weather {
+-            WeatherType::Clear => vec3(1.0, 1.0, 1.0),
+-            WeatherType::Cloudy => vec3(0.8, 0.8, 0.9),
+-            WeatherType::Rain | WeatherType::Storm => {
+-                // Wet terrain is darker
+-                let wetness = self.rain_intensity * 0.7;
+-                vec3(
+-                    1.0 - wetness * 0.3,
+-                    1.0 - wetness * 0.2,
+-                    1.0 - wetness * 0.1,
+-                )
+-            }
+-            WeatherType::Snow => {
+-                // Snow makes terrain whiter
+-                let snow_cover = self.snow_intensity * 0.8;
+-                vec3(
+-                    1.0 + snow_cover * 0.5,
+-                    1.0 + snow_cover * 0.5,
+-                    1.0 + snow_cover * 0.6,
+-                )
+-            }
+-            WeatherType::Fog => vec3(0.9, 0.9, 1.0),
+-            WeatherType::Sandstorm => vec3(1.0, 0.8, 0.6),
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get light attenuation due to weather
+     pub fn get_light_attenuation(&self) -> f32 {
+         match self.current_weather {
+             WeatherType::Clear => 1.0,
+             WeatherType::Cloudy => 0.7,
+             WeatherType::Rain => 0.5,

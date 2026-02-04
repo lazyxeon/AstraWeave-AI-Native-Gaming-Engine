@@ -1,0 +1,107 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace ClusteredForwardRenderer::build_clusters_gpu -> Result<(), Box<dyn std::error::Error>> with Ok(())
+@@ -467,103 +467,17 @@
+         _device: &wgpu::Device,
+         queue: &wgpu::Queue,
+         encoder: &mut wgpu::CommandEncoder,
+         _view_matrix: Mat4,
+         _screen_size: (u32, u32),
+     ) -> Result<(), Box<dyn std::error::Error>> {
+         // Calculate cluster bounds in view space
+         // TODO: Move this to GPU compute shader for better performance
+-        for z in 0..self.config.cluster_z {
+-            for y in 0..self.config.cluster_y {
+-                for x in 0..self.config.cluster_x {
+-                    let cluster_idx = self.cluster_index(x, y, z);
+-
+-                    // Calculate cluster bounds (same as CPU path)
+-                    let min_x = (x as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+-                    let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+-                    let min_y = (y as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
+-                    let max_y = ((y + 1) as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
+-
+-                    let near = self.config.near;
+-                    let far = self.config.far;
+-                    let min_z = near * (far / near).powf(z as f32 / self.config.cluster_z as f32);
+-                    let max_z =
+-                        near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
+-
+-                    self.clusters[cluster_idx].min_bounds = [min_x, min_y, min_z, 1.0];
+-                    self.clusters[cluster_idx].max_bounds = [max_x, max_y, max_z, 1.0];
+-                }
+-            }
+-        }
+-
+-        // Upload cluster bounds to GPU (for MegaLights shaders)
+-        // Convert GpuCluster to ClusterBounds format
+-        let cluster_bounds: Vec<[f32; 8]> = self
+-            .clusters
+-            .iter()
+-            .map(|c| {
+-                [
+-                    c.min_bounds[0],
+-                    c.min_bounds[1],
+-                    c.min_bounds[2],
+-                    0.0, // min + padding
+-                    c.max_bounds[0],
+-                    c.max_bounds[1],
+-                    c.max_bounds[2],
+-                    0.0, // max + padding
+-                ]
+-            })
+-            .collect();
+-
+-        queue.write_buffer(
+-            &self.cluster_bounds_buffer,
+-            0,
+-            bytemuck::cast_slice(&cluster_bounds),
+-        );
+-
+-        // Upload params for GPU shaders
+-        let total_clusters = self.config.cluster_x * self.config.cluster_y * self.config.cluster_z;
+-        let cluster_params = [
+-            self.config.cluster_x,
+-            self.config.cluster_y,
+-            self.config.cluster_z,
+-            0, // padding
+-            total_clusters,
+-            self.lights.len() as u32,
+-            0, // padding
+-            0, // padding
+-        ];
+-        queue.write_buffer(
+-            &self.params_buffer,
+-            0,
+-            bytemuck::cast_slice(&cluster_params),
+-        );
+-
+-        let prefix_sum_params = [
+-            total_clusters,
+-            256, // workgroup_size
+-            0,   // padding
+-            0,   // padding
+-        ];
+-        queue.write_buffer(
+-            &self.prefix_sum_params_buffer,
+-            0,
+-            bytemuck::cast_slice(&prefix_sum_params),
+-        );
+-
+-        // Dispatch MegaLights GPU compute pipeline
+-        if let Some(ref megalights) = self.megalights {
+-            megalights.dispatch(encoder, self.lights.len() as u32)?;
+-        }
+-
+-        // Note: Results are written directly to light_indices_buffer by GPU
+-        // No need to read back or update CPU-side data structures
+-
+-        Ok(())
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get cluster index from 3D coordinates
+     fn cluster_index(&self, x: u32, y: u32, z: u32) -> usize {
+         (x + y * self.config.cluster_x + z * self.config.cluster_x * self.config.cluster_y) as usize
+     }
+ 
+     /// Check if a light intersects a cluster

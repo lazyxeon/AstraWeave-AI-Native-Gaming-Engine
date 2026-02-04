@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace * with / in TimeOfDay::get_sun_position
+@@ -65,17 +65,17 @@
+         // At midnight (0:00), sun should be below horizon (0, -1, 0)
+ 
+         if sun_height.abs() < 0.01 {
+             // Near horizon, avoid division by zero
+             vec3(sun_azimuth.sin(), 0.0, sun_azimuth.cos()).normalize()
+         } else {
+             let horizontal_distance = (1.0 - sun_height.abs()).max(0.1);
+             vec3(
+-                sun_azimuth.sin() * horizontal_distance,
++                sun_azimuth.sin() / /* ~ changed by cargo-mutants ~ */ horizontal_distance,
+                 sun_height,
+                 sun_azimuth.cos() * horizontal_distance,
+             )
+             .normalize()
+         }
+     }
+ 
+     /// Get the moon position in the sky (opposite to sun)

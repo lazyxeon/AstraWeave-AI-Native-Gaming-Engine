@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace * with + in ClusteredForwardRenderer::build_clusters_cpu
+@@ -397,17 +397,17 @@
+         view_matrix: Mat4,
+         screen_size: (u32, u32),
+     ) {
+         // Clear previous data
+         self.light_indices.clear();
+ 
+         let (_width, _height) = screen_size;
+         let _total_clusters =
+-            (self.config.cluster_x * self.config.cluster_y * self.config.cluster_z) as usize;
++            (self.config.cluster_x * self.config.cluster_y + /* ~ changed by cargo-mutants ~ */ self.config.cluster_z) as usize;
+ 
+         // Calculate cluster bounds in view space
+         for z in 0..self.config.cluster_z {
+             for y in 0..self.config.cluster_y {
+                 for x in 0..self.config.cluster_x {
+                     let cluster_idx = self.cluster_index(x, y, z);
+ 
+                     // Calculate cluster bounds

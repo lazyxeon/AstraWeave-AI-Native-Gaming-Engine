@@ -61,12 +61,14 @@ fn manhattan_distance_non_negative() {
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
     
-    // Bound inputs to prevent subtraction overflow and abs(i32::MIN) overflow
-    // Range [-1_000_000_000, 1_000_000_000] ensures difference fits in i32
-    kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
-    kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
-    kani::assume(bx > -1_000_000_000 && bx < 1_000_000_000);
-    kani::assume(by > -1_000_000_000 && by < 1_000_000_000);
+    // Bound inputs to prevent ALL overflow scenarios:
+    // 1. Subtraction: diff = a - b, max |diff| = 1B (from -500M to +500M)
+    // 2. Abs: |diff| < i32::MAX, satisfied by above
+    // 3. Addition: |diff_x| + |diff_y| <= 2B < i32::MAX, satisfied by max 1B each
+    kani::assume(ax >= -500_000_000 && ax <= 500_000_000);
+    kani::assume(ay >= -500_000_000 && ay <= 500_000_000);
+    kani::assume(bx >= -500_000_000 && bx <= 500_000_000);
+    kani::assume(by >= -500_000_000 && by <= 500_000_000);
     
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
@@ -84,11 +86,11 @@ fn manhattan_distance_symmetric() {
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
     
-    // Bound inputs to prevent overflow
-    kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
-    kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
-    kani::assume(bx > -1_000_000_000 && bx < 1_000_000_000);
-    kani::assume(by > -1_000_000_000 && by < 1_000_000_000);
+    // Same bounds as manhattan_distance_non_negative
+    kani::assume(ax >= -500_000_000 && ax <= 500_000_000);
+    kani::assume(ay >= -500_000_000 && ay <= 500_000_000);
+    kani::assume(bx >= -500_000_000 && bx <= 500_000_000);
+    kani::assume(by >= -500_000_000 && by <= 500_000_000);
     
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
@@ -117,12 +119,14 @@ fn distance_squared_non_negative() {
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
     
-    // Bound to avoid overflow: max diff = 60000, max squared sum = 2*60000^2 = 7.2B > i32::MAX
-    // Use max diff = 30000, max squared sum = 2*30000^2 = 1.8B < i32::MAX
-    kani::assume(ax > -15000 && ax < 15000);
-    kani::assume(ay > -15000 && ay < 15000);
-    kani::assume(bx > -15000 && bx < 15000);
-    kani::assume(by > -15000 && by < 15000);
+    // Bound to avoid overflow:
+    // Max diff = 20000 (from -10000 to +10000)
+    // Max dx^2 = 400_000_000
+    // Max dx^2 + dy^2 = 800_000_000 < i32::MAX (2.1B)
+    kani::assume(ax >= -10000 && ax <= 10000);
+    kani::assume(ay >= -10000 && ay <= 10000);
+    kani::assume(bx >= -10000 && bx <= 10000);
+    kani::assume(by >= -10000 && by <= 10000);
     
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
@@ -140,11 +144,11 @@ fn distance_squared_symmetric() {
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
     
-    // Bound to avoid overflow (same as above)
-    kani::assume(ax > -15000 && ax < 15000);
-    kani::assume(ay > -15000 && ay < 15000);
-    kani::assume(bx > -15000 && bx < 15000);
-    kani::assume(by > -15000 && by < 15000);
+    // Same bounds as distance_squared_non_negative
+    kani::assume(ax >= -10000 && ax <= 10000);
+    kani::assume(ay >= -10000 && ay <= 10000);
+    kani::assume(bx >= -10000 && bx <= 10000);
+    kani::assume(by >= -10000 && by <= 10000);
     
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);

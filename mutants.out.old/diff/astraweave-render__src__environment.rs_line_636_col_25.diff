@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ delete field mag_filter from struct wgpu::SamplerDescriptor expression in SkyRenderer::render
+@@ -628,17 +628,17 @@
+         if !drawn {
+             if let Some(tex) = sky_texture {
+                 if let (Some(tex_pipeline), Some(tex_bgl)) =
+                     (&self.texture_pipeline, &self.texture_bgl)
+                 {
+                     // Create sampler
+                     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                         label: Some("Skybox Sampler"),
+-                        mag_filter: wgpu::FilterMode::Linear,
++                         /* ~ changed by cargo-mutants ~ */
+                         min_filter: wgpu::FilterMode::Linear,
+                         mipmap_filter: wgpu::FilterMode::Linear,
+                         ..Default::default()
+                     });
+ 
+                     let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                         label: Some("Sky Texture BG"),
+                         layout: tex_bgl,

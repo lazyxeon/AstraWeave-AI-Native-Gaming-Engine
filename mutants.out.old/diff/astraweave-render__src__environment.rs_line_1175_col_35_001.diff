@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace * with / in WeatherSystem::get_terrain_color_modifier
+@@ -1167,17 +1167,17 @@
+     pub fn get_terrain_color_modifier(&self) -> Vec3 {
+         match self.current_weather {
+             WeatherType::Clear => vec3(1.0, 1.0, 1.0),
+             WeatherType::Cloudy => vec3(0.8, 0.8, 0.9),
+             WeatherType::Rain | WeatherType::Storm => {
+                 // Wet terrain is darker
+                 let wetness = self.rain_intensity * 0.7;
+                 vec3(
+-                    1.0 - wetness * 0.3,
++                    1.0 - wetness / /* ~ changed by cargo-mutants ~ */ 0.3,
+                     1.0 - wetness * 0.2,
+                     1.0 - wetness * 0.1,
+                 )
+             }
+             WeatherType::Snow => {
+                 // Snow makes terrain whiter
+                 let snow_cover = self.snow_intensity * 0.8;
+                 vec3(

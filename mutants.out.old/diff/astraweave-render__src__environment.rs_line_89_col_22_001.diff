@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace > with < in TimeOfDay::get_light_direction
+@@ -81,17 +81,17 @@
+     /// Get the moon position in the sky (opposite to sun)
+     pub fn get_moon_position(&self) -> Vec3 {
+         -self.get_sun_position()
+     }
+ 
+     /// Get the primary light direction (sun during day, moon at night)
+     pub fn get_light_direction(&self) -> Vec3 {
+         let sun_pos = self.get_sun_position();
+-        if sun_pos.y > 0.1 {
++        if sun_pos.y < /* ~ changed by cargo-mutants ~ */ 0.1 {
+             -sun_pos // Light comes from the sun
+         } else {
+             -self.get_moon_position() // Light comes from the moon
+         }
+     }
+ 
+     /// Get the light color based on time of day
+     pub fn get_light_color(&self) -> Vec3 {

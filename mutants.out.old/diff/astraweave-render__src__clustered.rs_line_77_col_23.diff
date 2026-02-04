@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered.rs
++++ replace + with - in bin_lights_cpu
+@@ -69,17 +69,17 @@
+         let min_py = (py - rpx_y).floor() as i32;
+         let max_py = (py + rpx_y).ceil() as i32;
+         let ix0 = clamp_u32(min_px / tile_w as i32, 0, dims.x as i32 - 1);
+         let ix1 = clamp_u32(max_px / tile_w as i32, 0, dims.x as i32 - 1);
+         let iy0 = clamp_u32(min_py / tile_h as i32, 0, dims.y as i32 - 1);
+         let iy1 = clamp_u32(max_py / tile_h as i32, 0, dims.y as i32 - 1);
+         // Z slices
+         let zmin = (z - l.radius).max(near);
+-        let zmax = (z + l.radius).min(far);
++        let zmax = (z - /* ~ changed by cargo-mutants ~ */ l.radius).min(far);
+         if zmin >= zmax {
+             continue;
+         }
+         let iz0 = (((zmin - near) / (far - near)) * dims.z as f32)
+             .floor()
+             .clamp(0.0, dims.z as f32 - 1.0) as u32;
+         let iz1 = (((zmax - near) / (far - near)) * dims.z as f32)
+             .floor()

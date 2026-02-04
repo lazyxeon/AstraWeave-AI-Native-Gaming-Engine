@@ -1,0 +1,40 @@
+--- astraweave-render/src/environment.rs
++++ replace TimeOfDay::get_sun_position -> Vec3 with Default::default()
+@@ -51,36 +51,17 @@
+         let game_hours = (elapsed * self.time_scale) / 3600.0;
+         self.current_time = (self.current_time + game_hours) % 24.0;
+         self.start_time = Instant::now();
+     }
+ 
+     /// Get the sun position in the sky (-1 to 1 range)
+     pub fn get_sun_position(&self) -> Vec3 {
+         // Sun rises at 6am, peaks at noon, sets at 6pm
+-        let sun_angle = (self.current_time - 6.0) * std::f32::consts::PI / 12.0;
+-        let sun_height = sun_angle.sin();
+-        let sun_azimuth = (self.current_time - 12.0) * std::f32::consts::PI / 12.0;
+-
+-        // At noon (12:00), sun should be nearly overhead (0, 1, 0)
+-        // At sunrise/sunset (6:00/18:00), sun should be at horizon
+-        // At midnight (0:00), sun should be below horizon (0, -1, 0)
+-
+-        if sun_height.abs() < 0.01 {
+-            // Near horizon, avoid division by zero
+-            vec3(sun_azimuth.sin(), 0.0, sun_azimuth.cos()).normalize()
+-        } else {
+-            let horizontal_distance = (1.0 - sun_height.abs()).max(0.1);
+-            vec3(
+-                sun_azimuth.sin() * horizontal_distance,
+-                sun_height,
+-                sun_azimuth.cos() * horizontal_distance,
+-            )
+-            .normalize()
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get the moon position in the sky (opposite to sun)
+     pub fn get_moon_position(&self) -> Vec3 {
+         -self.get_sun_position()
+     }
+ 
+     /// Get the primary light direction (sun during day, moon at night)

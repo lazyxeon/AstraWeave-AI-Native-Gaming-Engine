@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace TimeOfDay::is_day -> bool with false
+@@ -122,17 +122,17 @@
+         } else {
+             // Night ambient - dark blue
+             vec3(0.1, 0.15, 0.3) * 0.1
+         }
+     }
+ 
+     /// Check if it's currently day time
+     pub fn is_day(&self) -> bool {
+-        self.get_sun_position().y > 0.0
++        false /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Check if it's currently night time
+     pub fn is_night(&self) -> bool {
+         self.get_sun_position().y < -0.1
+     }
+ 
+     /// Check if it's currently twilight (sunrise/sunset)

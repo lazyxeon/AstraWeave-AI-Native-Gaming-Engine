@@ -1,0 +1,22 @@
+--- astraweave-render/src/environment.rs
++++ replace TimeOfDay::is_twilight -> bool with true
+@@ -132,18 +132,17 @@
+ 
+     /// Check if it's currently night time
+     pub fn is_night(&self) -> bool {
+         self.get_sun_position().y < -0.1
+     }
+ 
+     /// Check if it's currently twilight (sunrise/sunset)
+     pub fn is_twilight(&self) -> bool {
+-        let sun_height = self.get_sun_position().y;
+-        (-0.1..=0.1).contains(&sun_height)
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// Sky rendering configuration
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+ pub struct SkyConfig {
+     /// Sky colors for different times of day
+     pub day_color_top: Vec3,

@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ delete ! in CameraController::update_camera
+@@ -221,17 +221,17 @@
+ 
+     fn update_orbit_position(&mut self, camera: &mut Camera) {
+         let dir = Camera::dir(camera.yaw, camera.pitch);
+         camera.position = self.orbit_target - dir * self.orbit_distance;
+     }
+ 
+     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32) {
+         // Initialize look targets on first update
+-        if !self.targets_initialized {
++        if  /* ~ changed by cargo-mutants ~ */self.targets_initialized {
+             self.yaw_target = camera.yaw;
+             self.pitch_target = camera.pitch;
+             self.targets_initialized = true;
+         }
+ 
+         // Exponential smoothing toward targets; dt-aware
+         let t = 1.0 - (-self.mouse_smooth * dt.max(1e-4)).exp();
+         camera.yaw = camera.yaw + (self.yaw_target - camera.yaw) * t;

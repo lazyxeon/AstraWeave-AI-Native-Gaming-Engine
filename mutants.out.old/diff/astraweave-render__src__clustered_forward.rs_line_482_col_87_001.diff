@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace - with / in ClusteredForwardRenderer::build_clusters_gpu
+@@ -474,17 +474,17 @@
+         // TODO: Move this to GPU compute shader for better performance
+         for z in 0..self.config.cluster_z {
+             for y in 0..self.config.cluster_y {
+                 for x in 0..self.config.cluster_x {
+                     let cluster_idx = self.cluster_index(x, y, z);
+ 
+                     // Calculate cluster bounds (same as CPU path)
+                     let min_x = (x as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+-                    let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
++                    let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 / /* ~ changed by cargo-mutants ~ */ 1.0;
+                     let min_y = (y as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
+                     let max_y = ((y + 1) as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
+ 
+                     let near = self.config.near;
+                     let far = self.config.far;
+                     let min_z = near * (far / near).powf(z as f32 / self.config.cluster_z as f32);
+                     let max_z =
+                         near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);

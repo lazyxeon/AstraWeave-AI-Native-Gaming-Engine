@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ delete match arm winit::keyboard::KeyCode::KeyW in CameraController::process_keyboard
+@@ -105,17 +105,17 @@
+     /// Is the right-mouse look active?
+     pub fn is_dragging(&self) -> bool {
+         self.dragging
+     }
+ 
+     pub fn process_keyboard(&mut self, key: winit::keyboard::KeyCode, pressed: bool) {
+         let v = if pressed { 1.0 } else { 0.0 };
+         match key {
+-            winit::keyboard::KeyCode::KeyW => self.fwd = v,
++             /* ~ changed by cargo-mutants ~ */
+             winit::keyboard::KeyCode::KeyS => self.back = v,
+             winit::keyboard::KeyCode::KeyA => self.left = v,
+             winit::keyboard::KeyCode::KeyD => self.right = v,
+             // Support both Space and 'E' for up
+             winit::keyboard::KeyCode::Space | winit::keyboard::KeyCode::KeyE => self.up = v,
+             // Support both 'Q' and 'C' for down
+             winit::keyboard::KeyCode::KeyQ | winit::keyboard::KeyCode::KeyC => self.down = v,
+             // Modifiers: Shift = sprint, Ctrl = precision/slow

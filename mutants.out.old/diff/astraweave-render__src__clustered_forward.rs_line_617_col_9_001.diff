@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace ClusteredForwardRenderer::light_count -> usize with 1
+@@ -609,17 +609,17 @@
+ 
+     /// Get configuration
+     pub fn config(&self) -> &ClusterConfig {
+         &self.config
+     }
+ 
+     /// Get light count
+     pub fn light_count(&self) -> usize {
+-        self.lights.len()
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// WGSL shader code for clustered forward rendering
+ pub const CLUSTERED_LIGHTING_SHADER: &str = r#"
+ struct Light {
+     position: vec4<f32>,  // w = radius
+     color: vec4<f32>,     // w = intensity

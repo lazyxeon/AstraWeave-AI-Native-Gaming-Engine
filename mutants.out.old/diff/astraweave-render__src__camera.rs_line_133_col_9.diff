@@ -1,0 +1,26 @@
+--- astraweave-render/src/camera.rs
++++ replace CameraController::process_mouse_button with ()
+@@ -125,22 +125,17 @@
+             winit::keyboard::KeyCode::ControlLeft | winit::keyboard::KeyCode::ControlRight => {
+                 self.precision_active = pressed;
+             }
+             _ => {}
+         }
+     }
+ 
+     pub fn process_mouse_button(&mut self, button: winit::event::MouseButton, pressed: bool) {
+-        if button == winit::event::MouseButton::Right {
+-            self.dragging = pressed;
+-            if !pressed {
+-                self.last_mouse = None;
+-            }
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn process_mouse_move(&mut self, camera: &mut Camera, pos: Vec2) {
+         if self.dragging {
+             // If raw deltas already consumed this frame, skip absolute to avoid double-apply
+             if self.raw_used_this_frame {
+                 return;
+             }

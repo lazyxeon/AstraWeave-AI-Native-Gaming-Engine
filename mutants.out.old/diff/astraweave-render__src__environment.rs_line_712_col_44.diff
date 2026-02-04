@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace * with + in SkyRenderer::create_skybox_vertices
+@@ -704,17 +704,17 @@
+     // Private helper methods
+ 
+     fn create_skybox_vertices(&self) -> Vec<SkyVertex> {
+         // Create a sphere for skybox to avoid corner artifacts
+         let rings = 16;
+         let segments = 32;
+         let mut vertices = Vec::new();
+         for r in 0..=rings {
+-            let phi = std::f32::consts::PI * (r as f32 / rings as f32);
++            let phi = std::f32::consts::PI + /* ~ changed by cargo-mutants ~ */ (r as f32 / rings as f32);
+             for s in 0..=segments {
+                 let theta = std::f32::consts::PI * 2.0 * (s as f32 / segments as f32);
+                 // Y-up spherical coordinates, Radius 500.0 to avoid near-plane clipping
+                 let r = 500.0;
+                 let x = r * phi.sin() * theta.cos();
+                 let y = r * phi.cos();
+                 let z = r * phi.sin() * theta.sin();
+                 vertices.push(SkyVertex {

@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace && with || in ClusteredForwardRenderer::build_clusters_with_encoder
+@@ -371,17 +371,17 @@
+         screen_size: (u32, u32),
+     ) {
+         // Upload lights to GPU
+         if !self.lights.is_empty() {
+             queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&self.lights));
+         }
+ 
+         // Try GPU path if MegaLights available
+-        if self.megalights.is_some() && !self.lights.is_empty() {
++        if self.megalights.is_some() || /* ~ changed by cargo-mutants ~ */ !self.lights.is_empty() {
+             if self
+                 .build_clusters_gpu(device, queue, encoder, view_matrix, screen_size)
+                 .is_ok()
+             {
+                 return; // GPU path succeeded
+             }
+             log::warn!("MegaLights GPU dispatch failed, falling back to CPU");
+         }

@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered.rs
++++ replace += with -= in bin_lights_cpu
+@@ -135,17 +135,17 @@
+             .floor()
+             .clamp(0.0, dims.z as f32 - 1.0) as u32;
+         for iz in iz0..=iz1 {
+             for iy in iy0..=iy1 {
+                 for ix in ix0..=ix1 {
+                     let ci = cluster_index(ix, iy, iz, dims);
+                     let off = offsets[ci] + cursors[ci];
+                     indices[off as usize] = li as u32;
+-                    cursors[ci] += 1;
++                    cursors[ci] -= /* ~ changed by cargo-mutants ~ */ 1;
+                 }
+             }
+         }
+     }
+ 
+     (counts, indices, offsets)
+ }
+ 

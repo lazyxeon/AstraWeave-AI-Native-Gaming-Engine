@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered.rs
++++ replace - with + in bin_lights_cpu
+@@ -59,17 +59,17 @@
+         let ndc_x = (l.pos.x / z) * fx;
+         let ndc_y = (l.pos.y / z) * fy;
+         // Convert to pixel space
+         let px = (ndc_x * 0.5 + 0.5) * width as f32;
+         let py = (ndc_y * 0.5 + 0.5) * height as f32;
+         // Screen-space radius in pixels (approx)
+         let rpx_x = (l.radius / z) * fx * (width as f32 * 0.5);
+         let rpx_y = (l.radius / z) * fy * (height as f32 * 0.5);
+-        let min_px = (px - rpx_x).floor() as i32;
++        let min_px = (px + /* ~ changed by cargo-mutants ~ */ rpx_x).floor() as i32;
+         let max_px = (px + rpx_x).ceil() as i32;
+         let min_py = (py - rpx_y).floor() as i32;
+         let max_py = (py + rpx_y).ceil() as i32;
+         let ix0 = clamp_u32(min_px / tile_w as i32, 0, dims.x as i32 - 1);
+         let ix1 = clamp_u32(max_px / tile_w as i32, 0, dims.x as i32 - 1);
+         let iy0 = clamp_u32(min_py / tile_h as i32, 0, dims.y as i32 - 1);
+         let iy1 = clamp_u32(max_py / tile_h as i32, 0, dims.y as i32 - 1);
+         // Z slices

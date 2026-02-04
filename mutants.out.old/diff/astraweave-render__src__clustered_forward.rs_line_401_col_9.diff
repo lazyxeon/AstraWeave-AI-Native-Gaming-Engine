@@ -1,0 +1,80 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace ClusteredForwardRenderer::build_clusters_cpu with ()
+@@ -393,76 +393,17 @@
+     /// CPU light binning (fallback when MegaLights unavailable)
+     fn build_clusters_cpu(
+         &mut self,
+         queue: &wgpu::Queue,
+         view_matrix: Mat4,
+         screen_size: (u32, u32),
+     ) {
+         // Clear previous data
+-        self.light_indices.clear();
+-
+-        let (_width, _height) = screen_size;
+-        let _total_clusters =
+-            (self.config.cluster_x * self.config.cluster_y * self.config.cluster_z) as usize;
+-
+-        // Calculate cluster bounds in view space
+-        for z in 0..self.config.cluster_z {
+-            for y in 0..self.config.cluster_y {
+-                for x in 0..self.config.cluster_x {
+-                    let cluster_idx = self.cluster_index(x, y, z);
+-
+-                    // Calculate cluster bounds
+-                    let min_x = (x as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+-                    let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+-                    let min_y = (y as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
+-                    let max_y = ((y + 1) as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
+-
+-                    // Exponential depth slicing for better distribution
+-                    let near = self.config.near;
+-                    let far = self.config.far;
+-                    let min_z = near * (far / near).powf(z as f32 / self.config.cluster_z as f32);
+-                    let max_z =
+-                        near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
+-
+-                    self.clusters[cluster_idx].min_bounds = [min_x, min_y, min_z, 1.0];
+-                    self.clusters[cluster_idx].max_bounds = [max_x, max_y, max_z, 1.0];
+-                    self.clusters[cluster_idx].light_offset = self.light_indices.len() as u32;
+-                    self.clusters[cluster_idx].light_count = 0;
+-
+-                    // Assign lights to this cluster
+-                    for (light_idx, light) in self.lights.iter().enumerate() {
+-                        if self.light_intersects_cluster(
+-                            light,
+-                            &self.clusters[cluster_idx],
+-                            view_matrix,
+-                        ) && self.clusters[cluster_idx].light_count
+-                            < self.max_lights_per_cluster as u32
+-                        {
+-                            self.light_indices.push(light_idx as u32);
+-                            self.clusters[cluster_idx].light_count += 1;
+-                        }
+-                    }
+-                }
+-            }
+-        }
+-
+-        // Upload cluster data and light indices to GPU
+-        queue.write_buffer(
+-            &self.cluster_buffer,
+-            0,
+-            bytemuck::cast_slice(&self.clusters),
+-        );
+-        if !self.light_indices.is_empty() {
+-            queue.write_buffer(
+-                &self.light_indices_buffer,
+-                0,
+-                bytemuck::cast_slice(&self.light_indices),
+-            );
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// GPU light binning using MegaLights compute shaders
+     #[cfg(feature = "megalights")]
+     fn build_clusters_gpu(
+         &mut self,
+         _device: &wgpu::Device,
+         queue: &wgpu::Queue,

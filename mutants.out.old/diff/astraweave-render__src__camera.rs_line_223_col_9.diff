@@ -1,0 +1,22 @@
+--- astraweave-render/src/camera.rs
++++ replace CameraController::update_orbit_position with ()
+@@ -215,18 +215,17 @@
+     pub fn set_orbit_target(&mut self, target: Vec3, camera: &mut Camera) {
+         self.orbit_target = target;
+         if matches!(self.mode, CameraMode::Orbit) {
+             self.update_orbit_position(camera);
+         }
+     }
+ 
+     fn update_orbit_position(&mut self, camera: &mut Camera) {
+-        let dir = Camera::dir(camera.yaw, camera.pitch);
+-        camera.position = self.orbit_target - dir * self.orbit_distance;
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32) {
+         // Initialize look targets on first update
+         if !self.targets_initialized {
+             self.yaw_target = camera.yaw;
+             self.pitch_target = camera.pitch;
+             self.targets_initialized = true;

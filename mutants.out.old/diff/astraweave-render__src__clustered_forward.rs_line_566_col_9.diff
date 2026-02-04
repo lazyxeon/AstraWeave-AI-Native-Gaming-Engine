@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered_forward.rs
++++ replace ClusteredForwardRenderer::cluster_index -> usize with 0
+@@ -558,17 +558,17 @@
+         // Note: Results are written directly to light_indices_buffer by GPU
+         // No need to read back or update CPU-side data structures
+ 
+         Ok(())
+     }
+ 
+     /// Get cluster index from 3D coordinates
+     fn cluster_index(&self, x: u32, y: u32, z: u32) -> usize {
+-        (x + y * self.config.cluster_x + z * self.config.cluster_x * self.config.cluster_y) as usize
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Check if a light intersects a cluster
+     fn light_intersects_cluster(
+         &self,
+         light: &GpuLight,
+         cluster: &GpuCluster,
+         view_matrix: Mat4,

@@ -1,0 +1,21 @@
+--- astraweave-render/src/environment.rs
++++ replace < with <= in TimeOfDay::is_night
+@@ -127,17 +127,17 @@
+ 
+     /// Check if it's currently day time
+     pub fn is_day(&self) -> bool {
+         self.get_sun_position().y > 0.0
+     }
+ 
+     /// Check if it's currently night time
+     pub fn is_night(&self) -> bool {
+-        self.get_sun_position().y < -0.1
++        self.get_sun_position().y <= /* ~ changed by cargo-mutants ~ */ -0.1
+     }
+ 
+     /// Check if it's currently twilight (sunrise/sunset)
+     pub fn is_twilight(&self) -> bool {
+         let sun_height = self.get_sun_position().y;
+         (-0.1..=0.1).contains(&sun_height)
+     }
+ }
