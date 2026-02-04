@@ -479,7 +479,7 @@ impl ClusteredForwardRenderer {
 
                     // Calculate cluster bounds (same as CPU path)
                     let min_x = (x as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
-                    let max_x = ((x * /* ~ changed by cargo-mutants ~ */ 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
+                    let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
                     let min_y = (y as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
                     let max_y = ((y + 1) as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
 
@@ -487,7 +487,7 @@ impl ClusteredForwardRenderer {
                     let far = self.config.far;
                     let min_z = near * (far / near).powf(z as f32 / self.config.cluster_z as f32);
                     let max_z =
-                        near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
+                        near / /* ~ changed by cargo-mutants ~ */ (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
 
                     self.clusters[cluster_idx].min_bounds = [min_x, min_y, min_z, 1.0];
                     self.clusters[cluster_idx].max_bounds = [max_x, max_y, max_z, 1.0];

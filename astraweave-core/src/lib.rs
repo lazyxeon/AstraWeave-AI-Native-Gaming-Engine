@@ -15,6 +15,9 @@ pub mod util;
 pub mod validation;
 pub mod world;
 
+#[cfg(kani)]
+mod schema_kani;
+
 #[cfg(test)]
 mod mutation_tests;
 

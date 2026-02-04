@@ -5,6 +5,10 @@ edition = "2021"
 license = { workspace = true }
 publish = { workspace = true }
 
+# Allow cfg(kani) for Kani formal verification
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [dependencies]
 anyhow = { workspace = true }
 thiserror = { workspace = true }
