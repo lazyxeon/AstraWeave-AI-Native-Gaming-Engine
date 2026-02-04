@@ -6,6 +6,10 @@ authors = ["AstraWeave Team"]
 description = "SIMD-accelerated math operations for AstraWeave game engine"
 license = "MIT"
 
+# Allow cfg(kani) for Kani formal verification
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [dependencies]
 glam = { workspace = true }
 bytemuck = { version = "1", features = ["derive"] }

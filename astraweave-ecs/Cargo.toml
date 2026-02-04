@@ -3,6 +3,9 @@ name = "astraweave-ecs"
 version = "0.1.0"
 edition = "2021"
 
+# Allow cfg(kani) for Kani formal verification
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 
 [dependencies]
 anyhow = { workspace = true }
