@@ -170,33 +170,73 @@ flowchart TB
 
 ## 📦 Crate Ecosystem
 
-AstraWeave is a workspace of **80+ crates**. Here are the highlights:
+AstraWeave is a modular workspace of **49 production crates** organized into 7 functional domains. Each crate is designed for composability, testability, and production deployment.
 
-### Core & Infrastructure
--   `astraweave-core`: The heart of the engine (ECS, World, Time).
--   `astraweave-ecs`: Custom high-performance ECS.
--   `astraweave-math`: SIMD math utilities.
--   `astraweave-profiling`: Tracy integration.
+### 🏗️ Core Engine (8 crates)
+-   **`astraweave-core`**: Foundation framework with WorldSnapshot, PlanIntent schemas, and tool registry system
+-   **`astraweave-ecs`**: AI-native archetype-based ECS with deterministic scheduling and event systems
+-   **`astraweave-math`**: SIMD-accelerated math operations (1.7-2.5× speedup, SSE2/AVX2/NEON support)
+-   **`astraweave-profiling`**: Zero-cost Tracy integration with GPU/memory/lock tracing
+-   **`astraweave-input`**: Action-based input binding system with multi-device support
+-   **`astraweave-sdk`**: C ABI interface for embedding AstraWeave in external engines
+-   **`astraweave-observability`**: Production telemetry, logging, and crash reporting
+-   **`astraweave-optimization`**: LLM performance optimization (batching, caching, token compression)
 
-### AI & Behavior
--   `astraweave-ai`: AI orchestration and planning systems.
--   `astraweave-llm`: LLM inference and management.
--   `astraweave-behavior`: Behavior trees and GOAP.
--   `astraweave-scripting`: Rhai scripting integration.
--   `astraweave-ai-gen`: **[Experimental]** AI asset generation.
+### 🧠 AI & Intelligence (14 crates)
+-   **`astraweave-ai`**: Core loop orchestration with GOAP planner and async LLM executor
+-   **`astraweave-llm`**: Production LLM integration (Phi-3/Hermes2, Ollama, prompt caching, circuit breaker)
+-   **`astraweave-llm-eval`**: Automated LLM evaluation with multi-metric scoring
+-   **`astraweave-behavior`**: Behavior trees, HTN planning, GOAP with LRU plan caching
+-   **`astraweave-context`**: Conversation history with token-aware sliding windows and summarization
+-   **`astraweave-embeddings`**: Vector embeddings and HNSW semantic search
+-   **`astraweave-rag`**: Retrieval-augmented generation pipeline with memory consolidation
+-   **`astraweave-prompts`**: Handlebars templating with persona integration and A/B testing
+-   **`astraweave-persona`**: NPC personality system with zip-based persona packs
+-   **`astraweave-memory`**: Hierarchical memory (sensory/working/episodic/semantic) with SQLite persistence
+-   **`astraweave-coordination`**: Multi-agent coordination framework *(Experimental)*
+-   **`astraweave-director`**: Boss director with LLM orchestration and dynamic difficulty
+-   **`astraweave-npc`**: NPC runtime with sensing, behavior execution, and profile management
+-   **`astraweave-dialogue`**: Branching dialogue graph system with validation
 
-### Rendering & Assets
--   `astraweave-render`: WGPU-based renderer.
--   `astraweave-materials`: PBR material system.
--   `astraweave-asset`: Asset management and streaming.
+### 🎨 Rendering & Assets (4 crates)
+-   **`astraweave-render`**: AAA rendering pipeline (PBR, clustered lighting, VXGI, MegaLights, Nanite virtualized geometry)
+-   **`astraweave-materials`**: Material graph system with PBR-E advanced shading (clearcoat, anisotropy, transmission)
+-   **`astraweave-asset`**: Asset management with Nanite preprocessing and World Partition cell loading
+-   **`astraweave-asset-pipeline`**: Texture compression (BC7/ASTC) and mesh optimization
 
-### Gameplay & Tools
--   `astraweave-physics`: Physics integration.
--   `astraweave-nav`: Navigation and pathfinding.
--   `astraweave-terrain`: Voxel terrain with AI-orchestrated dynamic generation.
--   `astraweave-quests`: LLM-powered quest generation with terrain integration.
--   `astraweave-ui`: Egui-based UI framework.
--   `tools/aw_editor`: The editor (currently in remediation).
+### 🍎 Physics & Simulation (5 crates)
+-   **`astraweave-physics`**: Rapier3D integration with spatial hash, projectiles, gravity zones, and ragdoll
+-   **`astraweave-nav`**: Navigation mesh with pathfinding and geometric utilities
+-   **`astraweave-terrain`**: Procedural terrain with erosion, biomes, LOD, and async streaming
+-   **`astraweave-fluids`**: Position-based dynamics (PBD) fluid sim with caustics, foam, and screen-space rendering
+-   **`astraweave-scene`**: Scene management with world partitioning and GPU resource streaming
+
+### 🎮 Gameplay Systems (5 crates)
+-   **`astraweave-gameplay`**: Core gameplay framework (biomes, combat, crafting, quests, cutscenes)
+-   **`astraweave-quests`**: Quest system with authorable steps and LLM-powered generation
+-   **`astraweave-weaving`**: Emergent behavior layer with anchor system and echo currency (VeilWeaver mechanics)
+-   **`astraweave-cinematics`**: Cinematic timeline system for cutscenes and scripted sequences
+-   **`astraweave-pcg`**: Procedural content generation with deterministic seed-based RNG
+
+### 🌐 Networking & Persistence (4 crates)
+-   **`astraweave-net`**: Snapshot-based networking with delta compression and interest management
+-   **`astraweave-net-ecs`**: ECS networking plugin with client prediction and server reconciliation
+-   **`astraweave-persistence-ecs`**: ECS save/load integration with replay recording
+-   **`astraweave-ipc`**: Inter-process communication for AI orchestration via WebSocket
+
+### 🛠️ Infrastructure & Tools (8 crates)
+-   **`astraweave-audio`**: Spatial audio engine with dialogue integration and TTS adapter
+-   **`astraweave-ui`**: UI framework with HUD (quest tracker, minimap), menus, and accessibility
+-   **`astraweave-scripting`**: Rhai-based scripting for game logic and AI behavior
+-   **`astraweave-author`**: Rhai authoring for map design and encounter configuration
+-   **`astraweave-security`**: Security framework with sandboxing and input validation
+-   **`astraweave-secrets`**: Secrets management with keyring backend
+-   **`astraweave-steam`**: Steamworks SDK integration (achievements, cloud saves, statistics)
+-   **`astraweave-stress-test`**: Comprehensive stress testing and benchmarking framework
+
+### 🔧 Additional Components
+-   **Tools**: `aw_editor` (production-ready with 3,592 tests), `aw_asset_cli`, `aw_texture_gen`, `aw_save_cli`, and 10+ build/debugging utilities
+-   **Examples**: 40+ working examples including `hello_companion` (6 AI modes), `unified_showcase` (rendering), `biome_showcase`, `adaptive_boss`, and physics/fluids demos
 
 ---
 
@@ -204,12 +244,13 @@ AstraWeave is a workspace of **80+ crates**. Here are the highlights:
 
 AstraWeave is an experimental project built **100% by AI** to prove AI's capability to create production-grade systems.
 
-**Current Focus:**
-1.  Fixing Editor compilation errors.
-2.  Improving UI and LLM test coverage.
-3.  Stabilizing the Scripting and AI Generation crates.
+**Current Development Status:**
+-   **49 production crates** with 94.57% test coverage (3,040+ tests)
+-   **Editor**: Production-ready with 3,592 passing tests
+-   **Experimental**: `astraweave-coordination` (multi-agent scaffolding)
+-   **Active Phases**: Physics robustness upgrades, scripting API expansion
 
-See `CONTRIBUTING.md` and `docs/current/MASTER_ROADMAP.md` for details.
+See `CONTRIBUTING.md` and `docs/masters/MASTER_ROADMAP.md` for detailed roadmap and contribution guidelines.
 
 ---
 
