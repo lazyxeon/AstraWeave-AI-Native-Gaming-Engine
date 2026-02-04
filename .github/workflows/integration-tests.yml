@@ -88,7 +88,7 @@ jobs:
           shared-key: "integration-tests"
       
       - name: Run Network snapshot sync tests
-        run: cargo test -p astraweave-net --test snapshot_sync_tests -- --nocapture
+        run: cargo test -p astraweave-net --test integration_tests -- --nocapture
 
   # ===========================================================================
   # LLM Integration Tests
