@@ -563,7 +563,7 @@ impl ClusteredForwardRenderer {
 
     /// Get cluster index from 3D coordinates
     fn cluster_index(&self, x: u32, y: u32, z: u32) -> usize {
-        (x + y * self.config.cluster_x - /* ~ changed by cargo-mutants ~ */ z * self.config.cluster_x * self.config.cluster_y) as usize
+        (x + y * self.config.cluster_x + z * self.config.cluster_x * self.config.cluster_y) as usize
     }
 
     /// Check if a light intersects a cluster
