@@ -15,7 +15,7 @@ use glam::Vec3;
 /// Verify dot product is symmetric: dot(a, b) == dot(b, a)
 /// Uses concrete test values since symbolic f32 is too complex for CBMC
 #[kani::proof]
-#[kani::unwind(1)]
+#[kani::unwind(5)]
 fn dot_product_symmetric() {
     // Use representative concrete values to avoid CBMC explosion
     let test_cases: [(f32, f32, f32, f32, f32, f32); 4] = [
@@ -60,7 +60,7 @@ fn dot_product_zero_identity() {
 /// Verify cross product is anticommutative: cross(a, b) == -cross(b, a)
 /// Uses concrete test values since symbolic f32 is too complex for CBMC
 #[kani::proof]
-#[kani::unwind(1)]
+#[kani::unwind(5)]
 fn cross_product_anticommutative() {
     // Use representative concrete values
     let test_cases: [(f32, f32, f32, f32, f32, f32); 4] = [
@@ -89,7 +89,7 @@ fn cross_product_anticommutative() {
 /// Verify cross product is orthogonal to both inputs
 /// Uses concrete test values since symbolic f32 is too complex for CBMC
 #[kani::proof]
-#[kani::unwind(1)]
+#[kani::unwind(4)]
 fn cross_product_orthogonal() {
     // Use representative concrete values (non-parallel vectors)
     let test_cases: [(f32, f32, f32, f32, f32, f32); 3] = [
@@ -141,7 +141,7 @@ fn length_non_negative() {
 /// Verify length_squared equals length^2
 /// Uses concrete test values since symbolic f32 is too complex for CBMC
 #[kani::proof]
-#[kani::unwind(1)]
+#[kani::unwind(5)]
 fn length_squared_is_length_squared() {
     // Use representative concrete values
     let test_cases: [(f32, f32, f32); 4] = [
@@ -170,7 +170,7 @@ fn length_squared_is_length_squared() {
 /// Verify normalization produces unit vector (length ≈ 1)
 /// Uses concrete test values since symbolic f32 is too complex for CBMC
 #[kani::proof]
-#[kani::unwind(1)]
+#[kani::unwind(5)]
 fn normalize_produces_unit_vector() {
     // Use representative non-zero concrete values
     let test_cases: [(f32, f32, f32); 4] = [
@@ -205,7 +205,7 @@ fn normalize_or_zero_handles_zero() {
 /// Verify normalize preserves direction
 /// Uses concrete test values since symbolic f32 is too complex for CBMC
 #[kani::proof]
-#[kani::unwind(1)]
+#[kani::unwind(5)]
 fn normalize_preserves_direction() {
     // Use representative non-zero concrete values
     let test_cases: [(f32, f32, f32); 4] = [
