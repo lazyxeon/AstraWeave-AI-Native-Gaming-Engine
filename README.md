@@ -4,6 +4,7 @@
 
 <h1 align="center">AstraWeave — AI‑Native Game Engine</h1>
 
+[![Kani Formal Verification](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/kani.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/kani.yml)             [![OpenSSF Scorecard](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/scorecard.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/scorecard.yml)
 <p align="center">
   <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/stargazers"><img src="https://img.shields.io/github/stars/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge&logo=github" alt="GitHub stars" /></a>
   <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge" alt="License" /></a>
@@ -26,7 +27,7 @@ Built in Rust, designed for massive-scale intelligent worlds with production-gra
 
 📚 [Documentation](docs/) • 📊 [Benchmarks](docs/masters/MASTER_BENCHMARK_REPORT.md) • 🗺️ [Roadmap](docs/masters/MASTER_ROADMAP.md) • 🧪 [Coverage](docs/masters/MASTER_COVERAGE_REPORT.md)
 
-**[Interactive Benchmark Dashboard](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Local: `.\scripts\run_benchmark_dashboard.ps1`
+**[Github Pages](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Interactive Benchmark Dashboard Local: `.\scripts\run_benchmark_dashboard.ps1`
 
 ---
 
