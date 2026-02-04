@@ -21,13 +21,13 @@ basis-universal = { version = "0.3", optional = true }
 meshopt = "0.6"
 
 # Byte manipulation
-bytemuck = "1.18"
+bytemuck = "1.25"
 
 # Image loading
 image = "0.25"
 
 # Async support
-tokio = { version = "1.48", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 intel_tex = { version = "0.1", optional = true }
 
 # Logging
@@ -35,7 +35,7 @@ tracing = "0.1"
 
 [dev-dependencies]
 tokio-test = "0.4"
-criterion = "0.5"
+criterion = "0.7"
 
 [[bench]]
 name = "pipeline_adversarial"
