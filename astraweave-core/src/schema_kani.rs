@@ -56,8 +56,20 @@ fn ivec2_is_zero_correct() {
 /// Verify Manhattan distance is non-negative
 #[kani::proof]
 fn manhattan_distance_non_negative() {
-    let a = IVec2::new(kani::any(), kani::any());
-    let b = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
+    let bx: i32 = kani::any();
+    let by: i32 = kani::any();
+    
+    // Bound inputs to prevent subtraction overflow and abs(i32::MIN) overflow
+    // Range [-1_000_000_000, 1_000_000_000] ensures difference fits in i32
+    kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
+    kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
+    kani::assume(bx > -1_000_000_000 && bx < 1_000_000_000);
+    kani::assume(by > -1_000_000_000 && by < 1_000_000_000);
+    
+    let a = IVec2::new(ax, ay);
+    let b = IVec2::new(bx, by);
     
     let dist = a.manhattan_distance(&b);
     
@@ -67,8 +79,19 @@ fn manhattan_distance_non_negative() {
 /// Verify Manhattan distance is symmetric
 #[kani::proof]
 fn manhattan_distance_symmetric() {
-    let a = IVec2::new(kani::any(), kani::any());
-    let b = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
+    let bx: i32 = kani::any();
+    let by: i32 = kani::any();
+    
+    // Bound inputs to prevent overflow
+    kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
+    kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
+    kani::assume(bx > -1_000_000_000 && bx < 1_000_000_000);
+    kani::assume(by > -1_000_000_000 && by < 1_000_000_000);
+    
+    let a = IVec2::new(ax, ay);
+    let b = IVec2::new(bx, by);
     
     let dist_ab = a.manhattan_distance(&b);
     let dist_ba = b.manhattan_distance(&a);
@@ -89,12 +112,20 @@ fn manhattan_distance_to_self_is_zero() {
 /// Verify squared distance is non-negative
 #[kani::proof]
 fn distance_squared_non_negative() {
-    let a = IVec2::new(kani::any(), kani::any());
-    let b = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
+    let bx: i32 = kani::any();
+    let by: i32 = kani::any();
     
-    // Bound inputs to avoid overflow
-    kani::assume(a.x.abs() < 10000 && a.y.abs() < 10000);
-    kani::assume(b.x.abs() < 10000 && b.y.abs() < 10000);
+    // Bound to avoid overflow: max diff = 60000, max squared sum = 2*60000^2 = 7.2B > i32::MAX
+    // Use max diff = 30000, max squared sum = 2*30000^2 = 1.8B < i32::MAX
+    kani::assume(ax > -15000 && ax < 15000);
+    kani::assume(ay > -15000 && ay < 15000);
+    kani::assume(bx > -15000 && bx < 15000);
+    kani::assume(by > -15000 && by < 15000);
+    
+    let a = IVec2::new(ax, ay);
+    let b = IVec2::new(bx, by);
     
     let dist_sq = a.distance_squared(&b);
     
@@ -104,12 +135,19 @@ fn distance_squared_non_negative() {
 /// Verify squared distance is symmetric
 #[kani::proof]
 fn distance_squared_symmetric() {
-    let a = IVec2::new(kani::any(), kani::any());
-    let b = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
+    let bx: i32 = kani::any();
+    let by: i32 = kani::any();
     
-    // Bound inputs to avoid overflow
-    kani::assume(a.x.abs() < 10000 && a.y.abs() < 10000);
-    kani::assume(b.x.abs() < 10000 && b.y.abs() < 10000);
+    // Bound to avoid overflow (same as above)
+    kani::assume(ax > -15000 && ax < 15000);
+    kani::assume(ay > -15000 && ay < 15000);
+    kani::assume(bx > -15000 && bx < 15000);
+    kani::assume(by > -15000 && by < 15000);
+    
+    let a = IVec2::new(ax, ay);
+    let b = IVec2::new(bx, by);
     
     let dist_ab = a.distance_squared(&b);
     let dist_ba = b.distance_squared(&a);
@@ -130,12 +168,19 @@ fn distance_squared_to_self_is_zero() {
 /// Verify Add is commutative
 #[kani::proof]
 fn ivec2_add_commutative() {
-    let a = IVec2::new(kani::any(), kani::any());
-    let b = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
+    let bx: i32 = kani::any();
+    let by: i32 = kani::any();
     
-    // Bound to avoid overflow
-    kani::assume(a.x.abs() < i32::MAX / 2 && a.y.abs() < i32::MAX / 2);
-    kani::assume(b.x.abs() < i32::MAX / 2 && b.y.abs() < i32::MAX / 2);
+    // Bound to avoid overflow: sum of two values must fit in i32
+    kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
+    kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
+    kani::assume(bx > -1_000_000_000 && bx < 1_000_000_000);
+    kani::assume(by > -1_000_000_000 && by < 1_000_000_000);
+    
+    let a = IVec2::new(ax, ay);
+    let b = IVec2::new(bx, by);
     
     let ab = a + b;
     let ba = b + a;
@@ -157,11 +202,12 @@ fn ivec2_add_identity() {
 /// Verify Sub inverse
 #[kani::proof]
 fn ivec2_sub_inverse() {
-    let a = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
     
-    // Bound to avoid overflow
-    kani::assume(a.x.abs() < i32::MAX / 2 && a.y.abs() < i32::MAX / 2);
+    let a = IVec2::new(ax, ay);
     
+    // a - a is always 0, no overflow possible since same values cancel
     let result = a - a;
     
     kani::assert(result.x == 0 && result.y == 0, "a - a must be zero");
@@ -170,13 +216,18 @@ fn ivec2_sub_inverse() {
 /// Verify offset is equivalent to add
 #[kani::proof]
 fn ivec2_offset_correct() {
-    let a = IVec2::new(kani::any(), kani::any());
+    let ax: i32 = kani::any();
+    let ay: i32 = kani::any();
     let dx: i32 = kani::any();
     let dy: i32 = kani::any();
     
     // Bound to avoid overflow
-    kani::assume(a.x.abs() < i32::MAX / 2 && a.y.abs() < i32::MAX / 2);
-    kani::assume(dx.abs() < i32::MAX / 2 && dy.abs() < i32::MAX / 2);
+    kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
+    kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
+    kani::assume(dx > -1_000_000_000 && dx < 1_000_000_000);
+    kani::assume(dy > -1_000_000_000 && dy < 1_000_000_000);
+    
+    let a = IVec2::new(ax, ay);
     
     let offset_result = a.offset(dx, dy);
     let add_result = a + IVec2::new(dx, dy);

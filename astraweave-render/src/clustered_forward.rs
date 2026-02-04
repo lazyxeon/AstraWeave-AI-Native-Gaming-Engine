@@ -487,7 +487,7 @@ impl ClusteredForwardRenderer {
                     let far = self.config.far;
                     let min_z = near * (far / near).powf(z as f32 / self.config.cluster_z as f32);
                     let max_z =
-                        near / /* ~ changed by cargo-mutants ~ */ (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
+                        near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
 
                     self.clusters[cluster_idx].min_bounds = [min_x, min_y, min_z, 1.0];
                     self.clusters[cluster_idx].max_bounds = [max_x, max_y, max_z, 1.0];
@@ -563,7 +563,7 @@ impl ClusteredForwardRenderer {
 
     /// Get cluster index from 3D coordinates
     fn cluster_index(&self, x: u32, y: u32, z: u32) -> usize {
-        (x + y * self.config.cluster_x + z * self.config.cluster_x * self.config.cluster_y) as usize
+        (x + y * self.config.cluster_x - /* ~ changed by cargo-mutants ~ */ z * self.config.cluster_x * self.config.cluster_y) as usize
     }
 
     /// Check if a light intersects a cluster
