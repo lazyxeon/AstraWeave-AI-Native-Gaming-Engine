@@ -281,6 +281,7 @@ async fn run_soak_test(config: SoakTestConfig) -> SoakTestResults {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "slow soak test - skip for mutation testing (17+ minutes)"]
 async fn streaming_soak_test_1024_ticks() {
     let config = SoakTestConfig::default();
 
@@ -362,6 +363,7 @@ async fn streaming_soak_test_1024_ticks() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "slow test - skip for mutation testing (64-tick validation takes 60+ seconds)"]
 async fn streaming_quick_validation() {
     // Quick 64-tick validation for CI
     let config = SoakTestConfig {

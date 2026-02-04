@@ -165,6 +165,9 @@ jobs:
       
       - name: Run Miri on astraweave-ai
         run: |
+          # Note: Tests using #[serial] attribute are skipped under Miri
+          # because serial_test depends on scc crate which has UB (unaligned reference)
+          # See: https://github.com/paholg/serial_test/issues/136
           cargo +nightly miri test -p astraweave-ai --lib -- --test-threads=1
         env:
           MIRIFLAGS: "-Zmiri-symbolic-alignment-check -Zmiri-strict-provenance"
