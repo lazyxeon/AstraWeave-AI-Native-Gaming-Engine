@@ -150,8 +150,10 @@ jobs:
     timeout-minutes: 15
     
     steps:
-      - name: Checkout
+      - name: Checkout with LFS
         uses: actions/checkout@v5
+        with:
+          lfs: true  # Required: gltf/glb fixtures are stored in Git LFS
         
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
