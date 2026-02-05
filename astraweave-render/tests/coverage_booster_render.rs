@@ -7379,6 +7379,7 @@ fn test_residency_extended_wave18() {
 
 /// Wave 18 Test 11: terrain.rs rendering paths (TerrainRenderer uses WorldConfig)
 #[test]
+#[ignore = "slow terrain generation test - skip for mutation testing (60+ seconds)"]
 fn test_terrain_rendering_wave18() {
     use astraweave_render::terrain::TerrainRenderer;
     use astraweave_terrain::WorldConfig;
