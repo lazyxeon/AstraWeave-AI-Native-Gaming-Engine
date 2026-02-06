@@ -46,12 +46,42 @@
 | **astraweave-math** | 94% | - | - | - | Excellent |
 | **astraweave-core** | 98% | 215 | 5 | 220 | ⭐ Exemplary |
 
-### ⏸️ Pending
+### ⏸️ Pending / In Progress
 
 | Crate | Status | Notes |
 |-------|--------|-------|
-| **astraweave-render** | Not started | Complex GPU code |
+| **astraweave-render** | Partial (1.0%) | 38 of 3,682 tested, **54% kill rate** |
 | **aw_editor** | Not started | UI-heavy |
+
+#### astraweave-render Partial Results (38/3682 = 1.0%)
+
+| Metric | Value |
+|--------|-------|
+| **Caught** | 20 |
+| **Missed** | 17 |
+| **Unviable** | 1 |
+| **Kill Rate** | **54%** (20/37 viable) |
+| **Test Time** | ~2.5 min/mutant |
+| **Est. Full Run** | 147+ hours |
+
+**Mutations Tested** (camera.rs only so far):
+- `Camera::view_matrix` - 1 caught, 1 missed
+- `Camera::proj_matrix` - caught
+- `Camera::vp` - 2 caught
+- `Camera::dir` - 4 caught, 1 missed
+- `CameraController::is_dragging` - 2 caught
+- `CameraController::process_keyboard` - 2 missed (match arm deletions)
+- `CameraController::process_mouse_button` - 1 missed
+- `CameraController::process_mouse_move` - 11 missed (no assertion tests!)
+- `CameraController::process_mouse_delta` - in progress
+
+**Key Finding**: Camera controller mouse handling has **zero test coverage** - all mutations passed tests despite code changes.
+
+**Recommended Actions**:
+1. Add assertion tests for `process_mouse_move` to verify yaw/pitch changes
+2. Add tests for `process_keyboard` to verify movement state changes
+3. Run targeted mutation tests: `cargo mutants -p astraweave-render -f camera.rs --timeout 120`
+4. Full run impractical - prioritize file-by-file approach
 
 ---
 
