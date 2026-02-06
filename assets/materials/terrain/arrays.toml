@@ -1,0 +1,7 @@
+# Terrain biome — stable GPU array indices for terrain splatmap layers
+[layers]
+grass = 0
+dirt = 1
+stone = 2
+sand = 3
+rock = 4
