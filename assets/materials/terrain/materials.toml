@@ -1,0 +1,45 @@
+# Terrain biome — generic cross-biome material set for terrain blending
+# Used as fallback when no specific biome is loaded
+
+[biome]
+name = "terrain"
+
+[[layer]]
+key = "grass"
+albedo = "../../grass.png"
+normal = "../../grass_n.png"
+mra    = "../../grass_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 24.0
+
+[[layer]]
+key = "dirt"
+albedo = "../../dirt.png"
+normal = "../../dirt_n.png"
+mra    = "../../dirt_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "stone"
+albedo = "../../stone.png"
+normal = "../../stone_n.png"
+mra    = "../../stone_mra.png"
+tiling = [1.5, 1.5]
+triplanar_scale = 18.0
+
+[[layer]]
+key = "sand"
+albedo = "../../sand.png"
+normal = "../../sand_n.png"
+mra    = "../../sand_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 22.0
+
+[[layer]]
+key = "rock"
+albedo = "../../rock_slate.png"
+normal = "../../rock_slate_n.png"
+mra    = "../../rock_slate_mra.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 18.0
