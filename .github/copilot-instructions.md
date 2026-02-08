@@ -104,7 +104,7 @@ fn do_work() -> Result<()> {
     Ok(())
 }
 ```
-**AVOID `.unwrap()` in production code.** See `docs/root-archive/UNWRAP_AUDIT_ANALYSIS.md`.
+**NO `.unwrap()` in production code.** All existing `.unwrap()` calls are confined to `#[cfg(test)]` modules and test utilities — this is intentional and acceptable. Use `anyhow::Context` or `?` in production paths. Build/CLI tools (`aw_build`, `aw_demo_builder`) have a handful of low-risk `.unwrap()` calls in non-runtime paths.
 
 ### ECS Components & Systems
 
@@ -249,7 +249,7 @@ Any new or modified `unsafe` code **MUST** pass both verification pipelines:
 - **Graphics examples**: `ui_controls_demo`, `debug_overlay` won't compile (egui/winit version drift)
 - **Rhai crates**: `astraweave-author`, `rhai_authoring` have Sync trait errors
 - **LLM crates**: `astraweave-llm`, `llm_toolcall` excluded from standard builds
-- **`.unwrap()` debt**: 637 occurrences cataloged (342 P0-Critical) — see `docs/root-archive/UNWRAP_AUDIT_ANALYSIS.md`
+- **`.unwrap()` in test code only**: All `.unwrap()` calls are inside `#[cfg(test)]` modules — justified for test assertions. Zero production-path unwraps in engine runtime crates.
 
 ### Build Timings
 
