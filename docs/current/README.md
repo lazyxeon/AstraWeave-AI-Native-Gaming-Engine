@@ -7,6 +7,13 @@ Active planning documents for ongoing AstraWeave development.
 
 ---
 
+## Key Reference Documents
+- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Current state, active phases, recently completed
+- **[ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md)** - Detailed patterns, API deep dives, performance data
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Master navigation for all project docs
+
+---
+
 ## Phase 8: Game Engine Readiness
 
 ### Master Plans (Start Here)
