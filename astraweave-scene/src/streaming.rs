@@ -11,6 +11,7 @@ use tokio::sync::RwLock;
 
 /// Events emitted by the streaming system
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum StreamingEvent {
     CellLoadStarted(GridCoord),
     CellLoaded(GridCoord),

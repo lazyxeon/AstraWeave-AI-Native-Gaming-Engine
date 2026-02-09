@@ -33,6 +33,7 @@ pub type NodeId = u64;
 
 /// Port type for visual distinction
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PortType {
     /// Execution flow (white)
     Exec,

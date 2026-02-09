@@ -20,28 +20,15 @@
 //!
 //! ## Example
 //!
-//! ```rust,ignore
+//! ```
 //! use astraweave_ecs::*;
 //!
-//! #[derive(Clone, Copy)]
-//! struct Position { x: f32, y: f32 }
-//!
-//! #[derive(Clone, Copy)]
-//! struct Velocity { x: f32, y: f32 }
-//!
-//! fn movement_system(world: &mut World) {
-//!     let mut query = QueryMut::<Position>::new(world);
-//!     for (entity, pos) in query.iter_mut() {
-//!         if let Some(vel) = world.get::<Velocity>(entity) {
-//!             pos.x += vel.x;
-//!             pos.y += vel.y;
-//!         }
-//!     }
-//! }
-//!
-//! let mut app = App::new();
-//! app.add_system("simulation", movement_system);
-//! app = app.run_fixed(100); // Run 100 ticks
+//! let mut world = World::new();
+//! let e = world.spawn();
+//! world.insert(e, 42_u32);
+//! assert_eq!(world.get::<u32>(e), Some(&42));
+//! world.despawn(e);
+//! assert!(!world.is_alive(e));
 //! ```
 
 #[cfg(feature = "profiling")]
@@ -136,10 +123,35 @@ pub struct World {
 }
 
 impl World {
+    /// Creates a new, empty ECS world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let world = World::new();
+    /// assert_eq!(world.entity_count(), 0);
+    /// ```
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Spawns a new entity in the world and returns its handle.
+    ///
+    /// Each spawned entity has a unique [`Entity`] handle that can be used to
+    /// insert, query, and remove components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let mut world = World::new();
+    /// let entity = world.spawn();
+    /// assert_eq!(world.entity_count(), 1);
+    /// assert!(world.is_alive(entity));
+    /// ```
     pub fn spawn(&mut self) -> Entity {
         #[cfg(feature = "profiling")]
         span!("ECS::World::spawn");
@@ -184,6 +196,21 @@ impl World {
         self.component_registry.is_registered(TypeId::of::<T>())
     }
 
+    /// Inserts a component on an entity, moving it to the appropriate archetype.
+    ///
+    /// If the entity is dead (stale handle), the insert is silently ignored.
+    /// If the entity already has a component of this type, it is replaced.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let mut world = World::new();
+    /// let e = world.spawn();
+    /// world.insert(e, 42_u32);
+    /// assert_eq!(world.get::<u32>(e), Some(&42));
+    /// ```
     pub fn insert<T: Component>(&mut self, e: Entity, c: T) {
         // Validate entity is alive
         if !self.is_alive(e) {
@@ -271,6 +298,21 @@ impl World {
         new_archetype.add_entity(entity, final_components);
     }
 
+    /// Returns an immutable reference to a component on an entity.
+    ///
+    /// Returns `None` if the entity is dead or does not have the component.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let mut world = World::new();
+    /// let e = world.spawn();
+    /// world.insert(e, String::from("hello"));
+    /// assert_eq!(world.get::<String>(e).map(|s| s.as_str()), Some("hello"));
+    /// assert_eq!(world.get::<u32>(e), None); // component not present
+    /// ```
     pub fn get<T: Component>(&self, e: Entity) -> Option<&T> {
         #[cfg(feature = "profiling")]
         span!("ECS::World::get");
@@ -285,6 +327,23 @@ impl World {
         archetype.get::<T>(e)
     }
 
+    /// Returns a mutable reference to a component on an entity.
+    ///
+    /// Returns `None` if the entity is dead or does not have the component.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let mut world = World::new();
+    /// let e = world.spawn();
+    /// world.insert(e, 10_i32);
+    /// if let Some(val) = world.get_mut::<i32>(e) {
+    ///     *val += 5;
+    /// }
+    /// assert_eq!(world.get::<i32>(e), Some(&15));
+    /// ```
     pub fn get_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
         // Validate entity is alive
         if !self.is_alive(e) {
@@ -296,10 +355,38 @@ impl World {
         archetype.get_mut::<T>(e)
     }
 
+    /// Inserts a singleton resource into the world.
+    ///
+    /// Resources are accessed by type rather than by entity. If a resource of the
+    /// same type already exists, it is overwritten.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// struct GameTime(f32);
+    ///
+    /// let mut world = World::new();
+    /// world.insert_resource(GameTime(0.0));
+    /// assert_eq!(world.get_resource::<GameTime>().unwrap().0, 0.0);
+    /// ```
     pub fn insert_resource<T: 'static + Send + Sync>(&mut self, r: T) {
         self.resources.insert(TypeId::of::<T>(), Box::new(r));
     }
 
+    /// Returns a reference to a singleton resource, if it has been inserted.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let mut world = World::new();
+    /// assert!(world.get_resource::<String>().is_none());
+    /// world.insert_resource(String::from("hello"));
+    /// assert_eq!(world.get_resource::<String>().unwrap().as_str(), "hello");
+    /// ```
     pub fn get_resource<T: 'static + Send + Sync>(&self) -> Option<&T> {
         self.resources.get(&TypeId::of::<T>())?.downcast_ref()
     }
@@ -308,6 +395,24 @@ impl World {
         self.resources.get_mut(&TypeId::of::<T>())?.downcast_mut()
     }
 
+    /// Iterates all entities with component `T`, giving mutable access.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::World;
+    ///
+    /// let mut world = World::new();
+    /// let a = world.spawn();
+    /// let b = world.spawn();
+    /// world.insert(a, 1_i32);
+    /// world.insert(b, 2_i32);
+    ///
+    /// world.each_mut::<i32>(|_entity, val| *val *= 10);
+    ///
+    /// assert_eq!(world.get::<i32>(a), Some(&10));
+    /// assert_eq!(world.get::<i32>(b), Some(&20));
+    /// ```
     pub fn each_mut<T: Component>(&mut self, mut f: impl FnMut(Entity, &mut T)) {
         let archetypes_with_t = self
             .archetypes
@@ -476,6 +581,25 @@ impl Schedule {
 }
 
 // App-like builder with deterministic fixed-timestep driver
+/// A high-level application driver combining a [`World`] with a [`Schedule`].
+///
+/// `App` provides a builder pattern for setting up ECS systems and
+/// running them for a fixed number of ticks. Systems execute deterministically
+/// in stage order every tick.
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_ecs::{App, World};
+///
+/// fn gravity_system(world: &mut World) {
+///     world.each_mut::<f32>(|_e, y| *y -= 9.8);
+/// }
+///
+/// let app = App::new();
+/// // Access the world after running
+/// assert_eq!(app.world.entity_count(), 0);
+/// ```
 pub struct App {
     pub world: World,
     pub schedule: Schedule,

@@ -55,12 +55,12 @@ mod heightmap_tests {
     fn test_heightmap_get_height_bounds_check() {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let heightmap = Heightmap::from_data(data, 2).unwrap();
-        
+
         assert_eq!(heightmap.get_height(0, 0), 1.0);
         assert_eq!(heightmap.get_height(1, 0), 2.0);
         assert_eq!(heightmap.get_height(0, 1), 3.0);
         assert_eq!(heightmap.get_height(1, 1), 4.0);
-        
+
         // Out of bounds should return 0
         assert_eq!(heightmap.get_height(2, 0), 0.0);
         assert_eq!(heightmap.get_height(0, 2), 0.0);
@@ -73,11 +73,11 @@ mod heightmap_tests {
             ..Default::default()
         };
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         heightmap.set_height(0, 0, 50.0);
         assert_eq!(heightmap.get_height(0, 0), 50.0);
         assert_eq!(heightmap.max_height(), 50.0);
-        
+
         heightmap.set_height(1, 1, -10.0);
         assert_eq!(heightmap.min_height(), -10.0);
     }
@@ -89,7 +89,7 @@ mod heightmap_tests {
             ..Default::default()
         };
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         // Should not crash or modify anything
         heightmap.set_height(5, 5, 100.0);
         assert!(heightmap.data().iter().all(|&h| h == 0.0));
@@ -101,10 +101,10 @@ mod heightmap_tests {
         // The clamping means we can't actually sample at exactly 1.0
         let data = vec![0.0, 10.0, 20.0, 30.0];
         let heightmap = Heightmap::from_data(data, 2).unwrap();
-        
+
         // At (0,0) corner should match exact value
         assert!((heightmap.sample_bilinear(0.0, 0.0) - 0.0).abs() < 0.01);
-        
+
         // Near upper bounds, value should be interpolated (due to clamping to res-1.001)
         // Just verify they return reasonable values within range
         let upper_x = heightmap.sample_bilinear(0.999, 0.0);
@@ -117,11 +117,16 @@ mod heightmap_tests {
     fn test_heightmap_bilinear_sample_center() {
         let data = vec![0.0, 10.0, 20.0, 30.0];
         let heightmap = Heightmap::from_data(data, 2).unwrap();
-        
+
         // At center (0.5, 0.5), should be average of all four
         let center = heightmap.sample_bilinear(0.5, 0.5);
         let expected = (0.0 + 10.0 + 20.0 + 30.0) / 4.0;
-        assert!((center - expected).abs() < 0.01, "Center: {}, Expected: {}", center, expected);
+        assert!(
+            (center - expected).abs() < 0.01,
+            "Center: {}, Expected: {}",
+            center,
+            expected
+        );
     }
 
     #[test]
@@ -131,14 +136,14 @@ mod heightmap_tests {
             ..Default::default()
         };
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         // Manually modify data
         let data = heightmap.data_mut();
         data[0] = 5.0;
         data[1] = 15.0;
         data[2] = -5.0;
         data[3] = 25.0;
-        
+
         heightmap.recalculate_bounds();
         assert_eq!(heightmap.min_height(), -5.0);
         assert_eq!(heightmap.max_height(), 25.0);
@@ -186,7 +191,7 @@ mod chunk_id_tests {
         let chunk_size = 64.0;
         let id = ChunkId::new(2, 3);
         let pos = id.to_world_pos(chunk_size);
-        
+
         assert_eq!(pos.x, 128.0); // 2 * 64
         assert_eq!(pos.y, 0.0);
         assert_eq!(pos.z, 192.0); // 3 * 64
@@ -197,7 +202,7 @@ mod chunk_id_tests {
         let chunk_size = 64.0;
         let id = ChunkId::new(0, 0);
         let center = id.to_center_pos(chunk_size);
-        
+
         assert_eq!(center.x, 32.0);
         assert_eq!(center.y, 0.0);
         assert_eq!(center.z, 32.0);
@@ -221,7 +226,7 @@ mod chunk_id_tests {
     fn test_chunk_id_get_chunks_in_radius() {
         let chunks = ChunkId::get_chunks_in_radius(Vec3::ZERO, 1, 64.0);
         assert_eq!(chunks.len(), 9); // 3x3 grid around center
-        
+
         // Verify all expected chunks are present
         assert!(chunks.contains(&ChunkId::new(0, 0)));
         assert!(chunks.contains(&ChunkId::new(-1, 0)));
@@ -236,7 +241,7 @@ mod chunk_id_tests {
         let original = ChunkId::new(10, -5);
         let world_pos = original.to_world_pos(chunk_size);
         let recovered = ChunkId::from_world_pos(world_pos, chunk_size);
-        
+
         assert_eq!(original, recovered);
     }
 }
@@ -285,26 +290,26 @@ mod voxel_tests {
     #[test]
     fn test_chunk_coord_from_world_pos() {
         let coord = ChunkCoord::from_world_pos(Vec3::new(50.0, 100.0, 150.0));
-        assert_eq!(coord.x, 1);  // 50/32 = 1.56 -> floor = 1
-        assert_eq!(coord.y, 3);  // 100/32 = 3.12 -> floor = 3
-        assert_eq!(coord.z, 4);  // 150/32 = 4.68 -> floor = 4
+        assert_eq!(coord.x, 1); // 50/32 = 1.56 -> floor = 1
+        assert_eq!(coord.y, 3); // 100/32 = 3.12 -> floor = 3
+        assert_eq!(coord.z, 4); // 150/32 = 4.68 -> floor = 4
     }
 
     #[test]
     fn test_chunk_coord_from_world_pos_negative() {
         let coord = ChunkCoord::from_world_pos(Vec3::new(-50.0, -100.0, -150.0));
-        assert_eq!(coord.x, -2);  // -50/32 = -1.56 -> floor = -2
-        assert_eq!(coord.y, -4);  // -100/32 = -3.12 -> floor = -4
-        assert_eq!(coord.z, -5);  // -150/32 = -4.68 -> floor = -5
+        assert_eq!(coord.x, -2); // -50/32 = -1.56 -> floor = -2
+        assert_eq!(coord.y, -4); // -100/32 = -3.12 -> floor = -4
+        assert_eq!(coord.z, -5); // -150/32 = -4.68 -> floor = -5
     }
 
     #[test]
     fn test_chunk_coord_to_world_pos() {
         let coord = ChunkCoord::new(2, 3, 4);
         let world = coord.to_world_pos();
-        
-        assert_eq!(world.x, 64.0);  // 2 * 32
-        assert_eq!(world.y, 96.0);  // 3 * 32
+
+        assert_eq!(world.x, 64.0); // 2 * 32
+        assert_eq!(world.y, 96.0); // 3 * 32
         assert_eq!(world.z, 128.0); // 4 * 32
     }
 
@@ -312,7 +317,7 @@ mod voxel_tests {
     fn test_chunk_coord_neighbors() {
         let coord = ChunkCoord::new(0, 0, 0);
         let neighbors = coord.neighbors();
-        
+
         assert_eq!(neighbors.len(), 6);
         assert!(neighbors.contains(&ChunkCoord::new(1, 0, 0)));
         assert!(neighbors.contains(&ChunkCoord::new(-1, 0, 0)));
@@ -327,7 +332,7 @@ mod voxel_tests {
         let original = ChunkCoord::new(5, -3, 7);
         let world_pos = original.to_world_pos();
         let recovered = ChunkCoord::from_world_pos(world_pos);
-        
+
         assert_eq!(original, recovered);
     }
 }
@@ -351,10 +356,16 @@ mod biome_tests {
 
     #[test]
     fn test_biome_type_from_str_lowercase() {
-        assert_eq!(BiomeType::from_str("grassland").unwrap(), BiomeType::Grassland);
+        assert_eq!(
+            BiomeType::from_str("grassland").unwrap(),
+            BiomeType::Grassland
+        );
         assert_eq!(BiomeType::from_str("desert").unwrap(), BiomeType::Desert);
         assert_eq!(BiomeType::from_str("forest").unwrap(), BiomeType::Forest);
-        assert_eq!(BiomeType::from_str("mountain").unwrap(), BiomeType::Mountain);
+        assert_eq!(
+            BiomeType::from_str("mountain").unwrap(),
+            BiomeType::Mountain
+        );
         assert_eq!(BiomeType::from_str("tundra").unwrap(), BiomeType::Tundra);
         assert_eq!(BiomeType::from_str("swamp").unwrap(), BiomeType::Swamp);
         assert_eq!(BiomeType::from_str("beach").unwrap(), BiomeType::Beach);
@@ -363,9 +374,18 @@ mod biome_tests {
 
     #[test]
     fn test_biome_type_from_str_case_insensitive() {
-        assert_eq!(BiomeType::from_str("GRASSLAND").unwrap(), BiomeType::Grassland);
-        assert_eq!(BiomeType::from_str("Grassland").unwrap(), BiomeType::Grassland);
-        assert_eq!(BiomeType::from_str("GrAsSlAnD").unwrap(), BiomeType::Grassland);
+        assert_eq!(
+            BiomeType::from_str("GRASSLAND").unwrap(),
+            BiomeType::Grassland
+        );
+        assert_eq!(
+            BiomeType::from_str("Grassland").unwrap(),
+            BiomeType::Grassland
+        );
+        assert_eq!(
+            BiomeType::from_str("GrAsSlAnD").unwrap(),
+            BiomeType::Grassland
+        );
     }
 
     #[test]
@@ -433,7 +453,7 @@ mod noise_config_tests {
     fn test_noise_layer_base_elevation() {
         let config = NoiseConfig::default();
         let base = &config.base_elevation;
-        
+
         assert!(base.scale > 0.0);
         assert!(base.amplitude > 0.0);
         assert!(base.octaves >= 1);
@@ -446,7 +466,7 @@ mod noise_config_tests {
     fn test_noise_layer_mountains() {
         let config = NoiseConfig::default();
         let mountains = &config.mountains;
-        
+
         // Mountains should have higher amplitude and more octaves
         assert!(mountains.amplitude > config.base_elevation.amplitude);
         assert!(mountains.octaves >= config.base_elevation.octaves);
@@ -456,7 +476,7 @@ mod noise_config_tests {
     fn test_noise_layer_detail() {
         let config = NoiseConfig::default();
         let detail = &config.detail;
-        
+
         // Detail should have smaller amplitude and larger scale (higher frequency)
         assert!(detail.amplitude < config.base_elevation.amplitude);
         assert!(detail.scale > config.base_elevation.scale);
@@ -469,7 +489,7 @@ mod noise_config_tests {
         let ridged = NoiseType::RidgedNoise;
         let billow = NoiseType::Billow;
         let fbm = NoiseType::Fbm;
-        
+
         assert!(format!("{:?}", perlin).contains("Perlin"));
         assert!(format!("{:?}", ridged).contains("Ridged"));
         assert!(format!("{:?}", billow).contains("Billow"));
@@ -484,38 +504,38 @@ mod climate_tests {
     #[test]
     fn test_climate_config_default() {
         let config = ClimateConfig::default();
-        
+
         // Temperature layer should have reasonable world scale
         assert!(config.temperature.scale > 0.0);
         assert!(config.temperature.octaves >= 1);
         assert!(config.temperature.persistence > 0.0 && config.temperature.persistence <= 1.0);
         assert!(config.temperature.amplitude > 0.0);
-        
+
         // Moisture layer should have reasonable world scale
         assert!(config.moisture.scale > 0.0);
         assert!(config.moisture.octaves >= 1);
         assert!(config.moisture.persistence > 0.0 && config.moisture.persistence <= 1.0);
         assert!(config.moisture.amplitude > 0.0);
     }
-    
+
     #[test]
     fn test_climate_gradients() {
         let config = ClimateConfig::default();
-        
+
         // Height gradient should be negative (cooler at altitude)
         assert!(config.temperature_height_gradient < 0.0);
-        
+
         // Latitude gradient should be positive
         assert!(config.temperature_latitude_gradient > 0.0);
-        
+
         // Moisture falloff should be positive
         assert!(config.moisture_distance_falloff > 0.0);
     }
-    
+
     #[test]
     fn test_climate_layer_lacunarity() {
         let config = ClimateConfig::default();
-        
+
         // Lacunarity should be > 1 for increasing frequency
         assert!(config.temperature.lacunarity > 1.0);
         assert!(config.moisture.lacunarity > 1.0);
@@ -529,15 +549,15 @@ mod world_config_tests {
     #[test]
     fn test_world_config_default() {
         let config = WorldConfig::default();
-        
+
         // Chunk size should be reasonable
         assert!(config.chunk_size > 0.0);
         assert!(config.chunk_size >= 32.0);
-        
+
         // Resolution should be power of 2 or reasonable
         assert!(config.heightmap_resolution >= 32);
         assert!(config.heightmap_resolution <= 512);
-        
+
         // Seed should exist
         assert!(config.seed > 0);
     }
@@ -556,51 +576,55 @@ mod texture_splatting_tests {
     #[test]
     fn test_splat_weights_from_weights_normalization() {
         let weights = SplatWeights::from_weights(&[0.5, 0.5, 0.0, 0.0]);
-        
+
         // Weights should sum to 1.0 (normalized)
-        let sum = weights.weights_0.x + weights.weights_0.y + 
-                  weights.weights_0.z + weights.weights_0.w +
-                  weights.weights_1.x + weights.weights_1.y +
-                  weights.weights_1.z + weights.weights_1.w;
+        let sum = weights.weights_0.x
+            + weights.weights_0.y
+            + weights.weights_0.z
+            + weights.weights_0.w
+            + weights.weights_1.x
+            + weights.weights_1.y
+            + weights.weights_1.z
+            + weights.weights_1.w;
         assert!((sum - 1.0).abs() < 0.001, "Weights sum: {}", sum);
     }
-    
+
     #[test]
     fn test_splat_weights_single_layer() {
         let weights = SplatWeights::from_weights(&[1.0]);
-        
+
         // First weight should dominate
         assert!(weights.weights_0.x > 0.99);
         assert!(weights.weights_0.y < 0.01);
     }
-    
+
     #[test]
     fn test_splat_weights_multiple_layers() {
         let weights = SplatWeights::from_weights(&[0.25, 0.25, 0.25, 0.25]);
-        
+
         // All first 4 weights should be equal
         assert!((weights.weights_0.x - 0.25).abs() < 0.01);
         assert!((weights.weights_0.y - 0.25).abs() < 0.01);
         assert!((weights.weights_0.z - 0.25).abs() < 0.01);
         assert!((weights.weights_0.w - 0.25).abs() < 0.01);
     }
-    
+
     #[test]
     fn test_splat_weights_default() {
         let weights = SplatWeights::default();
-        
+
         // Default should be valid (not NaN)
         assert!(!weights.weights_0.x.is_nan());
         assert!(!weights.weights_1.x.is_nan());
     }
-    
+
     #[test]
     fn test_splat_weights_extended_layers() {
         let weights = SplatWeights::from_weights(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);
-        
+
         // Second weight vector should be populated
-        let second_sum = weights.weights_1.x + weights.weights_1.y +
-                         weights.weights_1.z + weights.weights_1.w;
+        let second_sum =
+            weights.weights_1.x + weights.weights_1.y + weights.weights_1.z + weights.weights_1.w;
         assert!(second_sum > 0.0);
     }
 }
@@ -616,7 +640,7 @@ mod lod_tests {
         let half = LodLevel::Half;
         let quarter = LodLevel::Quarter;
         let skybox = LodLevel::Skybox;
-        
+
         // Each should be debuggable
         assert!(!format!("{:?}", full).is_empty());
         assert!(!format!("{:?}", half).is_empty());
@@ -628,11 +652,11 @@ mod lod_tests {
     fn test_lod_level_full_is_distinct() {
         let full = LodLevel::Full;
         let half = LodLevel::Half;
-        
+
         // Full should not equal Half
         assert_ne!(format!("{:?}", full), format!("{:?}", half));
     }
-    
+
     #[test]
     fn test_lod_level_skybox_is_lowest_detail() {
         // Skybox should be the lowest detail level
@@ -648,38 +672,38 @@ mod streaming_tests {
     #[test]
     fn test_streaming_config_default() {
         let config = StreamingConfig::default();
-        
+
         // View distance should be reasonable (u32)
         assert!(config.view_distance > 0);
         assert!(config.view_distance <= 100);
-        
+
         // Prefetch distance should be reasonable
         assert!(config.prefetch_distance > 0);
         assert!(config.prefetch_distance <= config.view_distance);
-        
+
         // Max concurrent loads should be at least 1
         assert!(config.max_concurrent_loads >= 1);
-        
+
         // Chunk size should be positive
         assert!(config.chunk_size > 0.0);
     }
-    
+
     #[test]
     fn test_streaming_config_adaptive_throttle() {
         let config = StreamingConfig::default();
-        
+
         // Throttle threshold should be reasonable frame time
         assert!(config.adaptive_throttle_threshold_ms > 0.0);
         assert!(config.adaptive_throttle_threshold_ms < 100.0);
-        
+
         // Throttled loads should be less than normal
         assert!(config.throttled_concurrent_loads <= config.max_concurrent_loads);
     }
-    
+
     #[test]
     fn test_streaming_config_max_loaded() {
         let config = StreamingConfig::default();
-        
+
         // Max loaded chunks should be reasonable
         assert!(config.max_loaded_chunks >= 16);
         assert!(config.max_loaded_chunks <= 1024);
@@ -693,31 +717,31 @@ mod erosion_tests {
     #[test]
     fn test_erosion_preset_default() {
         let preset = ErosionPreset::default();
-        
+
         // Default should have a name
         assert!(!preset.name.is_empty());
-        
+
         // Default should have hydraulic and thermal
         assert!(preset.hydraulic.is_some());
         assert!(preset.thermal.is_some());
-        
+
         // Pass order should be non-empty
         assert!(!preset.pass_order.is_empty());
     }
-    
+
     #[test]
     fn test_erosion_preset_desert() {
         let preset = ErosionPreset::desert();
-        
+
         // Desert should have wind erosion
         assert!(preset.wind.is_some());
         assert!(preset.name.contains("Desert"));
     }
-    
+
     #[test]
     fn test_erosion_preset_mountain() {
         let preset = ErosionPreset::mountain();
-        
+
         // Mountain should have heavy hydraulic
         assert!(preset.hydraulic.is_some());
         if let Some(ref hydraulic) = preset.hydraulic {
@@ -728,34 +752,34 @@ mod erosion_tests {
     #[test]
     fn test_hydraulic_erosion_config_default() {
         let config = HydraulicErosionConfig::default();
-        
+
         // Droplet count should be reasonable
         assert!(config.droplet_count > 0);
         assert!(config.droplet_count <= 500000);
-        
+
         // Erode speed should be positive
         assert!(config.erode_speed > 0.0);
-        
+
         // Deposit speed should be positive
         assert!(config.deposit_speed > 0.0);
-        
+
         // Erosion radius should be reasonable
         assert!(config.erosion_radius > 0);
         assert!(config.erosion_radius <= 10);
     }
-    
+
     #[test]
     fn test_thermal_erosion_config_default() {
         let config = ThermalErosionConfig::default();
-        
+
         // Iterations should be reasonable
         assert!(config.iterations > 0);
         assert!(config.iterations <= 1000);
-        
+
         // Talus angle should be in reasonable range
         assert!(config.talus_angle > 0.0);
         assert!(config.talus_angle < 90.0);
-        
+
         // Redistribution rate should be between 0 and 1
         assert!(config.redistribution_rate >= 0.0);
         assert!(config.redistribution_rate <= 1.0);
@@ -764,33 +788,33 @@ mod erosion_tests {
 
 #[cfg(test)]
 mod solver_tests {
-    use crate::solver::ValidationStatus;
     use crate::biome::BiomeType;
+    use crate::solver::ValidationStatus;
 
     #[test]
     fn test_validation_status_valid() {
         let valid = ValidationStatus::Valid;
         assert!(format!("{:?}", valid).contains("Valid"));
     }
-    
+
     #[test]
     fn test_validation_status_out_of_bounds() {
         let oob = ValidationStatus::OutOfBounds;
         assert!(format!("{:?}", oob).contains("OutOfBounds"));
     }
-    
+
     #[test]
     fn test_validation_status_no_solid_ground() {
         let nsg = ValidationStatus::NoSolidGround;
         assert!(format!("{:?}", nsg).contains("NoSolidGround"));
     }
-    
+
     #[test]
     fn test_validation_status_chunk_not_loaded() {
         let cnl = ValidationStatus::ChunkNotLoaded;
         assert!(format!("{:?}", cnl).contains("ChunkNotLoaded"));
     }
-    
+
     #[test]
     fn test_validation_status_biome_incompatible() {
         let bi = ValidationStatus::BiomeIncompatible(BiomeType::Desert);
@@ -809,25 +833,25 @@ mod terrain_modifier_tests {
         let set_op = VoxelOpType::Set(voxel);
         assert!(format!("{:?}", set_op).contains("Set"));
     }
-    
+
     #[test]
     fn test_voxel_op_type_add_density() {
         let add = VoxelOpType::AddDensity(0.5);
         assert!(format!("{:?}", add).contains("AddDensity"));
     }
-    
+
     #[test]
     fn test_voxel_op_type_subtract_density() {
         let subtract = VoxelOpType::SubtractDensity(0.3);
         assert!(format!("{:?}", subtract).contains("SubtractDensity"));
     }
-    
+
     #[test]
     fn test_voxel_op_type_set_material() {
         let set_mat = VoxelOpType::SetMaterial(42);
         assert!(format!("{:?}", set_mat).contains("SetMaterial"));
     }
-    
+
     #[test]
     fn test_voxel_op_type_blend() {
         let voxel = Voxel::new(0.5, 2);
@@ -847,41 +871,41 @@ mod structure_tests {
         let farmhouse = StructureType::Farmhouse;
         let villa = StructureType::Villa;
         let cabin = StructureType::Cabin;
-        
+
         assert!(format!("{:?}", cottage).contains("Cottage"));
         assert!(format!("{:?}", farmhouse).contains("Farmhouse"));
         assert!(format!("{:?}", villa).contains("Villa"));
         assert!(format!("{:?}", cabin).contains("Cabin"));
     }
-    
+
     #[test]
     fn test_structure_type_commercial() {
         let tavern = StructureType::Tavern;
         let blacksmith = StructureType::Blacksmith;
         let market = StructureType::Market;
-        
+
         assert!(format!("{:?}", tavern).contains("Tavern"));
         assert!(format!("{:?}", blacksmith).contains("Blacksmith"));
         assert!(format!("{:?}", market).contains("Market"));
     }
-    
+
     #[test]
     fn test_structure_type_defensive() {
         let tower = StructureType::Watchtower;
         let fort = StructureType::Fort;
         let wall = StructureType::Wall;
-        
+
         assert!(format!("{:?}", tower).contains("Watchtower"));
         assert!(format!("{:?}", fort).contains("Fort"));
         assert!(format!("{:?}", wall).contains("Wall"));
     }
-    
+
     #[test]
     fn test_structure_type_ancient() {
         let ruin = StructureType::AncientRuin;
         let obelisk = StructureType::Obelisk;
         let tomb = StructureType::Tomb;
-        
+
         assert!(format!("{:?}", ruin).contains("AncientRuin"));
         assert!(format!("{:?}", obelisk).contains("Obelisk"));
         assert!(format!("{:?}", tomb).contains("Tomb"));
@@ -897,25 +921,25 @@ mod diagnostic_tests {
         let pending = ChunkLoadState::Pending;
         assert!(format!("{:?}", pending).contains("Pending"));
     }
-    
+
     #[test]
     fn test_chunk_load_state_loading() {
         let loading = ChunkLoadState::Loading;
         assert!(format!("{:?}", loading).contains("Loading"));
     }
-    
+
     #[test]
     fn test_chunk_load_state_loaded() {
         let loaded = ChunkLoadState::Loaded;
         assert!(format!("{:?}", loaded).contains("Loaded"));
     }
-    
+
     #[test]
     fn test_chunk_load_state_unloaded() {
         let unloaded = ChunkLoadState::Unloaded;
         assert!(format!("{:?}", unloaded).contains("Unloaded"));
     }
-    
+
     #[test]
     fn test_chunk_load_states_distinct() {
         // All states should be distinct
@@ -928,9 +952,9 @@ mod diagnostic_tests {
 #[cfg(test)]
 mod behavioral_correctness_tests {
     //! Tests that verify terrain generation produces physically correct results
-    
-    use crate::heightmap::{Heightmap, HeightmapConfig};
+
     use crate::chunk::ChunkId;
+    use crate::heightmap::{Heightmap, HeightmapConfig};
     use crate::voxel_data::{ChunkCoord, CHUNK_SIZE};
     use glam::Vec3;
 
@@ -938,16 +962,16 @@ mod behavioral_correctness_tests {
     fn test_chunk_world_pos_consistency() {
         // World position to chunk and back should be consistent
         let chunk_size = 64.0;
-        
+
         for x in -10..10 {
             for z in -10..10 {
                 let chunk = ChunkId::new(x, z);
                 let world = chunk.to_world_pos(chunk_size);
-                
+
                 // Position inside chunk should map back to same chunk
                 let inside = world + Vec3::new(chunk_size * 0.5, 0.0, chunk_size * 0.5);
                 let recovered = ChunkId::from_world_pos(inside, chunk_size);
-                
+
                 assert_eq!(chunk, recovered, "Failed for chunk ({}, {})", x, z);
             }
         }
@@ -961,11 +985,11 @@ mod behavioral_correctness_tests {
                 for z in -5..5 {
                     let coord = ChunkCoord::new(x, y, z);
                     let world = coord.to_world_pos();
-                    
+
                     // Position inside chunk should map back to same chunk
                     let inside = world + Vec3::splat(CHUNK_SIZE as f32 * 0.5);
                     let recovered = ChunkCoord::from_world_pos(inside);
-                    
+
                     assert_eq!(coord, recovered, "Failed for coord ({}, {}, {})", x, y, z);
                 }
             }
@@ -980,7 +1004,7 @@ mod behavioral_correctness_tests {
             ..Default::default()
         };
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         // Set each position with unique value
         for z in 0..4 {
             for x in 0..4 {
@@ -988,7 +1012,7 @@ mod behavioral_correctness_tests {
                 heightmap.set_height(x, z, expected_index as f32);
             }
         }
-        
+
         // Verify values
         for z in 0..4 {
             for x in 0..4 {
@@ -1003,18 +1027,14 @@ mod behavioral_correctness_tests {
     fn test_bilinear_interpolation_linearity() {
         // Bilinear interpolation should be linear along edges
         // Using a 3x3 grid for clearer interpolation testing
-        let data = vec![
-            0.0, 50.0, 100.0,
-            0.0, 50.0, 100.0,
-            0.0, 50.0, 100.0,
-        ];
+        let data = vec![0.0, 50.0, 100.0, 0.0, 50.0, 100.0, 0.0, 50.0, 100.0];
         let heightmap = Heightmap::from_data(data, 3).unwrap();
-        
+
         // Along x edge (z=0): should go from 0 to 50 at midpoint
         let h_0 = heightmap.sample_bilinear(0.0, 0.0);
         let h_half = heightmap.sample_bilinear(0.5, 0.0);
         let h_1 = heightmap.sample_bilinear(1.0, 0.0);
-        
+
         assert!((h_0 - 0.0).abs() < 0.1);
         assert!((h_half - 25.0).abs() < 0.1, "Expected ~25, got {}", h_half);
         assert!((h_1 - 50.0).abs() < 0.1, "Expected ~50, got {}", h_1);
@@ -1024,15 +1044,15 @@ mod behavioral_correctness_tests {
     fn test_chunk_radius_calculation() {
         let center = Vec3::ZERO;
         let chunk_size = 64.0;
-        
+
         // Radius 0 should give 1 chunk
         let r0 = ChunkId::get_chunks_in_radius(center, 0, chunk_size);
         assert_eq!(r0.len(), 1);
-        
+
         // Radius 1 should give 9 chunks (3x3)
         let r1 = ChunkId::get_chunks_in_radius(center, 1, chunk_size);
         assert_eq!(r1.len(), 9);
-        
+
         // Radius 2 should give 25 chunks (5x5)
         let r2 = ChunkId::get_chunks_in_radius(center, 2, chunk_size);
         assert_eq!(r2.len(), 25);
@@ -1045,14 +1065,14 @@ mod behavioral_correctness_tests {
 
 #[cfg(test)]
 mod boundary_condition_tests {
-    use crate::heightmap::{Heightmap, HeightmapConfig};
-    use crate::chunk::ChunkId;
-    use crate::voxel_data::Voxel;
     use crate::background_loader::StreamingConfig;
+    use crate::chunk::ChunkId;
+    use crate::heightmap::{Heightmap, HeightmapConfig};
+    use crate::voxel_data::Voxel;
     use glam::Vec3;
 
     // --- Heightmap boundary tests ---
-    
+
     #[test]
     fn heightmap_value_at_zero() {
         let data = vec![0.0, 1.0, 2.0, 3.0];
@@ -1084,25 +1104,35 @@ mod boundary_condition_tests {
         // Sample near normalized (1.0, 1.0) should give interpolated value
         let sample = heightmap.sample_bilinear(0.999, 0.999);
         // Should be close to 40.0 (lower-right corner)
-        assert!(sample > 25.0, "Sample near corner should be high: {}", sample);
+        assert!(
+            sample > 25.0,
+            "Sample near corner should be high: {}",
+            sample
+        );
     }
 
     #[test]
     fn heightmap_out_of_bounds_x_returns_zero() {
-        let config = HeightmapConfig { resolution: 2, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 2,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(config).unwrap();
         assert_eq!(heightmap.get_height(100, 0), 0.0);
     }
 
     #[test]
     fn heightmap_out_of_bounds_z_returns_zero() {
-        let config = HeightmapConfig { resolution: 2, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 2,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(config).unwrap();
         assert_eq!(heightmap.get_height(0, 100), 0.0);
     }
 
     // --- ChunkId boundary tests ---
-    
+
     #[test]
     fn chunk_id_at_origin() {
         let id = ChunkId::from_world_pos(Vec3::ZERO, 64.0);
@@ -1138,7 +1168,7 @@ mod boundary_condition_tests {
     }
 
     // --- Voxel density boundary tests ---
-    
+
     #[test]
     fn voxel_density_zero_is_empty() {
         let voxel = Voxel::new(0.0, 0);
@@ -1166,7 +1196,7 @@ mod boundary_condition_tests {
     }
 
     // --- StreamingConfig boundary tests ---
-    
+
     #[test]
     fn streaming_view_distance_minimum() {
         let config = StreamingConfig::default();
@@ -1198,15 +1228,15 @@ mod boundary_condition_tests {
 
 #[cfg(test)]
 mod comparison_operator_tests {
-    use crate::heightmap::Heightmap;
-    use crate::chunk::ChunkId;
     use crate::biome::BiomeType;
-    use crate::voxel_data::Voxel;
+    use crate::chunk::ChunkId;
+    use crate::heightmap::Heightmap;
     use crate::lod_manager::LodLevel;
+    use crate::voxel_data::Voxel;
     use glam::Vec3;
 
     // --- ChunkId equality ---
-    
+
     #[test]
     fn chunk_id_equal_to_self() {
         let id = ChunkId::new(5, 10);
@@ -1235,7 +1265,7 @@ mod comparison_operator_tests {
     }
 
     // --- BiomeType equality ---
-    
+
     #[test]
     fn biome_type_equals_self() {
         assert_eq!(BiomeType::Forest, BiomeType::Forest);
@@ -1261,7 +1291,7 @@ mod comparison_operator_tests {
     }
 
     // --- Voxel comparisons ---
-    
+
     #[test]
     fn voxel_default_equals_default() {
         let v1 = Voxel::default();
@@ -1277,7 +1307,7 @@ mod comparison_operator_tests {
     }
 
     // --- Heightmap min/max comparison ---
-    
+
     #[test]
     fn heightmap_min_less_than_max() {
         let data = vec![5.0, 10.0, 15.0, 20.0];
@@ -1293,19 +1323,25 @@ mod comparison_operator_tests {
     }
 
     // --- LodLevel debug format comparisons ---
-    
+
     #[test]
     fn lod_full_not_equals_half() {
-        assert_ne!(format!("{:?}", LodLevel::Full), format!("{:?}", LodLevel::Half));
+        assert_ne!(
+            format!("{:?}", LodLevel::Full),
+            format!("{:?}", LodLevel::Half)
+        );
     }
 
     #[test]
     fn lod_quarter_not_equals_skybox() {
-        assert_ne!(format!("{:?}", LodLevel::Quarter), format!("{:?}", LodLevel::Skybox));
+        assert_ne!(
+            format!("{:?}", LodLevel::Quarter),
+            format!("{:?}", LodLevel::Skybox)
+        );
     }
 
     // --- Position comparisons ---
-    
+
     #[test]
     fn center_world_pos_correct() {
         let id = ChunkId::new(1, 1);
@@ -1322,14 +1358,14 @@ mod comparison_operator_tests {
 
 #[cfg(test)]
 mod boolean_return_path_tests {
-    use crate::heightmap::{Heightmap, HeightmapConfig};
-    use crate::voxel_data::{Voxel, ChunkCoord};
-    use crate::meshing::ChunkMesh;
     use crate::biome::BiomeType;
+    use crate::heightmap::{Heightmap, HeightmapConfig};
+    use crate::meshing::ChunkMesh;
+    use crate::voxel_data::{ChunkCoord, Voxel};
     use std::str::FromStr;
 
     // --- Voxel.is_solid() paths ---
-    
+
     #[test]
     fn voxel_is_solid_true_for_high_density() {
         let voxel = Voxel::new(1.0, 0);
@@ -1355,7 +1391,7 @@ mod boolean_return_path_tests {
     }
 
     // --- Voxel.is_empty() paths ---
-    
+
     #[test]
     fn voxel_is_empty_true_for_zero() {
         let voxel = Voxel::new(0.0, 0);
@@ -1381,7 +1417,7 @@ mod boolean_return_path_tests {
     }
 
     // --- ChunkMesh.is_empty() paths ---
-    
+
     #[test]
     fn chunk_mesh_is_empty_true_when_new() {
         let mesh = ChunkMesh::empty(ChunkCoord::new(0, 0, 0));
@@ -1389,7 +1425,7 @@ mod boolean_return_path_tests {
     }
 
     // --- Heightmap.from_data() Result paths ---
-    
+
     #[test]
     fn heightmap_from_data_ok_valid_size() {
         let data = vec![1.0; 9]; // 3x3
@@ -1405,7 +1441,7 @@ mod boolean_return_path_tests {
     }
 
     // --- BiomeType::from_str() Result paths ---
-    
+
     #[test]
     fn biome_from_str_ok_valid() {
         let result = BiomeType::from_str("forest");
@@ -1425,7 +1461,7 @@ mod boolean_return_path_tests {
     }
 
     // --- BiomeType::parse() Option paths ---
-    
+
     #[test]
     fn biome_parse_some_valid() {
         let result = BiomeType::parse("mountain");
@@ -1439,10 +1475,13 @@ mod boolean_return_path_tests {
     }
 
     // --- Heightmap data operations ---
-    
+
     #[test]
     fn heightmap_data_iter_all_returns_true_when_uniform() {
-        let config = HeightmapConfig { resolution: 2, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 2,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(config).unwrap();
         // All zeros should be uniform
         assert!(heightmap.data().iter().all(|&h| h == 0.0));

@@ -21,9 +21,11 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
              _: &mut RenderContext,
              out: &mut dyn Output|
              -> HelperResult {
-                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
-                    "json", 0,
-                ))?;
+                let param =
+                    h.param(0)
+                        .ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                            "json", 0,
+                        ))?;
                 let json = serde_json::to_string_pretty(param.value())
                     .map_err(|e| handlebars::RenderErrorReason::Other(e.to_string()))?;
                 out.write(&json)?;
@@ -42,12 +44,17 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
              _: &mut RenderContext,
              out: &mut dyn Output|
              -> HelperResult {
-                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
-                    "trim", 0,
-                ))?;
-                let value = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
-                    "Param must be a string".to_string(),
-                ))?;
+                let param =
+                    h.param(0)
+                        .ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                            "trim", 0,
+                        ))?;
+                let value = param
+                    .value()
+                    .as_str()
+                    .ok_or(handlebars::RenderErrorReason::Other(
+                        "Param must be a string".to_string(),
+                    ))?;
                 out.write(value.trim())?;
                 Ok(())
             },
@@ -64,26 +71,31 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
              _: &mut RenderContext,
              out: &mut dyn Output|
              -> HelperResult {
-                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
-                    "indent", 0,
-                ))?;
-                let text = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
-                    "Param must be a string".to_string(),
-                ))?;
-                
+                let param =
+                    h.param(0)
+                        .ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                            "indent", 0,
+                        ))?;
+                let text = param
+                    .value()
+                    .as_str()
+                    .ok_or(handlebars::RenderErrorReason::Other(
+                        "Param must be a string".to_string(),
+                    ))?;
+
                 let spaces = if let Some(p1) = h.param(1) {
                     p1.value().as_u64().unwrap_or(2) as usize
                 } else {
                     2
                 };
-                
+
                 let indent_str = " ".repeat(spaces);
                 let indented = text
                     .lines()
                     .map(|line| format!("{}{}", indent_str, line))
                     .collect::<Vec<_>>()
                     .join("\n");
-                    
+
                 out.write(&indented)?;
                 Ok(())
             },
@@ -100,12 +112,18 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
              _: &mut RenderContext,
              out: &mut dyn Output|
              -> HelperResult {
-                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
-                    "uppercase", 0,
-                ))?;
-                let value = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
-                    "Param must be a string".to_string(),
-                ))?;
+                let param =
+                    h.param(0)
+                        .ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                            "uppercase",
+                            0,
+                        ))?;
+                let value = param
+                    .value()
+                    .as_str()
+                    .ok_or(handlebars::RenderErrorReason::Other(
+                        "Param must be a string".to_string(),
+                    ))?;
                 out.write(&value.to_uppercase())?;
                 Ok(())
             },
@@ -122,12 +140,18 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
              _: &mut RenderContext,
              out: &mut dyn Output|
              -> HelperResult {
-                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
-                    "lowercase", 0,
-                ))?;
-                let value = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
-                    "Param must be a string".to_string(),
-                ))?;
+                let param =
+                    h.param(0)
+                        .ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                            "lowercase",
+                            0,
+                        ))?;
+                let value = param
+                    .value()
+                    .as_str()
+                    .ok_or(handlebars::RenderErrorReason::Other(
+                        "Param must be a string".to_string(),
+                    ))?;
                 out.write(&value.to_lowercase())?;
                 Ok(())
             },
@@ -144,9 +168,11 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
              _: &mut RenderContext,
              out: &mut dyn Output|
              -> HelperResult {
-                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
-                    "length", 0,
-                ))?;
+                let param =
+                    h.param(0)
+                        .ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                            "length", 0,
+                        ))?;
                 let len = if let Some(s) = param.value().as_str() {
                     s.len()
                 } else if let Some(arr) = param.value().as_array() {
@@ -460,7 +486,7 @@ mod tests {
         let prompt = "This is a valid prompt with {variable}.";
         let mut rules = ValidationRules::default();
         rules.required_variables.push("variable".to_string());
-        
+
         assert!(PromptValidator::validate(prompt, &rules).is_ok());
     }
 
@@ -471,7 +497,7 @@ mod tests {
             max_length: 1000,
             ..Default::default()
         };
-        
+
         let result = PromptValidator::validate(&prompt, &rules);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("too long"));
@@ -484,7 +510,7 @@ mod tests {
             min_length: 10,
             ..Default::default()
         };
-        
+
         let result = PromptValidator::validate(prompt, &rules);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("too short"));
@@ -497,7 +523,7 @@ mod tests {
             required_variables: vec!["name".to_string()],
             ..Default::default()
         };
-        
+
         let result = PromptValidator::validate(prompt, &rules);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("name"));
@@ -510,7 +536,7 @@ mod tests {
             forbidden_patterns: vec!["FORBIDDEN".to_string()],
             ..Default::default()
         };
-        
+
         let result = PromptValidator::validate(prompt, &rules);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("FORBIDDEN"));
@@ -536,7 +562,7 @@ mod tests {
         let prompt = "Line 1\n  Indented line\nLine 3";
         let options = FormattingOptions::default();
         let formatted = PromptFormatter::format(prompt, &options);
-        
+
         assert!(formatted.contains("Line 1"));
         assert!(formatted.contains("Line 3"));
     }
@@ -549,7 +575,7 @@ mod tests {
             ..Default::default()
         };
         let formatted = PromptFormatter::format(prompt, &options);
-        
+
         assert!(formatted.contains("Line 1"));
     }
 
@@ -557,7 +583,7 @@ mod tests {
     fn test_minify() {
         let prompt = "Line 1\n  \n  Line 2  \n\nLine 3";
         let minified = PromptFormatter::minify(prompt);
-        
+
         assert_eq!(minified, "Line 1 Line 2 Line 3");
     }
 
@@ -565,7 +591,7 @@ mod tests {
     fn test_pretty_print() {
         let prompt = "Hello {name}, welcome to {place}!";
         let pretty = PromptFormatter::pretty_print(prompt);
-        
+
         assert!(pretty.contains("**{name}**"));
         assert!(pretty.contains("**{place}**"));
     }
@@ -575,7 +601,7 @@ mod tests {
     fn test_estimate_tokens() {
         let text = "This is a test sentence with eight words here.";
         let tokens = PromptAnalyzer::estimate_tokens(text);
-        
+
         // 10 words * 0.75 ≈ 7
         assert!(tokens > 0);
         assert!(tokens < text.split_whitespace().count());
@@ -585,7 +611,7 @@ mod tests {
     fn test_extract_variables() {
         let prompt = "Hello {name}! Your {item} is ready at {location}.";
         let vars = PromptAnalyzer::extract_variables(prompt);
-        
+
         assert_eq!(vars.len(), 3);
         assert!(vars.contains(&"name".to_string()));
         assert!(vars.contains(&"item".to_string()));
@@ -596,7 +622,7 @@ mod tests {
     fn test_extract_variables_no_duplicates() {
         let prompt = "{name} likes {name}";
         let vars = PromptAnalyzer::extract_variables(prompt);
-        
+
         assert_eq!(vars.len(), 1);
     }
 
@@ -604,7 +630,7 @@ mod tests {
     fn test_extract_variables_empty() {
         let prompt = "No variables here";
         let vars = PromptAnalyzer::extract_variables(prompt);
-        
+
         assert!(vars.is_empty());
     }
 
@@ -612,7 +638,7 @@ mod tests {
     fn test_calculate_complexity_short() {
         let prompt = "Simple prompt.";
         let score = PromptAnalyzer::calculate_complexity(prompt);
-        
+
         assert!(score < 50);
     }
 
@@ -620,7 +646,7 @@ mod tests {
     fn test_calculate_complexity_long() {
         let prompt = "a ".repeat(500) + &"{var}".repeat(10);
         let score = PromptAnalyzer::calculate_complexity(&prompt);
-        
+
         // Long prompts should have some complexity score
         assert!(score > 0);
     }
@@ -629,7 +655,7 @@ mod tests {
     fn test_calculate_readability() {
         let prompt = "Short. Sentences. Are. Easy.";
         let score = PromptAnalyzer::calculate_readability(prompt);
-        
+
         // Short sentences = high readability
         assert!(score > 50);
     }
@@ -638,7 +664,7 @@ mod tests {
     fn test_analyze() {
         let prompt = "Hello {name}! Welcome to {place}. This is a test.";
         let result = PromptAnalyzer::analyze(prompt);
-        
+
         assert!(result.estimated_tokens > 0);
         assert!(result.complexity_score <= 100);
         assert_eq!(result.variables.len(), 2);
@@ -649,13 +675,13 @@ mod tests {
     fn test_generate_stats() {
         let prompt = "Hello {name}!\nLine two.";
         let stats = PromptAnalyzer::generate_stats(prompt);
-        
+
         assert!(stats.contains_key("character_count"));
         assert!(stats.contains_key("word_count"));
         assert!(stats.contains_key("line_count"));
         assert!(stats.contains_key("variable_count"));
         assert!(stats.contains_key("estimated_tokens"));
-        
+
         assert_eq!(stats.get("line_count").unwrap(), "2");
         assert_eq!(stats.get("variable_count").unwrap(), "1");
     }
@@ -664,7 +690,7 @@ mod tests {
     #[test]
     fn test_validation_rules_default() {
         let rules = ValidationRules::default();
-        
+
         assert_eq!(rules.max_length, 8000);
         assert_eq!(rules.min_length, 10);
         assert!(rules.required_variables.is_empty());
@@ -679,10 +705,10 @@ mod tests {
             required_variables: vec!["name".to_string()],
             forbidden_patterns: vec!["bad".to_string()],
         };
-        
+
         let serialized = serde_json::to_string(&rules).unwrap();
         let deserialized: ValidationRules = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(rules.max_length, deserialized.max_length);
         assert_eq!(rules.required_variables, deserialized.required_variables);
     }
@@ -691,7 +717,7 @@ mod tests {
     #[test]
     fn test_formatting_options_default() {
         let options = FormattingOptions::default();
-        
+
         assert_eq!(options.indent_size, 2);
         assert!(!options.use_tabs);
         assert_eq!(options.max_line_length, 80);
@@ -704,10 +730,10 @@ mod tests {
             use_tabs: true,
             max_line_length: 120,
         };
-        
+
         let serialized = serde_json::to_string(&options).unwrap();
         let deserialized: FormattingOptions = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(options.indent_size, deserialized.indent_size);
         assert_eq!(options.use_tabs, deserialized.use_tabs);
     }
@@ -721,10 +747,10 @@ mod tests {
             variables: vec!["name".to_string()],
             readability_score: 75,
         };
-        
+
         let serialized = serde_json::to_string(&result).unwrap();
         let deserialized: AnalysisResult = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(result.estimated_tokens, deserialized.estimated_tokens);
         assert_eq!(result.variables, deserialized.variables);
     }
@@ -734,7 +760,7 @@ mod tests {
     fn test_empty_prompt_analyze() {
         let prompt = "";
         let result = PromptAnalyzer::analyze(prompt);
-        
+
         assert_eq!(result.estimated_tokens, 0);
         assert!(result.variables.is_empty());
     }
@@ -743,7 +769,7 @@ mod tests {
     fn test_nested_braces() {
         let prompt = "{{nested}}";
         let vars = PromptAnalyzer::extract_variables(prompt);
-        
+
         // Should handle nested braces by extracting inner variable
         assert!(!vars.is_empty());
     }
@@ -752,7 +778,7 @@ mod tests {
     fn test_minify_empty_lines() {
         let prompt = "\n\n\n";
         let minified = PromptFormatter::minify(prompt);
-        
+
         assert!(minified.is_empty());
     }
 
@@ -761,7 +787,7 @@ mod tests {
         let prompt = "Line 1\n\nLine 3";
         let options = FormattingOptions::default();
         let formatted = PromptFormatter::format(prompt, &options);
-        
+
         assert!(formatted.contains("\n"));
     }
 }

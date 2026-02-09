@@ -1,0 +1,126 @@
+# =============================================================================
+# AstraWeave PolyHaven Wishlist
+# =============================================================================
+# Assets to download from PolyHaven for the AstraWeave asset library.
+# Run: ./scripts/fetch_polyhaven.ps1 -WishlistFile scripts/polyhaven_wishlist.toml
+#
+# All PolyHaven assets are CC0 (public domain) — free for any use.
+# =============================================================================
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HDRIs — Environment lighting for each biome × time-of-day
+# ─────────────────────────────────────────────────────────────────────────────
+# We need good coverage across biomes and times of day.
+# Current inventory: 7 HDRIs. Target: 15-20 for full biome coverage.
+
+# Forest / Grassland — Morning
+[[hdris]]
+id = "spruit_sunrise"
+resolution = "2k"
+
+# Forest / Grassland — Day (clear sky)
+[[hdris]]
+id = "kloppenheim_06_puresky"
+resolution = "2k"
+
+# Desert / Beach — Day (bright, clear)
+[[hdris]]
+id = "kloppenheim_02_puresky"
+resolution = "2k"
+
+# General — Evening / Sunset
+[[hdris]]
+id = "venice_sunset"
+resolution = "2k"
+
+# Mountain / Tundra — Night
+[[hdris]]
+id = "qwantani_moonrise_puresky"
+resolution = "2k"
+
+# Swamp / River — Night (darker, moodier)
+[[hdris]]
+id = "rogland_clear_night"
+resolution = "2k"
+
+# === NEW TARGETS (not yet downloaded) ===
+
+# Desert — Day (dry, arid)
+[[hdris]]
+id = "desert_highway"
+resolution = "2k"
+
+# Mountain — Day (alpine, high altitude)
+[[hdris]]
+id = "table_mountain_2"
+resolution = "2k"
+
+# Tundra — Day (overcast, cold)
+[[hdris]]
+id = "snowy_park_01"
+resolution = "2k"
+
+# Swamp — Overcast (moody)
+[[hdris]]
+id = "mud_road_puresky"
+resolution = "2k"
+
+# Beach — Sunset (warm)
+[[hdris]]
+id = "cape_hill"
+resolution = "2k"
+
+# Forest — Overcast (diffuse light)
+[[hdris]]
+id = "clarens_night_02"
+resolution = "2k"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PBR Textures — Additional materials for terrain and props
+# ─────────────────────────────────────────────────────────────────────────────
+# Focus on terrain-ready tileable textures that complement our existing set.
+
+# Forest floor variant (different from our current forest_floor)
+[[textures]]
+id = "forest_leaves_03"
+resolution = "2k"
+
+# Rocky ground for mountain biome
+[[textures]]
+id = "rock_ground_02"
+resolution = "2k"
+
+# Wet cobblestone for rain/swamp
+[[textures]]
+id = "cobblestone_floor_08"
+resolution = "2k"
+
+# Sandy ground for beach/desert
+[[textures]]
+id = "sandy_gravel"
+resolution = "2k"
+
+# Snow for tundra
+[[textures]]
+id = "snow_03"
+resolution = "2k"
+
+# Mossy stone for river/swamp
+[[textures]]
+id = "mossy_stone_wall"
+resolution = "2k"
+
+# Dry cracked earth for desert
+[[textures]]
+id = "dry_riverbed_rock"
+resolution = "2k"
+
+# Grass variant
+[[textures]]
+id = "grass_path_2"
+resolution = "2k"
+
+# Mud for swamp
+[[textures]]
+id = "brown_mud_03"
+resolution = "2k"

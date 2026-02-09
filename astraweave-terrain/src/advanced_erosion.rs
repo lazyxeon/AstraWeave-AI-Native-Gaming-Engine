@@ -368,8 +368,7 @@ impl AdvancedErosionSimulator {
                 let cell_offset_z = droplet.pos.y - node_z as f32;
 
                 // Calculate height and gradient using bilinear interpolation
-                let (height, gradient) =
-                    self.calculate_height_and_gradient(heightmap, droplet.pos);
+                let (height, gradient) = self.calculate_height_and_gradient(heightmap, droplet.pos);
 
                 // Update droplet direction (with inertia)
                 let new_dir = droplet.dir * config.inertia - gradient * (1.0 - config.inertia);
@@ -399,9 +398,7 @@ impl AdvancedErosionSimulator {
                 let delta_height = new_height - height;
 
                 // Calculate sediment capacity
-                let sediment_capacity = (-delta_height)
-                    .max(config.min_slope)
-                    .max(0.0)
+                let sediment_capacity = (-delta_height).max(config.min_slope).max(0.0)
                     * droplet.velocity
                     * droplet.water
                     * config.sediment_capacity_factor;
@@ -580,10 +577,10 @@ impl AdvancedErosionSimulator {
                     // Check windward and leeward heights
                     let windward_x = (x as f32 - wind_dir.x).clamp(0.0, (resolution - 1) as f32);
                     let windward_z = (z as f32 - wind_dir.y).clamp(0.0, (resolution - 1) as f32);
-                    let leeward_x =
-                        (x as f32 + wind_dir.x * config.saltation_distance).clamp(0.0, (resolution - 1) as f32);
-                    let leeward_z =
-                        (z as f32 + wind_dir.y * config.saltation_distance).clamp(0.0, (resolution - 1) as f32);
+                    let leeward_x = (x as f32 + wind_dir.x * config.saltation_distance)
+                        .clamp(0.0, (resolution - 1) as f32);
+                    let leeward_z = (z as f32 + wind_dir.y * config.saltation_distance)
+                        .clamp(0.0, (resolution - 1) as f32);
 
                     let windward_idx =
                         (windward_z as u32 * resolution + windward_x as u32) as usize;
@@ -616,7 +613,11 @@ impl AdvancedErosionSimulator {
     }
 
     /// Apply a full erosion preset with multiple passes
-    pub fn apply_preset(&mut self, heightmap: &mut Heightmap, preset: &ErosionPreset) -> ErosionStats {
+    pub fn apply_preset(
+        &mut self,
+        heightmap: &mut Heightmap,
+        preset: &ErosionPreset,
+    ) -> ErosionStats {
         let mut combined_stats = ErosionStats::default();
 
         for pass_name in &preset.pass_order {
@@ -647,8 +648,9 @@ impl AdvancedErosionSimulator {
 
             combined_stats.total_eroded += pass_stats.total_eroded;
             combined_stats.total_deposited += pass_stats.total_deposited;
-            combined_stats.max_erosion_depth =
-                combined_stats.max_erosion_depth.max(pass_stats.max_erosion_depth);
+            combined_stats.max_erosion_depth = combined_stats
+                .max_erosion_depth
+                .max(pass_stats.max_erosion_depth);
         }
 
         combined_stats
@@ -754,9 +756,7 @@ struct SimpleRng {
 
 impl SimpleRng {
     fn new(seed: u64) -> Self {
-        Self {
-            state: seed.max(1),
-        }
+        Self { state: seed.max(1) }
     }
 
     fn next(&mut self) -> u64 {
@@ -822,7 +822,9 @@ mod tests {
         assert!(
             final_max < initial_max || stats.total_eroded > 100.0,
             "Expected erosion: initial_max={}, final_max={}, total_eroded={}",
-            initial_max, final_max, stats.total_eroded
+            initial_max,
+            final_max,
+            stats.total_eroded
         );
     }
 

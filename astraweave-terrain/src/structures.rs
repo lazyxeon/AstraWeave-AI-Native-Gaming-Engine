@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 /// Types of structures that can be generated
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum StructureType {
     // Residential structures
     Cottage,

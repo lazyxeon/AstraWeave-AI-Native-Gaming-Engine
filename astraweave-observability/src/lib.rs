@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, Level};

@@ -62,6 +62,10 @@ async fn main() -> anyhow::Result<()> {
             eprintln!("Fell back to heuristic: {}", reason);
             p
         }
+        _ => {
+            eprintln!("Unknown plan source");
+            return Ok(());
+        }
     };
     println!("{}", serde_json::to_string_pretty(&plan)?);
     Ok(())

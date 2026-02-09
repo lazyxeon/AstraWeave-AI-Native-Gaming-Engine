@@ -25,6 +25,7 @@ pub struct CachedPlan {
 
 /// Result of a cache lookup
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CacheDecision {
     /// Exact match found
     HitExact,

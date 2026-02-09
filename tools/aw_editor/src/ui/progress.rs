@@ -41,6 +41,7 @@ pub struct SubTask {
 
 /// Categories of tasks for visual grouping
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TaskCategory {
     SceneLoading,
     AssetImport,

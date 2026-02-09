@@ -126,10 +126,7 @@ impl ForgettingEngine {
                     .entry(memory_id.clone())
                     .or_insert_with(|| {
                         MemoryStrength {
-                            protected: self
-                                .config
-                                .protected_categories
-                                .contains(&memory.category),
+                            protected: self.config.protected_categories.contains(&memory.category),
                             // Use memory timestamp as initial last_access
                             last_access: memory.timestamp as i64,
                             ..Default::default()
@@ -138,11 +135,12 @@ impl ForgettingEngine {
 
                 // Calculate current strength based on time decay
                 let hours_since_access = (current_time - strength.last_access) as f32 / 3600.0;
-                
+
                 // Apply importance factor to decay
                 // Higher importance factor means slower decay for important memories
                 // We assume memory.importance is 0.0-1.0
-                let decay_modifier = 1.0 / (1.0 + self.config.importance_factor * memory.importance);
+                let decay_modifier =
+                    1.0 / (1.0 + self.config.importance_factor * memory.importance);
                 let effective_decay = self.config.base_decay_rate * decay_modifier;
 
                 strength.current_strength = (strength.initial_strength
@@ -473,7 +471,7 @@ mod tests {
             text: "Important quest".to_string(),
             category: MemoryCategory::Quest, // Protected category
             timestamp: (chrono::Utc::now().timestamp() - 10000) as u64, // Very old
-            importance: 0.1, // Very low importance
+            importance: 0.1,                 // Very low importance
             valence: 0.0,
             entities: vec![],
             context: HashMap::new(),
@@ -499,7 +497,7 @@ mod tests {
             text: "Very old memory".to_string(),
             category: MemoryCategory::Gameplay,
             timestamp: (chrono::Utc::now().timestamp() - 200) as u64, // 200 seconds old
-            importance: 0.9, // High importance
+            importance: 0.9,                                          // High importance
             valence: 0.0,
             entities: vec![],
             context: HashMap::new(),

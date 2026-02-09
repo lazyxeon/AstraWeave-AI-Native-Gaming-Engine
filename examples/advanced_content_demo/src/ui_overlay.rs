@@ -256,6 +256,7 @@ pub fn get_quest_state_symbol(state: QuestState) -> &'static str {
         QuestState::Active => "🔄",
         QuestState::Completed => "✅",
         QuestState::Failed => "❌",
+        _ => "❓",
     }
 }
 

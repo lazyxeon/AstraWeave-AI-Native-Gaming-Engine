@@ -9,6 +9,7 @@ use std::sync::{Arc, RwLock};
 
 /// Memory allocation categories
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MemoryCategory {
     /// Vertex/index buffers
     Geometry,
@@ -69,6 +70,7 @@ pub type BudgetCallback = Arc<dyn Fn(BudgetEvent) + Send + Sync>;
 
 /// Budget event types
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum BudgetEvent {
     /// Soft limit exceeded
     SoftLimitExceeded {
@@ -138,7 +140,7 @@ impl GpuMemoryBudget {
 
         // Distribute budget proportionally
         let per_category = total_bytes / 8;
-        let mut budgets = mgr.budgets.write().unwrap();
+        let mut budgets = mgr.budgets.write().expect("lock poisoned");
         for budget in budgets.values_mut() {
             budget.soft_limit = (per_category as f64 * 0.75) as u64;
             budget.hard_limit = per_category;
@@ -156,13 +158,13 @@ impl GpuMemoryBudget {
 
     /// Register a callback for budget events
     pub fn on_event(&self, callback: BudgetCallback) {
-        self.callbacks.write().unwrap().push(callback);
+        self.callbacks.write().expect("lock poisoned").push(callback);
     }
 
     /// Attempt to allocate memory in a category
     /// Returns true if allocation succeeded, false if blocked
     pub fn try_allocate(&self, category: MemoryCategory, bytes: u64) -> bool {
-        let mut budgets = self.budgets.write().unwrap();
+        let mut budgets = self.budgets.write().expect("lock poisoned");
 
         if let Some(budget) = budgets.get_mut(&category) {
             let new_total = budget.current + bytes;
@@ -201,7 +203,7 @@ impl GpuMemoryBudget {
 
     /// Record a deallocation
     pub fn deallocate(&self, category: MemoryCategory, bytes: u64) {
-        let mut budgets = self.budgets.write().unwrap();
+        let mut budgets = self.budgets.write().expect("lock poisoned");
 
         if let Some(budget) = budgets.get_mut(&category) {
             budget.current = budget.current.saturating_sub(bytes);
@@ -213,7 +215,7 @@ impl GpuMemoryBudget {
     pub fn get_usage(&self, category: MemoryCategory) -> u64 {
         self.budgets
             .read()
-            .unwrap()
+            .expect("lock poisoned")
             .get(&category)
             .map(|b| b.current)
             .unwrap_or(0)
@@ -239,7 +241,7 @@ impl GpuMemoryBudget {
     pub fn snapshot(&self) -> Vec<(MemoryCategory, u64, u64)> {
         self.budgets
             .read()
-            .unwrap()
+            .expect("lock poisoned")
             .iter()
             .map(|(&cat, budget)| (cat, budget.current, budget.hard_limit))
             .collect()
@@ -247,7 +249,7 @@ impl GpuMemoryBudget {
 
     /// Set budget for a specific category
     pub fn set_category_budget(&self, category: MemoryCategory, soft: u64, hard: u64) {
-        let mut budgets = self.budgets.write().unwrap();
+        let mut budgets = self.budgets.write().expect("lock poisoned");
         if let Some(budget) = budgets.get_mut(&category) {
             budget.soft_limit = soft;
             budget.hard_limit = hard;
@@ -266,7 +268,7 @@ impl GpuMemoryBudget {
     }
 
     fn fire_event(&self, event: BudgetEvent) {
-        let callbacks = self.callbacks.read().unwrap();
+        let callbacks = self.callbacks.read().expect("lock poisoned");
         for callback in callbacks.iter() {
             callback(event.clone());
         }

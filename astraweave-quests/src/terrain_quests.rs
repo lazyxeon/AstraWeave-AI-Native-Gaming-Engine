@@ -22,6 +22,7 @@ use tracing::{debug, info};
 
 /// Types of terrain features that can trigger quests
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum TerrainFeatureType {
     Mountain,
     Hill,
@@ -228,6 +229,7 @@ pub struct TerrainObjective {
 
 /// Types of terrain interactions for quest objectives
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum TerrainInteraction {
     /// Player must reach this location
     Reach,

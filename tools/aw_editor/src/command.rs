@@ -155,6 +155,7 @@ impl UndoStackStats {
 
 /// Issues that may affect undo stack health.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum UndoStackIssue {
     /// Stack is approaching capacity limit
     NearCapacity { utilization_percent: u8 },

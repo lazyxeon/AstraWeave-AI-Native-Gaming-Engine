@@ -185,6 +185,10 @@ impl<T> AsyncTask<T> {
             RawWaker::new(std::ptr::null(), vtable)
         }
 
+        // SAFETY: The noop RawWaker vtable functions (clone/wake/drop) are all valid
+        // no-ops that satisfy the RawWaker contract. The null data pointer is never
+        // dereferenced. This is safe because we only poll a JoinHandle that we already
+        // confirmed `is_finished()`, so the waker will never actually be invoked.
         let waker = unsafe { Waker::from_raw(noop_raw_waker()) };
         let mut cx = TaskContext::from_waker(&waker);
 

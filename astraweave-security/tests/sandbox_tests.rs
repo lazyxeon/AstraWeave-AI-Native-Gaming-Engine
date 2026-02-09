@@ -414,12 +414,12 @@ async fn test_small_array_allowed() {
 // ============================================================================
 
 /// Test that deep recursion is blocked by Rhai's call level limit.
-/// 
+///
 /// NOTE: This test is ignored because tokio's spawn_blocking thread has limited
 /// stack size and Rhai's call level check may not catch the recursion before
 /// the host stack overflows. In production, scripts with deep recursion will
 /// hit the operation limit or timeout, preventing DoS attacks.
-/// 
+///
 /// To run manually with increased stack: RUST_MIN_STACK=8388608 cargo test
 #[tokio::test]
 #[ignore = "Requires increased stack size - run with RUST_MIN_STACK=8388608"]
@@ -441,16 +441,19 @@ async fn test_deep_recursion_blocked() {
 
     let result = execute_script_sandboxed(script, &sandbox, context).await;
 
-    assert!(result.is_err(), "Deep recursion should hit call level limit");
+    assert!(
+        result.is_err(),
+        "Deep recursion should hit call level limit"
+    );
 }
 
 /// Test that mutual recursion is blocked by Rhai's call level limit.
-/// 
+///
 /// NOTE: This test is ignored because tokio's spawn_blocking thread has limited
 /// stack size and Rhai's call level check may not catch the recursion before
 /// the host stack overflows. In production, scripts with deep recursion will
 /// hit the operation limit or timeout, preventing DoS attacks.
-/// 
+///
 /// To run manually with increased stack: RUST_MIN_STACK=8388608 cargo test
 #[tokio::test]
 #[ignore = "Requires increased stack size - run with RUST_MIN_STACK=8388608"]
@@ -486,10 +489,10 @@ async fn test_mutual_recursion_blocked() {
 }
 
 /// Test that shallow recursion works within operation limits
-/// 
+///
 /// This test validates that the sandbox correctly enforces operation limits
 /// while still allowing legitimate recursive algorithms that fit within the budget.
-/// 
+///
 /// Design Philosophy:
 /// - Security over convenience: Operation limits prevent DoS attacks
 /// - Factorial(5) uses ~50 operations (well within 10,000 limit)
@@ -499,7 +502,7 @@ async fn test_mutual_recursion_blocked() {
 async fn test_shallow_recursion_allowed() {
     let sandbox = create_standard_sandbox();
     let context = HashMap::new();
-    
+
     // Test with factorial(5) - well within operation limits
     let script = r#"
         fn factorial(n) {
@@ -514,16 +517,19 @@ async fn test_shallow_recursion_allowed() {
 
     let result = execute_script_sandboxed(script, &sandbox, context).await;
 
-    assert!(result.is_ok(), "Shallow recursion (factorial 5) should work within operation limits");
+    assert!(
+        result.is_ok(),
+        "Shallow recursion (factorial 5) should work within operation limits"
+    );
     assert_eq!(result.unwrap().as_int().unwrap(), 120, "5! = 120");
 }
 
 /// Test operation limit enforcement with tail recursion
-/// 
+///
 /// This test validates that the sandbox correctly limits operations even for
 /// tail-recursive algorithms. Rhai doesn't optimize tail calls, so recursive
 /// algorithms consume operations linearly with depth.
-/// 
+///
 /// Design Philosophy:
 /// - Tail recursion in Rhai still counts operations (no TCO)
 /// - sum(10, 0) uses ~100 operations (safely within 10,000 limit)
@@ -532,7 +538,7 @@ async fn test_shallow_recursion_allowed() {
 async fn test_tail_recursion_optimization() {
     let sandbox = create_standard_sandbox();
     let context = HashMap::new();
-    
+
     // Test with small recursion depth that fits comfortably within operation limits
     let script = r#"
         fn sum(n, acc) {
@@ -551,7 +557,10 @@ async fn test_tail_recursion_optimization() {
         eprintln!("Script error: {:?}", e);
     }
 
-    assert!(result.is_ok(), "Tail recursion (sum 10) should work within operation limits");
+    assert!(
+        result.is_ok(),
+        "Tail recursion (sum 10) should work within operation limits"
+    );
     assert_eq!(result.unwrap().as_int().unwrap(), 55, "sum(1..10) = 55");
 }
 

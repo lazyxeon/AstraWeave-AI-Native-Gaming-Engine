@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! AstraWeave Terrain Generation Module
 //!
 //! This module provides procedural terrain generation using noise functions,
@@ -74,9 +75,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(test)]
 mod chunk_tests;
 #[cfg(test)]
-mod voxel_data_tests;
+mod mutation_tests;
 #[cfg(test)]
-mod mutation_tests; // Phase 10B: Comprehensive mutation-killing tests
+mod voxel_data_tests; // Phase 10B: Comprehensive mutation-killing tests
 
 /// Configuration for the world generator
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -33,6 +33,8 @@ pub fn mul_quat_simd(a: Quat, b: Quat) -> Quat {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check above confirms SSE2 support. mul_quat_simd_sse2
+            // operates on valid Quat values using SSE2 shuffle/mul/add intrinsics.
             unsafe { mul_quat_simd_sse2(a, b) }
         } else {
             a * b
@@ -119,6 +121,8 @@ pub fn normalize_quat_simd(q: Quat) -> Quat {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check confirms SSE2 support. normalize_quat_simd_sse2
+            // uses SSE2 mul/add/rsqrt intrinsics on valid Quat data.
             unsafe { normalize_quat_simd_sse2(q) }
         } else {
             q.normalize()
@@ -186,6 +190,8 @@ pub fn slerp_simd(a: Quat, b: Quat, t: f32) -> Quat {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check confirms SSE2 support. slerp_simd_sse2
+            // uses SSE2 dot/lerp intrinsics on valid Quat values and t in [0,1].
             unsafe { slerp_simd_sse2(a, b, t) }
         } else {
             a.slerp(b, t)
@@ -282,6 +288,8 @@ pub fn dot_quat_simd(a: Quat, b: Quat) -> f32 {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check confirms SSE2 support. dot_quat_simd_sse2
+            // uses SSE2 mul/add intrinsics on valid Quat values.
             unsafe { dot_quat_simd_sse2(a, b) }
         } else {
             a.dot(b)

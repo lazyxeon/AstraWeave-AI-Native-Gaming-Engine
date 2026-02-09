@@ -1,7 +1,7 @@
 use astraweave_math::simd_quat::*;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use glam::Quat;
+use std::hint::black_box;
 
 fn bench_quat_multiply(c: &mut Criterion) {
     let q1 = Quat::from_rotation_x(1.0);

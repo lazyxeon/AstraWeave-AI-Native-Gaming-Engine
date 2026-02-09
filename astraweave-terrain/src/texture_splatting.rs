@@ -552,10 +552,8 @@ mod tests {
     fn test_splat_weights_normalization() {
         let weights = SplatWeights::from_weights(&[0.5, 0.3, 0.2]);
 
-        let total = weights.weights_0.x
-            + weights.weights_0.y
-            + weights.weights_0.z
-            + weights.weights_0.w;
+        let total =
+            weights.weights_0.x + weights.weights_0.y + weights.weights_0.z + weights.weights_0.w;
 
         assert!((total - 1.0).abs() < 0.001);
     }

@@ -11,6 +11,7 @@ use std::process::Command;
 
 /// Distribution format for platform-specific packaging
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum DistributionFormat {
     /// Windows NSIS installer (.exe)
     WindowsInstaller,

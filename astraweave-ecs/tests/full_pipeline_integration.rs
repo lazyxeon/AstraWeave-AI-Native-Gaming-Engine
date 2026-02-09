@@ -37,6 +37,7 @@ struct Health {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct AIState {
     current_action: AIAction,
     target_position: Option<Position>,
@@ -56,6 +57,7 @@ enum AIAction {
 struct Team(u8);
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct Ammo {
     current: i32,
     max: i32,

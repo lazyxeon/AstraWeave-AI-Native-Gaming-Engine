@@ -243,6 +243,8 @@ impl Default for SpotLight {
 
 /// Errors that can occur during render data extraction
 #[derive(Error, Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum RenderExtractError {
     /// Failed to extract meshes
     #[error("Failed to extract meshes: {0}")]

@@ -25,6 +25,7 @@ pub const MANIFEST_FILENAME: &str = "cache_manifest.ron";
 /// Result of a cache lookup.
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)] // Entry is frequently accessed, boxing adds indirection
+#[non_exhaustive]
 pub enum CacheLookup {
     /// Cache hit - valid cached conversion exists.
     Hit {
@@ -42,6 +43,7 @@ pub enum CacheLookup {
 
 /// Reasons for a cache miss.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CacheMissReason {
     /// No cache entry exists for this file.
     NotCached,

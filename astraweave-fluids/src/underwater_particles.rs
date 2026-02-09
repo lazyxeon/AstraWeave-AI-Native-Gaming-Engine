@@ -79,6 +79,7 @@ impl UnderwaterParticleConfig {
 /// Type of underwater particle
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
+#[non_exhaustive]
 pub enum UnderwaterParticleType {
     /// Air bubble (rises to surface)
     Bubble = 0,

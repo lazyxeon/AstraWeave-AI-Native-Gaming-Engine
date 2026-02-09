@@ -157,7 +157,11 @@ fn bench_controls_settings(c: &mut Criterion) {
 
         b.iter(|| {
             toggle = !toggle;
-            settings.move_forward = if toggle { "W".to_string() } else { "Z".to_string() };
+            settings.move_forward = if toggle {
+                "W".to_string()
+            } else {
+                "Z".to_string()
+            };
             black_box(settings.move_forward.len())
         })
     });
@@ -330,7 +334,11 @@ fn bench_poi_markers(c: &mut Criterion) {
                         pois.push(PoiMarker {
                             id: i as u32,
                             world_pos: (i as f32 * 10.0, 0.0),
-                            poi_type: if i % 3 == 0 { PoiType::Objective } else { PoiType::Waypoint },
+                            poi_type: if i % 3 == 0 {
+                                PoiType::Objective
+                            } else {
+                                PoiType::Waypoint
+                            },
                             label: Some(format!("POI {}", i)),
                         });
                     }
@@ -488,9 +496,7 @@ fn bench_settings_persistence(c: &mut Criterion) {
     group.bench_function("settings_save", |b| {
         let settings = SettingsState::default();
 
-        b.iter(|| {
-            black_box(save_settings(black_box(&settings)).is_ok())
-        })
+        b.iter(|| black_box(save_settings(black_box(&settings)).is_ok()))
     });
 
     // Benchmark: Settings load

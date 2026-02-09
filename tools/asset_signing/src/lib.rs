@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // Asset signing and verification (Phase 0): Ed25519 signature over SHA-256 hash of file contents
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey, SECRET_KEY_LENGTH};
 use sha2::{Digest, Sha256};

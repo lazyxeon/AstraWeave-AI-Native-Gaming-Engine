@@ -412,6 +412,7 @@ impl std::fmt::Display for BranchMergeStrategy {
 
 /// Strategies for merging dialogue branches
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BranchMergeStrategy {
     /// Merge based on context similarity
     Contextual,
@@ -1155,6 +1156,7 @@ impl std::fmt::Display for ResponseMetadata {
 
 /// Methods used for response generation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum GenerationMethod {
     /// Pure LLM generation
     LlmGeneration,
@@ -1684,7 +1686,7 @@ impl LlmDialogueSystem {
             .join(" ");
         
         // Remove excessive punctuation
-        let re = Regex::new(r"[.]{3,}").unwrap();
+        let re = Regex::new(r"[.]{3,}").expect("valid regex");
         let cleaned = re.replace_all(&cleaned, "...");
         
         // Ensure proper sentence ending

@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 
 /// Toast notification level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ToastLevel {
     Info,
     Success,
@@ -89,6 +90,7 @@ impl std::fmt::Display for ToastLevel {
 
 /// Action that can be taken from a toast
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ToastAction {
     /// Undo the action that triggered this toast
     Undo,

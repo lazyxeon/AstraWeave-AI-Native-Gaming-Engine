@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 /// Typed GPU resources passed between graph nodes.
 /// Keep this minimal for now; extend as we integrate more passes.
+#[non_exhaustive]
 pub enum Resource {
     Texture(wgpu::Texture),
     View(wgpu::TextureView),

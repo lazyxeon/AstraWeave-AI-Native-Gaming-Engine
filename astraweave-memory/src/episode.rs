@@ -17,6 +17,7 @@ use std::time::{Duration, SystemTime};
 
 /// Episode category aligned with gameplay systems
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum EpisodeCategory {
     /// Combat encounter episode
     Combat,
@@ -69,6 +70,8 @@ pub struct CompanionResponse {
 
 /// Result of an action attempt
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+#[must_use]
 pub enum ActionResult {
     /// Action completed successfully
     Success,

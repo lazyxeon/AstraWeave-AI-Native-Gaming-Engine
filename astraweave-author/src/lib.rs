@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 use astraweave_core::DirectorBudget;
 use rhai::{Dynamic, Engine, Map};

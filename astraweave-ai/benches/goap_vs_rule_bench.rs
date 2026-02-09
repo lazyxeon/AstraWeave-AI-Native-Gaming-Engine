@@ -24,7 +24,7 @@ fn create_test_snapshot(enemy_count: usize, distance: i32) -> WorldSnapshot {
             pos: IVec2 {
                 x: distance + (i as i32 * 2),
                 y: distance,
-            physics_context: None,
+                physics_context: None,
             },
             hp: 50,
             cover: "none".to_string(),

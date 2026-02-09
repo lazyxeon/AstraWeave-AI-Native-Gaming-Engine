@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 /*!
 # AstraWeave RAG Pipeline
 
@@ -140,6 +141,7 @@ impl Default for InjectionConfig {
 
 /// Strategies for ordering retrieved memories
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum OrderingStrategy {
     /// Order by similarity (highest first)
     SimilarityDesc,
@@ -186,6 +188,7 @@ impl Default for DiversityConfig {
 
 /// Strategies for ensuring diversity in retrieval
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum DiversityStrategy {
     /// Semantic diversity (different topics)
     Semantic,
@@ -269,6 +272,7 @@ pub struct RetrievalMetadata {
 
 /// Methods used for memory retrieval
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum RetrievalMethod {
     /// Semantic similarity search
     SemanticSearch,
@@ -353,6 +357,7 @@ pub struct InjectionMetadata {
 
 /// Strategies for injecting context into prompts
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum InjectionStrategy {
     /// Prepend memories before the prompt
     Prepend,

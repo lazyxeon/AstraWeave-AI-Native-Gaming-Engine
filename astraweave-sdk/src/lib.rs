@@ -1,3 +1,36 @@
+//! # AstraWeave SDK
+//!
+//! C ABI surface for embedding AstraWeave in non-Rust applications.
+//!
+//! This crate exposes the engine through a stable C-compatible interface designed
+//! for `cbindgen` header generation. It enables C, C++, C#, Python, and other
+//! FFI-capable languages to:
+//!
+//! - Create and destroy physics worlds ([`aw_world_create`], [`aw_world_destroy`])
+//! - Tick the simulation ([`aw_world_tick`])
+//! - Export world snapshots as JSON ([`aw_world_snapshot_json`])
+//! - Submit AI intents ([`aw_world_submit_intent_json`])
+//! - Register callbacks for snapshot and delta updates
+//! - Query version info ([`aw_version`], [`aw_version_string`])
+//!
+//! # Error Handling
+//!
+//! All C ABI functions return integer status codes:
+//! - [`AW_OK`] (0) — Success
+//! - [`AW_ERR_NULL`] — Null pointer argument
+//! - [`AW_ERR_PARAM`] — Invalid parameter
+//! - [`AW_ERR_PARSE`] — JSON parse failure
+//! - [`AW_ERR_EXEC`] — Execution error
+//!
+//! Use [`aw_last_error_string`] to retrieve a human-readable error message.
+//!
+//! # Safety
+//!
+//! All `extern "C"` functions are `unsafe` by nature. Callers must ensure:
+//! - Pointers are valid and non-null (unless documented otherwise)
+//! - Strings are valid UTF-8 null-terminated C strings
+//! - `AWWorld` handles are not used after `aw_world_destroy`
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -14,6 +47,8 @@ use astraweave_core::{
 mod lib_kani;
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum SdkError {
     #[error("schema mismatch: {0}")]
     Schema(String),
@@ -121,6 +156,9 @@ pub extern "C" fn aw_world_create() -> AWWorld {
 #[no_mangle]
 pub extern "C" fn aw_world_destroy(_w: AWWorld) {
     if !_w.0.is_null() {
+        // SAFETY: `_w.0` was created by `Box::into_raw` in `aw_world_create`.
+        // This is the matching deallocation. Caller guarantees the handle is valid
+        // and not used after this call (single-ownership transfer).
         unsafe {
             let _ = Box::from_raw(_w.0);
         }
@@ -132,12 +170,17 @@ pub extern "C" fn aw_world_tick(_w: AWWorld, _dt: f32) {
     if _w.0.is_null() {
         return;
     }
+    // SAFETY: Null check above ensures `_w.0` is a valid pointer created by
+    // `Box::into_raw` in `aw_world_create`. The C ABI contract requires callers
+    // to not use the handle concurrently (single-threaded access).
     let wrap = unsafe { &mut *(_w.0) };
     wrap.world.tick(_dt);
     // If a snapshot callback is registered, emit the snapshot JSON
     if let Some(cb) = wrap.snapshot_cb {
         let snap = crate_snapshot(&wrap.world);
         if let Ok(s) = serde_json::to_string(&snap) {
+            // SAFETY: `cb` is a valid C function pointer (caller guarantee).
+            // CString ensures null-termination. Pointer is valid for the cb() call duration.
             unsafe {
                 use std::ffi::CString;
                 if let Ok(cs) = CString::new(s) {
@@ -171,6 +214,8 @@ pub extern "C" fn aw_world_tick(_w: AWWorld, _dt: f32) {
             removed,
         };
         if let Ok(s) = serde_json::to_string(&d) {
+            // SAFETY: Same as snapshot callback above — `cb` is a valid C function pointer,
+            // CString provides null termination, pointer valid for call duration.
             unsafe {
                 use std::ffi::CString;
                 if let Ok(cs) = CString::new(s) {
@@ -186,6 +231,7 @@ pub extern "C" fn aw_world_set_snapshot_callback(_w: AWWorld, cb: CStringCallbac
     if _w.0.is_null() {
         return;
     }
+    // SAFETY: Null check above ensures valid pointer from `aw_world_create`.
     let wrap = unsafe { &mut *(_w.0) };
     wrap.snapshot_cb = cb;
 }
@@ -195,6 +241,7 @@ pub extern "C" fn aw_world_set_delta_callback(_w: AWWorld, cb: CStringCallback) 
     if _w.0.is_null() {
         return;
     }
+    // SAFETY: Null check above ensures valid pointer from `aw_world_create`.
     let wrap = unsafe { &mut *(_w.0) };
     wrap.delta_cb = cb;
 }
@@ -204,6 +251,7 @@ pub extern "C" fn aw_world_snapshot_json(_w: AWWorld, buf: *mut u8, len: usize) 
     if _w.0.is_null() {
         return 0;
     }
+    // SAFETY: Null check above ensures valid pointer from `aw_world_create`.
     let wrap = unsafe { &mut *(_w.0) };
     let snap = crate_snapshot(&wrap.world);
     let s = serde_json::to_string(&snap).unwrap_or_else(|_| "{}".into());

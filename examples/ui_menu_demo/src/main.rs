@@ -881,6 +881,9 @@ impl App {
                     }
                 }
                 MenuAction::None => {}
+                _ => {
+                    info!("Unhandled menu action: {:?}", menu_action);
+                }
             }
         }
 

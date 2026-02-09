@@ -19,6 +19,7 @@ const MAX_PARTICLE_LIFETIME: f32 = 3.0;
 
 /// Type of particle (determines behavior and appearance)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ParticleType {
     /// Small blue sparks (Stable anchors, rare glitches)
     Spark,

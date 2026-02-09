@@ -313,7 +313,8 @@ mod tests {
         assert_eq!(neighbors.len(), 9);
 
         // Verify grid contains all expected chunks
-        let expected_ids = [ChunkId::new(-1, -1),
+        let expected_ids = [
+            ChunkId::new(-1, -1),
             ChunkId::new(0, -1),
             ChunkId::new(1, -1),
             ChunkId::new(-1, 0),
@@ -321,7 +322,8 @@ mod tests {
             ChunkId::new(1, 0),
             ChunkId::new(-1, 1),
             ChunkId::new(0, 1),
-            ChunkId::new(1, 1)];
+            ChunkId::new(1, 1),
+        ];
 
         for expected in expected_ids.iter() {
             assert!(

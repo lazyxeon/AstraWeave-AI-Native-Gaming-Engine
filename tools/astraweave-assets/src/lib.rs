@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // Re-export main types for library usage
 pub use config::{AssetManifest, HdriAsset, LockEntry, Lockfile, ModelAsset, TextureAsset};
 pub use direct_url_provider::DirectUrlProvider;

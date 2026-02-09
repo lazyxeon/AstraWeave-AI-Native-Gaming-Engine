@@ -15,6 +15,7 @@ use crate::panels::Panel;
 
 /// Network role (server, client, or offline)
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum NetworkRole {
     #[default]
     Offline,
@@ -77,6 +78,7 @@ impl NetworkRole {
 
 /// Connection state
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ConnectionState {
     #[default]
     Disconnected,
@@ -144,6 +146,7 @@ impl ConnectionState {
 
 /// Interest management policy for entity replication
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum InterestPolicy {
     #[default]
     Full,
@@ -211,6 +214,7 @@ impl InterestPolicy {
 
 /// Compression level for network data
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CompressionLevel {
     None,
     #[default]
@@ -298,6 +302,7 @@ pub struct NetworkStats {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum NetworkTab {
     #[default]
     Connection,
@@ -347,6 +352,7 @@ impl NetworkTab {
 
 /// Actions that can be performed on the networking panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum NetworkAction {
     /// Start server on specified port
     StartServer { port: u16 },

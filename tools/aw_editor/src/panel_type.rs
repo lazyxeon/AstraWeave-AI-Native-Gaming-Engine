@@ -30,6 +30,7 @@ use std::fmt;
 
 /// Category for grouping related panels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PanelCategory {
     /// Scene editing panels (Hierarchy, Inspector, Viewport)
     Scene,
@@ -102,6 +103,7 @@ impl fmt::Display for PanelCategory {
 /// - **Tool Panels**: Transform, Animation, Graph, Charts, AdvancedWidgets
 /// - **System Panels**: BuildManager, ThemeManager
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum PanelType {
     /// Scene hierarchy tree showing entity parent-child relationships
     Hierarchy,

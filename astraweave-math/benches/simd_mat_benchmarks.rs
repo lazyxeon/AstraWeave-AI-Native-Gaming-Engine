@@ -1,7 +1,7 @@
 use astraweave_math::simd_mat::*;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use glam::{Mat4, Vec3};
+use std::hint::black_box;
 
 fn bench_mat4_multiply(c: &mut Criterion) {
     let a = Mat4::from_scale(Vec3::splat(2.0));

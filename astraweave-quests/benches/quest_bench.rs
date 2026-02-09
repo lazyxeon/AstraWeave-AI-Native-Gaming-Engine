@@ -13,9 +13,7 @@
 // =============================================================================
 
 use astraweave_quests::{
-    Quest, QuestStep,
-    CQuestGenerator,
-    TerrainFeatureType, TerrainQuestContext, TerrainQuestTrigger,
+    CQuestGenerator, Quest, QuestStep, TerrainFeatureType, TerrainQuestContext, TerrainQuestTrigger,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
@@ -37,8 +35,14 @@ fn assert_quest_valid(quest: &Quest, context: &str) {
 #[inline]
 fn assert_validation_result(result: &Result<(), String>, should_pass: bool, context: &str) {
     match (result.is_ok(), should_pass) {
-        (true, false) => panic!("[CORRECTNESS FAILURE] {}: validation passed when it should fail", context),
-        (false, true) => panic!("[CORRECTNESS FAILURE] {}: validation failed when it should pass - {:?}", context, result),
+        (true, false) => panic!(
+            "[CORRECTNESS FAILURE] {}: validation passed when it should fail",
+            context
+        ),
+        (false, true) => panic!(
+            "[CORRECTNESS FAILURE] {}: validation failed when it should pass - {:?}",
+            context, result
+        ),
         _ => {}
     }
 }
@@ -78,11 +82,7 @@ fn create_terrain_context(feature_type: TerrainFeatureType) -> TerrainQuestConte
 
 /// Create quest generator component
 fn create_quest_generator() -> CQuestGenerator {
-    CQuestGenerator::new(
-        "player_001".to_string(),
-        10,
-        "mystic_forest".to_string(),
-    )
+    CQuestGenerator::new("player_001".to_string(), 10, "mystic_forest".to_string())
 }
 
 /// Create terrain quest trigger
@@ -106,7 +106,7 @@ fn create_terrain_trigger(feature_types: Vec<TerrainFeatureType>) -> TerrainQues
 fn bench_quest_validation(c: &mut Criterion) {
     let mut group = c.benchmark_group("quest_validation");
     group.throughput(Throughput::Elements(1));
-    
+
     // Benchmark valid quest validation
     let valid_quest = create_quest("The Hero's Journey", 5, 0);
     group.bench_function("validate_valid_quest", |b| {
@@ -116,7 +116,7 @@ fn bench_quest_validation(c: &mut Criterion) {
             result
         })
     });
-    
+
     // Benchmark invalid quest (empty title) validation
     let invalid_title = Quest {
         title: String::new(),
@@ -132,7 +132,7 @@ fn bench_quest_validation(c: &mut Criterion) {
             result
         })
     });
-    
+
     // Benchmark invalid quest (no steps) validation
     let invalid_steps = Quest {
         title: "Empty Quest".to_string(),
@@ -145,7 +145,7 @@ fn bench_quest_validation(c: &mut Criterion) {
             result
         })
     });
-    
+
     // Benchmark validation with varying step counts
     for step_count in [1, 5, 10, 20, 50].iter() {
         let quest = create_quest("Multi-step Quest", *step_count, 0);
@@ -155,13 +155,17 @@ fn bench_quest_validation(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let result = black_box(&quest).validate();
-                    assert_validation_result(&result, true, &format!("validate_{}_steps", step_count));
+                    assert_validation_result(
+                        &result,
+                        true,
+                        &format!("validate_{}_steps", step_count),
+                    );
                     result
                 })
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -172,7 +176,7 @@ fn bench_quest_validation(c: &mut Criterion) {
 fn bench_quest_completion(c: &mut Criterion) {
     let mut group = c.benchmark_group("quest_completion");
     group.throughput(Throughput::Elements(1));
-    
+
     // Benchmark is_complete on completed quest
     let completed = create_quest("Complete Quest", 10, 10);
     group.bench_function("check_complete_all_done", |b| {
@@ -182,27 +186,33 @@ fn bench_quest_completion(c: &mut Criterion) {
             result
         })
     });
-    
+
     // Benchmark is_complete on partial quest
     let partial = create_quest("Partial Quest", 10, 5);
     group.bench_function("check_complete_partial", |b| {
         b.iter(|| {
             let result = black_box(&partial).is_complete();
-            assert!(!result, "[CORRECTNESS FAILURE] Quest should not be complete");
+            assert!(
+                !result,
+                "[CORRECTNESS FAILURE] Quest should not be complete"
+            );
             result
         })
     });
-    
+
     // Benchmark is_complete on fresh quest
     let fresh = create_quest("Fresh Quest", 10, 0);
     group.bench_function("check_complete_none", |b| {
         b.iter(|| {
             let result = black_box(&fresh).is_complete();
-            assert!(!result, "[CORRECTNESS FAILURE] Quest should not be complete");
+            assert!(
+                !result,
+                "[CORRECTNESS FAILURE] Quest should not be complete"
+            );
             result
         })
     });
-    
+
     // Benchmark with varying step counts
     for step_count in [1, 10, 50, 100].iter() {
         let quest = create_quest("Large Quest", *step_count, *step_count);
@@ -212,13 +222,16 @@ fn bench_quest_completion(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let result = black_box(&quest).is_complete();
-                    assert!(result, "[CORRECTNESS FAILURE] All steps complete, quest should be complete");
+                    assert!(
+                        result,
+                        "[CORRECTNESS FAILURE] All steps complete, quest should be complete"
+                    );
                     result
                 })
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -228,14 +241,14 @@ fn bench_quest_completion(c: &mut Criterion) {
 
 fn bench_quest_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("quest_serialization");
-    
+
     // Test quests of varying sizes
     for step_count in [1, 5, 10, 20, 50].iter() {
         let quest = create_quest("Serialization Test Quest", *step_count, *step_count / 2);
         let json_data = serde_json::to_string(&quest).unwrap();
-        
+
         group.throughput(Throughput::Bytes(json_data.len() as u64));
-        
+
         // Benchmark serialization
         group.bench_with_input(
             BenchmarkId::new("serialize_json", step_count),
@@ -243,12 +256,15 @@ fn bench_quest_serialization(c: &mut Criterion) {
             |b, quest| {
                 b.iter(|| {
                     let json = serde_json::to_string(black_box(quest)).unwrap();
-                    assert!(!json.is_empty(), "[CORRECTNESS FAILURE] Serialization produced empty result");
+                    assert!(
+                        !json.is_empty(),
+                        "[CORRECTNESS FAILURE] Serialization produced empty result"
+                    );
                     json
                 })
             },
         );
-        
+
         // Benchmark deserialization
         group.bench_with_input(
             BenchmarkId::new("deserialize_json", step_count),
@@ -261,7 +277,7 @@ fn bench_quest_serialization(c: &mut Criterion) {
                 })
             },
         );
-        
+
         // Benchmark round-trip
         group.bench_with_input(
             BenchmarkId::new("roundtrip_json", step_count),
@@ -275,7 +291,8 @@ fn bench_quest_serialization(c: &mut Criterion) {
                         "[CORRECTNESS FAILURE] Round-trip changed quest title"
                     );
                     assert_eq!(
-                        restored.steps.len(), original.steps.len(),
+                        restored.steps.len(),
+                        original.steps.len(),
                         "[CORRECTNESS FAILURE] Round-trip changed step count"
                     );
                     restored
@@ -283,7 +300,7 @@ fn bench_quest_serialization(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -294,7 +311,7 @@ fn bench_quest_serialization(c: &mut Criterion) {
 fn bench_component_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("component_operations");
     group.throughput(Throughput::Elements(1));
-    
+
     // Benchmark quest generator creation
     group.bench_function("create_quest_generator", |b| {
         b.iter(|| {
@@ -303,21 +320,21 @@ fn bench_component_operations(c: &mut Criterion) {
                 black_box(10),
                 black_box("forest".to_string()),
             );
-            assert_eq!(gen.context.player_level, 10, "[CORRECTNESS FAILURE] Wrong player level");
+            assert_eq!(
+                gen.context.player_level, 10,
+                "[CORRECTNESS FAILURE] Wrong player level"
+            );
             gen
         })
     });
-    
+
     // Benchmark can_generate_quest check
     let generator = create_quest_generator();
     group.bench_function("can_generate_quest", |b| {
         let current_time = 1000000u64;
-        b.iter(|| {
-            
-            black_box(&generator).can_generate_quest(black_box(current_time))
-        })
+        b.iter(|| black_box(&generator).can_generate_quest(black_box(current_time)))
     });
-    
+
     // Benchmark context update
     let mut generator = create_quest_generator();
     group.bench_function("update_context", |b| {
@@ -329,7 +346,7 @@ fn bench_component_operations(c: &mut Criterion) {
             );
         })
     });
-    
+
     // Benchmark add/remove active quest
     let mut generator = create_quest_generator();
     group.bench_function("add_remove_active_quest", |b| {
@@ -339,7 +356,7 @@ fn bench_component_operations(c: &mut Criterion) {
             gen.remove_active_quest("quest_001");
         })
     });
-    
+
     // Benchmark add recent activity
     let mut generator = create_quest_generator();
     group.bench_function("add_recent_activity", |b| {
@@ -347,7 +364,7 @@ fn bench_component_operations(c: &mut Criterion) {
             black_box(&mut generator).add_recent_activity("Explored cave".to_string());
         })
     });
-    
+
     group.finish();
 }
 
@@ -358,7 +375,7 @@ fn bench_component_operations(c: &mut Criterion) {
 fn bench_terrain_quests(c: &mut Criterion) {
     let mut group = c.benchmark_group("terrain_quests");
     group.throughput(Throughput::Elements(1));
-    
+
     // Benchmark terrain context creation
     group.bench_function("create_terrain_context", |b| {
         b.iter(|| {
@@ -372,21 +389,27 @@ fn bench_terrain_quests(c: &mut Criterion) {
                 is_ai_generated: true,
                 seed: Some(12345),
             };
-            assert_eq!(ctx.feature_type, TerrainFeatureType::Mountain, 
-                       "[CORRECTNESS FAILURE] Wrong feature type");
+            assert_eq!(
+                ctx.feature_type,
+                TerrainFeatureType::Mountain,
+                "[CORRECTNESS FAILURE] Wrong feature type"
+            );
             ctx
         })
     });
-    
+
     // Benchmark quest archetypes lookup
     group.bench_function("get_quest_archetypes", |b| {
         b.iter(|| {
             let archetypes = black_box(TerrainFeatureType::Mountain).quest_archetypes();
-            assert!(!archetypes.is_empty(), "[CORRECTNESS FAILURE] No archetypes returned");
+            assert!(
+                !archetypes.is_empty(),
+                "[CORRECTNESS FAILURE] No archetypes returned"
+            );
             archetypes
         })
     });
-    
+
     // Benchmark all terrain feature archetypes
     for feature in [
         TerrainFeatureType::Mountain,
@@ -394,20 +417,26 @@ fn bench_terrain_quests(c: &mut Criterion) {
         TerrainFeatureType::Lake,
         TerrainFeatureType::Cave,
         TerrainFeatureType::Desert,
-    ].iter() {
+    ]
+    .iter()
+    {
         group.bench_with_input(
             BenchmarkId::new("archetypes_for", format!("{:?}", feature)),
             feature,
             |b, feature| {
                 b.iter(|| {
                     let archetypes = black_box(*feature).quest_archetypes();
-                    assert!(!archetypes.is_empty(), "[CORRECTNESS FAILURE] No archetypes for {:?}", feature);
+                    assert!(
+                        !archetypes.is_empty(),
+                        "[CORRECTNESS FAILURE] No archetypes for {:?}",
+                        feature
+                    );
                     archetypes
                 })
             },
         );
     }
-    
+
     // Benchmark difficulty modifier
     group.bench_function("get_difficulty_modifier", |b| {
         b.iter(|| {
@@ -415,13 +444,18 @@ fn bench_terrain_quests(c: &mut Criterion) {
                 TerrainFeatureType::Mountain,
                 TerrainFeatureType::Meadow,
                 TerrainFeatureType::Cave,
-            ].iter().map(|t| black_box(*t).difficulty_modifier()).collect();
-            assert!(modifiers[0] > modifiers[1], 
-                   "[CORRECTNESS FAILURE] Mountain should be harder than meadow");
+            ]
+            .iter()
+            .map(|t| black_box(*t).difficulty_modifier())
+            .collect();
+            assert!(
+                modifiers[0] > modifiers[1],
+                "[CORRECTNESS FAILURE] Mountain should be harder than meadow"
+            );
             modifiers
         })
     });
-    
+
     // Benchmark trigger should_trigger check
     let trigger = create_terrain_trigger(vec![
         TerrainFeatureType::Mountain,
@@ -431,16 +465,9 @@ fn bench_terrain_quests(c: &mut Criterion) {
     let context = create_terrain_context(TerrainFeatureType::Mountain);
     group.bench_function("should_trigger_check", |b| {
         let mut rng = rand::rng();
-        b.iter(|| {
-            
-            black_box(&trigger).should_trigger(
-                black_box(&context),
-                black_box(15),
-                &mut rng,
-            )
-        })
+        b.iter(|| black_box(&trigger).should_trigger(black_box(&context), black_box(15), &mut rng))
     });
-    
+
     // Benchmark trigger with non-matching feature
     let non_matching_context = create_terrain_context(TerrainFeatureType::Lake);
     group.bench_function("should_trigger_no_match", |b| {
@@ -451,11 +478,14 @@ fn bench_terrain_quests(c: &mut Criterion) {
                 black_box(15),
                 &mut rng,
             );
-            assert!(!result, "[CORRECTNESS FAILURE] Should not trigger for non-matching feature");
+            assert!(
+                !result,
+                "[CORRECTNESS FAILURE] Should not trigger for non-matching feature"
+            );
             result
         })
     });
-    
+
     group.finish();
 }
 
@@ -465,13 +495,13 @@ fn bench_terrain_quests(c: &mut Criterion) {
 
 fn bench_batch_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("batch_operations");
-    
+
     // Benchmark validating multiple quests
     for batch_size in [10, 50, 100, 500].iter() {
         let quests: Vec<Quest> = (0..*batch_size)
             .map(|i| create_quest(&format!("Quest {}", i), 5, 0))
             .collect();
-        
+
         group.throughput(Throughput::Elements(*batch_size as u64));
         group.bench_with_input(
             BenchmarkId::new("validate_batch", batch_size),
@@ -484,35 +514,38 @@ fn bench_batch_operations(c: &mut Criterion) {
                             valid_count += 1;
                         }
                     }
-                    assert_eq!(valid_count, quests.len(), 
-                              "[CORRECTNESS FAILURE] Not all quests validated");
+                    assert_eq!(
+                        valid_count,
+                        quests.len(),
+                        "[CORRECTNESS FAILURE] Not all quests validated"
+                    );
                     valid_count
                 })
             },
         );
-        
+
         // Benchmark checking completion in batch
         let completed_quests: Vec<Quest> = (0..*batch_size)
             .map(|i| create_quest(&format!("Quest {}", i), 5, 5))
             .collect();
-        
+
         group.bench_with_input(
             BenchmarkId::new("check_completion_batch", batch_size),
             &completed_quests,
             |b, quests| {
                 b.iter(|| {
-                    let completed: Vec<bool> = black_box(quests)
-                        .iter()
-                        .map(|q| q.is_complete())
-                        .collect();
-                    assert!(completed.iter().all(|&c| c), 
-                           "[CORRECTNESS FAILURE] All quests should be complete");
+                    let completed: Vec<bool> =
+                        black_box(quests).iter().map(|q| q.is_complete()).collect();
+                    assert!(
+                        completed.iter().all(|&c| c),
+                        "[CORRECTNESS FAILURE] All quests should be complete"
+                    );
                     completed
                 })
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -525,7 +558,7 @@ criterion_group!(
     config = Criterion::default()
         .sample_size(100)
         .measurement_time(std::time::Duration::from_secs(3));
-    targets = 
+    targets =
         bench_quest_validation,
         bench_quest_completion,
         bench_quest_serialization,

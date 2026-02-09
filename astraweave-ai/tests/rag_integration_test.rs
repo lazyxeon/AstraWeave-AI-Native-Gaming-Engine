@@ -20,7 +20,7 @@ async fn test_rag_integration_lifecycle() {
         .add_memory("The secret code is 12345.".to_string(), 1.0)
         .await
         .expect("Failed to add memory 1");
-    
+
     manager
         .add_memory("The weather is sunny.".to_string(), 0.5)
         .await
@@ -39,7 +39,7 @@ async fn test_rag_integration_lifecycle() {
     // However, MockEmbeddingClient usually returns a fixed vector or hash-based vector.
     // If it's hash-based, "secret code" query should be somewhat similar to "secret code" doc.
     // For this test, we mainly verify the pipeline doesn't crash and returns *something*.
-    
+
     // 5. Maintenance
     manager.maintenance().expect("Maintenance failed");
 }

@@ -1,3 +1,29 @@
+#![forbid(unsafe_code)]
+//! # AstraWeave Nav
+//!
+//! Navmesh-based pathfinding for AstraWeave.
+//!
+//! This crate provides triangle-based navigation mesh baking, A* search,
+//! and dynamic mesh invalidation for runtime terrain changes.
+//!
+//! # Key Types
+//!
+//! - **[`NavMesh`]** — Main struct: `bake()` from triangles with slope/step filtering,
+//!   A* pathfinding, dirty region tracking, and incremental rebake.
+//! - **[`NavTri`]** — Navigation triangle with adjacency, slope, walkability, and area.
+//! - **[`Triangle`]** — Geometric triangle with area, normal, perimeter, and degeneracy checks.
+//! - **[`Aabb`]** — Axis-aligned bounding box with intersection, merge, and containment tests.
+//!
+//! # Example
+//!
+//! ```rust,no_run
+//! use astraweave_nav::NavMesh;
+//! // Bake navmesh from level geometry triangles
+//! let mesh = NavMesh::bake(&triangles, max_step, max_slope);
+//! // Find path between two points
+//! let path = mesh.find_path(start_tri, goal_tri);
+//! ```
+
 use glam::Vec3;
 use std::fmt;
 
@@ -100,9 +126,15 @@ impl fmt::Display for Triangle {
         write!(
             f,
             "Triangle({:.2}, {:.2}, {:.2})-({:.2}, {:.2}, {:.2})-({:.2}, {:.2}, {:.2})",
-            self.a.x, self.a.y, self.a.z,
-            self.b.x, self.b.y, self.b.z,
-            self.c.x, self.c.y, self.c.z
+            self.a.x,
+            self.a.y,
+            self.a.z,
+            self.b.x,
+            self.b.y,
+            self.b.z,
+            self.c.x,
+            self.c.y,
+            self.c.z
         )
     }
 }
@@ -202,7 +234,11 @@ impl fmt::Display for NavTri {
         write!(
             f,
             "NavTri[{}] center=({:.2}, {:.2}, {:.2}), {} neighbors",
-            self.idx, self.center.x, self.center.y, self.center.z, self.neighbor_count()
+            self.idx,
+            self.center.x,
+            self.center.y,
+            self.center.z,
+            self.neighbor_count()
         )
     }
 }
@@ -371,8 +407,7 @@ impl fmt::Display for Aabb {
         write!(
             f,
             "AABB[({:.2}, {:.2}, {:.2}) - ({:.2}, {:.2}, {:.2})]",
-            self.min.x, self.min.y, self.min.z,
-            self.max.x, self.max.y, self.max.z
+            self.min.x, self.min.y, self.min.z, self.max.x, self.max.y, self.max.z
         )
     }
 }
@@ -1454,7 +1489,11 @@ mod tests {
 
     #[test]
     fn test_triangle_center() {
-        let tri = Triangle::new(Vec3::ZERO, Vec3::new(3.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 3.0));
+        let tri = Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(3.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 3.0),
+        );
         let center = tri.center();
         assert!((center.x - 1.0).abs() < 1e-5);
         assert!((center.z - 1.0).abs() < 1e-5);
@@ -1469,7 +1508,11 @@ mod tests {
 
     #[test]
     fn test_triangle_area() {
-        let tri = Triangle::new(Vec3::ZERO, Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 2.0));
+        let tri = Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(2.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 2.0),
+        );
         assert!((tri.area() - 2.0).abs() < 1e-5);
     }
 
@@ -1533,7 +1576,12 @@ mod tests {
 
     #[test]
     fn test_navtri_new() {
-        let tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::new(0.33, 0.0, 0.33));
+        let tri = NavTri::new(
+            0,
+            [Vec3::ZERO, Vec3::X, Vec3::Z],
+            Vec3::Y,
+            Vec3::new(0.33, 0.0, 0.33),
+        );
         assert_eq!(tri.idx, 0);
         assert!(tri.neighbors.is_empty());
     }
@@ -1581,7 +1629,11 @@ mod tests {
     fn test_navtri_area() {
         let tri = NavTri::new(
             0,
-            [Vec3::ZERO, Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 2.0)],
+            [
+                Vec3::ZERO,
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+            ],
             Vec3::Y,
             Vec3::ZERO,
         );
@@ -1628,7 +1680,12 @@ mod tests {
 
     #[test]
     fn test_navtri_display() {
-        let tri = NavTri::new(42, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::new(0.5, 0.0, 0.5));
+        let tri = NavTri::new(
+            42,
+            [Vec3::ZERO, Vec3::X, Vec3::Z],
+            Vec3::Y,
+            Vec3::new(0.5, 0.0, 0.5),
+        );
         let display = format!("{}", tri);
         assert!(display.contains("NavTri[42]"));
         assert!(display.contains("neighbors"));
@@ -1740,8 +1797,16 @@ mod tests {
     #[test]
     fn test_navmesh_triangle_count() {
         let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+            Triangle::new(
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 1.0),
+            ),
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         assert_eq!(nav.triangle_count(), 2);
@@ -1752,15 +1817,31 @@ mod tests {
         let empty = NavMesh::bake(&[], 0.4, 60.0);
         assert!(empty.is_empty());
 
-        let non_empty = NavMesh::bake(&[Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0))], 0.4, 60.0);
+        let non_empty = NavMesh::bake(
+            &[Triangle::new(
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            )],
+            0.4,
+            60.0,
+        );
         assert!(!non_empty.is_empty());
     }
 
     #[test]
     fn test_navmesh_edge_count() {
         let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+            Triangle::new(
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 1.0),
+            ),
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         assert_eq!(nav.edge_count(), 1); // One shared edge
@@ -1769,8 +1850,16 @@ mod tests {
     #[test]
     fn test_navmesh_average_neighbor_count() {
         let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+            Triangle::new(
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 1.0),
+            ),
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         assert!((nav.average_neighbor_count() - 1.0).abs() < 1e-5); // Each has 1 neighbor
@@ -1779,8 +1868,16 @@ mod tests {
     #[test]
     fn test_navmesh_isolated_count() {
         let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-            Triangle::new(Vec3::new(10.0, 0.0, 0.0), Vec3::new(10.0, 0.0, 1.0), Vec3::new(11.0, 0.0, 0.0)),
+            Triangle::new(
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(10.0, 0.0, 0.0),
+                Vec3::new(10.0, 0.0, 1.0),
+                Vec3::new(11.0, 0.0, 0.0),
+            ),
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         assert_eq!(nav.isolated_count(), 2); // Both isolated
@@ -1788,9 +1885,11 @@ mod tests {
 
     #[test]
     fn test_navmesh_total_area() {
-        let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 2.0), Vec3::new(2.0, 0.0, 0.0)),
-        ];
+        let tris = vec![Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(0.0, 0.0, 2.0),
+            Vec3::new(2.0, 0.0, 0.0),
+        )];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         assert!((nav.total_area() - 2.0).abs() < 1e-5);
     }
@@ -1798,8 +1897,16 @@ mod tests {
     #[test]
     fn test_navmesh_bounds() {
         let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-            Triangle::new(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 1.0)),
+            Triangle::new(
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 1.0),
+            ),
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         let bounds = nav.bounds().unwrap();
@@ -1815,9 +1922,11 @@ mod tests {
 
     #[test]
     fn test_navmesh_get_triangle() {
-        let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-        ];
+        let tris = vec![Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+        )];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         assert!(nav.get_triangle(0).is_some());
         assert!(nav.get_triangle(99).is_none());
@@ -1825,9 +1934,11 @@ mod tests {
 
     #[test]
     fn test_navmesh_summary() {
-        let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-        ];
+        let tris = vec![Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+        )];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         let summary = nav.summary();
         assert!(summary.contains("NavMesh"));
@@ -1836,9 +1947,11 @@ mod tests {
 
     #[test]
     fn test_navmesh_display() {
-        let tris = vec![
-            Triangle::new(Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
-        ];
+        let tris = vec![Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+        )];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         let display = format!("{}", nav);
         assert!(display.contains("NavMesh"));

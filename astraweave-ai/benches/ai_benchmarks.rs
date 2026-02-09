@@ -17,7 +17,9 @@ use astraweave_ai::{
     orchestrator::{GoapOrchestrator, Orchestrator, RuleOrchestrator, UtilityOrchestrator},
     tool_sandbox::{validate_tool_action, ToolVerb, ValidationContext},
 };
-use astraweave_core::{ActionStep, CompanionState, EnemyState, IVec2, PlayerState, Poi, WorldSnapshot, PlanIntent};
+use astraweave_core::{
+    ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, Poi, WorldSnapshot,
+};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::{collections::BTreeMap, hint::black_box};
 
@@ -30,11 +32,13 @@ use std::{collections::BTreeMap, hint::black_box};
 fn assert_plan_valid(plan: &PlanIntent, context: &str) {
     assert!(
         !plan.steps.is_empty(),
-        "[CORRECTNESS FAILURE] {}: orchestrator returned empty plan", context
+        "[CORRECTNESS FAILURE] {}: orchestrator returned empty plan",
+        context
     );
     assert!(
         !plan.plan_id.is_empty(),
-        "[CORRECTNESS FAILURE] {}: plan has empty plan_id", context
+        "[CORRECTNESS FAILURE] {}: plan has empty plan_id",
+        context
     );
 }
 
@@ -99,21 +103,31 @@ fn assert_actions_recognized(plan: &PlanIntent, context: &str) {
         // Verify step index is consistent
         assert!(
             i < plan.steps.len(),
-            "[CORRECTNESS FAILURE] {}: step index {} exceeds plan length", context, i
+            "[CORRECTNESS FAILURE] {}: step index {} exceeds plan length",
+            context,
+            i
         );
     }
 }
 
 /// Validates snapshot integrity wasn't corrupted during planning
 #[inline]
-fn assert_snapshot_intact(snap: &WorldSnapshot, original_time: f32, original_enemy_count: usize, context: &str) {
+fn assert_snapshot_intact(
+    snap: &WorldSnapshot,
+    original_time: f32,
+    original_enemy_count: usize,
+    context: &str,
+) {
     assert_eq!(
         snap.t, original_time,
-        "[CORRECTNESS FAILURE] {}: snapshot time was corrupted", context
+        "[CORRECTNESS FAILURE] {}: snapshot time was corrupted",
+        context
     );
     assert_eq!(
-        snap.enemies.len(), original_enemy_count,
-        "[CORRECTNESS FAILURE] {}: snapshot enemy count changed", context
+        snap.enemies.len(),
+        original_enemy_count,
+        "[CORRECTNESS FAILURE] {}: snapshot enemy count changed",
+        context
     );
 }
 
@@ -123,8 +137,10 @@ fn assert_deterministic<O: Orchestrator>(orchestrator: &O, snap: &WorldSnapshot,
     let plan1 = orchestrator.propose_plan(snap);
     let plan2 = orchestrator.propose_plan(snap);
     assert_eq!(
-        plan1.steps.len(), plan2.steps.len(),
-        "[CORRECTNESS FAILURE] {}: non-deterministic plan length", context
+        plan1.steps.len(),
+        plan2.steps.len(),
+        "[CORRECTNESS FAILURE] {}: non-deterministic plan length",
+        context
     );
 }
 
@@ -249,7 +265,7 @@ fn bench_goap_planning_latency(c: &mut Criterion) {
     let simple_snap = create_minimal_snapshot(1, 0);
     // CORRECTNESS: Pre-validate determinism
     assert_deterministic(&orchestrator, &simple_snap, "GOAP simple");
-    
+
     group.bench_function("1 enemy (simple)", |b| {
         b.iter(|| {
             let snap = black_box(&simple_snap);
@@ -263,7 +279,7 @@ fn bench_goap_planning_latency(c: &mut Criterion) {
 
     let moderate_snap = create_minimal_snapshot(3, 2);
     assert_deterministic(&orchestrator, &moderate_snap, "GOAP moderate");
-    
+
     group.bench_function("3 enemies + 2 POIs (moderate)", |b| {
         b.iter(|| {
             let snap = black_box(&moderate_snap);
@@ -277,7 +293,7 @@ fn bench_goap_planning_latency(c: &mut Criterion) {
 
     let complex_snap = create_minimal_snapshot(10, 5);
     assert_deterministic(&orchestrator, &complex_snap, "GOAP complex");
-    
+
     group.bench_function("10 enemies + 5 POIs (complex)", |b| {
         b.iter(|| {
             let snap = black_box(&complex_snap);
@@ -304,7 +320,7 @@ fn bench_rule_based_planning(c: &mut Criterion) {
     let simple_snap = create_minimal_snapshot(1, 0);
     // CORRECTNESS: Pre-validate determinism (rule-based must be perfectly deterministic)
     assert_deterministic(&orchestrator, &simple_snap, "RuleBased simple");
-    
+
     group.bench_function("1 enemy", |b| {
         b.iter(|| {
             let snap = black_box(&simple_snap);
@@ -318,7 +334,7 @@ fn bench_rule_based_planning(c: &mut Criterion) {
 
     let moderate_snap = create_minimal_snapshot(3, 2);
     assert_deterministic(&orchestrator, &moderate_snap, "RuleBased moderate");
-    
+
     group.bench_function("3 enemies", |b| {
         b.iter(|| {
             let snap = black_box(&moderate_snap);
@@ -344,7 +360,7 @@ fn bench_utility_planning(c: &mut Criterion) {
     let simple_snap = create_minimal_snapshot(1, 0);
     // CORRECTNESS: Pre-validate determinism
     assert_deterministic(&orchestrator, &simple_snap, "Utility simple");
-    
+
     group.bench_function("1 enemy", |b| {
         b.iter(|| {
             let snap = black_box(&simple_snap);
@@ -358,7 +374,7 @@ fn bench_utility_planning(c: &mut Criterion) {
 
     let complex_snap = create_complex_snapshot();
     assert_deterministic(&orchestrator, &complex_snap, "Utility complex");
-    
+
     group.bench_function("complex scenario", |b| {
         b.iter(|| {
             let snap = black_box(&complex_snap);
@@ -399,7 +415,8 @@ fn bench_tool_validation(c: &mut Criterion) {
 
     group.bench_function("validate CoverFire", |b| {
         b.iter(|| {
-            let result = validate_tool_action(0, ToolVerb::CoverFire, &snap, &context, Some(target));
+            let result =
+                validate_tool_action(0, ToolVerb::CoverFire, &snap, &context, Some(target));
             // CORRECTNESS: CoverFire validation returns a result (success or valid rejection)
             // Not asserting Ok because CoverFire may legitimately fail based on conditions
             black_box(result)
@@ -460,9 +477,19 @@ fn bench_snapshot_cloning(c: &mut Criterion) {
             let snap = black_box(&simple_snap);
             let cloned = snap.clone();
             // CORRECTNESS: Clone must be exact copy
-            assert_eq!(cloned.t, snap.t, "[CORRECTNESS FAILURE] Clone: time mismatch");
-            assert_eq!(cloned.enemies.len(), snap.enemies.len(), "[CORRECTNESS FAILURE] Clone: enemy count mismatch");
-            assert_eq!(cloned.me.ammo, snap.me.ammo, "[CORRECTNESS FAILURE] Clone: ammo mismatch");
+            assert_eq!(
+                cloned.t, snap.t,
+                "[CORRECTNESS FAILURE] Clone: time mismatch"
+            );
+            assert_eq!(
+                cloned.enemies.len(),
+                snap.enemies.len(),
+                "[CORRECTNESS FAILURE] Clone: enemy count mismatch"
+            );
+            assert_eq!(
+                cloned.me.ammo, snap.me.ammo,
+                "[CORRECTNESS FAILURE] Clone: ammo mismatch"
+            );
             black_box(cloned)
         })
     });
@@ -473,11 +500,30 @@ fn bench_snapshot_cloning(c: &mut Criterion) {
             let snap = black_box(&complex_snap);
             let cloned = snap.clone();
             // CORRECTNESS: Complex snapshot clone integrity
-            assert_eq!(cloned.t, snap.t, "[CORRECTNESS FAILURE] Clone complex: time mismatch");
-            assert_eq!(cloned.enemies.len(), snap.enemies.len(), "[CORRECTNESS FAILURE] Clone complex: enemy count");
-            assert_eq!(cloned.pois.len(), snap.pois.len(), "[CORRECTNESS FAILURE] Clone complex: POI count");
-            assert_eq!(cloned.obstacles.len(), snap.obstacles.len(), "[CORRECTNESS FAILURE] Clone complex: obstacle count");
-            assert_eq!(cloned.me.cooldowns.len(), snap.me.cooldowns.len(), "[CORRECTNESS FAILURE] Clone complex: cooldown count");
+            assert_eq!(
+                cloned.t, snap.t,
+                "[CORRECTNESS FAILURE] Clone complex: time mismatch"
+            );
+            assert_eq!(
+                cloned.enemies.len(),
+                snap.enemies.len(),
+                "[CORRECTNESS FAILURE] Clone complex: enemy count"
+            );
+            assert_eq!(
+                cloned.pois.len(),
+                snap.pois.len(),
+                "[CORRECTNESS FAILURE] Clone complex: POI count"
+            );
+            assert_eq!(
+                cloned.obstacles.len(),
+                snap.obstacles.len(),
+                "[CORRECTNESS FAILURE] Clone complex: obstacle count"
+            );
+            assert_eq!(
+                cloned.me.cooldowns.len(),
+                snap.me.cooldowns.len(),
+                "[CORRECTNESS FAILURE] Clone complex: cooldown count"
+            );
             black_box(cloned)
         })
     });
@@ -488,14 +534,32 @@ fn bench_snapshot_cloning(c: &mut Criterion) {
             let snap = black_box(&large_snap);
             let cloned = snap.clone();
             // CORRECTNESS: Large snapshot clone must preserve all data
-            assert_eq!(cloned.enemies.len(), 100, "[CORRECTNESS FAILURE] Clone large: expected 100 enemies");
-            assert_eq!(cloned.pois.len(), 50, "[CORRECTNESS FAILURE] Clone large: expected 50 POIs");
+            assert_eq!(
+                cloned.enemies.len(),
+                100,
+                "[CORRECTNESS FAILURE] Clone large: expected 100 enemies"
+            );
+            assert_eq!(
+                cloned.pois.len(),
+                50,
+                "[CORRECTNESS FAILURE] Clone large: expected 50 POIs"
+            );
             // Verify first and last enemy data integrity
-            if let (Some(first_orig), Some(first_clone)) = (snap.enemies.first(), cloned.enemies.first()) {
-                assert_eq!(first_orig.id, first_clone.id, "[CORRECTNESS FAILURE] Clone large: first enemy ID mismatch");
+            if let (Some(first_orig), Some(first_clone)) =
+                (snap.enemies.first(), cloned.enemies.first())
+            {
+                assert_eq!(
+                    first_orig.id, first_clone.id,
+                    "[CORRECTNESS FAILURE] Clone large: first enemy ID mismatch"
+                );
             }
-            if let (Some(last_orig), Some(last_clone)) = (snap.enemies.last(), cloned.enemies.last()) {
-                assert_eq!(last_orig.id, last_clone.id, "[CORRECTNESS FAILURE] Clone large: last enemy ID mismatch");
+            if let (Some(last_orig), Some(last_clone)) =
+                (snap.enemies.last(), cloned.enemies.last())
+            {
+                assert_eq!(
+                    last_orig.id, last_clone.id,
+                    "[CORRECTNESS FAILURE] Clone large: last enemy ID mismatch"
+                );
             }
             black_box(cloned)
         })
@@ -515,7 +579,7 @@ fn bench_planning_conditions(c: &mut Criterion) {
     let no_enemies = create_minimal_snapshot(0, 2);
     // CORRECTNESS: Pre-validate determinism with no enemies
     assert_deterministic(&orchestrator, &no_enemies, "Conditions/no_enemies");
-    
+
     group.bench_function("no enemies (idle)", |b| {
         b.iter(|| {
             let snap = black_box(&no_enemies);
@@ -531,7 +595,7 @@ fn bench_planning_conditions(c: &mut Criterion) {
     let mut low_ammo = create_minimal_snapshot(3, 0);
     low_ammo.me.ammo = 2;
     assert_deterministic(&orchestrator, &low_ammo, "Conditions/low_ammo");
-    
+
     group.bench_function("low ammo (3 enemies)", |b| {
         b.iter(|| {
             let snap = black_box(&low_ammo);
@@ -540,7 +604,10 @@ fn bench_planning_conditions(c: &mut Criterion) {
             assert_plan_valid(&plan, "Conditions/low_ammo");
             assert_snapshot_intact(snap, 1.0, 3, "Conditions/low_ammo");
             // Verify ammo wasn't modified
-            assert_eq!(snap.me.ammo, 2, "[CORRECTNESS FAILURE] Conditions/low_ammo: ammo was modified");
+            assert_eq!(
+                snap.me.ammo, 2,
+                "[CORRECTNESS FAILURE] Conditions/low_ammo: ammo was modified"
+            );
             black_box(plan)
         })
     });
@@ -548,7 +615,7 @@ fn bench_planning_conditions(c: &mut Criterion) {
     let mut low_morale = create_minimal_snapshot(5, 0);
     low_morale.me.morale = 0.2;
     assert_deterministic(&orchestrator, &low_morale, "Conditions/low_morale");
-    
+
     group.bench_function("low morale (5 enemies)", |b| {
         b.iter(|| {
             let snap = black_box(&low_morale);
@@ -557,7 +624,10 @@ fn bench_planning_conditions(c: &mut Criterion) {
             assert_plan_valid(&plan, "Conditions/low_morale");
             assert_snapshot_intact(snap, 1.0, 5, "Conditions/low_morale");
             // Verify morale wasn't modified
-            assert!((snap.me.morale - 0.2).abs() < 0.001, "[CORRECTNESS FAILURE] Conditions/low_morale: morale was modified");
+            assert!(
+                (snap.me.morale - 0.2).abs() < 0.001,
+                "[CORRECTNESS FAILURE] Conditions/low_morale: morale was modified"
+            );
             black_box(plan)
         })
     });
@@ -575,7 +645,7 @@ fn bench_orchestrator_comparison(c: &mut Criterion) {
     let utility = UtilityOrchestrator;
     let mut group = c.benchmark_group("Orchestrator Comparison");
     let snap = create_complex_snapshot();
-    
+
     // CORRECTNESS: Pre-validate all orchestrators produce valid plans for this scenario
     let goap_plan = goap.propose_plan(&snap);
     let rule_plan = rule.propose_plan(&snap);

@@ -3,8 +3,8 @@
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::injection::{InjectionConfig, InjectionContext, InjectionEngine};
 use astraweave_rag::InjectionStrategy;
-use std::collections::HashMap;
 use chrono::Utc;
+use std::collections::HashMap;
 
 fn create_memory(id: &str, text: &str, category: MemoryCategory, age_hours: i64) -> Memory {
     let timestamp = Utc::now().timestamp() - (age_hours * 3600);
@@ -39,20 +39,20 @@ fn test_injection_relevance_threshold() {
     ];
 
     let result = engine.inject(&context, &memories).unwrap();
-    
+
     // "cats are great" has "cats" (1/3 match) -> 0.33 * 0.5 = 0.165
     // Plus base score 0.1 = 0.265.
     // Wait, the naive similarity is: common_words / words1.len().
     // query="cats" (len 1). memory="cats are great".
     // similarity("cats", "cats are great") -> common=1, len=1 -> 1.0.
     // relevance = 1.0 * 0.5 + 0.1 = 0.6.
-    
+
     // "dogs are loyal". query="cats".
     // similarity("cats", "dogs are loyal") -> common=0.
     // relevance = 0.0 * 0.5 + 0.1 = 0.1.
-    
+
     // So "cats" should pass (0.6 >= 0.5), "dogs" should fail (0.1 < 0.5).
-    
+
     assert_eq!(result.injected_memories.len(), 1);
     assert_eq!(result.injected_memories[0].id, "1");
 }
@@ -78,7 +78,7 @@ fn test_injection_recency_prioritization() {
     ];
 
     let result = engine.inject(&context, &memories).unwrap();
-    
+
     assert_eq!(result.injected_memories.len(), 1);
     assert_eq!(result.injected_memories[0].id, "new");
 }
@@ -101,7 +101,7 @@ fn test_injection_category_preference() {
     ];
 
     let result = engine.inject(&context, &memories).unwrap();
-    
+
     // Both have same text similarity.
     // Memory 2 matches preferred category -> +0.3 boost.
     // Memory 1 does not -> +0.0 (and base score logic might differ).
@@ -110,7 +110,7 @@ fn test_injection_category_preference() {
     // else: +0.1.
     // So Combat gets +0.3, Gameplay gets +0.1.
     // Combat should be first.
-    
+
     assert!(result.injected_memories.len() >= 2);
     assert_eq!(result.injected_memories[0].id, "2");
 }
@@ -135,7 +135,7 @@ fn test_injection_max_memories() {
     ];
 
     let result = engine.inject(&context, &memories).unwrap();
-    
+
     assert_eq!(result.injected_memories.len(), 2);
 }
 
@@ -180,7 +180,12 @@ fn test_injection_relevance_calculation() {
     };
 
     let high_relevance = create_memory("1", "cats and dogs are pets", MemoryCategory::Gameplay, 0);
-    let low_relevance = create_memory("2", "completely unrelated topic", MemoryCategory::Gameplay, 0);
+    let low_relevance = create_memory(
+        "2",
+        "completely unrelated topic",
+        MemoryCategory::Gameplay,
+        0,
+    );
 
     let memories = vec![high_relevance, low_relevance];
 

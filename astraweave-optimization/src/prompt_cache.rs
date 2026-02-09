@@ -130,6 +130,8 @@ impl Default for CacheStats {
 
 /// Cache lookup result
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum CacheLookupResult {
     /// Exact match found
     ExactHit(CachedResponse),
@@ -141,6 +143,7 @@ pub enum CacheLookupResult {
 
 /// Cache invalidation strategy
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum InvalidationStrategy {
     /// Time-based TTL
     TimeToLive,
@@ -238,7 +241,7 @@ impl PromptCache {
             created_at: now,
             last_accessed: now,
             access_count: 1,
-            ttl_expires_at: now + chrono::Duration::from_std(self.config.entry_ttl).unwrap(),
+            ttl_expires_at: now + chrono::Duration::from_std(self.config.entry_ttl).unwrap_or_default(),
             response_quality: quality,
             compression_ratio: None, // Would be calculated if compression is enabled
             tags: Vec::new(),

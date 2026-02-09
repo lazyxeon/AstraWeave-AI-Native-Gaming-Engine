@@ -65,6 +65,7 @@ impl BlenderInstallation {
 
 /// Method used to discover Blender.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum DiscoveryMethod {
     /// User explicitly configured the path.
     UserConfigured,

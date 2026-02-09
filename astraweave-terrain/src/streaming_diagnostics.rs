@@ -15,6 +15,7 @@ use std::collections::{HashMap, VecDeque};
 
 /// Chunk load state for diagnostics
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ChunkLoadState {
     /// Chunk is fully loaded and rendered
     Loaded,
@@ -455,7 +456,7 @@ mod tests {
     fn test_hitch_detector_single_frame() {
         let mut detector = HitchDetector::new(100, 2.0);
         detector.record_frame(1.5);
-        
+
         assert_eq!(detector.average_frame_time(), 1.5);
         assert_eq!(detector.p99_frame_time(), 1.5);
     }
@@ -463,13 +464,13 @@ mod tests {
     #[test]
     fn test_hitch_detector_p99_calculation() {
         let mut detector = HitchDetector::new(100, 50.0);
-        
+
         // Add 99 normal frames and 1 slow frame
         for _ in 0..99 {
             detector.record_frame(10.0);
         }
         detector.record_frame(40.0); // Slow but not hitch
-        
+
         // p99 should be 40.0
         assert_eq!(detector.p99_frame_time(), 40.0);
     }
@@ -477,16 +478,16 @@ mod tests {
     #[test]
     fn test_hitch_detector_history_eviction() {
         let mut detector = HitchDetector::new(10, 2.0);
-        
+
         // Add a hitch first
         detector.record_frame(5.0);
         assert_eq!(detector.hitch_count(), 1);
-        
+
         // Add 10 more normal frames (should evict the hitch)
         for _ in 0..10 {
             detector.record_frame(1.0);
         }
-        
+
         // Hitch should have been evicted
         assert_eq!(detector.hitch_count(), 0);
     }
@@ -494,7 +495,7 @@ mod tests {
     #[test]
     fn test_hitch_detector_hitch_rate_calculation() {
         let mut detector = HitchDetector::new(100, 2.0);
-        
+
         // Add 90 normal, 10 hitches
         for _ in 0..90 {
             detector.record_frame(1.0);
@@ -502,7 +503,7 @@ mod tests {
         for _ in 0..10 {
             detector.record_frame(5.0);
         }
-        
+
         // 10% hitch rate
         assert!((detector.hitch_rate() - 10.0).abs() < 0.1);
     }
@@ -520,15 +521,15 @@ mod tests {
     #[test]
     fn test_memory_stats_peak_tracking() {
         let mut stats = MemoryStats::default();
-        
+
         // Initial update
         stats.update(100, 1024);
         assert_eq!(stats.peak_bytes, 100 * 1024);
-        
+
         // Lower count
         stats.update(50, 1024);
         assert_eq!(stats.peak_bytes, 100 * 1024); // Peak unchanged
-        
+
         // Higher count
         stats.update(150, 1024);
         assert_eq!(stats.peak_bytes, 150 * 1024); // New peak
@@ -539,7 +540,7 @@ mod tests {
         let mut stats = MemoryStats::default();
         stats.update(1, 1024 * 1024); // 1 MB
         assert_eq!(stats.total_mb(), 1.0);
-        
+
         stats.update(512, 2 * 1024); // 1 MB total
         assert_eq!(stats.total_mb(), 1.0);
     }
@@ -563,7 +564,7 @@ mod tests {
     fn test_memory_stats_clone() {
         let mut stats = MemoryStats::default();
         stats.update(100, 1024);
-        
+
         let cloned = stats.clone();
         assert_eq!(stats.total_bytes, cloned.total_bytes);
         assert_eq!(stats.peak_bytes, cloned.peak_bytes);
@@ -573,10 +574,10 @@ mod tests {
     fn test_memory_stats_serialization() {
         let mut stats = MemoryStats::default();
         stats.update(100, 1024);
-        
+
         let serialized = serde_json::to_string(&stats).unwrap();
         let deserialized: MemoryStats = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(stats.total_bytes, deserialized.total_bytes);
     }
 
@@ -599,10 +600,10 @@ mod tests {
     #[test]
     fn test_streaming_diagnostics_record_frame() {
         let mut diag = StreamingDiagnostics::new(16.67, 100);
-        
+
         // Normal frame
         assert!(!diag.record_frame(10.0));
-        
+
         // Hitch frame
         assert!(diag.record_frame(50.0));
     }
@@ -611,7 +612,7 @@ mod tests {
     fn test_streaming_diagnostics_update_memory() {
         let mut diag = StreamingDiagnostics::new(16.67, 100);
         diag.update_memory(50, 1024 * 1024);
-        
+
         assert_eq!(diag.memory_stats().chunk_count, 50);
         assert_eq!(diag.memory_stats().total_mb(), 50.0);
     }
@@ -632,7 +633,7 @@ mod tests {
             ..Default::default()
         };
         diag.update_streaming_stats(stats.clone());
-        
+
         assert_eq!(diag.streaming_stats().loaded_chunk_count, 100);
         assert_eq!(diag.streaming_stats().pending_load_count, 10);
     }
@@ -649,7 +650,7 @@ mod tests {
             transitioning_count: 0,
         };
         diag.update_lod_stats(stats.clone());
-        
+
         assert_eq!(diag.lod_stats().total_chunks, 50);
         assert_eq!(diag.lod_stats().full_count, 20);
     }
@@ -657,27 +658,33 @@ mod tests {
     #[test]
     fn test_streaming_diagnostics_get_all_chunk_states() {
         let mut diag = StreamingDiagnostics::new(16.67, 100);
-        
+
         let loaded = vec![ChunkId::new(0, 0)];
         let loading = vec![ChunkId::new(1, 1)];
         let pending = vec![];
-        
+
         diag.update_chunk_states(&loaded, &loading, &pending);
-        
+
         let states = diag.get_all_chunk_states();
         assert_eq!(states.len(), 2);
-        assert_eq!(states.get(&ChunkId::new(0, 0)), Some(&ChunkLoadState::Loaded));
-        assert_eq!(states.get(&ChunkId::new(1, 1)), Some(&ChunkLoadState::Loading));
+        assert_eq!(
+            states.get(&ChunkId::new(0, 0)),
+            Some(&ChunkLoadState::Loaded)
+        );
+        assert_eq!(
+            states.get(&ChunkId::new(1, 1)),
+            Some(&ChunkLoadState::Loading)
+        );
     }
 
     #[test]
     fn test_streaming_diagnostics_hitch_detector() {
         let mut diag = StreamingDiagnostics::new(16.67, 100);
-        
+
         for _ in 0..10 {
             diag.record_frame(10.0);
         }
-        
+
         let detector = diag.hitch_detector();
         assert!(detector.average_frame_time() > 0.0);
     }
@@ -686,22 +693,22 @@ mod tests {
     #[test]
     fn test_diagnostic_report_full() {
         let mut diag = StreamingDiagnostics::new(16.67, 100);
-        
+
         // Set up some state
         let loaded = vec![ChunkId::new(0, 0), ChunkId::new(1, 0), ChunkId::new(2, 0)];
         let loading = vec![ChunkId::new(3, 0)];
         let pending = vec![ChunkId::new(4, 0), ChunkId::new(5, 0)];
         diag.update_chunk_states(&loaded, &loading, &pending);
-        
+
         diag.update_memory(50, 1024 * 1024);
-        
+
         for _ in 0..10 {
             diag.record_frame(12.0);
         }
         diag.record_frame(30.0); // 1 hitch
-        
+
         let report = diag.generate_report();
-        
+
         assert_eq!(report.chunk_counts.loaded, 3);
         assert_eq!(report.chunk_counts.loading, 1);
         assert_eq!(report.chunk_counts.pending, 2);
@@ -713,10 +720,10 @@ mod tests {
     fn test_diagnostic_report_serialization() {
         let diag = StreamingDiagnostics::new(16.67, 100);
         let report = diag.generate_report();
-        
+
         let serialized = serde_json::to_string(&report).unwrap();
         let deserialized: DiagnosticReport = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(report.chunk_counts.loaded, deserialized.chunk_counts.loaded);
     }
 
@@ -729,10 +736,10 @@ mod tests {
             hitch_count: 5,
             hitch_rate: 2.5,
         };
-        
+
         let serialized = serde_json::to_string(&stats).unwrap();
         let deserialized: FrameStats = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(stats.average_ms, deserialized.average_ms);
         assert_eq!(stats.hitch_count, deserialized.hitch_count);
     }
@@ -748,10 +755,10 @@ mod tests {
             skybox_count: 5,
             transitioning_count: 0,
         };
-        
+
         let serialized = serde_json::to_string(&stats).unwrap();
         let deserialized: LodStatsReport = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(stats.total_chunks, deserialized.total_chunks);
     }
 
@@ -763,27 +770,26 @@ mod tests {
             loading: 10,
             pending: 20,
         };
-        
+
         let serialized = serde_json::to_string(&counts).unwrap();
         let deserialized: ChunkCounts = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(counts.loaded, deserialized.loaded);
     }
 
     #[test]
     fn test_streaming_diagnostics_chunk_state_priority() {
         let mut diag = StreamingDiagnostics::new(16.67, 100);
-        
+
         // Same chunk in multiple lists - last one wins
         let chunk = ChunkId::new(0, 0);
         let loaded = vec![chunk];
         let loading = vec![chunk]; // Same chunk
         let pending = vec![];
-        
+
         diag.update_chunk_states(&loaded, &loading, &pending);
-        
+
         // Loading should override loaded since it's inserted later
         assert_eq!(diag.get_chunk_state(chunk), ChunkLoadState::Loading);
     }
 }
-

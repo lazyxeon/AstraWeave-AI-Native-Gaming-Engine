@@ -28,6 +28,7 @@ pub struct Sky {
 /// Biome paint brush types
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
+#[non_exhaustive]
 pub enum BiomePaint {
     #[serde(rename = "grass_dense")]
     GrassDense { area: Circle },
@@ -121,6 +122,7 @@ pub struct FateThread {
 /// Trigger types
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
+#[non_exhaustive]
 pub enum Trigger {
     #[serde(rename = "enter_area")]
     EnterArea { center: [f32; 3], radius: f32 },
@@ -186,6 +188,7 @@ impl Trigger {
 /// Director operation types
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(tag = "op")]
+#[non_exhaustive]
 pub enum DirectorOp {
     Fortify {
         area: FortRegion,

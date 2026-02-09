@@ -15,7 +15,7 @@
 //! Phase 8.8: Production-Ready Core Validation
 
 use astraweave_core::{
-    IVec2, Team, World, WorldSnapshot, CompanionState, EnemyState, PlayerState, Poi,
+    CompanionState, EnemyState, IVec2, PlayerState, Poi, Team, World, WorldSnapshot,
 };
 use std::collections::BTreeMap;
 
@@ -94,7 +94,10 @@ fn test_euclidean_distance_correctness() {
 
     let dist = a.distance(&b);
     // Distance = sqrt(25) = 5
-    assert!((dist - 5.0).abs() < 0.001, "Euclidean distance should be 5.0");
+    assert!(
+        (dist - 5.0).abs() < 0.001,
+        "Euclidean distance should be 5.0"
+    );
 }
 
 /// Verify distance is symmetric
@@ -212,7 +215,11 @@ fn test_entity_team_assignment() {
     let enemy = world.spawn("Enemy", IVec2::zero(), Team { id: 2 }, 100, 10);
 
     assert_eq!(world.team(player).unwrap().id, 0, "Player should be team 0");
-    assert_eq!(world.team(companion).unwrap().id, 1, "Companion should be team 1");
+    assert_eq!(
+        world.team(companion).unwrap().id,
+        1,
+        "Companion should be team 1"
+    );
     assert_eq!(world.team(enemy).unwrap().id, 2, "Enemy should be team 2");
 }
 
@@ -224,15 +231,27 @@ fn test_entity_destruction() {
     let e = world.spawn("ToDestroy", IVec2::zero(), Team { id: 0 }, 100, 10);
 
     // Entity exists
-    assert!(world.pose(e).is_some(), "Entity should exist before destruction");
+    assert!(
+        world.pose(e).is_some(),
+        "Entity should exist before destruction"
+    );
 
     // Destroy
     let destroyed = world.destroy_entity(e);
-    assert!(destroyed, "Should return true when destroying existing entity");
+    assert!(
+        destroyed,
+        "Should return true when destroying existing entity"
+    );
 
     // Entity gone
-    assert!(world.pose(e).is_none(), "Entity should not exist after destruction");
-    assert!(world.health(e).is_none(), "Health should not exist after destruction");
+    assert!(
+        world.pose(e).is_none(),
+        "Entity should not exist after destruction"
+    );
+    assert!(
+        world.health(e).is_none(),
+        "Health should not exist after destruction"
+    );
 }
 
 /// Verify double destruction is safe
@@ -282,7 +301,13 @@ fn test_cooldown_decrease() {
     // Tick 1 second
     world.tick(1.0);
 
-    let cd_val = world.cooldowns(e).unwrap().map.get("ability").copied().unwrap();
+    let cd_val = world
+        .cooldowns(e)
+        .unwrap()
+        .map
+        .get("ability")
+        .copied()
+        .unwrap();
     assert!(
         (cd_val - 1.0).abs() < 0.001,
         "Cooldown should decrease: expected 1.0, got {}",
@@ -304,7 +329,13 @@ fn test_cooldown_no_negative() {
     // Tick more than the cooldown
     world.tick(1.0);
 
-    let cd_val = world.cooldowns(e).unwrap().map.get("ability").copied().unwrap();
+    let cd_val = world
+        .cooldowns(e)
+        .unwrap()
+        .map
+        .get("ability")
+        .copied()
+        .unwrap();
     assert!(
         cd_val >= 0.0,
         "Cooldown should not go negative, got {}",
@@ -329,7 +360,10 @@ fn test_world_snapshot_defaults() {
     assert!((snap.t - 0.0).abs() < 0.001, "Default time should be 0");
     assert!(snap.enemies.is_empty(), "Default enemies should be empty");
     assert!(snap.pois.is_empty(), "Default pois should be empty");
-    assert!(snap.obstacles.is_empty(), "Default obstacles should be empty");
+    assert!(
+        snap.obstacles.is_empty(),
+        "Default obstacles should be empty"
+    );
     assert!(snap.objective.is_none(), "Default objective should be None");
 }
 
@@ -350,8 +384,14 @@ fn test_companion_state_defaults() {
     let companion = CompanionState::default();
 
     assert_eq!(companion.ammo, 10, "Default ammo should be 10");
-    assert!((companion.morale - 1.0).abs() < 0.001, "Default morale should be 1.0");
-    assert!(companion.cooldowns.is_empty(), "Default cooldowns should be empty");
+    assert!(
+        (companion.morale - 1.0).abs() < 0.001,
+        "Default morale should be 1.0"
+    );
+    assert!(
+        companion.cooldowns.is_empty(),
+        "Default cooldowns should be empty"
+    );
 }
 
 /// Verify EnemyState default values
@@ -362,7 +402,10 @@ fn test_enemy_state_defaults() {
     assert_eq!(enemy.id, 0, "Default enemy id should be 0");
     assert_eq!(enemy.hp, 100, "Default enemy HP should be 100");
     assert_eq!(enemy.cover, "none", "Default cover should be 'none'");
-    assert!((enemy.last_seen - 0.0).abs() < 0.001, "Default last_seen should be 0");
+    assert!(
+        (enemy.last_seen - 0.0).abs() < 0.001,
+        "Default last_seen should be 0"
+    );
 }
 
 /// Verify enemy_count helper
@@ -431,7 +474,7 @@ fn test_manhattan_uses_abs() {
     let dist = a.manhattan_distance(&b);
     // |5-2| + |5-8| = 3 + 3 = 6
     // Without abs: (5-2) + (5-8) = 3 + (-3) = 0 WRONG
-    
+
     assert_eq!(dist, 6, "Manhattan distance should use abs()");
     assert!(dist > 0, "Manhattan distance should be positive");
 }
@@ -470,7 +513,7 @@ fn test_subtraction_order() {
 
     // a - b: (10-3, 20-5) = (7, 15)
     // b - a would be: (3-10, 5-20) = (-7, -15)
-    
+
     assert_eq!(result.x, 7, "Subtraction should be a.x - b.x");
     assert_eq!(result.y, 15, "Subtraction should be a.y - b.y");
 }
@@ -487,8 +530,14 @@ fn test_cooldown_subtracts_dt() {
 
     world.tick(1.0);
 
-    let cd_after = world.cooldowns(e).unwrap().map.get("test").copied().unwrap();
-    
+    let cd_after = world
+        .cooldowns(e)
+        .unwrap()
+        .map
+        .get("test")
+        .copied()
+        .unwrap();
+
     // Correct: 5.0 - 1.0 = 4.0
     // Wrong (if +): 5.0 + 1.0 = 6.0
     assert!(
@@ -509,7 +558,7 @@ fn test_health_damage_subtracts() {
     }
 
     let hp = world.health(e).unwrap().hp;
-    
+
     // Correct: 100 - 25 = 75
     // Wrong (if +): 100 + 25 = 125
     assert_eq!(hp, 75, "Damage should subtract health");
@@ -548,7 +597,11 @@ fn test_snapshot_construction_determinism() {
         snap.t = 5.0;
         snap.player.hp = 75;
         snap.me.ammo = 20;
-        snap.enemies.push(EnemyState { id: 1, hp: 50, ..Default::default() });
+        snap.enemies.push(EnemyState {
+            id: 1,
+            hp: 50,
+            ..Default::default()
+        });
         snap
     };
 
@@ -577,8 +630,17 @@ fn test_zero_dt_tick() {
 
     world.tick(0.0);
 
-    let cd = world.cooldowns(e).unwrap().map.get("test").copied().unwrap();
-    assert!((cd - 5.0).abs() < 0.001, "Zero dt should not change cooldown");
+    let cd = world
+        .cooldowns(e)
+        .unwrap()
+        .map
+        .get("test")
+        .copied()
+        .unwrap();
+    assert!(
+        (cd - 5.0).abs() < 0.001,
+        "Zero dt should not change cooldown"
+    );
 }
 
 /// Verify negative coordinates work correctly
@@ -601,6 +663,6 @@ fn test_large_distance_no_overflow() {
     let dist_sq = a.distance_squared(&b);
     // (20000)^2 + (20000)^2 = 400,000,000 + 400,000,000 = 800,000,000
     // This is within i32 range (max ~2.1 billion)
-    
+
     assert_eq!(dist_sq, 800_000_000, "Large distances should not overflow");
 }

@@ -33,10 +33,7 @@ fn dot_product_symmetric() {
         let dot_ba = b.dot(a);
 
         // Dot product is exactly symmetric (same operations)
-        kani::assert(
-            dot_ab == dot_ba,
-            "Dot product must be symmetric",
-        );
+        kani::assert(dot_ab == dot_ba, "Dot product must be symmetric");
     }
 }
 
@@ -64,9 +61,9 @@ fn dot_product_zero_identity() {
 fn cross_product_anticommutative() {
     // Use representative concrete values
     let test_cases: [(f32, f32, f32, f32, f32, f32); 4] = [
-        (1.0, 0.0, 0.0, 0.0, 1.0, 0.0),  // Unit vectors
-        (1.0, 2.0, 3.0, 4.0, 5.0, 6.0),  // General case
-        (-1.0, 0.5, 2.0, 3.0, -0.5, 1.0), // Mixed signs
+        (1.0, 0.0, 0.0, 0.0, 1.0, 0.0),    // Unit vectors
+        (1.0, 2.0, 3.0, 4.0, 5.0, 6.0),    // General case
+        (-1.0, 0.5, 2.0, 3.0, -0.5, 1.0),  // Mixed signs
         (10.0, 20.0, 30.0, 0.1, 0.2, 0.3), // Different magnitudes
     ];
 
@@ -93,9 +90,9 @@ fn cross_product_anticommutative() {
 fn cross_product_orthogonal() {
     // Use representative concrete values (non-parallel vectors)
     let test_cases: [(f32, f32, f32, f32, f32, f32); 3] = [
-        (1.0, 0.0, 0.0, 0.0, 1.0, 0.0),  // X cross Y = Z
-        (1.0, 2.0, 3.0, 4.0, 5.0, 6.0),  // General case
-        (1.0, 1.0, 0.0, 0.0, 1.0, 1.0),  // Different orientations
+        (1.0, 0.0, 0.0, 0.0, 1.0, 0.0), // X cross Y = Z
+        (1.0, 2.0, 3.0, 4.0, 5.0, 6.0), // General case
+        (1.0, 1.0, 0.0, 0.0, 1.0, 1.0), // Different orientations
     ];
 
     for (ax, ay, az, bx, by, bz) in test_cases {
@@ -132,10 +129,7 @@ fn length_non_negative() {
     let v = Vec3::new(x, y, z);
     let len = v.length();
 
-    kani::assert(
-        len >= 0.0 || len.is_nan(),
-        "Length must be non-negative",
-    );
+    kani::assert(len >= 0.0 || len.is_nan(), "Length must be non-negative");
 }
 
 /// Verify length_squared equals length^2
@@ -160,10 +154,7 @@ fn length_squared_is_length_squared() {
         let expected = len * len;
         let diff = (len_sq - expected).abs();
 
-        kani::assert(
-            diff < 1e-6,
-            "length_squared must equal length^2",
-        );
+        kani::assert(diff < 1e-6, "length_squared must equal length^2");
     }
 }
 
@@ -174,9 +165,9 @@ fn length_squared_is_length_squared() {
 fn normalize_produces_unit_vector() {
     // Use representative non-zero concrete values
     let test_cases: [(f32, f32, f32); 4] = [
-        (1.0, 0.0, 0.0),     // Already unit length
-        (3.0, 4.0, 0.0),     // Classic 3-4-5 triangle
-        (1.0, 1.0, 1.0),     // Diagonal
+        (1.0, 0.0, 0.0),       // Already unit length
+        (3.0, 4.0, 0.0),       // Classic 3-4-5 triangle
+        (1.0, 1.0, 1.0),       // Diagonal
         (100.0, 200.0, 300.0), // Large values
     ];
 
@@ -199,7 +190,10 @@ fn normalize_or_zero_handles_zero() {
     let zero = Vec3::ZERO;
     let result = zero.normalize_or_zero();
 
-    kani::assert(result == Vec3::ZERO, "normalize_or_zero of zero must be zero");
+    kani::assert(
+        result == Vec3::ZERO,
+        "normalize_or_zero of zero must be zero",
+    );
 }
 
 /// Verify normalize preserves direction
@@ -249,9 +243,18 @@ fn unit_vectors_have_length_one() {
     let y = Vec3::Y;
     let z = Vec3::Z;
 
-    kani::assert((x.length() - 1.0).abs() < 1e-6, "X unit vector must have length 1");
-    kani::assert((y.length() - 1.0).abs() < 1e-6, "Y unit vector must have length 1");
-    kani::assert((z.length() - 1.0).abs() < 1e-6, "Z unit vector must have length 1");
+    kani::assert(
+        (x.length() - 1.0).abs() < 1e-6,
+        "X unit vector must have length 1",
+    );
+    kani::assert(
+        (y.length() - 1.0).abs() < 1e-6,
+        "Y unit vector must have length 1",
+    );
+    kani::assert(
+        (z.length() - 1.0).abs() < 1e-6,
+        "Z unit vector must have length 1",
+    );
 }
 
 /// Verify standard cross product results
@@ -263,22 +266,13 @@ fn standard_cross_products() {
 
     // X × Y = Z
     let x_cross_y = x.cross(y);
-    kani::assert(
-        (x_cross_y - z).length() < 1e-6,
-        "X × Y must equal Z",
-    );
+    kani::assert((x_cross_y - z).length() < 1e-6, "X × Y must equal Z");
 
     // Y × Z = X
     let y_cross_z = y.cross(z);
-    kani::assert(
-        (y_cross_z - x).length() < 1e-6,
-        "Y × Z must equal X",
-    );
+    kani::assert((y_cross_z - x).length() < 1e-6, "Y × Z must equal X");
 
     // Z × X = Y
     let z_cross_x = z.cross(x);
-    kani::assert(
-        (z_cross_x - y).length() < 1e-6,
-        "Z × X must equal Y",
-    );
+    kani::assert((z_cross_x - y).length() < 1e-6, "Z × X must equal Y");
 }

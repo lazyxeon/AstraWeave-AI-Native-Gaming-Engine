@@ -39,6 +39,7 @@ pub type VehicleId = u64;
 
 /// Wheel position preset
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum WheelPosition {
     FrontLeft,
     FrontRight,
@@ -161,6 +162,7 @@ impl WheelConfig {
 
 /// Drivetrain type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum DrivetrainType {
     /// Front-wheel drive
     FWD,

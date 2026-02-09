@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 
 /// Renders a full-screen quad using a WGSL snippet (expects a `vs_main` and `fs_main`) into an RGBA8 image.

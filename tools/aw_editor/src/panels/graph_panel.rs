@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 /// Graph type for categorization
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GraphType {
     BehaviorTree,
     Shader,
@@ -140,7 +141,7 @@ impl GraphStats {
             .collect();
         
         // Calculate max depth using BFS from root nodes (nodes with no incoming edges)
-        let max_depth = Self::calculate_max_depth(&nodes, &edges);
+        let max_depth = Self::calculate_max_depth(nodes, edges);
         
         Self {
             node_count: nodes.len(),

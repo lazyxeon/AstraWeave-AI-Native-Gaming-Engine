@@ -93,6 +93,7 @@ impl WaterfallConfig {
 /// Type of water particle
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
+#[non_exhaustive]
 pub enum WaterParticleType {
     /// Water droplet (falls with gravity)
     Droplet = 0,

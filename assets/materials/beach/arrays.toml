@@ -1,0 +1,7 @@
+# Beach biome — stable GPU array indices for terrain splatmap layers
+[layers]
+sand = 0
+gravel = 1
+stone = 2
+grass = 3
+dirt = 4

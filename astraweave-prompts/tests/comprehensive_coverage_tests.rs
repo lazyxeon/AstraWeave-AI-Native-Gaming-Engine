@@ -12,8 +12,8 @@
 #![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
-    ContextValue, PromptContext, PromptEngine, PromptTemplate, TemplateEngine,
-    TemplateProcessor, ProcessorConfig, EngineConfig,
+    ContextValue, EngineConfig, ProcessorConfig, PromptContext, PromptEngine, PromptTemplate,
+    TemplateEngine, TemplateProcessor,
 };
 use std::collections::HashMap;
 
@@ -64,7 +64,10 @@ fn test_template_with_whitespace_in_placeholders() {
 fn test_simple_variable_substitution() {
     let template = PromptTemplate::new("simple", "Hello {{name}}!");
     let mut ctx = PromptContext::new();
-    ctx.set("name".to_string(), ContextValue::String("Alice".to_string()));
+    ctx.set(
+        "name".to_string(),
+        ContextValue::String("Alice".to_string()),
+    );
 
     let result = template.render(&ctx).unwrap();
     assert_eq!(result, "Hello Alice!");
@@ -74,7 +77,10 @@ fn test_simple_variable_substitution() {
 fn test_multiple_variable_substitution() {
     let template = PromptTemplate::new("multi", "{{greeting}} {{name}}, age {{age}}");
     let mut ctx = PromptContext::new();
-    ctx.set("greeting".to_string(), ContextValue::String("Hello".to_string()));
+    ctx.set(
+        "greeting".to_string(),
+        ContextValue::String("Hello".to_string()),
+    );
     ctx.set("name".to_string(), ContextValue::String("Bob".to_string()));
     ctx.set("age".to_string(), ContextValue::Number(30.0));
 
@@ -124,11 +130,17 @@ fn test_array_variable_substitution() {
 fn test_nested_object_variable_substitution() {
     let template = PromptTemplate::new("nested", "User: {{user.name}}, Email: {{user.email}}");
     let mut ctx = PromptContext::new();
-    
+
     let mut user_obj = HashMap::new();
-    user_obj.insert("name".to_string(), ContextValue::String("Charlie".to_string()));
-    user_obj.insert("email".to_string(), ContextValue::String("charlie@example.com".to_string()));
-    
+    user_obj.insert(
+        "name".to_string(),
+        ContextValue::String("Charlie".to_string()),
+    );
+    user_obj.insert(
+        "email".to_string(),
+        ContextValue::String("charlie@example.com".to_string()),
+    );
+
     ctx.set("user".to_string(), ContextValue::Object(user_obj));
 
     let result = template.render(&ctx).unwrap();
@@ -159,7 +171,7 @@ fn test_template_with_only_text() {
 fn test_missing_variable_strict_mode() {
     let template = PromptTemplate::new("missing", "Hello {{undefined_var}}!");
     let ctx = PromptContext::new();
-    
+
     // With strict mode, this should fail or return empty
     let result = template.render(&ctx);
     // Depending on strict mode, this might error or render as empty
@@ -181,8 +193,14 @@ fn test_template_with_special_characters() {
 fn test_template_with_newlines() {
     let template = PromptTemplate::new("newlines", "Line 1: {{val1}}\nLine 2: {{val2}}");
     let mut ctx = PromptContext::new();
-    ctx.set("val1".to_string(), ContextValue::String("First".to_string()));
-    ctx.set("val2".to_string(), ContextValue::String("Second".to_string()));
+    ctx.set(
+        "val1".to_string(),
+        ContextValue::String("First".to_string()),
+    );
+    ctx.set(
+        "val2".to_string(),
+        ContextValue::String("Second".to_string()),
+    );
 
     let result = template.render(&ctx).unwrap();
     assert!(result.contains("Line 1: First"));
@@ -230,10 +248,16 @@ fn test_context_get_nonexistent() {
 #[test]
 fn test_context_scope_push_pop() {
     let mut ctx = PromptContext::new();
-    ctx.set("global".to_string(), ContextValue::String("global_value".to_string()));
+    ctx.set(
+        "global".to_string(),
+        ContextValue::String("global_value".to_string()),
+    );
 
     ctx.push_scope();
-    ctx.set("local".to_string(), ContextValue::String("local_value".to_string()));
+    ctx.set(
+        "local".to_string(),
+        ContextValue::String("local_value".to_string()),
+    );
 
     assert!(ctx.get("global").is_some());
     assert!(ctx.get("local").is_some());
@@ -268,10 +292,16 @@ fn test_context_nested_scopes() {
 #[test]
 fn test_context_merge() {
     let mut ctx1 = PromptContext::new();
-    ctx1.set("key1".to_string(), ContextValue::String("value1".to_string()));
+    ctx1.set(
+        "key1".to_string(),
+        ContextValue::String("value1".to_string()),
+    );
 
     let mut ctx2 = PromptContext::new();
-    ctx2.set("key2".to_string(), ContextValue::String("value2".to_string()));
+    ctx2.set(
+        "key2".to_string(),
+        ContextValue::String("value2".to_string()),
+    );
 
     ctx1.merge(ctx2);
 
@@ -301,7 +331,10 @@ fn test_context_set_path_nested() {
 #[test]
 fn test_context_to_string_map() {
     let mut ctx = PromptContext::new();
-    ctx.set("key1".to_string(), ContextValue::String("value1".to_string()));
+    ctx.set(
+        "key1".to_string(),
+        ContextValue::String("value1".to_string()),
+    );
     ctx.set("key2".to_string(), ContextValue::Number(42.0));
 
     let map = ctx.to_string_map();
@@ -391,9 +424,15 @@ fn test_engine_register_and_list() {
 fn test_engine_register_multiple_templates() {
     let mut engine = TemplateEngine::new();
 
-    engine.register_template("t1", PromptTemplate::new("t1", "Template 1")).unwrap();
-    engine.register_template("t2", PromptTemplate::new("t2", "Template 2")).unwrap();
-    engine.register_template("t3", PromptTemplate::new("t3", "Template 3")).unwrap();
+    engine
+        .register_template("t1", PromptTemplate::new("t1", "Template 1"))
+        .unwrap();
+    engine
+        .register_template("t2", PromptTemplate::new("t2", "Template 2"))
+        .unwrap();
+    engine
+        .register_template("t3", PromptTemplate::new("t3", "Template 3"))
+        .unwrap();
 
     let templates = engine.list_templates();
     assert_eq!(templates.len(), 3);
@@ -402,10 +441,15 @@ fn test_engine_register_multiple_templates() {
 #[test]
 fn test_engine_render_registered_template() {
     let mut engine = TemplateEngine::new();
-    engine.register_template("greeting", PromptTemplate::new("g", "Hello {{name}}!")).unwrap();
+    engine
+        .register_template("greeting", PromptTemplate::new("g", "Hello {{name}}!"))
+        .unwrap();
 
     let mut ctx = PromptContext::new();
-    ctx.set("name".to_string(), ContextValue::String("World".to_string()));
+    ctx.set(
+        "name".to_string(),
+        ContextValue::String("World".to_string()),
+    );
 
     let result = engine.render("greeting", &ctx).unwrap();
     assert_eq!(result, "Hello World!");
@@ -414,7 +458,9 @@ fn test_engine_render_registered_template() {
 #[test]
 fn test_engine_clear_templates() {
     let mut engine = TemplateEngine::new();
-    engine.register_template("t1", PromptTemplate::new("t1", "Content")).unwrap();
+    engine
+        .register_template("t1", PromptTemplate::new("t1", "Content"))
+        .unwrap();
 
     assert_eq!(engine.list_templates().len(), 1);
 
@@ -426,7 +472,9 @@ fn test_engine_clear_templates() {
 fn test_engine_register_partial() {
     let mut engine = TemplateEngine::new();
     engine.register_partial("header", "=== Header ===").unwrap();
-    engine.register_template("main", PromptTemplate::new("m", "{{> header}}\nContent")).unwrap();
+    engine
+        .register_template("main", PromptTemplate::new("m", "{{> header}}\nContent"))
+        .unwrap();
 
     let ctx = PromptContext::new();
     let result = engine.render("main", &ctx).unwrap();
@@ -461,7 +509,9 @@ fn test_prompt_engine_template_too_large() {
 #[test]
 fn test_prompt_engine_render() {
     let mut engine = PromptEngine::new(EngineConfig::default());
-    engine.register_template("test".to_string(), "Value: {{val}}".to_string()).unwrap();
+    engine
+        .register_template("test".to_string(), "Value: {{val}}".to_string())
+        .unwrap();
 
     let mut ctx = PromptContext::new();
     ctx.set("val".to_string(), ContextValue::Number(123.0));
@@ -498,7 +548,9 @@ fn test_processor_process_json() {
         "count": 42
     });
 
-    let result = processor.process_json("User: {{user}}, Count: {{count}}", &json).unwrap();
+    let result = processor
+        .process_json("User: {{user}}, Count: {{count}}", &json)
+        .unwrap();
     assert_eq!(result, "User: Bob, Count: 42");
 }
 
@@ -592,25 +644,36 @@ fn test_processor_config_custom() {
 #[test]
 fn test_end_to_end_dialogue_template() {
     let mut engine = TemplateEngine::new();
-    
+
     let dialogue_template = PromptTemplate::new(
         "dialogue",
         "You are {{character.name}}, a {{character.role}}. \
          Your personality is {{character.personality}}. \
-         Respond to: {{user_input}}"
+         Respond to: {{user_input}}",
     );
-    
-    engine.register_template("dialogue", dialogue_template).unwrap();
-    
+
+    engine
+        .register_template("dialogue", dialogue_template)
+        .unwrap();
+
     let mut ctx = PromptContext::new();
     let mut character = HashMap::new();
-    character.insert("name".to_string(), ContextValue::String("Elena".to_string()));
+    character.insert(
+        "name".to_string(),
+        ContextValue::String("Elena".to_string()),
+    );
     character.insert("role".to_string(), ContextValue::String("mage".to_string()));
-    character.insert("personality".to_string(), ContextValue::String("wise".to_string()));
-    
+    character.insert(
+        "personality".to_string(),
+        ContextValue::String("wise".to_string()),
+    );
+
     ctx.set("character".to_string(), ContextValue::Object(character));
-    ctx.set("user_input".to_string(), ContextValue::String("Teach me magic".to_string()));
-    
+    ctx.set(
+        "user_input".to_string(),
+        ContextValue::String("Teach me magic".to_string()),
+    );
+
     let result = engine.render("dialogue", &ctx).unwrap();
     assert!(result.contains("Elena"));
     assert!(result.contains("mage"));
@@ -622,17 +685,23 @@ fn test_end_to_end_dialogue_template() {
 fn test_end_to_end_quest_template() {
     let template = PromptTemplate::new(
         "quest",
-        "Quest: {{quest.title}}\nObjective: {{quest.objective}}\nReward: {{quest.reward}} gold"
+        "Quest: {{quest.title}}\nObjective: {{quest.objective}}\nReward: {{quest.reward}} gold",
     );
-    
+
     let mut ctx = PromptContext::new();
     let mut quest = HashMap::new();
-    quest.insert("title".to_string(), ContextValue::String("Dragon Slayer".to_string()));
-    quest.insert("objective".to_string(), ContextValue::String("Defeat the dragon".to_string()));
+    quest.insert(
+        "title".to_string(),
+        ContextValue::String("Dragon Slayer".to_string()),
+    );
+    quest.insert(
+        "objective".to_string(),
+        ContextValue::String("Defeat the dragon".to_string()),
+    );
     quest.insert("reward".to_string(), ContextValue::Number(1000.0));
-    
+
     ctx.set("quest".to_string(), ContextValue::Object(quest));
-    
+
     let result = template.render(&ctx).unwrap();
     assert!(result.contains("Dragon Slayer"));
     assert!(result.contains("Defeat the dragon"));
@@ -642,17 +711,23 @@ fn test_end_to_end_quest_template() {
 #[test]
 fn test_multiple_templates_in_engine() {
     let mut engine = TemplateEngine::new();
-    
-    engine.register_template("greeting", PromptTemplate::new("g", "Hello {{name}}!")).unwrap();
-    engine.register_template("farewell", PromptTemplate::new("f", "Goodbye {{name}}!")).unwrap();
-    
+
+    engine
+        .register_template("greeting", PromptTemplate::new("g", "Hello {{name}}!"))
+        .unwrap();
+    engine
+        .register_template("farewell", PromptTemplate::new("f", "Goodbye {{name}}!"))
+        .unwrap();
+
     let mut ctx = PromptContext::new();
-    ctx.set("name".to_string(), ContextValue::String("Alice".to_string()));
-    
+    ctx.set(
+        "name".to_string(),
+        ContextValue::String("Alice".to_string()),
+    );
+
     let greeting = engine.render("greeting", &ctx).unwrap();
     let farewell = engine.render("farewell", &ctx).unwrap();
-    
+
     assert_eq!(greeting, "Hello Alice!");
     assert_eq!(farewell, "Goodbye Alice!");
 }
-

@@ -72,6 +72,9 @@ members = [
   "examples/cinematics_timeline_demo",
   "examples/terrain_demo",
   "examples/biome_showcase",
+  "examples/biome_transition_demo",
+  "examples/biome_gpu_demo",
+  "examples/biome_weather_demo",
   "examples/orchestrator_async_tick",
   "examples/advanced_content_demo",
   # New tooling crates

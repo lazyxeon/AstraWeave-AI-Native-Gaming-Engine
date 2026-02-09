@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 /// Detected automatically from filename suffixes (e.g., _normal, _albedo, _orm)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[allow(clippy::upper_case_acronyms)]
+#[non_exhaustive]
 pub enum TextureType {
     /// Base color / diffuse map
     Albedo,
@@ -198,6 +199,7 @@ impl TextureType {
 
 /// Asset categories for organizing the asset browser
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AssetCategory {
     All,
     Models,
@@ -284,6 +286,7 @@ impl AssetCategory {
 
 /// Actions triggered from the asset browser for processing by the editor
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum AssetAction {
     /// Import a 3D model into the scene as a new entity
     ImportModel { path: PathBuf },
@@ -401,6 +404,7 @@ impl AssetAction {
 // ============================================================================
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AssetType {
     Model,
     Texture,
@@ -566,6 +570,7 @@ impl AssetEntry {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ViewMode {
     List,
     Grid,

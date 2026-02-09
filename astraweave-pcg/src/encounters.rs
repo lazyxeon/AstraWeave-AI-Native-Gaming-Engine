@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 
 /// Type of encounter
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum EncounterKind {
     /// Combat encounter with enemy types and count
     Combat {

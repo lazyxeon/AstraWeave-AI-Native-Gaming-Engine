@@ -27,6 +27,7 @@ pub struct CombatSystem {
 
 /// Combat event types.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum CombatEvent {
     /// Player took damage
     PlayerDamaged { amount: f32, source_position: Vec3 },
@@ -48,6 +49,7 @@ pub enum CombatEvent {
 
 /// Who killed an enemy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Killer {
     /// Player basic attack
     Player,

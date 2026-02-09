@@ -15,6 +15,7 @@ use std::thread;
 
 /// Target platform for game builds
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum BuildTarget {
     #[default]
     Windows,
@@ -82,6 +83,7 @@ impl BuildTarget {
 
 /// Build profile (Debug vs Release)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum BuildProfile {
     Debug,
     #[default]
@@ -129,6 +131,7 @@ impl BuildProfile {
 
 /// Build status tracking
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub enum BuildStatus {
     #[default]
     Idle,
@@ -217,6 +220,7 @@ impl Default for BuildConfig {
 
 /// Message types for build thread communication
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum BuildMessage {
     Progress {
         percent: f32,

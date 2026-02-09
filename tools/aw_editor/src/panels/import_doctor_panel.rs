@@ -22,6 +22,7 @@ use crate::panels::Panel;
 
 /// Actions emitted by the import doctor panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ImportAction {
     /// Apply a specific quick fix
     ApplyQuickFix {
@@ -56,6 +57,7 @@ pub enum ImportAction {
 
 /// Detected source engine/tool for imported assets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SourceEngine {
     #[default]
     Unknown,
@@ -213,6 +215,8 @@ impl SourceEngine {
 
 /// Texture channel packing formats
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[allow(clippy::upper_case_acronyms)]
+#[non_exhaustive]
 pub enum TexturePackingFormat {
     #[default]
     Separate,
@@ -327,6 +331,7 @@ impl TexturePackingFormat {
 
 /// Severity of import issues
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum IssueSeverity {
     #[default]
     Info,
@@ -390,6 +395,7 @@ impl IssueSeverity {
 
 /// Type of import issue
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum IssueType {
     #[default]
     Unknown,
@@ -584,6 +590,7 @@ impl ImportIssue {
 
 /// Quick-fix actions for common import issues
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum QuickFix {
     TreatAsNormalMap,
     FlipGreenChannel,
@@ -736,6 +743,7 @@ impl Default for ImportSettings {
 
 /// Up-axis orientation
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum UpAxis {
     #[default]
     Y,

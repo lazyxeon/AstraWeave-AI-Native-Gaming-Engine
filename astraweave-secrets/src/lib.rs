@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 mod backend;
 mod keyring_backend;
 mod manager;

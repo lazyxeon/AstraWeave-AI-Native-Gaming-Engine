@@ -7,6 +7,7 @@ use std::path::Path;
 
 /// Defines how a texture should be interpreted for correct color space handling
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TextureUsage {
     /// Color/albedo textures - stored in sRGB, GPU converts to linear
     Albedo,

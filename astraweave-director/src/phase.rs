@@ -45,7 +45,7 @@ impl PhaseDirector {
                     "Boss shifts into phase: {}",
                     self.phases[self.state.idx].name
                 ));
-                tele.push(self.state.telegraph.clone().unwrap());
+                tele.push(self.state.telegraph.clone().expect("telegraph must be set"));
             }
         }
         // craft a plan using simple bias rules

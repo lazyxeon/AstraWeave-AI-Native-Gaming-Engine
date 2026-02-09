@@ -16,6 +16,7 @@ use crate::panels::Panel;
 
 /// Physics visualization modes
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PhysicsVisualization {
     #[default]
     None,
@@ -103,6 +104,7 @@ pub struct CollisionLayer {
 
 /// Physics simulation mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SimulationMode {
     #[default]
     Running,
@@ -161,6 +163,7 @@ impl SimulationMode {
 
 /// Ragdoll preset configuration
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RagdollPreset {
     #[default]
     Humanoid,
@@ -220,6 +223,7 @@ impl RagdollPreset {
 
 /// Vehicle type presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum VehicleType {
     #[default]
     Sedan,
@@ -283,6 +287,7 @@ impl VehicleType {
 
 /// Cloth simulation quality
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ClothQuality {
     Low,
     #[default]
@@ -337,6 +342,7 @@ impl ClothQuality {
 
 /// Destruction pattern type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DestructionPattern {
     #[default]
     Voronoi,
@@ -396,6 +402,7 @@ impl DestructionPattern {
 
 /// Gravity zone shape
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GravityZoneShape {
     #[default]
     Box,
@@ -465,6 +472,7 @@ pub struct PhysicsStats {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PhysicsTab {
     #[default]
     Overview,
@@ -522,6 +530,7 @@ impl PhysicsTab {
 
 /// Actions that can be performed on the physics panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum PhysicsAction {
     /// Start physics simulation
     Play,

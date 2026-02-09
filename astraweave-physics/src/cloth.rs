@@ -132,6 +132,7 @@ impl DistanceConstraint {
 
 /// Collision shape for cloth collision
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum ClothCollider {
     /// Sphere collider
     Sphere { center: Vec3, radius: f32 },

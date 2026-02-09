@@ -61,6 +61,18 @@ use std::collections::BTreeMap;
 pub type Entity = u32;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// A 2D integer vector used for grid-based positions.
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_core::IVec2;
+///
+/// let a = IVec2::new(3, 4);
+/// let b = IVec2::new(6, 8);
+/// assert_eq!(a.manhattan_distance(&b), 7);
+/// assert_eq!(a + b, IVec2::new(9, 12));
+/// ```
 pub struct IVec2 {
     pub x: i32,
     pub y: i32,
@@ -101,7 +113,10 @@ impl IVec2 {
 
     /// Returns a new vector offset by the given amounts.
     pub fn offset(&self, dx: i32, dy: i32) -> Self {
-        Self { x: self.x + dx, y: self.y + dy }
+        Self {
+            x: self.x + dx,
+            y: self.y + dy,
+        }
     }
 }
 
@@ -114,18 +129,47 @@ impl std::fmt::Display for IVec2 {
 impl std::ops::Add for IVec2 {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Self { x: self.x + rhs.x, y: self.y + rhs.y }
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
     }
 }
 
 impl std::ops::Sub for IVec2 {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        Self { x: self.x - rhs.x, y: self.y - rhs.y }
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// A snapshot of the game world at a point in time, used for AI perception.
+///
+/// `WorldSnapshot` is the primary input to all AI orchestrators. It captures
+/// the player, companion, enemies, and points of interest.
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_core::{WorldSnapshot, PlayerState, CompanionState, IVec2};
+/// use std::collections::BTreeMap;
+///
+/// let snap = WorldSnapshot {
+///     t: 1.0,
+///     player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
+///     me: CompanionState { ammo: 30, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(1, 1) },
+///     enemies: vec![],
+///     pois: vec![],
+///     obstacles: vec![],
+///     objective: Some("patrol".into()),
+/// };
+/// assert!(snap.has_no_enemies());
+/// assert!(snap.has_objective());
+/// ```
 pub struct WorldSnapshot {
     pub t: f32,
     pub player: PlayerState,
@@ -149,12 +193,15 @@ impl WorldSnapshot {
 
     /// Returns the nearest enemy to the companion's position.
     pub fn nearest_enemy(&self) -> Option<&EnemyState> {
-        self.enemies.iter().min_by_key(|e| self.me.pos.distance_squared(&e.pos))
+        self.enemies
+            .iter()
+            .min_by_key(|e| self.me.pos.distance_squared(&e.pos))
     }
 
     /// Returns enemies within the given Manhattan distance from the companion.
     pub fn enemies_within_range(&self, range: i32) -> Vec<&EnemyState> {
-        self.enemies.iter()
+        self.enemies
+            .iter()
             .filter(|e| self.me.pos.manhattan_distance(&e.pos) <= range)
             .collect()
     }
@@ -182,8 +229,13 @@ impl WorldSnapshot {
 
 impl std::fmt::Display for WorldSnapshot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "WorldSnapshot(t={:.1}s, {} enemies, {} POIs)", 
-            self.t, self.enemies.len(), self.pois.len())
+        write!(
+            f,
+            "WorldSnapshot(t={:.1}s, {} enemies, {} POIs)",
+            self.t,
+            self.enemies.len(),
+            self.pois.len()
+        )
     }
 }
 
@@ -241,6 +293,23 @@ pub struct InteractableObject {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
+/// An AI plan consisting of ordered action steps.
+///
+/// Created by orchestrators and consumed by the tool sandbox for validation
+/// and execution. Use the builder pattern with [`PlanIntent::with_step`].
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_core::{PlanIntent, ActionStep};
+///
+/// let plan = PlanIntent::new("assault-plan")
+///     .with_step(ActionStep::MoveTo { x: 5, y: 3, speed: None })
+///     .with_step(ActionStep::Attack { target_id: 42 });
+///
+/// assert_eq!(plan.step_count(), 2);
+/// assert!(!plan.is_empty());
+/// ```
 pub struct PlanIntent {
     pub plan_id: String,
     pub steps: Vec<ActionStep>,
@@ -249,7 +318,10 @@ pub struct PlanIntent {
 impl PlanIntent {
     /// Creates an empty plan with the given ID.
     pub fn new(plan_id: impl Into<String>) -> Self {
-        Self { plan_id: plan_id.into(), steps: Vec::new() }
+        Self {
+            plan_id: plan_id.into(),
+            steps: Vec::new(),
+        }
     }
 
     /// Creates an empty plan with no ID.
@@ -294,7 +366,12 @@ impl std::fmt::Display for PlanIntent {
         if self.plan_id.is_empty() {
             write!(f, "PlanIntent({} steps)", self.steps.len())
         } else {
-            write!(f, "PlanIntent('{}', {} steps)", self.plan_id, self.steps.len())
+            write!(
+                f,
+                "PlanIntent('{}', {} steps)",
+                self.plan_id,
+                self.steps.len()
+            )
         }
     }
 }
@@ -305,6 +382,7 @@ impl std::fmt::Display for PlanIntent {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum MovementSpeed {
     Walk,
     Run,
@@ -313,6 +391,7 @@ pub enum MovementSpeed {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum StrafeDirection {
     Left,
     Right,
@@ -320,6 +399,7 @@ pub enum StrafeDirection {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum AttackType {
     Light,
     Heavy,
@@ -332,6 +412,7 @@ pub enum AttackType {
 /// Terrain feature types for LLM-driven generation
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type")]
+#[non_exhaustive]
 pub enum TerrainFeatureType {
     /// Underground cave system with specified depth
     Cave { depth: u32 },
@@ -361,6 +442,7 @@ impl Default for TerrainFeatureType {
 /// Cardinal direction for spatial references
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum CardinalDirection {
     North,
     South,
@@ -391,6 +473,7 @@ impl CardinalDirection {
 /// Distance categories to prevent LLM spatial hallucination
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum DistanceCategory {
     /// 10-50 units from reference point
     Near,
@@ -420,6 +503,7 @@ impl DistanceCategory {
 /// Relative location for LLM-friendly spatial references
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "method")]
+#[non_exhaustive]
 pub enum RelativeLocation {
     /// Place at the point the camera/player is looking at
     LineOfSight {
@@ -448,6 +532,7 @@ impl Default for RelativeLocation {
 /// Persistence mode for terrain modifications
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum PersistenceMode {
     /// Terrain changes are lost when the session ends
     #[default]
@@ -523,6 +608,23 @@ impl TerrainGenerationRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "act")]
+#[non_exhaustive]
+/// A single action in an AI plan.
+///
+/// `ActionStep` represents the 37-tool vocabulary available to AI agents.
+/// Each variant maps to a validated, executable engine action.
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_core::ActionStep;
+///
+/// let step = ActionStep::MoveTo { x: 10, y: 20, speed: None };
+/// assert!(matches!(step, ActionStep::MoveTo { .. }));
+///
+/// let attack = ActionStep::Attack { target_id: 7 };
+/// assert!(matches!(attack, ActionStep::Attack { target_id: 7 }));
+/// ```
 pub enum ActionStep {
     // ═══════════════════════════════════════
     // MOVEMENT (6 tools)
@@ -697,28 +799,51 @@ impl ActionStep {
     /// Returns the category name for this action (Movement, Offensive, etc.).
     pub fn category(&self) -> &'static str {
         match self {
-            Self::MoveTo { .. } | Self::Approach { .. } | Self::Retreat { .. } |
-            Self::TakeCover { .. } | Self::Strafe { .. } | Self::Patrol { .. } => "Movement",
-            
-            Self::Attack { .. } | Self::AimedShot { .. } | Self::QuickAttack { .. } |
-            Self::HeavyAttack { .. } | Self::AoEAttack { .. } | Self::ThrowExplosive { .. } |
-            Self::CoverFire { .. } | Self::Charge { .. } => "Offensive",
-            
-            Self::Block | Self::Dodge { .. } | Self::Parry | Self::ThrowSmoke { .. } |
-            Self::Heal { .. } | Self::UseDefensiveAbility { .. } => "Defensive",
-            
-            Self::EquipWeapon { .. } | Self::SwitchWeapon { .. } | Self::Reload |
-            Self::UseItem { .. } | Self::DropItem { .. } => "Equipment",
-            
-            Self::CallReinforcements { .. } | Self::MarkTarget { .. } | Self::RequestCover { .. } |
-            Self::CoordinateAttack { .. } | Self::SetAmbush { .. } | Self::Distract { .. } |
-            Self::Regroup { .. } => "Tactical",
-            
-            Self::Scan { .. } | Self::Wait { .. } | Self::Interact { .. } |
-            Self::UseAbility { .. } | Self::Taunt { .. } => "Utility",
-            
+            Self::MoveTo { .. }
+            | Self::Approach { .. }
+            | Self::Retreat { .. }
+            | Self::TakeCover { .. }
+            | Self::Strafe { .. }
+            | Self::Patrol { .. } => "Movement",
+
+            Self::Attack { .. }
+            | Self::AimedShot { .. }
+            | Self::QuickAttack { .. }
+            | Self::HeavyAttack { .. }
+            | Self::AoEAttack { .. }
+            | Self::ThrowExplosive { .. }
+            | Self::CoverFire { .. }
+            | Self::Charge { .. } => "Offensive",
+
+            Self::Block
+            | Self::Dodge { .. }
+            | Self::Parry
+            | Self::ThrowSmoke { .. }
+            | Self::Heal { .. }
+            | Self::UseDefensiveAbility { .. } => "Defensive",
+
+            Self::EquipWeapon { .. }
+            | Self::SwitchWeapon { .. }
+            | Self::Reload
+            | Self::UseItem { .. }
+            | Self::DropItem { .. } => "Equipment",
+
+            Self::CallReinforcements { .. }
+            | Self::MarkTarget { .. }
+            | Self::RequestCover { .. }
+            | Self::CoordinateAttack { .. }
+            | Self::SetAmbush { .. }
+            | Self::Distract { .. }
+            | Self::Regroup { .. } => "Tactical",
+
+            Self::Scan { .. }
+            | Self::Wait { .. }
+            | Self::Interact { .. }
+            | Self::UseAbility { .. }
+            | Self::Taunt { .. } => "Utility",
+
             Self::Throw { .. } | Self::Revive { .. } => "Legacy",
-            
+
             Self::ModifyTerrain { .. } => "Terrain",
         }
     }
@@ -801,32 +926,43 @@ impl ActionStep {
 
     /// Returns `true` if this targets a specific entity.
     pub fn targets_entity(&self) -> bool {
-        matches!(self,
-            Self::Approach { .. } | Self::Retreat { .. } | Self::Strafe { .. } |
-            Self::Attack { .. } | Self::AimedShot { .. } | Self::QuickAttack { .. } |
-            Self::HeavyAttack { .. } | Self::CoverFire { .. } | Self::Charge { .. } |
-            Self::MarkTarget { .. } | Self::CoordinateAttack { .. } | Self::Distract { .. } |
-            Self::Interact { .. } | Self::Taunt { .. } | Self::Revive { .. }
+        matches!(
+            self,
+            Self::Approach { .. }
+                | Self::Retreat { .. }
+                | Self::Strafe { .. }
+                | Self::Attack { .. }
+                | Self::AimedShot { .. }
+                | Self::QuickAttack { .. }
+                | Self::HeavyAttack { .. }
+                | Self::CoverFire { .. }
+                | Self::Charge { .. }
+                | Self::MarkTarget { .. }
+                | Self::CoordinateAttack { .. }
+                | Self::Distract { .. }
+                | Self::Interact { .. }
+                | Self::Taunt { .. }
+                | Self::Revive { .. }
         )
     }
 
     /// Returns the target entity ID if this action targets one.
     pub fn target_entity(&self) -> Option<Entity> {
         match self {
-            Self::Approach { target_id, .. } |
-            Self::Retreat { target_id, .. } |
-            Self::Strafe { target_id, .. } |
-            Self::Attack { target_id } |
-            Self::AimedShot { target_id } |
-            Self::QuickAttack { target_id } |
-            Self::HeavyAttack { target_id } |
-            Self::CoverFire { target_id, .. } |
-            Self::Charge { target_id } |
-            Self::MarkTarget { target_id } |
-            Self::CoordinateAttack { target_id } |
-            Self::Distract { target_id } |
-            Self::Interact { target_id } |
-            Self::Taunt { target_id } => Some(*target_id),
+            Self::Approach { target_id, .. }
+            | Self::Retreat { target_id, .. }
+            | Self::Strafe { target_id, .. }
+            | Self::Attack { target_id }
+            | Self::AimedShot { target_id }
+            | Self::QuickAttack { target_id }
+            | Self::HeavyAttack { target_id }
+            | Self::CoverFire { target_id, .. }
+            | Self::Charge { target_id }
+            | Self::MarkTarget { target_id }
+            | Self::CoordinateAttack { target_id }
+            | Self::Distract { target_id }
+            | Self::Interact { target_id }
+            | Self::Taunt { target_id } => Some(*target_id),
             Self::Revive { ally_id } => Some(*ally_id),
             Self::Heal { target_id } => *target_id,
             _ => None,
@@ -835,10 +971,19 @@ impl ActionStep {
 
     /// Returns `true` if this action has a position component.
     pub fn has_position(&self) -> bool {
-        matches!(self,
-            Self::MoveTo { .. } | Self::TakeCover { position: Some(_), .. } |
-            Self::AoEAttack { .. } | Self::ThrowExplosive { .. } | Self::ThrowSmoke { .. } |
-            Self::SetAmbush { .. } | Self::Regroup { .. } | Self::Throw { .. }
+        matches!(
+            self,
+            Self::MoveTo { .. }
+                | Self::TakeCover {
+                    position: Some(_),
+                    ..
+                }
+                | Self::AoEAttack { .. }
+                | Self::ThrowExplosive { .. }
+                | Self::ThrowSmoke { .. }
+                | Self::SetAmbush { .. }
+                | Self::Regroup { .. }
+                | Self::Throw { .. }
         )
     }
 }
@@ -869,6 +1014,8 @@ pub struct Constraints {
 }
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum EngineError {
     #[error("invalid action: {0}")]
     InvalidAction(String),
@@ -892,6 +1039,7 @@ pub struct Rect {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "op")]
+#[non_exhaustive]
 pub enum DirectorOp {
     Fortify {
         rect: Rect,
@@ -1779,7 +1927,10 @@ mod tests {
             .category(),
             "Movement"
         );
-        assert_eq!(ActionStep::TakeCover { position: None }.category(), "Movement");
+        assert_eq!(
+            ActionStep::TakeCover { position: None }.category(),
+            "Movement"
+        );
         assert_eq!(
             ActionStep::Strafe {
                 target_id: 1,
@@ -1788,15 +1939,27 @@ mod tests {
             .category(),
             "Movement"
         );
-        assert_eq!(ActionStep::Patrol { waypoints: vec![] }.category(), "Movement");
+        assert_eq!(
+            ActionStep::Patrol { waypoints: vec![] }.category(),
+            "Movement"
+        );
     }
 
     #[test]
     fn test_action_step_category_offensive() {
         assert_eq!(ActionStep::Attack { target_id: 1 }.category(), "Offensive");
-        assert_eq!(ActionStep::AimedShot { target_id: 1 }.category(), "Offensive");
-        assert_eq!(ActionStep::QuickAttack { target_id: 1 }.category(), "Offensive");
-        assert_eq!(ActionStep::HeavyAttack { target_id: 1 }.category(), "Offensive");
+        assert_eq!(
+            ActionStep::AimedShot { target_id: 1 }.category(),
+            "Offensive"
+        );
+        assert_eq!(
+            ActionStep::QuickAttack { target_id: 1 }.category(),
+            "Offensive"
+        );
+        assert_eq!(
+            ActionStep::HeavyAttack { target_id: 1 }.category(),
+            "Offensive"
+        );
         assert_eq!(
             ActionStep::AoEAttack {
                 x: 0,
@@ -1806,7 +1969,10 @@ mod tests {
             .category(),
             "Offensive"
         );
-        assert_eq!(ActionStep::ThrowExplosive { x: 0, y: 0 }.category(), "Offensive");
+        assert_eq!(
+            ActionStep::ThrowExplosive { x: 0, y: 0 }.category(),
+            "Offensive"
+        );
         assert_eq!(
             ActionStep::CoverFire {
                 target_id: 1,
@@ -1821,9 +1987,15 @@ mod tests {
     #[test]
     fn test_action_step_category_defensive() {
         assert_eq!(ActionStep::Block.category(), "Defensive");
-        assert_eq!(ActionStep::Dodge { direction: None }.category(), "Defensive");
+        assert_eq!(
+            ActionStep::Dodge { direction: None }.category(),
+            "Defensive"
+        );
         assert_eq!(ActionStep::Parry.category(), "Defensive");
-        assert_eq!(ActionStep::ThrowSmoke { x: 0, y: 0 }.category(), "Defensive");
+        assert_eq!(
+            ActionStep::ThrowSmoke { x: 0, y: 0 }.category(),
+            "Defensive"
+        );
         assert_eq!(ActionStep::Heal { target_id: None }.category(), "Defensive");
         assert_eq!(
             ActionStep::UseDefensiveAbility {
@@ -1863,10 +2035,22 @@ mod tests {
 
     #[test]
     fn test_action_step_category_tactical() {
-        assert_eq!(ActionStep::CallReinforcements { count: 2 }.category(), "Tactical");
-        assert_eq!(ActionStep::MarkTarget { target_id: 1 }.category(), "Tactical");
-        assert_eq!(ActionStep::RequestCover { duration: 3.0 }.category(), "Tactical");
-        assert_eq!(ActionStep::CoordinateAttack { target_id: 1 }.category(), "Tactical");
+        assert_eq!(
+            ActionStep::CallReinforcements { count: 2 }.category(),
+            "Tactical"
+        );
+        assert_eq!(
+            ActionStep::MarkTarget { target_id: 1 }.category(),
+            "Tactical"
+        );
+        assert_eq!(
+            ActionStep::RequestCover { duration: 3.0 }.category(),
+            "Tactical"
+        );
+        assert_eq!(
+            ActionStep::CoordinateAttack { target_id: 1 }.category(),
+            "Tactical"
+        );
         assert_eq!(
             ActionStep::SetAmbush {
                 position: IVec2::zero()
@@ -1995,7 +2179,10 @@ mod tests {
         );
         assert_eq!(ActionStep::Attack { target_id: 1 }.action_name(), "Attack");
         assert_eq!(ActionStep::Reload.action_name(), "Reload");
-        assert_eq!(ActionStep::TakeCover { position: None }.action_name(), "TakeCover");
+        assert_eq!(
+            ActionStep::TakeCover { position: None }.action_name(),
+            "TakeCover"
+        );
         assert_eq!(ActionStep::Wait { duration: 1.0 }.action_name(), "Wait");
         assert_eq!(ActionStep::Block.action_name(), "Block");
         assert_eq!(ActionStep::Parry.action_name(), "Parry");
@@ -2022,11 +2209,23 @@ mod tests {
 
     #[test]
     fn test_action_step_target_entity() {
-        assert_eq!(ActionStep::Attack { target_id: 42 }.target_entity(), Some(42));
-        assert_eq!(ActionStep::AimedShot { target_id: 5 }.target_entity(), Some(5));
-        assert_eq!(ActionStep::MarkTarget { target_id: 10 }.target_entity(), Some(10));
+        assert_eq!(
+            ActionStep::Attack { target_id: 42 }.target_entity(),
+            Some(42)
+        );
+        assert_eq!(
+            ActionStep::AimedShot { target_id: 5 }.target_entity(),
+            Some(5)
+        );
+        assert_eq!(
+            ActionStep::MarkTarget { target_id: 10 }.target_entity(),
+            Some(10)
+        );
         assert_eq!(ActionStep::Charge { target_id: 3 }.target_entity(), Some(3));
-        assert_eq!(ActionStep::Interact { target_id: 99 }.target_entity(), Some(99));
+        assert_eq!(
+            ActionStep::Interact { target_id: 99 }.target_entity(),
+            Some(99)
+        );
         assert_eq!(
             ActionStep::Approach {
                 target_id: 7,

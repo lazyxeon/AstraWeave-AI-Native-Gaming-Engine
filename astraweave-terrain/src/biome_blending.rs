@@ -50,7 +50,11 @@ impl PackedBiomeBlend {
 
         // Take top 4 weights sorted by influence
         let mut sorted: Vec<_> = weights.iter().filter(|w| w.weight > 0.001).collect();
-        sorted.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap());
+        sorted.sort_by(|a, b| {
+            b.weight
+                .partial_cmp(&a.weight)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         for (i, bw) in sorted.iter().take(MAX_BLEND_BIOMES).enumerate() {
             result.biome_ids[i] = bw.biome as u8;
@@ -79,7 +83,7 @@ impl PackedBiomeBlend {
             .weights
             .iter()
             .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
 
@@ -259,8 +263,8 @@ impl BiomeBlender {
                 if nx >= 0 && nx < resolution as i32 && nz >= 0 && nz < resolution as i32 {
                     let idx = nz as usize * resolution + nx as usize;
                     if let Some(&biome) = biome_map.get(idx) {
-                        let pos = world_offset
-                            + Vec2::new(nx as f32 * cell_size, nz as f32 * cell_size);
+                        let pos =
+                            world_offset + Vec2::new(nx as f32 * cell_size, nz as f32 * cell_size);
                         neighbors.push((pos, biome));
                     }
                 }

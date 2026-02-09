@@ -1,3 +1,35 @@
+//! # AstraWeave Render
+//!
+//! GPU rendering pipeline for AstraWeave, built on **wgpu 25**.
+//!
+//! This crate provides a complete rendering solution including:
+//!
+//! - **Core**: [`Renderer`], [`Camera`], [`CameraController`], [`Texture`], [`Vertex`], [`Mesh`]
+//! - **Materials**: PBR material system with TOML-driven asset pipeline
+//!   ([`MaterialManager`], [`MaterialGpuExtended`] with clearcoat, anisotropy, SSS)
+//! - **Lighting**: Clustered forward rendering, MegaLights GPU culling, CSM shadows
+//! - **Post-Processing**: Bloom, tonemapping, TAA, motion blur, DoF, SSAO, color grading
+//! - **Animation**: GPU skinning ([`Skeleton`], [`AnimationClip`], [`JointPalette`])
+//! - **Mesh Optimization**: Vertex compression (37.5% memory reduction), LOD generation, instancing
+//! - **Environment**: Sky rendering, day/night cycle, weather system, water (Gerstner waves)
+//! - **Advanced**: Deferred rendering ([`GBuffer`]), decals, GPU particles, biome materials
+//! - **Streaming**: Texture streaming, GPU memory residency management
+//!
+//! # Feature Flags
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `postfx` | Post-processing effects (default) |
+//! | `textures` | Texture loading (default) |
+//! | `bloom` | HDR bloom pipeline |
+//! | `ibl` | Image-based lighting |
+//! | `megalights` | GPU-accelerated light culling |
+//! | `deferred` | Deferred rendering path |
+//! | `gpu-particles` | GPU particle system |
+//! | `decals` | Projected decal system |
+//! | `advanced-post` | TAA, motion blur, DoF, color grading |
+//! | `ssao` | Screen-space ambient occlusion |
+
 pub mod camera;
 pub mod clustered;
 pub mod clustered_forward; // Complete clustered forward rendering
@@ -5,6 +37,7 @@ pub mod clustered_megalights; // MegaLights: GPU-accelerated light culling (Phas
 pub mod debug_quad;
 pub mod depth;
 pub mod environment;
+pub mod error; // Typed error types for the rendering pipeline
 pub mod gi; // Global Illumination (VXGI)
 pub mod ibl; // image-based lighting manager
 pub mod mesh; // cpu mesh structures + utils
@@ -32,6 +65,14 @@ pub mod mesh_gltf; // glTF loader
 pub mod mesh_obj;
 pub mod residency;
 pub mod terrain_material;
+pub mod hdri_catalog;
+pub mod biome_material;
+pub mod asset_index;
+pub mod biome_detector;
+pub mod biome_transition;
+pub mod biome_audio;
+pub mod scene_environment;
+pub mod weather_system;
 pub mod texture_streaming; // Texture streaming with LRU cache and priority-based loading // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
 
 #[cfg(feature = "skinning-gpu")]
@@ -59,6 +100,7 @@ pub use camera::{Camera, CameraController};
 pub use environment::{
     SkyConfig, SkyRenderer, TimeOfDay, WeatherParticles, WeatherSystem, WeatherType,
 };
+pub use error::{RenderError, RenderResult};
 pub use renderer::Renderer;
 pub use terrain::{TerrainMesh, TerrainRenderer, TerrainVertex, VegetationRenderInstance};
 pub use texture::Texture;
@@ -111,6 +153,14 @@ pub use post::{BloomConfig, BloomPipeline};
 pub use residency::ResidencyManager;
 pub use terrain_material::{
     TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
+};
+pub use hdri_catalog::{DayPeriod, HdriCatalog, HdriEntry};
+pub use biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
+pub use asset_index::{AssetIndex, MaterialSetEntry, TextureEntry, HdriRef as AssetHdriRef};
+pub use biome_detector::{BiomeDetector, BiomeDetectorConfig, BiomeTransition};
+pub use biome_transition::{BiomeVisuals, EasingFunction, TransitionConfig, TransitionEffect};
+pub use scene_environment::{
+    SceneEnvironment, SceneEnvironmentUBO, WGSL_FOG_FUNCTIONS, WGSL_SCENE_ENVIRONMENT,
 };
 pub use texture_streaming::{TextureStreamingManager, TextureStreamingStats};
 pub use transparency::{create_blend_state, BlendMode, TransparencyManager, TransparentInstance};

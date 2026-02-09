@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! LLM performance optimization system
 //!
 //! This crate provides advanced optimization techniques for LLM usage including:

@@ -133,8 +133,6 @@ impl RepairProgressBar {
             });
         });
     }
-
-
 }
 
 impl Default for RepairProgressBar {

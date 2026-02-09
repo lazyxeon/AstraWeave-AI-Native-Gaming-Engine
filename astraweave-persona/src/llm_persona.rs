@@ -90,6 +90,7 @@ impl Default for PersonaLlmConfig {
 
 /// Response style preferences
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ResponseStyle {
     /// Natural conversational style
     Conversational,
@@ -146,6 +147,7 @@ impl Default for PersonalityState {
 
 /// Emotional states for the persona
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum EmotionalState {
     Joyful,
     Excited,
@@ -288,6 +290,7 @@ impl Default for PromptSettings {
 
 /// Strategy for injecting context into prompts
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ContextInjectionStrategy {
     /// Full context with memories
     Full,

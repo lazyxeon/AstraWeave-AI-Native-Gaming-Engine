@@ -12,11 +12,7 @@ use std::panic;
 /// Helper to verify a closure doesn't panic
 fn should_not_panic<F: FnOnce() + panic::UnwindSafe>(name: &str, f: F) {
     let result = panic::catch_unwind(f);
-    assert!(
-        result.is_ok(),
-        "{} should not panic on invalid input",
-        name
-    );
+    assert!(result.is_ok(), "{} should not panic on invalid input", name);
 }
 
 /// Create a valid baseline WorldSnapshot for testing

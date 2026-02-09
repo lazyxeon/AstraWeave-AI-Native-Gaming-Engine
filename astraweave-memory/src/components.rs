@@ -172,6 +172,7 @@ pub struct SocialRelationship {
 
 /// Types of social relationships
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum RelationshipType {
     Friend,
     Colleague,
@@ -213,6 +214,7 @@ pub struct SocialInteraction {
 
 /// Types of social interactions
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum InteractionType {
     Conversation,
     Collaboration,
@@ -331,6 +333,7 @@ pub struct MemoryOperation {
 
 /// Types of memory operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum MemoryOperationType {
     Create,
     Retrieve,
@@ -537,7 +540,7 @@ impl LearningMemoryComponent {
             .learning_domains
             .iter_mut()
             .find(|d| d.name == domain_name)
-            .unwrap();
+            .expect("domain was just created above");
 
         domain.practice_sessions.push(session);
         domain.last_practice = chrono::Utc::now();

@@ -50,6 +50,7 @@ pub struct CoordinatorConfig {
 
 /// Resource allocation strategies
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ResourceStrategy {
     FirstCome,     // First agent to request gets resources
     Priority,      // Based on agent priority and task priority
@@ -93,6 +94,7 @@ pub struct RoutingRule {
 
 /// Action to take when routing rule matches
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum RoutingAction {
     Allow,
     Block,

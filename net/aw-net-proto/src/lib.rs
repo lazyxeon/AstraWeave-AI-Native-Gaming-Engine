@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use rand::{distr::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -19,6 +20,7 @@ impl SessionKey {
 
 /// Simple wire messages (focus on MVP end-to-end).
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ClientToServer {
     Hello {
         protocol: u16,
@@ -54,6 +56,7 @@ pub enum ClientToServer {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ServerToClient {
     HelloAck {
         protocol: u16,
@@ -92,6 +95,8 @@ pub enum ServerToClient {
 }
 
 #[derive(Debug, Error)]
+#[non_exhaustive]
+#[must_use]
 pub enum WireError {
     #[error("protocol mismatch (client={client}, server={server})")]
     ProtocolMismatch { client: u16, server: u16 },
@@ -100,6 +105,7 @@ pub enum WireError {
 }
 
 #[derive(Clone, Copy)]
+#[non_exhaustive]
 pub enum Codec {
     /// Compact CBOR-like; great for small messages.
     PostcardLz4,

@@ -17,6 +17,8 @@ use crate::waterfall::{WaterfallConfig, WaterfallSystem};
 
 /// Error types for water effects operations
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+#[must_use]
 pub enum WaterEffectsError {
     /// Invalid configuration value
     InvalidConfig { field: String, reason: String },
@@ -54,6 +56,7 @@ pub type WaterEffectsResult<T> = Result<T, WaterEffectsError>;
 
 /// Quality preset for water effects
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum WaterQualityPreset {
     /// Minimal effects for low-end hardware
     Low,

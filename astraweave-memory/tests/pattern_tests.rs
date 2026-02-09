@@ -4,9 +4,7 @@ use astraweave_memory::episode::{
     ActionResult, CompanionResponse, Episode as GameEpisode, EpisodeCategory, EpisodeOutcome,
     Observation, PlayerAction,
 };
-use astraweave_memory::{
-    MemoryStorage, PatternDetector, PlaystylePattern, ProfileBuilder,
-};
+use astraweave_memory::{MemoryStorage, PatternDetector, PlaystylePattern, ProfileBuilder};
 
 fn create_combat_episode(
     id: &str,

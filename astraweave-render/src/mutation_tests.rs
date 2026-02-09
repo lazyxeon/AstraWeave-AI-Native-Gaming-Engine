@@ -648,7 +648,7 @@ mod clustered_tests {
             CpuLight { pos: Vec3::new(5.0, 5.0, 20.0), radius: 5.0 },
         ];
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        let (counts, indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
+        let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
         
         // Both lights should contribute to some clusters
         let total_count: u32 = counts.iter().sum();
@@ -1451,7 +1451,7 @@ mod color_space_tests {
 
 #[cfg(test)]
 mod boundary_condition_tests {
-    use crate::environment::{TimeOfDay, WeatherSystem, WeatherType};
+    use crate::environment::{TimeOfDay, WeatherSystem};
     use crate::camera::Camera;
     use glam::Vec3;
 

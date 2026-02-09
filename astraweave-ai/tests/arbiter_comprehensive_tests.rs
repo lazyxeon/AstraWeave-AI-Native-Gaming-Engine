@@ -96,7 +96,7 @@ impl OrchestratorAsync for MockLlmOrch {
         tokio::time::sleep(std::time::Duration::from_millis(self.delay_ms)).await;
         Ok(self.plan.clone())
     }
-    
+
     fn name(&self) -> &'static str {
         "MockLlmOrch"
     }

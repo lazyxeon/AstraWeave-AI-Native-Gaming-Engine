@@ -871,9 +871,9 @@ mod tests {
             .unwrap();
 
         assert!(!history.get_recent_messages(10).is_empty());
-        
+
         history.clear();
-        
+
         assert_eq!(history.get_recent_messages(10).len(), 0);
         assert_eq!(history.get_total_tokens(), 0);
     }
@@ -908,7 +908,7 @@ mod tests {
         let config = ContextConfig::default();
         let json = serde_json::to_string(&config).unwrap();
         let deserialized: ContextConfig = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(config.max_tokens, deserialized.max_tokens);
         assert_eq!(config.sliding_window_size, deserialized.sliding_window_size);
     }
@@ -923,7 +923,7 @@ mod tests {
             OverflowStrategy::TruncateStart,
             OverflowStrategy::TruncateMiddle,
         ];
-        
+
         for strategy in strategies {
             let mut config = ContextConfig::default();
             config.overflow_strategy = strategy;
@@ -936,7 +936,7 @@ mod tests {
     async fn test_build_context_with_summary() {
         let mut config = ContextConfig::default();
         config.max_tokens = 1000;
-        
+
         let history = ConversationHistory::new(config);
 
         // Manually set a summary
@@ -961,7 +961,7 @@ mod tests {
 
         let mut preserved_msg = Message::new(Role::System, "Preserved message".to_string());
         preserved_msg.preserve = true;
-        
+
         {
             let mut messages = history.messages.write();
             messages.push_back(preserved_msg);
@@ -1029,7 +1029,7 @@ mod tests {
             avg_message_tokens: 50.0,
             processing_time_ms: 100,
         };
-        
+
         let cloned = metrics.clone();
         assert_eq!(metrics.total_messages, cloned.total_messages);
         assert_eq!(metrics.prune_count, cloned.prune_count);
@@ -1054,7 +1054,7 @@ mod tests {
     #[tokio::test]
     async fn test_role_enum_values() {
         let roles = vec![Role::User, Role::Assistant, Role::System, Role::Function];
-        
+
         for role in roles {
             let message = Message::new(role, "Test".to_string());
             assert_eq!(message.role, role);

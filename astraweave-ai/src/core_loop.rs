@@ -21,6 +21,7 @@ use crate::orchestrator::{Orchestrator, RuleOrchestrator};
 
 /// Planner mode selection for AI entities.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PlannerMode {
     /// Use rule-based orchestrator (smoke + advance logic).
     Rule,
@@ -72,7 +73,11 @@ impl PlannerMode {
     /// Get all available planner modes.
     #[must_use]
     pub fn all() -> &'static [PlannerMode] {
-        &[PlannerMode::Rule, PlannerMode::BehaviorTree, PlannerMode::GOAP]
+        &[
+            PlannerMode::Rule,
+            PlannerMode::BehaviorTree,
+            PlannerMode::GOAP,
+        ]
     }
 }
 
@@ -695,7 +700,10 @@ mod tests {
     #[test]
     fn test_controller_display_with_policy() {
         let controller = CAiController::with_policy(PlannerMode::GOAP, "combat_policy");
-        assert_eq!(format!("{}", controller), "CAiController(GOAP, policy=combat_policy)");
+        assert_eq!(
+            format!("{}", controller),
+            "CAiController(GOAP, policy=combat_policy)"
+        );
     }
 
     #[test]

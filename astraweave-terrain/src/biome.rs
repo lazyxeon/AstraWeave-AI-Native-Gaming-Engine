@@ -8,6 +8,7 @@ use std::str::FromStr;
 
 /// Types of biomes available in the world
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BiomeType {
     Grassland,
     Desert,
@@ -32,6 +33,26 @@ impl BiomeType {
             BiomeType::Beach => "beach",
             BiomeType::River => "river",
         }
+    }
+
+    /// Get the materials directory path for this biome, relative to the assets root.
+    ///
+    /// # Example
+    /// ```
+    /// # use astraweave_terrain::biome::BiomeType;
+    /// # use std::path::Path;
+    /// assert_eq!(BiomeType::Forest.material_dir(), Path::new("assets/materials/forest"));
+    /// ```
+    pub fn material_dir(&self) -> std::path::PathBuf {
+        std::path::PathBuf::from(format!("assets/materials/{}", self.as_str()))
+    }
+
+    /// Get the materials directory path for the generic terrain fallback.
+    ///
+    /// Used when no biome-specific material set is available or during
+    /// cross-biome blending transitions.
+    pub fn terrain_fallback_material_dir() -> std::path::PathBuf {
+        std::path::PathBuf::from("assets/materials/terrain")
     }
 
     /// Parse from string (case-insensitive)
@@ -159,6 +180,7 @@ impl Default for BiomeSky {
 
 /// Types of precipitation
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum PrecipitationType {
     None,
     Rain,
@@ -520,22 +542,17 @@ impl BiomeConfig {
             },
             vegetation: BiomeVegetation {
                 density: 0.15,
-                vegetation_types: vec![
-                    VegetationType {
-                        name: "frozen_shrub".to_string(),
-                        weight: 1.0,
-                        model_path: "assets/models/frozen_shrub.glb".to_string(),
-                        scale_range: (0.5, 1.0),
-                        slope_tolerance: 25.0,
-                    },
-                ],
+                vegetation_types: vec![VegetationType {
+                    name: "frozen_shrub".to_string(),
+                    weight: 1.0,
+                    model_path: "assets/models/frozen_shrub.glb".to_string(),
+                    scale_range: (0.5, 1.0),
+                    slope_tolerance: 25.0,
+                }],
                 size_variation: (0.4, 1.0),
                 random_rotation: true,
             },
-            resource_weights: vec![
-                (ResourceKind::Ore, 1.5),
-                (ResourceKind::Crystal, 2.0),
-            ],
+            resource_weights: vec![(ResourceKind::Ore, 1.5), (ResourceKind::Crystal, 2.0)],
             base_resource_amount: (1, 3),
             resource_respawn: (60.0, 240.0),
             ground_textures: vec![
@@ -587,10 +604,7 @@ impl BiomeConfig {
                 size_variation: (0.6, 1.4),
                 random_rotation: true,
             },
-            resource_weights: vec![
-                (ResourceKind::Fiber, 3.0),
-                (ResourceKind::Wood, 1.5),
-            ],
+            resource_weights: vec![(ResourceKind::Fiber, 3.0), (ResourceKind::Wood, 1.5)],
             base_resource_amount: (2, 5),
             resource_respawn: (30.0, 90.0),
             ground_textures: vec![
@@ -623,26 +637,20 @@ impl BiomeConfig {
             },
             vegetation: BiomeVegetation {
                 density: 0.1,
-                vegetation_types: vec![
-                    VegetationType {
-                        name: "palm_tree".to_string(),
-                        weight: 1.0,
-                        model_path: "assets/models/palm_tree.glb".to_string(),
-                        scale_range: (0.8, 1.3),
-                        slope_tolerance: 15.0,
-                    },
-                ],
+                vegetation_types: vec![VegetationType {
+                    name: "palm_tree".to_string(),
+                    weight: 1.0,
+                    model_path: "assets/models/palm_tree.glb".to_string(),
+                    scale_range: (0.8, 1.3),
+                    slope_tolerance: 15.0,
+                }],
                 size_variation: (0.7, 1.2),
                 random_rotation: true,
             },
-            resource_weights: vec![
-                (ResourceKind::Fiber, 0.5),
-            ],
+            resource_weights: vec![(ResourceKind::Fiber, 0.5)],
             base_resource_amount: (1, 2),
             resource_respawn: (60.0, 180.0),
-            ground_textures: vec![
-                "assets/textures/sand_diffuse.png".to_string(),
-            ],
+            ground_textures: vec!["assets/textures/sand_diffuse.png".to_string()],
             priority: 7,
         }
     }
@@ -688,10 +696,7 @@ impl BiomeConfig {
                 size_variation: (0.6, 1.3),
                 random_rotation: true,
             },
-            resource_weights: vec![
-                (ResourceKind::Fiber, 2.0),
-                (ResourceKind::Wood, 1.0),
-            ],
+            resource_weights: vec![(ResourceKind::Fiber, 2.0), (ResourceKind::Wood, 1.0)],
             base_resource_amount: (2, 4),
             resource_respawn: (40.0, 120.0),
             ground_textures: vec![

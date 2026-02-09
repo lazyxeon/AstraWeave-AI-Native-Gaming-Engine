@@ -4,6 +4,7 @@ use egui::{Color32, Vec2};
 
 /// Animation state machine
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AnimationState {
     /// Animation not started
     Idle,

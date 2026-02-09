@@ -322,6 +322,7 @@ pub struct AssetRef {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AssetType {
     Mesh,
     Texture,
@@ -332,6 +333,7 @@ pub enum AssetType {
 
 /// Cell state for streaming
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum CellState {
     Unloaded,
     Loading,

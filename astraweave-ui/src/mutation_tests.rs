@@ -10,59 +10,103 @@ mod easing_tests {
     fn test_ease_out_cubic_at_zero() {
         // t=0 should return 0
         let result = ease_out_cubic(0.0);
-        assert!(result.abs() < 0.001, "ease_out_cubic(0) should be 0, got {}", result);
+        assert!(
+            result.abs() < 0.001,
+            "ease_out_cubic(0) should be 0, got {}",
+            result
+        );
     }
 
     #[test]
     fn test_ease_out_cubic_at_one() {
         // t=1 should return 1
         let result = ease_out_cubic(1.0);
-        assert!((result - 1.0).abs() < 0.001, "ease_out_cubic(1) should be 1, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 0.001,
+            "ease_out_cubic(1) should be 1, got {}",
+            result
+        );
     }
 
     #[test]
     fn test_ease_out_cubic_midpoint() {
         // t=0.5 should be > 0.5 (fast start)
         let mid = ease_out_cubic(0.5);
-        assert!(mid > 0.5, "ease_out_cubic(0.5) should be > 0.5, got {}", mid);
-        assert!(mid < 1.0, "ease_out_cubic(0.5) should be < 1.0, got {}", mid);
+        assert!(
+            mid > 0.5,
+            "ease_out_cubic(0.5) should be > 0.5, got {}",
+            mid
+        );
+        assert!(
+            mid < 1.0,
+            "ease_out_cubic(0.5) should be < 1.0, got {}",
+            mid
+        );
     }
 
     #[test]
     fn test_ease_in_out_quad_at_zero() {
         // t=0 should return 0
         let result = ease_in_out_quad(0.0);
-        assert!(result.abs() < 0.001, "ease_in_out_quad(0) should be 0, got {}", result);
+        assert!(
+            result.abs() < 0.001,
+            "ease_in_out_quad(0) should be 0, got {}",
+            result
+        );
     }
 
     #[test]
     fn test_ease_in_out_quad_at_one() {
         // t=1 should return 1
         let result = ease_in_out_quad(1.0);
-        assert!((result - 1.0).abs() < 0.001, "ease_in_out_quad(1) should be 1, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 0.001,
+            "ease_in_out_quad(1) should be 1, got {}",
+            result
+        );
     }
 
     #[test]
     fn test_ease_in_out_quad_midpoint() {
         // t=0.5 should be exactly 0.5
         let result = ease_in_out_quad(0.5);
-        assert!((result - 0.5).abs() < 0.001, "ease_in_out_quad(0.5) should be 0.5, got {}", result);
+        assert!(
+            (result - 0.5).abs() < 0.001,
+            "ease_in_out_quad(0.5) should be 0.5, got {}",
+            result
+        );
     }
 
     #[test]
     fn test_ease_in_out_quad_first_half() {
         // t=0.25 should be < 0.25 (slow start)
         let quarter = ease_in_out_quad(0.25);
-        assert!(quarter < 0.25, "ease_in_out_quad(0.25) should be < 0.25, got {}", quarter);
-        assert!(quarter > 0.0, "ease_in_out_quad(0.25) should be > 0, got {}", quarter);
+        assert!(
+            quarter < 0.25,
+            "ease_in_out_quad(0.25) should be < 0.25, got {}",
+            quarter
+        );
+        assert!(
+            quarter > 0.0,
+            "ease_in_out_quad(0.25) should be > 0, got {}",
+            quarter
+        );
     }
 
     #[test]
     fn test_ease_in_out_quad_second_half() {
         // t=0.75 should be > 0.75 (slow end)
         let three_quarters = ease_in_out_quad(0.75);
-        assert!(three_quarters > 0.75, "ease_in_out_quad(0.75) should be > 0.75, got {}", three_quarters);
-        assert!(three_quarters < 1.0, "ease_in_out_quad(0.75) should be < 1.0, got {}", three_quarters);
+        assert!(
+            three_quarters > 0.75,
+            "ease_in_out_quad(0.75) should be > 0.75, got {}",
+            three_quarters
+        );
+        assert!(
+            three_quarters < 1.0,
+            "ease_in_out_quad(0.75) should be < 1.0, got {}",
+            three_quarters
+        );
     }
 }
 
@@ -95,7 +139,10 @@ mod health_animation_tests {
         assert_eq!(anim.target, 50.0);
         assert_eq!(anim.animation_time, 0.0);
         // Flash should trigger on damage
-        assert!(anim.flash_timer > 0.0, "Flash timer should be set on damage");
+        assert!(
+            anim.flash_timer > 0.0,
+            "Flash timer should be set on damage"
+        );
     }
 
     #[test]
@@ -105,7 +152,10 @@ mod health_animation_tests {
 
         assert_eq!(anim.target, 100.0);
         // Flash should NOT trigger on heal
-        assert_eq!(anim.flash_timer, 0.0, "Flash timer should NOT be set on heal");
+        assert_eq!(
+            anim.flash_timer, 0.0,
+            "Flash timer should NOT be set on heal"
+        );
     }
 
     #[test]
@@ -117,8 +167,14 @@ mod health_animation_tests {
         anim.update(0.1);
 
         // Visual should move toward target
-        assert!(anim.current_visual < 100.0, "Visual should decrease toward target");
-        assert!(anim.current_visual > 50.0, "Visual should not yet reach target");
+        assert!(
+            anim.current_visual < 100.0,
+            "Visual should decrease toward target"
+        );
+        assert!(
+            anim.current_visual > 50.0,
+            "Visual should not yet reach target"
+        );
     }
 
     #[test]
@@ -143,7 +199,10 @@ mod health_animation_tests {
 
         // Initially flash is at max
         let initial_alpha = anim.flash_alpha();
-        assert!(initial_alpha > 0.0, "Flash alpha should be positive after damage");
+        assert!(
+            initial_alpha > 0.0,
+            "Flash alpha should be positive after damage"
+        );
         assert!(initial_alpha <= 0.6, "Flash alpha should be <= 0.6");
     }
 
@@ -156,7 +215,10 @@ mod health_animation_tests {
         // After time passes, flash decays
         anim.update(0.1);
         let later_alpha = anim.flash_alpha();
-        assert!(later_alpha < initial_alpha, "Flash alpha should decay over time");
+        assert!(
+            later_alpha < initial_alpha,
+            "Flash alpha should decay over time"
+        );
     }
 
     #[test]
@@ -164,7 +226,10 @@ mod health_animation_tests {
         let mut anim = HealthAnimation::new(50.0);
         anim.set_target(100.0);
 
-        assert!(anim.is_healing(), "is_healing should be true when target > current");
+        assert!(
+            anim.is_healing(),
+            "is_healing should be true when target > current"
+        );
     }
 
     #[test]
@@ -174,7 +239,10 @@ mod health_animation_tests {
 
         // After animation completes
         anim.update(1.0);
-        assert!(!anim.is_healing(), "is_healing should be false after animation completes");
+        assert!(
+            !anim.is_healing(),
+            "is_healing should be false after animation completes"
+        );
     }
 
     #[test]
@@ -267,7 +335,10 @@ mod damage_number_tests {
 
         // At age > 0, shake oscillates within amplitude
         let shake = dmg.calculate_shake(0.1);
-        assert!(shake.abs() < dmg.shake_amplitude, "Shake should be within amplitude");
+        assert!(
+            shake.abs() < dmg.shake_amplitude,
+            "Shake should be within amplitude"
+        );
     }
 
     #[test]
@@ -316,7 +387,11 @@ mod quest_tests {
             objectives: vec![],
         };
 
-        assert_eq!(quest.completion(), 0.0, "Empty quest should have 0 completion");
+        assert_eq!(
+            quest.completion(),
+            0.0,
+            "Empty quest should have 0 completion"
+        );
     }
 
     #[test]
@@ -341,7 +416,11 @@ mod quest_tests {
             ],
         };
 
-        assert_eq!(quest.completion(), 0.0, "Quest with no complete objectives should be 0");
+        assert_eq!(
+            quest.completion(),
+            0.0,
+            "Quest with no complete objectives should be 0"
+        );
     }
 
     #[test]
@@ -396,7 +475,11 @@ mod quest_tests {
             ],
         };
 
-        assert_eq!(quest.completion(), 1.0, "Quest with all complete should be 1.0");
+        assert_eq!(
+            quest.completion(),
+            1.0,
+            "Quest with all complete should be 1.0"
+        );
     }
 
     #[test]
@@ -436,7 +519,10 @@ mod quest_tests {
                 progress: None,
             }],
         };
-        assert!(quest.is_complete(), "Quest with all objectives done should be complete");
+        assert!(
+            quest.is_complete(),
+            "Quest with all objectives done should be complete"
+        );
     }
 
     #[test]
@@ -486,21 +572,34 @@ mod ping_marker_tests {
     fn test_ping_marker_is_active_during() {
         let ping = PingMarker::new((0.0, 0.0), 1.0);
         assert!(ping.is_active(2.0), "Ping should be active during duration");
-        assert!(ping.is_active(3.9), "Ping should be active just before expiry");
+        assert!(
+            ping.is_active(3.9),
+            "Ping should be active just before expiry"
+        );
     }
 
     #[test]
     fn test_ping_marker_is_inactive_after_duration() {
         let ping = PingMarker::new((0.0, 0.0), 1.0);
         // Duration is 3.0, so at time 1.0 + 3.0 + 0.1 = 4.1 it should be inactive
-        assert!(!ping.is_active(4.1), "Ping should be inactive after duration");
-        assert!(!ping.is_active(10.0), "Ping should be inactive long after duration");
+        assert!(
+            !ping.is_active(4.1),
+            "Ping should be inactive after duration"
+        );
+        assert!(
+            !ping.is_active(10.0),
+            "Ping should be inactive long after duration"
+        );
     }
 
     #[test]
     fn test_ping_marker_age_normalized_at_spawn() {
         let ping = PingMarker::new((0.0, 0.0), 0.0);
-        assert_eq!(ping.age_normalized(0.0), 0.0, "Age normalized at spawn should be 0");
+        assert_eq!(
+            ping.age_normalized(0.0),
+            0.0,
+            "Age normalized at spawn should be 0"
+        );
     }
 
     #[test]
@@ -517,13 +616,21 @@ mod ping_marker_tests {
     #[test]
     fn test_ping_marker_age_normalized_at_end() {
         let ping = PingMarker::new((0.0, 0.0), 0.0);
-        assert_eq!(ping.age_normalized(3.0), 1.0, "Age normalized at end should be 1.0");
+        assert_eq!(
+            ping.age_normalized(3.0),
+            1.0,
+            "Age normalized at end should be 1.0"
+        );
     }
 
     #[test]
     fn test_ping_marker_age_normalized_clamped() {
         let ping = PingMarker::new((0.0, 0.0), 0.0);
-        assert_eq!(ping.age_normalized(10.0), 1.0, "Age normalized should clamp at 1.0");
+        assert_eq!(
+            ping.age_normalized(10.0),
+            1.0,
+            "Age normalized should clamp at 1.0"
+        );
     }
 }
 
@@ -585,13 +692,19 @@ mod hud_state_tests {
     #[test]
     fn test_hud_state_default_show_health_bars() {
         let state = HudState::default();
-        assert!(state.show_health_bars, "Health bars should be shown by default");
+        assert!(
+            state.show_health_bars,
+            "Health bars should be shown by default"
+        );
     }
 
     #[test]
     fn test_hud_state_default_show_objectives() {
         let state = HudState::default();
-        assert!(state.show_objectives, "Objectives should be shown by default");
+        assert!(
+            state.show_objectives,
+            "Objectives should be shown by default"
+        );
     }
 
     #[test]
@@ -609,13 +722,19 @@ mod hud_state_tests {
     #[test]
     fn test_hud_state_default_quest_tracker_not_collapsed() {
         let state = HudState::default();
-        assert!(!state.quest_tracker_collapsed, "Quest tracker should not be collapsed by default");
+        assert!(
+            !state.quest_tracker_collapsed,
+            "Quest tracker should not be collapsed by default"
+        );
     }
 
     #[test]
     fn test_hud_state_default_minimap_rotation_off() {
         let state = HudState::default();
-        assert!(!state.minimap_rotation, "Minimap rotation should be off by default");
+        assert!(
+            !state.minimap_rotation,
+            "Minimap rotation should be off by default"
+        );
     }
 
     #[test]
@@ -734,14 +853,20 @@ mod accessibility_tests {
     fn test_accessibility_settings_set_ui_scale_clamp_low() {
         let mut settings = AccessibilitySettings::default();
         settings.set_ui_scale(0.5);
-        assert_eq!(settings.ui_scale, 0.8, "UI scale should clamp to minimum 0.8");
+        assert_eq!(
+            settings.ui_scale, 0.8,
+            "UI scale should clamp to minimum 0.8"
+        );
     }
 
     #[test]
     fn test_accessibility_settings_set_ui_scale_clamp_high() {
         let mut settings = AccessibilitySettings::default();
         settings.set_ui_scale(2.0);
-        assert_eq!(settings.ui_scale, 1.5, "UI scale should clamp to maximum 1.5");
+        assert_eq!(
+            settings.ui_scale, 1.5,
+            "UI scale should clamp to maximum 1.5"
+        );
     }
 
     #[test]
@@ -874,8 +999,8 @@ mod menu_tests {
 mod behavioral_correctness_tests {
     use crate::hud::easing::{ease_in_out_quad, ease_out_cubic};
     use crate::hud::HealthAnimation;
-    use crate::{AccessibilitySettings, ColorblindMode};
     use crate::menu::QualityPreset;
+    use crate::{AccessibilitySettings, ColorblindMode};
 
     #[test]
     fn test_easing_functions_continuous() {
@@ -884,13 +1009,17 @@ mod behavioral_correctness_tests {
         for i in 0..steps {
             let t1 = i as f32 / steps as f32;
             let t2 = (i + 1) as f32 / steps as f32;
-            
+
             let v1 = ease_out_cubic(t1);
             let v2 = ease_out_cubic(t2);
-            
+
             // Maximum reasonable jump for smooth easing
-            assert!((v2 - v1).abs() < 0.1, 
-                "Easing should be continuous: jump {} at t={}", (v2-v1).abs(), t1);
+            assert!(
+                (v2 - v1).abs() < 0.1,
+                "Easing should be continuous: jump {} at t={}",
+                (v2 - v1).abs(),
+                t1
+            );
         }
     }
 
@@ -899,13 +1028,18 @@ mod behavioral_correctness_tests {
         // Behavioral: easing functions should be monotonically increasing
         let steps = 100;
         let mut prev = 0.0;
-        
+
         for i in 1..=steps {
             let t = i as f32 / steps as f32;
             let v = ease_out_cubic(t);
-            
-            assert!(v >= prev, 
-                "ease_out_cubic should be monotonically increasing: {} < {} at t={}", v, prev, t);
+
+            assert!(
+                v >= prev,
+                "ease_out_cubic should be monotonically increasing: {} < {} at t={}",
+                v,
+                prev,
+                t
+            );
             prev = v;
         }
     }
@@ -915,14 +1049,22 @@ mod behavioral_correctness_tests {
         // Behavioral: easing output should stay in [0, 1] for input in [0, 1]
         for i in 0..=100 {
             let t = i as f32 / 100.0;
-            
+
             let cubic = ease_out_cubic(t);
             let quad = ease_in_out_quad(t);
-            
-            assert!(cubic >= 0.0 && cubic <= 1.0, 
-                "ease_out_cubic({}) = {} should be in [0,1]", t, cubic);
-            assert!(quad >= 0.0 && quad <= 1.0, 
-                "ease_in_out_quad({}) = {} should be in [0,1]", t, quad);
+
+            assert!(
+                cubic >= 0.0 && cubic <= 1.0,
+                "ease_out_cubic({}) = {} should be in [0,1]",
+                t,
+                cubic
+            );
+            assert!(
+                quad >= 0.0 && quad <= 1.0,
+                "ease_in_out_quad({}) = {} should be in [0,1]",
+                t,
+                quad
+            );
         }
     }
 
@@ -930,9 +1072,9 @@ mod behavioral_correctness_tests {
     fn test_health_animation_damage_triggers_flash() {
         // Behavioral: taking damage should trigger flash effect
         let mut anim = HealthAnimation::new(100.0);
-        
+
         anim.set_target(50.0); // Take damage
-        
+
         assert!(anim.flash_timer > 0.0, "Damage should trigger flash");
     }
 
@@ -940,9 +1082,9 @@ mod behavioral_correctness_tests {
     fn test_health_animation_heal_no_flash() {
         // Behavioral: healing should not trigger flash
         let mut anim = HealthAnimation::new(50.0);
-        
+
         anim.set_target(100.0); // Heal
-        
+
         // Flash should not trigger on heal (or be very short)
         // Note: implementation may vary, so we just check it doesn't crash
     }
@@ -952,26 +1094,36 @@ mod behavioral_correctness_tests {
         // Behavioral: after update, current should move toward target
         let mut anim = HealthAnimation::new(100.0);
         anim.set_target(50.0);
-        
+
         let before = anim.current_visual;
         anim.update(0.1); // 100ms update
         let after = anim.current_visual;
-        
+
         // Should move toward target (50)
-        assert!(after <= before, 
-            "Health should animate toward target: {} should be <= {}", after, before);
+        assert!(
+            after <= before,
+            "Health should animate toward target: {} should be <= {}",
+            after,
+            before
+        );
     }
 
     #[test]
     fn test_accessibility_ui_scale_clamped() {
         // Behavioral: UI scale should be clamped to valid range
         let mut settings = AccessibilitySettings::default();
-        
+
         settings.set_ui_scale(0.1); // Too low
-        assert!(settings.ui_scale >= 0.8, "UI scale should clamp to minimum 0.8");
-        
+        assert!(
+            settings.ui_scale >= 0.8,
+            "UI scale should clamp to minimum 0.8"
+        );
+
         settings.set_ui_scale(5.0); // Too high
-        assert!(settings.ui_scale <= 1.5, "UI scale should clamp to maximum 1.5");
+        assert!(
+            settings.ui_scale <= 1.5,
+            "UI scale should clamp to maximum 1.5"
+        );
     }
 
     #[test]
@@ -980,23 +1132,23 @@ mod behavioral_correctness_tests {
         let mut settings = AccessibilitySettings::default();
         settings.ui_scale = 1.2;
         settings.large_text = false;
-        
+
         let scale1 = settings.font_scale();
-        
+
         settings.large_text = true;
         let scale2 = settings.font_scale();
-        
+
         assert!(scale2 > scale1, "Large text should increase font scale");
     }
 
     #[test]
     fn test_colorblind_mode_none_preserves_color() {
         // Behavioral: None mode should not modify colors
-        use crate::accessibility::{transform_color, colors};
-        
+        use crate::accessibility::{colors, transform_color};
+
         let original = colors::HEALTH_FULL;
         let transformed = transform_color(original, ColorblindMode::None);
-        
+
         assert_eq!(original, transformed, "None mode should preserve color");
     }
 
@@ -1026,11 +1178,10 @@ mod behavioral_correctness_tests {
             ColorblindMode::Tritanopia,
             ColorblindMode::HighContrast,
         ];
-        
+
         for i in 0..modes.len() {
-            for j in (i+1)..modes.len() {
-                assert_ne!(modes[i], modes[j], 
-                    "Colorblind modes should be distinct");
+            for j in (i + 1)..modes.len() {
+                assert_ne!(modes[i], modes[j], "Colorblind modes should be distinct");
             }
         }
     }

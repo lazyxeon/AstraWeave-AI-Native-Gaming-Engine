@@ -166,7 +166,7 @@ impl ClimateMap {
     }
 
     /// Estimate height at a position (temporary until we have proper integration)
-    fn estimate_height(&self, x: f64, z: f64) -> f32 {
+    pub fn estimate_height(&self, x: f64, z: f64) -> f32 {
         // Simple height estimation using noise
         let height_noise = self.sample_noise_fbm(
             &self.temperature_noise, // Reuse temperature noise for height

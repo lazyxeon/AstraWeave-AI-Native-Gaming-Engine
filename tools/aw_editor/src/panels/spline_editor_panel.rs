@@ -14,6 +14,7 @@ use crate::panels::Panel;
 
 /// Spline type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SplineType {
     #[default]
     CatmullRom,
@@ -57,6 +58,7 @@ impl SplineType {
 
 /// Spline preset category
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SplinePreset {
     #[default]
     Custom,
@@ -140,6 +142,7 @@ pub struct SplinePoint {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TangentMode {
     #[default]
     Auto,
@@ -231,6 +234,7 @@ pub struct Spline {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MeshProfile {
     #[default]
     Flat,
@@ -272,6 +276,7 @@ impl MeshProfile {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum UvMode {
     #[default]
     Stretch,
@@ -338,6 +343,7 @@ impl Default for Spline {
 
 /// Editor tool
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SplineTool {
     #[default]
     Select,
@@ -421,6 +427,7 @@ impl Default for CustomProfile {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SplineTab {
     #[default]
     Splines,
@@ -478,6 +485,7 @@ impl SplineTab {
 
 /// Actions that can be triggered from the spline editor panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum SplineEditorAction {
     // Tab navigation
     SetActiveTab(SplineTab),

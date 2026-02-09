@@ -10,6 +10,7 @@ use rapier3d::prelude::*;
 
 /// Enumeration of all validated action verbs
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ToolVerb {
     MoveTo,
     Throw,
@@ -44,7 +45,10 @@ impl ToolVerb {
     /// Check if this verb is a movement-related action.
     #[must_use]
     pub fn is_movement(&self) -> bool {
-        matches!(self, ToolVerb::MoveTo | ToolVerb::Wander | ToolVerb::Hide | ToolVerb::Stay)
+        matches!(
+            self,
+            ToolVerb::MoveTo | ToolVerb::Wander | ToolVerb::Hide | ToolVerb::Stay
+        )
     }
 
     /// Check if this verb is a combat-related action.
@@ -62,7 +66,14 @@ impl ToolVerb {
     /// Check if this verb requires a target position.
     #[must_use]
     pub fn requires_target_position(&self) -> bool {
-        matches!(self, ToolVerb::MoveTo | ToolVerb::Throw | ToolVerb::CoverFire | ToolVerb::Revive | ToolVerb::Hide)
+        matches!(
+            self,
+            ToolVerb::MoveTo
+                | ToolVerb::Throw
+                | ToolVerb::CoverFire
+                | ToolVerb::Revive
+                | ToolVerb::Hide
+        )
     }
 
     /// Check if this verb requires ammo.
@@ -109,6 +120,7 @@ impl ToolVerb {
 
 /// Validation categories for each verb
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ValidationCategory {
     Nav,
     Physics,
@@ -151,6 +163,8 @@ impl ValidationCategory {
 
 /// Error taxonomy for tool validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+#[must_use]
 pub enum ToolError {
     OutOfBounds,
     Cooldown,
@@ -237,7 +251,7 @@ impl ToolError {
     }
 
     /// Get all tool errors.
-    #[must_use]
+    #[must_use = "returns the complete list of known tool errors"]
     pub fn all() -> &'static [ToolError] {
         &[
             ToolError::OutOfBounds,
@@ -302,7 +316,9 @@ impl<'a> ValidationContext<'a> {
     /// Check if physics is available for collision validation.
     #[must_use]
     pub fn has_physics(&self) -> bool {
-        self.physics_pipeline.is_some() && self.rigid_body_set.is_some() && self.collider_set.is_some()
+        self.physics_pipeline.is_some()
+            && self.rigid_body_set.is_some()
+            && self.collider_set.is_some()
     }
 
     /// Check if all validation systems are available.
@@ -1525,16 +1541,46 @@ mod tests {
 
     #[test]
     fn test_tool_verb_primary_validation_category() {
-        assert_eq!(ToolVerb::MoveTo.primary_validation_category(), ValidationCategory::Nav);
-        assert_eq!(ToolVerb::Wander.primary_validation_category(), ValidationCategory::Nav);
-        assert_eq!(ToolVerb::Hide.primary_validation_category(), ValidationCategory::Nav);
-        assert_eq!(ToolVerb::Throw.primary_validation_category(), ValidationCategory::Visibility);
-        assert_eq!(ToolVerb::CoverFire.primary_validation_category(), ValidationCategory::Visibility);
-        assert_eq!(ToolVerb::Revive.primary_validation_category(), ValidationCategory::Resources);
-        assert_eq!(ToolVerb::UseItem.primary_validation_category(), ValidationCategory::Resources);
-        assert_eq!(ToolVerb::Interact.primary_validation_category(), ValidationCategory::Physics);
-        assert_eq!(ToolVerb::Stay.primary_validation_category(), ValidationCategory::Cooldown);
-        assert_eq!(ToolVerb::Rally.primary_validation_category(), ValidationCategory::Cooldown);
+        assert_eq!(
+            ToolVerb::MoveTo.primary_validation_category(),
+            ValidationCategory::Nav
+        );
+        assert_eq!(
+            ToolVerb::Wander.primary_validation_category(),
+            ValidationCategory::Nav
+        );
+        assert_eq!(
+            ToolVerb::Hide.primary_validation_category(),
+            ValidationCategory::Nav
+        );
+        assert_eq!(
+            ToolVerb::Throw.primary_validation_category(),
+            ValidationCategory::Visibility
+        );
+        assert_eq!(
+            ToolVerb::CoverFire.primary_validation_category(),
+            ValidationCategory::Visibility
+        );
+        assert_eq!(
+            ToolVerb::Revive.primary_validation_category(),
+            ValidationCategory::Resources
+        );
+        assert_eq!(
+            ToolVerb::UseItem.primary_validation_category(),
+            ValidationCategory::Resources
+        );
+        assert_eq!(
+            ToolVerb::Interact.primary_validation_category(),
+            ValidationCategory::Physics
+        );
+        assert_eq!(
+            ToolVerb::Stay.primary_validation_category(),
+            ValidationCategory::Cooldown
+        );
+        assert_eq!(
+            ToolVerb::Rally.primary_validation_category(),
+            ValidationCategory::Cooldown
+        );
     }
 
     #[test]
@@ -1640,11 +1686,23 @@ mod tests {
     fn test_tool_error_category() {
         assert_eq!(ToolError::OutOfBounds.category(), ValidationCategory::Nav);
         assert_eq!(ToolError::NoPath.category(), ValidationCategory::Nav);
-        assert_eq!(ToolError::PhysicsBlocked.category(), ValidationCategory::Physics);
-        assert_eq!(ToolError::InsufficientResource.category(), ValidationCategory::Resources);
-        assert_eq!(ToolError::NoLineOfSight.category(), ValidationCategory::Visibility);
+        assert_eq!(
+            ToolError::PhysicsBlocked.category(),
+            ValidationCategory::Physics
+        );
+        assert_eq!(
+            ToolError::InsufficientResource.category(),
+            ValidationCategory::Resources
+        );
+        assert_eq!(
+            ToolError::NoLineOfSight.category(),
+            ValidationCategory::Visibility
+        );
         assert_eq!(ToolError::Cooldown.category(), ValidationCategory::Cooldown);
-        assert_eq!(ToolError::InvalidTarget.category(), ValidationCategory::Resources);
+        assert_eq!(
+            ToolError::InvalidTarget.category(),
+            ValidationCategory::Resources
+        );
         assert_eq!(ToolError::Unknown.category(), ValidationCategory::Resources);
     }
 
@@ -1689,8 +1747,11 @@ mod tests {
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
         let physics_pipeline = PhysicsPipeline::new();
-        let context_with_physics = ValidationContext::new()
-            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        let context_with_physics = ValidationContext::new().with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
         assert!(context_with_physics.has_physics());
     }
 
@@ -1703,8 +1764,11 @@ mod tests {
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
         let physics_pipeline = PhysicsPipeline::new();
-        let context_physics_only = ValidationContext::new()
-            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        let context_physics_only = ValidationContext::new().with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
         assert!(!context_physics_only.is_complete());
     }
 
@@ -1716,8 +1780,11 @@ mod tests {
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
         let physics_pipeline = PhysicsPipeline::new();
-        let context_with_physics = ValidationContext::new()
-            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        let context_with_physics = ValidationContext::new().with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
         assert!(!context_with_physics.is_empty());
     }
 
@@ -1736,8 +1803,11 @@ mod tests {
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
         let physics_pipeline = PhysicsPipeline::new();
-        let context_with_physics = ValidationContext::new()
-            .with_physics(&physics_pipeline, &rigid_body_set, &collider_set);
+        let context_with_physics = ValidationContext::new().with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
         let cats_physics = context_with_physics.available_categories();
         assert!(cats_physics.contains(&ValidationCategory::Physics));
         assert!(!cats_physics.contains(&ValidationCategory::Nav));

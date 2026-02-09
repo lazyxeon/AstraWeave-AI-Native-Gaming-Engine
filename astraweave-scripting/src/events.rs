@@ -1,11 +1,24 @@
 use astraweave_ecs::{Entity, Event};
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ScriptEvent {
-    OnSpawn { entity: Entity },
-    OnCollision { entity: Entity, other: Entity },
-    OnTrigger { entity: Entity, trigger_name: String },
-    OnDamage { entity: Entity, damage: f32, source: Entity },
+    OnSpawn {
+        entity: Entity,
+    },
+    OnCollision {
+        entity: Entity,
+        other: Entity,
+    },
+    OnTrigger {
+        entity: Entity,
+        trigger_name: String,
+    },
+    OnDamage {
+        entity: Entity,
+        damage: f32,
+        source: Entity,
+    },
 }
 
 impl Event for ScriptEvent {}
@@ -44,7 +57,9 @@ mod tests {
 
     #[test]
     fn test_on_spawn_debug() {
-        let event = ScriptEvent::OnSpawn { entity: entity(100) };
+        let event = ScriptEvent::OnSpawn {
+            entity: entity(100),
+        };
         let debug_str = format!("{:?}", event);
         assert!(debug_str.contains("OnSpawn"));
     }
@@ -56,7 +71,11 @@ mod tests {
             entity: entity(1),
             other: entity(2),
         };
-        if let ScriptEvent::OnCollision { entity: e, other: o } = event {
+        if let ScriptEvent::OnCollision {
+            entity: e,
+            other: o,
+        } = event
+        {
             assert_eq!(e, entity(1));
             assert_eq!(o, entity(2));
         } else {
@@ -100,7 +119,11 @@ mod tests {
             entity: entity(1),
             trigger_name: "door_enter".to_string(),
         };
-        if let ScriptEvent::OnTrigger { entity: e, trigger_name } = event {
+        if let ScriptEvent::OnTrigger {
+            entity: e,
+            trigger_name,
+        } = event
+        {
             assert_eq!(e, entity(1));
             assert_eq!(trigger_name, "door_enter");
         } else {
@@ -142,7 +165,12 @@ mod tests {
             damage: 25.5,
             source: entity(2),
         };
-        if let ScriptEvent::OnDamage { entity: e, damage, source } = event {
+        if let ScriptEvent::OnDamage {
+            entity: e,
+            damage,
+            source,
+        } = event
+        {
             assert_eq!(e, entity(1));
             assert!((damage - 25.5).abs() < f32::EPSILON);
             assert_eq!(source, entity(2));
@@ -200,9 +228,19 @@ mod tests {
     fn test_pattern_matching() {
         let events = vec![
             ScriptEvent::OnSpawn { entity: entity(1) },
-            ScriptEvent::OnCollision { entity: entity(2), other: entity(3) },
-            ScriptEvent::OnTrigger { entity: entity(4), trigger_name: "test".into() },
-            ScriptEvent::OnDamage { entity: entity(5), damage: 10.0, source: entity(6) },
+            ScriptEvent::OnCollision {
+                entity: entity(2),
+                other: entity(3),
+            },
+            ScriptEvent::OnTrigger {
+                entity: entity(4),
+                trigger_name: "test".into(),
+            },
+            ScriptEvent::OnDamage {
+                entity: entity(5),
+                damage: 10.0,
+                source: entity(6),
+            },
         ];
 
         let mut spawn_count = 0;

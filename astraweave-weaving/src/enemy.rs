@@ -41,6 +41,7 @@ pub struct Enemy {
 
 /// AI state machine for enemy behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EnemyState {
     /// Walk randomly near patrol center
     Patrol,
@@ -56,6 +57,7 @@ pub enum EnemyState {
 
 /// Behavior command returned by enemy AI update.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum EnemyBehavior {
     /// Move toward target position
     MoveTo(Vec3),
@@ -67,6 +69,7 @@ pub enum EnemyBehavior {
 
 /// Target for enemy attack.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AttackTarget {
     /// Attack specific anchor by ID
     Anchor(usize),

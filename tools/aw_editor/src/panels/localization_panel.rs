@@ -15,6 +15,7 @@ use crate::panels::Panel;
 
 /// Supported languages/locales
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum Language {
     #[default]
     English,
@@ -138,6 +139,7 @@ impl Default for LocalizedString {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum StringCategory {
     #[default]
     Ui,
@@ -210,6 +212,7 @@ pub struct PluralForms {
 
 /// Export format
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ExportFormat {
     #[default]
     Csv,
@@ -269,6 +272,7 @@ impl ExportFormat {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LocalizationTab {
     #[default]
     Strings,
@@ -322,6 +326,7 @@ impl LocalizationTab {
 
 /// Actions that can be triggered from the localization panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum LocalizationAction {
     // Tab navigation
     SetActiveTab(LocalizationTab),

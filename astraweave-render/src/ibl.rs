@@ -23,6 +23,7 @@ use wgpu::util::DeviceExt;
 
 /// Quality presets for IBL resource sizes
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum IblQuality {
     Low,
     Medium,
@@ -54,6 +55,7 @@ impl IblQuality {
 
 /// Sky sources supported by the manager
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum SkyMode {
     /// Load an equirectangular HDR and convert to a cubemap
     HdrPath { biome: String, path: String },

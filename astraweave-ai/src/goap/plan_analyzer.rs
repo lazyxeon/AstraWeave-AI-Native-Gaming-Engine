@@ -32,6 +32,7 @@ pub struct Bottleneck {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum BottleneckReason {
     HighCost,
     HighRisk,
@@ -51,6 +52,7 @@ pub struct ComparisonReport {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PlanComparison {
     Plan1Better,
     Plan2Better,
@@ -66,6 +68,7 @@ pub struct Suggestion {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum SuggestionPriority {
     Low,
     Medium,
@@ -370,7 +373,11 @@ impl PlanAnalyzer {
         }
 
         // Sort by severity
-        bottlenecks.sort_by(|a, b| b.severity.partial_cmp(&a.severity).unwrap());
+        bottlenecks.sort_by(|a, b| {
+            b.severity
+                .partial_cmp(&a.severity)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         bottlenecks
     }

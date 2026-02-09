@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 /// Strategy for decomposing a goal into sub-goals
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum DecompositionStrategy {
     /// Sub-goals must be achieved in the order specified
     Sequential,

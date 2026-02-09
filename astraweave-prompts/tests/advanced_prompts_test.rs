@@ -1,7 +1,11 @@
 #![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::{
-    context::{ContextValue, PromptContext}, library::{PromptLibrary, TemplateLibrary}, optimization::{ABTestingEngine, OptimizationConfig, OptimizationEngine}, template::PromptTemplate, TemplateEngine, TemplateMetadata
+    context::{ContextValue, PromptContext},
+    library::{PromptLibrary, TemplateLibrary},
+    optimization::{ABTestingEngine, OptimizationConfig, OptimizationEngine},
+    template::PromptTemplate,
+    TemplateEngine, TemplateMetadata,
 };
 use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext};
 use std::sync::{Arc, Mutex};
@@ -50,10 +54,10 @@ fn test_helper_with_arguments() {
     let mut engine = TemplateEngine::new();
     let template = PromptTemplate::new("test", "{{indent text 4}}");
     engine.register_template("test", template).unwrap();
-    
+
     let mut context = PromptContext::new();
     context.set("text".to_string(), ContextValue::from("line1\nline2"));
-    
+
     let result = engine.render("test", &context).unwrap();
     assert_eq!(result, "    line1\n    line2");
 }
@@ -71,7 +75,7 @@ fn test_helper_error_handling() {
 #[test]
 fn test_builtin_helpers() {
     let mut engine = TemplateEngine::new();
-    
+
     // Uppercase
     let t1 = PromptTemplate::new("t1", "{{uppercase 'hello'}}");
     engine.register_template("t1", t1).unwrap();
@@ -91,7 +95,7 @@ fn test_builtin_helpers() {
 #[test]
 fn test_helper_override() {
     let mut engine = TemplateEngine::new();
-    
+
     // Override 'trim' to do nothing
     engine.register_helper(
         "trim",
@@ -160,7 +164,7 @@ fn test_load_library_from_directory() {
 
     let library = TemplateLibrary::load_from_directory(temp_dir.clone()).unwrap();
     let collection = library.get_collection("default").unwrap();
-    
+
     assert!(collection.get_template("test1").is_some());
     assert!(collection.get_template("test2").is_some());
     assert_eq!(collection.get_template("test1").unwrap(), "content1");
@@ -185,10 +189,10 @@ fn test_library_list_templates() {
 fn test_library_get_template() {
     let mut library = PromptLibrary::new();
     library.add_template("t1", PromptTemplate::new("t1", "content"));
-    
+
     let t = library.get_template("t1").unwrap();
     assert_eq!(t.template, "content");
-    
+
     assert!(library.get_template("missing").is_err());
 }
 
@@ -196,7 +200,7 @@ fn test_library_get_template() {
 fn test_library_delete_template() {
     let mut library = PromptLibrary::new();
     library.add_template("t1", PromptTemplate::new("t1", "content"));
-    
+
     assert!(library.get_template("t1").is_ok());
     library.delete_template("t1");
     assert!(library.get_template("t1").is_err());
@@ -207,11 +211,11 @@ fn test_library_template_metadata() {
     // PromptLibrary uses PromptTemplate which has metadata support
     let mut library = PromptLibrary::new();
     let mut template = PromptTemplate::new("t1", "content");
-    
+
     let mut metadata = TemplateMetadata::default();
     metadata.author = Some("me".to_string());
     template.metadata = Some(metadata);
-    
+
     library.add_template("t1", template);
     let t = library.get_template("t1").unwrap();
     assert_eq!(t.metadata.unwrap().author.unwrap(), "me");
@@ -223,7 +227,7 @@ fn test_library_template_metadata() {
 
 #[test]
 fn test_optimize_template_compilation() {
-    // OptimizationEngine doesn't expose compilation caching directly, 
+    // OptimizationEngine doesn't expose compilation caching directly,
     // but we can test that optimize_prompt works
     let mut config = OptimizationConfig::default();
     config.max_prompt_length = 0; // Force compression
@@ -257,10 +261,10 @@ fn test_ab_testing_variants() {
 fn test_ab_testing_metrics() {
     let mut engine = ABTestingEngine::new();
     engine.register_variant("test".to_string(), "A".to_string());
-    
+
     engine.select_variant("test");
     engine.record_success("test", "A");
-    
+
     let metrics = engine.get_metrics("test").unwrap();
     assert_eq!(*metrics.selections.get("A").unwrap(), 1);
     assert_eq!(*metrics.successes.get("A").unwrap(), 1);
@@ -270,11 +274,11 @@ fn test_ab_testing_metrics() {
 fn test_optimization_benchmarks() {
     let mut engine = OptimizationEngine::new(OptimizationConfig::default());
     let prompt = "test prompt";
-    
+
     let start = std::time::Instant::now();
     let _ = engine.optimize_prompt(prompt).unwrap();
     let elapsed = start.elapsed();
-    
+
     assert!(elapsed.as_millis() < 5); // Should be very fast
 }
 
@@ -283,6 +287,6 @@ fn test_template_precompilation() {
     // Verify we can register and render without errors (pre-compilation check)
     let mut engine = TemplateEngine::new();
     let template = PromptTemplate::new("test", "{{invalid}"); // Invalid syntax
-    // register_template compiles it, so this should fail
+                                                              // register_template compiles it, so this should fail
     assert!(engine.register_template("test", template).is_err());
 }

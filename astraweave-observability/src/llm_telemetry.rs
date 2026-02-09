@@ -168,9 +168,9 @@ pub struct PerformanceHistograms {
 impl Default for PerformanceHistograms {
     fn default() -> Self {
         Self {
-            latency_histogram: Histogram::new(3).unwrap(), // 3 significant digits
-            token_histogram: Histogram::new(3).unwrap(),
-            cost_histogram: Histogram::new(3).unwrap(),
+            latency_histogram: Histogram::new(3).expect("valid histogram config"), // 3 significant digits
+            token_histogram: Histogram::new(3).expect("valid histogram config"),
+            cost_histogram: Histogram::new(3).expect("valid histogram config"),
         }
     }
 }
@@ -207,6 +207,7 @@ pub struct BudgetAlert {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BudgetAlertType {
     DailyBudget,
     MonthlyBudget,
@@ -237,6 +238,7 @@ pub struct Alert {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AlertType {
     HighLatency,
     HighErrorRate,
@@ -246,6 +248,7 @@ pub enum AlertType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AlertSeverity {
     Info,
     Warning,
@@ -254,6 +257,7 @@ pub enum AlertSeverity {
 
 /// Notification channels for alerts
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum NotificationChannel {
     Log,
     Webhook(String),
@@ -678,11 +682,11 @@ impl LlmTelemetry {
         let current_hour = trace
             .start_time
             .with_minute(0)
-            .unwrap()
+            .expect("valid time truncation")
             .with_second(0)
-            .unwrap()
+            .expect("valid time truncation")
             .with_nanosecond(0)
-            .unwrap();
+            .expect("valid time truncation");
 
         if let Some(hourly) = cost_tracker.hourly_costs.back_mut() {
             if hourly.hour == current_hour {
@@ -1029,7 +1033,7 @@ impl RequestTracker {
             response,
             prompt_hash: None,
             model,
-            start_time: end_time - chrono::Duration::from_std(latency).unwrap(),
+            start_time: end_time - chrono::Duration::from_std(latency).unwrap_or_default(),
             end_time,
             latency_ms: latency.as_millis() as u64,
             tokens_prompt: prompt_tokens,
@@ -1049,6 +1053,7 @@ impl RequestTracker {
 
 /// Export format options
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ExportFormat {
     Json,
     Csv,

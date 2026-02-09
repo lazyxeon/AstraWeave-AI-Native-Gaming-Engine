@@ -15,6 +15,7 @@ use crate::panels::Panel;
 
 /// Tonemapping algorithm
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Tonemapper {
     None,
     Reinhard,
@@ -72,6 +73,7 @@ impl Tonemapper {
 
 /// Anti-aliasing method
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AntiAliasing {
     None,
     FXAA,
@@ -137,6 +139,7 @@ impl AntiAliasing {
 
 /// Depth of field mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DofMode {
     #[default]
     Disabled,
@@ -336,6 +339,7 @@ pub struct AmbientOcclusionSettings {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AoMethod {
     #[default]
     SSAO,
@@ -544,6 +548,7 @@ impl PostProcessPreset {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PostProcessTab {
     #[default]
     Overview,

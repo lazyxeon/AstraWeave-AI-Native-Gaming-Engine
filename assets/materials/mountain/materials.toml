@@ -1,0 +1,45 @@
+# Mountain biome — alpine terrain with exposed rock, snow caps, and sparse vegetation
+# Used for high-altitude regions and mountain passes
+
+[biome]
+name = "mountain"
+
+[[layer]]
+key = "mountain_rock"
+albedo = "../mountain_rock.png"
+normal = "../mountain_rock_n.png"
+mra    = "../mountain_rock_mra.png"
+tiling = [1.5, 1.5]
+triplanar_scale = 16.0
+
+[[layer]]
+key = "snow"
+albedo = "../snow.png"
+normal = "../snow_n.png"
+mra    = "../snow_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 24.0
+
+[[layer]]
+key = "gravel"
+albedo = "../gravel.png"
+normal = "../gravel_n.png"
+mra    = "../gravel_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "stone"
+albedo = "../stone.png"
+normal = "../stone_n.png"
+mra    = "../stone_mra.png"
+tiling = [1.5, 1.5]
+triplanar_scale = 18.0
+
+[[layer]]
+key = "dirt"
+albedo = "../dirt.png"
+normal = "../dirt_n.png"
+mra    = "../dirt_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0

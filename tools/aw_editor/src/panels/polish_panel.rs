@@ -131,6 +131,7 @@ impl Default for UiPolishSettings {
 
 /// Screen transition style
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TransitionStyle {
     /// Fade in/out
     Fade,

@@ -20,6 +20,7 @@ use crate::panels::Panel;
 
 /// Actions emitted by the input bindings panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum InputBindingAction {
     /// Apply a new keybinding to an action
     SetBinding {
@@ -54,6 +55,7 @@ pub enum InputBindingAction {
 
 /// Input device type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum InputDevice {
     #[default]
     Keyboard,
@@ -103,6 +105,7 @@ impl InputDevice {
 
 /// Action category for grouping
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ActionCategory {
     #[default]
     Movement,
@@ -164,6 +167,7 @@ impl ActionCategory {
 
 /// Binding preset
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BindingPreset {
     #[default]
     Default,
@@ -225,6 +229,7 @@ impl BindingPreset {
 
 /// Gamepad button representation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GamepadButton {
     South,      // A (Xbox), X (PlayStation)
     East,       // B (Xbox), Circle (PlayStation)
@@ -308,6 +313,7 @@ impl GamepadButton {
 
 /// Common keyboard key representation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum KeyboardKey {
     // Letters
     #[default]
@@ -465,6 +471,7 @@ impl KeyboardKey {
 
 /// Mouse button representation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MouseButton {
     Left,
     Right,
@@ -570,6 +577,7 @@ pub struct BindingConflict {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum InputTab {
     #[default]
     Actions,
@@ -723,6 +731,7 @@ impl InputBindingsPanel {
 
 /// What input we're waiting for
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum InputTarget {
     KeyboardPrimary(usize),
     KeyboardSecondary(usize),

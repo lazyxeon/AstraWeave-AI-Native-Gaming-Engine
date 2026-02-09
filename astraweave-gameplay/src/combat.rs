@@ -3,6 +3,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AttackKind {
     Light,
     Heavy,
@@ -220,15 +221,13 @@ mod tests {
     fn test_combo_chain_creation() {
         let chain = ComboChain {
             name: "Basic Slash".to_string(),
-            steps: vec![
-                ComboStep {
-                    kind: AttackKind::Light,
-                    window: (0.0, 0.5),
-                    damage: 10,
-                    reach: 2.0,
-                    stagger: 0.2,
-                },
-            ],
+            steps: vec![ComboStep {
+                kind: AttackKind::Light,
+                window: (0.0, 0.5),
+                damage: 10,
+                reach: 2.0,
+                stagger: 0.2,
+            }],
         };
         assert_eq!(chain.name, "Basic Slash");
         assert_eq!(chain.steps.len(), 1);
@@ -315,9 +314,9 @@ mod tests {
         let mut state = AttackState::new(chain);
         state.idx = 5; // Simulate some previous state
         state.t_since_last = 10.0;
-        
+
         state.start();
-        
+
         assert!(state.active);
         assert_eq!(state.idx, 0);
         assert!((state.t_since_last).abs() < f32::EPSILON);
@@ -328,10 +327,10 @@ mod tests {
         let chain = create_test_chain();
         let mut state = AttackState::new(chain);
         // Don't start - should remain inactive
-        
+
         let mut target = Stats::new(100);
         let attacker_stats = Stats::new(100);
-        
+
         let (hit, dmg) = state.tick(
             0.1,
             true,
@@ -342,7 +341,7 @@ mod tests {
             None,
             &mut target,
         );
-        
+
         assert!(!hit);
         assert_eq!(dmg, 0);
     }

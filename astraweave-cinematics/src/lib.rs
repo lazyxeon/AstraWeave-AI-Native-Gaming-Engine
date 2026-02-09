@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
@@ -91,6 +92,7 @@ impl std::ops::Sub for Time {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum Track {
     Camera {
         keyframes: Vec<CameraKey>,
@@ -367,6 +369,8 @@ impl std::fmt::Display for Timeline {
 }
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum SeqError {
     #[error("timeline out of range: {0:?}")]
     Range(Time),
@@ -451,6 +455,7 @@ impl Sequencer {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum SequencerEvent {
     CameraKey(CameraKey),
     AnimStart {

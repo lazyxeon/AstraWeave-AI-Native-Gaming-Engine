@@ -144,6 +144,7 @@ pub struct VoxelPartitionStats {
 
 /// Events emitted by voxel partition system
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum VoxelPartitionEvent {
     /// Partition cell activated, voxel chunks loaded
     CellActivated(PartitionCoord, Vec<ChunkCoord>),

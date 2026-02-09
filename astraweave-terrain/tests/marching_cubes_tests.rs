@@ -18,25 +18,25 @@ fn test_all_256_marching_cubes_lookup_tables() {
     for config in 0..256 {
         let edge_mask = MC_EDGE_TABLE[config];
         let triangles = &MC_TRI_TABLE[config];
-        
+
         // Config 0 (all empty): No edges, no triangles
         if config == 0 {
             assert_eq!(edge_mask, 0, "Config 0 should have no edges");
             assert_eq!(triangles[0], -1, "Config 0 should have no triangles");
             continue;
         }
-        
+
         // Config 255 (all full): No edges, no triangles (fully interior)
         if config == 255 {
             assert_eq!(edge_mask, 0, "Config 255 should have no edges");
             assert_eq!(triangles[0], -1, "Config 255 should have no triangles");
             continue;
         }
-        
+
         // All other configs should have at least one edge and one triangle
         assert_ne!(edge_mask, 0, "Config {} should have edges", config);
         assert_ne!(triangles[0], -1, "Config {} should have triangles", config);
-        
+
         // Count triangles (each triangle uses 3 indices, terminated by -1)
         let mut tri_count = 0;
         for i in (0..16).step_by(3) {
@@ -44,51 +44,61 @@ fn test_all_256_marching_cubes_lookup_tables() {
                 break;
             }
             tri_count += 1;
-            
+
             // Verify triangle indices are valid edge numbers (0-11)
             let v1 = triangles[i];
             let v2 = triangles[i + 1];
             let v3 = triangles[i + 2];
-            
+
             assert!(
                 (0..=11).contains(&v1),
                 "Config {} triangle {} has invalid edge index: {}",
-                config, tri_count, v1
+                config,
+                tri_count,
+                v1
             );
             assert!(
                 (0..=11).contains(&v2),
                 "Config {} triangle {} has invalid edge index: {}",
-                config, tri_count, v2
+                config,
+                tri_count,
+                v2
             );
             assert!(
                 (0..=11).contains(&v3),
                 "Config {} triangle {} has invalid edge index: {}",
-                config, tri_count, v3
+                config,
+                tri_count,
+                v3
             );
-            
+
             // Verify the edge is actually active in the edge mask
             assert!(
                 (edge_mask & (1 << v1)) != 0,
                 "Config {} uses inactive edge {}",
-                config, v1
+                config,
+                v1
             );
             assert!(
                 (edge_mask & (1 << v2)) != 0,
                 "Config {} uses inactive edge {}",
-                config, v2
+                config,
+                v2
             );
             assert!(
                 (edge_mask & (1 << v3)) != 0,
                 "Config {} uses inactive edge {}",
-                config, v3
+                config,
+                v3
             );
         }
-        
+
         // Marching cubes can produce 1-5 triangles per cell
         assert!(
             (1..=5).contains(&tri_count),
             "Config {} has invalid triangle count: {}",
-            config, tri_count
+            config,
+            tri_count
         );
     }
 }
@@ -138,7 +148,7 @@ fn create_chunk_for_config(config: u8) -> VoxelChunk {
 }
 
 /// Validate mesh geometry (no degenerate triangles, proper normals)
-/// 
+///
 /// Note: Relaxed thresholds to accommodate dual contouring mesh generation,
 /// which may produce small triangles and normals that are nearly normalized.
 #[allow(dead_code)]
@@ -171,10 +181,7 @@ fn validate_mesh_geometry(mesh: &ChunkMesh) -> bool {
         let n1_len = v1.normal.length();
         let n2_len = v2.normal.length();
 
-        if (n0_len - 1.0).abs() > 0.2
-            || (n1_len - 1.0).abs() > 0.2
-            || (n2_len - 1.0).abs() > 0.2
-        {
+        if (n0_len - 1.0).abs() > 0.2 || (n1_len - 1.0).abs() > 0.2 || (n2_len - 1.0).abs() > 0.2 {
             eprintln!(
                 "Triangle {} has invalid normals: lengths = ({:.4}, {:.4}, {:.4})",
                 tri_idx, n0_len, n1_len, n2_len
@@ -356,10 +363,10 @@ fn test_disconnected_components() {
 fn test_complementary_config_symmetry() {
     for config in 0..128 {
         let complement = (!config) & 0xFF;
-        
+
         let edges1 = MC_EDGE_TABLE[config];
         let edges2 = MC_EDGE_TABLE[complement];
-        
+
         // Complementary configs should have the same edges
         // (they represent opposite sides of the same isosurface)
         assert_eq!(
@@ -367,11 +374,11 @@ fn test_complementary_config_symmetry() {
             "Config {} and {} should have same edges",
             config, complement
         );
-        
+
         // Count triangles for both configs
         let tri_count1 = count_triangles(&MC_TRI_TABLE[config]);
         let tri_count2 = count_triangles(&MC_TRI_TABLE[complement]);
-        
+
         // Special case: Config 0 and 255 should both be empty
         if config == 0 {
             assert_eq!(tri_count1, 0, "Config 0 should have no triangles");
@@ -379,11 +386,7 @@ fn test_complementary_config_symmetry() {
         } else {
             // Both complementary configs should generate triangles
             // (though counts may differ due to triangle orientation)
-            assert!(
-                tri_count1 > 0,
-                "Config {} should have triangles",
-                config
-            );
+            assert!(tri_count1 > 0, "Config {} should have triangles", config);
             assert!(
                 tri_count2 > 0,
                 "Config {} should have triangles",
@@ -411,20 +414,21 @@ fn test_single_voxel_lookup_tables() {
     // Test each bit position (single corner solid)
     for bit in 0..8 {
         let config = 1 << bit;
-        
+
         let edge_mask = MC_EDGE_TABLE[config];
         let triangles = &MC_TRI_TABLE[config];
-        
+
         // Single corner should have edges and triangles
         assert_ne!(edge_mask, 0, "Config {} should have edges", config);
         assert_ne!(triangles[0], -1, "Config {} should have triangles", config);
-        
+
         // Count triangles
         let tri_count = count_triangles(triangles);
         assert!(
             (1..=5).contains(&tri_count),
             "Config {} has invalid triangle count: {}",
-            config, tri_count
+            config,
+            tri_count
         );
     }
 }

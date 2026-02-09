@@ -186,6 +186,7 @@ impl EnemyData {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum EnemyFaction {
     Hostile,  // Red health bar
     Neutral,  // Yellow health bar
@@ -269,6 +270,7 @@ impl DamageNumber {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum DamageType {
     Normal,     // White text
     Critical,   // Yellow text
@@ -351,6 +353,7 @@ impl PingMarker {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum PoiType {
     Objective, // Yellow star
     Waypoint,  // Blue diamond
@@ -520,6 +523,7 @@ impl Default for ComboTracker {
 
 /// Type of quest notification
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum NotificationType {
     /// New quest started
     NewQuest,
@@ -3133,10 +3137,8 @@ mod tests {
     #[test]
     fn test_notification_queue_push_single() {
         let mut queue = NotificationQueue::new();
-        let notification = QuestNotification::new_quest(
-            "Test Quest".to_string(),
-            "A test quest".to_string(),
-        );
+        let notification =
+            QuestNotification::new_quest("Test Quest".to_string(), "A test quest".to_string());
 
         queue.push(notification);
 
@@ -3151,10 +3153,8 @@ mod tests {
 
         // Push 3 notifications
         for i in 1..=3 {
-            let notification = QuestNotification::new_quest(
-                format!("Quest {}", i),
-                format!("Description {}", i),
-            );
+            let notification =
+                QuestNotification::new_quest(format!("Quest {}", i), format!("Description {}", i));
             queue.push(notification);
         }
 
@@ -3168,10 +3168,8 @@ mod tests {
 
         // Push 100 notifications (stress test)
         for i in 1..=100 {
-            let notification = QuestNotification::new_quest(
-                format!("Quest {}", i),
-                format!("Description {}", i),
-            );
+            let notification =
+                QuestNotification::new_quest(format!("Quest {}", i), format!("Description {}", i));
             queue.push(notification);
         }
 
@@ -3203,10 +3201,8 @@ mod tests {
 
         // Push 3 notifications
         for i in 1..=3 {
-            let notification = QuestNotification::new_quest(
-                format!("Quest {}", i),
-                format!("Description {}", i),
-            );
+            let notification =
+                QuestNotification::new_quest(format!("Quest {}", i), format!("Description {}", i));
             queue.push(notification);
         }
 
@@ -3237,7 +3233,9 @@ mod tests {
             "First".to_string(),
             "First quest".to_string(),
         ));
-        queue.push(QuestNotification::objective_complete("Objective 1".to_string()));
+        queue.push(QuestNotification::objective_complete(
+            "Objective 1".to_string(),
+        ));
         queue.push(QuestNotification::quest_complete(
             "Completed Quest".to_string(),
             vec!["Gold".to_string(), "XP".to_string()],
@@ -3476,7 +3474,7 @@ mod tests {
         tracker.record_hit(0.0, 50);
         tracker.record_hit(0.2, 75);
         tracker.record_hit(0.5, 100);
-        
+
         assert_eq!(tracker.get_combo_count(0.5), 3);
         assert_eq!(tracker.get_combo_damage(0.5), 225);
     }
@@ -3486,15 +3484,15 @@ mod tests {
         let mut tracker = ComboTracker::new();
         tracker.record_hit(0.0, 50);
         tracker.record_hit(0.3, 75);
-        
+
         // Both hits within 1s window at time 0.5
         assert_eq!(tracker.get_combo_count(0.5), 2);
-        
+
         // At time 1.1, first hit (at 0.0) is outside 1s window (1.1 - 0.0 = 1.1 > 1.0)
         // But second hit (at 0.3) is still in window (1.1 - 0.3 = 0.8 <= 1.0)
         assert_eq!(tracker.get_combo_count(1.1), 1);
         assert_eq!(tracker.get_combo_damage(1.1), 75);
-        
+
         // At time 1.5, second hit (at 0.3) is also outside window (1.5 - 0.3 = 1.2 > 1.0)
         assert_eq!(tracker.get_combo_count(1.5), 0);
     }
@@ -3505,7 +3503,7 @@ mod tests {
         tracker.record_hit(0.0, 50);
         tracker.record_hit(0.5, 75);
         tracker.record_hit(1.2, 100);
-        
+
         // Before cleanup at 1.2s, first hit should have expired
         tracker.cleanup(1.2);
         assert_eq!(tracker.get_combo_count(1.2), 2); // Only 0.5 and 1.2 hits
@@ -3545,13 +3543,13 @@ mod tests {
     #[test]
     fn test_damage_number_calculate_offset_parabolic() {
         let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
-        
+
         // Test parabolic arc (goes up then down)
         let (_, y0) = dmg.calculate_offset(0.0);
         let (_, y1) = dmg.calculate_offset(0.25);
         let (_, y2) = dmg.calculate_offset(0.5);
         let (_, y3) = dmg.calculate_offset(1.0);
-        
+
         // Initial position
         assert_eq!(y0, 0.0);
         // Should go up (negative y) initially
@@ -3570,11 +3568,11 @@ mod tests {
     #[test]
     fn test_damage_number_calculate_shake_damped() {
         let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
-        
+
         // Shake should be damped over time
         let shake_early = dmg.calculate_shake(0.1).abs();
         let shake_late = dmg.calculate_shake(0.5).abs();
-        
+
         // Later shake should be smaller due to damping
         assert!(shake_late < shake_early, "Shake should decay over time");
     }
@@ -3583,11 +3581,11 @@ mod tests {
     fn test_damage_number_critical_shake_amplitude() {
         let normal = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
         let critical = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Critical);
-        
+
         // Critical has larger shake amplitude
         assert!(critical.shake_amplitude > normal.shake_amplitude);
         assert!((critical.shake_amplitude - 0.175).abs() < 0.01); // ±10 degrees
-        assert!((normal.shake_amplitude - 0.087).abs() < 0.01);   // ±5 degrees
+        assert!((normal.shake_amplitude - 0.087).abs() < 0.01); // ±5 degrees
     }
 
     #[test]
@@ -3595,7 +3593,7 @@ mod tests {
         // Same spawn_time should produce same velocity
         let dmg1 = DamageNumber::new(50, 1.234, (0.0, 0.0, 0.0), DamageType::Normal);
         let dmg2 = DamageNumber::new(50, 1.234, (0.0, 0.0, 0.0), DamageType::Normal);
-        
+
         assert_eq!(dmg1.velocity_x, dmg2.velocity_x);
         assert_eq!(dmg1.velocity_y, dmg2.velocity_y);
     }
@@ -3605,7 +3603,7 @@ mod tests {
         // Different spawn_times should produce different velocities
         let dmg1 = DamageNumber::new(50, 1.0, (0.0, 0.0, 0.0), DamageType::Normal);
         let dmg2 = DamageNumber::new(50, 2.0, (0.0, 0.0, 0.0), DamageType::Normal);
-        
+
         // Velocities should differ (pseudo-random based on spawn_time)
         assert_ne!(dmg1.velocity_x, dmg2.velocity_x);
     }
@@ -3614,15 +3612,16 @@ mod tests {
 
     #[test]
     fn test_notification_new_quest() {
-        let notif = QuestNotification::new_quest(
-            "New Quest".to_string(),
-            "Test description".to_string(),
-        );
+        let notif =
+            QuestNotification::new_quest("New Quest".to_string(), "Test description".to_string());
         assert_eq!(notif.title, "New Quest");
         assert_eq!(notif.description, "Test description");
         assert_eq!(notif.animation_time, 0.0);
         assert_eq!(notif.total_duration, 2.0);
-        assert!(matches!(notif.notification_type, NotificationType::NewQuest));
+        assert!(matches!(
+            notif.notification_type,
+            NotificationType::NewQuest
+        ));
     }
 
     #[test]
@@ -3630,7 +3629,10 @@ mod tests {
         let notif = QuestNotification::objective_complete("Collect 5 items".to_string());
         assert_eq!(notif.title, "Objective Complete!");
         assert_eq!(notif.description, "Collect 5 items");
-        assert!(matches!(notif.notification_type, NotificationType::ObjectiveComplete { .. }));
+        assert!(matches!(
+            notif.notification_type,
+            NotificationType::ObjectiveComplete { .. }
+        ));
     }
 
     #[test]
@@ -3642,17 +3644,20 @@ mod tests {
         assert_eq!(notif.title, "Main Quest");
         assert_eq!(notif.description, "Quest Complete!");
         assert_eq!(notif.total_duration, 2.8); // Longer duration for rewards
-        assert!(matches!(notif.notification_type, NotificationType::QuestComplete { .. }));
+        assert!(matches!(
+            notif.notification_type,
+            NotificationType::QuestComplete { .. }
+        ));
     }
 
     #[test]
     fn test_notification_update() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // Not finished yet
         assert!(!notif.update(1.0));
         assert_eq!(notif.animation_time, 1.0);
-        
+
         // Finished
         assert!(notif.update(1.5)); // Total 2.5s > 2.0s duration
     }
@@ -3660,11 +3665,11 @@ mod tests {
     #[test]
     fn test_notification_slide_offset_ease_in() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // At start, should be off-screen (negative offset)
         let offset_start = notif.calculate_slide_offset();
         assert!(offset_start < 0.0);
-        
+
         // During ease-in
         notif.animation_time = 0.15; // Mid ease-in
         let offset_mid = notif.calculate_slide_offset();
@@ -3675,7 +3680,7 @@ mod tests {
     #[test]
     fn test_notification_slide_offset_hold() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // During hold phase
         notif.animation_time = 1.0; // Middle of hold
         let offset = notif.calculate_slide_offset();
@@ -3685,7 +3690,7 @@ mod tests {
     #[test]
     fn test_notification_slide_offset_ease_out() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // During ease-out
         notif.animation_time = 1.85; // During ease-out
         let offset = notif.calculate_slide_offset();
@@ -3695,11 +3700,11 @@ mod tests {
     #[test]
     fn test_notification_alpha_fade_in() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // At start, alpha should be low
         let alpha_start = notif.calculate_alpha();
         assert_eq!(alpha_start, 0);
-        
+
         // During fade-in
         notif.animation_time = 0.1; // Half of 0.2s fade-in
         let alpha_mid = notif.calculate_alpha();
@@ -3710,7 +3715,7 @@ mod tests {
     #[test]
     fn test_notification_alpha_full() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // During hold phase, fully visible
         notif.animation_time = 1.0;
         let alpha = notif.calculate_alpha();
@@ -3720,7 +3725,7 @@ mod tests {
     #[test]
     fn test_notification_alpha_fade_out() {
         let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
-        
+
         // During fade-out (last 0.3s)
         notif.animation_time = 1.85; // Within fade-out
         let alpha = notif.calculate_alpha();
@@ -3740,7 +3745,7 @@ mod tests {
     #[test]
     fn test_ping_marker_is_active() {
         let ping = PingMarker::new((0.0, 0.0), 10.0);
-        
+
         assert!(ping.is_active(10.0)); // Just spawned
         assert!(ping.is_active(11.0)); // 1s after
         assert!(ping.is_active(12.9)); // Just before expiration
@@ -3751,7 +3756,7 @@ mod tests {
     #[test]
     fn test_ping_marker_age_normalized() {
         let ping = PingMarker::new((0.0, 0.0), 10.0);
-        
+
         assert_eq!(ping.age_normalized(10.0), 0.0); // Just spawned
         assert!((ping.age_normalized(11.5) - 0.5).abs() < 0.01); // Halfway
         assert_eq!(ping.age_normalized(13.0), 1.0); // Full duration
@@ -3764,10 +3769,10 @@ mod tests {
     fn test_hud_manager_toggle_quest_tracker() {
         let mut hud = HudManager::new();
         assert!(hud.state().show_objectives);
-        
+
         hud.toggle_quest_tracker();
         assert!(!hud.state().show_objectives);
-        
+
         hud.toggle_quest_tracker();
         assert!(hud.state().show_objectives);
     }
@@ -3776,10 +3781,10 @@ mod tests {
     fn test_hud_manager_toggle_quest_collapse() {
         let mut hud = HudManager::new();
         assert!(!hud.state().quest_tracker_collapsed);
-        
+
         hud.toggle_quest_collapse();
         assert!(hud.state().quest_tracker_collapsed);
-        
+
         hud.toggle_quest_collapse();
         assert!(!hud.state().quest_tracker_collapsed);
     }
@@ -3788,10 +3793,10 @@ mod tests {
     fn test_hud_manager_toggle_minimap() {
         let mut hud = HudManager::new();
         assert!(hud.state().show_minimap);
-        
+
         hud.toggle_minimap();
         assert!(!hud.state().show_minimap);
-        
+
         hud.toggle_minimap();
         assert!(hud.state().show_minimap);
     }
@@ -3800,10 +3805,10 @@ mod tests {
     fn test_hud_manager_toggle_minimap_rotation() {
         let mut hud = HudManager::new();
         assert!(!hud.state().minimap_rotation);
-        
+
         hud.toggle_minimap_rotation();
         assert!(hud.state().minimap_rotation);
-        
+
         hud.toggle_minimap_rotation();
         assert!(!hud.state().minimap_rotation);
     }
@@ -3812,14 +3817,14 @@ mod tests {
     fn test_hud_manager_set_minimap_zoom() {
         let mut hud = HudManager::new();
         assert_eq!(hud.minimap_zoom(), 1.0);
-        
+
         hud.set_minimap_zoom(2.0);
         assert_eq!(hud.minimap_zoom(), 2.0);
-        
+
         // Test clamping
         hud.set_minimap_zoom(0.1); // Below min
         assert_eq!(hud.minimap_zoom(), 0.5);
-        
+
         hud.set_minimap_zoom(5.0); // Above max
         assert_eq!(hud.minimap_zoom(), 3.0);
     }
@@ -3829,7 +3834,7 @@ mod tests {
         let mut hud = HudManager::new();
         assert!(!hud.state().show_dialogue);
         assert!(hud.active_dialogue.is_none());
-        
+
         let dialogue = DialogueNode {
             id: 1,
             speaker_name: "NPC".to_string(),
@@ -3837,11 +3842,11 @@ mod tests {
             portrait_id: None,
             choices: vec![],
         };
-        
+
         hud.start_dialogue(dialogue);
         assert!(hud.state().show_dialogue);
         assert!(hud.active_dialogue.is_some());
-        
+
         hud.end_dialogue();
         assert!(!hud.state().show_dialogue);
         assert!(hud.active_dialogue.is_none());
@@ -3850,7 +3855,7 @@ mod tests {
     #[test]
     fn test_hud_manager_select_dialogue_choice() {
         let mut hud = HudManager::new();
-        
+
         let dialogue = DialogueNode {
             id: 1,
             speaker_name: "NPC".to_string(),
@@ -3869,9 +3874,9 @@ mod tests {
                 },
             ],
         };
-        
+
         hud.start_dialogue(dialogue);
-        
+
         assert_eq!(hud.select_dialogue_choice(1), Some(10));
         assert_eq!(hud.select_dialogue_choice(2), None);
         assert_eq!(hud.select_dialogue_choice(99), None); // Invalid choice
@@ -3881,18 +3886,18 @@ mod tests {
     fn test_hud_manager_show_hide_tooltip() {
         let mut hud = HudManager::new();
         assert!(hud.hovered_tooltip.is_none());
-        
+
         let tooltip = TooltipData {
             title: "Item".to_string(),
             description: "Description".to_string(),
             stats: vec![],
             flavor_text: None,
         };
-        
+
         hud.show_tooltip(tooltip, (100.0, 200.0));
         assert!(hud.hovered_tooltip.is_some());
         assert_eq!(hud.tooltip_position, (100.0, 200.0));
-        
+
         hud.hide_tooltip();
         assert!(hud.hovered_tooltip.is_none());
     }
@@ -3901,11 +3906,11 @@ mod tests {
     fn test_hud_manager_spawn_damage() {
         let mut hud = HudManager::new();
         assert!(hud.damage_numbers.is_empty());
-        
+
         hud.spawn_damage(50, (10.0, 5.0, 20.0), DamageType::Normal);
         assert_eq!(hud.damage_numbers.len(), 1);
         assert_eq!(hud.damage_numbers[0].value, 50);
-        
+
         // Combo tracker should also have recorded the hit
         assert_eq!(hud.combo_tracker.get_combo_count(0.0), 1);
     }
@@ -3914,7 +3919,7 @@ mod tests {
     fn test_hud_manager_spawn_ping() {
         let mut hud = HudManager::new();
         assert!(hud.ping_markers.is_empty());
-        
+
         hud.spawn_ping((50.0, 100.0));
         assert_eq!(hud.ping_markers.len(), 1);
         assert_eq!(hud.ping_markers[0].world_pos, (50.0, 100.0));
@@ -3925,7 +3930,7 @@ mod tests {
         let mut hud = HudManager::new();
         hud.spawn_damage(50, (0.0, 0.0, 0.0), DamageType::Normal);
         assert_eq!(hud.damage_numbers.len(), 1);
-        
+
         // After 1.5s, damage numbers should expire
         hud.update(2.0);
         assert!(hud.damage_numbers.is_empty());
@@ -3936,7 +3941,7 @@ mod tests {
         let mut hud = HudManager::new();
         hud.spawn_ping((0.0, 0.0));
         assert_eq!(hud.ping_markers.len(), 1);
-        
+
         // After 3s, ping should expire
         hud.update(4.0);
         assert!(hud.ping_markers.is_empty());
@@ -3946,22 +3951,30 @@ mod tests {
     fn test_hud_manager_update_health_animation() {
         let mut hud = HudManager::new();
         hud.player_stats.health = 50.0; // Set actual health
-        
+
         // Visual health should still be at 100 before update
         assert_eq!(hud.player_stats.health_animation.visual_health(), 100.0);
-        
+
         // After update, visual health should animate toward target
         hud.update(0.5);
         let visual = hud.player_stats.health_animation.visual_health();
-        assert!(visual < 100.0 && visual >= 50.0, "Visual health should be animating");
+        assert!(
+            visual < 100.0 && visual >= 50.0,
+            "Visual health should be animating"
+        );
     }
 
     #[test]
     fn test_hud_manager_update_enemy_health_animation() {
         let mut hud = HudManager::new();
-        hud.enemies.push(EnemyData::new(1, (0.0, 0.0, 0.0), 100.0, EnemyFaction::Hostile));
+        hud.enemies.push(EnemyData::new(
+            1,
+            (0.0, 0.0, 0.0),
+            100.0,
+            EnemyFaction::Hostile,
+        ));
         hud.enemies[0].health = 50.0;
-        
+
         hud.update(0.5);
         let visual = hud.enemies[0].health_animation.visual_health();
         assert!(visual < 100.0 && visual >= 50.0);
@@ -3975,7 +3988,7 @@ mod tests {
             "Desc".to_string(),
         ));
         assert!(hud.notification_queue.has_active());
-        
+
         // After duration, notification should expire
         hud.update(3.0);
         assert!(!hud.notification_queue.has_active());
@@ -4012,11 +4025,11 @@ mod tests {
             show_dialogue: true,
             debug_mode: true,
         };
-        
+
         // Serialize and deserialize (round-trip test)
         let json = serde_json::to_string(&state).unwrap();
         let deserialized: HudState = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.visible, state.visible);
         assert_eq!(deserialized.show_health_bars, state.show_health_bars);
         assert_eq!(deserialized.minimap_zoom, state.minimap_zoom);
@@ -4028,7 +4041,7 @@ mod tests {
     #[test]
     fn test_enemy_data_new_with_animation() {
         let enemy = EnemyData::new(42, (10.0, 5.0, 20.0), 100.0, EnemyFaction::Hostile);
-        
+
         assert_eq!(enemy.id, 42);
         assert_eq!(enemy.health, 100.0);
         assert_eq!(enemy.max_health, 100.0);
@@ -4040,7 +4053,7 @@ mod tests {
         let hostile = format!("{:?}", EnemyFaction::Hostile);
         let neutral = format!("{:?}", EnemyFaction::Neutral);
         let friendly = format!("{:?}", EnemyFaction::Friendly);
-        
+
         assert_eq!(hostile, "Hostile");
         assert_eq!(neutral, "Neutral");
         assert_eq!(friendly, "Friendly");
@@ -4051,7 +4064,7 @@ mod tests {
     #[test]
     fn test_poi_type_colors() {
         use egui::Color32;
-        
+
         assert_eq!(PoiType::Objective.color(), Color32::YELLOW);
         assert_eq!(PoiType::Waypoint.color(), Color32::LIGHT_BLUE);
         assert_eq!(PoiType::Vendor.color(), Color32::GREEN);
@@ -4064,7 +4077,7 @@ mod tests {
     fn test_easing_ease_out_cubic_midpoints() {
         let quarter = easing::ease_out_cubic(0.25);
         let three_quarter = easing::ease_out_cubic(0.75);
-        
+
         // ease_out_cubic should accelerate fast then slow
         assert!(quarter > 0.25, "Should be ahead of linear at 0.25");
         assert!(three_quarter > 0.75, "Should be ahead of linear at 0.75");
@@ -4074,9 +4087,12 @@ mod tests {
     fn test_easing_ease_in_out_quad_symmetry() {
         let quarter = easing::ease_in_out_quad(0.25);
         let three_quarter = easing::ease_in_out_quad(0.75);
-        
+
         // ease_in_out_quad should be symmetric around 0.5
-        assert!((quarter + three_quarter - 1.0).abs() < 0.01, "Should be symmetric");
+        assert!(
+            (quarter + three_quarter - 1.0).abs() < 0.01,
+            "Should be symmetric"
+        );
     }
 
     #[test]
@@ -4095,7 +4111,7 @@ mod tests {
             completed: false,
             progress: Some((7, 10)),
         };
-        
+
         assert_eq!(obj.id, 1);
         assert!(!obj.completed);
         assert_eq!(obj.progress, Some((7, 10)));
@@ -4109,7 +4125,7 @@ mod tests {
             completed: true,
             progress: None,
         };
-        
+
         assert!(obj.completed);
         assert!(obj.progress.is_none());
     }
@@ -4134,7 +4150,7 @@ mod tests {
         let quest_complete = NotificationType::QuestComplete {
             rewards: vec!["Gold".to_string()],
         };
-        
+
         assert!(format!("{:?}", new_quest).contains("NewQuest"));
         assert!(format!("{:?}", obj_complete).contains("ObjectiveComplete"));
         assert!(format!("{:?}", quest_complete).contains("QuestComplete"));
@@ -4146,21 +4162,21 @@ mod tests {
     fn test_hud_manager_set_minimap_click_callback() {
         let mut hud = HudManager::new();
         assert!(hud.on_minimap_click.is_none());
-        
+
         let called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let called_clone = called.clone();
-        
+
         hud.set_minimap_click_callback(move |_dist| {
             called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
         });
-        
+
         assert!(hud.on_minimap_click.is_some());
-        
+
         // Call the callback
         if let Some(callback) = &hud.on_minimap_click {
             callback(0.5);
         }
-        
+
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
     }
 
@@ -4168,21 +4184,21 @@ mod tests {
     fn test_hud_manager_set_ping_spawn_callback() {
         let mut hud = HudManager::new();
         assert!(hud.on_ping_spawn.is_none());
-        
+
         let called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let called_clone = called.clone();
-        
+
         hud.set_ping_spawn_callback(move |_pos| {
             called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
         });
-        
+
         assert!(hud.on_ping_spawn.is_some());
-        
+
         // Call the callback
         if let Some(callback) = &hud.on_ping_spawn {
             callback((10.0, 20.0));
         }
-        
+
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
     }
 
@@ -4207,9 +4223,24 @@ mod tests {
             title: "Main Quest".to_string(),
             description: "Find items".to_string(),
             objectives: vec![
-                Objective { id: 1, description: "Item 1".to_string(), completed: true, progress: None },
-                Objective { id: 2, description: "Item 2".to_string(), completed: false, progress: Some((3, 5)) },
-                Objective { id: 3, description: "Item 3".to_string(), completed: false, progress: None },
+                Objective {
+                    id: 1,
+                    description: "Item 1".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Item 2".to_string(),
+                    completed: false,
+                    progress: Some((3, 5)),
+                },
+                Objective {
+                    id: 3,
+                    description: "Item 3".to_string(),
+                    completed: false,
+                    progress: None,
+                },
             ],
         };
         assert!((quest.completion() - 0.333).abs() < 0.01);
@@ -4223,8 +4254,18 @@ mod tests {
             title: "Complete Quest".to_string(),
             description: "All done".to_string(),
             objectives: vec![
-                Objective { id: 1, description: "Obj 1".to_string(), completed: true, progress: None },
-                Objective { id: 2, description: "Obj 2".to_string(), completed: true, progress: None },
+                Objective {
+                    id: 1,
+                    description: "Obj 1".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Obj 2".to_string(),
+                    completed: true,
+                    progress: None,
+                },
             ],
         };
         assert_eq!(quest.completion(), 1.0);
@@ -4326,8 +4367,16 @@ mod tests {
             speaker_name: "Elder".to_string(),
             text: "Welcome, traveler!".to_string(),
             choices: vec![
-                DialogueChoice { id: 1, text: "Hello!".to_string(), next_node: Some(2) },
-                DialogueChoice { id: 2, text: "Leave".to_string(), next_node: None },
+                DialogueChoice {
+                    id: 1,
+                    text: "Hello!".to_string(),
+                    next_node: Some(2),
+                },
+                DialogueChoice {
+                    id: 2,
+                    text: "Leave".to_string(),
+                    next_node: None,
+                },
             ],
             portrait_id: Some(42),
         };
@@ -4395,7 +4444,10 @@ mod tests {
     #[test]
     fn test_notification_queue_push_when_empty() {
         let mut queue = NotificationQueue::new();
-        queue.push(QuestNotification::new_quest("Test".to_string(), "Desc".to_string()));
+        queue.push(QuestNotification::new_quest(
+            "Test".to_string(),
+            "Desc".to_string(),
+        ));
         assert!(queue.has_active());
         assert!(queue.pending.is_empty());
     }
@@ -4403,9 +4455,15 @@ mod tests {
     #[test]
     fn test_notification_queue_push_when_active() {
         let mut queue = NotificationQueue::new();
-        queue.push(QuestNotification::new_quest("First".to_string(), "Desc".to_string()));
-        queue.push(QuestNotification::new_quest("Second".to_string(), "Desc".to_string()));
-        
+        queue.push(QuestNotification::new_quest(
+            "First".to_string(),
+            "Desc".to_string(),
+        ));
+        queue.push(QuestNotification::new_quest(
+            "Second".to_string(),
+            "Desc".to_string(),
+        ));
+
         assert!(queue.has_active());
         assert_eq!(queue.active.as_ref().unwrap().title, "First");
         assert_eq!(queue.pending.len(), 1);
@@ -4414,12 +4472,18 @@ mod tests {
     #[test]
     fn test_notification_queue_update_pop_next() {
         let mut queue = NotificationQueue::new();
-        queue.push(QuestNotification::new_quest("First".to_string(), "Desc".to_string()));
-        queue.push(QuestNotification::new_quest("Second".to_string(), "Desc".to_string()));
-        
+        queue.push(QuestNotification::new_quest(
+            "First".to_string(),
+            "Desc".to_string(),
+        ));
+        queue.push(QuestNotification::new_quest(
+            "Second".to_string(),
+            "Desc".to_string(),
+        ));
+
         // Finish first notification
         queue.update(3.0); // Exceeds 2.0s duration
-        
+
         // Second notification should now be active
         assert!(queue.has_active());
         assert_eq!(queue.active.as_ref().unwrap().title, "Second");
@@ -4440,7 +4504,7 @@ mod tests {
         let mut anim = HealthAnimation::new(100.0);
         anim.set_target(50.0);
         assert_eq!(anim.visual_health(), 100.0); // Not animated yet
-        // Update should animate toward target
+                                                 // Update should animate toward target
         anim.update(0.5);
         let visual = anim.visual_health();
         assert!(visual < 100.0 && visual >= 50.0);
@@ -4450,7 +4514,7 @@ mod tests {
     fn test_health_animation_flash_timer() {
         let mut anim = HealthAnimation::new(100.0);
         anim.set_target(50.0); // Taking damage
-        // Flash timer should be set
+                               // Flash timer should be set
         anim.update(0.1);
         // After update, flash behavior depends on implementation
     }
@@ -4529,4 +4593,3 @@ mod tests {
         });
     }
 }
-

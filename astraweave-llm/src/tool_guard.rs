@@ -34,6 +34,7 @@ use tracing::{debug, warn};
 
 /// Security policy for a specific tool/action
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ToolPolicy {
     /// Action is always allowed
     Allowed,
@@ -45,6 +46,8 @@ pub enum ToolPolicy {
 
 /// Validation result for a tool invocation
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+#[must_use]
 pub enum ValidationResult {
     /// Action is valid and can be executed
     Valid,
@@ -220,6 +223,7 @@ impl ToolGuard {
             ActionStep::UseAbility { .. } => "UseAbility",
             ActionStep::Taunt { .. } => "Taunt",
             ActionStep::ModifyTerrain { .. } => "ModifyTerrain",
+            _ => "Unknown",
         }
     }
 

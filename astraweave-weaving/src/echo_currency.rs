@@ -226,6 +226,7 @@ impl Transaction {
 
 /// Reason for Echo transaction (for UI feedback and analytics)
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum TransactionReason {
     /// Tutorial reward (Z0, +2-3 Echoes)
     TutorialReward,

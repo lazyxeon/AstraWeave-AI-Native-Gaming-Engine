@@ -21,6 +21,7 @@ pub struct GpuDecal {
 
 /// Decal blend mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DecalBlendMode {
     /// Multiply albedo, blend normals
     Multiply = 0,

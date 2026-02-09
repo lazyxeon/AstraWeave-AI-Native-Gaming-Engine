@@ -9,6 +9,7 @@ use winit::keyboard::KeyCode;
 
 /// Gizmo operation mode (modal, like Blender).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GizmoMode {
     /// No active transform.
     Inactive,
@@ -120,6 +121,7 @@ impl GizmoMode {
 
 /// Axis constraint for transform operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum AxisConstraint {
     /// Free movement in all axes.
     #[default]

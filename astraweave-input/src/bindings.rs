@@ -6,6 +6,7 @@ use winit::keyboard::KeyCode;
 use crate::Action;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GamepadButton {
     South,
     East,
@@ -123,6 +124,7 @@ impl std::fmt::Display for GamepadButton {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AxisKind {
     LeftX,
     LeftY,

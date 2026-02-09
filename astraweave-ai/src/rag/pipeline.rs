@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 /// Strategy for consolidating memories
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum ConsolidationStrategy {
     /// Keep high importance memories
     Importance,
@@ -19,6 +20,7 @@ pub enum ConsolidationStrategy {
 
 /// Strategy for forgetting memories
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum ForgettingStrategy {
     /// Forget memories older than N seconds
     Age(u64),
@@ -32,6 +34,7 @@ pub enum ForgettingStrategy {
 
 /// Strategy for injecting context into prompts
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum InjectionStrategy {
     /// Prepend context to the prompt
     Prepend,
@@ -249,7 +252,7 @@ impl RagPipeline {
                 let all_ids = self.store.get_all_ids();
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .expect("system clock before UNIX epoch")
                     .as_secs();
                 
                 for id in all_ids {

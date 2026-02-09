@@ -60,6 +60,7 @@ impl Default for BackpressureConfig {
 
 /// Priority levels for request queuing
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum Priority {
     Critical = 0,
     High = 1,
@@ -183,6 +184,8 @@ impl PriorityQueues {
 
 /// Backpressure management result
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum BackpressureResult {
     /// Request was accepted and can proceed immediately
     Accepted { request_id: String },

@@ -1,0 +1,95 @@
+# AstraWeave Biome Ambient Audio Manifest
+# Each biome maps to one or more ambient tracks that loop/crossfade
+# Format: [biome.BIOME_NAME]
+#   primary = "path/to/main_loop.ogg"
+#   secondary = "path/to/optional_layer.ogg"  (optional, for layering)
+#   volume = 0.8  (0.0-1.0, default 0.5)
+#   crossfade = 3.0  (seconds, default 3.0)
+#
+# Audio files should be:
+# - Format: OGG Vorbis (recommended) or WAV
+# - Sample rate: 44100 Hz or 48000 Hz
+# - Channels: Mono for 3D, Stereo for ambient loops
+# - Duration: 30-120 seconds for seamless loops
+#
+# Placeholder entries - replace with actual audio files
+
+[biome.grassland]
+primary = "assets/audio/ambient/grassland.ogg"
+# Gentle wind, distant birds, rustling grass
+volume = 0.5
+crossfade = 3.0
+
+[biome.forest]
+primary = "assets/audio/ambient/forest.ogg"
+# Dense birdsong, creaking branches, rustling leaves
+volume = 0.55
+crossfade = 3.5
+
+[biome.desert]
+primary = "assets/audio/ambient/desert.ogg"
+# Howling wind, sand granules, occasional hawk cry
+volume = 0.45
+crossfade = 4.0
+
+[biome.mountain]
+primary = "assets/audio/ambient/mountain.ogg"
+# Strong wind gusts, distant eagle, rock echoes
+volume = 0.5
+crossfade = 3.0
+
+[biome.tundra]
+primary = "assets/audio/ambient/tundra.ogg"
+# Arctic wind, ice cracking, snow compression
+volume = 0.55
+crossfade = 3.5
+
+[biome.swamp]
+primary = "assets/audio/ambient/swamp.ogg"
+# Frogs, insects, bubbling water, croaking
+volume = 0.6
+crossfade = 3.0
+
+[biome.beach]
+primary = "assets/audio/ambient/beach.ogg"
+# Ocean waves, seagulls, gentle breeze
+volume = 0.55
+crossfade = 4.0
+
+[biome.river]
+primary = "assets/audio/ambient/river.ogg"
+# Flowing water, splashing, riverbank birds
+volume = 0.5
+crossfade = 3.0
+
+# ─── Weather-specific ambient overlays ───────────────────────────────────────
+# These layer over biome ambience during weather events
+
+[weather.rain]
+primary = "assets/audio/ambient/weather_rain.ogg"
+volume = 0.7
+crossfade = 2.0
+
+[weather.storm]
+primary = "assets/audio/ambient/weather_storm.ogg"
+# Heavy rain, thunder, wind
+volume = 0.8
+crossfade = 1.5
+
+[weather.snow]
+primary = "assets/audio/ambient/weather_snow.ogg"
+# Soft wind, muffled sounds, ice crystals
+volume = 0.4
+crossfade = 4.0
+
+[weather.sandstorm]
+primary = "assets/audio/ambient/weather_sandstorm.ogg"
+# Intense wind, sand blasting, reduced visibility ambience
+volume = 0.75
+crossfade = 2.0
+
+[weather.fog]
+primary = "assets/audio/ambient/weather_fog.ogg"
+# Muted sounds, dripping, eerie quiet
+volume = 0.35
+crossfade = 3.0

@@ -59,6 +59,7 @@ pub trait Agent: Send + Sync {
 
 /// State of an agent in the coordination system
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum AgentState {
     Idle,
     Processing,
@@ -83,6 +84,7 @@ pub struct AgentMessage {
 
 /// Types of messages agents can send
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum MessageType {
     Request,
     Response,
@@ -95,6 +97,7 @@ pub enum MessageType {
 
 /// Priority levels for agent messages
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum MessagePriority {
     Low,
     Normal,
@@ -118,6 +121,7 @@ pub struct AgentGoal {
 
 /// Types of goals agents can have
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum GoalType {
     Maintain, // Keep a value within range
     Achieve,  // Reach a target value
@@ -128,6 +132,7 @@ pub enum GoalType {
 
 /// Status of a goal
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum GoalStatus {
     Active,
     Paused,
@@ -205,6 +210,7 @@ pub struct WorldEvent {
 
 /// Severity of world events
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum EventSeverity {
     Trivial,
     Minor,
@@ -241,6 +247,7 @@ pub struct CoordinationContext {
 
 /// Status of coordination session
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum CoordinationStatus {
     Planning,
     Active,

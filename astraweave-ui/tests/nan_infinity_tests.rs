@@ -13,19 +13,11 @@ use std::panic;
 /// Helper to verify a closure doesn't panic
 fn should_not_panic<F: FnOnce() + panic::UnwindSafe>(name: &str, f: F) {
     let result = panic::catch_unwind(f);
-    assert!(
-        result.is_ok(),
-        "{} should not panic on invalid input",
-        name
-    );
+    assert!(result.is_ok(), "{} should not panic on invalid input", name);
 }
 
 /// Helper to create a default DamageNumber for testing
-fn create_damage_number(
-    value: i32,
-    spawn_time: f32,
-    world_pos: (f32, f32, f32),
-) -> DamageNumber {
+fn create_damage_number(value: i32, spawn_time: f32, world_pos: (f32, f32, f32)) -> DamageNumber {
     DamageNumber::new(value, spawn_time, world_pos, DamageType::Normal)
 }
 
@@ -264,7 +256,12 @@ fn test_player_stats_neg_infinity_all_values() {
 #[test]
 fn test_enemy_data_nan_position() {
     should_not_panic("EnemyData with NaN position", || {
-        let enemy = EnemyData::new(1, (f32::NAN, f32::NAN, f32::NAN), 100.0, EnemyFaction::Hostile);
+        let enemy = EnemyData::new(
+            1,
+            (f32::NAN, f32::NAN, f32::NAN),
+            100.0,
+            EnemyFaction::Hostile,
+        );
         let _ = enemy;
     });
 }
@@ -350,11 +347,7 @@ fn test_damage_number_nan_position() {
 #[test]
 fn test_damage_number_infinity_position() {
     should_not_panic("DamageNumber with Infinity position", || {
-        let dmg = create_damage_number(
-            100,
-            0.0,
-            (f32::INFINITY, f32::INFINITY, f32::INFINITY),
-        );
+        let dmg = create_damage_number(100, 0.0, (f32::INFINITY, f32::INFINITY, f32::INFINITY));
         let _ = dmg;
     });
 }
@@ -362,11 +355,7 @@ fn test_damage_number_infinity_position() {
 #[test]
 fn test_damage_number_mixed_nan_infinity_position() {
     should_not_panic("DamageNumber with mixed NaN/Infinity position", || {
-        let dmg = create_damage_number(
-            100,
-            f32::NAN,
-            (f32::NAN, f32::INFINITY, f32::NEG_INFINITY),
-        );
+        let dmg = create_damage_number(100, f32::NAN, (f32::NAN, f32::INFINITY, f32::NEG_INFINITY));
         let _ = dmg;
     });
 }

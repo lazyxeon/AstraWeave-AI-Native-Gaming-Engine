@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! aw-save: versioned, atomic, checksummed, compressed save files for AstraWeave.
 //!
 //! Design goals:

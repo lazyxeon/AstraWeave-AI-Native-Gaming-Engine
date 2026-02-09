@@ -32,7 +32,7 @@ async fn test_summarizer_merge() {
         Message::new(Role::User, "Group 1 message 1".to_string()),
         Message::new(Role::Assistant, "Group 1 response 1".to_string()),
     ];
-    
+
     // Add more messages to meet minimum length requirement
     let mut extended_group1 = group1;
     for i in 0..10 {
@@ -43,7 +43,7 @@ async fn test_summarizer_merge() {
         Message::new(Role::User, "Group 2 message 1".to_string()),
         Message::new(Role::Assistant, "Group 2 response 1".to_string()),
     ];
-    
+
     let mut extended_group2 = group2;
     for i in 0..10 {
         extended_group2.push(Message::new(Role::User, format!("G2 Extra {}", i)));

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Security and Sandboxing for AstraWeave
 //!
 //! This crate provides security features including:
@@ -48,6 +49,7 @@ pub struct TelemetryEvent {
 
 /// Telemetry severity levels
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum TelemetrySeverity {
     Info,
     Warning,
@@ -194,7 +196,7 @@ fn input_validation_system(world: &mut World) {
                 (anti_cheat.trust_score * 0.9) + (validation_result.trust_score * 0.1);
             anti_cheat.last_validation = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .expect("system clock before UNIX epoch")
                 .as_secs();
 
             // Record anomalies
@@ -273,7 +275,7 @@ fn anomaly_detection_system(world: &mut World) {
             telemetry.events.push(TelemetryEvent {
                 timestamp: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .expect("system clock before UNIX epoch")
                     .as_secs(),
                 event_type: "systemic_anomaly".to_string(),
                 severity: TelemetrySeverity::Critical,
@@ -431,11 +433,11 @@ mod ecs_systems_tests;
 #[cfg(test)]
 mod llm_validation_tests;
 #[cfg(test)]
+mod mutation_tests;
+#[cfg(test)]
 mod script_sandbox_tests;
 #[cfg(test)]
 mod signature_tests;
-#[cfg(test)]
-mod mutation_tests;
 
 #[cfg(test)]
 mod tests {

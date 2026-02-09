@@ -23,6 +23,7 @@ pub struct ParseResult {
 
 /// How the JSON was extracted from the response
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ExtractionMethod {
     Direct,           // Direct JSON parse
     CodeFence,        // Extracted from ```json ... ```
@@ -519,6 +520,7 @@ fn action_step_to_tool_name(step: &ActionStep) -> &str {
         ActionStep::Throw { .. } => "Throw",   // Legacy
         ActionStep::Revive { .. } => "Revive", // Legacy
         ActionStep::ModifyTerrain { .. } => "ModifyTerrain", // Director action
+        _ => "Unknown",
     }
 }
 

@@ -51,6 +51,7 @@ impl Default for RenderConfig {
 
 /// Tonemapping operators (from Bevy)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Tonemapping {
     /// No tonemapping (linear)
     None,

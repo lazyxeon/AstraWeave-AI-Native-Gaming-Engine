@@ -31,6 +31,7 @@ impl Default for FluidLodConfig {
 
 /// LOD level for a fluid volume
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LodLevel {
     /// Full detail - all particles simulated every frame
     Full = 0,
@@ -998,6 +999,7 @@ impl ParticleStreamingManager {
 
 /// Streaming operation result
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum StreamingOp {
     /// No operation needed
     None,

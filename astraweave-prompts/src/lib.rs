@@ -111,6 +111,7 @@ impl Default for PromptsConfig {
 
 /// Supported template formats
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum TemplateFormat {
     /// Handlebars templating
     Handlebars,
@@ -554,6 +555,7 @@ fn default_version() -> String {
 
 /// Categories for organizing templates
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TemplateCategory {
     /// Character dialogue templates
     Dialogue,
@@ -932,6 +934,8 @@ impl std::fmt::Display for RenderMetrics {
 
 /// Error types for template operations
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+#[must_use]
 pub enum TemplateError {
     #[error("Template not found: {name}")]
     TemplateNotFound { name: String },
@@ -1209,7 +1213,10 @@ mod tests {
     fn test_template_category_name() {
         assert_eq!(TemplateCategory::Dialogue.name(), "Dialogue");
         assert_eq!(TemplateCategory::WorldBuilding.name(), "World Building");
-        assert_eq!(TemplateCategory::TerrainGeneration.name(), "Terrain Generation");
+        assert_eq!(
+            TemplateCategory::TerrainGeneration.name(),
+            "Terrain Generation"
+        );
     }
 
     #[test]
@@ -1250,7 +1257,10 @@ mod tests {
     #[test]
     fn test_template_category_display() {
         assert_eq!(format!("{}", TemplateCategory::Dialogue), "Dialogue");
-        assert_eq!(format!("{}", TemplateCategory::WorldBuilding), "World Building");
+        assert_eq!(
+            format!("{}", TemplateCategory::WorldBuilding),
+            "World Building"
+        );
     }
 
     // TemplateMetadata tests
@@ -1301,7 +1311,9 @@ mod tests {
         assert_eq!(metadata.total_variables(), 0);
 
         metadata.required_variables = vec!["r1".to_string(), "r2".to_string()];
-        metadata.optional_variables.insert("o1".to_string(), serde_json::Value::Null);
+        metadata
+            .optional_variables
+            .insert("o1".to_string(), serde_json::Value::Null);
         assert_eq!(metadata.total_variables(), 3);
     }
 
@@ -1317,7 +1329,9 @@ mod tests {
     #[test]
     fn test_template_metadata_is_optional_variable() {
         let mut metadata = TemplateMetadata::new("test");
-        metadata.optional_variables.insert("color".to_string(), serde_json::json!("red"));
+        metadata
+            .optional_variables
+            .insert("color".to_string(), serde_json::json!("red"));
 
         assert!(metadata.is_optional_variable("color"));
         assert!(!metadata.is_optional_variable("name"));
@@ -1326,7 +1340,9 @@ mod tests {
     #[test]
     fn test_template_metadata_get_default() {
         let mut metadata = TemplateMetadata::new("test");
-        metadata.optional_variables.insert("count".to_string(), serde_json::json!(5));
+        metadata
+            .optional_variables
+            .insert("count".to_string(), serde_json::json!(5));
 
         assert_eq!(metadata.get_default("count"), Some(&serde_json::json!(5)));
         assert_eq!(metadata.get_default("missing"), None);

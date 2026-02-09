@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 pub mod behavior;
 pub mod llm;
 pub mod profile;

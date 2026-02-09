@@ -1,0 +1,7 @@
+# River biome — stable GPU array indices for terrain splatmap layers
+[layers]
+mud = 0
+gravel = 1
+sand = 2
+moss = 3
+grass = 4

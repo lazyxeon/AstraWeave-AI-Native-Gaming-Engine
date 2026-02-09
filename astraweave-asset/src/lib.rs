@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 use notify::Watcher;
 use serde::{Deserialize, Serialize};
@@ -699,6 +700,7 @@ pub mod gltf_loader {
 
     /// Animation channel data (one property per channel)
     #[derive(Debug, Clone)]
+    #[non_exhaustive]
     pub enum ChannelData {
         Translation(Vec<[f32; 3]>),
         Rotation(Vec<[f32; 4]>), // Quaternions
@@ -715,6 +717,7 @@ pub mod gltf_loader {
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[non_exhaustive]
     pub enum Interpolation {
         Linear,
         Step,
@@ -2979,6 +2982,7 @@ pub struct AssetMetadata {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum AssetKind {
     Mesh,
     Texture,

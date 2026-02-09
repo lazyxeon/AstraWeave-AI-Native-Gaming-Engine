@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Asset Pipeline - Texture compression and mesh optimization for AstraWeave
 //!
 //! This crate provides production-ready asset processing:

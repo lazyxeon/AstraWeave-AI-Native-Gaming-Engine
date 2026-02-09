@@ -64,6 +64,7 @@ impl Default for ContextWindowConfig {
 
 /// Types of context windows
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum WindowType {
     /// Simple sliding window (FIFO)
     Sliding,
@@ -929,7 +930,7 @@ mod tests {
         let config = ContextWindowConfig::default();
         let json = serde_json::to_string(&config).unwrap();
         let deserialized: ContextWindowConfig = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(config.max_tokens, deserialized.max_tokens);
         assert_eq!(config.max_messages, deserialized.max_messages);
     }
@@ -961,7 +962,7 @@ mod tests {
             window_utilization: 0.75,
             attention_computations: 5,
         };
-        
+
         let cloned = stats.clone();
         assert_eq!(stats.total_messages_added, cloned.total_messages_added);
         assert_eq!(stats.messages_pruned, cloned.messages_pruned);
@@ -987,7 +988,7 @@ mod tests {
             content_filter: None,
             copy_message: true,
         };
-        
+
         assert_eq!(rule.source_pattern, "agent-*");
         assert!(rule.targets.contains(&"target1".to_string()));
         assert!(rule.copy_message);
@@ -1002,7 +1003,7 @@ mod tests {
         };
 
         let mut manager = MultiAgentContextManager::new(routing_config);
-        
+
         manager.create_agent_window("agent1", ContextWindowConfig::default());
         manager.create_agent_window("agent2", ContextWindowConfig::default());
 
@@ -1075,14 +1076,12 @@ mod tests {
         let mut manager = MultiAgentContextManager::new(routing_config);
 
         // Adding to nonexistent agent silently succeeds (no-op behavior)
-        let result = manager.add_message_to_agent(
-            "nonexistent",
-            Message::new(Role::User, "Test".to_string()),
-        );
-        
+        let result = manager
+            .add_message_to_agent("nonexistent", Message::new(Role::User, "Test".to_string()));
+
         // Function returns Ok even if agent doesn't exist (silent no-op)
         assert!(result.is_ok());
-        
+
         // Verify agent still doesn't exist
         assert!(manager.get_agent_window("nonexistent").is_none());
     }
@@ -1090,13 +1089,17 @@ mod tests {
     #[test]
     fn test_attention_weight_keyword_boost() {
         let mut config = ContextWindowConfig::default();
-        config.attention_config.content_keywords = vec!["important".to_string(), "urgent".to_string()];
+        config.attention_config.content_keywords =
+            vec!["important".to_string(), "urgent".to_string()];
 
         let mut window = ContextWindow::new(config);
 
         // Add message with keyword
         window
-            .add_message(Message::new(Role::User, "This is important stuff".to_string()))
+            .add_message(Message::new(
+                Role::User,
+                "This is important stuff".to_string(),
+            ))
             .unwrap();
 
         // Add message without keyword

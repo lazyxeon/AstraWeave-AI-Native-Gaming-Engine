@@ -42,6 +42,7 @@ pub type ProjectileId = u64;
 
 /// Type of projectile simulation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum ProjectileKind {
     /// Instant raycast (bullets, lasers) - no travel time
     Hitscan,
@@ -145,6 +146,7 @@ pub struct ProjectileHit {
 
 /// Falloff curve for explosion damage/force
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum FalloffCurve {
     /// Force = max * (1 - distance/radius)
     #[default]

@@ -1,0 +1,7 @@
+# Mountain biome — stable GPU array indices for terrain splatmap layers
+[layers]
+mountain_rock = 0
+snow = 1
+gravel = 2
+stone = 3
+dirt = 4

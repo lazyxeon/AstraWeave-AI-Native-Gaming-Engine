@@ -10,8 +10,8 @@
 #![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::sanitize::{
-    sanitize_input, sanitize_variable_name, truncate_input, validate_safe_charset, TrustLevel,
-    SanitizationConfig,
+    sanitize_input, sanitize_variable_name, truncate_input, validate_safe_charset,
+    SanitizationConfig, TrustLevel,
 };
 
 #[test]
@@ -30,7 +30,11 @@ fn test_sanitize_input_exact_max_length_ok() {
     // Use a repeating, high-entropy base string and truncate to exactly max length.
     let base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
     let repeat_count = cfg.max_user_input_length.div_ceil(base.len());
-    let s: String = base.repeat(repeat_count).chars().take(cfg.max_user_input_length).collect();
+    let s: String = base
+        .repeat(repeat_count)
+        .chars()
+        .take(cfg.max_user_input_length)
+        .collect();
     let out = sanitize_input(&s, TrustLevel::User, &cfg).expect("exact max length should pass");
     assert_eq!(out.len(), cfg.max_user_input_length);
 }
@@ -52,9 +56,14 @@ fn test_sanitize_input_null_byte_blocked_by_default() {
     let input = "hello\0world";
     // Null bytes are now filtered out (not blocked) by default
     // Control characters are stripped when allow_control_chars is false
-    let result = sanitize_input(input, TrustLevel::User, &cfg).expect("null byte should be filtered, not blocked");
+    let result = sanitize_input(input, TrustLevel::User, &cfg)
+        .expect("null byte should be filtered, not blocked");
     assert!(!result.contains('\0'), "null byte should be removed");
-    assert!(result.contains("helloworld"), "content should remain: {}", result);
+    assert!(
+        result.contains("helloworld"),
+        "content should remain: {}",
+        result
+    );
 }
 
 #[test]
@@ -76,7 +85,8 @@ fn test_sanitize_input_unicode_filtered_when_disallowed() {
     cfg.block_injection_patterns = false;
 
     let input = "日本語🎮ABC";
-    let out = sanitize_input(input, TrustLevel::User, &cfg).expect("unicode filtering should not error");
+    let out =
+        sanitize_input(input, TrustLevel::User, &cfg).expect("unicode filtering should not error");
     assert!(out.contains("ABC"));
     assert!(out.is_ascii(), "output should be ASCII-only");
 }

@@ -37,6 +37,7 @@ pub struct InteractionEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum InteractionEventType {
     Inspect, // Open inspection modal
     Close,   // Close inspection modal

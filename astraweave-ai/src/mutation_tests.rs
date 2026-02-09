@@ -6,10 +6,8 @@
 #![cfg(test)]
 
 use crate::core_loop::{CAiController, PlannerMode};
-use crate::orchestrator::{RuleOrchestrator, Orchestrator};
-use astraweave_core::{
-    WorldSnapshot, PlayerState, CompanionState, EnemyState, IVec2, ActionStep,
-};
+use crate::orchestrator::{Orchestrator, RuleOrchestrator};
+use astraweave_core::{ActionStep, CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
 use std::collections::BTreeMap;
 
 // =============================================================================
@@ -82,7 +80,11 @@ mod ai_controller_tests {
     #[test]
     fn default_mode_is_rule() {
         let controller = CAiController::default();
-        assert_eq!(controller.mode, PlannerMode::Rule, "Default mode should be Rule");
+        assert_eq!(
+            controller.mode,
+            PlannerMode::Rule,
+            "Default mode should be Rule"
+        );
     }
 
     #[test]
@@ -126,7 +128,7 @@ mod ai_controller_tests {
     fn has_policy_reflects_policy_presence() {
         let without = CAiController::new(PlannerMode::Rule);
         assert!(!without.has_policy());
-        
+
         let with = CAiController::with_policy(PlannerMode::Rule, "test");
         assert!(with.has_policy());
     }
@@ -169,11 +171,25 @@ mod rule_orchestrator_tests {
     fn test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
             t: 10.0,
-            player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
-            me: CompanionState { ammo: 10, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(5, 5) },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(15, 15), hp: 50, cover: "none".into(), last_seen: 8.0 },
-            ],
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2::new(0, 0),
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2::new(5, 5),
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(15, 15),
+                hp: 50,
+                cover: "none".into(),
+                last_seen: 8.0,
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
@@ -197,8 +213,11 @@ mod rule_orchestrator_tests {
         let orch = RuleOrchestrator::new();
         let snap = test_snapshot();
         let plan = orch.propose_plan(&snap);
-        
-        assert!(!plan.steps.is_empty(), "Plan should have steps when enemies present");
+
+        assert!(
+            !plan.steps.is_empty(),
+            "Plan should have steps when enemies present"
+        );
     }
 
     #[test]
@@ -206,9 +225,15 @@ mod rule_orchestrator_tests {
         let orch = RuleOrchestrator::new();
         let snap = test_snapshot();
         let plan = orch.propose_plan(&snap);
-        
-        let has_smoke = plan.steps.iter().any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
-        assert!(has_smoke, "Plan should include smoke throw when cooldown ready");
+
+        let has_smoke = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
+        assert!(
+            has_smoke,
+            "Plan should include smoke throw when cooldown ready"
+        );
     }
 
     #[test]
@@ -216,11 +241,17 @@ mod rule_orchestrator_tests {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.me.cooldowns.insert("throw:smoke".into(), 5.0); // On cooldown
-        
+
         let plan = orch.propose_plan(&snap);
-        
-        let has_smoke = plan.steps.iter().any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
-        assert!(!has_smoke, "Plan should NOT include smoke throw when on cooldown");
+
+        let has_smoke = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
+        assert!(
+            !has_smoke,
+            "Plan should NOT include smoke throw when on cooldown"
+        );
     }
 
     #[test]
@@ -228,8 +259,11 @@ mod rule_orchestrator_tests {
         let orch = RuleOrchestrator::new();
         let snap = test_snapshot();
         let plan = orch.propose_plan(&snap);
-        
-        let has_move = plan.steps.iter().any(|s| matches!(s, ActionStep::MoveTo { .. }));
+
+        let has_move = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::MoveTo { .. }));
         assert!(has_move, "Plan should include movement action");
     }
 
@@ -238,8 +272,11 @@ mod rule_orchestrator_tests {
         let orch = RuleOrchestrator::new();
         let snap = test_snapshot();
         let plan = orch.propose_plan(&snap);
-        
-        assert!(plan.plan_id.starts_with("plan-"), "Plan ID should start with 'plan-'");
+
+        assert!(
+            plan.plan_id.starts_with("plan-"),
+            "Plan ID should start with 'plan-'"
+        );
     }
 
     #[test]
@@ -247,10 +284,13 @@ mod rule_orchestrator_tests {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.enemies.clear();
-        
+
         let plan = orch.propose_plan(&snap);
-        
-        assert!(plan.steps.is_empty(), "Plan should be empty when no enemies");
+
+        assert!(
+            plan.steps.is_empty(),
+            "Plan should be empty when no enemies"
+        );
     }
 }
 
@@ -283,7 +323,7 @@ mod behavioral_correctness_tests {
         let a = CAiController::new(PlannerMode::Rule);
         let b = CAiController::new(PlannerMode::Rule);
         let c = CAiController::new(PlannerMode::GOAP);
-        
+
         assert_eq!(a, b, "Same mode controllers should be equal");
         assert_ne!(a, c, "Different mode controllers should not be equal");
     }
@@ -294,20 +334,38 @@ mod behavioral_correctness_tests {
         let orch = RuleOrchestrator::new();
         let snap = WorldSnapshot {
             t: 5.0,
-            player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
-            me: CompanionState { ammo: 10, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(2, 2) },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(10, 10), hp: 50, cover: "none".into(), last_seen: 3.0 },
-            ],
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2::new(0, 0),
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2::new(2, 2),
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(10, 10),
+                hp: 50,
+                cover: "none".into(),
+                last_seen: 3.0,
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
         };
-        
+
         let plan1 = orch.propose_plan(&snap);
         let plan2 = orch.propose_plan(&snap);
-        
-        assert_eq!(plan1.steps.len(), plan2.steps.len(), "Same input should produce same plan length");
+
+        assert_eq!(
+            plan1.steps.len(),
+            plan2.steps.len(),
+            "Same input should produce same plan length"
+        );
         // Note: plan_id includes timestamp, so compare steps only
     }
 
@@ -318,17 +376,22 @@ mod behavioral_correctness_tests {
         let snap = WorldSnapshot {
             t: 0.0,
             player: PlayerState::default(),
-            me: CompanionState { pos: IVec2::new(0, 0), ..Default::default() },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(10, 10), ..Default::default() },
-            ],
+            me: CompanionState {
+                pos: IVec2::new(0, 0),
+                ..Default::default()
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(10, 10),
+                ..Default::default()
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
         };
-        
+
         let plan = orch.propose_plan(&snap);
-        
+
         if let Some(ActionStep::Throw { x, y, .. }) = plan.steps.first() {
             // Midpoint of (0,0) and (10,10) = (5,5)
             assert_eq!(*x, 5, "Smoke x should be midpoint");
@@ -345,17 +408,22 @@ mod behavioral_correctness_tests {
         let snap = WorldSnapshot {
             t: 0.0,
             player: PlayerState::default(),
-            me: CompanionState { pos: IVec2::new(0, 0), ..Default::default() },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(10, 10), ..Default::default() },
-            ],
+            me: CompanionState {
+                pos: IVec2::new(0, 0),
+                ..Default::default()
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(10, 10),
+                ..Default::default()
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
         };
-        
+
         let plan = orch.propose_plan(&snap);
-        
+
         // Second step should be MoveTo
         if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.get(1) {
             // From (0,0) towards (10,10), should move in positive direction
@@ -370,22 +438,31 @@ mod behavioral_correctness_tests {
     #[test]
     fn has_policy_consistent_with_policy_name() {
         let without_policy = CAiController::new(PlannerMode::Rule);
-        assert_eq!(without_policy.has_policy(), without_policy.policy_name().is_some());
-        
+        assert_eq!(
+            without_policy.has_policy(),
+            without_policy.policy_name().is_some()
+        );
+
         let with_policy = CAiController::with_policy(PlannerMode::Rule, "test");
-        assert_eq!(with_policy.has_policy(), with_policy.policy_name().is_some());
+        assert_eq!(
+            with_policy.has_policy(),
+            with_policy.policy_name().is_some()
+        );
     }
 
     // --- All modes are covered by all() ---
     #[test]
     fn all_covers_all_modes() {
         let all = PlannerMode::all();
-        
+
         // Verify each mode is in the list exactly once
         let rule_count = all.iter().filter(|m| **m == PlannerMode::Rule).count();
-        let bt_count = all.iter().filter(|m| **m == PlannerMode::BehaviorTree).count();
+        let bt_count = all
+            .iter()
+            .filter(|m| **m == PlannerMode::BehaviorTree)
+            .count();
         let goap_count = all.iter().filter(|m| **m == PlannerMode::GOAP).count();
-        
+
         assert_eq!(rule_count, 1, "Rule should appear exactly once");
         assert_eq!(bt_count, 1, "BehaviorTree should appear exactly once");
         assert_eq!(goap_count, 1, "GOAP should appear exactly once");
@@ -400,16 +477,19 @@ mod boundary_condition_tests {
     use super::*;
 
     // --- Cooldown boundary tests ---
-    
+
     #[test]
     fn cooldown_at_zero_allows_action() {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.me.cooldowns.insert("throw:smoke".into(), 0.0); // Exactly zero
-        
+
         let plan = orch.propose_plan(&snap);
-        
-        let has_smoke = plan.steps.iter().any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
+
+        let has_smoke = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
         assert!(has_smoke, "Zero cooldown should allow smoke throw");
     }
 
@@ -418,21 +498,24 @@ mod boundary_condition_tests {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.me.cooldowns.insert("throw:smoke".into(), 0.001); // Slightly positive
-        
+
         let plan = orch.propose_plan(&snap);
-        
-        let has_smoke = plan.steps.iter().any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
+
+        let has_smoke = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::Throw { item, .. } if item == "smoke"));
         assert!(!has_smoke, "Non-zero cooldown should block smoke throw");
     }
 
     // --- Morale boundary tests ---
-    
+
     #[test]
     fn morale_at_zero() {
         let controller = CAiController::default();
         let mut snap = test_snapshot();
         snap.me.morale = 0.0;
-        
+
         // Controller should still function
         assert_eq!(controller.mode, PlannerMode::Rule);
     }
@@ -442,19 +525,19 @@ mod boundary_condition_tests {
         let controller = CAiController::default();
         let mut snap = test_snapshot();
         snap.me.morale = 1.0;
-        
+
         // Controller should still function
         assert_eq!(controller.mode, PlannerMode::Rule);
     }
 
     // --- Ammo boundary tests ---
-    
+
     #[test]
     fn ammo_at_zero() {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.me.ammo = 0;
-        
+
         let plan = orch.propose_plan(&snap);
         // Plan should still generate (even if no ammo)
         assert!(!plan.plan_id.is_empty());
@@ -465,19 +548,19 @@ mod boundary_condition_tests {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.me.ammo = 1;
-        
+
         let plan = orch.propose_plan(&snap);
         assert!(!plan.plan_id.is_empty());
     }
 
     // --- HP boundary tests ---
-    
+
     #[test]
     fn enemy_hp_at_zero() {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.enemies[0].hp = 0;
-        
+
         let plan = orch.propose_plan(&snap);
         // Should still plan against 0-HP enemy (it exists)
         assert!(!plan.steps.is_empty());
@@ -488,20 +571,20 @@ mod boundary_condition_tests {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.enemies[0].hp = 1;
-        
+
         let plan = orch.propose_plan(&snap);
         assert!(!plan.steps.is_empty());
     }
 
     // --- Position boundary tests ---
-    
+
     #[test]
     fn position_at_origin() {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.me.pos = IVec2::new(0, 0);
         snap.enemies[0].pos = IVec2::new(10, 10);
-        
+
         let plan = orch.propose_plan(&snap);
         assert!(!plan.steps.is_empty());
     }
@@ -512,7 +595,7 @@ mod boundary_condition_tests {
         let mut snap = test_snapshot();
         snap.me.pos = IVec2::new(5, 5);
         snap.enemies[0].pos = IVec2::new(5, 5);
-        
+
         let plan = orch.propose_plan(&snap);
         // Midpoint of same location is the location
         if let Some(ActionStep::Throw { x, y, .. }) = plan.steps.first() {
@@ -522,7 +605,7 @@ mod boundary_condition_tests {
     }
 
     // --- Empty policy string ---
-    
+
     #[test]
     fn empty_policy_string() {
         let controller = CAiController::with_policy(PlannerMode::Rule, "");
@@ -531,13 +614,13 @@ mod boundary_condition_tests {
     }
 
     // --- Timestamp boundary ---
-    
+
     #[test]
     fn timestamp_at_zero() {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.t = 0.0;
-        
+
         let plan = orch.propose_plan(&snap);
         assert!(!plan.plan_id.is_empty());
     }
@@ -545,11 +628,25 @@ mod boundary_condition_tests {
     fn test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
             t: 10.0,
-            player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
-            me: CompanionState { ammo: 10, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(5, 5) },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(15, 15), hp: 50, cover: "none".into(), last_seen: 8.0 },
-            ],
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2::new(0, 0),
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2::new(5, 5),
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(15, 15),
+                hp: 50,
+                cover: "none".into(),
+                last_seen: 8.0,
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
@@ -565,7 +662,7 @@ mod comparison_operator_tests {
     use super::*;
 
     // --- PlannerMode equality ---
-    
+
     #[test]
     fn planner_mode_rule_equals_rule() {
         assert_eq!(PlannerMode::Rule, PlannerMode::Rule);
@@ -597,7 +694,7 @@ mod comparison_operator_tests {
     }
 
     // --- CAiController equality ---
-    
+
     #[test]
     fn controller_equals_self() {
         let controller = CAiController::new(PlannerMode::Rule);
@@ -633,27 +730,41 @@ mod comparison_operator_tests {
     }
 
     // --- Cooldown comparison ---
-    
+
     #[test]
     fn cooldown_comparison_zero_vs_positive() {
         let mut snap = test_snapshot();
         snap.me.cooldowns.insert("throw:smoke".into(), 0.0);
         let cd_zero = *snap.me.cooldowns.get("throw:smoke").unwrap();
-        
+
         snap.me.cooldowns.insert("throw:smoke".into(), 1.0);
         let cd_one = *snap.me.cooldowns.get("throw:smoke").unwrap();
-        
+
         assert!(cd_zero < cd_one);
     }
 
     fn test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
             t: 10.0,
-            player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
-            me: CompanionState { ammo: 10, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(5, 5) },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(15, 15), hp: 50, cover: "none".into(), last_seen: 8.0 },
-            ],
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2::new(0, 0),
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2::new(5, 5),
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(15, 15),
+                hp: 50,
+                cover: "none".into(),
+                last_seen: 8.0,
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
@@ -669,7 +780,7 @@ mod boolean_return_path_tests {
     use super::*;
 
     // --- is_always_available() paths ---
-    
+
     #[test]
     fn is_always_available_returns_true_for_rule() {
         assert!(PlannerMode::Rule.is_always_available());
@@ -686,7 +797,7 @@ mod boolean_return_path_tests {
     }
 
     // --- requires_bt_feature() paths ---
-    
+
     #[test]
     fn requires_bt_feature_returns_true_for_bt() {
         assert!(PlannerMode::BehaviorTree.requires_bt_feature());
@@ -703,7 +814,7 @@ mod boolean_return_path_tests {
     }
 
     // --- requires_goap_feature() paths ---
-    
+
     #[test]
     fn requires_goap_feature_returns_true_for_goap() {
         assert!(PlannerMode::GOAP.requires_goap_feature());
@@ -720,7 +831,7 @@ mod boolean_return_path_tests {
     }
 
     // --- has_policy() paths ---
-    
+
     #[test]
     fn has_policy_returns_true_when_policy_set() {
         let controller = CAiController::with_policy(PlannerMode::Rule, "test");
@@ -741,7 +852,7 @@ mod boolean_return_path_tests {
     }
 
     // --- requires_feature() paths ---
-    
+
     #[test]
     fn requires_feature_returns_false_for_rule() {
         assert!(!CAiController::rule().requires_feature());
@@ -758,7 +869,7 @@ mod boolean_return_path_tests {
     }
 
     // --- required_feature().is_some() paths ---
-    
+
     #[test]
     fn required_feature_is_none_for_rule() {
         assert!(PlannerMode::Rule.required_feature().is_none());
@@ -775,13 +886,13 @@ mod boolean_return_path_tests {
     }
 
     // --- plan.steps.is_empty() paths ---
-    
+
     #[test]
     fn plan_steps_is_empty_when_no_enemies() {
         let orch = RuleOrchestrator::new();
         let mut snap = test_snapshot();
         snap.enemies.clear();
-        
+
         let plan = orch.propose_plan(&snap);
         assert!(plan.steps.is_empty());
     }
@@ -790,7 +901,7 @@ mod boolean_return_path_tests {
     fn plan_steps_not_empty_when_enemies_present() {
         let orch = RuleOrchestrator::new();
         let snap = test_snapshot();
-        
+
         let plan = orch.propose_plan(&snap);
         assert!(!plan.steps.is_empty());
     }
@@ -798,15 +909,28 @@ mod boolean_return_path_tests {
     fn test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
             t: 10.0,
-            player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
-            me: CompanionState { ammo: 10, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(5, 5) },
-            enemies: vec![
-                EnemyState { id: 1, pos: IVec2::new(15, 15), hp: 50, cover: "none".into(), last_seen: 8.0 },
-            ],
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2::new(0, 0),
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2::new(5, 5),
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2::new(15, 15),
+                hp: 50,
+                cover: "none".into(),
+                last_seen: 8.0,
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: None,
         }
     }
 }
-

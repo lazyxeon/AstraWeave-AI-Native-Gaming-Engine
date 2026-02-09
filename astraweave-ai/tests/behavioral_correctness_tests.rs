@@ -16,9 +16,7 @@
 
 #![cfg(feature = "planner_advanced")]
 
-use astraweave_ai::goap::{
-    Action, Goal, OrderedFloat, SimpleAction, StateValue, WorldState,
-};
+use astraweave_ai::goap::{Action, Goal, OrderedFloat, SimpleAction, StateValue, WorldState};
 use std::collections::BTreeMap;
 
 // ============================================================================
@@ -33,11 +31,20 @@ fn test_state_value_bool_comparison() {
 
     // Same values satisfy each other
     assert!(true_val.satisfies(&true_val), "true should satisfy true");
-    assert!(false_val.satisfies(&false_val), "false should satisfy false");
+    assert!(
+        false_val.satisfies(&false_val),
+        "false should satisfy false"
+    );
 
     // Different values don't satisfy
-    assert!(!true_val.satisfies(&false_val), "true should NOT satisfy false");
-    assert!(!false_val.satisfies(&true_val), "false should NOT satisfy true");
+    assert!(
+        !true_val.satisfies(&false_val),
+        "true should NOT satisfy false"
+    );
+    assert!(
+        !false_val.satisfies(&true_val),
+        "false should NOT satisfy true"
+    );
 }
 
 /// Verify StateValue::Int comparison correctness
@@ -65,16 +72,31 @@ fn test_state_value_int_range() {
     let range_0_10 = StateValue::IntRange(0, 10);
 
     // Boundary inclusion (catches off-by-one mutations)
-    assert!(val_0.satisfies(&range_0_10), "0 should satisfy [0,10] - lower bound");
-    assert!(val_5.satisfies(&range_0_10), "5 should satisfy [0,10] - middle");
-    assert!(val_10.satisfies(&range_0_10), "10 should satisfy [0,10] - upper bound");
+    assert!(
+        val_0.satisfies(&range_0_10),
+        "0 should satisfy [0,10] - lower bound"
+    );
+    assert!(
+        val_5.satisfies(&range_0_10),
+        "5 should satisfy [0,10] - middle"
+    );
+    assert!(
+        val_10.satisfies(&range_0_10),
+        "10 should satisfy [0,10] - upper bound"
+    );
 
     // Boundary exclusion
-    assert!(!val_11.satisfies(&range_0_10), "11 should NOT satisfy [0,10]");
+    assert!(
+        !val_11.satisfies(&range_0_10),
+        "11 should NOT satisfy [0,10]"
+    );
 
     // Negative boundary test
     let val_neg1 = StateValue::Int(-1);
-    assert!(!val_neg1.satisfies(&range_0_10), "-1 should NOT satisfy [0,10]");
+    assert!(
+        !val_neg1.satisfies(&range_0_10),
+        "-1 should NOT satisfy [0,10]"
+    );
 }
 
 /// Verify StateValue::Float comparison with tolerance
@@ -84,8 +106,14 @@ fn test_state_value_float_comparison() {
     let val_b = StateValue::Float(OrderedFloat(3.14 + 1e-8)); // Within tolerance
     let val_c = StateValue::Float(OrderedFloat(4.0)); // Different
 
-    assert!(val_a.satisfies(&val_b), "Float values within 1e-6 should satisfy");
-    assert!(!val_a.satisfies(&val_c), "Different floats should NOT satisfy");
+    assert!(
+        val_a.satisfies(&val_b),
+        "Float values within 1e-6 should satisfy"
+    );
+    assert!(
+        !val_a.satisfies(&val_c),
+        "Different floats should NOT satisfy"
+    );
 }
 
 /// Verify StateValue::FloatApprox with epsilon tolerance
@@ -100,10 +128,16 @@ fn test_state_value_float_approx() {
 
     // Test boundary of tolerance (mutation catching)
     let val_edge = StateValue::Float(OrderedFloat(100.05));
-    assert!(val_edge.satisfies(&target_tight), "100.05 should satisfy 100 ± 0.1");
+    assert!(
+        val_edge.satisfies(&target_tight),
+        "100.05 should satisfy 100 ± 0.1"
+    );
 
     let val_outside = StateValue::Float(OrderedFloat(100.2));
-    assert!(!val_outside.satisfies(&target_tight), "100.2 should NOT satisfy 100 ± 0.1");
+    assert!(
+        !val_outside.satisfies(&target_tight),
+        "100.2 should NOT satisfy 100 ± 0.1"
+    );
 }
 
 /// Verify numeric_distance correctness for integers
@@ -169,10 +203,7 @@ fn test_world_state_get_set_state_value() {
     let mut state = WorldState::new();
 
     // Initially empty
-    assert!(
-        state.get("key").is_none(),
-        "Unset key should return None"
-    );
+    assert!(state.get("key").is_none(), "Unset key should return None");
 
     // Set Bool
     state.set("armed", StateValue::Bool(true));
@@ -270,10 +301,7 @@ fn test_world_state_distance_to() {
     let distance = state.distance_to(&goal);
 
     // Distance should be > 0 (unmet conditions + numeric diff)
-    assert!(
-        distance > 0.0,
-        "Distance to unmet goal should be positive"
-    );
+    assert!(distance > 0.0, "Distance to unmet goal should be positive");
 
     // After meeting goal, distance should decrease
     state.set("has_weapon", StateValue::Bool(true));
@@ -319,14 +347,20 @@ fn test_goal_is_satisfied_with_state_values() {
     no_weapon.set("has_weapon", StateValue::Bool(false));
     no_weapon.set("health", StateValue::Int(75));
 
-    assert!(!goal.is_satisfied(&no_weapon), "Goal should NOT be satisfied without weapon");
+    assert!(
+        !goal.is_satisfied(&no_weapon),
+        "Goal should NOT be satisfied without weapon"
+    );
 
     // Unsatisfied - health too low
     let mut low_health = WorldState::new();
     low_health.set("has_weapon", StateValue::Bool(true));
     low_health.set("health", StateValue::Int(25));
 
-    assert!(!goal.is_satisfied(&low_health), "Goal should NOT be satisfied with low health");
+    assert!(
+        !goal.is_satisfied(&low_health),
+        "Goal should NOT be satisfied with low health"
+    );
 }
 
 /// Verify Goal.priority ordering
@@ -414,9 +448,16 @@ fn test_simple_action_structure() {
     let action = SimpleAction::new("shoot", preconditions.clone(), effects.clone(), 1.0);
 
     assert_eq!(action.name(), "shoot", "Action name should match");
-    assert_eq!(action.preconditions(), &preconditions, "Preconditions should match");
+    assert_eq!(
+        action.preconditions(),
+        &preconditions,
+        "Preconditions should match"
+    );
     assert_eq!(action.effects(), &effects, "Effects should match");
-    assert!((action.base_cost() - 1.0).abs() < 0.001, "Base cost should be 1.0");
+    assert!(
+        (action.base_cost() - 1.0).abs() < 0.001,
+        "Base cost should be 1.0"
+    );
 }
 
 /// Verify Action.can_execute() respects preconditions
@@ -430,16 +471,25 @@ fn test_action_can_execute() {
     // Valid state
     let mut valid = WorldState::new();
     valid.set("has_weapon", StateValue::Bool(true));
-    assert!(action.can_execute(&valid), "Should be able to execute with weapon");
+    assert!(
+        action.can_execute(&valid),
+        "Should be able to execute with weapon"
+    );
 
     // Invalid state
     let mut invalid = WorldState::new();
     invalid.set("has_weapon", StateValue::Bool(false));
-    assert!(!action.can_execute(&invalid), "Should NOT be able to execute without weapon");
+    assert!(
+        !action.can_execute(&invalid),
+        "Should NOT be able to execute without weapon"
+    );
 
     // Missing state
     let empty = WorldState::new();
-    assert!(!action.can_execute(&empty), "Should NOT be able to execute with missing state");
+    assert!(
+        !action.can_execute(&empty),
+        "Should NOT be able to execute with missing state"
+    );
 }
 
 /// Verify Action cost is never negative (after history adjustments)
@@ -541,15 +591,27 @@ fn test_mutation_boundary_comparisons() {
     let at_lower = StateValue::Int(0);
     let below_lower = StateValue::Int(-1);
 
-    assert!(at_lower.satisfies(&range), "0 should satisfy [0,10] - catches >= vs >");
-    assert!(!below_lower.satisfies(&range), "-1 should NOT satisfy [0,10]");
+    assert!(
+        at_lower.satisfies(&range),
+        "0 should satisfy [0,10] - catches >= vs >"
+    );
+    assert!(
+        !below_lower.satisfies(&range),
+        "-1 should NOT satisfy [0,10]"
+    );
 
     // Upper boundary
     let at_upper = StateValue::Int(10);
     let above_upper = StateValue::Int(11);
 
-    assert!(at_upper.satisfies(&range), "10 should satisfy [0,10] - catches <= vs <");
-    assert!(!above_upper.satisfies(&range), "11 should NOT satisfy [0,10]");
+    assert!(
+        at_upper.satisfies(&range),
+        "10 should satisfy [0,10] - catches <= vs <"
+    );
+    assert!(
+        !above_upper.satisfies(&range),
+        "11 should NOT satisfy [0,10]"
+    );
 }
 
 /// Catch sign/negation mutations
@@ -622,12 +684,24 @@ fn test_mutation_boolean_logic() {
     let val_false = StateValue::Bool(false);
 
     // true satisfies true, not false
-    assert!(val_true.satisfies(&val_true), "true.satisfies(true) must be true");
-    assert!(!val_true.satisfies(&val_false), "true.satisfies(false) must be false");
+    assert!(
+        val_true.satisfies(&val_true),
+        "true.satisfies(true) must be true"
+    );
+    assert!(
+        !val_true.satisfies(&val_false),
+        "true.satisfies(false) must be false"
+    );
 
     // false satisfies false, not true
-    assert!(val_false.satisfies(&val_false), "false.satisfies(false) must be true");
-    assert!(!val_false.satisfies(&val_true), "false.satisfies(true) must be false");
+    assert!(
+        val_false.satisfies(&val_false),
+        "false.satisfies(false) must be true"
+    );
+    assert!(
+        !val_false.satisfies(&val_true),
+        "false.satisfies(true) must be false"
+    );
 }
 
 /// Catch empty collection edge cases
@@ -638,11 +712,18 @@ fn test_mutation_empty_collections() {
     let goal = Goal::new("empty", empty_goal.clone());
 
     let any_state = WorldState::new();
-    assert!(goal.is_satisfied(&any_state), "Empty goal should be satisfied by any state");
+    assert!(
+        goal.is_satisfied(&any_state),
+        "Empty goal should be satisfied by any state"
+    );
 
     // Distance to empty goal should be 0
     let dist = any_state.distance_to(&empty_goal);
-    assert!(dist < 0.001, "Distance to empty goal should be 0, got {}", dist);
+    assert!(
+        dist < 0.001,
+        "Distance to empty goal should be 0, got {}",
+        dist
+    );
 }
 
 /// Catch type mismatch handling
@@ -655,6 +736,12 @@ fn test_mutation_type_safety() {
     // Different types should not satisfy each other
     assert!(!int_val.satisfies(&bool_val), "Int should not satisfy Bool");
     assert!(!bool_val.satisfies(&int_val), "Bool should not satisfy Int");
-    assert!(!int_val.satisfies(&string_val), "Int should not satisfy String");
-    assert!(!string_val.satisfies(&int_val), "String should not satisfy Int");
+    assert!(
+        !int_val.satisfies(&string_val),
+        "Int should not satisfy String"
+    );
+    assert!(
+        !string_val.satisfies(&int_val),
+        "String should not satisfy Int"
+    );
 }

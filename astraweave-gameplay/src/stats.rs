@@ -12,6 +12,7 @@ pub struct Stats {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum StatusEffect {
     Stagger { time: f32 },
     Bleed { dps: f32, time: f32 },
@@ -96,7 +97,7 @@ mod tests {
     fn test_stats_apply_damage_minimum_damage_is_one() {
         let mut stats = Stats::new(100);
         stats.defense = 100; // Very high defense
-        // damage mitigated = max(5 - 50, 1) = 1
+                             // damage mitigated = max(5 - 50, 1) = 1
         let mitigated = stats.apply_damage(5, DamageType::Physical);
         assert_eq!(mitigated, 1);
         assert_eq!(stats.hp, 99);
@@ -122,7 +123,10 @@ mod tests {
     #[test]
     fn test_stats_tick_bleed_effect_deals_damage() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        });
         // dot = 10 * 1.0 = 10
         let dot = stats.tick(1.0);
         assert_eq!(dot, 10);
@@ -132,7 +136,10 @@ mod tests {
     #[test]
     fn test_stats_tick_bleed_effect_expires() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 0.5 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 0.5,
+        });
         stats.tick(1.0); // Effect should expire
         assert!(stats.effects.is_empty());
     }
@@ -158,7 +165,10 @@ mod tests {
     #[test]
     fn test_stats_tick_chill_effect() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Chill { slow: 0.5, time: 3.0 });
+        stats.effects.push(StatusEffect::Chill {
+            slow: 0.5,
+            time: 3.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 0); // Chill doesn't deal damage
         assert_eq!(stats.hp, 100);
@@ -168,8 +178,14 @@ mod tests {
     #[test]
     fn test_stats_tick_multiple_effects() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 2.0 });
-        stats.effects.push(StatusEffect::Bleed { dps: 3.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 2.0,
+        });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 3.0,
+            time: 2.0,
+        });
         stats.effects.push(StatusEffect::Stagger { time: 1.0 });
         // dot = 5 * 1.0 + 3 * 1.0 = 8
         let dot = stats.tick(1.0);
@@ -183,8 +199,14 @@ mod tests {
     #[test]
     fn test_stats_tick_partial_effect_expiry() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 0.5 }); // Will expire
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 2.0 }); // Will remain
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 0.5,
+        }); // Will expire
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 2.0,
+        }); // Will remain
         stats.tick(1.0);
         assert_eq!(stats.effects.len(), 1);
     }
@@ -200,7 +222,10 @@ mod tests {
 
     #[test]
     fn test_status_effect_serialization() {
-        let effect = StatusEffect::Bleed { dps: 5.0, time: 3.0 };
+        let effect = StatusEffect::Bleed {
+            dps: 5.0,
+            time: 3.0,
+        };
         let json = serde_json::to_string(&effect).expect("serialize");
         assert!(json.contains("Bleed"));
     }
@@ -237,7 +262,10 @@ mod tests {
     #[test]
     fn test_stats_tick_accumulates_bleed_fractional() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 3.0, time: 10.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 3.0,
+            time: 10.0,
+        });
         // dt=0.1, dot = 3.0 * 0.1 = 0.3, truncated to 0
         let dot = stats.tick(0.1);
         assert_eq!(dot, 0);
@@ -247,7 +275,10 @@ mod tests {
     #[test]
     fn test_stats_tick_high_dps_bleed() {
         let mut stats = Stats::new(1000);
-        stats.effects.push(StatusEffect::Bleed { dps: 100.0, time: 5.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 100.0,
+            time: 5.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 100);
         assert_eq!(stats.hp, 900);

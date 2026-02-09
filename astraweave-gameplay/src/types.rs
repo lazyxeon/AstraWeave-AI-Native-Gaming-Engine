@@ -2,6 +2,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum DamageType {
     Physical,
     Echo,
@@ -12,6 +13,7 @@ pub enum DamageType {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum ResourceKind {
     Wood,
     Crystal,
@@ -36,6 +38,7 @@ pub struct WeaveConsequence {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum WeaveOpKind {
     ReinforcePath,
     CollapseBridge,

@@ -7,6 +7,7 @@ use std::f32::consts::PI;
 
 /// Easing function types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EasingFunction {
     /// No easing (constant rate)
     Linear,

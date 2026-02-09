@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum InputContext {
     Gameplay,
     UI,
@@ -41,6 +42,7 @@ impl std::fmt::Display for InputContext {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Action {
     // Movement / Camera
     MoveForward,

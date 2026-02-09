@@ -77,6 +77,56 @@ kind = "hdri"
 res = "2k"
 tags = ["sky:sunset", "time:evening"]
 
+# --- Additional HDRIs for world-class coverage ---
+
+[hdris."drakensberg_solitary_mountain"]
+id = "drakensberg_solitary_mountain"
+kind = "hdri"
+res = "2k"
+tags = ["sky:mountain", "time:day", "biome:mountain"]
+
+[hdris."snowy_forest_path"]
+id = "snowy_forest_path_01"
+kind = "hdri"
+res = "2k"
+tags = ["sky:overcast", "time:day", "biome:tundra"]
+
+[hdris."mud_road"]
+id = "mud_road"
+kind = "hdri"
+res = "2k"
+tags = ["sky:overcast", "time:day", "biome:swamp"]
+
+[hdris."rosendal_plains"]
+id = "rosendal_plains_2"
+kind = "hdri"
+res = "2k"
+tags = ["sky:clear", "time:day", "biome:grassland"]
+
+[hdris."abandoned_tiled_room"]
+id = "abandoned_tiled_room"
+kind = "hdri"
+res = "2k"
+tags = ["interior:dungeon", "time:none", "usage:indoor"]
+
+[hdris."overcast_soil"]
+id = "overcast_soil"
+kind = "hdri"
+res = "2k"
+tags = ["sky:overcast", "time:day", "biome:desert"]
+
+[hdris."moonlit_golf"]
+id = "moonlit_golf"
+kind = "hdri"
+res = "2k"
+tags = ["sky:night", "time:night", "lighting:moonlit"]
+
+[hdris."noon_grass"]
+id = "noon_grass"
+kind = "hdri"
+res = "2k"
+tags = ["sky:highsun", "time:noon", "biome:grassland"]
+
 # === 3D MODELS (Optional - if PolyHaven adds models) ===
 # Note: PolyHaven currently focuses on textures/HDRIs. Models section is prepared for future.
 # Format:

@@ -61,6 +61,7 @@ impl LogEntry {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum LogLevel {
     Debug,
     #[default]

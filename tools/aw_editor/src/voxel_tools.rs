@@ -9,6 +9,7 @@ use std::collections::VecDeque;
 
 /// Brush shape for voxel editing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BrushShape {
     /// Spherical brush
     Sphere,
@@ -60,6 +61,7 @@ impl std::fmt::Display for BrushShape {
 
 /// Brush mode (add or remove voxels)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BrushMode {
     /// Add voxels (increase density)
     Add,

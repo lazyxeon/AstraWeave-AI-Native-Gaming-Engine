@@ -187,6 +187,7 @@ impl PrefabStats {
 
 /// Issues detected in prefab system
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum PrefabIssue {
     /// Prefab file not found on disk
     MissingFile { path: PathBuf },

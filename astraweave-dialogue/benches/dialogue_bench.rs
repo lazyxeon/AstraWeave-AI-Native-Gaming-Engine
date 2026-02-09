@@ -8,8 +8,8 @@
 //!
 //! Run with: `cargo bench -p astraweave-dialogue`
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use astraweave_dialogue::{DialogueGraph, DialogueNode, DialogueResponse};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 // ============================================================================
 // CORRECTNESS ASSERTION HELPERS
@@ -49,7 +49,10 @@ fn create_linear_dialogue(length: usize) -> DialogueGraph {
 
         nodes.push(DialogueNode {
             id,
-            text: format!("This is dialogue text for node {}. It contains some meaningful content.", i),
+            text: format!(
+                "This is dialogue text for node {}. It contains some meaningful content.",
+                i
+            ),
             responses: vec![DialogueResponse {
                 text: "Continue to next part of the conversation".to_string(),
                 next_id,
@@ -88,7 +91,10 @@ fn create_branching_dialogue(depth: usize, branch_factor: usize) -> DialogueGrap
 
         nodes.push(DialogueNode {
             id: parent_id,
-            text: format!("Branch point at depth {} with {} options", level, branch_factor),
+            text: format!(
+                "Branch point at depth {} with {} options",
+                level, branch_factor
+            ),
             responses,
         });
     }
@@ -323,18 +329,14 @@ fn bench_serialization(c: &mut Criterion) {
         group.throughput(Throughput::Elements(size as u64));
 
         // Serialize to JSON
-        group.bench_with_input(
-            BenchmarkId::new("to_json", size),
-            &graph,
-            |b, graph| {
-                b.iter(|| {
-                    let json = serde_json::to_string(black_box(graph))
-                        .expect("Serialization should succeed");
-                    assert!(!json.is_empty(), "JSON should not be empty");
-                    black_box(json)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("to_json", size), &graph, |b, graph| {
+            b.iter(|| {
+                let json =
+                    serde_json::to_string(black_box(graph)).expect("Serialization should succeed");
+                assert!(!json.is_empty(), "JSON should not be empty");
+                black_box(json)
+            })
+        });
 
         // Serialize to pretty JSON
         group.bench_with_input(
@@ -357,38 +359,30 @@ fn bench_serialization(c: &mut Criterion) {
         let json = serde_json::to_string(&graph).unwrap();
 
         group.throughput(Throughput::Bytes(json.len() as u64));
-        group.bench_with_input(
-            BenchmarkId::new("from_json", size),
-            &json,
-            |b, json| {
-                b.iter(|| {
-                    let parsed: DialogueGraph = serde_json::from_str(black_box(json))
-                        .expect("Deserialization should succeed");
-                    assert_eq!(parsed.nodes.len(), size, "Should have all nodes");
-                    black_box(parsed)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("from_json", size), &json, |b, json| {
+            b.iter(|| {
+                let parsed: DialogueGraph =
+                    serde_json::from_str(black_box(json)).expect("Deserialization should succeed");
+                assert_eq!(parsed.nodes.len(), size, "Should have all nodes");
+                black_box(parsed)
+            })
+        });
     }
 
     // Round-trip benchmark
     for size in [10, 50, 100] {
         let graph = create_complex_dialogue(size);
 
-        group.bench_with_input(
-            BenchmarkId::new("roundtrip", size),
-            &graph,
-            |b, graph| {
-                b.iter(|| {
-                    let json = serde_json::to_string(black_box(graph))
-                        .expect("Serialization should succeed");
-                    let parsed: DialogueGraph = serde_json::from_str(&json)
-                        .expect("Deserialization should succeed");
-                    assert_eq!(parsed.nodes.len(), graph.nodes.len());
-                    black_box(parsed)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("roundtrip", size), &graph, |b, graph| {
+            b.iter(|| {
+                let json =
+                    serde_json::to_string(black_box(graph)).expect("Serialization should succeed");
+                let parsed: DialogueGraph =
+                    serde_json::from_str(&json).expect("Deserialization should succeed");
+                assert_eq!(parsed.nodes.len(), graph.nodes.len());
+                black_box(parsed)
+            })
+        });
     }
 
     group.finish();
@@ -538,17 +532,13 @@ fn bench_clone_operations(c: &mut Criterion) {
         let graph = create_complex_dialogue(size);
 
         group.throughput(Throughput::Elements(size as u64));
-        group.bench_with_input(
-            BenchmarkId::new("clone_graph", size),
-            &graph,
-            |b, graph| {
-                b.iter(|| {
-                    let cloned = black_box(graph).clone();
-                    assert_eq!(cloned.nodes.len(), graph.nodes.len());
-                    black_box(cloned)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("clone_graph", size), &graph, |b, graph| {
+            b.iter(|| {
+                let cloned = black_box(graph).clone();
+                assert_eq!(cloned.nodes.len(), graph.nodes.len());
+                black_box(cloned)
+            })
+        });
     }
 
     // Clone individual node

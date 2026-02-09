@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! # AstraWeave Steam Integration
 //!
 //! Steamworks SDK integration for AstraWeave game engine.

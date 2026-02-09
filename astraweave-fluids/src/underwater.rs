@@ -310,7 +310,7 @@ impl DepthZoneManager {
     pub fn add_zone(&mut self, max_depth: f32, config: UnderwaterConfig) {
         self.zones.push(DepthZone { max_depth, config });
         // Keep sorted by depth
-        self.zones.sort_by(|a, b| a.max_depth.partial_cmp(&b.max_depth).unwrap());
+        self.zones.sort_by(|a, b| a.max_depth.partial_cmp(&b.max_depth).unwrap_or(std::cmp::Ordering::Equal));
     }
 
     /// Get the blended configuration for a given depth
@@ -337,7 +337,7 @@ impl DepthZoneManager {
         }
 
         // Deeper than all zones, use last config
-        self.zones.last().unwrap().config.clone()
+        self.zones.last().expect("zones must not be empty").config.clone()
     }
 }
 

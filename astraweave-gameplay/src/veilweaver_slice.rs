@@ -516,9 +516,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_weave_anchor() {
-        let cell = make_cell_with_components(vec![
-            ("WeaveAnchor", r#"{"anchor_id": "anchor_test", "type": "stability", "stability": "medium", "echo_cost": 3.5}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "WeaveAnchor",
+            r#"{"anchor_id": "anchor_test", "type": "stability", "stability": "medium", "echo_cost": 3.5}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.anchors.len(), 1);
@@ -529,9 +530,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_trigger_zone() {
-        let cell = make_cell_with_components(vec![
-            ("TriggerZone", r#"{"trigger_id": "zone_1", "shape": "sphere", "radius": 5.0}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "TriggerZone",
+            r#"{"trigger_id": "zone_1", "shape": "sphere", "radius": 5.0}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.trigger_zones.len(), 1);
@@ -541,9 +543,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_decision_prompt() {
-        let cell = make_cell_with_components(vec![
-            ("DecisionPrompt", r#"{"trigger_id": "prompt_1", "options": ["Yes", "No"]}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "DecisionPrompt",
+            r#"{"trigger_id": "prompt_1", "options": ["Yes", "No"]}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.decision_prompts.len(), 1);
@@ -552,20 +555,25 @@ mod tests {
 
     #[test]
     fn test_extend_cell_encounter_trigger() {
-        let cell = make_cell_with_components(vec![
-            ("EncounterTrigger", r#"{"trigger_id": "enc_1", "script": "battle.lua"}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "EncounterTrigger",
+            r#"{"trigger_id": "enc_1", "script": "battle.lua"}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.encounter_triggers.len(), 1);
-        assert_eq!(meta.encounter_triggers[0].script, Some("battle.lua".to_string()));
+        assert_eq!(
+            meta.encounter_triggers[0].script,
+            Some("battle.lua".to_string())
+        );
     }
 
     #[test]
     fn test_extend_cell_encounter_complete() {
-        let cell = make_cell_with_components(vec![
-            ("EncounterComplete", r#"{"trigger_id": "complete_1", "next_cell": [1, 0, 0]}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "EncounterComplete",
+            r#"{"trigger_id": "complete_1", "next_cell": [1, 0, 0]}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.encounter_completes.len(), 1);
@@ -574,9 +582,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_effect_anchor() {
-        let cell = make_cell_with_components(vec![
-            ("EffectAnchor", r#"{"trigger_id": "fx_1", "effect": "smoke", "intensity": 0.5}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "EffectAnchor",
+            r#"{"trigger_id": "fx_1", "effect": "smoke", "intensity": 0.5}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.effect_anchors.len(), 1);
@@ -585,9 +594,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_spawn_point() {
-        let cell = make_cell_with_components(vec![
-            ("SpawnPoint", r#"{"id": "spawn_1", "facing": [1.0, 0.0, 0.0]}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "SpawnPoint",
+            r#"{"id": "spawn_1", "facing": [1.0, 0.0, 0.0]}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.spawn_points.len(), 1);
@@ -619,9 +629,8 @@ mod tests {
 
     #[test]
     fn test_from_cells_multiple_cells() {
-        let cell1 = make_cell_with_components(vec![
-            ("WeaveAnchor", r#"{"anchor_id": "anchor_1"}"#),
-        ]);
+        let cell1 =
+            make_cell_with_components(vec![("WeaveAnchor", r#"{"anchor_id": "anchor_1"}"#)]);
         let cell2 = make_cell_with_components(vec![
             ("WeaveAnchor", r#"{"anchor_id": "anchor_2"}"#),
             ("SpawnPoint", r#"{"id": "spawn_1"}"#),
@@ -642,7 +651,7 @@ mod tests {
     #[test]
     fn test_extend_cell_invalid_json() {
         let cell = make_cell_with_components(vec![
-            ("WeaveAnchor", r#"{"anchor_id": "test"}"#), // Valid
+            ("WeaveAnchor", r#"{"anchor_id": "test"}"#),  // Valid
             ("TriggerZone", r#"{"trigger_id": "zone"}"#), // Valid
         ]);
         let mut meta = VeilweaverSliceMetadata::default();
@@ -653,9 +662,7 @@ mod tests {
 
     #[test]
     fn test_extend_cell_minimal_weave_anchor() {
-        let cell = make_cell_with_components(vec![
-            ("WeaveAnchor", r#"{"anchor_id": "minimal"}"#),
-        ]);
+        let cell = make_cell_with_components(vec![("WeaveAnchor", r#"{"anchor_id": "minimal"}"#)]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert_eq!(meta.anchors[0].anchor_id, "minimal");
@@ -666,9 +673,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_trigger_zone_with_extents() {
-        let cell = make_cell_with_components(vec![
-            ("TriggerZone", r#"{"trigger_id": "box", "shape": "box", "extents": [10.0, 5.0, 10.0]}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "TriggerZone",
+            r#"{"trigger_id": "box", "shape": "box", "extents": [10.0, 5.0, 10.0]}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         let extents = meta.trigger_zones[0].extents.unwrap();
@@ -678,9 +686,10 @@ mod tests {
 
     #[test]
     fn test_extend_cell_decision_prompt_no_options() {
-        let cell = make_cell_with_components(vec![
-            ("DecisionPrompt", r#"{"trigger_id": "empty_prompt"}"#),
-        ]);
+        let cell = make_cell_with_components(vec![(
+            "DecisionPrompt",
+            r#"{"trigger_id": "empty_prompt"}"#,
+        )]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert!(meta.decision_prompts[0].options.is_empty());
@@ -688,9 +697,8 @@ mod tests {
 
     #[test]
     fn test_extend_cell_encounter_complete_no_next_cell() {
-        let cell = make_cell_with_components(vec![
-            ("EncounterComplete", r#"{"trigger_id": "final"}"#),
-        ]);
+        let cell =
+            make_cell_with_components(vec![("EncounterComplete", r#"{"trigger_id": "final"}"#)]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert!(meta.encounter_completes[0].next_cell.is_none());
@@ -698,9 +706,7 @@ mod tests {
 
     #[test]
     fn test_spec_position_preserved() {
-        let cell = make_cell_with_components(vec![
-            ("WeaveAnchor", r#"{"anchor_id": "pos_test"}"#),
-        ]);
+        let cell = make_cell_with_components(vec![("WeaveAnchor", r#"{"anchor_id": "pos_test"}"#)]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         // Position comes from entity blueprint: [1.0, 2.0, 3.0]
@@ -711,9 +717,8 @@ mod tests {
 
     #[test]
     fn test_spec_cell_coord_preserved() {
-        let cell = make_cell_with_components(vec![
-            ("WeaveAnchor", r#"{"anchor_id": "coord_test"}"#),
-        ]);
+        let cell =
+            make_cell_with_components(vec![("WeaveAnchor", r#"{"anchor_id": "coord_test"}"#)]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         // Coord is [0, 0, 0] from make_cell_with_components
@@ -724,9 +729,7 @@ mod tests {
 
     #[test]
     fn test_effect_anchor_all_optional() {
-        let cell = make_cell_with_components(vec![
-            ("EffectAnchor", r#"{}"#),
-        ]);
+        let cell = make_cell_with_components(vec![("EffectAnchor", r#"{}"#)]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert!(meta.effect_anchors[0].trigger_id.is_none());
@@ -736,9 +739,7 @@ mod tests {
 
     #[test]
     fn test_spawn_point_no_facing() {
-        let cell = make_cell_with_components(vec![
-            ("SpawnPoint", r#"{"id": "no_facing"}"#),
-        ]);
+        let cell = make_cell_with_components(vec![("SpawnPoint", r#"{"id": "no_facing"}"#)]);
         let mut meta = VeilweaverSliceMetadata::default();
         meta.extend_cell(&cell).expect("extend_cell should succeed");
         assert!(meta.spawn_points[0].facing.is_none());

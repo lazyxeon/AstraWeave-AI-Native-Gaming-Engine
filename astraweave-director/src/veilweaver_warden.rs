@@ -3,6 +3,7 @@ use tracing::info;
 
 /// Three-stage adaptive encounter flow for the Oathbound Warden.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum WardenPhase {
     Assessment,
     FulcrumShift,
@@ -10,6 +11,7 @@ pub enum WardenPhase {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum StormChoice {
     Unknown,
     Stabilize,
@@ -17,6 +19,7 @@ pub enum StormChoice {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AdaptiveAbility {
     AntiRangedField,
     CounterShockAura,

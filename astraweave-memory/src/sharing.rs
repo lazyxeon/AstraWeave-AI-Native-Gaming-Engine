@@ -676,7 +676,10 @@ mod tests {
 
         let result = engine.validate_sharing_request(&request, &metadata, "owner");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not in authorized group"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not in authorized group"));
     }
 
     #[test]
@@ -747,7 +750,10 @@ mod tests {
 
         let result = engine.validate_sharing_request(&request, &metadata, "owner");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("only allows metadata"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("only allows metadata"));
     }
 
     #[test]
@@ -771,7 +777,10 @@ mod tests {
 
         let result = engine.validate_sharing_request(&request, &metadata, "owner");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("only allows summary"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("only allows summary"));
     }
 
     #[test]
@@ -812,8 +821,10 @@ mod tests {
             None,
         );
 
-        let content = engine.generate_shared_content(&memory, &SharingType::Full).unwrap();
-        
+        let content = engine
+            .generate_shared_content(&memory, &SharingType::Full)
+            .unwrap();
+
         assert_eq!(content.content, "Full content here");
         assert!(content.entities.contains(&"Alice".to_string()));
     }
@@ -824,8 +835,10 @@ mod tests {
         let long_text = "word ".repeat(100); // 100 words
         let memory = create_working_memory(&long_text);
 
-        let content = engine.generate_shared_content(&memory, &SharingType::Summary).unwrap();
-        
+        let content = engine
+            .generate_shared_content(&memory, &SharingType::Summary)
+            .unwrap();
+
         // Summary should be shorter and end with [...]
         assert!(content.content.len() < long_text.len());
         assert!(content.content.contains("[...]"));
@@ -837,8 +850,10 @@ mod tests {
         let short_text = "This is a short memory".to_string();
         let memory = create_working_memory(&short_text);
 
-        let content = engine.generate_shared_content(&memory, &SharingType::Summary).unwrap();
-        
+        let content = engine
+            .generate_shared_content(&memory, &SharingType::Summary)
+            .unwrap();
+
         assert_eq!(content.content, short_text);
     }
 
@@ -847,8 +862,10 @@ mod tests {
         let engine = SharingEngine::new(SharingConfig::default());
         let memory = Memory::semantic("Secret knowledge".to_string(), "facts".to_string());
 
-        let content = engine.generate_shared_content(&memory, &SharingType::Metadata).unwrap();
-        
+        let content = engine
+            .generate_shared_content(&memory, &SharingType::Metadata)
+            .unwrap();
+
         // Should NOT contain the actual content
         assert!(!content.content.contains("Secret knowledge"));
         // Should contain type and date info
@@ -861,7 +878,7 @@ mod tests {
         let memory = create_working_memory("Test");
 
         let result = engine.generate_shared_content(&memory, &SharingType::Restricted);
-        
+
         assert!(result.is_err());
     }
 
@@ -874,8 +891,10 @@ mod tests {
             None,
         );
 
-        let content = engine.generate_shared_content(&memory, &SharingType::Summary).unwrap();
-        
+        let content = engine
+            .generate_shared_content(&memory, &SharingType::Summary)
+            .unwrap();
+
         assert!(content.entities.contains(&"Alice".to_string()));
         assert!(!content.entities.iter().any(|e| e.starts_with("private:")));
     }
@@ -900,9 +919,12 @@ mod tests {
         };
 
         let result = engine.share_memory(&request, &memory, "owner").unwrap();
-        
+
         assert!(result.success);
-        assert!(result.sharing_metadata.authorized_entities.contains(&"new_entity".to_string()));
+        assert!(result
+            .sharing_metadata
+            .authorized_entities
+            .contains(&"new_entity".to_string()));
     }
 
     #[test]
@@ -919,10 +941,10 @@ mod tests {
         };
 
         let result = engine.share_memory(&request, &memory, "owner").unwrap();
-        
+
         assert!(!result.success);
         assert!(result.error_message.is_some());
-        
+
         // Check audit log recorded the failure
         let audit = engine.get_audit_log(&memory.id);
         assert!(!audit.is_empty());
@@ -948,7 +970,7 @@ mod tests {
         };
 
         let result = engine.share_memory(&request, &memory, "owner").unwrap();
-        
+
         let content = result.shared_content.unwrap();
         assert_eq!(content.content, "Actual content");
     }
@@ -969,7 +991,7 @@ mod tests {
             ..Default::default()
         };
         let mut engine = SharingEngine::new(config);
-        
+
         let memory1 = create_working_memory("Mem1");
         let memory2 = create_working_memory("Mem2");
 
@@ -987,7 +1009,7 @@ mod tests {
 
         let audit1 = engine.get_audit_log(&memory1.id);
         let audit2 = engine.get_audit_log(&memory2.id);
-        
+
         assert_eq!(audit1.len(), 1);
         assert_eq!(audit2.len(), 1);
         assert_eq!(audit1[0].memory_id, memory1.id);
@@ -1002,14 +1024,11 @@ mod tests {
             ..Default::default()
         };
         let engine = SharingEngine::new(config);
-        
-        let memories = vec![
-            create_working_memory("Mem1"),
-            create_working_memory("Mem2"),
-        ];
+
+        let memories = vec![create_working_memory("Mem1"), create_working_memory("Mem2")];
 
         let accessible = engine.get_accessible_memories("anyone", &memories);
-        
+
         // Public memories should be accessible to anyone
         assert_eq!(accessible.len(), 2);
     }
@@ -1021,7 +1040,7 @@ mod tests {
             ..Default::default()
         };
         let engine = SharingEngine::new(config);
-        
+
         let memories = vec![create_working_memory("Test")];
 
         // "owner" is in default authorized list
@@ -1036,7 +1055,7 @@ mod tests {
             ..Default::default()
         };
         let engine = SharingEngine::new(config);
-        
+
         let memories = vec![create_working_memory("Test")];
 
         // "stranger" is not in default authorized list
@@ -1048,14 +1067,16 @@ mod tests {
     #[test]
     fn test_create_shared_cluster_basic() {
         let mut engine = SharingEngine::new(SharingConfig::default());
-        
-        let cluster = engine.create_shared_cluster(
-            "Test Cluster".to_string(),
-            vec!["mem1".to_string(), "mem2".to_string()],
-            vec!["user1".to_string()],
-            PrivacyLevel::Group,
-        ).unwrap();
-        
+
+        let cluster = engine
+            .create_shared_cluster(
+                "Test Cluster".to_string(),
+                vec!["mem1".to_string(), "mem2".to_string()],
+                vec!["user1".to_string()],
+                PrivacyLevel::Group,
+            )
+            .unwrap();
+
         assert_eq!(cluster.name, "Test Cluster");
         assert!(cluster.memory_ids.contains(&"mem1".to_string()));
         assert!(cluster.memory_ids.contains(&"mem2".to_string()));
@@ -1064,14 +1085,16 @@ mod tests {
     #[test]
     fn test_create_shared_cluster_importance() {
         let mut engine = SharingEngine::new(SharingConfig::default());
-        
-        let cluster = engine.create_shared_cluster(
-            "Important Cluster".to_string(),
-            vec!["mem1".to_string()],
-            vec!["user1".to_string()],
-            PrivacyLevel::Public,
-        ).unwrap();
-        
+
+        let cluster = engine
+            .create_shared_cluster(
+                "Important Cluster".to_string(),
+                vec!["mem1".to_string()],
+                vec!["user1".to_string()],
+                PrivacyLevel::Public,
+            )
+            .unwrap();
+
         assert!((cluster.importance - 0.7).abs() < 0.001);
     }
 
@@ -1079,9 +1102,11 @@ mod tests {
     #[test]
     fn test_revoke_access_logs_event() {
         let mut engine = SharingEngine::new(SharingConfig::default());
-        
-        engine.revoke_access("mem123", "target_user", "admin").unwrap();
-        
+
+        engine
+            .revoke_access("mem123", "target_user", "admin")
+            .unwrap();
+
         let audit = engine.get_audit_log("mem123");
         assert_eq!(audit.len(), 1);
         assert!(audit[0].success);
@@ -1093,14 +1118,14 @@ mod tests {
     #[test]
     fn test_revoke_access_multiple() {
         let mut engine = SharingEngine::new(SharingConfig::default());
-        
+
         engine.revoke_access("mem123", "user1", "admin").unwrap();
         engine.revoke_access("mem123", "user2", "admin").unwrap();
         engine.revoke_access("mem456", "user1", "admin").unwrap();
-        
+
         let audit123 = engine.get_audit_log("mem123");
         let audit456 = engine.get_audit_log("mem456");
-        
+
         assert_eq!(audit123.len(), 2);
         assert_eq!(audit456.len(), 1);
     }
@@ -1115,7 +1140,7 @@ mod tests {
             reason: "Testing".to_string(),
             conditions: vec!["NDA signed".to_string(), "Time limited".to_string()],
         };
-        
+
         assert_eq!(request.conditions.len(), 2);
         assert!(request.conditions.contains(&"NDA signed".to_string()));
     }
@@ -1127,8 +1152,10 @@ mod tests {
         let mut memory = create_working_memory("Content");
         memory.metadata.importance = 0.95;
 
-        let content = engine.generate_shared_content(&memory, &SharingType::Full).unwrap();
-        
+        let content = engine
+            .generate_shared_content(&memory, &SharingType::Full)
+            .unwrap();
+
         assert!((content.importance - 0.95).abs() < 0.001);
         assert_eq!(content.memory_type, MemoryType::Working);
     }
@@ -1183,7 +1210,7 @@ mod tests {
         let engine = SharingEngine::new(SharingConfig::default());
         let long = "word ".repeat(60); // 60 words
         let summary = engine.generate_summary(&long);
-        
+
         assert!(summary.contains("[...]"));
         assert!(summary.split_whitespace().count() < 60);
     }

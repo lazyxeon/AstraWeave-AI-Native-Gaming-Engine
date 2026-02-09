@@ -29,18 +29,36 @@ use glam::Vec3;
 #[inline]
 fn assert_triangle_valid(tri: &Triangle, context: &str) {
     // All vertices must be finite
-    assert!(tri.a.x.is_finite() && tri.a.y.is_finite() && tri.a.z.is_finite(),
-        "[CORRECTNESS FAILURE] {}: triangle vertex A non-finite {:?}", context, tri.a);
-    assert!(tri.b.x.is_finite() && tri.b.y.is_finite() && tri.b.z.is_finite(),
-        "[CORRECTNESS FAILURE] {}: triangle vertex B non-finite {:?}", context, tri.b);
-    assert!(tri.c.x.is_finite() && tri.c.y.is_finite() && tri.c.z.is_finite(),
-        "[CORRECTNESS FAILURE] {}: triangle vertex C non-finite {:?}", context, tri.c);
+    assert!(
+        tri.a.x.is_finite() && tri.a.y.is_finite() && tri.a.z.is_finite(),
+        "[CORRECTNESS FAILURE] {}: triangle vertex A non-finite {:?}",
+        context,
+        tri.a
+    );
+    assert!(
+        tri.b.x.is_finite() && tri.b.y.is_finite() && tri.b.z.is_finite(),
+        "[CORRECTNESS FAILURE] {}: triangle vertex B non-finite {:?}",
+        context,
+        tri.b
+    );
+    assert!(
+        tri.c.x.is_finite() && tri.c.y.is_finite() && tri.c.z.is_finite(),
+        "[CORRECTNESS FAILURE] {}: triangle vertex C non-finite {:?}",
+        context,
+        tri.c
+    );
     // Vertices should not be coincident (degenerate triangle)
     let ab = (tri.b - tri.a).length();
     let bc = (tri.c - tri.b).length();
     let ca = (tri.a - tri.c).length();
-    assert!(ab > 0.0001 && bc > 0.0001 && ca > 0.0001,
-        "[CORRECTNESS FAILURE] {}: degenerate triangle (edges: {}, {}, {})", context, ab, bc, ca);
+    assert!(
+        ab > 0.0001 && bc > 0.0001 && ca > 0.0001,
+        "[CORRECTNESS FAILURE] {}: degenerate triangle (edges: {}, {}, {})",
+        context,
+        ab,
+        bc,
+        ca
+    );
 }
 
 /// CORRECTNESS: Validate path is geometrically valid
@@ -49,20 +67,37 @@ fn assert_triangle_valid(tri: &Triangle, context: &str) {
 fn assert_path_valid(path: &[Vec3], start: Vec3, goal: Vec3, context: &str) {
     if !path.is_empty() {
         // Path should have at least 2 points (start and end)
-        assert!(path.len() >= 2,
-            "[CORRECTNESS FAILURE] {}: path has < 2 waypoints ({})", context, path.len());
+        assert!(
+            path.len() >= 2,
+            "[CORRECTNESS FAILURE] {}: path has < 2 waypoints ({})",
+            context,
+            path.len()
+        );
         // First waypoint should be near start
         let start_dist = (path[0] - start).length();
-        assert!(start_dist < 5.0,
-            "[CORRECTNESS FAILURE] {}: path start too far from request ({} units)", context, start_dist);
+        assert!(
+            start_dist < 5.0,
+            "[CORRECTNESS FAILURE] {}: path start too far from request ({} units)",
+            context,
+            start_dist
+        );
         // Last waypoint should be near goal
-        let goal_dist = (path[path.len()-1] - goal).length();
-        assert!(goal_dist < 5.0,
-            "[CORRECTNESS FAILURE] {}: path end too far from goal ({} units)", context, goal_dist);
+        let goal_dist = (path[path.len() - 1] - goal).length();
+        assert!(
+            goal_dist < 5.0,
+            "[CORRECTNESS FAILURE] {}: path end too far from goal ({} units)",
+            context,
+            goal_dist
+        );
         // All waypoints should be finite
         for (i, wp) in path.iter().enumerate() {
-            assert!(wp.x.is_finite() && wp.y.is_finite() && wp.z.is_finite(),
-                "[CORRECTNESS FAILURE] {}: waypoint {} non-finite {:?}", context, i, wp);
+            assert!(
+                wp.x.is_finite() && wp.y.is_finite() && wp.z.is_finite(),
+                "[CORRECTNESS FAILURE] {}: waypoint {} non-finite {:?}",
+                context,
+                i,
+                wp
+            );
         }
     }
     // Note: empty path is valid (no path found on disconnected regions)
@@ -119,7 +154,7 @@ fn create_linear_strip(length: usize) -> Vec<Triangle> {
         };
         assert_triangle_valid(&tri1, "create_linear_strip/tri1");
         tris.push(tri1);
-        
+
         let tri2 = Triangle {
             a: Vec3::new(x + 2.0, 0.0, 0.0),
             b: Vec3::new(x, 0.0, 1.0),
@@ -143,8 +178,10 @@ fn bench_baking_100_triangles(c: &mut Criterion) {
         b.iter(|| {
             let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
             // CORRECTNESS: Baked mesh should have triangles
-            assert!(!nm.tris.is_empty(), 
-                "[CORRECTNESS FAILURE] bake_100_triangles: NavMesh has 0 triangles");
+            assert!(
+                !nm.tris.is_empty(),
+                "[CORRECTNESS FAILURE] bake_100_triangles: NavMesh has 0 triangles"
+            );
             black_box(nm)
         })
     });
@@ -157,8 +194,10 @@ fn bench_baking_1k_triangles(c: &mut Criterion) {
     c.bench_function("bake_1k_triangles", |b| {
         b.iter(|| {
             let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
-            assert!(!nm.tris.is_empty(), 
-                "[CORRECTNESS FAILURE] bake_1k_triangles: NavMesh has 0 triangles");
+            assert!(
+                !nm.tris.is_empty(),
+                "[CORRECTNESS FAILURE] bake_1k_triangles: NavMesh has 0 triangles"
+            );
             black_box(nm)
         })
     });
@@ -171,8 +210,10 @@ fn bench_baking_10k_triangles(c: &mut Criterion) {
     c.bench_function("bake_10k_triangles", |b| {
         b.iter(|| {
             let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
-            assert!(!nm.tris.is_empty(), 
-                "[CORRECTNESS FAILURE] bake_10k_triangles: NavMesh has 0 triangles");
+            assert!(
+                !nm.tris.is_empty(),
+                "[CORRECTNESS FAILURE] bake_10k_triangles: NavMesh has 0 triangles"
+            );
             black_box(nm)
         })
     });
@@ -240,8 +281,10 @@ fn bench_throughput_100_triangles(c: &mut Criterion) {
     let tris = create_grid_navmesh(10, 5); // 100 triangles
     let nm = NavMesh::bake(&tris, 0.5, 60.0);
     // CORRECTNESS: Validate baked mesh
-    assert!(!nm.tris.is_empty(), 
-        "[CORRECTNESS FAILURE] throughput_100: NavMesh has 0 triangles");
+    assert!(
+        !nm.tris.is_empty(),
+        "[CORRECTNESS FAILURE] throughput_100: NavMesh has 0 triangles"
+    );
 
     let start = Vec3::new(0.5, 0.0, 0.5);
     let goal = Vec3::new(5.5, 0.0, 2.5);
@@ -264,8 +307,10 @@ fn bench_throughput_100_triangles(c: &mut Criterion) {
 fn bench_throughput_1k_triangles(c: &mut Criterion) {
     let tris = create_grid_navmesh(32, 16); // 1024 triangles
     let nm = NavMesh::bake(&tris, 0.5, 60.0);
-    assert!(!nm.tris.is_empty(), 
-        "[CORRECTNESS FAILURE] throughput_1k: NavMesh has 0 triangles");
+    assert!(
+        !nm.tris.is_empty(),
+        "[CORRECTNESS FAILURE] throughput_1k: NavMesh has 0 triangles"
+    );
 
     let start = Vec3::new(0.5, 0.0, 0.5);
     let goal = Vec3::new(16.5, 0.0, 8.5);
@@ -287,8 +332,10 @@ fn bench_throughput_1k_triangles(c: &mut Criterion) {
 fn bench_throughput_10k_triangles(c: &mut Criterion) {
     let tris = create_grid_navmesh(100, 50); // 10000 triangles
     let nm = NavMesh::bake(&tris, 0.5, 60.0);
-    assert!(!nm.tris.is_empty(), 
-        "[CORRECTNESS FAILURE] throughput_10k: NavMesh has 0 triangles");
+    assert!(
+        !nm.tris.is_empty(),
+        "[CORRECTNESS FAILURE] throughput_10k: NavMesh has 0 triangles"
+    );
 
     let start = Vec3::new(0.5, 0.0, 0.5);
     let goal = Vec3::new(50.5, 0.0, 25.5);
@@ -322,8 +369,11 @@ fn bench_baking_scaling(c: &mut Criterion) {
             b.iter(|| {
                 let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
                 // CORRECTNESS: Validate baked mesh at all scales
-                assert!(!nm.tris.is_empty(), 
-                    "[CORRECTNESS FAILURE] baking_scaling_{}: NavMesh has 0 triangles", sz);
+                assert!(
+                    !nm.tris.is_empty(),
+                    "[CORRECTNESS FAILURE] baking_scaling_{}: NavMesh has 0 triangles",
+                    sz
+                );
                 black_box(nm)
             })
         });
@@ -339,8 +389,11 @@ fn bench_pathfinding_scaling(c: &mut Criterion) {
         let tris = create_grid_navmesh(*size, *size);
         let nm = NavMesh::bake(&tris, 0.5, 60.0);
         // CORRECTNESS: Validate mesh before pathfinding
-        assert!(!nm.tris.is_empty(), 
-            "[CORRECTNESS FAILURE] pathfinding_scaling_{}: NavMesh has 0 triangles", size);
+        assert!(
+            !nm.tris.is_empty(),
+            "[CORRECTNESS FAILURE] pathfinding_scaling_{}: NavMesh has 0 triangles",
+            size
+        );
 
         let start = Vec3::new(0.5, 0.0, 0.5);
         let goal = Vec3::new((*size as f32) - 0.5, 0.0, (*size as f32) - 0.5);

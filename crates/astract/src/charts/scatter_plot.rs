@@ -5,6 +5,7 @@ use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 /// Point shape for scatter plot.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum PointShape {
     Circle,
     Square,

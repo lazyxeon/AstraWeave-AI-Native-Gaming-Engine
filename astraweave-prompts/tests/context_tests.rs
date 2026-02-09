@@ -8,18 +8,9 @@ fn test_context_basic_ops() {
     ctx.set("count".to_string(), 42.0.into());
     ctx.set("active".to_string(), true.into());
 
-    assert_eq!(
-        ctx.get("name").unwrap().to_string(),
-        "World"
-    );
-    assert_eq!(
-        ctx.get("count").unwrap().to_string(),
-        "42"
-    );
-    assert_eq!(
-        ctx.get("active").unwrap().to_string(),
-        "true"
-    );
+    assert_eq!(ctx.get("name").unwrap().to_string(), "World");
+    assert_eq!(ctx.get("count").unwrap().to_string(), "42");
+    assert_eq!(ctx.get("active").unwrap().to_string(), "true");
     assert!(ctx.get("missing").is_none());
 }
 
@@ -51,12 +42,9 @@ fn test_context_scopes() {
 #[test]
 fn test_context_complex_types() {
     let mut ctx = PromptContext::new();
-    
+
     // Array
-    let arr = vec![
-        ContextValue::from("item1"),
-        ContextValue::from("item2"),
-    ];
+    let arr = vec![ContextValue::from("item1"), ContextValue::from("item2")];
     ctx.set("list".to_string(), ContextValue::Array(arr));
 
     // Object
@@ -72,7 +60,7 @@ fn test_context_complex_types() {
 fn test_to_string_map() {
     let mut ctx = PromptContext::new();
     ctx.set("a".to_string(), "1".into());
-    
+
     ctx.push_scope();
     ctx.set("b".to_string(), "2".into());
 

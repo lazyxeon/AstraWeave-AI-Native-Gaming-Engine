@@ -1400,6 +1400,7 @@ async fn test_texture_module() {
                 assert_eq!(usage.format(), wgpu::TextureFormat::Rgba8Unorm);
                 assert!(usage.needs_mipmaps());
             }
+            _ => { /* future variants */ }
         }
     }
 
@@ -9910,6 +9911,7 @@ fn test_msaa_types_wave21() {
             MsaaMode::X2 => assert_eq!(count, 2),
             MsaaMode::X4 => assert_eq!(count, 4),
             MsaaMode::X8 => assert_eq!(count, 8),
+            _ => { /* future variants */ }
         }
     }
 

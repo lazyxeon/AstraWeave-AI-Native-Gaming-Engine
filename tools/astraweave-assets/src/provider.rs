@@ -52,6 +52,7 @@ pub struct ResolvedAsset {
 /// Asset type enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum AssetType {
     /// PBR texture maps (albedo, normal, roughness, metallic, ao, height)
     Texture,

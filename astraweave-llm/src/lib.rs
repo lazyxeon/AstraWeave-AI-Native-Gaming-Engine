@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::{bail, Result};
 use astraweave_core::{ActionStep, PlanIntent, ToolRegistry, WorldSnapshot};
 use tracing::{debug, info};
@@ -71,6 +72,7 @@ pub fn clear_global_cache() {
 
 /// Enum to distinguish between LLM-generated plans and fallback plans with error reasons
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum PlanSource {
     Llm(PlanIntent),
     Fallback { plan: PlanIntent, reason: String },
@@ -965,7 +967,7 @@ Snapshot (redacted):
 
 {schema}"#,
         tools = tool_list,
-        snap = serde_json::to_string_pretty(snap).unwrap(),
+        snap = serde_json::to_string_pretty(snap).unwrap_or_default(),
         schema = schema
     )
 }

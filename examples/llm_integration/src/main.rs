@@ -103,6 +103,10 @@ async fn test_mock_client(snap: &WorldSnapshot, reg: &ToolRegistry) -> anyhow::R
             println!("MockLlm fell back: {}", reason);
             p
         }
+        _ => {
+            println!("Unknown plan source");
+            return Ok(());
+        }
     };
     println!("✓ MockLlm generated plan:");
     println!("{}", serde_json::to_string_pretty(&plan)?);

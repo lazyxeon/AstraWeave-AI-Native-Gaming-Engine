@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Dialogue system: branching dialogue graphs, validation, and execution
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -103,7 +104,12 @@ impl DialogueNode {
         if self.is_terminal() {
             format!("[{}] \"{}\" (end)", self.id, text_preview)
         } else if self.is_choice() {
-            format!("[{}] \"{}\" ({} choices)", self.id, text_preview, self.response_count())
+            format!(
+                "[{}] \"{}\" ({} choices)",
+                self.id,
+                text_preview,
+                self.response_count()
+            )
         } else {
             format!("[{}] \"{}\" (continue)", self.id, text_preview)
         }
@@ -140,9 +146,20 @@ impl DialogueNode {
 impl fmt::Display for DialogueNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_terminal() {
-            write!(f, "DialogueNode[{}]: \"{}\" (terminal)", self.id, self.truncated_text(40))
+            write!(
+                f,
+                "DialogueNode[{}]: \"{}\" (terminal)",
+                self.id,
+                self.truncated_text(40)
+            )
         } else {
-            write!(f, "DialogueNode[{}]: \"{}\" ({} responses)", self.id, self.truncated_text(40), self.response_count())
+            write!(
+                f,
+                "DialogueNode[{}]: \"{}\" ({} responses)",
+                self.id,
+                self.truncated_text(40),
+                self.response_count()
+            )
         }
     }
 }
@@ -375,11 +392,15 @@ impl DialogueGraph {
     /// Returns nodes that are not referenced by any response.
     #[must_use]
     pub fn root_nodes(&self) -> Vec<&DialogueNode> {
-        let referenced: std::collections::HashSet<&str> = self.nodes
+        let referenced: std::collections::HashSet<&str> = self
+            .nodes
             .iter()
             .flat_map(|n| n.responses.iter().filter_map(|r| r.next_id.as_deref()))
             .collect();
-        self.nodes.iter().filter(|n| !referenced.contains(n.id.as_str())).collect()
+        self.nodes
+            .iter()
+            .filter(|n| !referenced.contains(n.id.as_str()))
+            .collect()
     }
 
     /// Returns all unique node IDs.
@@ -391,7 +412,10 @@ impl DialogueGraph {
     /// Finds nodes whose text contains the given substring (case-insensitive).
     #[must_use]
     pub fn find_nodes_by_text(&self, substr: &str) -> Vec<&DialogueNode> {
-        self.nodes.iter().filter(|n| n.text_contains(substr)).collect()
+        self.nodes
+            .iter()
+            .filter(|n| n.text_contains(substr))
+            .collect()
     }
 
     /// Returns true if the graph is valid (no broken references).
@@ -435,10 +459,10 @@ impl DialogueGraph {
         if self.is_empty() {
             return 0;
         }
-        
+
         let mut max = 0;
         let mut visited = std::collections::HashSet::new();
-        
+
         for node in &self.nodes {
             let depth = self.calculate_depth(&node.id, &mut visited);
             max = max.max(depth);
@@ -447,17 +471,22 @@ impl DialogueGraph {
         max
     }
 
-    fn calculate_depth(&self, node_id: &str, visited: &mut std::collections::HashSet<String>) -> usize {
+    fn calculate_depth(
+        &self,
+        node_id: &str,
+        visited: &mut std::collections::HashSet<String>,
+    ) -> usize {
         if visited.contains(node_id) {
             return 0; // Cycle detected
         }
         visited.insert(node_id.to_string());
-        
+
         if let Some(node) = self.get_node(node_id) {
             if node.is_terminal() {
                 return 1;
             }
-            let max_child = node.responses
+            let max_child = node
+                .responses
                 .iter()
                 .filter_map(|r| r.next_id.as_ref())
                 .map(|next| self.calculate_depth(next, visited))
@@ -545,8 +574,8 @@ mod tests {
 
     #[test]
     fn test_dialogue_node_is_choice() {
-        let single = DialogueNode::new("test", "Hello")
-            .with_response(DialogueResponse::new("Continue"));
+        let single =
+            DialogueNode::new("test", "Hello").with_response(DialogueResponse::new("Continue"));
         assert!(!single.is_choice());
 
         let choice = DialogueNode::new("test", "Choose")
@@ -557,8 +586,8 @@ mod tests {
 
     #[test]
     fn test_dialogue_node_is_linear() {
-        let linear = DialogueNode::new("test", "Hello")
-            .with_response(DialogueResponse::new("Continue"));
+        let linear =
+            DialogueNode::new("test", "Hello").with_response(DialogueResponse::new("Continue"));
         assert!(linear.is_linear());
 
         let empty = DialogueNode::new("test", "End");
@@ -605,7 +634,10 @@ mod tests {
     fn test_dialogue_node_truncated_text() {
         let node = DialogueNode::new("test", "This is a very long dialogue text");
         assert_eq!(node.truncated_text(10), "This is...");
-        assert_eq!(node.truncated_text(100), "This is a very long dialogue text");
+        assert_eq!(
+            node.truncated_text(100),
+            "This is a very long dialogue text"
+        );
     }
 
     #[test]
@@ -628,8 +660,8 @@ mod tests {
 
     #[test]
     fn test_dialogue_node_summary_linear() {
-        let node = DialogueNode::new("linear", "Hello")
-            .with_response(DialogueResponse::new("Continue"));
+        let node =
+            DialogueNode::new("linear", "Hello").with_response(DialogueResponse::new("Continue"));
         let summary = node.summary();
         assert!(summary.contains("(continue)"));
     }
@@ -676,8 +708,8 @@ mod tests {
         assert!(display.contains("DialogueNode"));
         assert!(display.contains("terminal"));
 
-        let with_responses = DialogueNode::new("start", "Hello")
-            .with_response(DialogueResponse::new("Hi"));
+        let with_responses =
+            DialogueNode::new("start", "Hello").with_response(DialogueResponse::new("Hi"));
         let display = format!("{}", with_responses);
         assert!(display.contains("1 responses"));
     }
@@ -749,7 +781,10 @@ mod tests {
     fn test_dialogue_response_truncated_text() {
         let resp = DialogueResponse::new("This is a very long response text");
         assert_eq!(resp.truncated_text(10), "This is...");
-        assert_eq!(resp.truncated_text(100), "This is a very long response text");
+        assert_eq!(
+            resp.truncated_text(100),
+            "This is a very long response text"
+        );
     }
 
     #[test]
@@ -996,13 +1031,12 @@ mod tests {
 
     #[test]
     fn test_get_node_mut() {
-        let mut graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("test", "Original"));
-        
+        let mut graph = DialogueGraph::new().with_node(DialogueNode::new("test", "Original"));
+
         if let Some(node) = graph.get_node_mut("test") {
             node.text = "Modified".to_string();
         }
-        
+
         assert_eq!(graph.get_node("test").unwrap().text, "Modified");
     }
 
@@ -1026,8 +1060,7 @@ mod tests {
 
     #[test]
     fn test_dialogue_graph_has_node() {
-        let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("exists", "Hello"));
+        let graph = DialogueGraph::new().with_node(DialogueNode::new("exists", "Hello"));
         assert!(graph.has_node("exists"));
         assert!(!graph.has_node("not_exists"));
     }
@@ -1035,10 +1068,12 @@ mod tests {
     #[test]
     fn test_dialogue_graph_terminal_nodes() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("start", "Hello")
-                .with_response(DialogueResponse::with_next("Continue", "end")))
+            .with_node(
+                DialogueNode::new("start", "Hello")
+                    .with_response(DialogueResponse::with_next("Continue", "end")),
+            )
             .with_node(DialogueNode::new("end", "Goodbye"));
-        
+
         let terminals = graph.terminal_nodes();
         assert_eq!(terminals.len(), 1);
         assert_eq!(terminals[0].id, "end");
@@ -1049,20 +1084,25 @@ mod tests {
         let graph = DialogueGraph::new()
             .with_node(DialogueNode::new("1", "A"))
             .with_node(DialogueNode::new("2", "B"))
-            .with_node(DialogueNode::new("3", "C")
-                .with_response(DialogueResponse::new("Continue")));
+            .with_node(
+                DialogueNode::new("3", "C").with_response(DialogueResponse::new("Continue")),
+            );
         assert_eq!(graph.terminal_count(), 2);
     }
 
     #[test]
     fn test_dialogue_graph_choice_nodes() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("choice", "Choose")
-                .with_response(DialogueResponse::new("A"))
-                .with_response(DialogueResponse::new("B")))
-            .with_node(DialogueNode::new("linear", "Hello")
-                .with_response(DialogueResponse::new("Continue")));
-        
+            .with_node(
+                DialogueNode::new("choice", "Choose")
+                    .with_response(DialogueResponse::new("A"))
+                    .with_response(DialogueResponse::new("B")),
+            )
+            .with_node(
+                DialogueNode::new("linear", "Hello")
+                    .with_response(DialogueResponse::new("Continue")),
+            );
+
         let choices = graph.choice_nodes();
         assert_eq!(choices.len(), 1);
         assert_eq!(choices[0].id, "choice");
@@ -1071,23 +1111,29 @@ mod tests {
     #[test]
     fn test_dialogue_graph_choice_count() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("c1", "Choice 1")
-                .with_response(DialogueResponse::new("A"))
-                .with_response(DialogueResponse::new("B")))
-            .with_node(DialogueNode::new("c2", "Choice 2")
-                .with_response(DialogueResponse::new("X"))
-                .with_response(DialogueResponse::new("Y"))
-                .with_response(DialogueResponse::new("Z")));
+            .with_node(
+                DialogueNode::new("c1", "Choice 1")
+                    .with_response(DialogueResponse::new("A"))
+                    .with_response(DialogueResponse::new("B")),
+            )
+            .with_node(
+                DialogueNode::new("c2", "Choice 2")
+                    .with_response(DialogueResponse::new("X"))
+                    .with_response(DialogueResponse::new("Y"))
+                    .with_response(DialogueResponse::new("Z")),
+            );
         assert_eq!(graph.choice_count(), 2);
     }
 
     #[test]
     fn test_dialogue_graph_linear_nodes() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("linear", "Hello")
-                .with_response(DialogueResponse::new("Continue")))
+            .with_node(
+                DialogueNode::new("linear", "Hello")
+                    .with_response(DialogueResponse::new("Continue")),
+            )
             .with_node(DialogueNode::new("terminal", "End"));
-        
+
         let linear = graph.linear_nodes();
         assert_eq!(linear.len(), 1);
         assert_eq!(linear[0].id, "linear");
@@ -1096,11 +1142,12 @@ mod tests {
     #[test]
     fn test_dialogue_graph_total_response_count() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("1", "A")
-                .with_response(DialogueResponse::new("R1"))
-                .with_response(DialogueResponse::new("R2")))
-            .with_node(DialogueNode::new("2", "B")
-                .with_response(DialogueResponse::new("R3")));
+            .with_node(
+                DialogueNode::new("1", "A")
+                    .with_response(DialogueResponse::new("R1"))
+                    .with_response(DialogueResponse::new("R2")),
+            )
+            .with_node(DialogueNode::new("2", "B").with_response(DialogueResponse::new("R3")));
         assert_eq!(graph.total_response_count(), 3);
     }
 
@@ -1118,12 +1165,16 @@ mod tests {
     #[test]
     fn test_dialogue_graph_root_nodes() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("start", "Hello")
-                .with_response(DialogueResponse::with_next("Continue", "middle")))
-            .with_node(DialogueNode::new("middle", "How are you?")
-                .with_response(DialogueResponse::with_next("Continue", "end")))
+            .with_node(
+                DialogueNode::new("start", "Hello")
+                    .with_response(DialogueResponse::with_next("Continue", "middle")),
+            )
+            .with_node(
+                DialogueNode::new("middle", "How are you?")
+                    .with_response(DialogueResponse::with_next("Continue", "end")),
+            )
             .with_node(DialogueNode::new("end", "Goodbye"));
-        
+
         let roots = graph.root_nodes();
         assert_eq!(roots.len(), 1);
         assert_eq!(roots[0].id, "start");
@@ -1135,7 +1186,7 @@ mod tests {
             .with_node(DialogueNode::new("a", "A"))
             .with_node(DialogueNode::new("b", "B"))
             .with_node(DialogueNode::new("c", "C"));
-        
+
         let ids = graph.node_ids();
         assert_eq!(ids.len(), 3);
         assert!(ids.contains(&"a"));
@@ -1149,7 +1200,7 @@ mod tests {
             .with_node(DialogueNode::new("1", "Hello World"))
             .with_node(DialogueNode::new("2", "Goodbye World"))
             .with_node(DialogueNode::new("3", "Something else"));
-        
+
         let found = graph.find_nodes_by_text("world");
         assert_eq!(found.len(), 2);
     }
@@ -1157,24 +1208,28 @@ mod tests {
     #[test]
     fn test_dialogue_graph_is_valid() {
         let valid = DialogueGraph::new()
-            .with_node(DialogueNode::new("1", "Hello")
-                .with_response(DialogueResponse::with_next("Go", "2")))
+            .with_node(
+                DialogueNode::new("1", "Hello")
+                    .with_response(DialogueResponse::with_next("Go", "2")),
+            )
             .with_node(DialogueNode::new("2", "Bye"));
         assert!(valid.is_valid());
 
-        let invalid = DialogueGraph::new()
-            .with_node(DialogueNode::new("1", "Hello")
-                .with_response(DialogueResponse::with_next("Go", "nonexistent")));
+        let invalid = DialogueGraph::new().with_node(
+            DialogueNode::new("1", "Hello")
+                .with_response(DialogueResponse::with_next("Go", "nonexistent")),
+        );
         assert!(!invalid.is_valid());
     }
 
     #[test]
     fn test_dialogue_graph_validation_errors() {
-        let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("1", "Hello")
+        let graph = DialogueGraph::new().with_node(
+            DialogueNode::new("1", "Hello")
                 .with_response(DialogueResponse::with_next("A", "missing_a"))
-                .with_response(DialogueResponse::with_next("B", "missing_b")));
-        
+                .with_response(DialogueResponse::with_next("B", "missing_b")),
+        );
+
         let errors = graph.validation_errors();
         assert_eq!(errors.len(), 2);
         assert!(errors.iter().any(|e| e.contains("missing_a")));
@@ -1184,11 +1239,13 @@ mod tests {
     #[test]
     fn test_dialogue_graph_summary() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("choice", "Choose")
-                .with_response(DialogueResponse::new("A"))
-                .with_response(DialogueResponse::new("B")))
+            .with_node(
+                DialogueNode::new("choice", "Choose")
+                    .with_response(DialogueResponse::new("A"))
+                    .with_response(DialogueResponse::new("B")),
+            )
             .with_node(DialogueNode::new("end", "Goodbye"));
-        
+
         let summary = graph.summary();
         assert!(summary.contains("2 nodes"));
         assert!(summary.contains("2 responses"));
@@ -1204,26 +1261,26 @@ mod tests {
 
     #[test]
     fn test_dialogue_graph_max_depth_single() {
-        let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("only", "Hello"));
+        let graph = DialogueGraph::new().with_node(DialogueNode::new("only", "Hello"));
         assert_eq!(graph.max_depth(), 1);
     }
 
     #[test]
     fn test_dialogue_graph_max_depth_chain() {
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("1", "A")
-                .with_response(DialogueResponse::with_next("Go", "2")))
-            .with_node(DialogueNode::new("2", "B")
-                .with_response(DialogueResponse::with_next("Go", "3")))
+            .with_node(
+                DialogueNode::new("1", "A").with_response(DialogueResponse::with_next("Go", "2")),
+            )
+            .with_node(
+                DialogueNode::new("2", "B").with_response(DialogueResponse::with_next("Go", "3")),
+            )
             .with_node(DialogueNode::new("3", "C"));
         assert_eq!(graph.max_depth(), 3);
     }
 
     #[test]
     fn test_dialogue_graph_display() {
-        let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("1", "Hello"));
+        let graph = DialogueGraph::new().with_node(DialogueNode::new("1", "Hello"));
         let display = format!("{}", graph);
         assert!(display.contains("DialogueGraph"));
         assert!(display.contains("1 nodes"));
@@ -1288,11 +1345,13 @@ mod tests {
     fn test_graph_with_cycle_detection() {
         // Cycles shouldn't cause infinite loops in max_depth
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("a", "A")
-                .with_response(DialogueResponse::with_next("Go", "b")))
-            .with_node(DialogueNode::new("b", "B")
-                .with_response(DialogueResponse::with_next("Back", "a"))); // Cycle!
-        
+            .with_node(
+                DialogueNode::new("a", "A").with_response(DialogueResponse::with_next("Go", "b")),
+            )
+            .with_node(
+                DialogueNode::new("b", "B").with_response(DialogueResponse::with_next("Back", "a")),
+            ); // Cycle!
+
         // Should not hang - cycle detection returns 0 for visited nodes
         let depth = graph.max_depth();
         assert!(depth <= 2);
@@ -1300,8 +1359,7 @@ mod tests {
 
     #[test]
     fn test_response_chain_building() {
-        let response = DialogueResponse::new("Start")
-            .next("step2");
+        let response = DialogueResponse::new("Start").next("step2");
         assert_eq!(response.text, "Start");
         assert!(response.has_next_id("step2"));
     }
@@ -1310,15 +1368,21 @@ mod tests {
     fn test_dialogue_graph_complex_structure() {
         // Create a complex branching dialogue
         let graph = DialogueGraph::new()
-            .with_node(DialogueNode::new("start", "Welcome!")
-                .with_response(DialogueResponse::with_next("Accept quest", "accept"))
-                .with_response(DialogueResponse::with_next("Decline quest", "decline"))
-                .with_response(DialogueResponse::new("Leave")))
-            .with_node(DialogueNode::new("accept", "Thank you!")
-                .with_response(DialogueResponse::with_next("Continue", "quest")))
-            .with_node(DialogueNode::new("decline", "Maybe another time...")
-                .with_response(DialogueResponse::with_next("Actually, I'll help", "accept"))
-                .with_response(DialogueResponse::new("Goodbye")))
+            .with_node(
+                DialogueNode::new("start", "Welcome!")
+                    .with_response(DialogueResponse::with_next("Accept quest", "accept"))
+                    .with_response(DialogueResponse::with_next("Decline quest", "decline"))
+                    .with_response(DialogueResponse::new("Leave")),
+            )
+            .with_node(
+                DialogueNode::new("accept", "Thank you!")
+                    .with_response(DialogueResponse::with_next("Continue", "quest")),
+            )
+            .with_node(
+                DialogueNode::new("decline", "Maybe another time...")
+                    .with_response(DialogueResponse::with_next("Actually, I'll help", "accept"))
+                    .with_response(DialogueResponse::new("Goodbye")),
+            )
             .with_node(DialogueNode::new("quest", "Go to the forest"));
 
         assert!(graph.is_valid());

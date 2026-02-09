@@ -16,6 +16,7 @@ use egui::{Color32, RichText, Ui};
 
 /// Erosion preset types for quick configuration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ErosionPresetType {
     Custom,
     Desert,
@@ -185,6 +186,7 @@ impl Default for SplatParams {
 
 /// Water body type for fluid placement
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum WaterBodyPreset {
     Custom,
     CalmLake,
@@ -233,6 +235,7 @@ impl WaterBodyPreset {
 
 /// Fluid simulation quality preset
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FluidQualityPreset {
     Performance,
     Balanced,
@@ -441,6 +444,7 @@ pub struct TerrainPanel {
 
 /// Brush modes for terrain sculpting
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BrushMode {
     Sculpt,
     Smooth,
@@ -489,6 +493,7 @@ impl BrushMode {
 
 /// Actions that can be performed on the terrain panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum TerrainAction {
     /// Generate terrain with current settings
     Generate,

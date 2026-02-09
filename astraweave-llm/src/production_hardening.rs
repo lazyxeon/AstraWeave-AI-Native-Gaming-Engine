@@ -107,6 +107,8 @@ pub struct HardenedRequest {
 
 /// Result of production hardening processing
 #[derive(Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum HardeningResult<T> {
     /// Request processed successfully
     Success(T),
@@ -144,6 +146,7 @@ pub struct SystemHealth {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum HealthStatus {
     Healthy,
     Degraded,

@@ -8,6 +8,7 @@ use std::path::Path;
 /// Color space designation for textures
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum ColorSpace {
     /// sRGB color space (for albedo/color textures)
     Srgb,
@@ -17,6 +18,7 @@ pub enum ColorSpace {
 
 /// Normal map Y-axis convention
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum NormalYConvention {
     /// OpenGL convention (Y+ up)
     OpenGl,
@@ -26,6 +28,7 @@ pub enum NormalYConvention {
 
 /// GPU texture compression format
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CompressionFormat {
     /// BC1 (DXT1) - RGB + 1-bit alpha, 4:1 compression
     Bc1,

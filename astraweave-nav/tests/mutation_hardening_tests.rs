@@ -269,22 +269,31 @@ mod aabb_is_empty_per_axis {
 
     #[test]
     fn empty_on_x_axis_only() {
-        // min.x == max.x, but y and z are valid 
+        // min.x == max.x, but y and z are valid
         // With >=: true (empty). With >: false (not empty) — catches the mutation
         let aabb = Aabb::new(Vec3::new(5.0, 0.0, 0.0), Vec3::new(5.0, 1.0, 1.0));
-        assert!(aabb.is_empty(), "AABB with min.x == max.x must be empty (>= not >)");
+        assert!(
+            aabb.is_empty(),
+            "AABB with min.x == max.x must be empty (>= not >)"
+        );
     }
 
     #[test]
     fn empty_on_y_axis_only() {
         let aabb = Aabb::new(Vec3::new(0.0, 5.0, 0.0), Vec3::new(1.0, 5.0, 1.0));
-        assert!(aabb.is_empty(), "AABB with min.y == max.y must be empty (>= not >)");
+        assert!(
+            aabb.is_empty(),
+            "AABB with min.y == max.y must be empty (>= not >)"
+        );
     }
 
     #[test]
     fn empty_on_z_axis_only() {
         let aabb = Aabb::new(Vec3::new(0.0, 0.0, 5.0), Vec3::new(1.0, 1.0, 5.0));
-        assert!(aabb.is_empty(), "AABB with min.z == max.z must be empty (>= not >)");
+        assert!(
+            aabb.is_empty(),
+            "AABB with min.z == max.z must be empty (>= not >)"
+        );
     }
 
     // --- Valid on all axes (catches || → && when only one axis is collapsed) ---
@@ -350,7 +359,11 @@ mod aabb_arithmetic {
     fn volume_1x1x1_is_1_not_3() {
         // Catches * → + (1+1+1=3) since 1*1*1=1
         let v = Aabb::new(Vec3::ZERO, Vec3::ONE).volume();
-        assert!((v - 1.0).abs() < 1e-6, "volume of unit cube must be 1.0, got {}", v);
+        assert!(
+            (v - 1.0).abs() < 1e-6,
+            "volume of unit cube must be 1.0, got {}",
+            v
+        );
     }
 
     // --- surface_area = 2 * (xy + yz + zx) ---
@@ -371,7 +384,11 @@ mod aabb_arithmetic {
         // 2*(1+1+1) = 6
         // If the 2.0* were removed: 3.0. If + → *: 2*(1*1*1) = 2.
         let sa = Aabb::new(Vec3::ZERO, Vec3::ONE).surface_area();
-        assert!((sa - 6.0).abs() < 1e-6, "surface area of unit cube must be 6.0, got {}", sa);
+        assert!(
+            (sa - 6.0).abs() < 1e-6,
+            "surface area of unit cube must be 6.0, got {}",
+            sa
+        );
     }
 
     #[test]
@@ -387,7 +404,11 @@ mod aabb_arithmetic {
     fn longest_axis_is_z_when_z_largest() {
         // sizes: (2, 3, 5) → max = 5
         let la = asymmetric().longest_axis();
-        assert!((la - 5.0).abs() < 1e-6, "longest axis should be 5.0, got {}", la);
+        assert!(
+            (la - 5.0).abs() < 1e-6,
+            "longest axis should be 5.0, got {}",
+            la
+        );
     }
 
     #[test]
@@ -408,7 +429,11 @@ mod aabb_arithmetic {
     fn shortest_axis_is_x_when_x_smallest() {
         // sizes: (2, 3, 5) → min = 2
         let sa = asymmetric().shortest_axis();
-        assert!((sa - 2.0).abs() < 1e-6, "shortest axis should be 2.0, got {}", sa);
+        assert!(
+            (sa - 2.0).abs() < 1e-6,
+            "shortest axis should be 2.0, got {}",
+            sa
+        );
     }
 
     #[test]
@@ -627,7 +652,12 @@ mod navtri_boundaries {
         let target = Vec3::new(5.0, 7.0, 6.0);
         let d = tri.distance_to(target);
         let dsq = tri.distance_squared_to(target);
-        assert!((d * d - dsq).abs() < 1e-4, "d²={} should equal dsq={}", d * d, dsq);
+        assert!(
+            (d * d - dsq).abs() < 1e-4,
+            "d²={} should equal dsq={}",
+            d * d,
+            dsq
+        );
     }
 
     // --- NavTri::has_neighbor ---
@@ -931,11 +961,7 @@ mod bake_slope_boundary {
         let center = Vec3::new(0.0, 0.0, 0.0);
         // Vertex order: (center, center+tangent2, center+tangent1) gives
         // cross(tangent2, tangent1) which produces an upward-facing normal
-        Triangle::new(
-            center,
-            center + tangent2,
-            center + tangent1,
-        )
+        Triangle::new(center, center + tangent2, center + tangent1)
     }
 
     #[test]
@@ -1111,12 +1137,7 @@ mod display_tests {
 
     #[test]
     fn navtri_display_contains_index_and_neighbors() {
-        let mut tri = NavTri::new(
-            42,
-            [Vec3::ZERO, Vec3::X, Vec3::Z],
-            Vec3::Y,
-            Vec3::ZERO,
-        );
+        let mut tri = NavTri::new(42, [Vec3::ZERO, Vec3::X, Vec3::Z], Vec3::Y, Vec3::ZERO);
         tri.neighbors = vec![1, 2, 3];
         let s = format!("{}", tri);
         assert!(s.contains("42"), "Display must contain index '42'");

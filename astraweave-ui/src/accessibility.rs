@@ -12,6 +12,7 @@ pub type Color = (f32, f32, f32);
 
 /// Colorblind mode for health bar and status colors
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum ColorblindMode {
     /// Normal color vision
     #[default]

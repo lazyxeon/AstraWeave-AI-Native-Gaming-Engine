@@ -14,6 +14,7 @@ use crate::panels::Panel;
 
 /// UI widget type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum WidgetType {
     #[default]
     Panel,
@@ -95,6 +96,7 @@ impl WidgetType {
 
 /// Anchor preset for UI positioning
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AnchorPreset {
     #[default]
     TopLeft,
@@ -277,6 +279,7 @@ pub struct UiCanvas {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[allow(clippy::enum_variant_names)] // ScaleMode variants all end with Size by design
+#[non_exhaustive]
 pub enum ScaleMode {
     #[default]
     ConstantPixelSize,
@@ -408,6 +411,7 @@ pub struct UiAnimation {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum EasingType {
     #[default]
     Linear,
@@ -464,6 +468,7 @@ impl EasingType {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AnimLoopMode {
     #[default]
     Once,
@@ -590,6 +595,7 @@ impl UiPreset {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum UiEditorTab {
     #[default]
     Hierarchy,
@@ -603,6 +609,7 @@ pub enum UiEditorTab {
 
 /// Actions that can be performed by the UI editor panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum UiEditorAction {
     // Canvas management
     AddCanvas,

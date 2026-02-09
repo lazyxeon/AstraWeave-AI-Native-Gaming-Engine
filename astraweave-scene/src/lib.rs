@@ -1,10 +1,35 @@
+#![forbid(unsafe_code)]
+//! # AstraWeave Scene
+//!
+//! Hierarchical scene graph with transform management and world partitioning.
+//!
+//! This crate provides:
+//!
+//! - **[`Transform`]** — Translation/rotation/scale with matrix conversion,
+//!   interpolation, composition, and inverse.
+//! - **[`Node`]** — Scene graph node with transform, children, and mesh/material references.
+//! - **[`Scene`]** — Top-level scene container managing the node hierarchy.
+//! - **[`world_partition`]** — Spatial world partitioning for large open worlds.
+//! - **[`streaming`]** — Async cell streaming with distance-based loading.
+//! - **[`gpu_resource_manager`]** — GPU resource lifecycle management.
+//!
+//! # Feature Flags
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `ecs` | ECS system integration types |
+//! | `world-partition` | Spatial partitioning and streaming |
+
 use glam::{Mat4, Quat, Vec3};
 use serde::{Deserialize, Serialize};
 
+pub mod error;
 pub mod gpu_resource_manager;
 pub mod partitioned_scene;
 pub mod streaming;
 pub mod world_partition;
+
+pub use error::{SceneError, SceneResult};
 
 #[cfg(test)]
 mod mutation_tests;
@@ -374,6 +399,7 @@ pub mod ecs {
 
     /// Animation playback state
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    #[non_exhaustive]
     pub enum PlaybackState {
         Playing,
         Paused,
