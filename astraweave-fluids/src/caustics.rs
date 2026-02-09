@@ -209,7 +209,7 @@ impl CausticsProjector {
     /// Sample with chromatic aberration (returns RGB intensities)
     pub fn sample_chromatic(&self, position: Vec3, config: &CausticsConfig) -> Vec3 {
         let offset = config.chromatic_aberration;
-        
+
         let r = self.sample(position + Vec3::new(offset, 0.0, 0.0), config);
         let g = self.sample(position, config);
         let b = self.sample(position + Vec3::new(-offset, 0.0, offset), config);
@@ -428,7 +428,7 @@ mod tests {
         // Shallow should have higher intensity and faster animation
         assert!(shallow.intensity > deep.intensity);
         assert!(shallow.animation_speed > deep.animation_speed);
-        
+
         // Murky should have lowest intensity
         assert!(murky.intensity < shallow.intensity);
         assert!(murky.intensity < deep.intensity);
@@ -451,10 +451,7 @@ mod tests {
 
     #[test]
     fn test_projector_creation() {
-        let projector = CausticsProjector::new(
-            Vec3::new(0.0, -1.0, 0.0),
-            10.0,
-        );
+        let projector = CausticsProjector::new(Vec3::new(0.0, -1.0, 0.0), 10.0);
 
         assert_eq!(projector.surface_height, 10.0);
         assert!(projector.light_direction.y < 0.0);
@@ -511,7 +508,7 @@ mod tests {
         let projector = CausticsProjector::new(Vec3::NEG_Y, 10.0);
 
         let sample = projector.sample_chromatic(Vec3::new(0.0, 5.0, 0.0), &config);
-        
+
         // All channels should be valid
         assert!(sample.x >= 0.0 && sample.x <= 1.0);
         assert!(sample.y >= 0.0 && sample.y <= 1.0);
@@ -527,10 +524,10 @@ mod tests {
     #[test]
     fn test_system_add_projector() {
         let mut system = CausticsSystem::new(CausticsConfig::default());
-        
+
         system.add_projector(CausticsProjector::new(Vec3::NEG_Y, 0.0));
         assert_eq!(system.projector_count(), 1);
-        
+
         system.add_projector(CausticsProjector::new(Vec3::NEG_Y, 10.0));
         assert_eq!(system.projector_count(), 2);
     }
@@ -538,10 +535,10 @@ mod tests {
     #[test]
     fn test_system_clear() {
         let mut system = CausticsSystem::new(CausticsConfig::default());
-        
+
         system.add_projector(CausticsProjector::new(Vec3::NEG_Y, 0.0));
         system.add_projector(CausticsProjector::new(Vec3::NEG_Y, 10.0));
-        
+
         system.clear_projectors();
         assert_eq!(system.projector_count(), 0);
     }
@@ -553,7 +550,7 @@ mod tests {
 
         let initial_time = system.time;
         system.update(0.5);
-        
+
         assert!(system.time > initial_time);
     }
 

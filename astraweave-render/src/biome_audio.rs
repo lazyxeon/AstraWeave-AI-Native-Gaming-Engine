@@ -29,14 +29,8 @@ pub struct BiomeAmbientMap {
 impl Default for BiomeAmbientMap {
     fn default() -> Self {
         let mut tracks = HashMap::new();
-        tracks.insert(
-            BiomeType::Forest,
-            "assets/audio/ambient/forest.ogg".into(),
-        );
-        tracks.insert(
-            BiomeType::Desert,
-            "assets/audio/ambient/desert.ogg".into(),
-        );
+        tracks.insert(BiomeType::Forest, "assets/audio/ambient/forest.ogg".into());
+        tracks.insert(BiomeType::Desert, "assets/audio/ambient/desert.ogg".into());
         tracks.insert(
             BiomeType::Grassland,
             "assets/audio/ambient/grassland.ogg".into(),
@@ -45,22 +39,10 @@ impl Default for BiomeAmbientMap {
             BiomeType::Mountain,
             "assets/audio/ambient/mountain.ogg".into(),
         );
-        tracks.insert(
-            BiomeType::Tundra,
-            "assets/audio/ambient/tundra.ogg".into(),
-        );
-        tracks.insert(
-            BiomeType::Swamp,
-            "assets/audio/ambient/swamp.ogg".into(),
-        );
-        tracks.insert(
-            BiomeType::Beach,
-            "assets/audio/ambient/beach.ogg".into(),
-        );
-        tracks.insert(
-            BiomeType::River,
-            "assets/audio/ambient/river.ogg".into(),
-        );
+        tracks.insert(BiomeType::Tundra, "assets/audio/ambient/tundra.ogg".into());
+        tracks.insert(BiomeType::Swamp, "assets/audio/ambient/swamp.ogg".into());
+        tracks.insert(BiomeType::Beach, "assets/audio/ambient/beach.ogg".into());
+        tracks.insert(BiomeType::River, "assets/audio/ambient/river.ogg".into());
 
         Self {
             tracks,
@@ -139,11 +121,7 @@ mod tests {
             BiomeType::Beach,
             BiomeType::River,
         ] {
-            assert!(
-                map.get(biome).is_some(),
-                "missing ambient for {:?}",
-                biome
-            );
+            assert!(map.get(biome).is_some(), "missing ambient for {:?}", biome);
         }
     }
 
@@ -170,7 +148,10 @@ mod tests {
     fn override_and_remove() {
         let mut map = BiomeAmbientMap::new();
         map.set(BiomeType::Forest, "custom/forest_night.ogg");
-        assert_eq!(map.get(BiomeType::Forest).unwrap(), "custom/forest_night.ogg");
+        assert_eq!(
+            map.get(BiomeType::Forest).unwrap(),
+            "custom/forest_night.ogg"
+        );
 
         map.remove(BiomeType::Forest);
         assert!(map.get(BiomeType::Forest).is_none());

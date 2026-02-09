@@ -6,7 +6,10 @@
 #![cfg(test)]
 
 use astraweave_core::IVec2;
-use astraweave_net::{apply_delta, diff_snapshots, filter_snapshot_for_viewer, EntityState, FullInterest, Msg, Snapshot};
+use astraweave_net::{
+    apply_delta, diff_snapshots, filter_snapshot_for_viewer, EntityState, FullInterest, Msg,
+    Snapshot,
+};
 use std::sync::Arc;
 
 fn snapshot_with_entities(tick: u64, n: u32) -> Snapshot {
@@ -79,7 +82,11 @@ fn test_concurrent_diff_apply_and_serialize_no_panic() {
                 let json = serde_json::to_string(&msg).expect("serialize");
                 let decoded: Msg = serde_json::from_str(&json).expect("deserialize");
                 match decoded {
-                    Msg::ClientHello { name, token, policy } => {
+                    Msg::ClientHello {
+                        name,
+                        token,
+                        policy,
+                    } => {
                         assert!(!name.is_empty());
                         assert_eq!(token.as_deref(), Some("tok"));
                         assert_eq!(policy.as_deref(), Some("radius"));

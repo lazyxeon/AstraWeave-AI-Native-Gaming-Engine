@@ -52,7 +52,11 @@ pub struct BlenderVersion {
 impl BlenderVersion {
     /// Creates a new BlenderVersion.
     pub const fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 
     /// Parses a BlenderVersion from Blender's `--version` output.
@@ -70,11 +74,12 @@ impl BlenderVersion {
     ///
     /// Returns `BlendError::VersionParseError` if the output cannot be parsed.
     pub fn from_version_output(output: &str) -> BlendResult<Self> {
-        let captures = VERSION_REGEX.captures(output).ok_or_else(|| {
-            BlendError::VersionParseError {
-                output: output.lines().next().unwrap_or(output).to_string(),
-            }
-        })?;
+        let captures =
+            VERSION_REGEX
+                .captures(output)
+                .ok_or_else(|| BlendError::VersionParseError {
+                    output: output.lines().next().unwrap_or(output).to_string(),
+                })?;
 
         let major: u32 = captures
             .get(1)
@@ -95,7 +100,11 @@ impl BlenderVersion {
             .and_then(|m| m.as_str().parse().ok())
             .unwrap_or(0);
 
-        Ok(Self { major, minor, patch })
+        Ok(Self {
+            major,
+            minor,
+            patch,
+        })
     }
 
     /// Checks if this version meets the minimum requirements.
@@ -159,18 +168,23 @@ impl FromStr for BlenderVersion {
             });
         }
 
-        let major = parts[0].parse().map_err(|_| BlendError::VersionParseError {
-            output: s.to_string(),
-        })?;
-        let minor = parts[1].parse().map_err(|_| BlendError::VersionParseError {
-            output: s.to_string(),
-        })?;
-        let patch = parts
-            .get(2)
-            .and_then(|p| p.parse().ok())
-            .unwrap_or(0);
+        let major = parts[0]
+            .parse()
+            .map_err(|_| BlendError::VersionParseError {
+                output: s.to_string(),
+            })?;
+        let minor = parts[1]
+            .parse()
+            .map_err(|_| BlendError::VersionParseError {
+                output: s.to_string(),
+            })?;
+        let patch = parts.get(2).and_then(|p| p.parse().ok()).unwrap_or(0);
 
-        Ok(Self { major, minor, patch })
+        Ok(Self {
+            major,
+            minor,
+            patch,
+        })
     }
 }
 

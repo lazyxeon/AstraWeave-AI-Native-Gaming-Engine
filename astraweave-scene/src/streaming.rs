@@ -461,8 +461,12 @@ mod tests {
         assert_eq!(mgr.metrics.total_unloads, 1);
 
         let captured = events.lock().unwrap().clone();
-        assert!(captured.iter().any(|e| matches!(e, StreamingEvent::CellUnloadStarted(c) if *c == coord)));
-        assert!(captured.iter().any(|e| matches!(e, StreamingEvent::CellUnloaded(c) if *c == coord)));
+        assert!(captured
+            .iter()
+            .any(|e| matches!(e, StreamingEvent::CellUnloadStarted(c) if *c == coord)));
+        assert!(captured
+            .iter()
+            .any(|e| matches!(e, StreamingEvent::CellUnloaded(c) if *c == coord)));
     }
 
     #[tokio::test]

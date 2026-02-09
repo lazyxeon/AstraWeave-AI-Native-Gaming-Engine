@@ -202,13 +202,13 @@ mod tests {
     #[test]
     fn test_fluid_emitter_default() {
         let emitter = FluidEmitter::default();
-        
+
         // Check identity transform
         assert_eq!(emitter.transform[0], [1.0, 0.0, 0.0, 0.0]);
         assert_eq!(emitter.transform[1], [0.0, 1.0, 0.0, 0.0]);
         assert_eq!(emitter.transform[2], [0.0, 0.0, 1.0, 0.0]);
         assert_eq!(emitter.transform[3], [0.0, 0.0, 0.0, 1.0]);
-        
+
         // Check default values
         assert_eq!(emitter.rate, 100.0);
         assert_eq!(emitter.velocity, [0.0, -1.0, 0.0]);
@@ -226,16 +226,16 @@ mod tests {
         let position = [5.0, 10.0, 15.0];
         let rate = 50.0;
         let emitter = FluidEmitter::point(position, rate);
-        
+
         // Check position is in transform
         assert_eq!(emitter.transform[3][0], 5.0);
         assert_eq!(emitter.transform[3][1], 10.0);
         assert_eq!(emitter.transform[3][2], 15.0);
         assert_eq!(emitter.transform[3][3], 1.0);
-        
+
         // Check rate
         assert_eq!(emitter.rate, 50.0);
-        
+
         // Check shape is Point
         assert!(matches!(emitter.shape, EmitterShape::Point));
     }
@@ -262,15 +262,15 @@ mod tests {
         let radius = 5.0;
         let rate = 200.0;
         let emitter = FluidEmitter::sphere(center, radius, rate);
-        
+
         // Check center position
         assert_eq!(emitter.transform[3][0], 1.0);
         assert_eq!(emitter.transform[3][1], 2.0);
         assert_eq!(emitter.transform[3][2], 3.0);
-        
+
         // Check rate
         assert_eq!(emitter.rate, 200.0);
-        
+
         // Check shape
         match emitter.shape {
             EmitterShape::Sphere { radius: r } => assert_eq!(r, 5.0),
@@ -303,13 +303,16 @@ mod tests {
         let vertices = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
         let normals = vec![[0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]];
         let rate = 150.0;
-        
+
         let emitter = FluidEmitter::from_mesh(vertices.clone(), normals.clone(), rate);
-        
+
         assert_eq!(emitter.rate, 150.0);
-        
+
         match &emitter.shape {
-            EmitterShape::Mesh { vertices: v, normals: n } => {
+            EmitterShape::Mesh {
+                vertices: v,
+                normals: n,
+            } => {
                 assert_eq!(v.len(), 3);
                 assert_eq!(n.len(), 3);
                 assert_eq!(v[0], [0.0, 0.0, 0.0]);
@@ -333,11 +336,7 @@ mod tests {
 
     #[test]
     fn test_mesh_emitter_single_vertex() {
-        let emitter = FluidEmitter::from_mesh(
-            vec![[5.0, 5.0, 5.0]],
-            vec![[0.0, 1.0, 0.0]],
-            50.0,
-        );
+        let emitter = FluidEmitter::from_mesh(vec![[5.0, 5.0, 5.0]], vec![[0.0, 1.0, 0.0]], 50.0);
         match &emitter.shape {
             EmitterShape::Mesh { vertices, normals } => {
                 assert_eq!(vertices.len(), 1);
@@ -355,9 +354,9 @@ mod tests {
             enabled: false,
             ..Default::default()
         };
-        
+
         let (positions, velocities, colors) = emitter.tick(1.0);
-        
+
         assert!(positions.is_empty());
         assert!(velocities.is_empty());
         assert!(colors.is_empty());
@@ -369,9 +368,9 @@ mod tests {
             rate: 100.0,
             ..Default::default()
         };
-        
+
         let (positions, velocities, colors) = emitter.tick(0.0);
-        
+
         // No time passed, no particles should spawn
         assert!(positions.is_empty());
         assert!(velocities.is_empty());
@@ -381,10 +380,10 @@ mod tests {
     #[test]
     fn test_tick_spawns_particles() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 100.0);
-        
+
         // dt = 0.1 should spawn about 10 particles (100 * 0.1)
         let (positions, velocities, colors) = emitter.tick(0.1);
-        
+
         assert_eq!(positions.len(), 10);
         assert_eq!(velocities.len(), 10);
         assert_eq!(colors.len(), 10);
@@ -393,11 +392,11 @@ mod tests {
     #[test]
     fn test_tick_accumulates_fractional_particles() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 10.0);
-        
+
         // First tick: 10 * 0.05 = 0.5 particles (0 spawned)
         let (positions1, _, _) = emitter.tick(0.05);
         assert_eq!(positions1.len(), 0);
-        
+
         // Second tick: 0.5 + 0.5 = 1.0 particles (1 spawned)
         let (positions2, _, _) = emitter.tick(0.05);
         assert_eq!(positions2.len(), 1);
@@ -406,9 +405,9 @@ mod tests {
     #[test]
     fn test_tick_particle_positions_at_origin() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 100.0);
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         // Point emitter at origin should spawn all particles at origin
         for pos in &positions {
             assert_eq!(pos[0], 0.0);
@@ -420,9 +419,9 @@ mod tests {
     #[test]
     fn test_tick_particle_positions_offset() {
         let mut emitter = FluidEmitter::point([10.0, 20.0, 30.0], 100.0);
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         // Point emitter should spawn particles at emitter position
         for pos in &positions {
             assert_eq!(pos[0], 10.0);
@@ -438,9 +437,9 @@ mod tests {
             rate: 100.0,
             ..Default::default()
         };
-        
+
         let (_, _, colors) = emitter.tick(0.1);
-        
+
         for color in &colors {
             assert_eq!(*color, [1.0, 0.0, 0.0, 1.0]);
         }
@@ -449,9 +448,9 @@ mod tests {
     #[test]
     fn test_tick_high_rate_emitter() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 10000.0);
-        
+
         let (positions, velocities, colors) = emitter.tick(0.1);
-        
+
         // 10000 * 0.1 = 1000 particles
         assert_eq!(positions.len(), 1000);
         assert_eq!(velocities.len(), 1000);
@@ -461,11 +460,11 @@ mod tests {
     #[test]
     fn test_tick_low_rate_emitter() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 1.0);
-        
+
         // dt = 0.5 should spawn 0 particles (1 * 0.5 = 0.5, truncated to 0)
         let (positions, _, _) = emitter.tick(0.5);
         assert_eq!(positions.len(), 0);
-        
+
         // dt = 0.5 again should spawn 1 particle (accumulator = 0.5 + 0.5 = 1.0)
         let (positions, _, _) = emitter.tick(0.5);
         assert_eq!(positions.len(), 1);
@@ -476,16 +475,21 @@ mod tests {
     #[test]
     fn test_tick_sphere_emitter() {
         let mut emitter = FluidEmitter::sphere([0.0, 0.0, 0.0], 1.0, 100.0);
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         assert_eq!(positions.len(), 10);
-        
+
         // All positions should be within radius from origin
         for pos in &positions {
             let dist = (pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]).sqrt();
             // Allow some tolerance for the sphere radius
-            assert!(dist <= 1.1, "Position {:?} is outside sphere (dist = {})", pos, dist);
+            assert!(
+                dist <= 1.1,
+                "Position {:?} is outside sphere (dist = {})",
+                pos,
+                dist
+            );
         }
     }
 
@@ -500,11 +504,11 @@ mod tests {
             rate: 100.0,
             ..Default::default()
         };
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         assert_eq!(positions.len(), 10);
-        
+
         // All positions should be within the box bounds
         for pos in &positions {
             assert!(pos[0].abs() <= 2.0, "X position {} outside bounds", pos[0]);
@@ -518,9 +522,9 @@ mod tests {
     #[test]
     fn test_tick_mesh_emitter_empty() {
         let mut emitter = FluidEmitter::from_mesh(vec![], vec![], 100.0);
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         // Even with empty mesh, should still spawn particles at origin
         assert_eq!(positions.len(), 10);
         for pos in &positions {
@@ -530,23 +534,15 @@ mod tests {
 
     #[test]
     fn test_tick_mesh_emitter_with_vertices() {
-        let vertices = vec![
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ];
-        let normals = vec![
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ];
-        
+        let vertices = vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        let normals = vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+
         let mut emitter = FluidEmitter::from_mesh(vertices.clone(), normals.clone(), 100.0);
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         assert_eq!(positions.len(), 10);
-        
+
         // Each position should match one of the mesh vertices
         for pos in &positions {
             let matches = vertices.contains(pos);
@@ -559,7 +555,7 @@ mod tests {
     #[test]
     fn test_fluid_drain_new() {
         let drain = FluidDrain::new([5.0, 10.0, 15.0], 2.5);
-        
+
         assert_eq!(drain.position, [5.0, 10.0, 15.0]);
         assert_eq!(drain.radius, 2.5);
         assert!(drain.enabled);
@@ -568,7 +564,7 @@ mod tests {
     #[test]
     fn test_fluid_drain_at_origin() {
         let drain = FluidDrain::new([0.0, 0.0, 0.0], 1.0);
-        
+
         assert_eq!(drain.position, [0.0, 0.0, 0.0]);
         assert_eq!(drain.radius, 1.0);
     }
@@ -576,7 +572,7 @@ mod tests {
     #[test]
     fn test_fluid_drain_negative_position() {
         let drain = FluidDrain::new([-10.0, -20.0, -30.0], 5.0);
-        
+
         assert_eq!(drain.position, [-10.0, -20.0, -30.0]);
     }
 
@@ -596,7 +592,7 @@ mod tests {
     fn test_fluid_drain_disable() {
         let mut drain = FluidDrain::new([0.0, 0.0, 0.0], 1.0);
         assert!(drain.enabled);
-        
+
         drain.enabled = false;
         assert!(!drain.enabled);
     }
@@ -660,9 +656,9 @@ mod tests {
             rate: 100.0,
             ..Default::default()
         };
-        
+
         let (positions, _, _) = emitter.tick(0.1);
-        
+
         // Point emitter uses origin from transform[3]
         for pos in &positions {
             assert_eq!(pos[0], 100.0);
@@ -681,9 +677,9 @@ mod tests {
             rate: 10.0,
             ..Default::default()
         };
-        
+
         let (_, velocities, _) = emitter.tick(0.1);
-        
+
         // Point emitter normal is [0, -1, 0], velocity is multiplied by normal
         // v[0] = 10.0 * 0.0 = 0.0
         // v[1] = 20.0 * -1.0 = -20.0
@@ -702,9 +698,9 @@ mod tests {
             rate: 100.0,
             ..Default::default()
         };
-        
+
         let (_, velocities, _) = emitter.tick(0.1);
-        
+
         // With jitter, velocities should vary
         let mut has_variation = false;
         if velocities.len() > 1 {
@@ -715,8 +711,11 @@ mod tests {
                 }
             }
         }
-        
-        assert!(has_variation, "Velocities should have variation with jitter");
+
+        assert!(
+            has_variation,
+            "Velocities should have variation with jitter"
+        );
     }
 
     // ================== Edge Cases ==================
@@ -724,9 +723,9 @@ mod tests {
     #[test]
     fn test_emitter_very_small_dt() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 100.0);
-        
+
         let (positions, _, _) = emitter.tick(0.0001);
-        
+
         // 100 * 0.0001 = 0.01 particles, should spawn 0
         assert_eq!(positions.len(), 0);
     }
@@ -734,9 +733,9 @@ mod tests {
     #[test]
     fn test_emitter_very_large_dt() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 100.0);
-        
+
         let (positions, _, _) = emitter.tick(10.0);
-        
+
         // 100 * 10 = 1000 particles
         assert_eq!(positions.len(), 1000);
     }
@@ -744,22 +743,22 @@ mod tests {
     #[test]
     fn test_emitter_zero_rate() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 0.0);
-        
+
         let (positions, _, _) = emitter.tick(1.0);
-        
+
         assert!(positions.is_empty());
     }
 
     #[test]
     fn test_multiple_ticks_accumulation() {
         let mut emitter = FluidEmitter::point([0.0, 0.0, 0.0], 100.0);
-        
+
         let mut total = 0;
         for _ in 0..100 {
             let (positions, _, _) = emitter.tick(0.001);
             total += positions.len();
         }
-        
+
         // 100 ticks * 0.001 = 0.1 total time
         // 100 * 0.1 = 10 particles expected
         assert_eq!(total, 10);

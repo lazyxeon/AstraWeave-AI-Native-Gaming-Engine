@@ -624,7 +624,7 @@ mod tests {
     fn test_grid_coord_to_world_center() {
         let coord = GridCoord::new(1, 0, 2);
         let center = coord.to_world_center(100.0);
-        
+
         // Center of cell (1, 0, 2) with cell_size 100 should be (150, 50, 250)
         assert!((center - Vec3::new(150.0, 50.0, 250.0)).length() < 0.0001);
     }
@@ -633,12 +633,12 @@ mod tests {
     fn test_grid_coord_neighbors_3d() {
         let coord = GridCoord::new(0, 0, 0);
         let neighbors = coord.neighbors_3d();
-        
+
         assert_eq!(neighbors.len(), 26); // 3x3x3 - 1 (self)
-        
+
         // Should not include origin
         assert!(!neighbors.contains(&GridCoord::new(0, 0, 0)));
-        
+
         // Should include all direct neighbors
         assert!(neighbors.contains(&GridCoord::new(1, 0, 0)));
         assert!(neighbors.contains(&GridCoord::new(-1, 0, 0)));
@@ -652,17 +652,17 @@ mod tests {
     fn test_grid_coord_neighbors_2d() {
         let coord = GridCoord::new(5, 0, 5);
         let neighbors = coord.neighbors_2d();
-        
+
         assert_eq!(neighbors.len(), 8); // 3x3 - 1 (self)
-        
+
         // Y should be preserved
         for n in &neighbors {
             assert_eq!(n.y, 0);
         }
-        
+
         // Should not include self
         assert!(!neighbors.contains(&GridCoord::new(5, 0, 5)));
-        
+
         // Should include diagonal neighbors
         assert!(neighbors.contains(&GridCoord::new(4, 0, 4)));
         assert!(neighbors.contains(&GridCoord::new(6, 0, 6)));
@@ -672,7 +672,7 @@ mod tests {
     fn test_grid_coord_manhattan_distance() {
         let a = GridCoord::new(0, 0, 0);
         let b = GridCoord::new(3, 4, 5);
-        
+
         assert_eq!(a.manhattan_distance(b), 12); // 3 + 4 + 5
         assert_eq!(b.manhattan_distance(a), 12); // Symmetric
     }
@@ -688,7 +688,7 @@ mod tests {
         let a = GridCoord::new(1, 2, 3);
         let b = GridCoord::new(1, 2, 3);
         let c = GridCoord::new(1, 2, 4);
-        
+
         assert_eq!(a, b);
         assert_ne!(a, c);
     }
@@ -696,12 +696,12 @@ mod tests {
     #[test]
     fn test_grid_coord_hash() {
         use std::collections::HashSet;
-        
+
         let mut set = HashSet::new();
         set.insert(GridCoord::new(1, 2, 3));
         set.insert(GridCoord::new(1, 2, 3)); // Duplicate
         set.insert(GridCoord::new(4, 5, 6));
-        
+
         assert_eq!(set.len(), 2);
     }
 
@@ -710,7 +710,7 @@ mod tests {
         let coord = GridCoord::new(10, 20, 30);
         let json = serde_json::to_string(&coord).unwrap();
         let deserialized: GridCoord = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(coord, deserialized);
     }
 
@@ -725,11 +725,9 @@ mod tests {
 
     #[test]
     fn test_aabb_from_center_half_extents() {
-        let aabb = AABB::from_center_half_extents(
-            Vec3::new(5.0, 5.0, 5.0),
-            Vec3::new(5.0, 5.0, 5.0),
-        );
-        
+        let aabb =
+            AABB::from_center_half_extents(Vec3::new(5.0, 5.0, 5.0), Vec3::new(5.0, 5.0, 5.0));
+
         assert!((aabb.min - Vec3::new(0.0, 0.0, 0.0)).length() < 0.0001);
         assert!((aabb.max - Vec3::new(10.0, 10.0, 10.0)).length() < 0.0001);
     }
@@ -738,7 +736,7 @@ mod tests {
     fn test_aabb_center() {
         let aabb = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 20.0, 30.0));
         let center = aabb.center();
-        
+
         assert!((center - Vec3::new(5.0, 10.0, 15.0)).length() < 0.0001);
     }
 
@@ -746,14 +744,14 @@ mod tests {
     fn test_aabb_half_extents() {
         let aabb = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 20.0, 30.0));
         let half = aabb.half_extents();
-        
+
         assert!((half - Vec3::new(5.0, 10.0, 15.0)).length() < 0.0001);
     }
 
     #[test]
     fn test_aabb_contains_point_inside() {
         let aabb = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
-        
+
         assert!(aabb.contains_point(Vec3::new(5.0, 5.0, 5.0)));
         assert!(aabb.contains_point(Vec3::new(0.0, 0.0, 0.0))); // On boundary
         assert!(aabb.contains_point(Vec3::new(10.0, 10.0, 10.0))); // On boundary
@@ -762,7 +760,7 @@ mod tests {
     #[test]
     fn test_aabb_contains_point_outside() {
         let aabb = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
-        
+
         assert!(!aabb.contains_point(Vec3::new(-1.0, 5.0, 5.0)));
         assert!(!aabb.contains_point(Vec3::new(11.0, 5.0, 5.0)));
         assert!(!aabb.contains_point(Vec3::new(5.0, -1.0, 5.0)));
@@ -775,7 +773,7 @@ mod tests {
     fn test_aabb_intersects_overlapping() {
         let a = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
         let b = AABB::new(Vec3::new(5.0, 5.0, 5.0), Vec3::new(15.0, 15.0, 15.0));
-        
+
         assert!(a.intersects(&b));
         assert!(b.intersects(&a)); // Symmetric
     }
@@ -784,7 +782,7 @@ mod tests {
     fn test_aabb_intersects_touching() {
         let a = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
         let b = AABB::new(Vec3::new(10.0, 0.0, 0.0), Vec3::new(20.0, 10.0, 10.0));
-        
+
         assert!(a.intersects(&b)); // Touching at edge
     }
 
@@ -792,7 +790,7 @@ mod tests {
     fn test_aabb_intersects_separate() {
         let a = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
         let b = AABB::new(Vec3::new(20.0, 20.0, 20.0), Vec3::new(30.0, 30.0, 30.0));
-        
+
         assert!(!a.intersects(&b));
         assert!(!b.intersects(&a));
     }
@@ -801,7 +799,7 @@ mod tests {
     fn test_aabb_intersects_contained() {
         let outer = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(100.0, 100.0, 100.0));
         let inner = AABB::new(Vec3::new(25.0, 25.0, 25.0), Vec3::new(75.0, 75.0, 75.0));
-        
+
         assert!(outer.intersects(&inner));
         assert!(inner.intersects(&outer));
     }
@@ -810,7 +808,7 @@ mod tests {
     fn test_aabb_overlapping_cells_single() {
         let aabb = AABB::new(Vec3::new(25.0, 25.0, 25.0), Vec3::new(75.0, 75.0, 75.0));
         let cells = aabb.overlapping_cells(100.0);
-        
+
         // Should only overlap one cell (0, 0, 0) since AABB is entirely within
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0], GridCoord::new(0, 0, 0));
@@ -821,7 +819,7 @@ mod tests {
         // AABB crossing the boundary between cell (0,0,0) and (1,0,0)
         let aabb = AABB::new(Vec3::new(50.0, 0.0, 0.0), Vec3::new(150.0, 50.0, 50.0));
         let cells = aabb.overlapping_cells(100.0);
-        
+
         // Should overlap cells along X axis: (0,0,0) and (1,0,0)
         // The AABB is contained within Y=[0,50] and Z=[0,50] so only 1 cell in those dimensions
         // Total: 2 cells in X × 1 in Y × 1 in Z = 2 cells
@@ -835,7 +833,7 @@ mod tests {
         let aabb = AABB::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(4.0, 5.0, 6.0));
         let json = serde_json::to_string(&aabb).unwrap();
         let deserialized: AABB = serde_json::from_str(&json).unwrap();
-        
+
         assert!((deserialized.min - aabb.min).length() < 0.0001);
         assert!((deserialized.max - aabb.max).length() < 0.0001);
     }
@@ -847,11 +845,14 @@ mod tests {
         // Create a simple orthographic projection for testing
         let view_proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
         let frustum = Frustum::from_view_projection(view_proj);
-        
+
         // All 6 planes should be normalized (length ≈ 1)
         for plane in &frustum.planes {
             let normal_length = Vec3::new(plane.x, plane.y, plane.z).length();
-            assert!((normal_length - 1.0).abs() < 0.0001, "Plane normal should be normalized");
+            assert!(
+                (normal_length - 1.0).abs() < 0.0001,
+                "Plane normal should be normalized"
+            );
         }
     }
 
@@ -859,7 +860,7 @@ mod tests {
     fn test_frustum_intersects_aabb_inside() {
         let view_proj = Mat4::orthographic_rh(-100.0, 100.0, -100.0, 100.0, 0.1, 1000.0);
         let frustum = Frustum::from_view_projection(view_proj);
-        
+
         // Small box at origin should be inside frustum
         let aabb = AABB::new(Vec3::new(-10.0, -10.0, -10.0), Vec3::new(10.0, 10.0, 10.0));
         assert!(frustum.intersects_aabb(&aabb));
@@ -869,9 +870,9 @@ mod tests {
     fn test_frustum_cells_in_frustum() {
         let view_proj = Mat4::orthographic_rh(-100.0, 100.0, -100.0, 100.0, 0.1, 1000.0);
         let frustum = Frustum::from_view_projection(view_proj);
-        
+
         let cells = frustum.cells_in_frustum(Vec3::ZERO, 50.0, 100.0);
-        
+
         // Should return some cells near origin
         assert!(!cells.is_empty());
         // Center cell should be included
@@ -886,7 +887,7 @@ mod tests {
             path: "meshes/rock.glb".to_string(),
             asset_type: AssetType::Mesh,
         };
-        
+
         assert_eq!(asset.path, "meshes/rock.glb");
         assert_eq!(asset.asset_type, AssetType::Mesh);
     }
@@ -904,10 +905,10 @@ mod tests {
             path: "test/path.glb".to_string(),
             asset_type: AssetType::Mesh,
         };
-        
+
         let json = serde_json::to_string(&asset).unwrap();
         let deserialized: AssetRef = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(asset.path, deserialized.path);
         assert_eq!(asset.asset_type, deserialized.asset_type);
     }
@@ -929,7 +930,7 @@ mod tests {
             CellState::Loaded,
             CellState::Unloading,
         ];
-        
+
         for state in states {
             let json = serde_json::to_string(&state).unwrap();
             let deserialized: CellState = serde_json::from_str(&json).unwrap();
@@ -945,7 +946,7 @@ mod tests {
             cell_size: 100.0,
             world_bounds: (-5000.0, 5000.0, -5000.0, 5000.0),
         };
-        
+
         assert_eq!(config.cell_size, 100.0);
         assert_eq!(config.world_bounds.0, -5000.0);
         assert_eq!(config.world_bounds.1, 5000.0);
@@ -960,7 +961,7 @@ mod tests {
             world_bounds: (-1000.0, 1000.0, -1000.0, 1000.0),
         };
         let partition = WorldPartition::new(config);
-        
+
         assert_eq!(partition.config.cell_size, 100.0);
         assert!(partition.cells.is_empty());
     }
@@ -972,10 +973,10 @@ mod tests {
             world_bounds: (-1000.0, 1000.0, -1000.0, 1000.0),
         };
         let mut partition = WorldPartition::new(config);
-        
+
         let coord = GridCoord::new(0, 0, 0);
         let cell = partition.get_or_create_cell(coord);
-        
+
         assert_eq!(cell.coord, coord);
         assert_eq!(cell.state, CellState::Unloaded);
         assert!(cell.entities.is_empty());
@@ -988,15 +989,15 @@ mod tests {
             world_bounds: (-1000.0, 1000.0, -1000.0, 1000.0),
         };
         let mut partition = WorldPartition::new(config);
-        
+
         let entity_id = 42;
         let pos = Vec3::new(150.0, 50.0, 250.0);
-        
+
         partition.assign_entity_to_cell(entity_id, pos);
-        
+
         let coord = GridCoord::from_world_pos(pos, 100.0);
         let cell = partition.get_cell(coord).unwrap();
-        
+
         assert!(cell.entities.contains(&entity_id));
     }
 
@@ -1007,10 +1008,10 @@ mod tests {
             world_bounds: (-1000.0, 1000.0, -1000.0, 1000.0),
         };
         let mut partition = WorldPartition::new(config);
-        
+
         // Non-existent cell should return None
         assert!(partition.get_cell(GridCoord::new(99, 99, 99)).is_none());
-        
+
         // Create cell and verify it exists
         let coord = GridCoord::new(1, 2, 3);
         partition.get_or_create_cell(coord);
@@ -1024,13 +1025,13 @@ mod tests {
             world_bounds: (-1000.0, 1000.0, -1000.0, 1000.0),
         };
         let partition = WorldPartition::new(config);
-        
+
         let center = Vec3::new(150.0, 50.0, 150.0);
         let cells = partition.cells_in_radius(center, 150.0); // 1.5 cell radius
-        
+
         // Should include center cell and some neighbors
         assert!(!cells.is_empty());
-        
+
         // Center cell should be included
         let center_coord = GridCoord::from_world_pos(center, 100.0);
         assert!(cells.contains(&center_coord));
@@ -1043,14 +1044,14 @@ mod tests {
             world_bounds: (-1000.0, 1000.0, -1000.0, 1000.0),
         };
         let mut partition = WorldPartition::new(config);
-        
+
         // Empty partition
         let empty_mem = partition.memory_usage_estimate();
-        
+
         // Add a cell
         partition.get_or_create_cell(GridCoord::new(0, 0, 0));
         let with_cell_mem = partition.memory_usage_estimate();
-        
+
         assert!(with_cell_mem > empty_mem);
     }
 
@@ -1066,10 +1067,10 @@ mod tests {
     #[test]
     fn test_lru_cache_touch() {
         let mut cache = LRUCache::new(5);
-        
+
         cache.touch(GridCoord::new(1, 0, 0));
         cache.touch(GridCoord::new(2, 0, 0));
-        
+
         assert_eq!(cache.len(), 2);
         assert!(cache.contains(GridCoord::new(1, 0, 0)));
         assert!(cache.contains(GridCoord::new(2, 0, 0)));
@@ -1078,11 +1079,11 @@ mod tests {
     #[test]
     fn test_lru_cache_touch_reorder() {
         let mut cache = LRUCache::new(5);
-        
+
         cache.touch(GridCoord::new(1, 0, 0));
         cache.touch(GridCoord::new(2, 0, 0));
         cache.touch(GridCoord::new(1, 0, 0)); // Touch 1 again
-        
+
         // LRU should be 2 now (1 was more recently used)
         assert_eq!(cache.lru(), Some(GridCoord::new(2, 0, 0)));
     }
@@ -1090,12 +1091,12 @@ mod tests {
     #[test]
     fn test_lru_cache_eviction() {
         let mut cache = LRUCache::new(3);
-        
+
         cache.touch(GridCoord::new(1, 0, 0));
         cache.touch(GridCoord::new(2, 0, 0));
         cache.touch(GridCoord::new(3, 0, 0));
         cache.touch(GridCoord::new(4, 0, 0)); // Should evict 1
-        
+
         assert_eq!(cache.len(), 3);
         assert!(!cache.contains(GridCoord::new(1, 0, 0))); // Evicted
         assert!(cache.contains(GridCoord::new(2, 0, 0)));
@@ -1106,12 +1107,12 @@ mod tests {
     #[test]
     fn test_lru_cache_remove() {
         let mut cache = LRUCache::new(5);
-        
+
         cache.touch(GridCoord::new(1, 0, 0));
         cache.touch(GridCoord::new(2, 0, 0));
-        
+
         cache.remove(GridCoord::new(1, 0, 0));
-        
+
         assert_eq!(cache.len(), 1);
         assert!(!cache.contains(GridCoord::new(1, 0, 0)));
         assert!(cache.contains(GridCoord::new(2, 0, 0)));
@@ -1121,7 +1122,7 @@ mod tests {
     fn test_lru_cache_remove_nonexistent() {
         let mut cache = LRUCache::new(5);
         cache.touch(GridCoord::new(1, 0, 0));
-        
+
         // Removing nonexistent should not panic
         cache.remove(GridCoord::new(99, 99, 99));
         assert_eq!(cache.len(), 1);
@@ -1137,8 +1138,7 @@ mod tests {
     fn test_lru_cache_lru_single() {
         let mut cache = LRUCache::new(5);
         cache.touch(GridCoord::new(42, 0, 0));
-        
+
         assert_eq!(cache.lru(), Some(GridCoord::new(42, 0, 0)));
     }
 }
-

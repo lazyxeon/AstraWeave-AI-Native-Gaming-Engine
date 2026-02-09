@@ -4,16 +4,18 @@
 
 #![allow(clippy::redundant_closure, clippy::no_effect)]
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use sha2::{Digest, Sha256};
 use std::hint::black_box;
 use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::tempdir;
-use sha2::{Digest, Sha256};
 
-use astraweave_blend::cache::{CacheEntry, ConversionCache, CacheLookup, CacheMissReason, CacheManifest};
-use astraweave_blend::version::BlenderVersion;
+use astraweave_blend::cache::{
+    CacheEntry, CacheLookup, CacheManifest, CacheMissReason, ConversionCache,
+};
 use astraweave_blend::options::CacheOptions;
+use astraweave_blend::version::BlenderVersion;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -33,8 +35,8 @@ fn create_test_entry(id: usize) -> CacheEntry {
         BlenderVersion::new(4, 1, 0),
         PathBuf::from(format!("/cache/output_{}.glb", id)),
         PathBuf::from(format!("/models/model_{}.blend", id)),
-        1024 * 1024,  // 1 MB output
-        500,  // 500ms conversion
+        1024 * 1024, // 1 MB output
+        500,         // 500ms conversion
     )
 }
 
@@ -54,7 +56,7 @@ fn bench_cache_entry_creation(c: &mut Criterion) {
 
 fn bench_cache_entry_clone(c: &mut Criterion) {
     let entry = create_test_entry(0);
-    
+
     c.bench_function("cache_entry_clone", |b| {
         b.iter(|| black_box(black_box(&entry).clone()))
     });
@@ -62,7 +64,7 @@ fn bench_cache_entry_clone(c: &mut Criterion) {
 
 fn bench_cache_entry_touch(c: &mut Criterion) {
     let mut entry = create_test_entry(0);
-    
+
     c.bench_function("cache_entry_touch", |b| {
         b.iter(|| {
             black_box(&mut entry).touch();
@@ -72,7 +74,7 @@ fn bench_cache_entry_touch(c: &mut Criterion) {
 
 fn bench_cache_entry_age(c: &mut Criterion) {
     let entry = create_test_entry(0);
-    
+
     c.bench_function("cache_entry_age", |b| {
         b.iter(|| black_box(black_box(&entry).age()))
     });
@@ -80,7 +82,7 @@ fn bench_cache_entry_age(c: &mut Criterion) {
 
 fn bench_cache_entry_time_since_access(c: &mut Criterion) {
     let entry = create_test_entry(0);
-    
+
     c.bench_function("cache_entry_time_since_access", |b| {
         b.iter(|| black_box(black_box(&entry).time_since_access()))
     });
@@ -113,8 +115,8 @@ fn bench_cache_options_full(c: &mut Criterion) {
             black_box(CacheOptions {
                 enabled: true,
                 cache_directory: Some(PathBuf::from("/cache")),
-                max_cache_size: Some(10 * 1024 * 1024 * 1024),  // 10 GB
-                max_age: Some(Duration::from_secs(86400 * 7)),  // 1 week
+                max_cache_size: Some(10 * 1024 * 1024 * 1024), // 10 GB
+                max_age: Some(Duration::from_secs(86400 * 7)), // 1 week
                 validate_on_access: true,
             })
         })
@@ -133,16 +135,15 @@ fn bench_cache_manifest_new(c: &mut Criterion) {
 
 fn bench_cache_manifest_recalculate_size(c: &mut Criterion) {
     let mut group = c.benchmark_group("cache_manifest_recalculate_size");
-    
+
     for count in [10, 100, 1000].iter() {
         let mut manifest = CacheManifest::new();
         for i in 0..*count {
-            manifest.entries.insert(
-                format!("source_{}.blend", i),
-                create_test_entry(i),
-            );
+            manifest
+                .entries
+                .insert(format!("source_{}.blend", i), create_test_entry(i));
         }
-        
+
         group.bench_with_input(
             BenchmarkId::from_parameter(count),
             &manifest,
@@ -154,7 +155,7 @@ fn bench_cache_manifest_recalculate_size(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -165,7 +166,7 @@ fn bench_cache_manifest_recalculate_size(c: &mut Criterion) {
 fn bench_cache_lookup_hit_creation(c: &mut Criterion) {
     let entry = create_test_entry(0);
     let output_path = PathBuf::from("/cache/output.glb");
-    
+
     c.bench_function("cache_lookup_hit_creation", |b| {
         b.iter(|| {
             black_box(CacheLookup::Hit {
@@ -196,7 +197,7 @@ fn bench_cache_miss_reason_display(c: &mut Criterion) {
         CacheMissReason::Expired,
         CacheMissReason::ValidationFailed("test".to_string()),
     ];
-    
+
     c.bench_function("cache_miss_reason_display", |b| {
         b.iter(|| {
             for reason in black_box(&reasons) {
@@ -213,15 +214,11 @@ fn bench_cache_miss_reason_display(c: &mut Criterion) {
 fn bench_cache_key_generation(c: &mut Criterion) {
     let source_hash = compute_hash(b"source content");
     let options_hash = compute_hash(b"options content");
-    
+
     c.bench_function("cache_key_generation", |b| {
         b.iter(|| {
             // Simulate key generation
-            let key = format!(
-                "{}_{}", 
-                black_box(&source_hash),
-                black_box(&options_hash),
-            );
+            let key = format!("{}_{}", black_box(&source_hash), black_box(&options_hash),);
             black_box(key)
         })
     });
@@ -229,25 +226,23 @@ fn bench_cache_key_generation(c: &mut Criterion) {
 
 fn bench_hash_for_cache(c: &mut Criterion) {
     let mut group = c.benchmark_group("hash_for_cache");
-    
+
     let sizes = vec![
         ("1kb", 1024),
         ("100kb", 100 * 1024),
         ("1mb", 1024 * 1024),
         ("10mb", 10 * 1024 * 1024),
     ];
-    
+
     for (name, size) in sizes {
         let data = vec![0xABu8; size];
-        
+
         group.throughput(Throughput::Bytes(size as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(name),
-            &data,
-            |b, data| b.iter(|| black_box(compute_hash(black_box(data)))),
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(name), &data, |b, data| {
+            b.iter(|| black_box(compute_hash(black_box(data))))
+        });
     }
-    
+
     group.finish();
 }
 
@@ -281,7 +276,7 @@ fn bench_conversion_cache_for_project(c: &mut Criterion) {
 
 fn bench_cache_entry_serialize_ron(c: &mut Criterion) {
     let entry = create_test_entry(0);
-    
+
     c.bench_function("cache_entry_serialize_ron", |b| {
         b.iter(|| black_box(ron::to_string(black_box(&entry))))
     });
@@ -290,7 +285,7 @@ fn bench_cache_entry_serialize_ron(c: &mut Criterion) {
 fn bench_cache_entry_deserialize_ron(c: &mut Criterion) {
     let entry = create_test_entry(0);
     let serialized = ron::to_string(&entry).unwrap();
-    
+
     c.bench_function("cache_entry_deserialize_ron", |b| {
         b.iter(|| black_box(ron::from_str::<CacheEntry>(black_box(&serialized))))
     });
@@ -298,7 +293,7 @@ fn bench_cache_entry_deserialize_ron(c: &mut Criterion) {
 
 fn bench_cache_entry_serialize_json(c: &mut Criterion) {
     let entry = create_test_entry(0);
-    
+
     c.bench_function("cache_entry_serialize_json", |b| {
         b.iter(|| black_box(serde_json::to_string(black_box(&entry))))
     });
@@ -307,7 +302,7 @@ fn bench_cache_entry_serialize_json(c: &mut Criterion) {
 fn bench_cache_entry_deserialize_json(c: &mut Criterion) {
     let entry = create_test_entry(0);
     let serialized = serde_json::to_string(&entry).unwrap();
-    
+
     c.bench_function("cache_entry_deserialize_json", |b| {
         b.iter(|| black_box(serde_json::from_str::<CacheEntry>(black_box(&serialized))))
     });
@@ -319,49 +314,49 @@ fn bench_cache_entry_deserialize_json(c: &mut Criterion) {
 
 fn bench_cache_manifest_serialize_ron(c: &mut Criterion) {
     let mut group = c.benchmark_group("cache_manifest_serialize_ron");
-    
+
     for count in [10, 100, 1000].iter() {
         let mut manifest = CacheManifest::new();
         for i in 0..*count {
-            manifest.entries.insert(
-                format!("source_{}.blend", i),
-                create_test_entry(i),
-            );
+            manifest
+                .entries
+                .insert(format!("source_{}.blend", i), create_test_entry(i));
         }
         manifest.recalculate_size();
-        
+
         group.bench_with_input(
             BenchmarkId::from_parameter(count),
             &manifest,
             |b, manifest| b.iter(|| black_box(ron::to_string(black_box(manifest)))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_cache_manifest_deserialize_ron(c: &mut Criterion) {
     let mut group = c.benchmark_group("cache_manifest_deserialize_ron");
-    
+
     for count in [10, 100, 1000].iter() {
         let mut manifest = CacheManifest::new();
         for i in 0..*count {
-            manifest.entries.insert(
-                format!("source_{}.blend", i),
-                create_test_entry(i),
-            );
+            manifest
+                .entries
+                .insert(format!("source_{}.blend", i), create_test_entry(i));
         }
         manifest.recalculate_size();
         let serialized = ron::to_string(&manifest).unwrap();
-        
+
         group.throughput(Throughput::Bytes(serialized.len() as u64));
         group.bench_with_input(
             BenchmarkId::from_parameter(count),
             &serialized,
-            |b, serialized| b.iter(|| black_box(ron::from_str::<CacheManifest>(black_box(serialized)))),
+            |b, serialized| {
+                b.iter(|| black_box(ron::from_str::<CacheManifest>(black_box(serialized))))
+            },
         );
     }
-    
+
     group.finish();
 }
 
@@ -371,67 +366,53 @@ fn bench_cache_manifest_deserialize_ron(c: &mut Criterion) {
 
 fn bench_many_cache_entries_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("many_cache_entries_creation");
-    
+
     for count in [100, 1000, 10000].iter() {
         group.throughput(Throughput::Elements(*count as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(count),
-            count,
-            |b, &count| {
-                b.iter(|| {
-                    let entries: Vec<_> = (0..count)
-                        .map(|i| create_test_entry(i))
-                        .collect();
-                    black_box(entries)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
+            b.iter(|| {
+                let entries: Vec<_> = (0..count).map(|i| create_test_entry(i)).collect();
+                black_box(entries)
+            })
+        });
     }
-    
+
     group.finish();
 }
 
 fn bench_cache_hashmap_operations(c: &mut Criterion) {
     use std::collections::HashMap;
-    
+
     let mut group = c.benchmark_group("cache_hashmap_operations");
-    
+
     for count in [100, 1000, 10000].iter() {
         let entries: HashMap<String, CacheEntry> = (0..*count)
             .map(|i| (format!("source_{}.blend", i), create_test_entry(i)))
             .collect();
-        
+
         // Benchmark lookup
-        group.bench_with_input(
-            BenchmarkId::new("lookup", count),
-            &entries,
-            |b, entries| {
-                let mut i = 0;
-                b.iter(|| {
-                    i = (i + 1) % *count;
-                    let key = format!("source_{}.blend", i);
-                    black_box(entries.get(black_box(&key)))
-                })
-            },
-        );
-        
+        group.bench_with_input(BenchmarkId::new("lookup", count), &entries, |b, entries| {
+            let mut i = 0;
+            b.iter(|| {
+                i = (i + 1) % *count;
+                let key = format!("source_{}.blend", i);
+                black_box(entries.get(black_box(&key)))
+            })
+        });
+
         // Benchmark insert
-        group.bench_with_input(
-            BenchmarkId::new("insert", count),
-            &entries,
-            |b, _| {
-                let mut map: HashMap<String, CacheEntry> = HashMap::new();
-                let mut i = 0;
-                b.iter(|| {
-                    i += 1;
-                    let key = format!("source_{}.blend", i);
-                    let entry = create_test_entry(i);
-                    map.insert(black_box(key), black_box(entry));
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("insert", count), &entries, |b, _| {
+            let mut map: HashMap<String, CacheEntry> = HashMap::new();
+            let mut i = 0;
+            b.iter(|| {
+                i += 1;
+                let key = format!("source_{}.blend", i);
+                let entry = create_test_entry(i);
+                map.insert(black_box(key), black_box(entry));
+            })
+        });
     }
-    
+
     group.finish();
 }
 

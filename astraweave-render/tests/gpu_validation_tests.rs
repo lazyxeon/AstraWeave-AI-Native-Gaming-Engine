@@ -73,7 +73,11 @@ mod buffer_tests {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_SRC,
             });
 
-            assert_eq!(buffer.size(), 16, "Buffer size should be 16 bytes (4 floats)");
+            assert_eq!(
+                buffer.size(),
+                16,
+                "Buffer size should be 16 bytes (4 floats)"
+            );
             assert!(buffer.usage().contains(wgpu::BufferUsages::UNIFORM));
 
             // Cleanup

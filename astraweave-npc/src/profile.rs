@@ -77,13 +77,11 @@ mod tests {
                 episodes: vec!["met player at market".to_string()],
             },
             home: [10.0, 0.0, 20.0],
-            schedule: vec![
-                ScheduleEntry {
-                    hour: 8,
-                    action: "work".to_string(),
-                    target: [15.0, 0.0, 25.0],
-                },
-            ],
+            schedule: vec![ScheduleEntry {
+                hour: 8,
+                action: "work".to_string(),
+                target: [15.0, 0.0, 25.0],
+            }],
         }
     }
 
@@ -103,7 +101,12 @@ mod tests {
 
     #[test]
     fn test_all_roles() {
-        let roles = [Role::Merchant, Role::Guard, Role::Civilian, Role::QuestGiver];
+        let roles = [
+            Role::Merchant,
+            Role::Guard,
+            Role::Civilian,
+            Role::QuestGiver,
+        ];
         for role in roles {
             let json = serde_json::to_string(&role).unwrap();
             let parsed: Role = serde_json::from_str(&json).unwrap();
@@ -172,7 +175,10 @@ mod tests {
                 backstory: String::new(),
                 voice_speaker: None,
             },
-            memory: Memory { facts: vec![], episodes: vec![] },
+            memory: Memory {
+                facts: vec![],
+                episodes: vec![],
+            },
             home: [0.0, 0.0, 0.0],
             schedule: vec![],
         };
@@ -201,7 +207,7 @@ mod tests {
             action = "work"
             target = [15.0, 0.0, 25.0]
         "#;
-        
+
         let profile = load_profile_from_toml_str(toml).unwrap();
         assert_eq!(profile.id, "merchant_1");
         assert_eq!(profile.role, Role::Merchant);
@@ -221,7 +227,7 @@ mod tests {
             
             [memory]
         "#;
-        
+
         let profile = load_profile_from_toml_str(toml).unwrap();
         assert_eq!(profile.id, "npc_1");
         assert!(profile.schedule.is_empty());
@@ -243,4 +249,3 @@ mod tests {
         assert_eq!(parsed.role, profile.role);
     }
 }
-

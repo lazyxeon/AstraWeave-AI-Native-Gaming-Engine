@@ -14,7 +14,11 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(12.0, 1.0);
         let sun_pos = time.get_sun_position();
         // At noon (12:00), sun should be nearly overhead
-        assert!(sun_pos.y > 0.9, "Sun should be high at noon, got y={}", sun_pos.y);
+        assert!(
+            sun_pos.y > 0.9,
+            "Sun should be high at noon, got y={}",
+            sun_pos.y
+        );
         // Horizontal components should be small
         assert!(sun_pos.x.abs() < 0.2, "Sun x should be small at noon");
     }
@@ -24,7 +28,11 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(0.0, 1.0);
         let sun_pos = time.get_sun_position();
         // At midnight (0:00), sun should be below horizon
-        assert!(sun_pos.y < -0.5, "Sun should be low at midnight, got y={}", sun_pos.y);
+        assert!(
+            sun_pos.y < -0.5,
+            "Sun should be low at midnight, got y={}",
+            sun_pos.y
+        );
     }
 
     #[test]
@@ -32,7 +40,11 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(6.0, 1.0);
         let sun_pos = time.get_sun_position();
         // At sunrise (6:00), sun should be near horizon
-        assert!(sun_pos.y.abs() < 0.15, "Sun should be at horizon at 6am, got y={}", sun_pos.y);
+        assert!(
+            sun_pos.y.abs() < 0.15,
+            "Sun should be at horizon at 6am, got y={}",
+            sun_pos.y
+        );
     }
 
     #[test]
@@ -40,7 +52,11 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(18.0, 1.0);
         let sun_pos = time.get_sun_position();
         // At sunset (18:00), sun should be near horizon
-        assert!(sun_pos.y.abs() < 0.15, "Sun should be at horizon at 6pm, got y={}", sun_pos.y);
+        assert!(
+            sun_pos.y.abs() < 0.15,
+            "Sun should be at horizon at 6pm, got y={}",
+            sun_pos.y
+        );
     }
 
     #[test]
@@ -60,7 +76,11 @@ mod time_of_day_tests {
         let sun_pos = time.get_sun_position();
         // Light direction should be opposite to sun position (light comes FROM sun)
         let dot = light_dir.dot(-sun_pos);
-        assert!(dot > 0.99, "Light should come from sun during day, dot={}", dot);
+        assert!(
+            dot > 0.99,
+            "Light should come from sun during day, dot={}",
+            dot
+        );
     }
 
     #[test]
@@ -70,7 +90,11 @@ mod time_of_day_tests {
         let moon_pos = time.get_moon_position();
         // Light direction should be from moon at night
         let dot = light_dir.dot(-moon_pos);
-        assert!(dot > 0.99, "Light should come from moon at night, dot={}", dot);
+        assert!(
+            dot > 0.99,
+            "Light should come from moon at night, dot={}",
+            dot
+        );
     }
 
     #[test]
@@ -78,10 +102,22 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(12.0, 1.0);
         let light_color = time.get_light_color();
         // Noon light should be warm/bright (r > g > b)
-        assert!(light_color.x > 0.8, "Noon light red channel should be bright");
-        assert!(light_color.y > 0.7, "Noon light green channel should be bright");
-        assert!(light_color.x >= light_color.y, "Noon light should have r >= g");
-        assert!(light_color.y >= light_color.z, "Noon light should have g >= b");
+        assert!(
+            light_color.x > 0.8,
+            "Noon light red channel should be bright"
+        );
+        assert!(
+            light_color.y > 0.7,
+            "Noon light green channel should be bright"
+        );
+        assert!(
+            light_color.x >= light_color.y,
+            "Noon light should have r >= g"
+        );
+        assert!(
+            light_color.y >= light_color.z,
+            "Noon light should have g >= b"
+        );
     }
 
     #[test]
@@ -89,7 +125,10 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(0.0, 1.0);
         let light_color = time.get_light_color();
         // Night light should be cool/blue (b > r)
-        assert!(light_color.z > light_color.x, "Night light should be blue-ish");
+        assert!(
+            light_color.z > light_color.x,
+            "Night light should be blue-ish"
+        );
         assert!(light_color.x < 0.2, "Night light red should be dim");
     }
 
@@ -98,7 +137,10 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(18.5, 1.0); // Just after sunset
         let light_color = time.get_light_color();
         // Twilight light should be warm orange-ish
-        assert!(light_color.x > light_color.z, "Twilight light should have more red than blue");
+        assert!(
+            light_color.x > light_color.z,
+            "Twilight light should have more red than blue"
+        );
     }
 
     #[test]
@@ -107,7 +149,10 @@ mod time_of_day_tests {
         let ambient = time.get_ambient_color();
         // Day ambient should be blueish sky
         assert!(ambient.z > ambient.x, "Day ambient should be blue-sky");
-        assert!(ambient.length() > 0.3, "Day ambient should be reasonably bright");
+        assert!(
+            ambient.length() > 0.3,
+            "Day ambient should be reasonably bright"
+        );
     }
 
     #[test]
@@ -115,7 +160,11 @@ mod time_of_day_tests {
         let time = TimeOfDay::new(0.0, 1.0);
         let ambient = time.get_ambient_color();
         // Night ambient should be dim
-        assert!(ambient.length() < 0.1, "Night ambient should be dim, got {}", ambient.length());
+        assert!(
+            ambient.length() < 0.1,
+            "Night ambient should be dim, got {}",
+            ambient.length()
+        );
     }
 
     #[test]
@@ -144,11 +193,11 @@ mod time_of_day_tests {
         let time9 = TimeOfDay::new(9.0, 1.0);
         let time6 = TimeOfDay::new(6.0, 1.0);
         let time12 = TimeOfDay::new(12.0, 1.0);
-        
+
         let sun9 = time9.get_sun_position();
         let sun6 = time6.get_sun_position();
         let sun12 = time12.get_sun_position();
-        
+
         // 9am sun should be between sunrise and noon height
         assert!(sun9.y > sun6.y, "9am sun should be higher than 6am");
         assert!(sun9.y < sun12.y, "9am sun should be lower than noon");
@@ -159,11 +208,14 @@ mod time_of_day_tests {
         // time_scale shouldn't affect get_sun_position for same current_time
         let time1 = TimeOfDay::new(12.0, 1.0);
         let time60 = TimeOfDay::new(12.0, 60.0);
-        
+
         let sun1 = time1.get_sun_position();
         let sun60 = time60.get_sun_position();
-        
-        assert!((sun1 - sun60).length() < 0.001, "time_scale shouldn't affect sun position");
+
+        assert!(
+            (sun1 - sun60).length() < 0.001,
+            "time_scale shouldn't affect sun position"
+        );
     }
 }
 
@@ -183,14 +235,17 @@ mod weather_system_tests {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Rain, 0.0); // Instant change
         assert_eq!(weather.current_weather(), WeatherType::Rain);
-        assert!(weather.get_rain_intensity() > 0.0, "Rain should have intensity");
+        assert!(
+            weather.get_rain_intensity() > 0.0,
+            "Rain should have intensity"
+        );
     }
 
     #[test]
     fn test_gradual_weather_transition() {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Storm, 10.0); // 10 second transition
-        // Current should still be Clear, target is Storm
+                                                       // Current should still be Clear, target is Storm
         assert_eq!(weather.current_weather(), WeatherType::Clear);
         assert_eq!(weather.target_weather(), WeatherType::Storm);
     }
@@ -199,7 +254,10 @@ mod weather_system_tests {
     fn test_rain_intensity_when_raining() {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Rain, 0.0);
-        assert!(weather.get_rain_intensity() > 0.5, "Rain should have high intensity");
+        assert!(
+            weather.get_rain_intensity() > 0.5,
+            "Rain should have high intensity"
+        );
         assert!(weather.is_raining(), "Should detect raining");
     }
 
@@ -207,7 +265,10 @@ mod weather_system_tests {
     fn test_snow_intensity_when_snowing() {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Snow, 0.0);
-        assert!(weather.get_snow_intensity() > 0.5, "Snow should have high intensity");
+        assert!(
+            weather.get_snow_intensity() > 0.5,
+            "Snow should have high intensity"
+        );
         assert!(weather.is_snowing(), "Should detect snowing");
     }
 
@@ -215,7 +276,10 @@ mod weather_system_tests {
     fn test_fog_density_when_foggy() {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Fog, 0.0);
-        assert!(weather.get_fog_density() > 0.5, "Fog should have high density");
+        assert!(
+            weather.get_fog_density() > 0.5,
+            "Fog should have high density"
+        );
         assert!(weather.is_foggy(), "Should detect fog");
     }
 
@@ -237,32 +301,41 @@ mod weather_system_tests {
     fn test_wind_direction_is_normalized() {
         let weather = WeatherSystem::new();
         let wind = weather.get_wind_direction();
-        assert!((wind.length() - 1.0).abs() < 0.01, "Wind should be normalized");
+        assert!(
+            (wind.length() - 1.0).abs() < 0.01,
+            "Wind should be normalized"
+        );
     }
 
     #[test]
     fn test_wind_strength_positive() {
         let weather = WeatherSystem::new();
-        assert!(weather.get_wind_strength() > 0.0, "Wind strength should be positive");
+        assert!(
+            weather.get_wind_strength() > 0.0,
+            "Wind strength should be positive"
+        );
     }
 
     #[test]
     fn test_storm_has_high_wind() {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Storm, 0.0);
-        assert!(weather.get_wind_strength() > 0.5, "Storm should have high wind");
+        assert!(
+            weather.get_wind_strength() > 0.5,
+            "Storm should have high wind"
+        );
     }
 
     #[test]
     fn test_weather_update_progresses_transition() {
         let mut weather = WeatherSystem::new();
         weather.set_weather(WeatherType::Rain, 1.0); // 1 second transition
-        
+
         // Simulate updates
         for _ in 0..20 {
             weather.update(0.1); // 0.1s per update = 2 seconds total
         }
-        
+
         // After 2 seconds, should have completed 1 second transition
         assert_eq!(weather.current_weather(), WeatherType::Rain);
     }
@@ -291,7 +364,10 @@ mod camera_tests {
         let world_point = Vec3::new(10.0, 0.0, 0.0);
         let view_point = view.transform_point3(world_point);
         // Point in front should have negative Z in view space (RH convention)
-        assert!(view_point.z < 0.0, "Forward point should have -Z in view space");
+        assert!(
+            view_point.z < 0.0,
+            "Forward point should have -Z in view space"
+        );
     }
 
     #[test]
@@ -314,10 +390,10 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         let proj1 = camera1.proj_matrix();
         let proj2 = camera2.proj_matrix();
-        
+
         // Different aspect should produce different projections
         assert!((proj1 - proj2).abs_diff_eq(Mat4::ZERO, 0.001) == false);
     }
@@ -333,11 +409,14 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         let vp = camera.vp();
         let expected = camera.proj_matrix() * camera.view_matrix();
-        
-        assert!(vp.abs_diff_eq(expected, 0.0001), "VP should equal Proj * View");
+
+        assert!(
+            vp.abs_diff_eq(expected, 0.0001),
+            "VP should equal Proj * View"
+        );
     }
 
     #[test]
@@ -384,19 +463,22 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         // Test forward movement
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         ctrl.update_camera(&mut camera, 0.1);
         let move_fwd = camera.position.length();
         assert!(move_fwd > 0.0, "Forward movement should work");
-        
+
         // Reset and test backward
         camera.position = Vec3::ZERO;
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyW, false);
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyS, true);
         ctrl.update_camera(&mut camera, 0.1);
-        assert!(camera.position.length() > 0.0, "Backward movement should work");
+        assert!(
+            camera.position.length() > 0.0,
+            "Backward movement should work"
+        );
     }
 
     #[test]
@@ -411,12 +493,12 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         // Test left strafe
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyA, true);
         ctrl.update_camera(&mut camera, 0.1);
         assert!(camera.position.length() > 0.0, "Left strafe should work");
-        
+
         // Reset and test right strafe
         camera.position = Vec3::ZERO;
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyA, false);
@@ -437,17 +519,17 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         let pos1 = camera.position;
         ctrl.update_camera(&mut camera, 0.1);
         let move1 = (camera.position - pos1).length();
-        
+
         camera.position = Vec3::ZERO;
         ctrl.process_keyboard(winit::keyboard::KeyCode::ShiftLeft, true);
         ctrl.update_camera(&mut camera, 0.1);
         let move2 = camera.position.length();
-        
+
         // Sprint should move faster
         assert!(move2 > move1, "Sprint should increase movement speed");
     }
@@ -464,16 +546,16 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         ctrl.update_camera(&mut camera, 0.1);
         let move1 = camera.position.length();
-        
+
         camera.position = Vec3::ZERO;
         ctrl.process_keyboard(winit::keyboard::KeyCode::ControlLeft, true);
         ctrl.update_camera(&mut camera, 0.1);
         let move2 = camera.position.length();
-        
+
         // Precision should move slower
         assert!(move2 < move1, "Precision should decrease movement speed");
     }
@@ -481,7 +563,7 @@ mod camera_tests {
     #[test]
     fn test_camera_controller_mouse_drag() {
         let mut ctrl = CameraController::new(5.0, 0.1);
-        
+
         assert!(!ctrl.is_dragging());
         ctrl.process_mouse_button(winit::event::MouseButton::Right, true);
         assert!(ctrl.is_dragging());
@@ -501,13 +583,19 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         let initial_fov = camera.fovy;
         ctrl.process_scroll(&mut camera, 1.0);
-        assert!(camera.fovy < initial_fov, "Scroll up should zoom in (reduce FOV)");
-        
+        assert!(
+            camera.fovy < initial_fov,
+            "Scroll up should zoom in (reduce FOV)"
+        );
+
         ctrl.process_scroll(&mut camera, -2.0);
-        assert!(camera.fovy > initial_fov - 0.1, "Scroll down should zoom out");
+        assert!(
+            camera.fovy > initial_fov - 0.1,
+            "Scroll down should zoom out"
+        );
     }
 
     #[test]
@@ -522,13 +610,16 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         ctrl.toggle_mode(&mut camera);
         assert!(matches!(ctrl.mode, CameraMode::Orbit));
-        
+
         let initial_dist = ctrl.orbit_distance;
         ctrl.process_scroll(&mut camera, 1.0);
-        assert!(ctrl.orbit_distance < initial_dist, "Scroll should decrease orbit distance");
+        assert!(
+            ctrl.orbit_distance < initial_dist,
+            "Scroll should decrease orbit distance"
+        );
     }
 
     #[test]
@@ -543,11 +634,11 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         ctrl.process_mouse_button(winit::event::MouseButton::Right, true);
         ctrl.process_mouse_delta(&mut camera, Vec2::new(10.0, 10.0));
         // raw_used_this_frame should be true now
-        
+
         ctrl.begin_frame();
         // After begin_frame, should accept new raw deltas
         ctrl.process_mouse_delta(&mut camera, Vec2::new(5.0, 5.0));
@@ -566,14 +657,17 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         ctrl.toggle_mode(&mut camera);
         let initial_target = ctrl.orbit_target;
-        
+
         ctrl.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         ctrl.update_camera(&mut camera, 0.1);
-        
-        assert!(ctrl.orbit_target != initial_target, "Orbit target should move with WASD");
+
+        assert!(
+            ctrl.orbit_target != initial_target,
+            "Orbit target should move with WASD"
+        );
     }
 
     #[test]
@@ -588,11 +682,11 @@ mod camera_tests {
             znear: 0.1,
             zfar: 100.0,
         };
-        
+
         ctrl.toggle_mode(&mut camera);
         let new_target = Vec3::new(10.0, 5.0, 0.0);
         ctrl.set_orbit_target(new_target, &mut camera);
-        
+
         assert_eq!(ctrl.orbit_target, new_target);
     }
 }
@@ -606,32 +700,50 @@ mod clustered_tests {
     fn test_bin_lights_empty() {
         let lights: Vec<CpuLight> = vec![];
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        let (counts, indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
-        
-        assert!(counts.iter().all(|&c| c == 0), "Empty lights should have zero counts");
+        let (counts, indices, _offsets) =
+            bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
+
+        assert!(
+            counts.iter().all(|&c| c == 0),
+            "Empty lights should have zero counts"
+        );
         assert!(indices.is_empty(), "Empty lights should have no indices");
     }
 
     #[test]
     fn test_bin_lights_single_light() {
-        let lights = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 5.0 }];
+        let lights = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 5.0,
+        }];
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        let (counts, indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
-        
+        let (counts, indices, _offsets) =
+            bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
+
         // Light should be binned to some clusters
-        assert!(counts.iter().any(|&c| c > 0), "Single light should be in at least one cluster");
+        assert!(
+            counts.iter().any(|&c| c > 0),
+            "Single light should be in at least one cluster"
+        );
         assert!(!indices.is_empty(), "Should have indices for the light");
     }
 
     #[test]
     fn test_bin_lights_far_light_excluded() {
         // Light beyond far plane
-        let lights = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 150.0), radius: 1.0 }];
+        let lights = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 150.0),
+            radius: 1.0,
+        }];
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
-        
+        let (counts, _indices, _offsets) =
+            bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
+
         // Light far beyond far plane should not be binned
-        assert!(counts.iter().all(|&c| c == 0), "Light beyond far plane should be excluded");
+        assert!(
+            counts.iter().all(|&c| c == 0),
+            "Light beyond far plane should be excluded"
+        );
     }
 
     #[test]
@@ -644,12 +756,19 @@ mod clustered_tests {
     #[test]
     fn test_multiple_lights_different_positions() {
         let lights = vec![
-            CpuLight { pos: Vec3::new(-5.0, -5.0, 10.0), radius: 5.0 },
-            CpuLight { pos: Vec3::new(5.0, 5.0, 20.0), radius: 5.0 },
+            CpuLight {
+                pos: Vec3::new(-5.0, -5.0, 10.0),
+                radius: 5.0,
+            },
+            CpuLight {
+                pos: Vec3::new(5.0, 5.0, 20.0),
+                radius: 5.0,
+            },
         ];
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
-        
+        let (counts, _indices, _offsets) =
+            bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
+
         // Both lights should contribute to some clusters
         let total_count: u32 = counts.iter().sum();
         assert!(total_count >= 2, "Both lights should be binned");
@@ -658,18 +777,29 @@ mod clustered_tests {
     #[test]
     fn test_light_radius_affects_binning() {
         // Small radius light
-        let lights_small = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 1.0 }];
+        let lights_small = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 1.0,
+        }];
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        let (counts_small, _, _) = bin_lights_cpu(&lights_small, dims, (1920, 1080), 0.1, 100.0, 1.0);
-        
+        let (counts_small, _, _) =
+            bin_lights_cpu(&lights_small, dims, (1920, 1080), 0.1, 100.0, 1.0);
+
         // Large radius light
-        let lights_large = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 20.0 }];
-        let (counts_large, _, _) = bin_lights_cpu(&lights_large, dims, (1920, 1080), 0.1, 100.0, 1.0);
-        
+        let lights_large = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 20.0,
+        }];
+        let (counts_large, _, _) =
+            bin_lights_cpu(&lights_large, dims, (1920, 1080), 0.1, 100.0, 1.0);
+
         let total_small: u32 = counts_small.iter().sum();
         let total_large: u32 = counts_large.iter().sum();
-        
-        assert!(total_large >= total_small, "Larger radius should affect more clusters");
+
+        assert!(
+            total_large >= total_small,
+            "Larger radius should affect more clusters"
+        );
     }
 }
 
@@ -718,8 +848,13 @@ mod primitives_tests {
         let (verts, _indices) = sphere(16, 8, 2.0);
         // All vertices should be approximately at radius 2
         for v in &verts {
-            let dist = (v.position[0].powi(2) + v.position[1].powi(2) + v.position[2].powi(2)).sqrt();
-            assert!((dist - 2.0).abs() < 0.1, "Sphere vertices should be at radius, got {}", dist);
+            let dist =
+                (v.position[0].powi(2) + v.position[1].powi(2) + v.position[2].powi(2)).sqrt();
+            assert!(
+                (dist - 2.0).abs() < 0.1,
+                "Sphere vertices should be at radius, got {}",
+                dist
+            );
         }
     }
 
@@ -727,7 +862,11 @@ mod primitives_tests {
     fn test_sphere_indices_valid() {
         let (verts, indices) = sphere(16, 8, 1.0);
         for &idx in &indices {
-            assert!((idx as usize) < verts.len(), "Index {} should be valid", idx);
+            assert!(
+                (idx as usize) < verts.len(),
+                "Index {} should be valid",
+                idx
+            );
         }
     }
 
@@ -735,8 +874,11 @@ mod primitives_tests {
     fn test_sphere_more_segments_more_vertices() {
         let (verts_low, _) = sphere(8, 4, 1.0);
         let (verts_high, _) = sphere(32, 16, 1.0);
-        
-        assert!(verts_high.len() > verts_low.len(), "Higher segments should have more vertices");
+
+        assert!(
+            verts_high.len() > verts_low.len(),
+            "Higher segments should have more vertices"
+        );
     }
 
     #[test]
@@ -745,7 +887,10 @@ mod primitives_tests {
         // All vertices should have same Y
         let first_y = verts[0].position[1];
         for v in &verts {
-            assert!((v.position[1] - first_y).abs() < 0.001, "Plane should be flat");
+            assert!(
+                (v.position[1] - first_y).abs() < 0.001,
+                "Plane should be flat"
+            );
         }
     }
 
@@ -784,7 +929,7 @@ mod texture_tests {
         // Albedo and Emissive should use sRGB format
         let albedo = TextureUsage::Albedo;
         let emissive = TextureUsage::Emissive;
-        
+
         assert_eq!(albedo.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
         assert_eq!(emissive.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
     }
@@ -795,7 +940,7 @@ mod texture_tests {
         let normal = TextureUsage::Normal;
         let mra = TextureUsage::MRA;
         let height = TextureUsage::Height;
-        
+
         assert_eq!(normal.format(), wgpu::TextureFormat::Rgba8Unorm);
         assert_eq!(mra.format(), wgpu::TextureFormat::Rgba8Unorm);
         assert_eq!(height.format(), wgpu::TextureFormat::Rgba8Unorm);
@@ -851,7 +996,10 @@ mod ibl_tests {
             recapture_interval: 2.0,
         };
         match mode {
-            SkyMode::Procedural { last_capture_time, recapture_interval } => {
+            SkyMode::Procedural {
+                last_capture_time,
+                recapture_interval,
+            } => {
                 assert_eq!(last_capture_time, 5.0);
                 assert_eq!(recapture_interval, 2.0);
             }
@@ -880,13 +1028,19 @@ mod shadow_csm_tests {
 
     #[test]
     fn test_cascade_count_valid() {
-        assert!(CASCADE_COUNT >= 1 && CASCADE_COUNT <= 8, "CASCADE_COUNT should be 1-8");
+        assert!(
+            CASCADE_COUNT >= 1 && CASCADE_COUNT <= 8,
+            "CASCADE_COUNT should be 1-8"
+        );
     }
 
     #[test]
     fn test_cascade_resolution_power_of_two() {
         // Should be power of 2
-        assert!(CASCADE_RESOLUTION.is_power_of_two(), "Resolution should be power of 2");
+        assert!(
+            CASCADE_RESOLUTION.is_power_of_two(),
+            "Resolution should be power of 2"
+        );
     }
 
     #[test]
@@ -898,13 +1052,9 @@ mod shadow_csm_tests {
     #[test]
     fn test_shadow_cascade_matrices_valid() {
         let proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 50.0);
-        let view = Mat4::look_at_rh(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::ZERO,
-            Vec3::Z,
-        );
+        let view = Mat4::look_at_rh(Vec3::new(0.0, 10.0, 0.0), Vec3::ZERO, Vec3::Z);
         let vp = proj * view;
-        
+
         let cascade = ShadowCascade {
             near: 0.1,
             far: 50.0,
@@ -913,7 +1063,7 @@ mod shadow_csm_tests {
             view_proj_matrix: vp,
             atlas_offset: Vec4::new(0.0, 0.0, 0.5, 0.5),
         };
-        
+
         // View-proj should be valid matrix
         assert!(!cascade.view_proj_matrix.is_nan());
     }
@@ -928,7 +1078,10 @@ mod shadow_csm_tests {
             view_proj_matrix: Mat4::IDENTITY,
             atlas_offset: Vec4::ZERO,
         };
-        assert!(cascade.far > cascade.near * 10.0, "Far should be significantly larger than near");
+        assert!(
+            cascade.far > cascade.near * 10.0,
+            "Far should be significantly larger than near"
+        );
     }
 }
 
@@ -945,7 +1098,10 @@ mod post_tests {
         };
         assert!(config.threshold > 0.0, "Threshold should be positive");
         assert!(config.intensity >= 0.0, "Intensity should be non-negative");
-        assert!(config.mip_count >= 1 && config.mip_count <= 8, "Mip count should be 1-8");
+        assert!(
+            config.mip_count >= 1 && config.mip_count <= 8,
+            "Mip count should be 1-8"
+        );
     }
 
     #[test]
@@ -987,7 +1143,7 @@ mod post_tests {
 
 #[cfg(test)]
 mod mesh_tests {
-    use crate::mesh::{MeshVertex, CpuMesh, compute_tangents};
+    use crate::mesh::{compute_tangents, CpuMesh, MeshVertex};
     use glam::Vec3;
 
     #[test]
@@ -1008,12 +1164,27 @@ mod mesh_tests {
     #[test]
     fn test_cpu_mesh_creation() {
         let vertices = vec![
-            MeshVertex { position: [0.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0], tangent: [0.0; 4] },
+            MeshVertex {
+                position: [0.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [1.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [1.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [0.0, 0.0, 1.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 1.0],
+                tangent: [0.0; 4],
+            },
         ];
         let indices = vec![0, 1, 2];
-        
+
         let mesh = CpuMesh { vertices, indices };
         assert_eq!(mesh.vertices.len(), 3);
         assert_eq!(mesh.indices.len(), 3);
@@ -1022,57 +1193,114 @@ mod mesh_tests {
     #[test]
     fn test_compute_tangents_modifies_mesh() {
         let vertices = vec![
-            MeshVertex { position: [0.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0], tangent: [0.0; 4] },
+            MeshVertex {
+                position: [0.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [1.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [1.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [0.0, 0.0, 1.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 1.0],
+                tangent: [0.0; 4],
+            },
         ];
         let indices = vec![0, 1, 2];
-        
+
         let mut mesh = CpuMesh { vertices, indices };
         compute_tangents(&mut mesh);
-        
+
         // Tangents should be computed (not zero)
-        let tangent_sum: f32 = mesh.vertices.iter().map(|v| v.tangent[0].abs() + v.tangent[1].abs() + v.tangent[2].abs()).sum();
+        let tangent_sum: f32 = mesh
+            .vertices
+            .iter()
+            .map(|v| v.tangent[0].abs() + v.tangent[1].abs() + v.tangent[2].abs())
+            .sum();
         assert!(tangent_sum > 0.0, "Tangents should be computed");
     }
 
     #[test]
     fn test_tangent_orthogonal_to_normal() {
         let vertices = vec![
-            MeshVertex { position: [0.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0], tangent: [0.0; 4] },
+            MeshVertex {
+                position: [0.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [1.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [1.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [0.0, 0.0, 1.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 1.0],
+                tangent: [0.0; 4],
+            },
         ];
         let indices = vec![0, 1, 2];
-        
+
         let mut mesh = CpuMesh { vertices, indices };
         compute_tangents(&mut mesh);
-        
+
         // Tangents should be roughly orthogonal to normals
         for v in &mesh.vertices {
             let t = Vec3::new(v.tangent[0], v.tangent[1], v.tangent[2]);
             let n = Vec3::new(v.normal[0], v.normal[1], v.normal[2]);
             let dot = t.dot(n).abs();
-            assert!(dot < 0.1, "Tangent should be orthogonal to normal, dot={}", dot);
+            assert!(
+                dot < 0.1,
+                "Tangent should be orthogonal to normal, dot={}",
+                dot
+            );
         }
     }
 
     #[test]
     fn test_tangent_handedness() {
         let vertices = vec![
-            MeshVertex { position: [0.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0], tangent: [0.0; 4] },
-            MeshVertex { position: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0], tangent: [0.0; 4] },
+            MeshVertex {
+                position: [0.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [1.0, 0.0, 0.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [1.0, 0.0],
+                tangent: [0.0; 4],
+            },
+            MeshVertex {
+                position: [0.0, 0.0, 1.0],
+                normal: [0.0, 1.0, 0.0],
+                uv: [0.0, 1.0],
+                tangent: [0.0; 4],
+            },
         ];
         let indices = vec![0, 1, 2];
-        
+
         let mut mesh = CpuMesh { vertices, indices };
         compute_tangents(&mut mesh);
-        
+
         // Handedness (w component) should be +1 or -1
         for v in &mesh.vertices {
             let w = v.tangent[3];
-            assert!(w == 1.0 || w == -1.0, "Tangent handedness should be +1 or -1, got {}", w);
+            assert!(
+                w == 1.0 || w == -1.0,
+                "Tangent handedness should be +1 or -1, got {}",
+                w
+            );
         }
     }
 }
@@ -1089,15 +1317,20 @@ mod behavioral_correctness_tests {
     fn test_sun_trajectory_continuity() {
         // Sun position should change smoothly across the day
         let mut last_pos = TimeOfDay::new(0.0, 1.0).get_sun_position();
-        
+
         for hour in 1..=24 {
             let time = TimeOfDay::new(hour as f32, 1.0);
             let pos = time.get_sun_position();
-            
+
             // Position change should be gradual (no discontinuities)
             let delta = (pos - last_pos).length();
-            assert!(delta < 0.5, "Sun position jumped too much at hour {}: delta={}", hour, delta);
-            
+            assert!(
+                delta < 0.5,
+                "Sun position jumped too much at hour {}: delta={}",
+                hour,
+                delta
+            );
+
             last_pos = pos;
         }
     }
@@ -1110,9 +1343,14 @@ mod behavioral_correctness_tests {
                 let time = TimeOfDay::new(hour as f32 + minute as f32 / 60.0, 1.0);
                 let pos = time.get_sun_position();
                 let length = pos.length();
-                
-                assert!((length - 1.0).abs() < 0.01, 
-                    "Sun position not normalized at {}:{:02}, length={}", hour, minute, length);
+
+                assert!(
+                    (length - 1.0).abs() < 0.01,
+                    "Sun position not normalized at {}:{:02}, length={}",
+                    hour,
+                    minute,
+                    length
+                );
             }
         }
     }
@@ -1124,9 +1362,14 @@ mod behavioral_correctness_tests {
             let time = TimeOfDay::new(hour as f32, 1.0);
             let sun = time.get_sun_position();
             let moon = time.get_moon_position();
-            
+
             let dot = sun.dot(moon);
-            assert!(dot < -0.99, "Moon should be opposite sun at hour {}, dot={}", hour, dot);
+            assert!(
+                dot < -0.99,
+                "Moon should be opposite sun at hour {}, dot={}",
+                hour,
+                dot
+            );
         }
     }
 
@@ -1136,7 +1379,7 @@ mod behavioral_correctness_tests {
         for hour in 0..24 {
             let time = TimeOfDay::new(hour as f32, 1.0);
             let color = time.get_light_color();
-            
+
             assert!(color.x >= 0.0, "Red channel negative at hour {}", hour);
             assert!(color.y >= 0.0, "Green channel negative at hour {}", hour);
             assert!(color.z >= 0.0, "Blue channel negative at hour {}", hour);
@@ -1147,13 +1390,17 @@ mod behavioral_correctness_tests {
     fn test_light_intensity_day_vs_night() {
         let noon = TimeOfDay::new(12.0, 1.0);
         let midnight = TimeOfDay::new(0.0, 1.0);
-        
+
         let noon_intensity = noon.get_light_color().length();
         let midnight_intensity = midnight.get_light_color().length();
-        
+
         // Day should be significantly brighter than night
-        assert!(noon_intensity > midnight_intensity * 3.0, 
-            "Day should be much brighter: noon={}, midnight={}", noon_intensity, midnight_intensity);
+        assert!(
+            noon_intensity > midnight_intensity * 3.0,
+            "Day should be much brighter: noon={}, midnight={}",
+            noon_intensity,
+            midnight_intensity
+        );
     }
 
     #[test]
@@ -1163,10 +1410,15 @@ mod behavioral_correctness_tests {
             let time = TimeOfDay::new(hour as f32, 1.0);
             let direct = time.get_light_color().length();
             let ambient = time.get_ambient_color().length();
-            
+
             // Ambient should be less than or equal to direct (with some tolerance)
-            assert!(ambient <= direct * 1.5, 
-                "Ambient too bright at hour {}: ambient={}, direct={}", hour, ambient, direct);
+            assert!(
+                ambient <= direct * 1.5,
+                "Ambient too bright at hour {}: ambient={}, direct={}",
+                hour,
+                ambient,
+                direct
+            );
         }
     }
 
@@ -1176,16 +1428,22 @@ mod behavioral_correctness_tests {
         let mut day_count = 0;
         let mut night_count = 0;
         let mut twilight_count = 0;
-        
+
         for i in 0..240 {
             let hour = i as f32 / 10.0; // 10 samples per hour
             let time = TimeOfDay::new(hour, 1.0);
-            
-            if time.is_day() { day_count += 1; }
-            if time.is_night() { night_count += 1; }
-            if time.is_twilight() { twilight_count += 1; }
+
+            if time.is_day() {
+                day_count += 1;
+            }
+            if time.is_night() {
+                night_count += 1;
+            }
+            if time.is_twilight() {
+                twilight_count += 1;
+            }
         }
-        
+
         // Should have reasonable distribution
         assert!(day_count > 80, "Should have significant daytime");
         assert!(night_count > 60, "Should have significant nighttime");
@@ -1197,13 +1455,17 @@ mod behavioral_correctness_tests {
         // Sunrise and sunset should be roughly symmetric around noon
         let sunrise = TimeOfDay::new(6.0, 1.0);
         let sunset = TimeOfDay::new(18.0, 1.0);
-        
+
         let sunrise_pos = sunrise.get_sun_position();
         let sunset_pos = sunset.get_sun_position();
-        
+
         // Heights should be similar (both at horizon)
-        assert!((sunrise_pos.y - sunset_pos.y).abs() < 0.1, 
-            "Sunrise and sunset heights differ: {} vs {}", sunrise_pos.y, sunset_pos.y);
+        assert!(
+            (sunrise_pos.y - sunset_pos.y).abs() < 0.1,
+            "Sunrise and sunset heights differ: {} vs {}",
+            sunrise_pos.y,
+            sunset_pos.y
+        );
     }
 }
 
@@ -1228,22 +1490,31 @@ mod camera_behavioral_tests {
     fn test_camera_view_matrix_determinant() {
         let camera = make_camera();
         let view = camera.view_matrix();
-        
+
         // View matrix should have determinant close to ±1 (orthonormal rotation + translation)
         let det = view.determinant();
-        assert!((det.abs() - 1.0).abs() < 0.01, "View matrix determinant should be ~±1, got {}", det);
+        assert!(
+            (det.abs() - 1.0).abs() < 0.01,
+            "View matrix determinant should be ~±1, got {}",
+            det
+        );
     }
 
     #[test]
     fn test_camera_projection_matrix_valid() {
         let camera = make_camera();
         let proj = camera.proj_matrix();
-        
+
         // Projection matrix should not have NaN or Inf
         for i in 0..4 {
             for j in 0..4 {
                 let val = proj.col(i)[j];
-                assert!(val.is_finite(), "Projection matrix has non-finite value at ({}, {})", i, j);
+                assert!(
+                    val.is_finite(),
+                    "Projection matrix has non-finite value at ({}, {})",
+                    i,
+                    j
+                );
             }
         }
     }
@@ -1255,7 +1526,11 @@ mod camera_behavioral_tests {
             for pitch in [-0.5, 0.0, 0.5] {
                 let dir = Camera::dir(yaw, pitch);
                 let len = dir.length();
-                assert!((len - 1.0).abs() < 0.001, "Dir should be normalized, got length {}", len);
+                assert!(
+                    (len - 1.0).abs() < 0.001,
+                    "Dir should be normalized, got length {}",
+                    len
+                );
             }
         }
     }
@@ -1265,7 +1540,7 @@ mod camera_behavioral_tests {
         // Looking up (positive pitch) should have positive y
         let up_dir = Camera::dir(0.0, 0.5);
         let down_dir = Camera::dir(0.0, -0.5);
-        
+
         assert!(up_dir.y > down_dir.y, "Positive pitch should look up");
     }
 
@@ -1273,12 +1548,17 @@ mod camera_behavioral_tests {
     fn test_camera_vp_composite_valid() {
         let camera = make_camera();
         let vp = camera.vp();
-        
+
         // Composite should be valid (no NaN/Inf)
         for i in 0..4 {
             for j in 0..4 {
                 let val = vp.col(i)[j];
-                assert!(val.is_finite(), "VP matrix has non-finite value at ({}, {})", i, j);
+                assert!(
+                    val.is_finite(),
+                    "VP matrix has non-finite value at ({}, {})",
+                    i,
+                    j
+                );
             }
         }
     }
@@ -1289,10 +1569,10 @@ mod camera_behavioral_tests {
         let mut camera2 = make_camera();
         camera1.aspect = 1.0;
         camera2.aspect = 2.0;
-        
+
         let proj1 = camera1.proj_matrix();
         let proj2 = camera2.proj_matrix();
-        
+
         // Different aspects should produce different projections
         assert!((proj1.col(0)[0] - proj2.col(0)[0]).abs() > 0.01);
     }
@@ -1303,10 +1583,10 @@ mod camera_behavioral_tests {
         let mut camera2 = make_camera();
         camera1.fovy = 0.5;
         camera2.fovy = 1.0;
-        
+
         let proj1 = camera1.proj_matrix();
         let proj2 = camera2.proj_matrix();
-        
+
         // Different fovy should produce different projections
         assert!((proj1.col(1)[1] - proj2.col(1)[1]).abs() > 0.01);
     }
@@ -1315,18 +1595,22 @@ mod camera_behavioral_tests {
 #[cfg(test)]
 mod transform_behavioral_tests {
     use crate::animation::Transform;
-    use glam::{Vec3, Quat, Mat4};
+    use glam::{Mat4, Quat, Vec3};
 
     #[test]
     fn test_transform_default_is_identity() {
         let t = Transform::default();
         let mat = t.to_matrix();
         let identity = Mat4::IDENTITY;
-        
+
         for i in 0..4 {
             for j in 0..4 {
-                assert!((mat.col(i)[j] - identity.col(i)[j]).abs() < 0.001,
-                    "Transform default should be identity at ({}, {})", i, j);
+                assert!(
+                    (mat.col(i)[j] - identity.col(i)[j]).abs() < 0.001,
+                    "Transform default should be identity at ({}, {})",
+                    i,
+                    j
+                );
             }
         }
     }
@@ -1339,7 +1623,7 @@ mod transform_behavioral_tests {
             scale: Vec3::ONE,
         };
         let mat = t.to_matrix();
-        
+
         // Translation should appear in last column
         assert!((mat.col(3)[0] - 10.0).abs() < 0.001);
         assert!((mat.col(3)[1] - 20.0).abs() < 0.001);
@@ -1354,7 +1638,7 @@ mod transform_behavioral_tests {
             scale: Vec3::splat(2.0),
         };
         let mat = t.to_matrix();
-        
+
         // Diagonal should be scaled
         assert!((mat.col(0)[0] - 2.0).abs() < 0.001);
         assert!((mat.col(1)[1] - 2.0).abs() < 0.001);
@@ -1370,13 +1654,16 @@ mod transform_behavioral_tests {
             scale: Vec3::ONE,
         };
         let mat = t.to_matrix();
-        
+
         // Rotation should preserve vector length
         let v = Vec3::new(1.0, 0.0, 0.0);
         let transformed = mat.transform_point3(v);
-        
-        assert!((transformed.length() - 1.0).abs() < 0.001, 
-            "Rotation should preserve length, got {}", transformed.length());
+
+        assert!(
+            (transformed.length() - 1.0).abs() < 0.001,
+            "Rotation should preserve length, got {}",
+            transformed.length()
+        );
     }
 
     #[test]
@@ -1388,14 +1675,26 @@ mod transform_behavioral_tests {
             scale: Vec3::new(2.0, 2.0, 2.0),
         };
         let mat = t.to_matrix();
-        
+
         // Point at (1, 0, 0): scale to (2, 0, 0), rotate 90 to (0, 0, -2), translate to (0, 0, 8)
         let point = Vec3::new(1.0, 0.0, 0.0);
         let result = mat.transform_point3(point);
-        
-        assert!((result.x - 0.0).abs() < 0.01, "X should be ~0, got {}", result.x);
-        assert!((result.y - 0.0).abs() < 0.01, "Y should be ~0, got {}", result.y);
-        assert!((result.z - 8.0).abs() < 0.01, "Z should be ~8, got {}", result.z);
+
+        assert!(
+            (result.x - 0.0).abs() < 0.01,
+            "X should be ~0, got {}",
+            result.x
+        );
+        assert!(
+            (result.y - 0.0).abs() < 0.01,
+            "Y should be ~0, got {}",
+            result.y
+        );
+        assert!(
+            (result.z - 8.0).abs() < 0.01,
+            "Z should be ~8, got {}",
+            result.z
+        );
     }
 }
 
@@ -1409,7 +1708,7 @@ mod color_space_tests {
         for hour in 0..24 {
             let time = TimeOfDay::new(hour as f32, 1.0);
             let color = time.get_light_color();
-            
+
             assert!(color.x <= 2.0, "Red exceeds HDR range at hour {}", hour);
             assert!(color.y <= 2.0, "Green exceeds HDR range at hour {}", hour);
             assert!(color.z <= 2.0, "Blue exceeds HDR range at hour {}", hour);
@@ -1421,10 +1720,22 @@ mod color_space_tests {
         for hour in 0..24 {
             let time = TimeOfDay::new(hour as f32, 1.0);
             let ambient = time.get_ambient_color();
-            
-            assert!(ambient.x >= 0.0 && ambient.x <= 1.0, "Ambient red out of range at hour {}", hour);
-            assert!(ambient.y >= 0.0 && ambient.y <= 1.0, "Ambient green out of range at hour {}", hour);
-            assert!(ambient.z >= 0.0 && ambient.z <= 1.0, "Ambient blue out of range at hour {}", hour);
+
+            assert!(
+                ambient.x >= 0.0 && ambient.x <= 1.0,
+                "Ambient red out of range at hour {}",
+                hour
+            );
+            assert!(
+                ambient.y >= 0.0 && ambient.y <= 1.0,
+                "Ambient green out of range at hour {}",
+                hour
+            );
+            assert!(
+                ambient.z >= 0.0 && ambient.z <= 1.0,
+                "Ambient blue out of range at hour {}",
+                hour
+            );
         }
     }
 
@@ -1434,14 +1745,20 @@ mod color_space_tests {
         let morning = TimeOfDay::new(7.0, 1.0).get_light_color();
         let noon = TimeOfDay::new(12.0, 1.0).get_light_color();
         let evening = TimeOfDay::new(18.0, 1.0).get_light_color();
-        
+
         // Noon should have highest blue component relative to red
         let noon_ratio = noon.z / noon.x;
         let morning_ratio = morning.z / (morning.x + 0.01);
         let evening_ratio = evening.z / (evening.x + 0.01);
-        
-        assert!(noon_ratio > morning_ratio * 0.5, "Noon should be less warm than morning");
-        assert!(noon_ratio > evening_ratio * 0.5, "Noon should be less warm than evening");
+
+        assert!(
+            noon_ratio > morning_ratio * 0.5,
+            "Noon should be less warm than morning"
+        );
+        assert!(
+            noon_ratio > evening_ratio * 0.5,
+            "Noon should be less warm than evening"
+        );
     }
 }
 
@@ -1451,12 +1768,12 @@ mod color_space_tests {
 
 #[cfg(test)]
 mod boundary_condition_tests {
-    use crate::environment::{TimeOfDay, WeatherSystem};
     use crate::camera::Camera;
+    use crate::environment::{TimeOfDay, WeatherSystem};
     use glam::Vec3;
 
     // --- TimeOfDay hour boundaries ---
-    
+
     #[test]
     fn time_at_zero_hours() {
         let time = TimeOfDay::new(0.0, 1.0);
@@ -1498,7 +1815,7 @@ mod boundary_condition_tests {
     }
 
     // --- Camera near/far plane boundaries ---
-    
+
     #[test]
     fn camera_near_plane_at_minimum() {
         let camera = Camera {
@@ -1543,7 +1860,10 @@ mod boundary_condition_tests {
         };
         let proj = camera.proj_matrix();
         // For aspect=1, proj[0][0] should equal proj[1][1]
-        assert!((proj.col(0)[0] - proj.col(1)[1]).abs() < 0.01, "Square aspect should have equal x/y scale");
+        assert!(
+            (proj.col(0)[0] - proj.col(1)[1]).abs() < 0.01,
+            "Square aspect should have equal x/y scale"
+        );
     }
 
     #[test]
@@ -1559,11 +1879,14 @@ mod boundary_condition_tests {
         };
         let proj = camera.proj_matrix();
         // Very narrow FOV should have very large projection scale
-        assert!(proj.col(1)[1] > 100.0, "Narrow FOV should have large proj scale");
+        assert!(
+            proj.col(1)[1] > 100.0,
+            "Narrow FOV should have large proj scale"
+        );
     }
 
     // --- Weather intensity boundaries ---
-    
+
     #[test]
     fn rain_intensity_at_zero_when_clear() {
         let weather = WeatherSystem::new();
@@ -1583,7 +1906,7 @@ mod boundary_condition_tests {
     }
 
     // --- Pitch/yaw boundaries ---
-    
+
     #[test]
     fn camera_pitch_at_zero() {
         let camera = Camera {
@@ -1636,12 +1959,12 @@ mod boundary_condition_tests {
 
 #[cfg(test)]
 mod comparison_operator_tests {
-    use crate::environment::{TimeOfDay, WeatherType};
     use crate::camera::Camera;
+    use crate::environment::{TimeOfDay, WeatherType};
     use glam::Vec3;
 
     // --- TimeOfDay comparisons ---
-    
+
     #[test]
     fn time_day_not_equals_night() {
         let noon = TimeOfDay::new(12.0, 1.0);
@@ -1657,7 +1980,7 @@ mod comparison_operator_tests {
     }
 
     // --- WeatherType equality ---
-    
+
     #[test]
     fn weather_type_clear_equals_clear() {
         assert_eq!(WeatherType::Clear, WeatherType::Clear);
@@ -1684,7 +2007,7 @@ mod comparison_operator_tests {
     }
 
     // --- Sun height comparisons ---
-    
+
     #[test]
     fn noon_sun_higher_than_morning() {
         let noon = TimeOfDay::new(12.0, 1.0).get_sun_position();
@@ -1696,7 +2019,10 @@ mod comparison_operator_tests {
     fn noon_sun_higher_than_afternoon() {
         let noon = TimeOfDay::new(12.0, 1.0).get_sun_position();
         let afternoon = TimeOfDay::new(16.0, 1.0).get_sun_position();
-        assert!(noon.y > afternoon.y, "Noon sun should be higher than afternoon");
+        assert!(
+            noon.y > afternoon.y,
+            "Noon sun should be higher than afternoon"
+        );
     }
 
     #[test]
@@ -1707,7 +2033,7 @@ mod comparison_operator_tests {
     }
 
     // --- Camera znear vs zfar ---
-    
+
     #[test]
     fn camera_znear_less_than_zfar() {
         let camera = Camera {
@@ -1732,7 +2058,7 @@ mod boolean_return_path_tests {
     use crate::environment::{TimeOfDay, WeatherSystem, WeatherType};
 
     // --- is_day() paths ---
-    
+
     #[test]
     fn is_day_returns_true_at_noon() {
         let time = TimeOfDay::new(12.0, 1.0);
@@ -1746,7 +2072,7 @@ mod boolean_return_path_tests {
     }
 
     // --- is_night() paths ---
-    
+
     #[test]
     fn is_night_returns_true_at_midnight() {
         let time = TimeOfDay::new(0.0, 1.0);
@@ -1760,7 +2086,7 @@ mod boolean_return_path_tests {
     }
 
     // --- is_twilight() paths ---
-    
+
     #[test]
     fn is_twilight_returns_true_at_dawn() {
         let time = TimeOfDay::new(6.0, 1.0);
@@ -1780,7 +2106,7 @@ mod boolean_return_path_tests {
     }
 
     // --- is_raining() paths ---
-    
+
     #[test]
     fn is_raining_returns_true_for_rain() {
         let mut weather = WeatherSystem::new();
@@ -1802,7 +2128,7 @@ mod boolean_return_path_tests {
     }
 
     // --- is_snowing() paths ---
-    
+
     #[test]
     fn is_snowing_returns_true_for_snow() {
         let mut weather = WeatherSystem::new();
@@ -1824,7 +2150,7 @@ mod boolean_return_path_tests {
     }
 
     // --- is_foggy() paths (NOTE: is_foggy checks fog_density > 0.1, not weather type) ---
-    
+
     #[test]
     fn is_foggy_returns_true_for_fog() {
         let mut weather = WeatherSystem::new();
@@ -1847,6 +2173,10 @@ mod boolean_return_path_tests {
         // This verifies the density-based check exists
         let fog_density = weather.get_fog_density();
         let is_foggy = weather.is_foggy();
-        assert_eq!(is_foggy, fog_density > 0.1, "is_foggy should check fog_density > 0.1");
+        assert_eq!(
+            is_foggy,
+            fog_density > 0.1,
+            "is_foggy should check fog_density > 0.1"
+        );
     }
 }

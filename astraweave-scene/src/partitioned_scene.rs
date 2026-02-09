@@ -326,7 +326,10 @@ mod tests {
         // Untracked entity -> treated as spawn.
         ps.move_entity_to_cell(100, a);
         assert_eq!(ps.get_entity_cell(100), Some(a));
-        assert!(matches!(ps.events.last(), Some(SceneEvent::EntitySpawned(100, _))));
+        assert!(matches!(
+            ps.events.last(),
+            Some(SceneEvent::EntitySpawned(100, _))
+        ));
 
         let events_before = ps.events.len();
         // Same cell -> no-op.
@@ -336,7 +339,10 @@ mod tests {
         // Move to a new cell.
         ps.move_entity_to_cell(100, b);
         assert_eq!(ps.get_entity_cell(100), Some(b));
-        assert!(matches!(ps.events.last(), Some(SceneEvent::EntityMoved(100, _, _))));
+        assert!(matches!(
+            ps.events.last(),
+            Some(SceneEvent::EntityMoved(100, _, _))
+        ));
     }
 
     #[test]

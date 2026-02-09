@@ -74,9 +74,9 @@ mod tests {
 
     #[test]
     fn test_with_player() {
-        let view = NpcWorldView::new(Vec3::new(0.0, 0.0, 0.0), 12.0)
-            .with_player(Vec3::new(3.0, 0.0, 4.0));
-        
+        let view =
+            NpcWorldView::new(Vec3::new(0.0, 0.0, 0.0), 12.0).with_player(Vec3::new(3.0, 0.0, 4.0));
+
         assert!(view.player_pos.is_some());
         assert_eq!(view.player_pos.unwrap(), Vec3::new(3.0, 0.0, 4.0));
         assert!(view.player_dist.is_some());
@@ -87,7 +87,7 @@ mod tests {
     fn test_with_threat() {
         let view = NpcWorldView::default().with_threat(true);
         assert!(view.nearby_threat);
-        
+
         let view = NpcWorldView::default().with_threat(false);
         assert!(!view.nearby_threat);
     }
@@ -104,7 +104,7 @@ mod tests {
             .with_player(Vec3::new(10.0, 0.0, 5.0))
             .with_threat(true)
             .with_location("gate");
-        
+
         assert_eq!(view.time_of_day, 18.0);
         assert_eq!(view.self_pos, Vec3::new(5.0, 0.0, 5.0));
         assert!(view.player_pos.is_some());
@@ -120,7 +120,7 @@ mod tests {
             .with_player(Vec3::new(2.0, 2.0, 2.0))
             .with_threat(true)
             .with_location("tavern");
-        
+
         let cloned = view.clone();
         assert_eq!(cloned.time_of_day, view.time_of_day);
         assert_eq!(cloned.self_pos, view.self_pos);
@@ -129,4 +129,3 @@ mod tests {
         assert_eq!(cloned.location_tag, view.location_tag);
     }
 }
-

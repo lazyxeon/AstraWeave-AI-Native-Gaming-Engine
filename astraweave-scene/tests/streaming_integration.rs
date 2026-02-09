@@ -77,17 +77,19 @@ async fn test_async_cell_loading() {
 
     // Force load the cell
     let load_result = manager.force_load_cell(coord).await;
-    
+
     // The streaming manager spawns background tasks, so we need to wait a bit
     // for the async loading to complete
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-    
+
     // Check if the cell loaded successfully (may fail if file format doesn't match)
     if load_result.is_ok() && manager.is_cell_active(coord) {
         println!("Cell loaded successfully");
     } else {
         // This is expected in CI where the cell loader may not find the exact format
-        println!("Note: Cell loading may fail in CI - this tests the async plumbing, not file parsing");
+        println!(
+            "Note: Cell loading may fail in CI - this tests the async plumbing, not file parsing"
+        );
     }
 
     // Cleanup
@@ -207,9 +209,9 @@ async fn test_streaming_with_camera_movement() {
     // Update at origin - allow time for async loading
     scene.update_streaming(glam::Vec3::ZERO).await.unwrap();
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-    
+
     let initial_cells = scene.metrics().active_cells;
-    
+
     // Move camera to new position
     let new_pos = glam::Vec3::new(500.0, 0.0, 500.0); // ~5 cells away
     scene.update_streaming(new_pos).await.unwrap();
@@ -218,8 +220,11 @@ async fn test_streaming_with_camera_movement() {
     // The streaming system may not load cells if file format doesn't match exactly
     // This test validates the streaming logic path, not file I/O success
     let after_move_cells = scene.metrics().active_cells;
-    println!("Initial cells: {}, After move: {}", initial_cells, after_move_cells);
-    
+    println!(
+        "Initial cells: {}, After move: {}",
+        initial_cells, after_move_cells
+    );
+
     // At minimum, verify the streaming system didn't crash and processed the request
     // Cell count assertions removed since async loading depends on file I/O
 
@@ -272,7 +277,7 @@ async fn test_lru_cache_functionality() {
     // This test requires the streaming manager's hardcoded path: assets/cells/{x}_{y}_{z}.ron
     let assets_dir = Path::new("assets/cells");
     fs::create_dir_all(&assets_dir).await.ok();
-    
+
     // Create the test cell file
     let coord1 = GridCoord::new(0, 0, 0);
     let cell_path = assets_dir.join("0_0_0.ron");
@@ -290,7 +295,7 @@ async fn test_lru_cache_functionality() {
 
     // Force load the cell - this spawns async task
     let _ = manager.force_load_cell(coord1).await;
-    
+
     // Wait for async loading to complete
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
@@ -302,7 +307,10 @@ async fn test_lru_cache_functionality() {
 
     // Verify metrics tracked some loads (may be 0 if file format didn't match)
     let metrics = manager.metrics();
-    println!("LRU test: total_loads={}, total_unloads={}", metrics.total_loads, metrics.total_unloads);
+    println!(
+        "LRU test: total_loads={}, total_unloads={}",
+        metrics.total_loads, metrics.total_unloads
+    );
 
     // Cleanup
     fs::remove_file(&cell_path).await.ok();

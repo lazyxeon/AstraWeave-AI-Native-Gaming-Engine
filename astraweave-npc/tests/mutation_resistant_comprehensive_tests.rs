@@ -38,7 +38,12 @@ fn role_debug_format() {
 
 #[test]
 fn emote_kind_all_variants() {
-    let variants = [EmoteKind::Wave, EmoteKind::Nod, EmoteKind::Shrug, EmoteKind::Point];
+    let variants = [
+        EmoteKind::Wave,
+        EmoteKind::Nod,
+        EmoteKind::Shrug,
+        EmoteKind::Point,
+    ];
     assert_eq!(variants.len(), 4);
 }
 
@@ -62,7 +67,9 @@ fn emote_kind_eq() {
 
 #[test]
 fn npc_action_say() {
-    let a = NpcAction::Say { text: "Hello".to_string() };
+    let a = NpcAction::Say {
+        text: "Hello".to_string(),
+    };
     if let NpcAction::Say { text } = &a {
         assert_eq!(text, "Hello");
     } else {
@@ -72,7 +79,10 @@ fn npc_action_say() {
 
 #[test]
 fn npc_action_move_to() {
-    let a = NpcAction::MoveTo { pos: Vec3::new(1.0, 2.0, 3.0), speed: 1.5 };
+    let a = NpcAction::MoveTo {
+        pos: Vec3::new(1.0, 2.0, 3.0),
+        speed: 1.5,
+    };
     if let NpcAction::MoveTo { pos, speed } = &a {
         assert_eq!(*pos, Vec3::new(1.0, 2.0, 3.0));
         assert!((speed - 1.5).abs() < 1e-6);
@@ -83,7 +93,9 @@ fn npc_action_move_to() {
 
 #[test]
 fn npc_action_emote() {
-    let a = NpcAction::Emote { kind: EmoteKind::Point };
+    let a = NpcAction::Emote {
+        kind: EmoteKind::Point,
+    };
     if let NpcAction::Emote { kind } = &a {
         assert_eq!(*kind, EmoteKind::Point);
     } else {
@@ -99,7 +111,9 @@ fn npc_action_open_shop() {
 
 #[test]
 fn npc_action_give_quest() {
-    let a = NpcAction::GiveQuest { id: "quest_1".to_string() };
+    let a = NpcAction::GiveQuest {
+        id: "quest_1".to_string(),
+    };
     if let NpcAction::GiveQuest { id } = &a {
         assert_eq!(id, "quest_1");
     } else {
@@ -109,7 +123,9 @@ fn npc_action_give_quest() {
 
 #[test]
 fn npc_action_call_guards() {
-    let a = NpcAction::CallGuards { reason: "theft".to_string() };
+    let a = NpcAction::CallGuards {
+        reason: "theft".to_string(),
+    };
     if let NpcAction::CallGuards { reason } = &a {
         assert_eq!(reason, "theft");
     } else {
@@ -126,7 +142,9 @@ fn npc_action_clone_eq() {
 
 #[test]
 fn npc_action_serde_roundtrip() {
-    let a = NpcAction::Say { text: "Hi".to_string() };
+    let a = NpcAction::Say {
+        text: "Hi".to_string(),
+    };
     let json = serde_json::to_string(&a).unwrap();
     let a2: NpcAction = serde_json::from_str(&json).unwrap();
     assert_eq!(a, a2);
@@ -139,8 +157,12 @@ fn npc_action_serde_roundtrip() {
 #[test]
 fn npc_mode_all_variants() {
     let modes = [
-        NpcMode::Idle, NpcMode::Patrolling, NpcMode::Working,
-        NpcMode::Conversing, NpcMode::Flee, NpcMode::Combat,
+        NpcMode::Idle,
+        NpcMode::Patrolling,
+        NpcMode::Working,
+        NpcMode::Conversing,
+        NpcMode::Flee,
+        NpcMode::Combat,
     ];
     assert_eq!(modes.len(), 6);
 }
@@ -172,14 +194,21 @@ fn npc_plan_default_empty() {
 fn npc_plan_serde_roundtrip() {
     let plan = NpcPlan {
         actions: vec![
-            NpcAction::Say { text: "Test".to_string() },
+            NpcAction::Say {
+                text: "Test".to_string(),
+            },
             NpcAction::OpenShop,
         ],
     };
     let json = serde_json::to_string(&plan).unwrap();
     let p2: NpcPlan = serde_json::from_str(&json).unwrap();
     assert_eq!(p2.actions.len(), 2);
-    assert_eq!(p2.actions[0], NpcAction::Say { text: "Test".to_string() });
+    assert_eq!(
+        p2.actions[0],
+        NpcAction::Say {
+            text: "Test".to_string()
+        }
+    );
     assert_eq!(p2.actions[1], NpcAction::OpenShop);
 }
 
@@ -269,7 +298,10 @@ fn npc_profile_home_vec3() {
             backstory: String::new(),
             voice_speaker: None,
         },
-        memory: Memory { facts: vec![], episodes: vec![] },
+        memory: Memory {
+            facts: vec![],
+            episodes: vec![],
+        },
         home: [5.0, 0.0, 10.0],
         schedule: vec![],
     };
@@ -346,24 +378,24 @@ fn world_view_new_defaults() {
 
 #[test]
 fn world_view_with_player_computes_distance() {
-    let wv = NpcWorldView::new(Vec3::ZERO, 12.0)
-        .with_player(Vec3::new(3.0, 0.0, 4.0));
+    let wv = NpcWorldView::new(Vec3::ZERO, 12.0).with_player(Vec3::new(3.0, 0.0, 4.0));
     assert!(wv.player_pos.is_some());
     let dist = wv.player_dist.unwrap();
-    assert!((dist - 5.0).abs() < 1e-4, "distance to (3,0,4) from origin = 5");
+    assert!(
+        (dist - 5.0).abs() < 1e-4,
+        "distance to (3,0,4) from origin = 5"
+    );
 }
 
 #[test]
 fn world_view_with_threat() {
-    let wv = NpcWorldView::new(Vec3::ZERO, 12.0)
-        .with_threat(true);
+    let wv = NpcWorldView::new(Vec3::ZERO, 12.0).with_threat(true);
     assert!(wv.nearby_threat);
 }
 
 #[test]
 fn world_view_with_location() {
-    let wv = NpcWorldView::new(Vec3::ZERO, 12.0)
-        .with_location("market");
+    let wv = NpcWorldView::new(Vec3::ZERO, 12.0).with_location("market");
     assert_eq!(wv.location_tag, Some("market".to_string()));
 }
 
@@ -393,7 +425,10 @@ fn make_profile(role: Role, name: &str) -> NpcProfile {
             backstory: String::new(),
             voice_speaker: None,
         },
-        memory: Memory { facts: vec![], episodes: vec![] },
+        memory: Memory {
+            facts: vec![],
+            episodes: vec![],
+        },
         home: [0.0, 0.0, 0.0],
         schedule: vec![],
     }
@@ -404,12 +439,22 @@ fn mock_llm_merchant_with_player_utterance_says_and_opens_shop() {
     let llm = MockLlm;
     let prof = make_profile(Role::Merchant, "Shop");
     let view = NpcWorldView::new(Vec3::ZERO, 12.0);
-    let plan = llm.plan_dialogue_and_behaviour(&prof, &view, Some("I'd like to buy")).unwrap();
+    let plan = llm
+        .plan_dialogue_and_behaviour(&prof, &view, Some("I'd like to buy"))
+        .unwrap();
     // Merchant with utterance should say something and open shop
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })),
-        "merchant should say something");
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::OpenShop)),
-        "merchant should open shop when player speaks");
+    assert!(
+        plan.actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })),
+        "merchant should say something"
+    );
+    assert!(
+        plan.actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::OpenShop)),
+        "merchant should open shop when player speaks"
+    );
 }
 
 #[test]
@@ -418,8 +463,12 @@ fn mock_llm_guard_with_threat_calls_guards() {
     let prof = make_profile(Role::Guard, "Guard");
     let view = NpcWorldView::new(Vec3::ZERO, 12.0).with_threat(true);
     let plan = llm.plan_dialogue_and_behaviour(&prof, &view, None).unwrap();
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })),
-        "guard with threat should call guards");
+    assert!(
+        plan.actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::CallGuards { .. })),
+        "guard with threat should call guards"
+    );
 }
 
 #[test]
@@ -427,9 +476,15 @@ fn mock_llm_quest_giver_with_utterance_gives_quest() {
     let llm = MockLlm;
     let prof = make_profile(Role::QuestGiver, "Elder");
     let view = NpcWorldView::new(Vec3::ZERO, 12.0);
-    let plan = llm.plan_dialogue_and_behaviour(&prof, &view, Some("any quest?")).unwrap();
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })),
-        "quest giver should give quest");
+    let plan = llm
+        .plan_dialogue_and_behaviour(&prof, &view, Some("any quest?"))
+        .unwrap();
+    assert!(
+        plan.actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::GiveQuest { .. })),
+        "quest giver should give quest"
+    );
 }
 
 #[test]
@@ -437,7 +492,9 @@ fn mock_llm_quest_giver_gives_q_tutorial() {
     let llm = MockLlm;
     let prof = make_profile(Role::QuestGiver, "Elder");
     let view = NpcWorldView::new(Vec3::ZERO, 12.0);
-    let plan = llm.plan_dialogue_and_behaviour(&prof, &view, Some("quest")).unwrap();
+    let plan = llm
+        .plan_dialogue_and_behaviour(&prof, &view, Some("quest"))
+        .unwrap();
     let has_tutorial = plan.actions.iter().any(|a| {
         if let NpcAction::GiveQuest { id } = a {
             id == "q_tutorial"
@@ -455,7 +512,10 @@ fn mock_llm_civilian_with_threat_no_utterance_empty() {
     let view = NpcWorldView::new(Vec3::ZERO, 12.0).with_threat(true);
     let plan = llm.plan_dialogue_and_behaviour(&prof, &view, None).unwrap();
     // MockLlm civilian without utterance returns empty actions
-    assert!(plan.actions.is_empty(), "civilian with no utterance has no actions");
+    assert!(
+        plan.actions.is_empty(),
+        "civilian with no utterance has no actions"
+    );
 }
 
 #[test]
@@ -463,11 +523,24 @@ fn mock_llm_civilian_with_utterance_hello() {
     let llm = MockLlm;
     let prof = make_profile(Role::Civilian, "Villager");
     let view = NpcWorldView::new(Vec3::ZERO, 12.0);
-    let plan = llm.plan_dialogue_and_behaviour(&prof, &view, Some("hello")).unwrap();
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })),
-        "civilian with hello utterance should say something");
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Emote { kind: EmoteKind::Wave })),
-        "civilian greeting includes wave emote");
+    let plan = llm
+        .plan_dialogue_and_behaviour(&prof, &view, Some("hello"))
+        .unwrap();
+    assert!(
+        plan.actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })),
+        "civilian with hello utterance should say something"
+    );
+    assert!(
+        plan.actions.iter().any(|a| matches!(
+            a,
+            NpcAction::Emote {
+                kind: EmoteKind::Wave
+            }
+        )),
+        "civilian greeting includes wave emote"
+    );
 }
 
 #[test]
@@ -475,9 +548,15 @@ fn mock_llm_civilian_with_utterance_other() {
     let llm = MockLlm;
     let prof = make_profile(Role::Civilian, "Villager");
     let view = NpcWorldView::new(Vec3::ZERO, 12.0);
-    let plan = llm.plan_dialogue_and_behaviour(&prof, &view, Some("nice weather")).unwrap();
-    assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })),
-        "civilian with non-hello utterance should still respond");
+    let plan = llm
+        .plan_dialogue_and_behaviour(&prof, &view, Some("nice weather"))
+        .unwrap();
+    assert!(
+        plan.actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })),
+        "civilian with non-hello utterance should still respond"
+    );
 }
 
 #[test]
@@ -487,8 +566,10 @@ fn mock_llm_merchant_idle_has_actions() {
     let view = NpcWorldView::new(Vec3::ZERO, 12.0);
     let plan = llm.plan_dialogue_and_behaviour(&prof, &view, None).unwrap();
     // Even idle, merchant should have some behavior
-    assert!(!plan.actions.is_empty() || plan.actions.is_empty(),
-        "plan is always Ok"); // Just verify no error
+    assert!(
+        !plan.actions.is_empty() || plan.actions.is_empty(),
+        "plan is always Ok"
+    ); // Just verify no error
 }
 
 // ========================================================================

@@ -1,5 +1,5 @@
 //! Comprehensive benchmarks for astraweave-cinematics
-//! 
+//!
 //! Covers: Timeline creation, Sequencer operations, Track handling, Event emission,
 //! JSON serialization/deserialization, and various edge cases.
 //!
@@ -18,10 +18,24 @@ pub struct Time(pub f32);
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Track {
-    Camera { keyframes: Vec<CameraKey> },
-    Animation { target: u32, clip: String, start: Time },
-    Audio { clip: String, start: Time, volume: f32 },
-    Fx { name: String, start: Time, params: serde_json::Value },
+    Camera {
+        keyframes: Vec<CameraKey>,
+    },
+    Animation {
+        target: u32,
+        clip: String,
+        start: Time,
+    },
+    Audio {
+        clip: String,
+        start: Time,
+        volume: f32,
+    },
+    Fx {
+        name: String,
+        start: Time,
+        params: serde_json::Value,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -52,9 +66,18 @@ impl Timeline {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum SequencerEvent {
     CameraKey(CameraKey),
-    AnimStart { target: u32, clip: String },
-    AudioPlay { clip: String, volume: f32 },
-    FxTrigger { name: String, params: serde_json::Value },
+    AnimStart {
+        target: u32,
+        clip: String,
+    },
+    AudioPlay {
+        clip: String,
+        volume: f32,
+    },
+    FxTrigger {
+        name: String,
+        params: serde_json::Value,
+    },
 }
 
 pub struct Sequencer {
@@ -71,11 +94,11 @@ impl Sequencer {
     pub fn new() -> Self {
         Self { t: Time(0.0) }
     }
-    
+
     pub fn seek(&mut self, t: Time) {
         self.t = t;
     }
-    
+
     pub fn step(&mut self, dt: f32, tl: &Timeline) -> Result<Vec<SequencerEvent>, String> {
         let next_t = Time(self.t.0 + dt);
         if next_t.0 > tl.duration.0 + 0.001 {
@@ -84,7 +107,7 @@ impl Sequencer {
         let from = self.t.0;
         let to = next_t.0;
         self.t = next_t;
-        
+
         let mut evs = Vec::new();
         for tr in &tl.tracks {
             match tr {
@@ -95,7 +118,11 @@ impl Sequencer {
                         }
                     }
                 }
-                Track::Animation { target, clip, start } => {
+                Track::Animation {
+                    target,
+                    clip,
+                    start,
+                } => {
                     if start.0 > from && start.0 <= to {
                         evs.push(SequencerEvent::AnimStart {
                             target: *target,
@@ -103,7 +130,11 @@ impl Sequencer {
                         });
                     }
                 }
-                Track::Audio { clip, start, volume } => {
+                Track::Audio {
+                    clip,
+                    start,
+                    volume,
+                } => {
                     if start.0 > from && start.0 <= to {
                         evs.push(SequencerEvent::AudioPlay {
                             clip: clip.clone(),
@@ -111,7 +142,11 @@ impl Sequencer {
                         });
                     }
                 }
-                Track::Fx { name, start, params } => {
+                Track::Fx {
+                    name,
+                    start,
+                    params,
+                } => {
                     if start.0 > from && start.0 <= to {
                         evs.push(SequencerEvent::FxTrigger {
                             name: name.clone(),
@@ -149,7 +184,7 @@ fn create_timeline_with_camera(name: &str, duration: f32, keyframe_count: usize)
 
 fn create_timeline_with_mixed_tracks(name: &str, duration: f32, track_count: usize) -> Timeline {
     let mut tl = Timeline::new(name, duration);
-    
+
     for i in 0..track_count {
         let start_time = (i as f32 / track_count as f32) * duration;
         match i % 4 {
@@ -187,7 +222,7 @@ fn create_timeline_with_mixed_tracks(name: &str, duration: f32, track_count: usi
 
 fn create_complex_timeline(duration: f32) -> Timeline {
     let mut tl = Timeline::new("complex_cinematic", duration);
-    
+
     // Camera track with many keyframes (cinematic camera path)
     let camera_keyframes: Vec<CameraKey> = (0..20)
         .map(|i| {
@@ -200,8 +235,10 @@ fn create_complex_timeline(duration: f32) -> Timeline {
             }
         })
         .collect();
-    tl.tracks.push(Track::Camera { keyframes: camera_keyframes });
-    
+    tl.tracks.push(Track::Camera {
+        keyframes: camera_keyframes,
+    });
+
     // Multiple animation tracks
     for i in 0..5 {
         tl.tracks.push(Track::Animation {
@@ -210,7 +247,7 @@ fn create_complex_timeline(duration: f32) -> Timeline {
             start: Time(i as f32 * 2.0),
         });
     }
-    
+
     // Audio tracks (music, ambient, SFX)
     tl.tracks.push(Track::Audio {
         clip: "music_epic.ogg".into(),
@@ -229,7 +266,7 @@ fn create_complex_timeline(duration: f32) -> Timeline {
             volume: 1.0,
         });
     }
-    
+
     // FX tracks
     tl.tracks.push(Track::Fx {
         name: "screen_shake".into(),
@@ -246,7 +283,7 @@ fn create_complex_timeline(duration: f32) -> Timeline {
         start: Time(5.0),
         params: serde_json::json!({"duration": 0.1}),
     });
-    
+
     tl
 }
 
@@ -256,29 +293,23 @@ fn create_complex_timeline(duration: f32) -> Timeline {
 
 fn bench_timeline_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("Timeline Creation");
-    
+
     // Empty timeline creation
     group.bench_function("empty", |b| {
-        b.iter(|| {
-            black_box(Timeline::new("empty", 10.0))
-        })
+        b.iter(|| black_box(Timeline::new("empty", 10.0)))
     });
-    
+
     // Timeline with name allocation
     group.bench_function("with_long_name", |b| {
         let name = "this_is_a_very_long_timeline_name_for_testing_string_allocation";
-        b.iter(|| {
-            black_box(Timeline::new(black_box(name), 60.0))
-        })
+        b.iter(|| black_box(Timeline::new(black_box(name), 60.0)))
     });
-    
+
     // Time struct creation
     group.bench_function("time_struct", |b| {
-        b.iter(|| {
-            black_box(Time(black_box(42.5)))
-        })
+        b.iter(|| black_box(Time(black_box(42.5))))
     });
-    
+
     group.finish();
 }
 
@@ -288,7 +319,7 @@ fn bench_timeline_creation(c: &mut Criterion) {
 
 fn bench_camera_keyframes(c: &mut Criterion) {
     let mut group = c.benchmark_group("Camera Keyframes");
-    
+
     // Single keyframe creation
     group.bench_function("single_creation", |b| {
         b.iter(|| {
@@ -300,15 +331,11 @@ fn bench_camera_keyframes(c: &mut Criterion) {
             })
         })
     });
-    
+
     // Keyframe clone
     let keyframe = create_camera_keyframe(5.0);
-    group.bench_function("clone", |b| {
-        b.iter(|| {
-            black_box(keyframe.clone())
-        })
-    });
-    
+    group.bench_function("clone", |b| b.iter(|| black_box(keyframe.clone())));
+
     // Batch keyframe creation
     for count in [5, 20, 50, 100] {
         group.bench_with_input(
@@ -324,7 +351,7 @@ fn bench_camera_keyframes(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -334,17 +361,16 @@ fn bench_camera_keyframes(c: &mut Criterion) {
 
 fn bench_track_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("Track Creation");
-    
+
     // Camera track with keyframes
     group.bench_function("camera_5_keyframes", |b| {
         b.iter(|| {
-            let keyframes: Vec<CameraKey> = (0..5)
-                .map(|i| create_camera_keyframe(i as f32))
-                .collect();
+            let keyframes: Vec<CameraKey> =
+                (0..5).map(|i| create_camera_keyframe(i as f32)).collect();
             black_box(Track::Camera { keyframes })
         })
     });
-    
+
     // Animation track
     group.bench_function("animation", |b| {
         b.iter(|| {
@@ -355,7 +381,7 @@ fn bench_track_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     // Audio track
     group.bench_function("audio", |b| {
         b.iter(|| {
@@ -366,7 +392,7 @@ fn bench_track_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     // FX track with JSON params
     group.bench_function("fx_simple_params", |b| {
         b.iter(|| {
@@ -377,7 +403,7 @@ fn bench_track_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     // FX track with complex JSON params
     group.bench_function("fx_complex_params", |b| {
         b.iter(|| {
@@ -395,7 +421,7 @@ fn bench_track_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     group.finish();
 }
 
@@ -405,21 +431,13 @@ fn bench_track_creation(c: &mut Criterion) {
 
 fn bench_sequencer_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("Sequencer Operations");
-    
+
     // Sequencer creation
-    group.bench_function("creation", |b| {
-        b.iter(|| {
-            black_box(Sequencer::new())
-        })
-    });
-    
+    group.bench_function("creation", |b| b.iter(|| black_box(Sequencer::new())));
+
     // Sequencer default
-    group.bench_function("default", |b| {
-        b.iter(|| {
-            black_box(Sequencer::default())
-        })
-    });
-    
+    group.bench_function("default", |b| b.iter(|| black_box(Sequencer::default())));
+
     // Seek operation
     group.bench_function("seek", |b| {
         b.iter(|| {
@@ -428,7 +446,7 @@ fn bench_sequencer_operations(c: &mut Criterion) {
             black_box(seq.t)
         })
     });
-    
+
     // Step with empty timeline
     group.bench_function("step_empty_timeline", |b| {
         let tl = Timeline::new("empty", 100.0);
@@ -437,7 +455,7 @@ fn bench_sequencer_operations(c: &mut Criterion) {
             black_box(seq.step(black_box(0.016), &tl))
         })
     });
-    
+
     // Step with no events in range
     let tl_sparse = create_timeline_with_camera("sparse", 100.0, 5);
     group.bench_function("step_no_events", |b| {
@@ -447,7 +465,7 @@ fn bench_sequencer_operations(c: &mut Criterion) {
             black_box(seq.step(black_box(0.016), &tl_sparse))
         })
     });
-    
+
     group.finish();
 }
 
@@ -457,7 +475,7 @@ fn bench_sequencer_operations(c: &mut Criterion) {
 
 fn bench_event_emission(c: &mut Criterion) {
     let mut group = c.benchmark_group("Event Emission");
-    
+
     // Step that triggers camera event
     let tl_camera = create_timeline_with_camera("camera", 10.0, 10);
     group.bench_function("camera_event", |b| {
@@ -467,7 +485,7 @@ fn bench_event_emission(c: &mut Criterion) {
             black_box(seq.step(black_box(1.5), &tl_camera))
         })
     });
-    
+
     // Step that triggers animation event
     let mut tl_anim = Timeline::new("anim", 10.0);
     tl_anim.tracks.push(Track::Animation {
@@ -481,7 +499,7 @@ fn bench_event_emission(c: &mut Criterion) {
             black_box(seq.step(black_box(1.5), &tl_anim))
         })
     });
-    
+
     // Step that triggers audio event
     let mut tl_audio = Timeline::new("audio", 10.0);
     tl_audio.tracks.push(Track::Audio {
@@ -495,7 +513,7 @@ fn bench_event_emission(c: &mut Criterion) {
             black_box(seq.step(black_box(1.5), &tl_audio))
         })
     });
-    
+
     // Step that triggers FX event
     let mut tl_fx = Timeline::new("fx", 10.0);
     tl_fx.tracks.push(Track::Fx {
@@ -509,7 +527,7 @@ fn bench_event_emission(c: &mut Criterion) {
             black_box(seq.step(black_box(1.5), &tl_fx))
         })
     });
-    
+
     // Multiple events in single step
     let tl_multi = create_timeline_with_mixed_tracks("multi", 10.0, 20);
     group.bench_function("multiple_events_step", |b| {
@@ -519,7 +537,7 @@ fn bench_event_emission(c: &mut Criterion) {
             black_box(seq.step(black_box(5.0), &tl_multi))
         })
     });
-    
+
     group.finish();
 }
 
@@ -529,7 +547,7 @@ fn bench_event_emission(c: &mut Criterion) {
 
 fn bench_timeline_playback(c: &mut Criterion) {
     let mut group = c.benchmark_group("Timeline Playback");
-    
+
     // Simulate 1 second of playback at 60 FPS
     for track_count in [5, 20, 50, 100] {
         let tl = create_timeline_with_mixed_tracks("playback", 60.0, track_count);
@@ -550,7 +568,7 @@ fn bench_timeline_playback(c: &mut Criterion) {
             },
         );
     }
-    
+
     // Full complex timeline playback
     let complex = create_complex_timeline(30.0);
     group.bench_function("complex_30sec_full", |b| {
@@ -566,7 +584,7 @@ fn bench_timeline_playback(c: &mut Criterion) {
             black_box(total_events)
         })
     });
-    
+
     // Single frame step on complex timeline
     group.bench_function("complex_single_frame", |b| {
         let complex = create_complex_timeline(30.0);
@@ -576,7 +594,7 @@ fn bench_timeline_playback(c: &mut Criterion) {
             black_box(seq.step(black_box(1.0 / 60.0), &complex))
         })
     });
-    
+
     group.finish();
 }
 
@@ -586,54 +604,42 @@ fn bench_timeline_playback(c: &mut Criterion) {
 
 fn bench_json_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("JSON Serialization");
-    
+
     // Serialize empty timeline
     let empty = Timeline::new("empty", 10.0);
     group.bench_function("serialize_empty", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string(&empty))
-        })
+        b.iter(|| black_box(serde_json::to_string(&empty)))
     });
-    
+
     // Serialize simple timeline
     let simple = create_timeline_with_camera("simple", 10.0, 5);
     group.bench_function("serialize_simple", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string(&simple))
-        })
+        b.iter(|| black_box(serde_json::to_string(&simple)))
     });
-    
+
     // Serialize complex timeline
     let complex = create_complex_timeline(30.0);
     group.bench_function("serialize_complex", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string(&complex))
-        })
+        b.iter(|| black_box(serde_json::to_string(&complex)))
     });
-    
+
     // Serialize to pretty JSON
     group.bench_function("serialize_complex_pretty", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string_pretty(&complex))
-        })
+        b.iter(|| black_box(serde_json::to_string_pretty(&complex)))
     });
-    
+
     // Deserialize simple timeline
     let simple_json = serde_json::to_string(&simple).unwrap();
     group.bench_function("deserialize_simple", |b| {
-        b.iter(|| {
-            black_box(serde_json::from_str::<Timeline>(black_box(&simple_json)))
-        })
+        b.iter(|| black_box(serde_json::from_str::<Timeline>(black_box(&simple_json))))
     });
-    
+
     // Deserialize complex timeline
     let complex_json = serde_json::to_string(&complex).unwrap();
     group.bench_function("deserialize_complex", |b| {
-        b.iter(|| {
-            black_box(serde_json::from_str::<Timeline>(black_box(&complex_json)))
-        })
+        b.iter(|| black_box(serde_json::from_str::<Timeline>(black_box(&complex_json))))
     });
-    
+
     // Full roundtrip
     group.bench_function("roundtrip_complex", |b| {
         b.iter(|| {
@@ -642,7 +648,7 @@ fn bench_json_serialization(c: &mut Criterion) {
             black_box(restored)
         })
     });
-    
+
     group.finish();
 }
 
@@ -652,15 +658,13 @@ fn bench_json_serialization(c: &mut Criterion) {
 
 fn bench_event_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("Event Creation");
-    
+
     // CameraKey event
     let keyframe = create_camera_keyframe(5.0);
     group.bench_function("camera_key_event", |b| {
-        b.iter(|| {
-            black_box(SequencerEvent::CameraKey(keyframe.clone()))
-        })
+        b.iter(|| black_box(SequencerEvent::CameraKey(keyframe.clone())))
     });
-    
+
     // AnimStart event
     group.bench_function("anim_start_event", |b| {
         b.iter(|| {
@@ -670,7 +674,7 @@ fn bench_event_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     // AudioPlay event
     group.bench_function("audio_play_event", |b| {
         b.iter(|| {
@@ -680,7 +684,7 @@ fn bench_event_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     // FxTrigger event
     group.bench_function("fx_trigger_event", |b| {
         b.iter(|| {
@@ -690,18 +694,16 @@ fn bench_event_creation(c: &mut Criterion) {
             })
         })
     });
-    
+
     // Event clone
     let event = SequencerEvent::FxTrigger {
         name: "complex_fx".into(),
         params: serde_json::json!({"a": 1, "b": [1,2,3], "c": {"nested": true}}),
     };
     group.bench_function("event_clone_complex", |b| {
-        b.iter(|| {
-            black_box(event.clone())
-        })
+        b.iter(|| black_box(event.clone()))
     });
-    
+
     group.finish();
 }
 
@@ -711,20 +713,18 @@ fn bench_event_creation(c: &mut Criterion) {
 
 fn bench_timeline_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("Timeline Scaling");
-    
+
     // Track count scaling - creation
     for track_count in [10, 50, 100, 500, 1000] {
         group.bench_with_input(
             BenchmarkId::new("creation", track_count),
             &track_count,
             |b, &count| {
-                b.iter(|| {
-                    black_box(create_timeline_with_mixed_tracks("scale", 60.0, count))
-                })
+                b.iter(|| black_box(create_timeline_with_mixed_tracks("scale", 60.0, count)))
             },
         );
     }
-    
+
     // Track count scaling - step performance
     for track_count in [10, 50, 100, 500] {
         let tl = create_timeline_with_mixed_tracks("scale", 60.0, track_count);
@@ -739,7 +739,7 @@ fn bench_timeline_scaling(c: &mut Criterion) {
             },
         );
     }
-    
+
     // Camera keyframe scaling
     for keyframe_count in [10, 50, 100, 500] {
         let tl = create_timeline_with_camera("camera", 60.0, keyframe_count);
@@ -755,7 +755,7 @@ fn bench_timeline_scaling(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -765,7 +765,7 @@ fn bench_timeline_scaling(c: &mut Criterion) {
 
 fn bench_edge_cases(c: &mut Criterion) {
     let mut group = c.benchmark_group("Edge Cases");
-    
+
     // Zero duration timeline
     let zero_duration = Timeline::new("zero", 0.0);
     group.bench_function("zero_duration_step", |b| {
@@ -774,7 +774,7 @@ fn bench_edge_cases(c: &mut Criterion) {
             black_box(seq.step(black_box(0.0), &zero_duration))
         })
     });
-    
+
     // Very small time step (sub-millisecond)
     let tl = create_timeline_with_camera("precise", 10.0, 100);
     group.bench_function("sub_ms_step", |b| {
@@ -784,7 +784,7 @@ fn bench_edge_cases(c: &mut Criterion) {
             black_box(seq.step(black_box(0.0001), &tl))
         })
     });
-    
+
     // Very large time step
     group.bench_function("large_step", |b| {
         let tl = create_timeline_with_mixed_tracks("large", 100.0, 100);
@@ -794,7 +794,7 @@ fn bench_edge_cases(c: &mut Criterion) {
             black_box(seq.step(black_box(99.0), &tl))
         })
     });
-    
+
     // Boundary condition - exactly at event time
     let mut tl_boundary = Timeline::new("boundary", 10.0);
     tl_boundary.tracks.push(Track::Audio {
@@ -808,7 +808,7 @@ fn bench_edge_cases(c: &mut Criterion) {
             black_box(seq.step(black_box(5.0), &tl_boundary))
         })
     });
-    
+
     // Repeated seeks
     group.bench_function("repeated_seeks", |b| {
         b.iter(|| {
@@ -819,7 +819,7 @@ fn bench_edge_cases(c: &mut Criterion) {
             black_box(seq.t)
         })
     });
-    
+
     // Error path - out of range
     let short_tl = Timeline::new("short", 1.0);
     group.bench_function("out_of_range_error", |b| {
@@ -829,7 +829,7 @@ fn bench_edge_cases(c: &mut Criterion) {
             black_box(seq.step(black_box(1.0), &short_tl))
         })
     });
-    
+
     group.finish();
 }
 
@@ -839,39 +839,23 @@ fn bench_edge_cases(c: &mut Criterion) {
 
 fn bench_timeline_clone(c: &mut Criterion) {
     let mut group = c.benchmark_group("Timeline Clone");
-    
+
     // Clone empty timeline
     let empty = Timeline::new("empty", 10.0);
-    group.bench_function("empty", |b| {
-        b.iter(|| {
-            black_box(empty.clone())
-        })
-    });
-    
+    group.bench_function("empty", |b| b.iter(|| black_box(empty.clone())));
+
     // Clone simple timeline
     let simple = create_timeline_with_camera("simple", 10.0, 10);
-    group.bench_function("simple", |b| {
-        b.iter(|| {
-            black_box(simple.clone())
-        })
-    });
-    
+    group.bench_function("simple", |b| b.iter(|| black_box(simple.clone())));
+
     // Clone complex timeline
     let complex = create_complex_timeline(30.0);
-    group.bench_function("complex", |b| {
-        b.iter(|| {
-            black_box(complex.clone())
-        })
-    });
-    
+    group.bench_function("complex", |b| b.iter(|| black_box(complex.clone())));
+
     // Clone timeline with many tracks
     let many_tracks = create_timeline_with_mixed_tracks("many", 60.0, 100);
-    group.bench_function("100_tracks", |b| {
-        b.iter(|| {
-            black_box(many_tracks.clone())
-        })
-    });
-    
+    group.bench_function("100_tracks", |b| b.iter(|| black_box(many_tracks.clone())));
+
     group.finish();
 }
 

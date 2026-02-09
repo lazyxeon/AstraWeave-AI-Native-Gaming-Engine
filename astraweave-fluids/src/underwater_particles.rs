@@ -377,7 +377,13 @@ impl UnderwaterParticleSystem {
     }
 
     /// Update with player position for breathing bubbles
-    pub fn update_with_player(&mut self, dt: f32, camera_pos: Vec3, player_pos: Vec3, player_underwater: bool) {
+    pub fn update_with_player(
+        &mut self,
+        dt: f32,
+        camera_pos: Vec3,
+        player_pos: Vec3,
+        player_underwater: bool,
+    ) {
         self.update(dt, camera_pos);
 
         // Spawn player breathing bubbles
@@ -400,12 +406,18 @@ impl UnderwaterParticleSystem {
 
     /// Get only bubble GPU particles
     pub fn get_bubble_gpu_particles(&self) -> Vec<GpuUnderwaterParticle> {
-        self.bubbles.iter().map(GpuUnderwaterParticle::from).collect()
+        self.bubbles
+            .iter()
+            .map(GpuUnderwaterParticle::from)
+            .collect()
     }
 
     /// Get only debris GPU particles
     pub fn get_debris_gpu_particles(&self) -> Vec<GpuUnderwaterParticle> {
-        self.debris.iter().map(GpuUnderwaterParticle::from).collect()
+        self.debris
+            .iter()
+            .map(GpuUnderwaterParticle::from)
+            .collect()
     }
 
     /// Clear all particles
@@ -513,10 +525,10 @@ mod tests {
     #[test]
     fn test_spawn_bubble() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
-        
+
         system.spawn_bubble(Vec3::ZERO, 1.0);
         assert_eq!(system.bubble_count(), 1);
-        
+
         system.spawn_bubble(Vec3::ONE, 0.5);
         assert_eq!(system.bubble_count(), 2);
     }
@@ -524,18 +536,18 @@ mod tests {
     #[test]
     fn test_spawn_debris() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
-        
+
         system.spawn_debris(Vec3::ZERO, UnderwaterParticleType::Debris);
         system.spawn_debris(Vec3::ONE, UnderwaterParticleType::Plankton);
         system.spawn_debris(Vec3::NEG_ONE, UnderwaterParticleType::Sediment);
-        
+
         assert_eq!(system.debris_count(), 3);
     }
 
     #[test]
     fn test_spawn_ambient() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
-        
+
         system.spawn_ambient_debris(Vec3::ZERO, 10.0, 50);
         assert_eq!(system.debris_count(), 50);
     }
@@ -548,13 +560,13 @@ mod tests {
         };
         let mut system = UnderwaterParticleSystem::new(config);
         system.set_water_surface(100.0); // High surface so bubbles don't pop
-        
+
         system.spawn_bubble(Vec3::new(0.0, 0.0, 0.0), 1.0);
         let initial_y = system.get_gpu_particles()[0].position_size[1];
-        
+
         system.update(1.0, Vec3::ZERO);
         let final_y = system.get_gpu_particles()[0].position_size[1];
-        
+
         assert!(final_y > initial_y, "Bubble should rise");
     }
 
@@ -562,16 +574,16 @@ mod tests {
     fn test_bubble_pops_at_surface() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
         system.set_water_surface(0.0); // Surface at y=0
-        
+
         // Spawn bubble below surface
         system.spawn_bubble(Vec3::new(0.0, -1.0, 0.0), 1.0);
         assert_eq!(system.bubble_count(), 1);
-        
+
         // Update until bubble reaches surface
         for _ in 0..20 {
             system.update(0.2, Vec3::ZERO);
         }
-        
+
         // Bubble should have popped
         assert_eq!(system.bubble_count(), 0);
     }
@@ -584,9 +596,9 @@ mod tests {
         };
         let mut system = UnderwaterParticleSystem::new(config);
         system.set_water_surface(10.0);
-        
+
         system.update_with_player(1.0, Vec3::ZERO, Vec3::ZERO, true);
-        
+
         assert!(system.bubble_count() > 0, "Player should generate bubbles");
     }
 
@@ -598,10 +610,15 @@ mod tests {
         };
         let mut system = UnderwaterParticleSystem::new(config);
         system.set_water_surface(0.0);
-        
+
         // Player not underwater
-        system.update_with_player(1.0, Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.0, 5.0, 0.0), false);
-        
+        system.update_with_player(
+            1.0,
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.0, 5.0, 0.0),
+            false,
+        );
+
         assert_eq!(system.bubble_count(), 0);
     }
 
@@ -616,9 +633,9 @@ mod tests {
             particle_type: UnderwaterParticleType::Bubble,
             phase: 0.0,
         };
-        
+
         let gpu: GpuUnderwaterParticle = (&particle).into();
-        
+
         assert_eq!(gpu.position_size[0], 1.0);
         assert_eq!(gpu.position_size[3], 0.5);
         assert_eq!(gpu.type_opacity_phase[0], 0.0); // Bubble type
@@ -635,7 +652,7 @@ mod tests {
             particle_type: UnderwaterParticleType::Debris,
             phase: 0.0,
         };
-        
+
         // Near end of life, should be fading
         assert!(particle.opacity() < 1.0);
     }
@@ -644,34 +661,34 @@ mod tests {
     fn test_bubble_stream() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
         system.set_water_surface(100.0);
-        
+
         let mut stream = BubbleStream::new(Vec3::ZERO, 10.0);
-        
+
         stream.update(1.0, &mut system);
-        
+
         assert!(system.bubble_count() > 0);
     }
 
     #[test]
     fn test_bubble_stream_inactive() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
-        
+
         let mut stream = BubbleStream::new(Vec3::ZERO, 10.0);
         stream.active = false;
-        
+
         stream.update(1.0, &mut system);
-        
+
         assert_eq!(system.bubble_count(), 0);
     }
 
     #[test]
     fn test_clear_particles() {
         let mut system = UnderwaterParticleSystem::new(UnderwaterParticleConfig::default());
-        
+
         system.spawn_bubble(Vec3::ZERO, 1.0);
         system.spawn_debris(Vec3::ZERO, UnderwaterParticleType::Debris);
         assert!(system.particle_count() > 0);
-        
+
         system.clear();
         assert_eq!(system.particle_count(), 0);
     }
@@ -692,12 +709,12 @@ mod tests {
             ..Default::default()
         };
         let mut system = UnderwaterParticleSystem::new(config);
-        
+
         for _ in 0..10 {
             system.spawn_bubble(Vec3::ZERO, 1.0);
             system.spawn_debris(Vec3::ZERO, UnderwaterParticleType::Debris);
         }
-        
+
         assert_eq!(system.bubble_count(), 5);
         assert_eq!(system.debris_count(), 5);
     }

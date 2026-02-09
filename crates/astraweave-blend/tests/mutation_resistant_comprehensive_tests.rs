@@ -437,7 +437,10 @@ mod conversion_stage_tests {
 
     #[test]
     fn base_progress_linked_libs() {
-        assert!((ConversionStage::ProcessingLinkedLibraries.base_progress() - 0.10).abs() < f32::EPSILON);
+        assert!(
+            (ConversionStage::ProcessingLinkedLibraries.base_progress() - 0.10).abs()
+                < f32::EPSILON
+        );
     }
 
     #[test]
@@ -528,7 +531,10 @@ mod conversion_stage_tests {
             assert!(
                 w[0].base_progress() <= w[1].base_progress(),
                 "{:?} ({}) should be <= {:?} ({})",
-                w[0], w[0].base_progress(), w[1], w[1].base_progress()
+                w[0],
+                w[0].base_progress(),
+                w[1],
+                w[1].base_progress()
             );
         }
     }
@@ -536,12 +542,18 @@ mod conversion_stage_tests {
     // ---- description exact strings ----
     #[test]
     fn description_initializing() {
-        assert_eq!(ConversionStage::Initializing.description(), "Initializing conversion");
+        assert_eq!(
+            ConversionStage::Initializing.description(),
+            "Initializing conversion"
+        );
     }
 
     #[test]
     fn description_loading() {
-        assert_eq!(ConversionStage::LoadingBlendFile.description(), "Loading .blend file");
+        assert_eq!(
+            ConversionStage::LoadingBlendFile.description(),
+            "Loading .blend file"
+        );
     }
 
     #[test]
@@ -751,7 +763,9 @@ mod error_classification_tests {
     // ---- is_blender_missing ----
     #[test]
     fn blender_not_found_is_missing() {
-        let e = BlendError::BlenderNotFound { searched_paths: vec![] };
+        let e = BlendError::BlenderNotFound {
+            searched_paths: vec![],
+        };
         assert!(e.is_blender_missing());
     }
 
@@ -828,7 +842,9 @@ mod error_classification_tests {
 
     #[test]
     fn not_found_is_not_cancelled() {
-        let e = BlendError::BlenderNotFound { searched_paths: vec![] };
+        let e = BlendError::BlenderNotFound {
+            searched_paths: vec![],
+        };
         assert!(!e.is_cancelled());
     }
 
@@ -868,25 +884,33 @@ mod error_classification_tests {
     // ---- is_configuration_error ----
     #[test]
     fn configuration_error_is_config() {
-        let e = BlendError::ConfigurationError { message: "bad".into() };
+        let e = BlendError::ConfigurationError {
+            message: "bad".into(),
+        };
         assert!(e.is_configuration_error());
     }
 
     #[test]
     fn invalid_option_is_config() {
-        let e = BlendError::InvalidOption { reason: "bad".into() };
+        let e = BlendError::InvalidOption {
+            reason: "bad".into(),
+        };
         assert!(e.is_configuration_error());
     }
 
     #[test]
     fn configured_path_not_found_is_config() {
-        let e = BlendError::ConfiguredPathNotFound { path: PathBuf::from("/x") };
+        let e = BlendError::ConfiguredPathNotFound {
+            path: PathBuf::from("/x"),
+        };
         assert!(e.is_configuration_error());
     }
 
     #[test]
     fn configured_path_not_executable_is_config() {
-        let e = BlendError::ConfiguredPathNotExecutable { path: PathBuf::from("/x") };
+        let e = BlendError::ConfiguredPathNotExecutable {
+            path: PathBuf::from("/x"),
+        };
         assert!(e.is_configuration_error());
     }
 
@@ -898,7 +922,9 @@ mod error_classification_tests {
     // ---- suggestion ----
     #[test]
     fn blender_not_found_has_suggestion() {
-        let e = BlendError::BlenderNotFound { searched_paths: vec![] };
+        let e = BlendError::BlenderNotFound {
+            searched_paths: vec![],
+        };
         assert!(e.suggestion().is_some());
         assert!(e.suggestion().unwrap().contains("blender.org"));
     }
@@ -975,7 +1001,9 @@ mod error_classification_tests {
 
     #[test]
     fn internal_has_no_suggestion() {
-        let e = BlendError::Internal { message: "bad".into() };
+        let e = BlendError::Internal {
+            message: "bad".into(),
+        };
         assert!(e.suggestion().is_none());
     }
 
@@ -1016,7 +1044,10 @@ mod error_classification_tests {
 
     #[test]
     fn display_cancelled() {
-        assert_eq!(BlendError::Cancelled.to_string(), "Conversion cancelled by user");
+        assert_eq!(
+            BlendError::Cancelled.to_string(),
+            "Conversion cancelled by user"
+        );
     }
 }
 
@@ -1033,12 +1064,18 @@ mod cache_miss_reason_tests {
 
     #[test]
     fn source_modified_display() {
-        assert_eq!(CacheMissReason::SourceModified.to_string(), "source file modified");
+        assert_eq!(
+            CacheMissReason::SourceModified.to_string(),
+            "source file modified"
+        );
     }
 
     #[test]
     fn options_changed_display() {
-        assert_eq!(CacheMissReason::OptionsChanged.to_string(), "conversion options changed");
+        assert_eq!(
+            CacheMissReason::OptionsChanged.to_string(),
+            "conversion options changed"
+        );
     }
 
     #[test]
@@ -1051,7 +1088,10 @@ mod cache_miss_reason_tests {
 
     #[test]
     fn output_missing_display() {
-        assert_eq!(CacheMissReason::OutputMissing.to_string(), "cached output missing");
+        assert_eq!(
+            CacheMissReason::OutputMissing.to_string(),
+            "cached output missing"
+        );
     }
 
     #[test]
@@ -1089,12 +1129,22 @@ mod cache_data_structure_tests {
     fn manifest_recalculate_size() {
         let mut m = CacheManifest::new();
         let entry_a = CacheEntry::new(
-            "a".into(), "o".into(), BlenderVersion::new(4, 0, 0),
-            PathBuf::from("a.glb"), PathBuf::from("a.blend"), 100, 10,
+            "a".into(),
+            "o".into(),
+            BlenderVersion::new(4, 0, 0),
+            PathBuf::from("a.glb"),
+            PathBuf::from("a.blend"),
+            100,
+            10,
         );
         let entry_b = CacheEntry::new(
-            "b".into(), "o".into(), BlenderVersion::new(4, 0, 0),
-            PathBuf::from("b.glb"), PathBuf::from("b.blend"), 200, 20,
+            "b".into(),
+            "o".into(),
+            BlenderVersion::new(4, 0, 0),
+            PathBuf::from("b.glb"),
+            PathBuf::from("b.blend"),
+            200,
+            20,
         );
         m.entries.insert("a".into(), entry_a);
         m.entries.insert("b".into(), entry_b);
@@ -1113,8 +1163,13 @@ mod cache_data_structure_tests {
     #[test]
     fn cache_entry_new_timestamps_recent() {
         let entry = CacheEntry::new(
-            "hash".into(), "opts".into(), BlenderVersion::new(4, 0, 0),
-            PathBuf::from("out.glb"), PathBuf::from("src.blend"), 500, 100,
+            "hash".into(),
+            "opts".into(),
+            BlenderVersion::new(4, 0, 0),
+            PathBuf::from("out.glb"),
+            PathBuf::from("src.blend"),
+            500,
+            100,
         );
         assert!(entry.age() < Duration::from_secs(2));
         assert!(entry.time_since_access() < Duration::from_secs(2));
@@ -1123,8 +1178,13 @@ mod cache_data_structure_tests {
     #[test]
     fn cache_entry_touch_updates_accessed() {
         let mut entry = CacheEntry::new(
-            "hash".into(), "opts".into(), BlenderVersion::new(4, 0, 0),
-            PathBuf::from("out.glb"), PathBuf::from("src.blend"), 500, 100,
+            "hash".into(),
+            "opts".into(),
+            BlenderVersion::new(4, 0, 0),
+            PathBuf::from("out.glb"),
+            PathBuf::from("src.blend"),
+            500,
+            100,
         );
         let before = entry.last_accessed;
         entry.touch();
@@ -1135,8 +1195,13 @@ mod cache_data_structure_tests {
     #[test]
     fn cache_entry_fields_stored() {
         let entry = CacheEntry::new(
-            "hash123".into(), "opts456".into(), BlenderVersion::new(3, 6, 0),
-            PathBuf::from("out.glb"), PathBuf::from("src.blend"), 1024, 500,
+            "hash123".into(),
+            "opts456".into(),
+            BlenderVersion::new(3, 6, 0),
+            PathBuf::from("out.glb"),
+            PathBuf::from("src.blend"),
+            1024,
+            500,
         );
         assert_eq!(entry.source_hash, "hash123");
         assert_eq!(entry.options_hash, "opts456");
@@ -1271,7 +1336,9 @@ mod cache_filesystem_tests {
     fn cache_invalidate_nonexistent() {
         let temp = TempDir::new().unwrap();
         let mut cache = ConversionCache::new(temp.path()).unwrap();
-        let removed = cache.invalidate(&PathBuf::from("nonexistent.blend")).unwrap();
+        let removed = cache
+            .invalidate(&PathBuf::from("nonexistent.blend"))
+            .unwrap();
         assert!(!removed);
     }
 
@@ -1479,25 +1546,19 @@ mod options_tests {
 
     #[test]
     fn builder_modifiers() {
-        let opts = ConversionOptions::builder()
-            .apply_modifiers(false)
-            .build();
+        let opts = ConversionOptions::builder().apply_modifiers(false).build();
         assert!(!opts.mesh.apply_modifiers);
     }
 
     #[test]
     fn builder_linked_library_depth() {
-        let opts = ConversionOptions::builder()
-            .linked_library_depth(5)
-            .build();
+        let opts = ConversionOptions::builder().linked_library_depth(5).build();
         assert_eq!(opts.linked_libraries.max_recursion_depth, 5);
     }
 
     #[test]
     fn builder_cache() {
-        let opts = ConversionOptions::builder()
-            .cache_enabled(false)
-            .build();
+        let opts = ConversionOptions::builder().cache_enabled(false).build();
         assert!(!opts.cache.enabled);
     }
 
@@ -1637,7 +1698,10 @@ mod discovery_method_tests {
 
     #[test]
     fn user_configured_display() {
-        assert_eq!(format!("{}", DiscoveryMethod::UserConfigured), "user configured");
+        assert_eq!(
+            format!("{}", DiscoveryMethod::UserConfigured),
+            "user configured"
+        );
     }
 
     #[test]
@@ -1647,22 +1711,34 @@ mod discovery_method_tests {
 
     #[test]
     fn common_directory_display() {
-        assert_eq!(format!("{}", DiscoveryMethod::CommonDirectory), "common installation directory");
+        assert_eq!(
+            format!("{}", DiscoveryMethod::CommonDirectory),
+            "common installation directory"
+        );
     }
 
     #[test]
     fn windows_registry_display() {
-        assert_eq!(format!("{}", DiscoveryMethod::WindowsRegistry), "Windows Registry");
+        assert_eq!(
+            format!("{}", DiscoveryMethod::WindowsRegistry),
+            "Windows Registry"
+        );
     }
 
     #[test]
     fn macos_spotlight_display() {
-        assert_eq!(format!("{}", DiscoveryMethod::MacOsSpotlight), "macOS Spotlight");
+        assert_eq!(
+            format!("{}", DiscoveryMethod::MacOsSpotlight),
+            "macOS Spotlight"
+        );
     }
 
     #[test]
     fn custom_search_path_display() {
-        assert_eq!(format!("{}", DiscoveryMethod::CustomSearchPath), "custom search path");
+        assert_eq!(
+            format!("{}", DiscoveryMethod::CustomSearchPath),
+            "custom search path"
+        );
     }
 }
 
@@ -1796,7 +1872,11 @@ mod builder_tests {
         // When no output specified, builder should auto-generate from source + format extension
         let result = ConversionJobBuilder::new()
             .source("/test/model.blend")
-            .options(ConversionOptions::builder().format(OutputFormat::GltfSeparate).build())
+            .options(
+                ConversionOptions::builder()
+                    .format(OutputFormat::GltfSeparate)
+                    .build(),
+            )
             .installation(mock_installation())
             .build();
         assert!(result.is_ok());

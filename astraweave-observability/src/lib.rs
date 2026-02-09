@@ -296,7 +296,8 @@ mod tests {
 
     #[test]
     fn test_observability_config_deserialization() {
-        let json = r#"{"tracing_level":"DEBUG","metrics_enabled":false,"crash_reporting_enabled":true}"#;
+        let json =
+            r#"{"tracing_level":"DEBUG","metrics_enabled":false,"crash_reporting_enabled":true}"#;
         let config: ObservabilityConfig = serde_json::from_str(json).unwrap();
         assert_eq!(config.tracing_level, "DEBUG");
         assert!(!config.metrics_enabled);

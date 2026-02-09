@@ -49,7 +49,10 @@ fn seed_rng_fork_independent() {
     let mut f2 = rng.fork("b");
     let v1: Vec<i32> = (0..10).map(|_| f1.gen_range(0..1000)).collect();
     let v2: Vec<i32> = (0..10).map(|_| f2.gen_range(0..1000)).collect();
-    assert_ne!(v1, v2, "different sublayers should produce different sequences");
+    assert_ne!(
+        v1, v2,
+        "different sublayers should produce different sequences"
+    );
 }
 
 #[test]
@@ -65,7 +68,11 @@ fn seed_rng_gen_bool() {
     let mut trues = 0;
     let mut falses = 0;
     for _ in 0..1000 {
-        if rng.gen_bool() { trues += 1; } else { falses += 1; }
+        if rng.gen_bool() {
+            trues += 1;
+        } else {
+            falses += 1;
+        }
     }
     assert!(trues > 0, "should produce some trues");
     assert!(falses > 0, "should produce some falses");
@@ -75,7 +82,10 @@ fn seed_rng_gen_bool() {
 fn seed_rng_gen_bool_with_prob_zero() {
     let mut rng = SeedRng::new(0, "test");
     for _ in 0..100 {
-        assert!(!rng.gen_bool_with_prob(0.0), "prob 0.0 should always be false");
+        assert!(
+            !rng.gen_bool_with_prob(0.0),
+            "prob 0.0 should always be false"
+        );
     }
 }
 
@@ -83,7 +93,10 @@ fn seed_rng_gen_bool_with_prob_zero() {
 fn seed_rng_gen_bool_with_prob_one() {
     let mut rng = SeedRng::new(0, "test");
     for _ in 0..100 {
-        assert!(rng.gen_bool_with_prob(1.0), "prob 1.0 should always be true");
+        assert!(
+            rng.gen_bool_with_prob(1.0),
+            "prob 1.0 should always be true"
+        );
     }
 }
 
@@ -210,16 +223,28 @@ fn room_contains_outside() {
 
 #[test]
 fn room_overlaps_true() {
-    let r1 = Room { bounds: (IVec2::new(0, 0), IVec2::new(10, 10)), connections: vec![] };
-    let r2 = Room { bounds: (IVec2::new(5, 5), IVec2::new(15, 15)), connections: vec![] };
+    let r1 = Room {
+        bounds: (IVec2::new(0, 0), IVec2::new(10, 10)),
+        connections: vec![],
+    };
+    let r2 = Room {
+        bounds: (IVec2::new(5, 5), IVec2::new(15, 15)),
+        connections: vec![],
+    };
     assert!(r1.overlaps(&r2));
     assert!(r2.overlaps(&r1));
 }
 
 #[test]
 fn room_overlaps_false() {
-    let r1 = Room { bounds: (IVec2::new(0, 0), IVec2::new(5, 5)), connections: vec![] };
-    let r2 = Room { bounds: (IVec2::new(10, 10), IVec2::new(15, 15)), connections: vec![] };
+    let r1 = Room {
+        bounds: (IVec2::new(0, 0), IVec2::new(5, 5)),
+        connections: vec![],
+    };
+    let r2 = Room {
+        bounds: (IVec2::new(10, 10), IVec2::new(15, 15)),
+        connections: vec![],
+    };
     assert!(!r1.overlaps(&r2));
     assert!(!r2.overlaps(&r1));
 }
@@ -380,7 +405,9 @@ fn encounter_kind_combat() {
 
 #[test]
 fn encounter_kind_loot() {
-    let kind = EncounterKind::Loot { items: vec!["gold".into()] };
+    let kind = EncounterKind::Loot {
+        items: vec!["gold".into()],
+    };
     if let EncounterKind::Loot { items } = kind {
         assert_eq!(items[0], "gold");
     } else {
@@ -390,7 +417,9 @@ fn encounter_kind_loot() {
 
 #[test]
 fn encounter_kind_ambient() {
-    let kind = EncounterKind::Ambient { event_id: "rain".into() };
+    let kind = EncounterKind::Ambient {
+        event_id: "rain".into(),
+    };
     if let EncounterKind::Ambient { event_id } = kind {
         assert_eq!(event_id, "rain");
     } else {
@@ -400,7 +429,10 @@ fn encounter_kind_ambient() {
 
 #[test]
 fn encounter_kind_clone() {
-    let kind = EncounterKind::Combat { enemy_types: vec!["wolf".into()], count: 3 };
+    let kind = EncounterKind::Combat {
+        enemy_types: vec!["wolf".into()],
+        count: 3,
+    };
     let kind2 = kind.clone();
     if let EncounterKind::Combat { count, .. } = kind2 {
         assert_eq!(count, 3);
@@ -409,7 +441,9 @@ fn encounter_kind_clone() {
 
 #[test]
 fn encounter_kind_json_roundtrip() {
-    let kind = EncounterKind::Loot { items: vec!["gem".into(), "coin".into()] };
+    let kind = EncounterKind::Loot {
+        items: vec!["gem".into(), "coin".into()],
+    };
     let json = serde_json::to_string(&kind).unwrap();
     let back: EncounterKind = serde_json::from_str(&json).unwrap();
     if let EncounterKind::Loot { items } = back {
@@ -424,7 +458,10 @@ fn encounter_kind_json_roundtrip() {
 #[test]
 fn encounter_fields() {
     let enc = Encounter {
-        kind: EncounterKind::Combat { enemy_types: vec!["skeleton".into()], count: 2 },
+        kind: EncounterKind::Combat {
+            enemy_types: vec!["skeleton".into()],
+            count: 2,
+        },
         position: IVec2::new(50, 50),
         difficulty: 3.5,
         metadata: std::collections::BTreeMap::new(),
@@ -440,7 +477,9 @@ fn encounter_with_metadata() {
     let mut meta = std::collections::BTreeMap::new();
     meta.insert("zone".into(), "forest".into());
     let enc = Encounter {
-        kind: EncounterKind::Ambient { event_id: "wind".into() },
+        kind: EncounterKind::Ambient {
+            event_id: "wind".into(),
+        },
         position: IVec2::new(10, 20),
         difficulty: 1.0,
         metadata: meta,
@@ -451,7 +490,9 @@ fn encounter_with_metadata() {
 #[test]
 fn encounter_clone() {
     let enc = Encounter {
-        kind: EncounterKind::Loot { items: vec!["key".into()] },
+        kind: EncounterKind::Loot {
+            items: vec!["key".into()],
+        },
         position: IVec2::new(5, 5),
         difficulty: 2.0,
         metadata: std::collections::BTreeMap::new(),
@@ -509,8 +550,16 @@ fn encounter_generator_difficulty_in_range() {
     let mut rng = SeedRng::new(123, "enc");
     let encounters = gen.generate(&mut rng, 20);
     for enc in &encounters {
-        assert!(enc.difficulty >= 2.0, "difficulty too low: {}", enc.difficulty);
-        assert!(enc.difficulty <= 4.0, "difficulty too high: {}", enc.difficulty);
+        assert!(
+            enc.difficulty >= 2.0,
+            "difficulty too low: {}",
+            enc.difficulty
+        );
+        assert!(
+            enc.difficulty <= 4.0,
+            "difficulty too high: {}",
+            enc.difficulty
+        );
     }
 }
 

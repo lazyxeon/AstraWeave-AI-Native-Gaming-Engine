@@ -55,13 +55,12 @@ impl TlsServerConfig {
     /// TLS configuration ready to create an acceptor
     pub fn from_pem_files(cert_path: impl AsRef<Path>, key_path: impl AsRef<Path>) -> Result<Self> {
         // Load certificate chain
-        let cert_file = File::open(cert_path.as_ref())
-            .with_context(|| {
-                format!(
-                    "Failed to open cert file: {}",
-                    redact_path_for_error(cert_path.as_ref())
-                )
-            })?;
+        let cert_file = File::open(cert_path.as_ref()).with_context(|| {
+            format!(
+                "Failed to open cert file: {}",
+                redact_path_for_error(cert_path.as_ref())
+            )
+        })?;
         let mut cert_reader = BufReader::new(cert_file);
         let cert_chain: Vec<CertificateDer<'static>> = certs(&mut cert_reader)
             .collect::<Result<Vec<_>, _>>()
@@ -75,13 +74,12 @@ impl TlsServerConfig {
         }
 
         // Load private key
-        let key_file = File::open(key_path.as_ref())
-            .with_context(|| {
-                format!(
-                    "Failed to open key file: {}",
-                    redact_path_for_error(key_path.as_ref())
-                )
-            })?;
+        let key_file = File::open(key_path.as_ref()).with_context(|| {
+            format!(
+                "Failed to open key file: {}",
+                redact_path_for_error(key_path.as_ref())
+            )
+        })?;
         let mut key_reader = BufReader::new(key_file);
         let private_key = private_key(&mut key_reader)
             .context("Failed to parse private key")?
@@ -132,13 +130,12 @@ impl TlsClientConfig {
     /// # Arguments
     /// * `ca_cert_path` - Path to PEM-encoded CA certificate file
     pub fn with_custom_ca(ca_cert_path: impl AsRef<Path>) -> Result<TlsConnector> {
-        let ca_file = File::open(ca_cert_path.as_ref())
-            .with_context(|| {
-                format!(
-                    "Failed to open CA cert: {}",
-                    redact_path_for_error(ca_cert_path.as_ref())
-                )
-            })?;
+        let ca_file = File::open(ca_cert_path.as_ref()).with_context(|| {
+            format!(
+                "Failed to open CA cert: {}",
+                redact_path_for_error(ca_cert_path.as_ref())
+            )
+        })?;
         let mut ca_reader = BufReader::new(ca_file);
 
         let mut root_store = RootCertStore::empty();

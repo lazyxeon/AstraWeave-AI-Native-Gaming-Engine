@@ -184,7 +184,7 @@ impl BlendImporter {
     ) -> BlendResult<ConversionResult> {
         let source_path = source_path.as_ref();
         let output_path = self.default_output_path(source_path, &options);
-        
+
         self.import_to_with_options(source_path, &output_path, options)
             .await
     }
@@ -245,7 +245,11 @@ impl BlendImporter {
         };
 
         if result.from_cache {
-            info!("Loaded from cache: {} ({} bytes)", result.output_path.display(), result.output_size);
+            info!(
+                "Loaded from cache: {} ({} bytes)",
+                result.output_path.display(),
+                result.output_size
+            );
         } else {
             info!(
                 "Conversion complete: {} ({} bytes, {:.2}s)",
@@ -277,7 +281,7 @@ impl BlendImporter {
     ) -> BlendResult<ImportHandle> {
         let source_path = source_path.as_ref().to_path_buf();
         let output_path = self.default_output_path(&source_path, &options);
-        
+
         // Validate source
         if !source_path.exists() {
             return Err(BlendError::BlendFileNotFound {
@@ -361,9 +365,9 @@ impl BlendImporter {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("output");
-        
+
         let ext = options.format.extension();
-        
+
         if let Some(ref project_root) = self.project_root {
             // Output to project's assets directory
             project_root
@@ -430,10 +434,7 @@ impl ImportHandle {
     }
 
     /// Waits for the import with a timeout.
-    pub async fn wait_timeout(
-        self,
-        timeout: std::time::Duration,
-    ) -> BlendResult<ConversionResult> {
+    pub async fn wait_timeout(self, timeout: std::time::Duration) -> BlendResult<ConversionResult> {
         match tokio::time::timeout(timeout, self.handle).await {
             Ok(Ok(result)) => result,
             Ok(Err(e)) => Err(BlendError::ConversionFailed {

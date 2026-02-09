@@ -29,6 +29,8 @@
 //! manager.update(delta_time, camera_pos, water_height);
 //! ```
 
+pub mod anisotropic;
+pub mod boundary;
 pub mod building;
 pub mod caustics;
 pub mod debug_viz;
@@ -38,131 +40,145 @@ pub mod foam;
 pub mod god_rays;
 pub mod gpu_volume;
 pub mod lod;
+pub mod multi_phase;
+pub mod optimization;
+pub mod particle_shifting;
+pub mod pcisph_system;
 pub mod profiling;
 pub mod renderer;
+pub mod research;
 pub mod sdf;
 pub mod serialization;
+pub mod simd_ops;
 pub mod terrain_integration;
+pub mod turbulence;
 pub mod underwater;
 pub mod underwater_particles;
+pub mod unified_solver;
+pub mod validation;
+pub mod viscosity;
+pub mod viscosity_gpu;
 pub mod volume_grid;
+pub mod warm_start;
 pub mod water_effects;
 pub mod water_reflections;
 pub mod waterfall;
-pub mod optimization;
-pub mod anisotropic;
-pub mod research;
-pub mod pcisph_system;
-pub mod particle_shifting;
-pub mod warm_start;
-pub mod viscosity;
-pub mod viscosity_gpu;
-pub mod multi_phase;
-pub mod boundary;
-pub mod turbulence;
-pub mod validation;
-pub mod simd_ops;
-pub mod unified_solver;
 
 pub use building::{
-    FlowDirection, WaterBuildingManager, WaterBuildingStats, WaterDispenser, WaterDrain as VolumetricDrain,
-    WaterGate, WaterWheel, WheelAxis,
+    FlowDirection, WaterBuildingManager, WaterBuildingStats, WaterDispenser,
+    WaterDrain as VolumetricDrain, WaterGate, WaterWheel, WheelAxis,
+};
+pub use caustics::{
+    CausticSample, CausticsConfig, CausticsProjector, CausticsSystem, CausticsUniforms,
+    CAUSTICS_WGSL,
+};
+pub use debug_viz::{
+    DebugDrawList, DebugLine, DebugPoint, DebugVertex, ParticleDebugType, StatsFormatter,
+    WaterDebugConfig,
 };
 pub use editor::{
-    FluidEditorConfig, WaterBodyPreset, QualityPreset as EditorQualityPreset,
-    PhysicsConfig, ThermalConfig, RenderingConfig, LodConfig as EditorLodConfig,
-    CausticsEditorConfig, GodRaysEditorConfig, FoamEditorConfig,
-    ReflectionEditorConfig, UnderwaterEditorConfig, WaterfallEditorConfig,
-    EmitterEditorConfig, EmitterShapeType, DrainEditorConfig,
-    WaveConfig, FlowConfig,
-    // Widget metadata for UI generation
-    WidgetType, FieldMetadata, EditorMetadata,
-    // History & undo/redo support
-    ConfigHistory,
-    // Scene integration
-    FluidAABB, FluidScenePlacement,
-    // Performance profiling
-    FluidPerformanceMetrics,
-    // Accessibility
-    ColorblindPalette, AccessibilitySettings,
-    // Real-time preview hints
-    PreviewHint,
+    editor_shortcuts,
+    AccessibilitySettings,
     // Batch operations for multi-select
     BatchOperation,
-    // Validation system
-    ValidationSeverity, ValidationIssue, ConfigValidator,
-    // Animation easing
-    EasingFunction, ConfigTransition,
-    // Debug visualization
-    DebugVisualization,
-    // Keyboard shortcuts
-    KeyboardShortcut, editor_shortcuts,
-    // Preset export/import
-    ExportedPreset,
+    CausticsEditorConfig,
+    // Accessibility
+    ColorblindPalette,
     // Clipboard support
     ConfigClipboard,
+    // History & undo/redo support
+    ConfigHistory,
+    ConfigTransition,
+    ConfigValidator,
+    // Debug visualization
+    DebugVisualization,
+    DrainEditorConfig,
+    // Animation easing
+    EasingFunction,
+    EditorMetadata,
+    EmitterEditorConfig,
+    EmitterShapeType,
+    // Preset export/import
+    ExportedPreset,
+    FieldMetadata,
+    FlowConfig,
+    // Scene integration
+    FluidAABB,
+    FluidEditorConfig,
+    // Performance profiling
+    FluidPerformanceMetrics,
+    FluidScenePlacement,
+    FoamEditorConfig,
+    GodRaysEditorConfig,
+    // Keyboard shortcuts
+    KeyboardShortcut,
+    LodConfig as EditorLodConfig,
+    PhysicsConfig,
+    // Real-time preview hints
+    PreviewHint,
+    QualityPreset as EditorQualityPreset,
+    ReflectionEditorConfig,
+    RenderingConfig,
+    ThermalConfig,
+    UnderwaterEditorConfig,
+    ValidationIssue,
+    // Validation system
+    ValidationSeverity,
+    WaterBodyPreset,
+    WaterfallEditorConfig,
+    WaveConfig,
+    // Widget metadata for UI generation
+    WidgetType,
 };
 pub use emitter::{EmitterShape, FluidDrain, FluidEmitter};
 pub use foam::{FoamConfig, FoamParticle, FoamSource, FoamSystem, FoamTrail, GpuFoamParticle};
+pub use god_rays::{GodRaysConfig, GodRaysSystem, GodRaysUniforms, LightShaft, GOD_RAYS_WGSL};
 pub use gpu_volume::{GpuWaterCell, WaterSurfaceVertex, WaterVolumeGpu, WaterVolumeUniforms};
 pub use lod::{
     FluidLodConfig, FluidLodManager, LodLevel, LodUpdateResult, OptimizedLodConfig,
     OptimizedLodManager, ParticleStreamingManager, StreamingOp,
 };
+pub use optimization::{
+    analyze_metrics, AdaptiveIterations, BatchSpawner, GpuShaderConfig, GpuVendor, MortonCode,
+    OptimizationMetrics, OptimizationPreset, OptimizationProfiler, OptimizationRecommendation,
+    OptimizedSimParams, ParticleStateGpu, QualityTier, SimulationBudget, TemporalCoherence,
+    WorkgroupConfig,
+};
 pub use profiling::{FluidProfiler, FluidTimingStats};
 pub use renderer::FluidRenderer;
 pub use serialization::{FluidSnapshot, SnapshotParams};
+pub use simd_ops::{
+    accumulate_density_simple, accumulate_pressure_force, accumulate_viscosity_force,
+    aos_to_soa_positions, batch_apply_gravity, batch_distances, batch_integrate_positions,
+    batch_kernel_cubic, batch_kernel_gradient_cubic, cell_hash, position_to_cell,
+    soa_to_aos_positions, NEIGHBOR_OFFSETS,
+};
 pub use terrain_integration::{
-    DetectedWaterBody, LakeConfig, OceanConfig, RiverConfig, TerrainFluidConfig,
-    WaterBodyType, WaterfallConfig as TerrainWaterfallConfig, analyze_terrain_for_water,
+    analyze_terrain_for_water, DetectedWaterBody, LakeConfig, OceanConfig, RiverConfig,
+    TerrainFluidConfig, WaterBodyType, WaterfallConfig as TerrainWaterfallConfig,
 };
 pub use underwater::{DepthZoneManager, UnderwaterConfig, UnderwaterState, UnderwaterUniforms};
 pub use underwater_particles::{
     BubbleStream, GpuUnderwaterParticle, UnderwaterParticle, UnderwaterParticleConfig,
     UnderwaterParticleSystem, UnderwaterParticleType,
 };
+pub use unified_solver::{
+    FluidPhaseConfig, FluidType, QualityPreset, SolverStats, SolverType, UnifiedSolver,
+    UnifiedSolverConfig, ViscositySolverType,
+};
 pub use volume_grid::{
     CellFlags, MaterialType, WaterCell, WaterGridStats, WaterSimConfig, WaterVolumeGrid,
-};
-pub use waterfall::{
-    GpuWaterParticle, RapidsSystem, WaterParticle, WaterParticleType, WaterfallConfig,
-    WaterfallSource, WaterfallSystem,
-};
-pub use caustics::{
-    CausticSample, CausticsConfig, CausticsProjector, CausticsSystem, CausticsUniforms,
-    CAUSTICS_WGSL,
-};
-pub use god_rays::{
-    GodRaysConfig, GodRaysSystem, GodRaysUniforms, LightShaft, GOD_RAYS_WGSL,
-};
-pub use water_reflections::{
-    PlanarReflection, ReflectionUniforms, WaterReflectionConfig, WaterReflectionSystem,
-    SSR_WGSL,
 };
 pub use water_effects::{
     WaterEffectsConfig, WaterEffectsError, WaterEffectsManager, WaterEffectsResult,
     WaterEffectsStats, WaterQualityPreset,
 };
-pub use debug_viz::{
-    DebugDrawList, DebugLine, DebugPoint, DebugVertex, ParticleDebugType,
-    StatsFormatter, WaterDebugConfig,
+pub use water_reflections::{
+    PlanarReflection, ReflectionUniforms, WaterReflectionConfig, WaterReflectionSystem, SSR_WGSL,
 };
-pub use optimization::{
-    AdaptiveIterations, BatchSpawner, GpuShaderConfig, MortonCode, OptimizationPreset,
-    OptimizedSimParams, ParticleStateGpu, QualityTier, SimulationBudget, TemporalCoherence,
-    WorkgroupConfig, OptimizationMetrics, OptimizationProfiler, OptimizationRecommendation,
-    analyze_metrics, GpuVendor,
-};
-pub use unified_solver::{
-    FluidPhaseConfig, FluidType, QualityPreset, SolverStats, SolverType, UnifiedSolver,
-    UnifiedSolverConfig, ViscositySolverType,
-};
-pub use simd_ops::{
-    batch_distances, batch_kernel_cubic, batch_kernel_gradient_cubic,
-    accumulate_density_simple, accumulate_pressure_force, accumulate_viscosity_force,
-    batch_integrate_positions, batch_apply_gravity,
-    aos_to_soa_positions, soa_to_aos_positions,
-    position_to_cell, cell_hash, NEIGHBOR_OFFSETS,
+pub use waterfall::{
+    GpuWaterParticle, RapidsSystem, WaterParticle, WaterParticleType, WaterfallConfig,
+    WaterfallSource, WaterfallSystem,
 };
 
 use std::borrow::Cow;
@@ -798,7 +814,7 @@ impl FluidSystem {
             pending_despawn_regions: Vec::new(),
             particle_positions: initial_positions,
             particle_active: vec![true; particle_count as usize],
-            
+
             // Initialize optimization components with sensible defaults
             workgroup_config: WorkgroupConfig::universal(),
             adaptive_iterations: AdaptiveIterations::new(2, 8),
@@ -825,11 +841,13 @@ impl FluidSystem {
         queue.write_buffer(&self.particle_flags, 0, bytemuck::cast_slice(&flags));
         self.active_count = particles.len() as u32;
         self.free_list.clear();
-        
+
         // Update CPU-side position cache
         self.particle_positions.clear();
         self.particle_positions.extend(
-            particles.iter().map(|p| [p.position[0], p.position[1], p.position[2]])
+            particles
+                .iter()
+                .map(|p| [p.position[0], p.position[1], p.position[2]]),
         );
         self.particle_active = vec![true; particles.len()];
         self.pending_despawn_regions.clear();
@@ -873,7 +891,7 @@ impl FluidSystem {
             // Set flag to active
             let flag_offset = (idx * 4) as u64;
             queue.write_buffer(&self.particle_flags, flag_offset, bytemuck::bytes_of(&1u32));
-            
+
             // Update CPU-side cache
             self.particle_positions[idx] = pos;
             self.particle_active[idx] = true;
@@ -907,16 +925,8 @@ impl FluidSystem {
     /// Use `active_count()` after `step()` to observe the effect.
     pub fn despawn_region(&mut self, _queue: &wgpu::Queue, min: [f32; 3], max: [f32; 3]) -> usize {
         // Validate AABB (ensure min <= max for each axis)
-        let valid_min = [
-            min[0].min(max[0]),
-            min[1].min(max[1]),
-            min[2].min(max[2]),
-        ];
-        let valid_max = [
-            min[0].max(max[0]),
-            min[1].max(max[1]),
-            min[2].max(max[2]),
-        ];
+        let valid_min = [min[0].min(max[0]), min[1].min(max[1]), min[2].min(max[2])];
+        let valid_max = [min[0].max(max[0]), min[1].max(max[1]), min[2].max(max[2])];
 
         self.pending_despawn_regions.push((valid_min, valid_max));
         1 // One region queued
@@ -952,9 +962,12 @@ impl FluidSystem {
 
             // Check if position is inside any pending despawn region
             let should_despawn = self.pending_despawn_regions.iter().any(|(min, max)| {
-                pos[0] >= min[0] && pos[0] <= max[0] &&
-                pos[1] >= min[1] && pos[1] <= max[1] &&
-                pos[2] >= min[2] && pos[2] <= max[2]
+                pos[0] >= min[0]
+                    && pos[0] <= max[0]
+                    && pos[1] >= min[1]
+                    && pos[1] <= max[1]
+                    && pos[2] >= min[2]
+                    && pos[2] <= max[2]
             });
 
             if should_despawn {
@@ -989,7 +1002,7 @@ impl FluidSystem {
     ) {
         // Process any pending despawn regions first
         let _despawned = self.process_pending_despawns(queue);
-        
+
         // Update Uniforms
         let params = SimParams {
             smoothing_radius: self.smoothing_radius,
@@ -1270,12 +1283,12 @@ impl FluidSystem {
     }
 
     /// Optimized simulation step with budget-aware quality scaling.
-    /// 
+    ///
     /// This method uses:
     /// - Adaptive iterations based on density error feedback
     /// - Frame budget tracking for quality scaling
     /// - Workgroup configuration optimized for the target GPU
-    /// 
+    ///
     /// Returns the actual iteration count used this frame.
     pub fn step_with_budget(
         &mut self,
@@ -1287,13 +1300,13 @@ impl FluidSystem {
     ) -> u32 {
         // Record last frame's time for budget tracking
         self.simulation_budget.record_frame(frame_time_ms);
-        
+
         // Get quality-adjusted iteration count
         let quality = self.simulation_budget.quality();
-        let recommended = self.simulation_budget.recommended_iterations(
-            self.adaptive_iterations.max_iterations,
-        );
-        
+        let recommended = self
+            .simulation_budget
+            .recommended_iterations(self.adaptive_iterations.max_iterations);
+
         // Blend between adaptive and budget-recommended iterations
         let under_budget = quality >= 0.8; // Consider under budget if quality is high
         let target_iterations = if under_budget {
@@ -1303,14 +1316,14 @@ impl FluidSystem {
             // Over budget: use recommended (performance-focused)
             recommended.min(self.adaptive_iterations.current())
         };
-        
+
         // Set iterations for this frame (step()'s density-error feedback will
         // adaptively adjust self.iterations at the end of each frame)
         self.iterations = target_iterations;
-        
+
         // Execute the simulation step
         self.step(device, encoder, queue, dt);
-        
+
         // Update optimization stats
         self.optimization_stats = OptimizationStats {
             quality_level: quality,
@@ -1319,7 +1332,7 @@ impl FluidSystem {
             recommended_iterations: recommended,
             under_budget,
         };
-        
+
         target_iterations
     }
 
@@ -1330,12 +1343,12 @@ impl FluidSystem {
         if positions.is_empty() {
             return 0;
         }
-        
+
         // Convert to the format expected by spawn_particles
         let pos_refs: Vec<[f32; 3]> = positions;
         let vel_refs: Vec<[f32; 3]> = velocities;
         let color_refs: Vec<[f32; 4]> = colors;
-        
+
         self.spawn_particles(queue, &pos_refs, &vel_refs, Some(&color_refs))
     }
 
@@ -1475,8 +1488,8 @@ impl FluidOptimizationController {
             auto_tune_enabled: true,
             frames_since_adjustment: 0,
             adjustment_cooldown: 60, // 1 second at 60fps
-            quality_tier: 1, // Start at high quality
-            max_quality_tier: 3, // Allow down to low quality
+            quality_tier: 1,         // Start at high quality
+            max_quality_tier: 3,     // Allow down to low quality
             accumulated_frame_time: 0.0,
             frame_count: 0,
             force_full_quality: false,
@@ -1512,7 +1525,11 @@ impl FluidOptimizationController {
             GpuVendor::Amd
         } else if name_lower.contains("intel") {
             GpuVendor::Intel
-        } else if name_lower.contains("apple") || name_lower.contains("m1") || name_lower.contains("m2") || name_lower.contains("m3") {
+        } else if name_lower.contains("apple")
+            || name_lower.contains("m1")
+            || name_lower.contains("m2")
+            || name_lower.contains("m3")
+        {
             GpuVendor::Apple
         } else {
             GpuVendor::Unknown
@@ -1616,7 +1633,10 @@ impl FluidOptimizationController {
     /// Enable LOD management for camera-distance based optimization.
     pub fn enable_lod(&mut self, camera_position: [f32; 3]) {
         let config = self.lod_config_for_tier(self.quality_tier);
-        self.lod_manager = Some(OptimizedLodManager::with_camera_position(config, camera_position));
+        self.lod_manager = Some(OptimizedLodManager::with_camera_position(
+            config,
+            camera_position,
+        ));
     }
 
     /// Disable LOD management.
@@ -1787,8 +1807,14 @@ impl FluidOptimizationController {
         // Update LOD if enabled - compute config and camera position first to avoid borrow conflicts
         if self.lod_manager.is_some() {
             let lod_config = self.lod_config_for_tier(self.quality_tier);
-            let camera_pos = self.lod_manager.as_ref().expect("lod_manager must be initialized").camera_position();
-            self.lod_manager = Some(OptimizedLodManager::with_camera_position(lod_config, camera_pos));
+            let camera_pos = self
+                .lod_manager
+                .as_ref()
+                .expect("lod_manager must be initialized")
+                .camera_position();
+            self.lod_manager = Some(OptimizedLodManager::with_camera_position(
+                lod_config, camera_pos,
+            ));
         }
     }
 
@@ -1818,7 +1844,8 @@ impl FluidOptimizationController {
             1 => OptimizedLodConfig::from_preset(&OptimizationPreset::balanced()),
             2 => OptimizedLodConfig::from_preset(&OptimizationPreset::performance()),
             _ => {
-                let mut config = OptimizedLodConfig::from_preset(&OptimizationPreset::performance());
+                let mut config =
+                    OptimizedLodConfig::from_preset(&OptimizationPreset::performance());
                 // Allow very low particle counts for lowest tier
                 config.particle_factors = [0.5, 0.25, 0.1, 0.05];
                 config
@@ -1883,12 +1910,37 @@ impl std::fmt::Display for OptimizationControllerStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "=== Fluid Optimization Controller Status ===")?;
         writeln!(f, "GPU: {:?}", self.gpu_vendor)?;
-        writeln!(f, "Quality: {} (tier {})", self.quality_tier_name, self.quality_tier)?;
-        writeln!(f, "Target: {:.2}ms ({:.0} FPS)", self.target_frame_time_ms, 1000.0 / self.target_frame_time_ms)?;
-        writeln!(f, "Current: {:.2}ms ({:.1} FPS)", self.avg_frame_time_ms, self.current_fps)?;
-        writeln!(f, "Percentiles: P1={:.2}ms P50={:.2}ms P99={:.2}ms", self.frame_time_p1, self.frame_time_p50, self.frame_time_p99)?;
-        writeln!(f, "Auto-tune: {} | Force Quality: {}", self.auto_tune_enabled, self.force_full_quality)?;
-        writeln!(f, "LOD: {} | Streaming: {}", self.lod_enabled, self.streaming_enabled)?;
+        writeln!(
+            f,
+            "Quality: {} (tier {})",
+            self.quality_tier_name, self.quality_tier
+        )?;
+        writeln!(
+            f,
+            "Target: {:.2}ms ({:.0} FPS)",
+            self.target_frame_time_ms,
+            1000.0 / self.target_frame_time_ms
+        )?;
+        writeln!(
+            f,
+            "Current: {:.2}ms ({:.1} FPS)",
+            self.avg_frame_time_ms, self.current_fps
+        )?;
+        writeln!(
+            f,
+            "Percentiles: P1={:.2}ms P50={:.2}ms P99={:.2}ms",
+            self.frame_time_p1, self.frame_time_p50, self.frame_time_p99
+        )?;
+        writeln!(
+            f,
+            "Auto-tune: {} | Force Quality: {}",
+            self.auto_tune_enabled, self.force_full_quality
+        )?;
+        writeln!(
+            f,
+            "LOD: {} | Streaming: {}",
+            self.lod_enabled, self.streaming_enabled
+        )?;
         writeln!(f, "Frames Recorded: {}", self.frames_recorded)?;
 
         if !self.recommendations.is_empty() {
@@ -1916,7 +1968,7 @@ impl std::fmt::Display for OptimizationControllerStatus {
 /// # Example
 /// ```ignore
 /// let context = controller.create_render_context(camera_pos);
-/// 
+///
 /// for fluid_body in &mut fluid_bodies {
 ///     if context.should_simulate(fluid_body.position) {
 ///         let quality = context.quality_for_position(fluid_body.position);
@@ -2029,7 +2081,9 @@ impl FluidOptimizationController {
             max_simulation_distance: base_distances[3] * 1.5,
             lod_distances: base_distances,
             lod_particle_factors: particle_factors,
-            particle_budget: self.streaming_manager.as_ref()
+            particle_budget: self
+                .streaming_manager
+                .as_ref()
                 .map(|s| s.particle_budget())
                 .unwrap_or(100_000),
         }
@@ -2074,7 +2128,7 @@ impl FluidOptimizationController {
 
         // Get recommended iterations
         let iterations = self.recommended_iterations();
-        
+
         // Set iterations on the system
         system.set_iterations(iterations);
 
@@ -2088,7 +2142,10 @@ impl FluidOptimizationController {
         self.record_frame(frame_time_ms);
 
         // Update LOD manager with camera position and get result
-        let lod_result = self.lod_manager.as_mut().map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms));
+        let lod_result = self
+            .lod_manager
+            .as_mut()
+            .map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms));
 
         // Update streaming manager if enabled
         if let Some(ref mut streaming) = self.streaming_manager {
@@ -2135,7 +2192,10 @@ impl FluidOptimizationController {
         self.record_frame(frame_time_ms);
 
         // Update LOD manager with camera position and get result
-        let lod_result = self.lod_manager.as_mut().map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms));
+        let lod_result = self
+            .lod_manager
+            .as_mut()
+            .map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms));
 
         // Update streaming manager if enabled
         if let Some(ref mut streaming) = self.streaming_manager {
@@ -2212,7 +2272,11 @@ impl FluidOptimizationController {
     pub fn recommended_iterations(&self) -> u32 {
         match self.quality_tier {
             0 => self.preset.adaptive_iterations.max_iterations,
-            1 => (self.preset.adaptive_iterations.min_iterations + self.preset.adaptive_iterations.max_iterations) / 2,
+            1 => {
+                (self.preset.adaptive_iterations.min_iterations
+                    + self.preset.adaptive_iterations.max_iterations)
+                    / 2
+            }
             2 => self.preset.adaptive_iterations.min_iterations + 1,
             _ => self.preset.adaptive_iterations.min_iterations,
         }
@@ -2786,10 +2850,10 @@ mod tests {
             color: [1.0, 0.5, 0.25, 0.75], // RGBA
         };
 
-        assert_eq!(particle.color[0], 1.0);   // Red
-        assert_eq!(particle.color[1], 0.5);   // Green
-        assert_eq!(particle.color[2], 0.25);  // Blue
-        assert_eq!(particle.color[3], 0.75);  // Alpha
+        assert_eq!(particle.color[0], 1.0); // Red
+        assert_eq!(particle.color[1], 0.5); // Green
+        assert_eq!(particle.color[2], 0.25); // Blue
+        assert_eq!(particle.color[3], 0.75); // Alpha
     }
 
     #[test]
@@ -2832,17 +2896,23 @@ mod tests {
         // Helper to test AABB containment logic
         let min = [-5.0, -5.0, -5.0];
         let max = [5.0, 5.0, 5.0];
-        
+
         let pos_inside = [0.0, 0.0, 0.0];
-        let inside = pos_inside[0] >= min[0] && pos_inside[0] <= max[0] &&
-                     pos_inside[1] >= min[1] && pos_inside[1] <= max[1] &&
-                     pos_inside[2] >= min[2] && pos_inside[2] <= max[2];
+        let inside = pos_inside[0] >= min[0]
+            && pos_inside[0] <= max[0]
+            && pos_inside[1] >= min[1]
+            && pos_inside[1] <= max[1]
+            && pos_inside[2] >= min[2]
+            && pos_inside[2] <= max[2];
         assert!(inside);
-        
+
         let pos_outside = [10.0, 0.0, 0.0];
-        let outside = pos_outside[0] >= min[0] && pos_outside[0] <= max[0] &&
-                      pos_outside[1] >= min[1] && pos_outside[1] <= max[1] &&
-                      pos_outside[2] >= min[2] && pos_outside[2] <= max[2];
+        let outside = pos_outside[0] >= min[0]
+            && pos_outside[0] <= max[0]
+            && pos_outside[1] >= min[1]
+            && pos_outside[1] <= max[1]
+            && pos_outside[2] >= min[2]
+            && pos_outside[2] <= max[2];
         assert!(!outside);
     }
 
@@ -2851,19 +2921,11 @@ mod tests {
         // Test that min/max are correctly validated (swapped if needed)
         let min: [f32; 3] = [5.0, 5.0, 5.0];
         let max: [f32; 3] = [-5.0, -5.0, -5.0];
-        
+
         // Should swap to correct orientation
-        let valid_min = [
-            min[0].min(max[0]),
-            min[1].min(max[1]),
-            min[2].min(max[2]),
-        ];
-        let valid_max = [
-            min[0].max(max[0]),
-            min[1].max(max[1]),
-            min[2].max(max[2]),
-        ];
-        
+        let valid_min = [min[0].min(max[0]), min[1].min(max[1]), min[2].min(max[2])];
+        let valid_max = [min[0].max(max[0]), min[1].max(max[1]), min[2].max(max[2])];
+
         assert_eq!(valid_min, [-5.0, -5.0, -5.0]);
         assert_eq!(valid_max, [5.0, 5.0, 5.0]);
     }
@@ -2873,7 +2935,7 @@ mod tests {
         // Test that initial positions are correctly cached
         let spacing = 0.5;
         let size = (8_f32).powf(1.0 / 3.0).ceil() as usize; // 2
-        
+
         let mut positions = Vec::new();
         for i in 0..8 {
             let x = (i % size) as f32 * spacing - 5.0;
@@ -2881,7 +2943,7 @@ mod tests {
             let z = (i / (size * size)) as f32 * spacing - 5.0;
             positions.push([x, y, z]);
         }
-        
+
         assert_eq!(positions.len(), 8);
         // First particle
         assert_eq!(positions[0], [-5.0, 2.0, -5.0]);
@@ -2898,31 +2960,34 @@ mod tests {
         ];
         let mut active = vec![true; 4];
         let mut free_list = Vec::new();
-        
+
         let regions = vec![
             ([-5.0, -5.0, -5.0], [5.0, 5.0, 5.0]), // Region around origin
         ];
-        
+
         let mut despawned = 0;
         for idx in 0..positions.len() {
             if !active[idx] {
                 continue;
             }
-            
+
             let pos = positions[idx];
             let should_despawn = regions.iter().any(|(min, max)| {
-                pos[0] >= min[0] && pos[0] <= max[0] &&
-                pos[1] >= min[1] && pos[1] <= max[1] &&
-                pos[2] >= min[2] && pos[2] <= max[2]
+                pos[0] >= min[0]
+                    && pos[0] <= max[0]
+                    && pos[1] >= min[1]
+                    && pos[1] <= max[1]
+                    && pos[2] >= min[2]
+                    && pos[2] <= max[2]
             });
-            
+
             if should_despawn {
                 active[idx] = false;
                 free_list.push(idx as u32);
                 despawned += 1;
             }
         }
-        
+
         assert_eq!(despawned, 2); // Particles 0 and 2
         assert_eq!(free_list, vec![0, 2]);
         assert_eq!(active, vec![false, true, false, true]);
@@ -2938,32 +3003,35 @@ mod tests {
         ];
         let mut active = vec![true; 3];
         let mut free_list = Vec::new();
-        
+
         let regions = vec![
             ([-5.0, -5.0, -5.0], [5.0, 5.0, 5.0]),
             ([0.0, -5.0, -5.0], [10.0, 5.0, 5.0]),
         ];
-        
+
         let mut despawned = 0;
         for idx in 0..positions.len() {
             if !active[idx] {
                 continue;
             }
-            
+
             let pos = positions[idx];
             let should_despawn = regions.iter().any(|(min, max)| {
-                pos[0] >= min[0] && pos[0] <= max[0] &&
-                pos[1] >= min[1] && pos[1] <= max[1] &&
-                pos[2] >= min[2] && pos[2] <= max[2]
+                pos[0] >= min[0]
+                    && pos[0] <= max[0]
+                    && pos[1] >= min[1]
+                    && pos[1] <= max[1]
+                    && pos[2] >= min[2]
+                    && pos[2] <= max[2]
             });
-            
+
             if should_despawn {
                 active[idx] = false;
                 free_list.push(idx as u32);
                 despawned += 1;
             }
         }
-        
+
         assert_eq!(despawned, 2); // Particles 0 and 1
         assert_eq!(free_list, vec![0, 1]);
     }
@@ -2972,21 +3040,27 @@ mod tests {
     fn test_despawn_boundary_conditions() {
         // Test particles exactly on AABB boundaries
         let positions = vec![
-            [-5.0, 0.0, 0.0], // On min.x boundary (inside)
-            [5.0, 0.0, 0.0],  // On max.x boundary (inside)
+            [-5.0, 0.0, 0.0],   // On min.x boundary (inside)
+            [5.0, 0.0, 0.0],    // On max.x boundary (inside)
             [-5.001, 0.0, 0.0], // Just outside min.x
             [5.001, 0.0, 0.0],  // Just outside max.x
         ];
-        
+
         let min = [-5.0, -5.0, -5.0];
         let max = [5.0, 5.0, 5.0];
-        
-        let results: Vec<bool> = positions.iter().map(|pos| {
-            pos[0] >= min[0] && pos[0] <= max[0] &&
-            pos[1] >= min[1] && pos[1] <= max[1] &&
-            pos[2] >= min[2] && pos[2] <= max[2]
-        }).collect();
-        
+
+        let results: Vec<bool> = positions
+            .iter()
+            .map(|pos| {
+                pos[0] >= min[0]
+                    && pos[0] <= max[0]
+                    && pos[1] >= min[1]
+                    && pos[1] <= max[1]
+                    && pos[2] >= min[2]
+                    && pos[2] <= max[2]
+            })
+            .collect();
+
         assert!(results[0], "Particle on min.x boundary should be inside");
         assert!(results[1], "Particle on max.x boundary should be inside");
         assert!(!results[2], "Particle just outside min.x should be outside");
@@ -3010,10 +3084,10 @@ mod tests {
         let quality = OptimizationPreset::quality();
         assert_eq!(quality.adaptive_iterations.max_iterations, 8);
         assert!(quality.temporal_coherence.enabled);
-        
+
         let performance = OptimizationPreset::performance();
         assert_eq!(performance.adaptive_iterations.max_iterations, 4);
-        
+
         let balanced = OptimizationPreset::balanced();
         assert_eq!(balanced.adaptive_iterations.max_iterations, 6);
     }
@@ -3022,13 +3096,13 @@ mod tests {
     fn test_workgroup_config_vendors() {
         let nvidia = WorkgroupConfig::nvidia();
         assert_eq!(nvidia.particle_workgroup, 128);
-        
+
         let amd = WorkgroupConfig::amd();
         assert_eq!(amd.particle_workgroup, 64);
-        
+
         let intel = WorkgroupConfig::intel();
         assert_eq!(intel.particle_workgroup, 64);
-        
+
         let universal = WorkgroupConfig::universal();
         assert_eq!(universal.particle_workgroup, 64);
     }
@@ -3036,18 +3110,18 @@ mod tests {
     #[test]
     fn test_adaptive_iterations_bounds() {
         let mut adaptive = AdaptiveIterations::new(2, 8);
-        
+
         // Should start at middle
         assert!(adaptive.current() >= 2);
         assert!(adaptive.current() <= 8);
-        
+
         // Update with low error should decrease
         let initial = adaptive.current();
         for _ in 0..10 {
             adaptive.update(0.001);
         }
         assert!(adaptive.current() <= initial);
-        
+
         // Update with high error should increase
         adaptive.reset();
         let initial2 = adaptive.current();
@@ -3060,11 +3134,11 @@ mod tests {
     #[test]
     fn test_simulation_budget_tracking() {
         let mut budget = SimulationBudget::new(8.0);
-        
+
         // Under budget - quality starts at 1.0
         budget.record_frame(5.0);
         assert!(budget.quality() >= 0.8); // Should stay high when under budget
-        
+
         // Over budget - quality should decrease
         for _ in 0..10 {
             budget.record_frame(12.0);
@@ -3075,14 +3149,14 @@ mod tests {
     #[test]
     fn test_batch_spawner_queue_flush() {
         let mut spawner = BatchSpawner::new(100);
-        
+
         // Queue some particles
         spawner.queue([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
         spawner.queue([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0]);
-        
+
         assert_eq!(spawner.pending_count(), 2);
         assert!(!spawner.is_empty());
-        
+
         // Flush
         let (pos, vel, col) = spawner.flush();
         assert_eq!(pos.len(), 2);
@@ -3095,16 +3169,16 @@ mod tests {
     fn test_temporal_coherence_rest_detection() {
         let mut tc = TemporalCoherence::new(0.01, 3);
         tc.init(10);
-        
+
         // Moving particle should always simulate
         assert!(tc.should_simulate(0, 1.0));
         assert!(tc.should_simulate(0, 1.0));
-        
+
         // Resting particle should stop simulating after threshold
         assert!(tc.should_simulate(1, 0.001)); // Frame 1
         assert!(tc.should_simulate(1, 0.001)); // Frame 2
         assert!(!tc.should_simulate(1, 0.001)); // Frame 3 - now resting
-        
+
         // Wake up when moving again
         assert!(tc.should_simulate(1, 1.0));
     }
@@ -3115,16 +3189,30 @@ mod tests {
         let world_min = [0.0, 0.0, 0.0];
         let world_max = [20.0, 20.0, 20.0];
         let grid_resolution = 256;
-        
-        let code1 = MortonCode::from_position([0.0, 0.0, 0.0], world_min, world_max, grid_resolution);
-        let code2 = MortonCode::from_position([0.5, 0.0, 0.0], world_min, world_max, grid_resolution);
-        let code3 = MortonCode::from_position([10.0, 10.0, 10.0], world_min, world_max, grid_resolution);
-        
+
+        let code1 =
+            MortonCode::from_position([0.0, 0.0, 0.0], world_min, world_max, grid_resolution);
+        let code2 =
+            MortonCode::from_position([0.5, 0.0, 0.0], world_min, world_max, grid_resolution);
+        let code3 =
+            MortonCode::from_position([10.0, 10.0, 10.0], world_min, world_max, grid_resolution);
+
         // code1 and code2 should be closer than code1 and code3
-        let diff12 = if code1 > code2 { code1 - code2 } else { code2 - code1 };
-        let diff13 = if code1 > code3 { code1 - code3 } else { code3 - code1 };
-        
-        assert!(diff12 < diff13, "Nearby positions should have similar Morton codes");
+        let diff12 = if code1 > code2 {
+            code1 - code2
+        } else {
+            code2 - code1
+        };
+        let diff13 = if code1 > code3 {
+            code1 - code3
+        } else {
+            code3 - code1
+        };
+
+        assert!(
+            diff12 < diff13,
+            "Nearby positions should have similar Morton codes"
+        );
     }
 }
 
@@ -3139,7 +3227,7 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_creation_default() {
         let controller = FluidOptimizationController::new();
-        
+
         assert_eq!(controller.quality_tier(), 1); // High quality
         assert_eq!(controller.quality_tier_name(), "High");
         assert!((controller.target_frame_time_ms() - 16.67).abs() < 0.1); // 60 FPS
@@ -3156,7 +3244,8 @@ mod optimization_controller_tests {
         let controller = FluidOptimizationController::with_preset(OptimizationPreset::balanced());
         assert_eq!(controller.quality_tier(), 1); // High
 
-        let controller = FluidOptimizationController::with_preset(OptimizationPreset::performance());
+        let controller =
+            FluidOptimizationController::with_preset(OptimizationPreset::performance());
         assert_eq!(controller.quality_tier(), 2); // Medium
     }
 
@@ -3164,7 +3253,7 @@ mod optimization_controller_tests {
     fn test_controller_gpu_detection_nvidia() {
         let mut controller = FluidOptimizationController::new();
         controller.configure_for_gpu("NVIDIA GeForce RTX 4090");
-        
+
         assert!(matches!(controller.gpu_vendor(), GpuVendor::Nvidia));
         assert_eq!(controller.preset().workgroups.particle_workgroup, 128);
     }
@@ -3173,7 +3262,7 @@ mod optimization_controller_tests {
     fn test_controller_gpu_detection_amd() {
         let mut controller = FluidOptimizationController::new();
         controller.configure_for_gpu("AMD Radeon RX 7900 XTX");
-        
+
         assert!(matches!(controller.gpu_vendor(), GpuVendor::Amd));
         assert_eq!(controller.preset().workgroups.particle_workgroup, 64);
     }
@@ -3182,7 +3271,7 @@ mod optimization_controller_tests {
     fn test_controller_gpu_detection_intel() {
         let mut controller = FluidOptimizationController::new();
         controller.configure_for_gpu("Intel Arc A770");
-        
+
         assert!(matches!(controller.gpu_vendor(), GpuVendor::Intel));
         assert_eq!(controller.preset().workgroups.particle_workgroup, 64);
     }
@@ -3191,7 +3280,7 @@ mod optimization_controller_tests {
     fn test_controller_gpu_detection_apple() {
         let mut controller = FluidOptimizationController::new();
         controller.configure_for_gpu("Apple M3 Max");
-        
+
         assert!(matches!(controller.gpu_vendor(), GpuVendor::Apple));
         assert_eq!(controller.preset().workgroups.particle_workgroup, 256);
     }
@@ -3200,7 +3289,7 @@ mod optimization_controller_tests {
     fn test_controller_gpu_detection_unknown() {
         let mut controller = FluidOptimizationController::new();
         controller.configure_for_gpu("Some Unknown GPU");
-        
+
         assert!(matches!(controller.gpu_vendor(), GpuVendor::Unknown));
         // Unknown GPUs get limited quality
         assert!(controller.quality_tier() <= 2);
@@ -3209,7 +3298,7 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_target_framerate() {
         let mut controller = FluidOptimizationController::new();
-        
+
         controller.set_target_framerate(30.0);
         assert!((controller.target_frame_time_ms() - 33.33).abs() < 0.1);
 
@@ -3220,12 +3309,12 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_lod_enable_disable() {
         let mut controller = FluidOptimizationController::new();
-        
+
         assert!(controller.lod_manager().is_none());
-        
+
         controller.enable_lod([0.0, 10.0, 0.0]);
         assert!(controller.lod_manager().is_some());
-        
+
         controller.disable_lod();
         assert!(controller.lod_manager().is_none());
     }
@@ -3233,13 +3322,16 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_streaming_enable_disable() {
         let mut controller = FluidOptimizationController::new();
-        
+
         assert!(controller.streaming_manager().is_none());
-        
+
         controller.enable_streaming(50_000);
         assert!(controller.streaming_manager().is_some());
-        assert_eq!(controller.streaming_manager().unwrap().particle_budget(), 50_000);
-        
+        assert_eq!(
+            controller.streaming_manager().unwrap().particle_budget(),
+            50_000
+        );
+
         controller.disable_streaming();
         assert!(controller.streaming_manager().is_none());
     }
@@ -3247,12 +3339,12 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_record_frame() {
         let mut controller = FluidOptimizationController::new();
-        
+
         // Record some frames
         for _ in 0..10 {
             controller.record_frame(16.0);
         }
-        
+
         let status = controller.status();
         assert_eq!(status.frames_recorded, 10);
         assert!((status.avg_frame_time_ms - 16.0).abs() < 0.1);
@@ -3263,14 +3355,14 @@ mod optimization_controller_tests {
     fn test_controller_auto_tune_decrease_quality() {
         let mut controller = FluidOptimizationController::new();
         controller.set_target_framerate(60.0); // 16.67ms target
-        
+
         let initial_tier = controller.quality_tier();
-        
+
         // Simulate way over budget frames (25ms = 40 FPS)
         for _ in 0..70 {
             controller.record_frame(25.0);
         }
-        
+
         // Should have decreased quality (higher tier number)
         assert!(controller.quality_tier() > initial_tier);
     }
@@ -3279,20 +3371,20 @@ mod optimization_controller_tests {
     fn test_controller_auto_tune_increase_quality() {
         let mut controller = FluidOptimizationController::new();
         controller.set_target_framerate(60.0); // 16.67ms target
-        
+
         // Start at low quality
         controller.set_max_quality_tier(3);
         for _ in 0..70 {
             controller.record_frame(25.0);
         }
         let low_tier = controller.quality_tier();
-        
+
         // Now simulate very fast frames (5ms = 200 FPS)
         controller.reset_metrics();
         for _ in 0..70 {
             controller.record_frame(5.0);
         }
-        
+
         // Should have increased quality (lower tier number or same if already at best)
         assert!(controller.quality_tier() <= low_tier);
     }
@@ -3300,12 +3392,12 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_force_full_quality() {
         let mut controller = FluidOptimizationController::new();
-        
+
         assert!(!controller.status().force_full_quality);
-        
+
         controller.set_force_full_quality(true);
         assert!(controller.status().force_full_quality);
-        
+
         controller.set_force_full_quality(false);
         assert!(!controller.status().force_full_quality);
     }
@@ -3313,9 +3405,9 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_quality_tier_limits() {
         let mut controller = FluidOptimizationController::new();
-        
+
         controller.set_max_quality_tier(1);
-        
+
         // Tier should be clamped
         assert!(controller.quality_tier() <= 1);
     }
@@ -3324,14 +3416,14 @@ mod optimization_controller_tests {
     fn test_controller_status_display() {
         let mut controller = FluidOptimizationController::new();
         controller.configure_for_gpu("NVIDIA GeForce RTX 4090");
-        
+
         for _ in 0..5 {
             controller.record_frame(10.0);
         }
-        
+
         let status = controller.status();
         let display = format!("{}", status);
-        
+
         assert!(display.contains("Nvidia"));
         assert!(display.contains("High"));
         assert!(display.contains("FPS"));
@@ -3340,15 +3432,15 @@ mod optimization_controller_tests {
     #[test]
     fn test_controller_reset_metrics() {
         let mut controller = FluidOptimizationController::new();
-        
+
         for _ in 0..20 {
             controller.record_frame(15.0);
         }
-        
+
         assert!(controller.status().frames_recorded > 0);
-        
+
         controller.reset_metrics();
-        
+
         assert_eq!(controller.status().frames_recorded, 0);
     }
 
@@ -3356,7 +3448,7 @@ mod optimization_controller_tests {
     fn test_render_context_creation() {
         let controller = FluidOptimizationController::new();
         let context = controller.create_render_context([0.0, 10.0, 0.0]);
-        
+
         assert_eq!(context.camera_position, [0.0, 10.0, 0.0]);
         assert_eq!(context.quality_tier, 1);
         assert!(!context.force_full_quality);
@@ -3367,7 +3459,7 @@ mod optimization_controller_tests {
     fn test_render_context_distance_calculation() {
         let controller = FluidOptimizationController::new();
         let context = controller.create_render_context([0.0, 0.0, 0.0]);
-        
+
         let dist = context.distance_to([3.0, 4.0, 0.0]);
         assert!((dist - 5.0).abs() < 0.001); // 3-4-5 triangle
     }
@@ -3376,10 +3468,10 @@ mod optimization_controller_tests {
     fn test_render_context_should_simulate() {
         let controller = FluidOptimizationController::new();
         let context = controller.create_render_context([0.0, 0.0, 0.0]);
-        
+
         // Close objects should simulate
         assert!(context.should_simulate([10.0, 0.0, 0.0]));
-        
+
         // Far objects should not simulate
         assert!(!context.should_simulate([10000.0, 0.0, 0.0]));
     }
@@ -3388,10 +3480,10 @@ mod optimization_controller_tests {
     fn test_render_context_lod_for_position() {
         let controller = FluidOptimizationController::new();
         let context = controller.create_render_context([0.0, 0.0, 0.0]);
-        
+
         // Very close = LOD 0
         assert_eq!(context.lod_for_position([1.0, 0.0, 0.0]), 0);
-        
+
         // Further away = higher LOD
         let lod_far = context.lod_for_position([500.0, 0.0, 0.0]);
         assert!(lod_far > 0);
@@ -3401,11 +3493,11 @@ mod optimization_controller_tests {
     fn test_render_context_particle_factor() {
         let controller = FluidOptimizationController::new();
         let context = controller.create_render_context([0.0, 0.0, 0.0]);
-        
+
         // Close = high particle factor
         let factor_close = context.particle_factor_for_position([1.0, 0.0, 0.0]);
         assert!(factor_close >= 0.9);
-        
+
         // Far = lower particle factor
         let factor_far = context.particle_factor_for_position([200.0, 0.0, 0.0]);
         assert!(factor_far < factor_close);
@@ -3415,9 +3507,9 @@ mod optimization_controller_tests {
     fn test_render_context_force_full_quality() {
         let mut controller = FluidOptimizationController::new();
         controller.set_force_full_quality(true);
-        
+
         let context = controller.create_render_context([0.0, 0.0, 0.0]);
-        
+
         // Force full quality should always return LOD 0 and factor 1.0
         assert_eq!(context.lod_for_position([1000.0, 0.0, 0.0]), 0);
         assert!((context.particle_factor_for_position([1000.0, 0.0, 0.0]) - 1.0).abs() < 0.001);
@@ -3427,27 +3519,27 @@ mod optimization_controller_tests {
     fn test_render_context_quality_for_position() {
         let controller = FluidOptimizationController::new();
         let context = controller.create_render_context([0.0, 0.0, 0.0]);
-        
+
         // Close objects get base quality tier
         let quality_close = context.quality_for_position([1.0, 0.0, 0.0]);
-        
+
         // Far objects get degraded quality
         let quality_far = context.quality_for_position([300.0, 0.0, 0.0]);
-        
+
         assert!(quality_far >= quality_close);
     }
 
     #[test]
     fn test_controller_profiler_access() {
         let mut controller = FluidOptimizationController::new();
-        
+
         // Record some data
         controller.record_frame(15.0);
-        
+
         // Access profiler
         let profiler = controller.profiler();
         assert!(profiler.latest().is_some());
-        
+
         // Mutable access
         controller.profiler_mut().clear();
         assert!(controller.profiler().latest().is_none());
@@ -3457,15 +3549,15 @@ mod optimization_controller_tests {
     fn test_controller_recommendations() {
         let mut controller = FluidOptimizationController::new();
         controller.set_target_framerate(60.0);
-        
+
         // Initially no recommendations (no data)
         assert!(controller.get_recommendations().is_empty());
-        
+
         // Record fast frames
         for _ in 0..10 {
             controller.record_frame(5.0);
         }
-        
+
         // Now we should have recommendations
         let recs = controller.get_recommendations();
         // May or may not have recommendations depending on metrics
@@ -3477,7 +3569,7 @@ mod optimization_controller_tests {
     fn test_controller_preset_access() {
         let controller = FluidOptimizationController::with_preset(OptimizationPreset::quality());
         let preset = controller.preset();
-        
+
         assert!(preset.budget.target_ms >= 6.0);
         assert!(preset.adaptive_iterations.max_iterations >= 3);
     }
@@ -3489,9 +3581,9 @@ mod optimization_controller_tests {
         controller.enable_lod([0.0, 0.0, 0.0]);
         controller.enable_streaming(10000);
         controller.record_frame(12.0);
-        
+
         let status = controller.status();
-        
+
         assert!(matches!(status.gpu_vendor, GpuVendor::Amd));
         assert!(status.lod_enabled);
         assert!(status.streaming_enabled);
@@ -3504,14 +3596,14 @@ mod optimization_controller_tests {
     fn test_controller_auto_tune_disabled() {
         let mut controller = FluidOptimizationController::new();
         controller.set_auto_tune(false);
-        
+
         let initial_tier = controller.quality_tier();
-        
+
         // Even with terrible frame times, quality shouldn't change
         for _ in 0..100 {
             controller.record_frame(50.0);
         }
-        
+
         assert_eq!(controller.quality_tier(), initial_tier);
     }
 
@@ -3520,17 +3612,17 @@ mod optimization_controller_tests {
     #[test]
     fn test_recommended_iterations() {
         let mut controller = FluidOptimizationController::new();
-        
+
         // High quality tier (1) should return moderate iterations
         assert_eq!(controller.quality_tier(), 1);
         let iters = controller.recommended_iterations();
         assert!(iters >= 2 && iters <= 8);
-        
+
         // Force lower quality tier
         for _ in 0..100 {
             controller.record_frame(50.0); // Over budget
         }
-        
+
         // Lower quality tier should return fewer iterations
         let iters_low = controller.recommended_iterations();
         assert!(iters_low <= iters);
@@ -3540,16 +3632,16 @@ mod optimization_controller_tests {
     fn test_is_within_budget() {
         let mut controller = FluidOptimizationController::new();
         controller.set_target_framerate(60.0); // 16.67ms target
-        
+
         // Initially within budget (no frames recorded)
         assert!(controller.is_within_budget());
-        
+
         // Record fast frames
         for _ in 0..10 {
             controller.record_frame(5.0);
         }
         assert!(controller.is_within_budget());
-        
+
         // Record slow frames
         controller.reset_metrics();
         for _ in 0..10 {
@@ -3562,17 +3654,17 @@ mod optimization_controller_tests {
     fn test_budget_headroom() {
         let mut controller = FluidOptimizationController::new();
         controller.set_target_framerate(60.0); // 16.67ms target
-        
+
         // Initially 100% headroom
         assert_eq!(controller.budget_headroom(), 100.0);
-        
+
         // Record frame at 50% of budget
         for _ in 0..10 {
             controller.record_frame(8.33);
         }
         let headroom = controller.budget_headroom();
         assert!(headroom > 40.0 && headroom < 60.0); // ~50% headroom
-        
+
         // Record frame over budget
         controller.reset_metrics();
         for _ in 0..10 {
@@ -3591,10 +3683,10 @@ mod optimization_controller_tests {
             quality_tier: 0,
             within_budget: true,
         };
-        
+
         assert!(result.suggests_quality_increase());
         assert!(!result.suggests_quality_decrease());
-        
+
         let over_budget = OptimizedStepResult {
             frame_time_ms: 25.0,
             iterations_used: 4,
@@ -3602,7 +3694,7 @@ mod optimization_controller_tests {
             quality_tier: 2,
             within_budget: false,
         };
-        
+
         assert!(!over_budget.suggests_quality_increase());
         assert!(over_budget.suggests_quality_decrease());
     }
@@ -3611,14 +3703,14 @@ mod optimization_controller_tests {
     fn test_frame_guard_elapsed() {
         let mut controller = FluidOptimizationController::new();
         let guard = controller.begin_frame([0.0, 0.0, 0.0]);
-        
+
         // Should have some elapsed time
         std::thread::sleep(std::time::Duration::from_millis(1));
         assert!(guard.elapsed_ms() > 0.0);
-        
+
         // Camera position should be preserved
         assert_eq!(guard.camera_position(), [0.0, 0.0, 0.0]);
-        
+
         // Quality tier should match controller
         assert_eq!(guard.quality_tier(), 1);
     }
@@ -3627,11 +3719,11 @@ mod optimization_controller_tests {
     fn test_frame_guard_render_context() {
         let mut controller = FluidOptimizationController::new();
         controller.enable_lod([5.0, 5.0, 5.0]);
-        
+
         let expected_tier = controller.quality_tier();
         let guard = controller.begin_frame([10.0, 10.0, 10.0]);
         let context = guard.render_context();
-        
+
         assert_eq!(context.camera_position, [10.0, 10.0, 10.0]);
         assert_eq!(context.quality_tier, expected_tier);
     }
@@ -3640,10 +3732,10 @@ mod optimization_controller_tests {
     fn test_record_step_result() {
         let mut controller = FluidOptimizationController::new();
         controller.enable_lod([0.0, 0.0, 0.0]);
-        
+
         // Record should update metrics
         controller.record_step_result(10.0, [5.0, 5.0, 5.0]);
-        
+
         let status = controller.status();
         assert!(status.frames_recorded > 0);
         assert!(status.avg_frame_time_ms > 0.0);
@@ -3652,11 +3744,11 @@ mod optimization_controller_tests {
     #[test]
     fn test_set_get_iterations() {
         let mut adaptive = AdaptiveIterations::new(2, 8);
-        
+
         // Current should be within bounds
         assert!(adaptive.current() >= 2);
         assert!(adaptive.current() <= 8);
-        
+
         // Reset should work
         adaptive.reset();
         assert!(adaptive.current() >= 2);
@@ -3665,22 +3757,22 @@ mod optimization_controller_tests {
     #[test]
     fn test_set_quality_tier() {
         let mut controller = FluidOptimizationController::new();
-        
+
         // Initial tier should be 1 (High quality - default for new controller)
         assert_eq!(controller.quality_tier(), 1);
-        
+
         // Set tier to 2 (Medium)
         controller.set_quality_tier(2);
         assert_eq!(controller.quality_tier(), 2);
-        
+
         // Set tier to 3 (Low)
         controller.set_quality_tier(3);
         assert_eq!(controller.quality_tier(), 3);
-        
+
         // Setting tier beyond max should clamp to max_quality_tier
         controller.set_quality_tier(10);
         assert_eq!(controller.quality_tier(), 3); // Clamped to 3 (max)
-        
+
         // Set tier back to 0 (Essential)
         controller.set_quality_tier(0);
         assert_eq!(controller.quality_tier(), 0);
@@ -3690,18 +3782,18 @@ mod optimization_controller_tests {
     fn test_status_within_budget_field() {
         let mut controller = FluidOptimizationController::new();
         controller.set_target_framerate(60.0); // 16.67ms budget
-        
+
         // Initially within budget (no frames recorded)
         let status = controller.status();
         assert!(status.within_budget);
-        
+
         // Record frames well under budget
         for _ in 0..10 {
             controller.record_frame(10.0); // 10ms < 16.67ms
         }
         let status = controller.status();
         assert!(status.within_budget);
-        
+
         // Reset and record frames over budget
         controller.reset_metrics();
         for _ in 0..10 {

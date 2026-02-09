@@ -18,12 +18,12 @@ use astraweave_net::{
 /// Strategy for generating valid EntityState values
 fn entity_state_strategy() -> impl Strategy<Value = EntityState> {
     (
-        1u32..1000,           // id
-        -1000i32..1000,       // pos.x
-        -1000i32..1000,       // pos.y
-        1i32..100,            // hp
-        0u8..4,               // team
-        0i32..100,            // ammo
+        1u32..1000,     // id
+        -1000i32..1000, // pos.x
+        -1000i32..1000, // pos.y
+        1i32..100,      // hp
+        0u8..4,         // team
+        0i32..100,      // ammo
     )
         .prop_map(|(id, x, y, hp, team, ammo)| EntityState {
             id,
@@ -47,17 +47,17 @@ fn entity_vec_strategy(max_entities: usize) -> impl Strategy<Value = Vec<EntityS
 /// Strategy for generating Snapshot values
 fn snapshot_strategy() -> impl Strategy<Value = Snapshot> {
     (
-        0u64..10000,               // tick
-        0.0f32..1000.0,            // t
-        0u32..10000,               // seq
-        entity_vec_strategy(20),   // entities
+        0u64..10000,             // tick
+        0.0f32..1000.0,          // t
+        0u32..10000,             // seq
+        entity_vec_strategy(20), // entities
     )
         .prop_map(|(tick, t, seq, entities)| Snapshot {
             version: 1,
             tick,
             t,
             seq,
-            world_hash: 0,  // Will be computed
+            world_hash: 0, // Will be computed
             entities,
         })
 }
@@ -65,13 +65,13 @@ fn snapshot_strategy() -> impl Strategy<Value = Snapshot> {
 /// Strategy for generating EntityDelta values
 fn entity_delta_strategy() -> impl Strategy<Value = EntityDelta> {
     (
-        1u32..1000,                          // id
-        0u8..16,                             // mask
+        1u32..1000,                           // id
+        0u8..16,                              // mask
         proptest::option::of(-1000i32..1000), // pos.x
         proptest::option::of(-1000i32..1000), // pos.y
-        proptest::option::of(1i32..100),     // hp
-        proptest::option::of(0u8..4),        // team
-        proptest::option::of(0i32..100),     // ammo
+        proptest::option::of(1i32..100),      // hp
+        proptest::option::of(0u8..4),         // team
+        proptest::option::of(0i32..100),      // ammo
     )
         .prop_map(|(id, mask, px, py, hp, team, ammo)| EntityDelta {
             id,
@@ -86,10 +86,10 @@ fn entity_delta_strategy() -> impl Strategy<Value = EntityDelta> {
 /// Strategy for generating Delta values
 fn delta_strategy() -> impl Strategy<Value = Delta> {
     (
-        0u64..10000,                                      // base_tick
-        0u64..10000,                                      // tick
+        0u64..10000,                                           // base_tick
+        0u64..10000,                                           // tick
         prop::collection::vec(entity_delta_strategy(), 0..10), // changed
-        prop::collection::vec(1u32..1000, 0..5),          // removed
+        prop::collection::vec(1u32..1000, 0..5),               // removed
     )
         .prop_map(|(base_tick, tick, changed, removed)| Delta {
             base_tick,
@@ -154,8 +154,8 @@ proptest! {
         target.team = viewer.team;
         // Put target far away
         target.pos = IVec2::new(viewer.pos.x + 10000, viewer.pos.y + 10000);
-        
-        prop_assert!(interest.include(&viewer, &target), 
+
+        prop_assert!(interest.include(&viewer, &target),
             "Same team should always be included");
     }
 
@@ -167,12 +167,12 @@ proptest! {
         mut target in entity_state_strategy()
     ) {
         let interest = RadiusTeamInterest { radius };
-        
+
         // Different team
         target.team = (viewer.team + 1) % 4;
         // Place target within radius
         target.pos = IVec2::new(viewer.pos.x + radius / 2, viewer.pos.y);
-        
+
         prop_assert!(interest.include(&viewer, &target),
             "Target within radius should be included");
     }
@@ -185,12 +185,12 @@ proptest! {
         mut target in entity_state_strategy()
     ) {
         let interest = RadiusTeamInterest { radius };
-        
+
         // Different team
         target.team = (viewer.team + 1) % 4;
         // Place target well outside radius
         target.pos = IVec2::new(viewer.pos.x + radius * 3, viewer.pos.y + radius * 3);
-        
+
         prop_assert!(!interest.include(&viewer, &target),
             "Target outside radius should be excluded");
     }

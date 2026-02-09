@@ -220,10 +220,7 @@ fn bench_social_graph(c: &mut Criterion) {
             let mut factions: HashMap<u32, Vec<AgentId>> = HashMap::new();
 
             for agent in &agents {
-                factions
-                    .entry(agent.faction)
-                    .or_default()
-                    .push(agent.id);
+                factions.entry(agent.faction).or_default().push(agent.id);
             }
 
             let sizes: Vec<usize> = factions.values().map(|v| v.len()).collect();
@@ -245,10 +242,7 @@ fn bench_social_graph(c: &mut Criterion) {
                 }
             }
 
-            let total: f32 = graph
-                .values()
-                .flat_map(|c| c.iter().map(|(_, r)| r))
-                .sum();
+            let total: f32 = graph.values().flat_map(|c| c.iter().map(|(_, r)| r)).sum();
 
             black_box(total)
         });
@@ -415,7 +409,9 @@ fn bench_world_events(c: &mut Criterion) {
                     },
                     position: [(i % 100) as f32, ((i / 100) % 100) as f32, 0.0],
                     timestamp: i as f64 * 0.1,
-                    involved_agents: (0..(i % 5 + 1)).map(|j| AgentId((i * 10 + j) as u64)).collect(),
+                    involved_agents: (0..(i % 5 + 1))
+                        .map(|j| AgentId((i * 10 + j) as u64))
+                        .collect(),
                 })
                 .collect();
 
@@ -457,11 +453,7 @@ fn bench_world_events(c: &mut Criterion) {
             .map(|i| WorldEvent {
                 id: i as u64,
                 event_type: EventType::Combat,
-                position: [
-                    (i % 100) as f32,
-                    ((i / 100) % 100) as f32,
-                    0.0,
-                ],
+                position: [(i % 100) as f32, ((i / 100) % 100) as f32, 0.0],
                 timestamp: 0.0,
                 involved_agents: vec![],
             })
@@ -671,7 +663,11 @@ fn bench_narrative_coherence(c: &mut Criterion) {
         let events: Vec<WorldEvent> = (0..100)
             .map(|i| WorldEvent {
                 id: i as u64,
-                event_type: if i % 2 == 0 { EventType::Combat } else { EventType::Trade },
+                event_type: if i % 2 == 0 {
+                    EventType::Combat
+                } else {
+                    EventType::Trade
+                },
                 position: [(i % 10) as f32, 0.0, 0.0],
                 timestamp: i as f64,
                 involved_agents: vec![AgentId(i as u64), AgentId((i + 1) as u64)],
@@ -728,17 +724,20 @@ fn bench_decision_making(c: &mut Criterion) {
                         .enumerate()
                         .map(|(i, _)| {
                             let utility = match i {
-                                0 => 0.5 + agent.position[0] * 0.01, // attack
-                                1 => 0.3 + agent.position[1] * 0.01, // defend
+                                0 => 0.5 + agent.position[0] * 0.01,          // attack
+                                1 => 0.3 + agent.position[1] * 0.01,          // defend
                                 2 => 0.1 + (agent.id.0 as f32 % 10.0) * 0.05, // flee
-                                3 => 0.4 - agent.position[0] * 0.005, // heal
-                                _ => 0.2, // scout
+                                3 => 0.4 - agent.position[0] * 0.005,         // heal
+                                _ => 0.2,                                     // scout
                             };
                             (i, utility)
                         })
                         .collect();
 
-                    let best = utilities.iter().max_by(|a, b| a.1.partial_cmp(&b.1).unwrap()).unwrap();
+                    let best = utilities
+                        .iter()
+                        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                        .unwrap();
                     (actions[best.0], best.1)
                 })
                 .collect();
@@ -770,7 +769,10 @@ fn bench_decision_making(c: &mut Criterion) {
                 *votes.entry(preferred).or_insert(0.0) += weight;
             }
 
-            let winner = votes.iter().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).map(|(k, _)| *k);
+            let winner = votes
+                .iter()
+                .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+                .map(|(k, _)| *k);
             black_box(winner)
         });
     });
@@ -933,7 +935,8 @@ fn bench_communication(c: &mut Criterion) {
         bencher.iter(|| {
             let mut current_informed = informed.clone();
 
-            for _ in 0..10 { // 10 rounds
+            for _ in 0..10 {
+                // 10 rounds
                 let newly_informed: Vec<u64> = current_informed
                     .iter()
                     .flat_map(|&informer| {

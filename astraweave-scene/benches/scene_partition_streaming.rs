@@ -42,7 +42,11 @@ impl Transform {
     }
 
     pub fn from_trs(translation: Vec3, rotation: Quat, scale: Vec3) -> Self {
-        Self { translation, rotation, scale }
+        Self {
+            translation,
+            rotation,
+            scale,
+        }
     }
 }
 
@@ -72,7 +76,9 @@ pub struct Scene {
 
 impl Scene {
     pub fn new() -> Self {
-        Self { root: Node::new("root") }
+        Self {
+            root: Node::new("root"),
+        }
     }
 
     pub fn traverse<'a>(&'a self, f: &mut impl FnMut(&'a Node, Mat4)) {
@@ -286,9 +292,21 @@ impl Frustum {
             let d = plane.w;
 
             let p = Vec3::new(
-                if normal.x >= 0.0 { aabb.max.x } else { aabb.min.x },
-                if normal.y >= 0.0 { aabb.max.y } else { aabb.min.y },
-                if normal.z >= 0.0 { aabb.max.z } else { aabb.min.z },
+                if normal.x >= 0.0 {
+                    aabb.max.x
+                } else {
+                    aabb.min.x
+                },
+                if normal.y >= 0.0 {
+                    aabb.max.y
+                } else {
+                    aabb.min.y
+                },
+                if normal.z >= 0.0 {
+                    aabb.max.z
+                } else {
+                    aabb.min.z
+                },
             );
 
             if normal.dot(p) + d < 0.0 {
@@ -467,7 +485,10 @@ pub struct CellGpuResources {
 
 impl CellGpuResources {
     pub fn new(coord: GridCoord) -> Self {
-        Self { coord, memory_usage: 0 }
+        Self {
+            coord,
+            memory_usage: 0,
+        }
     }
 }
 
@@ -544,7 +565,10 @@ pub struct CellEntities {
 
 impl CellEntities {
     pub fn new(cell: GridCoord) -> Self {
-        Self { cell, entities: Vec::new() }
+        Self {
+            cell,
+            entities: Vec::new(),
+        }
     }
 
     pub fn add_entity(&mut self, entity: u64) {
@@ -614,11 +638,13 @@ fn bench_transform_operations(c: &mut Criterion) {
 
     group.bench_function("matrix_chain_5", |b| {
         let transforms: Vec<Transform> = (0..5)
-            .map(|i| Transform::from_trs(
-                Vec3::new(i as f32, 0.0, 0.0),
-                Quat::from_rotation_y(i as f32 * 0.1),
-                Vec3::ONE,
-            ))
+            .map(|i| {
+                Transform::from_trs(
+                    Vec3::new(i as f32, 0.0, 0.0),
+                    Quat::from_rotation_y(i as f32 * 0.1),
+                    Vec3::ONE,
+                )
+            })
             .collect();
         b.iter(|| {
             let mut result = Mat4::IDENTITY;
@@ -660,9 +686,7 @@ fn bench_scene_graph_operations(c: &mut Criterion) {
     });
 
     // Scene creation
-    group.bench_function("scene_creation", |b| {
-        b.iter(|| black_box(Scene::new()))
-    });
+    group.bench_function("scene_creation", |b| b.iter(|| black_box(Scene::new())));
 
     // Scene traversal - varying depths
     for depth in [1, 5, 10, 20] {
@@ -923,7 +947,10 @@ fn bench_frustum_culling(c: &mut Criterion) {
     });
 
     group.bench_function("intersects_aabb_outside", |b| {
-        let aabb = AABB::new(Vec3::new(200.0, 200.0, 200.0), Vec3::new(300.0, 300.0, 300.0));
+        let aabb = AABB::new(
+            Vec3::new(200.0, 200.0, 200.0),
+            Vec3::new(300.0, 300.0, 300.0),
+        );
         b.iter(|| black_box(frustum.intersects_aabb(&aabb)))
     });
 
@@ -949,7 +976,10 @@ fn bench_frustum_culling(c: &mut Criterion) {
                     })
                     .collect();
                 b.iter(|| {
-                    let visible: Vec<bool> = aabbs.iter().map(|aabb| frustum.intersects_aabb(aabb)).collect();
+                    let visible: Vec<bool> = aabbs
+                        .iter()
+                        .map(|aabb| frustum.intersects_aabb(aabb))
+                        .collect();
                     black_box(visible)
                 })
             },
@@ -971,9 +1001,7 @@ fn bench_lru_cache_operations(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("creation", capacity),
             &capacity,
-            |b, &capacity| {
-                b.iter(|| black_box(LRUCache::new(capacity)))
-            },
+            |b, &capacity| b.iter(|| black_box(LRUCache::new(capacity))),
         );
     }
 
@@ -984,7 +1012,10 @@ fn bench_lru_cache_operations(c: &mut Criterion) {
         b.iter(|| {
             cache.touch(GridCoord::new(i, 0, 0));
             i += 1;
-            if i > 100 { i = 0; cache = LRUCache::new(10); }
+            if i > 100 {
+                i = 0;
+                cache = LRUCache::new(10);
+            }
         })
     });
 
@@ -1366,7 +1397,7 @@ fn bench_spatial_queries(c: &mut Criterion) {
     group.bench_function("query_radius_entities", |b| {
         let mut partition = WorldPartition::new(GridConfig::default());
         let mut cell_entities: HashMap<GridCoord, CellEntities> = HashMap::new();
-        
+
         // Populate grid
         for x in -5..=5 {
             for z in -5..=5 {
@@ -1379,7 +1410,7 @@ fn bench_spatial_queries(c: &mut Criterion) {
                 cell_entities.insert(coord, ce);
             }
         }
-        
+
         let center = Vec3::new(0.0, 0.0, 0.0);
         b.iter(|| {
             let cells = partition.cells_in_radius(center, 300.0);

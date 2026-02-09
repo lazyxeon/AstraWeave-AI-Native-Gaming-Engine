@@ -107,8 +107,8 @@ impl WorkgroupConfig {
     /// Optimized for NVIDIA GPUs (wave size 32)
     pub const fn nvidia() -> Self {
         Self {
-            particle_workgroup: 128,  // 4 warps = good occupancy
-            grid_workgroup: 256,      // Grid ops are simple, more parallelism helps
+            particle_workgroup: 128, // 4 warps = good occupancy
+            grid_workgroup: 256,     // Grid ops are simple, more parallelism helps
             secondary_workgroup: 64,
         }
     }
@@ -116,7 +116,7 @@ impl WorkgroupConfig {
     /// Optimized for AMD GPUs (wave64 mode)
     pub const fn amd() -> Self {
         Self {
-            particle_workgroup: 64,   // 1 wave
+            particle_workgroup: 64, // 1 wave
             grid_workgroup: 64,
             secondary_workgroup: 64,
         }
@@ -134,7 +134,7 @@ impl WorkgroupConfig {
     /// Optimized for Apple Silicon (Metal)
     pub const fn apple() -> Self {
         Self {
-            particle_workgroup: 256,  // Apple Silicon handles larger workgroups well
+            particle_workgroup: 256, // Apple Silicon handles larger workgroups well
             grid_workgroup: 256,
             secondary_workgroup: 64,
         }
@@ -157,9 +157,15 @@ impl WorkgroupConfig {
         let vendor_lower = info.vendor.to_string().to_lowercase();
         let name_lower = info.name.to_lowercase();
 
-        if vendor_lower.contains("nvidia") || name_lower.contains("nvidia") || name_lower.contains("geforce") {
+        if vendor_lower.contains("nvidia")
+            || name_lower.contains("nvidia")
+            || name_lower.contains("geforce")
+        {
             Self::nvidia()
-        } else if vendor_lower.contains("amd") || name_lower.contains("amd") || name_lower.contains("radeon") {
+        } else if vendor_lower.contains("amd")
+            || name_lower.contains("amd")
+            || name_lower.contains("radeon")
+        {
             Self::amd()
         } else if vendor_lower.contains("intel") || name_lower.contains("intel") {
             Self::intel()
@@ -231,8 +237,8 @@ impl AdaptiveIterations {
             current: min_iterations.max(4).min(max_iterations),
             error_history: VecDeque::with_capacity(8),
             history_size: 8,
-            increase_threshold: 0.05,  // 5% average density error
-            decrease_threshold: 0.01,  // 1% average density error
+            increase_threshold: 0.05, // 5% average density error
+            decrease_threshold: 0.01, // 1% average density error
         }
     }
 
@@ -460,12 +466,7 @@ impl BatchSpawner {
     /// Queue a particle for spawning.
     ///
     /// Returns `true` if the batch is full and should be flushed.
-    pub fn queue(
-        &mut self,
-        position: [f32; 3],
-        velocity: [f32; 3],
-        color: [f32; 4],
-    ) -> bool {
+    pub fn queue(&mut self, position: [f32; 3], velocity: [f32; 3], color: [f32; 4]) -> bool {
         self.positions.push(position);
         self.velocities.push(velocity);
         self.colors.push(color);
@@ -687,7 +688,10 @@ impl TemporalCoherence {
 
     /// Get count of particles at rest (not being simulated)
     pub fn resting_particle_count(&self) -> usize {
-        self.rest_counts.iter().filter(|&&c| c >= self.rest_frame_threshold).count()
+        self.rest_counts
+            .iter()
+            .filter(|&&c| c >= self.rest_frame_threshold)
+            .count()
     }
 }
 
@@ -740,7 +744,7 @@ impl OptimizationPreset {
             adaptive_iterations: AdaptiveIterations::new(2, 4),
             budget: SimulationBudget::new(2.0), // 2ms budget
             temporal_coherence: TemporalCoherence::new(0.05, 3), // Aggressive rest detection
-            use_morton_sorting: false, // Skip sorting overhead
+            use_morton_sorting: false,          // Skip sorting overhead
         }
     }
 
@@ -821,44 +825,44 @@ mod tests {
     fn test_adaptive_iterations_increase() {
         let mut adaptive = AdaptiveIterations::new(2, 8);
         let initial = adaptive.current();
-        
+
         // High error should increase iterations
         for _ in 0..10 {
             adaptive.update(0.1); // Above increase threshold
         }
-        
+
         assert!(adaptive.current() > initial);
     }
 
     #[test]
     fn test_adaptive_iterations_decrease() {
         let mut adaptive = AdaptiveIterations::new(2, 8);
-        
+
         // Start at max
         for _ in 0..10 {
             adaptive.update(0.1);
         }
-        
+
         let high = adaptive.current();
-        
+
         // Low error should decrease iterations
         for _ in 0..20 {
             adaptive.update(0.001);
         }
-        
+
         assert!(adaptive.current() < high);
     }
 
     #[test]
     fn test_adaptive_iterations_bounds() {
         let mut adaptive = AdaptiveIterations::new(2, 8);
-        
+
         // Push to max
         for _ in 0..100 {
             adaptive.update(1.0);
         }
         assert_eq!(adaptive.current(), 8);
-        
+
         // Push to min
         for _ in 0..100 {
             adaptive.update(0.0);
@@ -869,11 +873,11 @@ mod tests {
     #[test]
     fn test_adaptive_iterations_reset() {
         let mut adaptive = AdaptiveIterations::new(2, 8);
-        
+
         for _ in 0..10 {
             adaptive.update(0.1);
         }
-        
+
         adaptive.reset();
         assert_eq!(adaptive.current(), 4);
         assert_eq!(adaptive.smoothed_error(), 0.0);
@@ -891,46 +895,46 @@ mod tests {
     #[test]
     fn test_simulation_budget_over_budget() {
         let mut budget = SimulationBudget::new(4.0);
-        
+
         // Consistently over budget
         for _ in 0..20 {
             budget.record_frame(6.0);
         }
-        
+
         assert!(budget.quality() < 1.0);
     }
 
     #[test]
     fn test_simulation_budget_under_budget() {
         let mut budget = SimulationBudget::new(4.0);
-        
+
         // Start at reduced quality
         for _ in 0..10 {
             budget.record_frame(6.0);
         }
-        
+
         let reduced = budget.quality();
-        
+
         // Now consistently under budget
         for _ in 0..50 {
             budget.record_frame(2.0);
         }
-        
+
         assert!(budget.quality() > reduced);
     }
 
     #[test]
     fn test_simulation_budget_recommended_iterations() {
         let mut budget = SimulationBudget::new(4.0);
-        
+
         // Full quality
         assert_eq!(budget.recommended_iterations(4), 4);
-        
+
         // Reduce quality
         for _ in 0..30 {
             budget.record_frame(10.0);
         }
-        
+
         // Should recommend fewer iterations
         assert!(budget.recommended_iterations(4) <= 4);
     }
@@ -938,7 +942,7 @@ mod tests {
     #[test]
     fn test_simulation_budget_feature_enabled() {
         let budget = SimulationBudget::new(4.0);
-        
+
         assert!(budget.feature_enabled(QualityTier::Essential));
         assert!(budget.feature_enabled(QualityTier::High));
         assert!(budget.feature_enabled(QualityTier::Medium));
@@ -948,11 +952,11 @@ mod tests {
     #[test]
     fn test_simulation_budget_reset() {
         let mut budget = SimulationBudget::new(4.0);
-        
+
         for _ in 0..30 {
             budget.record_frame(10.0);
         }
-        
+
         budget.reset();
         assert_eq!(budget.quality(), 1.0);
         assert_eq!(budget.average_frame_time(), 0.0);
@@ -970,9 +974,9 @@ mod tests {
     #[test]
     fn test_batch_spawner_queue() {
         let mut spawner = BatchSpawner::new(100);
-        
+
         let full = spawner.queue([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
-        
+
         assert!(!full);
         assert!(!spawner.is_empty());
         assert_eq!(spawner.pending_count(), 1);
@@ -981,30 +985,26 @@ mod tests {
     #[test]
     fn test_batch_spawner_queue_many() {
         let mut spawner = BatchSpawner::new(100);
-        
+
         let positions = [[0.0, 0.0, 0.0]; 10];
         let velocities = [[1.0, 0.0, 0.0]; 10];
         let colors = [[1.0, 1.0, 1.0, 1.0]; 10];
-        
+
         spawner.queue_many(&positions, &velocities, &colors);
-        
+
         assert_eq!(spawner.pending_count(), 10);
     }
 
     #[test]
     fn test_batch_spawner_flush() {
         let mut spawner = BatchSpawner::new(100);
-        
+
         for i in 0..5 {
-            spawner.queue(
-                [i as f32, 0.0, 0.0],
-                [0.0, 0.0, 0.0],
-                [1.0, 1.0, 1.0, 1.0],
-            );
+            spawner.queue([i as f32, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
         }
-        
+
         let (pos, vel, col) = spawner.flush();
-        
+
         assert_eq!(pos.len(), 5);
         assert_eq!(vel.len(), 5);
         assert_eq!(col.len(), 5);
@@ -1014,16 +1014,12 @@ mod tests {
     #[test]
     fn test_batch_spawner_full_signal() {
         let mut spawner = BatchSpawner::new(5);
-        
+
         for i in 0..4 {
-            let full = spawner.queue(
-                [i as f32, 0.0, 0.0],
-                [0.0, 0.0, 0.0],
-                [1.0, 1.0, 1.0, 1.0],
-            );
+            let full = spawner.queue([i as f32, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
             assert!(!full);
         }
-        
+
         // Fifth should signal full
         let full = spawner.queue([4.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
         assert!(full);
@@ -1032,10 +1028,10 @@ mod tests {
     #[test]
     fn test_batch_spawner_clear() {
         let mut spawner = BatchSpawner::new(100);
-        
+
         spawner.queue([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
         assert!(!spawner.is_empty());
-        
+
         spawner.clear();
         assert!(spawner.is_empty());
     }
@@ -1071,7 +1067,7 @@ mod tests {
     fn test_morton_code_from_position() {
         let world_min = [-10.0, -10.0, -10.0];
         let world_max = [10.0, 10.0, 10.0];
-        
+
         // Center should map to middle of grid
         let code_center = MortonCode::from_position([0.0, 0.0, 0.0], world_min, world_max, 64);
         let (x, y, z) = MortonCode::decode(code_center);
@@ -1084,7 +1080,7 @@ mod tests {
     fn test_morton_code_corners() {
         let world_min = [0.0, 0.0, 0.0];
         let world_max = [1.0, 1.0, 1.0];
-        
+
         // Near origin
         let code = MortonCode::from_position([0.01, 0.01, 0.01], world_min, world_max, 64);
         let (x, y, z) = MortonCode::decode(code);
@@ -1107,7 +1103,7 @@ mod tests {
     fn test_temporal_coherence_should_simulate_moving() {
         let mut tc = TemporalCoherence::new(0.01, 5);
         tc.init(10);
-        
+
         // Fast particle should always simulate
         for _ in 0..10 {
             assert!(tc.should_simulate(0, 1.0));
@@ -1118,7 +1114,7 @@ mod tests {
     fn test_temporal_coherence_should_simulate_resting() {
         let mut tc = TemporalCoherence::new(0.01, 3);
         tc.init(10);
-        
+
         // First few frames should simulate even if slow (until threshold reached)
         // Frame 1: rest_count becomes 1 (< 3), so simulate = true
         assert!(tc.should_simulate(0, 0.001));
@@ -1126,7 +1122,7 @@ mod tests {
         assert!(tc.should_simulate(0, 0.001));
         // Frame 3: rest_count becomes 3 (>= 3), so simulate = false
         assert!(!tc.should_simulate(0, 0.001));
-        
+
         // After threshold, should skip
         assert!(!tc.should_simulate(0, 0.001));
     }
@@ -1135,15 +1131,15 @@ mod tests {
     fn test_temporal_coherence_wake_up() {
         let mut tc = TemporalCoherence::new(0.01, 3);
         tc.init(10);
-        
+
         // Put particle to rest
         for _ in 0..5 {
             tc.should_simulate(0, 0.001);
         }
-        
+
         // Wake it up with movement
         assert!(tc.should_simulate(0, 1.0));
-        
+
         // Should stay awake
         assert!(tc.should_simulate(0, 0.001));
     }
@@ -1152,17 +1148,17 @@ mod tests {
     fn test_temporal_coherence_reset() {
         let mut tc = TemporalCoherence::new(0.01, 3);
         tc.init(10);
-        
+
         // Put particles to rest
         for _ in 0..10 {
             for i in 0..10 {
                 tc.should_simulate(i, 0.001);
             }
         }
-        
+
         let resting = tc.resting_particle_count();
         assert!(resting > 0);
-        
+
         tc.reset();
         assert_eq!(tc.resting_particle_count(), 0);
     }
@@ -1172,7 +1168,7 @@ mod tests {
         let mut tc = TemporalCoherence::new(0.01, 3);
         tc.enabled = false;
         tc.init(10);
-        
+
         // Should always simulate when disabled
         for _ in 0..10 {
             assert!(tc.should_simulate(0, 0.0));
@@ -1217,21 +1213,21 @@ mod tests {
     fn test_full_optimization_workflow() {
         // Create optimization preset
         let mut preset = OptimizationPreset::balanced();
-        
+
         // Initialize temporal coherence
         preset.temporal_coherence.init(1000);
-        
+
         // Simulate some frames
         for frame in 0..100 {
             // Record frame time
             let simulated_time = 3.5 + (frame as f32 * 0.01).sin() * 0.5;
             preset.budget.record_frame(simulated_time);
-            
+
             // Update adaptive iterations
             let error = 0.02 + (frame as f32 * 0.1).sin() * 0.02;
             preset.adaptive_iterations.update(error);
         }
-        
+
         // Quality should still be near 1.0 since we're under budget
         assert!(preset.budget.quality() > 0.9);
     }
@@ -1240,18 +1236,14 @@ mod tests {
     fn test_batch_spawner_with_budget() {
         let budget = SimulationBudget::new(4.0);
         let mut spawner = BatchSpawner::new(100);
-        
+
         // Only spawn if we have budget
         if budget.feature_enabled(QualityTier::Low) {
             for i in 0..50 {
-                spawner.queue(
-                    [i as f32, 0.0, 0.0],
-                    [0.0, -1.0, 0.0],
-                    [1.0, 1.0, 1.0, 1.0],
-                );
+                spawner.queue([i as f32, 0.0, 0.0], [0.0, -1.0, 0.0], [1.0, 1.0, 1.0, 1.0]);
             }
         }
-        
+
         assert_eq!(spawner.pending_count(), 50);
     }
 }
@@ -1500,8 +1492,19 @@ mod gpu_config_tests {
     #[test]
     fn test_optimized_sim_params_creation() {
         let params = OptimizedSimParams::new(
-            0.5, 1000.0, 1.0, 0.01, 0.05, -9.81, 0.016,
-            10000, [64, 64, 64], 0.5, 5, 4, 0.95,
+            0.5,
+            1000.0,
+            1.0,
+            0.01,
+            0.05,
+            -9.81,
+            0.016,
+            10000,
+            [64, 64, 64],
+            0.5,
+            5,
+            4,
+            0.95,
         );
         assert_eq!(params.particle_count, 10000);
         assert_eq!(params.iterations, 4);
@@ -1518,7 +1521,9 @@ mod gpu_config_tests {
     #[test]
     fn test_particle_state_gpu_resting() {
         // Simulate a particle that has been resting for 10 frames
-        let state = ParticleStateGpu { flags: (10 << 2) | 0x01 };
+        let state = ParticleStateGpu {
+            flags: (10 << 2) | 0x01,
+        };
         assert!(state.is_resting());
         assert_eq!(state.rest_frame_count(), 10);
     }
@@ -1638,12 +1643,7 @@ impl OptimizationMetrics {
     }
 
     /// Record temporal coherence state
-    pub fn record_temporal_state(
-        &mut self,
-        resting: u32,
-        new_rests: u32,
-        new_wakes: u32,
-    ) {
+    pub fn record_temporal_state(&mut self, resting: u32, new_rests: u32, new_wakes: u32) {
         self.resting_particles = resting;
         self.rest_transitions += new_rests as u64;
         self.wake_transitions += new_wakes as u64;
@@ -1716,7 +1716,11 @@ impl OptimizationMetrics {
              ─────────────────────────────────────────────────",
             self.frames_processed,
             self.avg_frame_time_ms(),
-            if self.min_frame_time_us == u64::MAX { 0.0 } else { self.min_frame_time_us as f32 / 1000.0 },
+            if self.min_frame_time_us == u64::MAX {
+                0.0
+            } else {
+                self.min_frame_time_us as f32 / 1000.0
+            },
             self.max_frame_time_us as f32 / 1000.0,
             self.avg_iterations(),
             self.iteration_reductions,
@@ -1820,10 +1824,10 @@ impl OptimizationProfiler {
         // Merge incoming metrics
         self.metrics.frames_processed += metrics.frames_processed;
         self.metrics.total_time_us += metrics.total_time_us;
-        
+
         if metrics.total_time_us > 0 && metrics.frames_processed > 0 {
             let time_us = metrics.total_time_us / metrics.frames_processed;
-            
+
             if self.frame_history.len() >= self.history_size {
                 self.frame_history.pop_front();
             }
@@ -1884,15 +1888,17 @@ impl OptimizationProfiler {
             return 0.0;
         }
 
-        let mean = self.frame_history.iter().sum::<u64>() as f64
-            / self.frame_history.len() as f64;
+        let mean = self.frame_history.iter().sum::<u64>() as f64 / self.frame_history.len() as f64;
 
-        let variance = self.frame_history.iter()
+        let variance = self
+            .frame_history
+            .iter()
             .map(|&x| {
                 let diff = x as f64 - mean;
                 diff * diff
             })
-            .sum::<f64>() / (self.frame_history.len() - 1) as f64;
+            .sum::<f64>()
+            / (self.frame_history.len() - 1) as f64;
 
         (variance.sqrt() / 1000.0) as f32
     }
@@ -1949,7 +1955,9 @@ impl OptimizationProfiler {
             self.p50_frame_time_ms(),
             self.p99_frame_time_ms(),
             self.frame_time_stddev_ms(),
-            self.metrics.summary().lines()
+            self.metrics
+                .summary()
+                .lines()
                 .map(|l| format!("║ {:<65} ║", l))
                 .collect::<Vec<_>>()
                 .join("\n"),
@@ -1987,12 +1995,16 @@ impl std::fmt::Display for OptimizationRecommendation {
             Self::Optimal => write!(f, "Current settings are optimal"),
             Self::IncreaseWorkgroupSize => write!(f, "Consider increasing workgroup size"),
             Self::DecreaseWorkgroupSize => write!(f, "Consider decreasing workgroup size"),
-            Self::EnableTemporalCoherence => write!(f, "Enable temporal coherence for better performance"),
+            Self::EnableTemporalCoherence => {
+                write!(f, "Enable temporal coherence for better performance")
+            }
             Self::IncreaseIterations => write!(f, "Increase iterations for better quality"),
             Self::DecreaseIterations => write!(f, "Decrease iterations for better performance"),
             Self::EnableMortonSort => write!(f, "Enable Morton code sorting for cache efficiency"),
             Self::ReduceQualityScale => write!(f, "Reduce quality scale to meet frame budget"),
-            Self::IncreaseQualityScale => write!(f, "Increase quality scale (performance headroom available)"),
+            Self::IncreaseQualityScale => {
+                write!(f, "Increase quality scale (performance headroom available)")
+            }
         }
     }
 }
@@ -2028,10 +2040,7 @@ pub fn analyze_metrics(
     }
 
     // Check temporal coherence
-    if !temporal_enabled
-        && metrics.frames_processed > 60
-        && avg_time > budget_ms * 0.7
-    {
+    if !temporal_enabled && metrics.frames_processed > 60 && avg_time > budget_ms * 0.7 {
         recommendations.push(OptimizationRecommendation::EnableTemporalCoherence);
     }
 
@@ -2333,8 +2342,10 @@ mod optimization_metrics_tests {
         let recs = analyze_metrics(&metrics, 4.0, true, true);
 
         // Should be optimal or increase quality (have headroom)
-        assert!(recs.contains(&OptimizationRecommendation::Optimal)
-            || recs.contains(&OptimizationRecommendation::IncreaseQualityScale));
+        assert!(
+            recs.contains(&OptimizationRecommendation::Optimal)
+                || recs.contains(&OptimizationRecommendation::IncreaseQualityScale)
+        );
     }
 
     #[test]

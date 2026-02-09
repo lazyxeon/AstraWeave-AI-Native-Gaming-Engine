@@ -86,7 +86,11 @@ fn generate_snapshot(entity_count: usize) -> WorldSnapshot {
         entities: (0..entity_count)
             .map(|i| EntityState {
                 id: i as u64,
-                position: [(i % 100) as f32, ((i / 100) % 100) as f32, (i / 10000) as f32],
+                position: [
+                    (i % 100) as f32,
+                    ((i / 100) % 100) as f32,
+                    (i / 10000) as f32,
+                ],
                 rotation: [0.0, 0.0, 0.0, 1.0],
                 health: 100.0 - (i % 50) as f32,
                 entity_type: match i % 5 {
@@ -103,7 +107,9 @@ fn generate_snapshot(entity_count: usize) -> WorldSnapshot {
                 id: i as u64,
                 event_type: "damage".to_string(),
                 timestamp: i as f64 * 0.1,
-                data: [("amount".to_string(), "50".to_string())].into_iter().collect(),
+                data: [("amount".to_string(), "50".to_string())]
+                    .into_iter()
+                    .collect(),
             })
             .collect(),
     }
@@ -263,7 +269,11 @@ fn bench_deserialization(c: &mut Criterion) {
             .map(|i| {
                 format!(
                     "{{\"id\":{},\"pos\":[{},{},{}],\"health\":{}}}",
-                    i, i % 100, (i / 100) % 10, i / 1000, 100 - i % 50
+                    i,
+                    i % 100,
+                    (i / 100) % 10,
+                    i / 1000,
+                    100 - i % 50
                 )
             })
             .collect();
@@ -475,14 +485,15 @@ fn bench_message_handling(c: &mut Criterion) {
 
     // Test 3: Message batching
     group.bench_function("message_batching_2000", |bencher| {
-        let messages: Vec<Message> = (0..2000)
-            .map(|i| Message::Heartbeat(i as u64))
-            .collect();
+        let messages: Vec<Message> = (0..2000).map(|i| Message::Heartbeat(i as u64)).collect();
 
         let batch_size = 50;
 
         bencher.iter(|| {
-            let batches: Vec<Vec<&Message>> = messages.chunks(batch_size).map(|c| c.iter().collect()).collect();
+            let batches: Vec<Vec<&Message>> = messages
+                .chunks(batch_size)
+                .map(|c| c.iter().collect())
+                .collect();
 
             std_black_box(batches.len())
         });
@@ -600,17 +611,13 @@ fn bench_connection_management(c: &mut Criterion) {
 
             let can_reconnect: Vec<u64> = disconnected
                 .iter()
-                .filter(|(_, disconnect_time, timeout)| {
-                    current_time - disconnect_time < *timeout
-                })
+                .filter(|(_, disconnect_time, timeout)| current_time - disconnect_time < *timeout)
                 .map(|(id, _, _)| *id)
                 .collect();
 
             let expired: Vec<u64> = disconnected
                 .iter()
-                .filter(|(_, disconnect_time, timeout)| {
-                    current_time - disconnect_time >= *timeout
-                })
+                .filter(|(_, disconnect_time, timeout)| current_time - disconnect_time >= *timeout)
                 .map(|(id, _, _)| *id)
                 .collect();
 
@@ -659,10 +666,7 @@ fn bench_compression(c: &mut Criterion) {
         let values: Vec<i32> = (0..5000).map(|i| i * 10 + (i % 10) as i32).collect();
 
         bencher.iter(|| {
-            let deltas: Vec<i32> = values
-                .windows(2)
-                .map(|w| w[1] - w[0])
-                .collect();
+            let deltas: Vec<i32> = values.windows(2).map(|w| w[1] - w[0]).collect();
 
             // Count bytes needed (varint simulation)
             let bytes: usize = deltas
@@ -686,19 +690,17 @@ fn bench_compression(c: &mut Criterion) {
     // Test 3: Dictionary compression
     group.bench_function("dictionary_compress_1000", |bencher| {
         let strings: Vec<String> = (0..1000)
-            .map(|i| {
-                match i % 10 {
-                    0 => "player".to_string(),
-                    1 => "enemy".to_string(),
-                    2 => "npc".to_string(),
-                    3 => "item".to_string(),
-                    4 => "projectile".to_string(),
-                    5 => "effect".to_string(),
-                    6 => "trigger".to_string(),
-                    7 => "spawn".to_string(),
-                    8 => "death".to_string(),
-                    _ => "unknown".to_string(),
-                }
+            .map(|i| match i % 10 {
+                0 => "player".to_string(),
+                1 => "enemy".to_string(),
+                2 => "npc".to_string(),
+                3 => "item".to_string(),
+                4 => "projectile".to_string(),
+                5 => "effect".to_string(),
+                6 => "trigger".to_string(),
+                7 => "spawn".to_string(),
+                8 => "death".to_string(),
+                _ => "unknown".to_string(),
             })
             .collect();
 
@@ -724,11 +726,13 @@ fn bench_compression(c: &mut Criterion) {
     // Test 4: Position quantization
     group.bench_function("position_quantize_5000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..5000)
-            .map(|i| [
-                (i % 1000) as f32 * 0.1,
-                ((i / 1000) % 100) as f32 * 0.1,
-                (i / 100000) as f32 * 0.1,
-            ])
+            .map(|i| {
+                [
+                    (i % 1000) as f32 * 0.1,
+                    ((i / 1000) % 100) as f32 * 0.1,
+                    (i / 100000) as f32 * 0.1,
+                ]
+            })
             .collect();
 
         let scale = 100.0f32; // 1cm precision in 100m range
@@ -736,11 +740,13 @@ fn bench_compression(c: &mut Criterion) {
         bencher.iter(|| {
             let quantized: Vec<[i16; 3]> = positions
                 .iter()
-                .map(|p| [
-                    (p[0] * scale) as i16,
-                    (p[1] * scale) as i16,
-                    (p[2] * scale) as i16,
-                ])
+                .map(|p| {
+                    [
+                        (p[0] * scale) as i16,
+                        (p[1] * scale) as i16,
+                        (p[2] * scale) as i16,
+                    ]
+                })
                 .collect();
 
             std_black_box(quantized.len())

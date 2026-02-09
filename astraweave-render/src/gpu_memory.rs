@@ -158,7 +158,10 @@ impl GpuMemoryBudget {
 
     /// Register a callback for budget events
     pub fn on_event(&self, callback: BudgetCallback) {
-        self.callbacks.write().expect("lock poisoned").push(callback);
+        self.callbacks
+            .write()
+            .expect("lock poisoned")
+            .push(callback);
     }
 
     /// Attempt to allocate memory in a category

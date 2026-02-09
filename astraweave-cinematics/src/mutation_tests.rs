@@ -56,7 +56,7 @@ mod time_tests {
         let t = Time::from_secs(5.0);
         let clamped = t.clamp(Time::from_secs(2.0), Time::from_secs(4.0));
         assert_eq!(clamped.as_secs(), 4.0);
-        
+
         let below = Time::from_secs(1.0);
         let clamped_below = below.clamp(Time::from_secs(2.0), Time::from_secs(4.0));
         assert_eq!(clamped_below.as_secs(), 2.0);
@@ -66,7 +66,7 @@ mod time_tests {
     fn test_time_lerp() {
         let a = Time::from_secs(0.0);
         let b = Time::from_secs(10.0);
-        
+
         assert_eq!(a.lerp(b, 0.0).as_secs(), 0.0);
         assert_eq!(a.lerp(b, 0.5).as_secs(), 5.0);
         assert_eq!(a.lerp(b, 1.0).as_secs(), 10.0);
@@ -90,14 +90,22 @@ mod time_tests {
     fn test_time_display_seconds() {
         let t = Time::from_secs(2.5);
         let display = format!("{}", t);
-        assert!(display.contains("2.50s"), "Display should show seconds for >=1s: {}", display);
+        assert!(
+            display.contains("2.50s"),
+            "Display should show seconds for >=1s: {}",
+            display
+        );
     }
 
     #[test]
     fn test_time_display_milliseconds() {
         let t = Time::from_secs(0.5);
         let display = format!("{}", t);
-        assert!(display.contains("500ms"), "Display should show ms for <1s: {}", display);
+        assert!(
+            display.contains("500ms"),
+            "Display should show ms for <1s: {}",
+            display
+        );
     }
 }
 
@@ -141,15 +149,24 @@ mod track_tests {
     #[test]
     fn test_track_type_names() {
         assert_eq!(Track::camera(vec![]).type_name(), "Camera");
-        assert_eq!(Track::animation(1, "clip", Time::zero()).type_name(), "Animation");
+        assert_eq!(
+            Track::animation(1, "clip", Time::zero()).type_name(),
+            "Animation"
+        );
         assert_eq!(Track::audio("clip", Time::zero(), 1.0).type_name(), "Audio");
-        assert_eq!(Track::fx("fx", Time::zero(), serde_json::json!({})).type_name(), "Fx");
+        assert_eq!(
+            Track::fx("fx", Time::zero(), serde_json::json!({})).type_name(),
+            "Fx"
+        );
     }
 
     #[test]
     fn test_track_start_time_camera() {
         let camera = Track::camera(vec![]);
-        assert!(camera.start_time().is_none(), "Camera tracks have no single start time");
+        assert!(
+            camera.start_time().is_none(),
+            "Camera tracks have no single start time"
+        );
     }
 
     #[test]
@@ -221,7 +238,7 @@ mod camera_key_tests {
     fn test_camera_key_distance_to_target() {
         let key = CameraKey::new(
             Time::zero(),
-            (0.0, 0.0, 10.0),  // 10 units away on Z
+            (0.0, 0.0, 10.0), // 10 units away on Z
             (0.0, 0.0, 0.0),
             60.0,
         );
@@ -232,7 +249,7 @@ mod camera_key_tests {
     fn test_camera_key_distance_diagonal() {
         let key = CameraKey::new(
             Time::zero(),
-            (3.0, 4.0, 0.0),  // 3-4-5 triangle
+            (3.0, 4.0, 0.0), // 3-4-5 triangle
             (0.0, 0.0, 0.0),
             60.0,
         );
@@ -257,8 +274,13 @@ mod camera_key_tests {
     #[test]
     fn test_camera_key_lerp() {
         let a = CameraKey::new(Time::zero(), (0.0, 0.0, 0.0), (0.0, 0.0, -1.0), 60.0);
-        let b = CameraKey::new(Time::from_secs(2.0), (10.0, 10.0, 10.0), (10.0, 0.0, -1.0), 90.0);
-        
+        let b = CameraKey::new(
+            Time::from_secs(2.0),
+            (10.0, 10.0, 10.0),
+            (10.0, 0.0, -1.0),
+            90.0,
+        );
+
         let mid = a.lerp(&b, 0.5);
         assert_eq!(mid.t.as_secs(), 1.0);
         assert_eq!(mid.pos, (5.0, 5.0, 5.0));
@@ -303,7 +325,7 @@ mod timeline_tests {
         tl.add_track(Track::camera(vec![]));
         tl.add_track(Track::audio("music", Time::zero(), 1.0));
         tl.add_track(Track::camera(vec![]));
-        
+
         assert_eq!(tl.camera_track_count(), 2);
         assert_eq!(tl.audio_track_count(), 1);
     }
@@ -313,7 +335,7 @@ mod timeline_tests {
         let mut tl = Timeline::new("test", 5.0);
         tl.add_track(Track::audio("a", Time::zero(), 1.0));
         tl.add_track(Track::audio("b", Time::zero(), 1.0));
-        
+
         assert_eq!(tl.audio_track_count(), 2);
     }
 
@@ -321,7 +343,7 @@ mod timeline_tests {
     fn test_timeline_animation_track_count() {
         let mut tl = Timeline::new("test", 5.0);
         tl.add_track(Track::animation(1, "walk", Time::zero()));
-        
+
         assert_eq!(tl.animation_track_count(), 1);
     }
 
@@ -329,23 +351,20 @@ mod timeline_tests {
     fn test_timeline_fx_track_count() {
         let mut tl = Timeline::new("test", 5.0);
         tl.add_track(Track::fx("boom", Time::zero(), serde_json::json!({})));
-        
+
         assert_eq!(tl.fx_track_count(), 1);
     }
 
     #[test]
     fn test_timeline_total_keyframes() {
         let mut tl = Timeline::new("test", 5.0);
-        tl.add_camera_track(vec![
-            CameraKey::at_origin(60.0),
-            CameraKey::at_origin(60.0),
-        ]);
+        tl.add_camera_track(vec![CameraKey::at_origin(60.0), CameraKey::at_origin(60.0)]);
         tl.add_camera_track(vec![
             CameraKey::at_origin(60.0),
             CameraKey::at_origin(60.0),
             CameraKey::at_origin(60.0),
         ]);
-        
+
         assert_eq!(tl.total_keyframes(), 5);
     }
 
@@ -353,7 +372,7 @@ mod timeline_tests {
     fn test_timeline_add_audio_track() {
         let mut tl = Timeline::new("test", 5.0);
         tl.add_audio_track("music.ogg", Time::from_secs(1.0), 0.75);
-        
+
         assert_eq!(tl.audio_track_count(), 1);
     }
 }
@@ -382,10 +401,10 @@ mod sequencer_tests {
     fn test_sequencer_step_advances_time() {
         let mut seq = Sequencer::new();
         let tl = Timeline::new("test", 10.0);
-        
+
         seq.step(1.0, &tl).unwrap();
         assert_eq!(seq.t.as_secs(), 1.0);
-        
+
         seq.step(2.0, &tl).unwrap();
         assert_eq!(seq.t.as_secs(), 3.0);
     }
@@ -394,7 +413,7 @@ mod sequencer_tests {
     fn test_sequencer_step_out_of_range() {
         let mut seq = Sequencer::new();
         let tl = Timeline::new("test", 5.0);
-        
+
         let result = seq.step(10.0, &tl);
         assert!(result.is_err());
     }
@@ -404,10 +423,10 @@ mod sequencer_tests {
         let mut seq = Sequencer::new();
         let mut tl = Timeline::new("test", 10.0);
         tl.add_audio_track("music.ogg", Time::from_secs(0.5), 0.8);
-        
+
         // Step past the audio start
         let events = seq.step(1.0, &tl).unwrap();
-        
+
         assert_eq!(events.len(), 1);
         assert!(matches!(events[0], SequencerEvent::AudioPlay { .. }));
     }
@@ -416,12 +435,15 @@ mod sequencer_tests {
     fn test_sequencer_step_emits_camera_event() {
         let mut seq = Sequencer::new();
         let mut tl = Timeline::new("test", 10.0);
-        tl.add_camera_track(vec![
-            CameraKey::new(Time::from_secs(0.5), (0.0, 0.0, 0.0), (0.0, 0.0, -1.0), 60.0),
-        ]);
-        
+        tl.add_camera_track(vec![CameraKey::new(
+            Time::from_secs(0.5),
+            (0.0, 0.0, 0.0),
+            (0.0, 0.0, -1.0),
+            60.0,
+        )]);
+
         let events = seq.step(1.0, &tl).unwrap();
-        
+
         assert_eq!(events.len(), 1);
         assert!(matches!(events[0], SequencerEvent::CameraKey(_)));
     }
@@ -431,11 +453,14 @@ mod sequencer_tests {
         let mut seq = Sequencer::new();
         let mut tl = Timeline::new("test", 10.0);
         tl.add_audio_track("music.ogg", Time::from_secs(5.0), 0.8);
-        
+
         // Step but not past the audio start
         let events = seq.step(1.0, &tl).unwrap();
-        
-        assert!(events.is_empty(), "No events should be emitted before start time");
+
+        assert!(
+            events.is_empty(),
+            "No events should be emitted before start time"
+        );
     }
 
     #[test]
@@ -443,9 +468,9 @@ mod sequencer_tests {
         let mut seq = Sequencer::new();
         let mut tl = Timeline::new("test", 10.0);
         tl.add_track(Track::animation(42, "walk", Time::from_secs(0.5)));
-        
+
         let events = seq.step(1.0, &tl).unwrap();
-        
+
         assert_eq!(events.len(), 1);
         match &events[0] {
             SequencerEvent::AnimStart { target, clip } => {
@@ -460,10 +485,14 @@ mod sequencer_tests {
     fn test_sequencer_step_fx_event() {
         let mut seq = Sequencer::new();
         let mut tl = Timeline::new("test", 10.0);
-        tl.add_track(Track::fx("explosion", Time::from_secs(0.5), serde_json::json!({"size": 10})));
-        
+        tl.add_track(Track::fx(
+            "explosion",
+            Time::from_secs(0.5),
+            serde_json::json!({"size": 10}),
+        ));
+
         let events = seq.step(1.0, &tl).unwrap();
-        
+
         assert_eq!(events.len(), 1);
         assert!(matches!(events[0], SequencerEvent::FxTrigger { .. }));
     }
@@ -475,9 +504,9 @@ mod sequencer_tests {
         tl.add_audio_track("music1.ogg", Time::from_secs(0.3), 1.0);
         tl.add_audio_track("music2.ogg", Time::from_secs(0.6), 1.0);
         tl.add_track(Track::animation(1, "walk", Time::from_secs(0.5)));
-        
+
         let events = seq.step(1.0, &tl).unwrap();
-        
+
         assert_eq!(events.len(), 3, "Should emit all events in the step range");
     }
 }
@@ -525,9 +554,9 @@ mod behavioral_tests {
         let mut tl = Timeline::new("test", 10.0);
         tl.add_audio_track("first", Time::from_secs(0.8), 1.0);
         tl.add_audio_track("second", Time::from_secs(0.2), 1.0);
-        
+
         let events = seq.step(1.0, &tl).unwrap();
-        
+
         // Both events are in range and emitted
         assert_eq!(events.len(), 2);
     }

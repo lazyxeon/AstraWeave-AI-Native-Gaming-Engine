@@ -21,13 +21,32 @@ struct DirectorPlan {
 
 #[derive(Clone, Debug)]
 enum DirectorOp {
-    Fortify { position: [f32; 3], strength: f32 },
-    SpawnWave { enemy_types: Vec<String>, count: u32 },
-    Collapse { area_radius: f32 },
-    BuffBoss { stat: String, amount: f32 },
-    SpawnMinion { minion_type: String, position: [f32; 3] },
-    EnvironmentalHazard { hazard_type: String, duration: f32 },
-    PhaseTransition { target_phase: u32 },
+    Fortify {
+        position: [f32; 3],
+        strength: f32,
+    },
+    SpawnWave {
+        enemy_types: Vec<String>,
+        count: u32,
+    },
+    Collapse {
+        area_radius: f32,
+    },
+    BuffBoss {
+        stat: String,
+        amount: f32,
+    },
+    SpawnMinion {
+        minion_type: String,
+        position: [f32; 3],
+    },
+    EnvironmentalHazard {
+        hazard_type: String,
+        duration: f32,
+    },
+    PhaseTransition {
+        target_phase: u32,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -92,21 +111,33 @@ fn generate_phase_configs() -> Vec<PhaseConfig> {
         PhaseConfig {
             phase_number: 2,
             health_threshold: 0.7,
-            available_ops: vec!["SpawnWave".to_string(), "BuffBoss".to_string(), "SpawnMinion".to_string()],
+            available_ops: vec![
+                "SpawnWave".to_string(),
+                "BuffBoss".to_string(),
+                "SpawnMinion".to_string(),
+            ],
             attack_speed_multiplier: 1.2,
             damage_multiplier: 1.1,
         },
         PhaseConfig {
             phase_number: 3,
             health_threshold: 0.4,
-            available_ops: vec!["SpawnWave".to_string(), "Collapse".to_string(), "EnvironmentalHazard".to_string()],
+            available_ops: vec![
+                "SpawnWave".to_string(),
+                "Collapse".to_string(),
+                "EnvironmentalHazard".to_string(),
+            ],
             attack_speed_multiplier: 1.5,
             damage_multiplier: 1.3,
         },
         PhaseConfig {
             phase_number: 4,
             health_threshold: 0.15,
-            available_ops: vec!["SpawnWave".to_string(), "Collapse".to_string(), "BuffBoss".to_string()],
+            available_ops: vec![
+                "SpawnWave".to_string(),
+                "Collapse".to_string(),
+                "BuffBoss".to_string(),
+            ],
             attack_speed_multiplier: 2.0,
             damage_multiplier: 1.5,
         },
@@ -138,9 +169,7 @@ fn generate_director_op(op_type: &str, seed: u64) -> DirectorOp {
             hazard_type: "fire".to_string(),
             duration: 5.0 + (seed % 10) as f32,
         },
-        _ => DirectorOp::PhaseTransition {
-            target_phase: 2,
-        },
+        _ => DirectorOp::PhaseTransition { target_phase: 2 },
     }
 }
 
@@ -235,9 +264,8 @@ fn bench_boss_planning(c: &mut Criterion) {
                 .iter()
                 .enumerate()
                 .map(|(i, pos)| {
-                    let dist = ((pos[0] - boss_pos[0]).powi(2)
-                        + (pos[1] - boss_pos[1]).powi(2))
-                    .sqrt();
+                    let dist =
+                        ((pos[0] - boss_pos[0]).powi(2) + (pos[1] - boss_pos[1]).powi(2)).sqrt();
                     let threat = 100.0 / (1.0 + dist);
                     (i, threat)
                 })
@@ -265,7 +293,8 @@ fn bench_boss_planning(c: &mut Criterion) {
                 boss.enrage_timer -= delta_time;
 
                 // Apply enrage buff at 0
-                if boss.enrage_timer <= 0.0 && boss.active_buffs.iter().all(|(n, _)| n != "enrage") {
+                if boss.enrage_timer <= 0.0 && boss.active_buffs.iter().all(|(n, _)| n != "enrage")
+                {
                     boss.active_buffs.push(("enrage".to_string(), f32::MAX));
                 }
             }
@@ -374,9 +403,7 @@ fn bench_phase_transitions(c: &mut Criterion) {
 
     // Test 4: Intermission phase handling
     group.bench_function("intermission_handling_50", |bencher| {
-        let mut bosses: Vec<BossState> = (0..50)
-            .map(|_| BossState::new(1_000_000.0))
-            .collect();
+        let mut bosses: Vec<BossState> = (0..50).map(|_| BossState::new(1_000_000.0)).collect();
 
         bencher.iter(|| {
             let mut intermission_results: Vec<(u64, bool, f32)> = Vec::new();
@@ -629,12 +656,7 @@ fn bench_encounter_metrics(c: &mut Criterion) {
 
     // Test 4: Phase timing analysis
     group.bench_function("phase_timing_analysis", |bencher| {
-        let phase_events: Vec<(u32, f32)> = vec![
-            (1, 0.0),
-            (2, 120.0),
-            (3, 240.0),
-            (4, 360.0),
-        ];
+        let phase_events: Vec<(u32, f32)> = vec![(1, 0.0), (2, 120.0), (3, 240.0), (4, 360.0)];
 
         let expected_times = [90.0f32, 180.0, 270.0, 400.0];
 
@@ -752,16 +774,18 @@ fn bench_llm_director(c: &mut Criterion) {
     // Test 3: Action validation
     group.bench_function("action_validation_200", |bencher| {
         let proposed_actions: Vec<DirectorOp> = (0..200)
-            .map(|i| generate_director_op(
-                match i % 5 {
-                    0 => "Fortify",
-                    1 => "SpawnWave",
-                    2 => "Collapse",
-                    3 => "BuffBoss",
-                    _ => "EnvironmentalHazard",
-                },
-                i as u64,
-            ))
+            .map(|i| {
+                generate_director_op(
+                    match i % 5 {
+                        0 => "Fortify",
+                        1 => "SpawnWave",
+                        2 => "Collapse",
+                        3 => "BuffBoss",
+                        _ => "EnvironmentalHazard",
+                    },
+                    i as u64,
+                )
+            })
             .collect();
 
         let current_phase = 2;
@@ -852,9 +876,9 @@ fn bench_difficulty_scaling(c: &mut Criterion) {
                 (0..10)
                     .map(|j| {
                         (
-                            300.0 + (i + j) as f32 * 5.0,  // time
-                            (i + j) as u32 % 4,            // deaths
-                            100.0 - (i + j) as f32 * 2.0,  // rating
+                            300.0 + (i + j) as f32 * 5.0, // time
+                            (i + j) as u32 % 4,           // deaths
+                            100.0 - (i + j) as f32 * 2.0, // rating
                         )
                     })
                     .collect()
@@ -865,9 +889,12 @@ fn bench_difficulty_scaling(c: &mut Criterion) {
             let skill_ratings: Vec<f32> = player_histories
                 .iter()
                 .map(|history| {
-                    let avg_time: f32 = history.iter().map(|(t, _, _)| t).sum::<f32>() / history.len() as f32;
-                    let avg_deaths: f32 = history.iter().map(|(_, d, _)| *d as f32).sum::<f32>() / history.len() as f32;
-                    let avg_rating: f32 = history.iter().map(|(_, _, r)| r).sum::<f32>() / history.len() as f32;
+                    let avg_time: f32 =
+                        history.iter().map(|(t, _, _)| t).sum::<f32>() / history.len() as f32;
+                    let avg_deaths: f32 = history.iter().map(|(_, d, _)| *d as f32).sum::<f32>()
+                        / history.len() as f32;
+                    let avg_rating: f32 =
+                        history.iter().map(|(_, _, r)| r).sum::<f32>() / history.len() as f32;
 
                     let time_factor = 600.0 / avg_time;
                     let death_factor = 1.0 / (1.0 + avg_deaths);
@@ -900,7 +927,8 @@ fn bench_difficulty_scaling(c: &mut Criterion) {
                 difficulty_levels[i] = (difficulty_levels[i] + adjustment).clamp(0.1, 2.0);
             }
 
-            let avg_difficulty: f32 = difficulty_levels.iter().sum::<f32>() / difficulty_levels.len() as f32;
+            let avg_difficulty: f32 =
+                difficulty_levels.iter().sum::<f32>() / difficulty_levels.len() as f32;
             std_black_box(avg_difficulty)
         });
     });
@@ -936,7 +964,7 @@ fn bench_difficulty_scaling(c: &mut Criterion) {
             .map(|i| {
                 (
                     format!("item_{}", i),
-                    i as u32 * 10,           // base value
+                    i as u32 * 10,                // base value
                     0.1 + (i % 10) as f32 * 0.05, // base drop chance
                 )
             })

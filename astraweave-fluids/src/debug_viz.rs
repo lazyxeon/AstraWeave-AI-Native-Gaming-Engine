@@ -139,7 +139,11 @@ pub struct DebugPoint {
 impl DebugPoint {
     /// Create a new debug point
     pub fn new(position: Vec3, color: Vec4, size: f32) -> Self {
-        Self { position, color, size }
+        Self {
+            position,
+            color,
+            size,
+        }
     }
 
     /// Create from particle data
@@ -151,7 +155,11 @@ impl DebugPoint {
             ParticleDebugType::WaterfallDroplet => (Vec4::new(0.3, 0.6, 1.0, 0.9), 2.5),
             ParticleDebugType::Mist => (Vec4::new(0.8, 0.9, 1.0, 0.3), 5.0),
         };
-        Self { position, color, size }
+        Self {
+            position,
+            color,
+            size,
+        }
     }
 }
 
@@ -215,22 +223,70 @@ impl DebugDrawList {
     /// Add an axis-aligned bounding box
     pub fn add_aabb(&mut self, min: Vec3, max: Vec3, color: Vec4) {
         // Bottom face
-        self.lines.push(DebugLine::new(Vec3::new(min.x, min.y, min.z), Vec3::new(max.x, min.y, min.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(max.x, min.y, min.z), Vec3::new(max.x, min.y, max.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(max.x, min.y, max.z), Vec3::new(min.x, min.y, max.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(min.x, min.y, max.z), Vec3::new(min.x, min.y, min.z), color));
+        self.lines.push(DebugLine::new(
+            Vec3::new(min.x, min.y, min.z),
+            Vec3::new(max.x, min.y, min.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(max.x, min.y, min.z),
+            Vec3::new(max.x, min.y, max.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(max.x, min.y, max.z),
+            Vec3::new(min.x, min.y, max.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(min.x, min.y, max.z),
+            Vec3::new(min.x, min.y, min.z),
+            color,
+        ));
 
         // Top face
-        self.lines.push(DebugLine::new(Vec3::new(min.x, max.y, min.z), Vec3::new(max.x, max.y, min.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(max.x, max.y, min.z), Vec3::new(max.x, max.y, max.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(max.x, max.y, max.z), Vec3::new(min.x, max.y, max.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(min.x, max.y, max.z), Vec3::new(min.x, max.y, min.z), color));
+        self.lines.push(DebugLine::new(
+            Vec3::new(min.x, max.y, min.z),
+            Vec3::new(max.x, max.y, min.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(max.x, max.y, min.z),
+            Vec3::new(max.x, max.y, max.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(max.x, max.y, max.z),
+            Vec3::new(min.x, max.y, max.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(min.x, max.y, max.z),
+            Vec3::new(min.x, max.y, min.z),
+            color,
+        ));
 
         // Vertical edges
-        self.lines.push(DebugLine::new(Vec3::new(min.x, min.y, min.z), Vec3::new(min.x, max.y, min.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(max.x, min.y, min.z), Vec3::new(max.x, max.y, min.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(max.x, min.y, max.z), Vec3::new(max.x, max.y, max.z), color));
-        self.lines.push(DebugLine::new(Vec3::new(min.x, min.y, max.z), Vec3::new(min.x, max.y, max.z), color));
+        self.lines.push(DebugLine::new(
+            Vec3::new(min.x, min.y, min.z),
+            Vec3::new(min.x, max.y, min.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(max.x, min.y, min.z),
+            Vec3::new(max.x, max.y, min.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(max.x, min.y, max.z),
+            Vec3::new(max.x, max.y, max.z),
+            color,
+        ));
+        self.lines.push(DebugLine::new(
+            Vec3::new(min.x, min.y, max.z),
+            Vec3::new(min.x, max.y, max.z),
+            color,
+        ));
     }
 
     /// Add a grid on the XZ plane
@@ -260,7 +316,7 @@ impl DebugDrawList {
     /// Add a circle on the XZ plane
     pub fn add_circle(&mut self, center: Vec3, radius: f32, segments: u32, color: Vec4) {
         let step = std::f32::consts::TAU / segments as f32;
-        
+
         for i in 0..segments {
             let a1 = step * i as f32;
             let a2 = step * (i + 1) as f32;
@@ -283,7 +339,8 @@ impl DebugDrawList {
         let t = (speed / 10.0).min(1.0);
         let color = Vec4::new(t, 0.2, 1.0 - t, 0.8);
 
-        self.lines.push(DebugLine::new(position, position + velocity * scale, color));
+        self.lines
+            .push(DebugLine::new(position, position + velocity * scale, color));
     }
 
     /// Clear all debug draws
@@ -338,30 +395,45 @@ impl StatsFormatter {
     /// Format stats as multi-line string
     pub fn format_stats(stats: &crate::water_effects::WaterEffectsStats) -> String {
         let mut lines = Vec::new();
-        
+
         lines.push("═══ Water Effects ═══".to_string());
         lines.push(format!("Frame: {}", stats.frame));
-        lines.push(format!("Total: {}", Self::format_time_us(stats.total_update_us)));
-        
+        lines.push(format!(
+            "Total: {}",
+            Self::format_time_us(stats.total_update_us)
+        ));
+
         if stats.budget_exceeded {
             lines.push("⚠ BUDGET EXCEEDED".to_string());
         }
-        
+
         lines.push(String::new());
         lines.push("─── Timing ───".to_string());
-        
+
         for (name, pct) in stats.breakdown_percentages() {
             lines.push(format!("  {}: {}", name, Self::format_percent(pct)));
         }
-        
+
         lines.push(String::new());
         lines.push("─── Particles ───".to_string());
-        lines.push(format!("  Total: {}", Self::format_count(stats.total_particles)));
-        lines.push(format!("  Foam: {}", Self::format_count(stats.foam_particles)));
-        lines.push(format!("  Underwater: {}", Self::format_count(stats.underwater_particle_count)));
-        lines.push(format!("  Waterfall: {}", Self::format_count(stats.waterfall_particles)));
+        lines.push(format!(
+            "  Total: {}",
+            Self::format_count(stats.total_particles)
+        ));
+        lines.push(format!(
+            "  Foam: {}",
+            Self::format_count(stats.foam_particles)
+        ));
+        lines.push(format!(
+            "  Underwater: {}",
+            Self::format_count(stats.underwater_particle_count)
+        ));
+        lines.push(format!(
+            "  Waterfall: {}",
+            Self::format_count(stats.waterfall_particles)
+        ));
         lines.push(format!("  God Rays: {}", stats.god_ray_shafts));
-        
+
         lines.join("\n")
     }
 }
@@ -402,6 +474,8 @@ impl DebugVertex {
     }
 }
 
+// SAFETY: DebugVertex is #[repr(C)] containing only [f32; 3] and [f32; 4],
+// which are valid for any bit pattern and have no padding with repr(C).
 unsafe impl bytemuck::Pod for DebugVertex {}
 unsafe impl bytemuck::Zeroable for DebugVertex {}
 

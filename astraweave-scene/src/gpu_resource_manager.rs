@@ -42,10 +42,10 @@ pub struct CellGpuResources {
     /// For Texture: `wgpu::Texture` does not easily give size back in standard wgpu without storing it.
     /// So I will add `texture_sizes: HashMap<AssetId, usize>` specifically.
     /// Buffers can report their own size.
-    
+
     /// Sizes of textures mapped by asset ID (since Texture doesn't expose size easily)
     pub texture_sizes: HashMap<AssetId, usize>,
-    
+
     /// Current memory usage in bytes
     pub memory_usage: usize,
 }
@@ -79,12 +79,12 @@ impl CellGpuResources {
         });
 
         let buffer_size = vertices.len();
-        
+
         // Fix: Subtract old size if exists
         if let Some(old_buf) = self.vertex_buffers.insert(asset_id, vertex_buffer) {
             self.memory_usage = self.memory_usage.saturating_sub(old_buf.size() as usize);
         }
-        
+
         self.memory_usage += buffer_size;
 
         Ok(())
@@ -107,12 +107,12 @@ impl CellGpuResources {
         });
 
         let buffer_size = indices.len();
-        
+
         // Fix: Subtract old size if exists
         if let Some(old_buf) = self.index_buffers.insert(asset_id, index_buffer) {
             self.memory_usage = self.memory_usage.saturating_sub(old_buf.size() as usize);
         }
-        
+
         self.memory_usage += buffer_size;
 
         Ok(())
@@ -166,14 +166,14 @@ impl CellGpuResources {
         );
 
         let texture_size = (width * height * 4) as usize; // RGBA8
-        
+
         self.textures.insert(asset_id, texture);
-        
+
         // Fix: Subtract old size if exists
         if let Some(old_size) = self.texture_sizes.insert(asset_id, texture_size) {
-             self.memory_usage = self.memory_usage.saturating_sub(old_size);
+            self.memory_usage = self.memory_usage.saturating_sub(old_size);
         }
-        
+
         self.memory_usage += texture_size;
 
         Ok(())
@@ -359,12 +359,8 @@ mod tests {
         let near = GridCoord::new(0, 0, 0);
         let far = GridCoord::new(10, 0, 10);
 
-        budget
-            .get_or_create_cell(near)
-            .memory_usage = 100;
-        budget
-            .get_or_create_cell(far)
-            .memory_usage = 100;
+        budget.get_or_create_cell(near).memory_usage = 100;
+        budget.get_or_create_cell(far).memory_usage = 100;
 
         budget.update_usage();
         assert_eq!(budget.current_usage, 200);

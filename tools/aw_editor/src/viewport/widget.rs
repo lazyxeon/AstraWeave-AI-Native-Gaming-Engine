@@ -2246,6 +2246,8 @@ fn estimate_memory_usage_mb() -> f32 {
         extern "system" {
             fn GetCurrentProcess() -> *mut std::ffi::c_void;
         }
+        // SAFETY: Calling Win32 `GetProcessMemoryInfo` with a properly sized
+        // `ProcessMemoryCounters` struct. Standard Win32 memory query pattern.
         unsafe {
             let mut pmc = MaybeUninit::<ProcessMemoryCounters>::uninit();
             (*pmc.as_mut_ptr()).cb = std::mem::size_of::<ProcessMemoryCounters>() as u32;

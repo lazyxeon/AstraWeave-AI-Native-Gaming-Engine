@@ -25,7 +25,10 @@ fn config_default_metrics_enabled() {
 #[test]
 fn config_default_crash_reporting_enabled() {
     let cfg = ObservabilityConfig::default();
-    assert!(cfg.crash_reporting_enabled, "crash reporting enabled by default");
+    assert!(
+        cfg.crash_reporting_enabled,
+        "crash reporting enabled by default"
+    );
 }
 
 #[test]
@@ -164,7 +167,10 @@ fn telemetry_config_default_opentelemetry_disabled() {
 #[test]
 fn telemetry_config_default_sampling_rate() {
     let cfg = TelemetryConfig::default();
-    assert!((cfg.sampling_rate - 1.0).abs() < 1e-6, "100% sampling by default");
+    assert!(
+        (cfg.sampling_rate - 1.0).abs() < 1e-6,
+        "100% sampling by default"
+    );
 }
 
 // ========================================================================
@@ -180,13 +186,19 @@ fn alert_thresholds_default_latency_p95() {
 #[test]
 fn alert_thresholds_default_error_rate() {
     let at = AlertThresholds::default();
-    assert!((at.error_rate - 0.1).abs() < 1e-6, "10% error rate threshold");
+    assert!(
+        (at.error_rate - 0.1).abs() < 1e-6,
+        "10% error rate threshold"
+    );
 }
 
 #[test]
 fn alert_thresholds_default_cost_per_hour() {
     let at = AlertThresholds::default();
-    assert!((at.cost_per_hour_usd - 10.0).abs() < 1e-6, "$10/hour default");
+    assert!(
+        (at.cost_per_hour_usd - 10.0).abs() < 1e-6,
+        "$10/hour default"
+    );
 }
 
 #[test]
@@ -451,8 +463,10 @@ async fn telemetry_export_json_empty() {
 async fn telemetry_export_csv_header() {
     let tel = LlmTelemetry::new(TelemetryConfig::default());
     let csv = tel.export_traces(ExportFormat::Csv, None).await.unwrap();
-    assert!(csv.contains("request_id") || csv.is_empty() || csv.contains("model"),
-        "CSV should have header or be empty");
+    assert!(
+        csv.contains("request_id") || csv.is_empty() || csv.contains("model"),
+        "CSV should have header or be empty"
+    );
 }
 
 #[tokio::test]

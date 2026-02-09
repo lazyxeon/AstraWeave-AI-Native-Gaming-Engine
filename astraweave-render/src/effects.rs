@@ -90,7 +90,11 @@ impl WeatherFx {
     pub fn set_wind(&mut self, strength: f32, direction: Vec3) {
         self.wind_strength = strength.max(0.0);
         let len = direction.length();
-        self.wind_dir = if len > 0.001 { direction / len } else { vec3(1.0, 0.0, 0.0) };
+        self.wind_dir = if len > 0.001 {
+            direction / len
+        } else {
+            vec3(1.0, 0.0, 0.0)
+        };
     }
 
     /// Get current wind strength.
@@ -187,8 +191,8 @@ impl WeatherFx {
                     wind_offset.z + rng.random_range(-0.5..0.5),
                 ),
                 life: rng.random_range(3.0..6.0), // Longer life
-                color: [1.0, 1.0, 1.0, 0.85], // White, slightly transparent
-                scale: vec3(0.08, 0.08, 0.08), // Small spheres
+                color: [1.0, 1.0, 1.0, 0.85],     // White, slightly transparent
+                scale: vec3(0.08, 0.08, 0.08),    // Small spheres
             });
         }
         self.particles.retain_mut(|p| {
@@ -219,7 +223,7 @@ impl WeatherFx {
                 ),
                 life: rng.random_range(0.8..2.5),
                 color: [0.85, 0.75, 0.55, 0.7], // Sandy tan
-                scale: vec3(0.03, 0.03, 0.15), // Elongated streaks
+                scale: vec3(0.03, 0.03, 0.15),  // Elongated streaks
             });
         }
         self.particles.retain_mut(|p| {
@@ -228,7 +232,10 @@ impl WeatherFx {
             p.vel.y += (rng.random_range(-1.0..1.0) as f32) * dt * 5.0;
             p.pos += p.vel * dt;
             // Keep in bounds
-            if p.pos.y < 0.0 { p.pos.y = 0.1; p.vel.y = rng.random_range(0.5..2.0); }
+            if p.pos.y < 0.0 {
+                p.pos.y = 0.1;
+                p.vel.y = rng.random_range(0.5..2.0);
+            }
             p.life > 0.0
         });
     }

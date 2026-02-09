@@ -16,12 +16,15 @@
 //!
 //! # Example
 //!
-//! ```rust,no_run
-//! use astraweave_nav::NavMesh;
-//! // Bake navmesh from level geometry triangles
-//! let mesh = NavMesh::bake(&triangles, max_step, max_slope);
-//! // Find path between two points
-//! let path = mesh.find_path(start_tri, goal_tri);
+//! ```rust
+//! use astraweave_nav::{NavMesh, Triangle};
+//! use glam::Vec3;
+//!
+//! let triangles = vec![
+//!     Triangle::new(Vec3::ZERO, Vec3::new(10.0, 0.0, 0.0), Vec3::new(5.0, 0.0, 10.0)),
+//! ];
+//! let mesh = NavMesh::bake(&triangles, 0.5, 45.0);
+//! let path = mesh.find_path(Vec3::ZERO, Vec3::new(5.0, 0.0, 5.0));
 //! ```
 
 use glam::Vec3;

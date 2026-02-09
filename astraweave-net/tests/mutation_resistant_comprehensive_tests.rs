@@ -267,7 +267,10 @@ fn radius_interest_same_team_always_included() {
     let ri = RadiusTeamInterest { radius: 1 };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let far_ally = e(2, 1000, 1000, 50, 0, 0); // same team, way beyond radius
-    assert!(ri.include(&viewer, &far_ally), "same team must always include");
+    assert!(
+        ri.include(&viewer, &far_ally),
+        "same team must always include"
+    );
 }
 
 #[test]
@@ -283,7 +286,10 @@ fn radius_interest_enemy_exactly_at_radius() {
     let ri = RadiusTeamInterest { radius: 5 };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let enemy = e(2, 3, 4, 50, 1, 0); // 9+16=25 <= 25
-    assert!(ri.include(&viewer, &enemy), "exactly at radius should include");
+    assert!(
+        ri.include(&viewer, &enemy),
+        "exactly at radius should include"
+    );
 }
 
 #[test]
@@ -316,7 +322,10 @@ fn radius_interest_diagonal_check() {
     let ri = RadiusTeamInterest { radius: 1 };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let enemy = e(2, 1, 1, 50, 1, 0);
-    assert!(!ri.include(&viewer, &enemy), "diagonal distance exceeds radius 1");
+    assert!(
+        !ri.include(&viewer, &enemy),
+        "diagonal distance exceeds radius 1"
+    );
 }
 
 #[test]
@@ -402,7 +411,10 @@ fn fov_interest_zero_facing_includes_all_in_radius() {
     };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let enemy = e(2, -5, 3, 50, 1, 0);
-    assert!(fov.include(&viewer, &enemy), "zero facing = omnidirectional");
+    assert!(
+        fov.include(&viewer, &enemy),
+        "zero facing = omnidirectional"
+    );
 }
 
 #[test]
@@ -414,7 +426,10 @@ fn fov_interest_same_pos_included() {
     };
     let viewer = e(1, 5, 5, 100, 0, 0);
     let enemy = e(2, 5, 5, 50, 1, 0);
-    assert!(fov.include(&viewer, &enemy), "same pos = zero distance = true");
+    assert!(
+        fov.include(&viewer, &enemy),
+        "same pos = zero distance = true"
+    );
 }
 
 #[test]
@@ -485,7 +500,10 @@ fn fov_los_obstacle_at_viewer_pos_not_blocking() {
     };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let enemy = e(2, 3, 0, 50, 1, 0);
-    assert!(fov.include(&viewer, &enemy), "viewer's own cell is skipped in LOS check");
+    assert!(
+        fov.include(&viewer, &enemy),
+        "viewer's own cell is skipped in LOS check"
+    );
 }
 
 #[test]
@@ -501,7 +519,10 @@ fn fov_los_zero_facing_los_only() {
     };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let enemy = e(2, 4, 0, 50, 1, 0);
-    assert!(!fov.include(&viewer, &enemy), "LOS blocked even with zero facing");
+    assert!(
+        !fov.include(&viewer, &enemy),
+        "LOS blocked even with zero facing"
+    );
 }
 
 #[test]
@@ -545,7 +566,10 @@ fn build_snapshot_from_world() {
     assert_eq!(snap.entities[0].pos.y, 2);
     assert_eq!(snap.entities[0].hp, 100);
     assert_eq!(snap.entities[0].ammo, 50);
-    assert_ne!(snap.world_hash, 0, "hash must be non-zero for non-empty world");
+    assert_ne!(
+        snap.world_hash, 0,
+        "hash must be non-zero for non-empty world"
+    );
 }
 
 #[test]
@@ -606,7 +630,11 @@ fn filter_snapshot_radius_excludes_distant() {
     let viewer = e(1, 0, 0, 100, 0, 0);
     let ri = RadiusTeamInterest { radius: 5 };
     let filtered = filter_snapshot_for_viewer(&s, &ri, &viewer);
-    assert_eq!(filtered.entities.len(), 2, "distant enemy excluded, ally kept");
+    assert_eq!(
+        filtered.entities.len(),
+        2,
+        "distant enemy excluded, ally kept"
+    );
     assert!(filtered.entities.iter().any(|e| e.id == 1));
     assert!(filtered.entities.iter().any(|e| e.id == 3));
     assert!(!filtered.entities.iter().any(|e| e.id == 2));
@@ -971,7 +999,11 @@ async fn game_server_companion_stats() {
     let gs = GameServer::new();
     let w = gs.world.lock().await;
     let snap = build_snapshot(&w, 0, 0);
-    let comp = snap.entities.iter().find(|e| e.id == gs.companion_id).unwrap();
+    let comp = snap
+        .entities
+        .iter()
+        .find(|e| e.id == gs.companion_id)
+        .unwrap();
     assert_eq!(comp.pos.x, 2);
     assert_eq!(comp.pos.y, 3);
     assert_eq!(comp.hp, 80);
@@ -1013,10 +1045,7 @@ fn game_server_default_impl() {
 #[tokio::test]
 async fn game_server_tick_starts_at_zero() {
     let gs = GameServer::new();
-    assert_eq!(
-        gs.tick.load(std::sync::atomic::Ordering::Relaxed),
-        0
-    );
+    assert_eq!(gs.tick.load(std::sync::atomic::Ordering::Relaxed), 0);
 }
 
 #[tokio::test]
@@ -1158,7 +1187,11 @@ fn msg_client_hello_roundtrip() {
     let json = serde_json::to_string(&msg).unwrap();
     let back: Msg = serde_json::from_str(&json).unwrap();
     match back {
-        Msg::ClientHello { name, token, policy } => {
+        Msg::ClientHello {
+            name,
+            token,
+            policy,
+        } => {
             assert_eq!(name, "Player1");
             assert_eq!(token, Some("abc".into()));
             assert_eq!(policy, None);
@@ -1365,14 +1398,20 @@ fn radius_interest_large_radius() {
     let ri = RadiusTeamInterest { radius: 46340 };
     let viewer = e(1, 0, 0, 100, 0, 0);
     let far = e(2, 30000, 30000, 50, 1, 0);
-    assert!(ri.include(&viewer, &far), "large radius should include distant enemies");
+    assert!(
+        ri.include(&viewer, &far),
+        "large radius should include distant enemies"
+    );
 }
 
 #[test]
 fn entity_state_max_values() {
     let es = EntityState {
         id: u32::MAX,
-        pos: IVec2 { x: i32::MAX, y: i32::MAX },
+        pos: IVec2 {
+            x: i32::MAX,
+            y: i32::MAX,
+        },
         hp: i32::MAX,
         team: u8::MAX,
         ammo: i32::MAX,
@@ -1426,12 +1465,8 @@ fn filter_empty_snapshot() {
 
 #[test]
 fn diff_apply_many_entities() {
-    let base_ents: Vec<EntityState> = (0..50)
-        .map(|i| e(i, i as i32, 0, 100, 0, 0))
-        .collect();
-    let head_ents: Vec<EntityState> = (0..50)
-        .map(|i| e(i, i as i32 + 1, 1, 99, 0, 0))
-        .collect();
+    let base_ents: Vec<EntityState> = (0..50).map(|i| e(i, i as i32, 0, 100, 0, 0)).collect();
+    let head_ents: Vec<EntityState> = (0..50).map(|i| e(i, i as i32 + 1, 1, 99, 0, 0)).collect();
     let base = snap(0, 0, base_ents.clone());
     let head = snap(1, 1, head_ents);
     let viewer = e(0, 1, 1, 99, 0, 0);

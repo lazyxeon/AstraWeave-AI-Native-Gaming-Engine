@@ -4,8 +4,7 @@
 //! Focus: exact return values, boundary conditions, off-by-one, negation, operator swaps
 
 use astraweave_core::{
-    CompanionState, DirectorBudget, DirectorOp, EnemyState, IVec2, PlayerState,
-    WorldSnapshot,
+    CompanionState, DirectorBudget, DirectorOp, EnemyState, IVec2, PlayerState, WorldSnapshot,
 };
 use astraweave_director::*;
 use std::collections::BTreeMap;
@@ -485,8 +484,18 @@ fn phase_no_enemies_doesnt_switch_phase() {
 #[test]
 fn phase_doesnt_regress_after_switch() {
     let mut d = PhaseDirector::new(vec![
-        PhaseSpec { name: "P1".into(), hp_threshold: 100, terrain_bias: 0.3, aggression: 0.5 },
-        PhaseSpec { name: "P2".into(), hp_threshold: 50, terrain_bias: 0.7, aggression: 0.8 },
+        PhaseSpec {
+            name: "P1".into(),
+            hp_threshold: 100,
+            terrain_bias: 0.3,
+            aggression: 0.5,
+        },
+        PhaseSpec {
+            name: "P2".into(),
+            hp_threshold: 50,
+            terrain_bias: 0.7,
+            aggression: 0.8,
+        },
     ]);
     // Switch to P2
     let snap = make_snapshot(IVec2 { x: 0, y: 0 }, vec![(IVec2 { x: 5, y: 5 }, 40)]);
@@ -524,7 +533,10 @@ fn player_model_analyze_far_enemies_increases_range() {
     // enemies far away (>10)
     let snap = make_snapshot(IVec2 { x: 0, y: 0 }, vec![(IVec2 { x: 20, y: 0 }, 50)]);
     m.analyze_snapshot(&snap);
-    assert!(m.preferred_range > range_before, "range should increase for far enemies");
+    assert!(
+        m.preferred_range > range_before,
+        "range should increase for far enemies"
+    );
 }
 
 #[test]
@@ -534,7 +546,10 @@ fn player_model_analyze_close_enemies_decreases_range() {
     // enemies very close (<4)
     let snap = make_snapshot(IVec2 { x: 0, y: 0 }, vec![(IVec2 { x: 1, y: 1 }, 50)]);
     m.analyze_snapshot(&snap);
-    assert!(m.preferred_range < range_before, "range should decrease for close enemies");
+    assert!(
+        m.preferred_range < range_before,
+        "range should decrease for close enemies"
+    );
 }
 
 #[test]
@@ -542,7 +557,11 @@ fn player_model_analyze_returns_format_string() {
     let mut m = PlayerBehaviorModel::default();
     let snap = make_snapshot(IVec2 { x: 0, y: 0 }, vec![(IVec2 { x: 5, y: 5 }, 50)]);
     let analysis = m.analyze_snapshot(&snap);
-    assert!(analysis.contains("Player behavior analysis"), "analysis: {}", analysis);
+    assert!(
+        analysis.contains("Player behavior analysis"),
+        "analysis: {}",
+        analysis
+    );
     assert!(analysis.contains("Aggression"), "analysis: {}", analysis);
     assert!(analysis.contains("Caution"), "analysis: {}", analysis);
     assert!(analysis.contains("Skill"), "analysis: {}", analysis);
@@ -554,7 +573,11 @@ fn player_model_analyze_no_enemies_default_distance() {
     let snap = make_snapshot(IVec2 { x: 0, y: 0 }, vec![]);
     let analysis = m.analyze_snapshot(&snap);
     // With no enemies, avg_distance defaults to 8.0 which is medium range
-    assert!(analysis.contains("average distance 8.0"), "analysis: {}", analysis);
+    assert!(
+        analysis.contains("average distance 8.0"),
+        "analysis: {}",
+        analysis
+    );
 }
 
 // ============================= PlayerBehaviorModel: update_from_outcome =============================
@@ -585,7 +608,10 @@ fn player_model_update_high_performance_increases_skill() {
     for _ in 0..5 {
         m.update_from_outcome(&make_outcome("t", 0.9));
     }
-    assert!(m.skill_level > initial_skill, "skill should increase with high performance");
+    assert!(
+        m.skill_level > initial_skill,
+        "skill should increase with high performance"
+    );
 }
 
 #[test]
@@ -595,7 +621,10 @@ fn player_model_update_low_performance_decreases_skill() {
     for _ in 0..5 {
         m.update_from_outcome(&make_outcome("t", 0.1));
     }
-    assert!(m.skill_level < initial_skill, "skill should decrease with low performance");
+    assert!(
+        m.skill_level < initial_skill,
+        "skill should decrease with low performance"
+    );
 }
 
 #[test]
@@ -800,8 +829,16 @@ fn tactic_execution_is_complete_true_when_empty_plan() {
 #[test]
 fn tactic_execution_advance_through_all() {
     let plan = make_tactic_plan(vec![
-        DirectorOp::SpawnWave { archetype: "a".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
-        DirectorOp::SpawnWave { archetype: "b".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
+        DirectorOp::SpawnWave {
+            archetype: "a".into(),
+            count: 1,
+            origin: IVec2 { x: 0, y: 0 },
+        },
+        DirectorOp::SpawnWave {
+            archetype: "b".into(),
+            count: 1,
+            origin: IVec2 { x: 0, y: 0 },
+        },
     ]);
     let mut exec = CTacticExecution::new(plan, 0);
     assert!(!exec.is_complete());
@@ -815,8 +852,16 @@ fn tactic_execution_advance_through_all() {
 #[test]
 fn tactic_execution_get_current_operation_returns_correct() {
     let plan = make_tactic_plan(vec![
-        DirectorOp::SpawnWave { archetype: "first".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
-        DirectorOp::SpawnWave { archetype: "second".into(), count: 2, origin: IVec2 { x: 1, y: 1 } },
+        DirectorOp::SpawnWave {
+            archetype: "first".into(),
+            count: 1,
+            origin: IVec2 { x: 0, y: 0 },
+        },
+        DirectorOp::SpawnWave {
+            archetype: "second".into(),
+            count: 2,
+            origin: IVec2 { x: 1, y: 1 },
+        },
     ]);
     let mut exec = CTacticExecution::new(plan, 0);
     if let Some(DirectorOp::SpawnWave { archetype, .. }) = exec.get_current_operation() {
@@ -836,9 +881,11 @@ fn tactic_execution_get_current_operation_returns_correct() {
 
 #[test]
 fn tactic_execution_paused_returns_none_for_current_op() {
-    let plan = make_tactic_plan(vec![
-        DirectorOp::SpawnWave { archetype: "a".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
-    ]);
+    let plan = make_tactic_plan(vec![DirectorOp::SpawnWave {
+        archetype: "a".into(),
+        count: 1,
+        origin: IVec2 { x: 0, y: 0 },
+    }]);
     let mut exec = CTacticExecution::new(plan, 0);
     assert!(exec.get_current_operation().is_some());
     exec.pause();
@@ -962,7 +1009,7 @@ fn metrics_get_success_rate_exact() {
     m.record_tactic(&make_outcome("t", 0.9), 100); // successful
     m.record_tactic(&make_outcome("t", 0.9), 100); // successful
     m.record_tactic(&make_outcome("t", 0.3), 100); // not successful
-    // 2/3 = 0.666...
+                                                   // 2/3 = 0.666...
     assert!((m.get_success_rate() - 2.0 / 3.0).abs() < 0.01);
 }
 
@@ -1102,8 +1149,16 @@ fn tactic_outcome_serde_roundtrip() {
 #[test]
 fn integration_process_director_operations_returns_current() {
     let plan = make_tactic_plan(vec![
-        DirectorOp::SpawnWave { archetype: "a".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
-        DirectorOp::SpawnWave { archetype: "b".into(), count: 2, origin: IVec2 { x: 1, y: 1 } },
+        DirectorOp::SpawnWave {
+            archetype: "a".into(),
+            count: 1,
+            origin: IVec2 { x: 0, y: 0 },
+        },
+        DirectorOp::SpawnWave {
+            archetype: "b".into(),
+            count: 2,
+            origin: IVec2 { x: 1, y: 1 },
+        },
     ]);
     let exec = CTacticExecution::new(plan, 0);
     let ops = astraweave_director::integration::process_director_operations(&exec, 100);
@@ -1120,17 +1175,25 @@ fn integration_process_director_operations_empty_when_complete() {
 
 #[test]
 fn integration_should_provide_feedback_timing() {
-    let plan = make_tactic_plan(vec![
-        DirectorOp::SpawnWave { archetype: "a".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
-    ]);
+    let plan = make_tactic_plan(vec![DirectorOp::SpawnWave {
+        archetype: "a".into(),
+        count: 1,
+        origin: IVec2 { x: 0, y: 0 },
+    }]);
     let exec = CTacticExecution::new(plan, 0);
 
     // Not enough time elapsed
-    assert!(!astraweave_director::integration::should_provide_feedback(&exec, 0, 400, 500));
+    assert!(!astraweave_director::integration::should_provide_feedback(
+        &exec, 0, 400, 500
+    ));
     // Exact boundary
-    assert!(astraweave_director::integration::should_provide_feedback(&exec, 0, 500, 500));
+    assert!(astraweave_director::integration::should_provide_feedback(
+        &exec, 0, 500, 500
+    ));
     // Past boundary
-    assert!(astraweave_director::integration::should_provide_feedback(&exec, 0, 600, 500));
+    assert!(astraweave_director::integration::should_provide_feedback(
+        &exec, 0, 600, 500
+    ));
 }
 
 #[test]
@@ -1138,7 +1201,9 @@ fn integration_should_provide_feedback_false_when_complete() {
     let plan = make_tactic_plan(vec![]);
     let exec = CTacticExecution::new(plan, 0);
     // Execution is complete (no ops)
-    assert!(!astraweave_director::integration::should_provide_feedback(&exec, 0, 1000, 500));
+    assert!(!astraweave_director::integration::should_provide_feedback(
+        &exec, 0, 1000, 500
+    ));
 }
 
 // ============================= Clone/Serde verifications =============================
@@ -1155,9 +1220,11 @@ fn director_state_clone_independent() {
 
 #[test]
 fn tactic_execution_clone_independent() {
-    let plan = make_tactic_plan(vec![
-        DirectorOp::SpawnWave { archetype: "a".into(), count: 1, origin: IVec2 { x: 0, y: 0 } },
-    ]);
+    let plan = make_tactic_plan(vec![DirectorOp::SpawnWave {
+        archetype: "a".into(),
+        count: 1,
+        origin: IVec2 { x: 0, y: 0 },
+    }]);
     let mut exec = CTacticExecution::new(plan, 0);
     let cloned = exec.clone();
     exec.advance_operation();

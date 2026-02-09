@@ -17,18 +17,9 @@ fn version_returns_valid_struct() {
 
     // Version numbers should be reasonable (not garbage)
     // The actual values depend on Cargo.toml, but they should parse correctly
-    kani::assert(
-        version.major <= 100,
-        "Major version should be reasonable",
-    );
-    kani::assert(
-        version.minor <= 100,
-        "Minor version should be reasonable",
-    );
-    kani::assert(
-        version.patch <= 1000,
-        "Patch version should be reasonable",
-    );
+    kani::assert(version.major <= 100, "Major version should be reasonable");
+    kani::assert(version.minor <= 100, "Minor version should be reasonable");
+    kani::assert(version.patch <= 1000, "Patch version should be reasonable");
 }
 
 /// Verify aw_version_string with null buffer returns required size
@@ -65,10 +56,7 @@ fn version_string_no_buffer_overflow() {
             let null_pos = buf.iter().position(|&b| b == 0);
 
             if let Some(pos) = null_pos {
-                kani::assert(
-                    pos < len,
-                    "Null terminator must be within buffer bounds",
-                );
+                kani::assert(pos < len, "Null terminator must be within buffer bounds");
             }
         }
 
@@ -94,10 +82,7 @@ fn version_string_writes_valid_utf8() {
 
         // Each byte should be valid ASCII (version strings are ASCII)
         for &byte in string_bytes {
-            kani::assert(
-                byte < 128,
-                "Version string must be ASCII",
-            );
+            kani::assert(byte < 128, "Version string must be ASCII");
         }
     }
 }
@@ -166,15 +151,24 @@ fn version_string_minimum_buffers() {
     // Test size 1 buffer
     let mut buf1 = [0xFFu8; 1];
     let _ = unsafe { aw_version_string(buf1.as_mut_ptr(), 1) };
-    kani::assert(buf1.iter().any(|&b| b == 0), "Size 1: must have null terminator");
+    kani::assert(
+        buf1.iter().any(|&b| b == 0),
+        "Size 1: must have null terminator",
+    );
 
     // Test size 4 buffer
     let mut buf4 = [0xFFu8; 4];
     let _ = unsafe { aw_version_string(buf4.as_mut_ptr(), 4) };
-    kani::assert(buf4.iter().any(|&b| b == 0), "Size 4: must have null terminator");
+    kani::assert(
+        buf4.iter().any(|&b| b == 0),
+        "Size 4: must have null terminator",
+    );
 
     // Test size 8 buffer
     let mut buf8 = [0xFFu8; 8];
     let _ = unsafe { aw_version_string(buf8.as_mut_ptr(), 8) };
-    kani::assert(buf8.iter().any(|&b| b == 0), "Size 8: must have null terminator");
+    kani::assert(
+        buf8.iter().any(|&b| b == 0),
+        "Size 8: must have null terminator",
+    );
 }

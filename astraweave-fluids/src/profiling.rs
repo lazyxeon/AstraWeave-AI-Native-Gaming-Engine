@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn test_fluid_timing_stats_default() {
         let stats = FluidTimingStats::default();
-        
+
         assert_eq!(stats.total_step_us, 0);
         assert_eq!(stats.sdf_gen_us, 0);
         assert_eq!(stats.predict_us, 0);
@@ -170,9 +170,9 @@ mod tests {
             heat_diffuse_us: 50,
             frame: 42,
         };
-        
+
         let cloned = stats.clone();
-        
+
         assert_eq!(cloned.total_step_us, 1000);
         assert_eq!(cloned.frame, 42);
     }
@@ -183,7 +183,7 @@ mod tests {
             total_step_us: 1000,
             ..Default::default()
         };
-        
+
         assert_eq!(stats.total_ms(), 1.0);
     }
 
@@ -199,7 +199,7 @@ mod tests {
             total_step_us: 500,
             ..Default::default()
         };
-        
+
         assert_eq!(stats.total_ms(), 0.5);
     }
 
@@ -209,7 +209,7 @@ mod tests {
             total_step_us: 16_667, // ~60fps in microseconds
             ..Default::default()
         };
-        
+
         let ms = stats.total_ms();
         assert!((ms - 16.667).abs() < 0.001);
     }
@@ -246,7 +246,7 @@ mod tests {
             frame: 1,
         };
         let breakdown = stats.breakdown();
-        
+
         let sum: f32 = breakdown.values().sum();
         assert_eq!(sum, 100.0);
     }
@@ -255,7 +255,7 @@ mod tests {
     fn test_breakdown_all_keys_present() {
         let stats = FluidTimingStats::default();
         let breakdown = stats.breakdown();
-        
+
         assert!(breakdown.contains_key("sdf_gen"));
         assert!(breakdown.contains_key("predict"));
         assert!(breakdown.contains_key("grid_build"));
@@ -272,10 +272,10 @@ mod tests {
             sdf_gen_us: 100,
             ..Default::default()
         };
-        
+
         // With zero total, breakdown uses max(1) to avoid division by zero
         let breakdown = stats.breakdown();
-        
+
         // 100 / 1 * 100 = 10000%
         assert_eq!(breakdown["sdf_gen"], 10000.0);
     }
@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn test_fluid_profiler_new() {
         let profiler = FluidProfiler::new();
-        
+
         assert!(!profiler.is_enabled());
         assert_eq!(profiler.stats().total_step_us, 0);
     }
@@ -293,19 +293,19 @@ mod tests {
     #[test]
     fn test_fluid_profiler_default() {
         let profiler = FluidProfiler::default();
-        
+
         assert!(!profiler.is_enabled());
     }
 
     #[test]
     fn test_profiler_enable_disable() {
         let mut profiler = FluidProfiler::new();
-        
+
         assert!(!profiler.is_enabled());
-        
+
         profiler.set_enabled(true);
         assert!(profiler.is_enabled());
-        
+
         profiler.set_enabled(false);
         assert!(!profiler.is_enabled());
     }
@@ -314,7 +314,7 @@ mod tests {
     fn test_profiler_stats_access() {
         let profiler = FluidProfiler::new();
         let stats = profiler.stats();
-        
+
         assert_eq!(stats.total_step_us, 0);
     }
 
@@ -322,14 +322,14 @@ mod tests {
     fn test_profiler_record_frame_when_disabled() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(false);
-        
+
         let stats = FluidTimingStats {
             total_step_us: 1000,
             ..Default::default()
         };
-        
+
         profiler.record_frame(stats);
-        
+
         // Stats should not be updated when disabled
         assert_eq!(profiler.stats().total_step_us, 0);
     }
@@ -338,7 +338,7 @@ mod tests {
     fn test_profiler_record_frame_when_enabled() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         let stats = FluidTimingStats {
             total_step_us: 1000,
             sdf_gen_us: 100,
@@ -350,9 +350,9 @@ mod tests {
             heat_diffuse_us: 50,
             frame: 1,
         };
-        
+
         profiler.record_frame(stats);
-        
+
         assert_eq!(profiler.stats().total_step_us, 1000);
         assert_eq!(profiler.stats().sdf_gen_us, 100);
     }
@@ -361,7 +361,7 @@ mod tests {
     fn test_profiler_average_stats_no_frames() {
         let profiler = FluidProfiler::new();
         let avg = profiler.average_stats();
-        
+
         assert_eq!(avg.total_step_us, 0);
     }
 
@@ -369,16 +369,16 @@ mod tests {
     fn test_profiler_average_stats_single_frame() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         let stats = FluidTimingStats {
             total_step_us: 1000,
             sdf_gen_us: 100,
             ..Default::default()
         };
-        
+
         profiler.record_frame(stats);
         let avg = profiler.average_stats();
-        
+
         assert_eq!(avg.total_step_us, 1000);
         assert_eq!(avg.sdf_gen_us, 100);
         assert_eq!(avg.frame, 1);
@@ -388,30 +388,30 @@ mod tests {
     fn test_profiler_average_stats_multiple_frames() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         // Frame 1: 1000us
         profiler.record_frame(FluidTimingStats {
             total_step_us: 1000,
             sdf_gen_us: 100,
             ..Default::default()
         });
-        
+
         // Frame 2: 2000us
         profiler.record_frame(FluidTimingStats {
             total_step_us: 2000,
             sdf_gen_us: 200,
             ..Default::default()
         });
-        
+
         // Frame 3: 3000us
         profiler.record_frame(FluidTimingStats {
             total_step_us: 3000,
             sdf_gen_us: 300,
             ..Default::default()
         });
-        
+
         let avg = profiler.average_stats();
-        
+
         // Average: (1000 + 2000 + 3000) / 3 = 2000
         assert_eq!(avg.total_step_us, 2000);
         assert_eq!(avg.sdf_gen_us, 200);
@@ -422,16 +422,16 @@ mod tests {
     fn test_profiler_reset() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         profiler.record_frame(FluidTimingStats {
             total_step_us: 1000,
             ..Default::default()
         });
-        
+
         assert_eq!(profiler.stats().total_step_us, 1000);
-        
+
         profiler.reset();
-        
+
         assert_eq!(profiler.stats().total_step_us, 0);
         assert_eq!(profiler.average_stats().total_step_us, 0);
     }
@@ -440,14 +440,14 @@ mod tests {
     fn test_profiler_reset_maintains_enabled_state() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         profiler.record_frame(FluidTimingStats {
             total_step_us: 1000,
             ..Default::default()
         });
-        
+
         profiler.reset();
-        
+
         // Enabled state should be preserved
         assert!(profiler.is_enabled());
     }
@@ -456,7 +456,7 @@ mod tests {
     fn test_profiler_accumulated_stats() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         for i in 0..100 {
             profiler.record_frame(FluidTimingStats {
                 total_step_us: 1000,
@@ -464,9 +464,9 @@ mod tests {
                 ..Default::default()
             });
         }
-        
+
         let avg = profiler.average_stats();
-        
+
         assert_eq!(avg.total_step_us, 1000);
         assert_eq!(avg.frame, 100);
         // Average of 0, 10, 20, ..., 990 = sum(0..100) * 10 / 100 = 4950 * 10 / 100 = 495
@@ -477,19 +477,19 @@ mod tests {
     fn test_profiler_latest_stats_override() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         profiler.record_frame(FluidTimingStats {
             total_step_us: 1000,
             frame: 1,
             ..Default::default()
         });
-        
+
         profiler.record_frame(FluidTimingStats {
             total_step_us: 2000,
             frame: 2,
             ..Default::default()
         });
-        
+
         // Latest stats should be the most recent frame
         assert_eq!(profiler.stats().total_step_us, 2000);
         assert_eq!(profiler.stats().frame, 2);
@@ -501,7 +501,7 @@ mod tests {
     fn test_profiler_with_stats_workflow() {
         let mut profiler = FluidProfiler::new();
         profiler.set_enabled(true);
-        
+
         // Simulate a fluid step
         let stats = FluidTimingStats {
             total_step_us: 16_667, // ~60 FPS
@@ -514,12 +514,12 @@ mod tests {
             heat_diffuse_us: 1500,
             frame: 1,
         };
-        
+
         profiler.record_frame(stats);
-        
+
         // Verify total time
         assert!((profiler.stats().total_ms() - 16.667).abs() < 0.001);
-        
+
         // Verify breakdown
         let breakdown = profiler.stats().breakdown();
         assert!(breakdown["constraint_solve"] > 25.0); // Should be largest

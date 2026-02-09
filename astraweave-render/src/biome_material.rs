@@ -25,7 +25,7 @@
 //! // system.transition_biome(BiomeType::Forest, device, queue).await?;
 //! ```
 
-use crate::hdri_catalog::{HdriCatalog, DayPeriod};
+use crate::hdri_catalog::{DayPeriod, HdriCatalog};
 use crate::ibl::SkyMode;
 use anyhow::{Context, Result};
 use astraweave_terrain::biome::BiomeType;
@@ -104,7 +104,10 @@ impl BiomeMaterialSystem {
                 .context("Failed to load HDRI catalog")?;
             self.hdri_catalog = Some(catalog);
         }
-        Ok(self.hdri_catalog.as_ref().expect("hdri_catalog must be initialized"))
+        Ok(self
+            .hdri_catalog
+            .as_ref()
+            .expect("hdri_catalog must be initialized"))
     }
 
     /// Get the material directory for a biome, resolved from the assets root.
@@ -297,11 +300,7 @@ mod tests {
         let gaps = system
             .validate_hdri_coverage()
             .expect("Failed to validate HDRI coverage");
-        assert!(
-            gaps.is_empty(),
-            "HDRI coverage gaps found: {:?}",
-            gaps
-        );
+        assert!(gaps.is_empty(), "HDRI coverage gaps found: {:?}", gaps);
     }
 
     /// Integration test: resolve sky mode for all biomes

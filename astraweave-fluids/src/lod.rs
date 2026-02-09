@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn test_lod_config_default() {
         let config = FluidLodConfig::default();
-        
+
         assert_eq!(config.lod_distances, [20.0, 50.0, 100.0, 200.0]);
         assert_eq!(config.sim_rate_multipliers, [1.0, 0.5, 0.25, 0.1]);
         assert!(config.enable_clustering);
@@ -132,7 +132,7 @@ mod tests {
     fn test_lod_config_clone() {
         let config = FluidLodConfig::default();
         let cloned = config.clone();
-        
+
         assert_eq!(cloned.lod_distances, config.lod_distances);
         assert_eq!(cloned.sim_rate_multipliers, config.sim_rate_multipliers);
     }
@@ -145,7 +145,7 @@ mod tests {
             enable_clustering: false,
             cluster_min_particles: 16,
         };
-        
+
         assert_eq!(config.lod_distances[0], 10.0);
         assert_eq!(config.sim_rate_multipliers[1], 0.75);
         assert!(!config.enable_clustering);
@@ -181,7 +181,7 @@ mod tests {
     fn test_lod_manager_new() {
         let config = FluidLodConfig::default();
         let manager = FluidLodManager::new(config);
-        
+
         assert_eq!(manager.current_lod(), LodLevel::Full);
     }
 
@@ -207,11 +207,11 @@ mod tests {
     fn test_lod_full_threshold() {
         let config = FluidLodConfig::default(); // distances: [20.0, 50.0, 100.0, 200.0]
         let mut manager = FluidLodManager::new(config);
-        
+
         // Distance 0 -> Full
         manager.update([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Full);
-        
+
         // Distance 19 -> Full (just under threshold)
         manager.update([0.0, 0.0, 0.0], [19.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Full);
@@ -221,11 +221,11 @@ mod tests {
     fn test_lod_high_threshold() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Distance 21 -> High (just over first threshold)
         manager.update([0.0, 0.0, 0.0], [21.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::High);
-        
+
         // Distance 49 -> High (just under second threshold)
         manager.update([0.0, 0.0, 0.0], [49.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::High);
@@ -235,11 +235,11 @@ mod tests {
     fn test_lod_medium_threshold() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Distance 51 -> Medium
         manager.update([0.0, 0.0, 0.0], [51.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Medium);
-        
+
         // Distance 99 -> Medium
         manager.update([0.0, 0.0, 0.0], [99.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Medium);
@@ -249,11 +249,11 @@ mod tests {
     fn test_lod_low_threshold() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Distance 101 -> Low
         manager.update([0.0, 0.0, 0.0], [101.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Low);
-        
+
         // Distance 199 -> Low
         manager.update([0.0, 0.0, 0.0], [199.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Low);
@@ -263,11 +263,11 @@ mod tests {
     fn test_lod_culled_threshold() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Distance 201 -> Culled
         manager.update([0.0, 0.0, 0.0], [201.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Culled);
-        
+
         // Very far -> Culled
         manager.update([0.0, 0.0, 0.0], [1000.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Culled);
@@ -277,11 +277,11 @@ mod tests {
     fn test_lod_3d_distance() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // 3D distance calculation: sqrt(10^2 + 10^2 + 10^2) = sqrt(300) ≈ 17.32
         manager.update([0.0, 0.0, 0.0], [10.0, 10.0, 10.0]);
         assert_eq!(manager.current_lod(), LodLevel::Full);
-        
+
         // sqrt(30^2 + 30^2 + 30^2) = sqrt(2700) ≈ 51.96
         manager.update([0.0, 0.0, 0.0], [30.0, 30.0, 30.0]);
         assert_eq!(manager.current_lod(), LodLevel::Medium);
@@ -291,11 +291,11 @@ mod tests {
     fn test_lod_negative_coordinates() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Distance should be same regardless of sign
         manager.update([0.0, 0.0, 0.0], [-25.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::High);
-        
+
         manager.update([0.0, 0.0, 0.0], [25.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::High);
     }
@@ -306,7 +306,7 @@ mod tests {
     fn test_should_simulate_full_lod() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
         assert!(manager.should_simulate_this_frame());
     }
@@ -315,9 +315,9 @@ mod tests {
     fn test_should_simulate_high_lod() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [25.0, 0.0, 0.0]); // High LOD
-        
+
         // High LOD simulates every other frame
         // After first update, frame_accumulator = 1
         // 1 % 2 == 1, not 0, so should NOT simulate
@@ -325,7 +325,7 @@ mod tests {
         let frame1 = manager.should_simulate_this_frame();
         manager.update([0.0, 0.0, 0.0], [25.0, 0.0, 0.0]);
         let frame2 = manager.should_simulate_this_frame();
-        
+
         // At least one of two consecutive frames should simulate
         assert!(frame1 || frame2);
     }
@@ -334,7 +334,7 @@ mod tests {
     fn test_should_simulate_culled() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [300.0, 0.0, 0.0]); // Culled
         assert!(!manager.should_simulate_this_frame());
     }
@@ -343,7 +343,7 @@ mod tests {
     fn test_sim_rate_multiplier_full() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
         assert_eq!(manager.sim_rate_multiplier(), 1.0);
     }
@@ -352,7 +352,7 @@ mod tests {
     fn test_sim_rate_multiplier_high() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [25.0, 0.0, 0.0]);
         assert_eq!(manager.sim_rate_multiplier(), 0.5);
     }
@@ -361,7 +361,7 @@ mod tests {
     fn test_sim_rate_multiplier_medium() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [75.0, 0.0, 0.0]);
         assert_eq!(manager.sim_rate_multiplier(), 0.25);
     }
@@ -370,7 +370,7 @@ mod tests {
     fn test_sim_rate_multiplier_low() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [150.0, 0.0, 0.0]);
         assert_eq!(manager.sim_rate_multiplier(), 0.1);
     }
@@ -379,7 +379,7 @@ mod tests {
     fn test_sim_rate_multiplier_culled() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [300.0, 0.0, 0.0]);
         assert_eq!(manager.sim_rate_multiplier(), 0.0);
     }
@@ -390,7 +390,7 @@ mod tests {
     fn test_update_returns_should_simulate() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Full LOD should always return true
         let result = manager.update([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
         assert!(result);
@@ -400,7 +400,7 @@ mod tests {
     fn test_update_culled_returns_false() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Culled should always return false
         let result = manager.update([0.0, 0.0, 0.0], [300.0, 0.0, 0.0]);
         assert!(!result);
@@ -415,11 +415,11 @@ mod tests {
             ..Default::default()
         };
         let mut manager = FluidLodManager::new(config);
-        
+
         // With tighter thresholds, should transition sooner
         manager.update([0.0, 0.0, 0.0], [6.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::High);
-        
+
         manager.update([0.0, 0.0, 0.0], [15.0, 0.0, 0.0]);
         assert_eq!(manager.current_lod(), LodLevel::Medium);
     }
@@ -431,7 +431,7 @@ mod tests {
             ..Default::default()
         };
         let mut manager = FluidLodManager::new(config);
-        
+
         manager.update([0.0, 0.0, 0.0], [25.0, 0.0, 0.0]); // High LOD
         assert_eq!(manager.sim_rate_multiplier(), 0.8);
     }
@@ -442,7 +442,7 @@ mod tests {
     fn test_frame_accumulator_increments() {
         let config = FluidLodConfig::default();
         let mut manager = FluidLodManager::new(config);
-        
+
         // Each update increments frame_accumulator
         for _ in 0..10 {
             manager.update([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]);
@@ -505,7 +505,7 @@ impl OptimizedLodConfig {
     pub fn from_preset(preset: &OptimizationPreset) -> Self {
         // Determine quality level from budget target (higher budget = higher quality)
         let target_ms = preset.budget.target_ms;
-        
+
         let (base, particle_factors, auto_adjust) = if target_ms >= 8.0 {
             // Ultra/Quality preset
             (
@@ -693,21 +693,21 @@ impl OptimizedLodManager {
         // but are semantically different conditions (allow clippy::if_same_then_else)
         #[allow(clippy::if_same_then_else)]
         {
-        self.current_lod = if self.force_invisible {
-            LodLevel::Culled
-        } else if self.force_visible {
-            LodLevel::Full
-        } else if scaled_distance < base.lod_distances[0] {
-            LodLevel::Full
-        } else if scaled_distance < base.lod_distances[1] {
-            LodLevel::High
-        } else if scaled_distance < base.lod_distances[2] {
-            LodLevel::Medium
-        } else if scaled_distance < base.lod_distances[3] {
-            LodLevel::Low
-        } else {
-            LodLevel::Culled
-        };
+            self.current_lod = if self.force_invisible {
+                LodLevel::Culled
+            } else if self.force_visible {
+                LodLevel::Full
+            } else if scaled_distance < base.lod_distances[0] {
+                LodLevel::Full
+            } else if scaled_distance < base.lod_distances[1] {
+                LodLevel::High
+            } else if scaled_distance < base.lod_distances[2] {
+                LodLevel::Medium
+            } else if scaled_distance < base.lod_distances[3] {
+                LodLevel::Low
+            } else {
+                LodLevel::Culled
+            };
         }
 
         // Update particle factor
@@ -719,10 +719,10 @@ impl OptimizedLodManager {
                 LodLevel::Low => self.config.particle_factors[3],
                 LodLevel::Culled => 0.0,
             }
-        } else if self.current_lod == LodLevel::Culled { 
-            0.0 
-        } else { 
-            1.0 
+        } else if self.current_lod == LodLevel::Culled {
+            0.0
+        } else {
+            1.0
         };
 
         self.frame_accumulator += 1;
@@ -750,12 +750,10 @@ impl OptimizedLodManager {
 
         if current > target * 1.1 {
             // Over budget: shrink distances (more aggressive culling)
-            self.distance_scale = (self.distance_scale * 0.98)
-                .max(self.config.min_distance_scale);
+            self.distance_scale = (self.distance_scale * 0.98).max(self.config.min_distance_scale);
         } else if current < target * 0.7 {
             // Under budget: expand distances (less aggressive culling)
-            self.distance_scale = (self.distance_scale * 1.02)
-                .min(self.config.max_distance_scale);
+            self.distance_scale = (self.distance_scale * 1.02).min(self.config.max_distance_scale);
         }
     }
 

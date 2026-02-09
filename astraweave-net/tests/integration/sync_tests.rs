@@ -9,8 +9,8 @@
 
 use astraweave_core::{ActionStep, IVec2, PlanIntent};
 use astraweave_net::{
-    apply_delta, diff_snapshots, filter_snapshot_for_viewer, Delta, EntityState,
-    FovInterest, FovLosInterest, FullInterest, RadiusTeamInterest, Snapshot,
+    apply_delta, diff_snapshots, filter_snapshot_for_viewer, Delta, EntityState, FovInterest,
+    FovLosInterest, FullInterest, RadiusTeamInterest, Snapshot,
 };
 use std::collections::BTreeSet;
 
@@ -47,7 +47,11 @@ async fn test_two_clients_see_same_world_state() {
     for id in [e1, e2] {
         let exists_1 = snap1.entities.iter().any(|e| e.id == id);
         let exists_2 = snap2.entities.iter().any(|e| e.id == id);
-        assert!(exists_1 && exists_2, "Entity {} should be visible to both", id);
+        assert!(
+            exists_1 && exists_2,
+            "Entity {} should be visible to both",
+            id
+        );
     }
 
     // Verify state consistency
@@ -172,7 +176,10 @@ async fn test_delta_compression_preserves_state() {
     // Find entity 1 and verify position was updated
     let e1_base = base.entities.iter().find(|e| e.id == 1).unwrap();
     let e1_head = head.entities.iter().find(|e| e.id == 1).unwrap();
-    assert_eq!(e1_base.pos, e1_head.pos, "Position should be updated via delta");
+    assert_eq!(
+        e1_base.pos, e1_head.pos,
+        "Position should be updated via delta"
+    );
 }
 
 #[tokio::test]
@@ -293,7 +300,11 @@ async fn test_delta_handles_entity_removal() {
     // Apply and verify
     let mut reconstructed = base.clone();
     apply_delta(&mut reconstructed, &delta);
-    assert_eq!(reconstructed.entities.len(), 1, "Only one entity after delta");
+    assert_eq!(
+        reconstructed.entities.len(),
+        1,
+        "Only one entity after delta"
+    );
     assert!(
         reconstructed.entities.iter().all(|e| e.id != 2),
         "Entity 2 should be removed"
@@ -516,7 +527,7 @@ async fn test_interest_filtering_fov() {
 
     let interest = FovInterest {
         radius: 10,
-        half_angle_deg: 45.0, // 90 degree FOV
+        half_angle_deg: 45.0,         // 90 degree FOV
         facing: IVec2 { x: 1, y: 0 }, // Facing +X
     };
     let filtered = filter_snapshot_for_viewer(&full_snap, &interest, &viewer);
@@ -718,7 +729,10 @@ async fn test_concurrent_client_modifications() {
 
     // Original server should still be consistent
     let snap = server.get_snapshot().await;
-    assert!(snap.entities.iter().any(|e| e.id == id), "Entity should exist");
+    assert!(
+        snap.entities.iter().any(|e| e.id == id),
+        "Entity should exist"
+    );
 
     server.shutdown().await;
 }
@@ -797,7 +811,12 @@ async fn test_late_joiner_gets_full_snapshot() {
     // Run game for a while with modifications
     for i in 0..5 {
         server
-            .spawn_entity(&format!("entity_{}", i), IVec2 { x: i, y: i }, 0, 100 - i * 10)
+            .spawn_entity(
+                &format!("entity_{}", i),
+                IVec2 { x: i, y: i },
+                0,
+                100 - i * 10,
+            )
             .await;
     }
 
@@ -850,7 +869,12 @@ async fn test_multiple_disconnect_reconnect_cycles() {
     for cycle in 0..3 {
         // Spawn entity for this "connection"
         let id = server
-            .spawn_entity(&format!("player_{}", cycle), IVec2 { x: cycle, y: 0 }, 0, 100)
+            .spawn_entity(
+                &format!("player_{}", cycle),
+                IVec2 { x: cycle, y: 0 },
+                0,
+                100,
+            )
             .await;
 
         // Take some snapshots
@@ -976,7 +1000,10 @@ async fn test_empty_snapshot_handling() {
 
     // Should not panic
     let filtered = filter_snapshot_for_viewer(&empty, &FullInterest, &viewer);
-    assert!(filtered.entities.is_empty(), "Filtered empty should be empty");
+    assert!(
+        filtered.entities.is_empty(),
+        "Filtered empty should be empty"
+    );
 }
 
 #[tokio::test]

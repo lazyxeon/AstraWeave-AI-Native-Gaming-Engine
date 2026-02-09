@@ -25,7 +25,11 @@ pub enum WaterEffectsError {
     /// System not initialized
     NotInitialized { system: String },
     /// Resource limit exceeded
-    ResourceLimitExceeded { resource: String, limit: usize, requested: usize },
+    ResourceLimitExceeded {
+        resource: String,
+        limit: usize,
+        requested: usize,
+    },
     /// Invalid state transition
     InvalidStateTransition { from: String, to: String },
 }
@@ -39,8 +43,16 @@ impl std::fmt::Display for WaterEffectsError {
             Self::NotInitialized { system } => {
                 write!(f, "System '{}' not initialized", system)
             }
-            Self::ResourceLimitExceeded { resource, limit, requested } => {
-                write!(f, "Resource '{}' limit exceeded: {} requested, {} max", resource, requested, limit)
+            Self::ResourceLimitExceeded {
+                resource,
+                limit,
+                requested,
+            } => {
+                write!(
+                    f,
+                    "Resource '{}' limit exceeded: {} requested, {} max",
+                    resource, requested, limit
+                )
             }
             Self::InvalidStateTransition { from, to } => {
                 write!(f, "Invalid state transition from '{}' to '{}'", from, to)
@@ -329,7 +341,10 @@ impl WaterEffectsStats {
             ("God Rays", self.god_rays_us as f32 / total * 100.0),
             ("Reflections", self.reflections_us as f32 / total * 100.0),
             ("Foam", self.foam_us as f32 / total * 100.0),
-            ("Underwater", self.underwater_particles_us as f32 / total * 100.0),
+            (
+                "Underwater",
+                self.underwater_particles_us as f32 / total * 100.0,
+            ),
             ("Waterfalls", self.waterfalls_us as f32 / total * 100.0),
         ]
     }
@@ -374,7 +389,9 @@ impl WaterEffectsManager {
             god_rays: GodRaysSystem::new(config.god_rays.clone()),
             reflections: WaterReflectionSystem::new(config.reflections.clone()),
             foam: FoamSystem::new(config.foam.clone()),
-            underwater_particles: UnderwaterParticleSystem::new(config.underwater_particles.clone()),
+            underwater_particles: UnderwaterParticleSystem::new(
+                config.underwater_particles.clone(),
+            ),
             waterfalls: WaterfallSystem::new(config.waterfalls.clone()),
             underwater_state: UnderwaterState::new(config.underwater.clone()),
             surface_height: 0.0,
@@ -396,7 +413,12 @@ impl WaterEffectsManager {
     }
 
     /// Initialize systems for a water surface
-    pub fn setup_water_surface(&mut self, surface_height: f32, bounds_min: glam::Vec2, bounds_max: glam::Vec2) {
+    pub fn setup_water_surface(
+        &mut self,
+        surface_height: f32,
+        bounds_min: glam::Vec2,
+        bounds_max: glam::Vec2,
+    ) {
         self.surface_height = surface_height;
 
         // Setup reflections
@@ -407,8 +429,9 @@ impl WaterEffectsManager {
 
         // Setup caustics projector
         self.caustics.clear_projectors();
-        let projector = CausticsProjector::new(Vec3::new(0.0, -1.0, 0.2).normalize(), surface_height)
-            .with_bounds(bounds_min, bounds_max);
+        let projector =
+            CausticsProjector::new(Vec3::new(0.0, -1.0, 0.2).normalize(), surface_height)
+                .with_bounds(bounds_min, bounds_max);
         self.caustics.add_projector(projector);
     }
 
@@ -420,7 +443,8 @@ impl WaterEffectsManager {
         let is_underwater = camera_pos.y < self.surface_height;
 
         // Update underwater state
-        self.underwater_state.update(camera_pos.y, self.surface_height, dt);
+        self.underwater_state
+            .update(camera_pos.y, self.surface_height, dt);
 
         // Caustics
         let caustics_start = Instant::now();
@@ -614,7 +638,8 @@ impl WaterEffectsManager {
         self.god_rays.set_config(config.god_rays.clone());
         self.reflections.set_config(config.reflections.clone());
         self.foam.set_config(config.foam.clone());
-        self.underwater_particles.set_config(config.underwater_particles.clone());
+        self.underwater_particles
+            .set_config(config.underwater_particles.clone());
         // Note: WaterfallSystem does not have set_config - reconfigure by recreating if needed
 
         self.config = config;
@@ -757,7 +782,7 @@ mod tests {
     fn test_manager_creation() {
         let manager = WaterEffectsManager::new_default();
         assert!(manager.is_ok());
-        
+
         let manager = manager.unwrap();
         assert!(manager.is_initialized());
         assert_eq!(manager.total_particle_count(), 0);
@@ -784,9 +809,13 @@ mod tests {
     #[test]
     fn test_setup_water_surface() {
         let mut manager = WaterEffectsManager::new_default().unwrap();
-        
-        manager.setup_water_surface(10.0, glam::Vec2::new(-50.0, -50.0), glam::Vec2::new(50.0, 50.0));
-        
+
+        manager.setup_water_surface(
+            10.0,
+            glam::Vec2::new(-50.0, -50.0),
+            glam::Vec2::new(50.0, 50.0),
+        );
+
         assert_eq!(manager.surface_height(), 10.0);
         assert!(manager.reflections().planar().is_some());
         assert_eq!(manager.caustics().projector_count(), 1);
@@ -832,7 +861,7 @@ mod tests {
         };
 
         let breakdown = stats.breakdown_percentages();
-        
+
         // Check percentages sum to ~100%
         let sum: f32 = breakdown.iter().map(|(_, p)| p).sum();
         assert!((sum - 100.0).abs() < 1.0);
@@ -844,7 +873,7 @@ mod tests {
 
         // Should be able to spawn within limit
         assert!(manager.can_spawn_particles(100));
-        
+
         // Should not be able to spawn more than limit
         assert!(!manager.can_spawn_particles(100_000_000));
     }
@@ -881,7 +910,9 @@ mod tests {
 
         // Spawn some particles using correct API
         use crate::foam::FoamSource;
-        manager.foam_mut().spawn_foam(glam::Vec3::ZERO, glam::Vec2::ONE, FoamSource::Whitecap);
+        manager
+            .foam_mut()
+            .spawn_foam(glam::Vec3::ZERO, glam::Vec2::ONE, FoamSource::Whitecap);
 
         assert!(manager.total_particle_count() > 0);
 
@@ -893,7 +924,7 @@ mod tests {
     fn test_reset() {
         let mut manager = WaterEffectsManager::new_default().unwrap();
         manager.setup_water_surface(10.0, glam::Vec2::splat(-50.0), glam::Vec2::splat(50.0));
-        
+
         manager.update(0.016, Vec3::new(0.0, 5.0, 0.0), 100.0);
         assert!(manager.stats().frame > 0);
 

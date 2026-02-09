@@ -169,7 +169,7 @@ impl WaterfallSource {
         // Calculate facing direction (perpendicular to fall direction in XZ plane)
         let fall_dir = (bottom - top).normalize();
         let facing = Vec2::new(fall_dir.x, fall_dir.z).normalize();
-        
+
         Self {
             top,
             bottom,
@@ -253,7 +253,7 @@ impl WaterfallSystem {
 
         let t = self.next_random();
         let position = source.random_top_point(t);
-        
+
         // Initial velocity (mostly downward with some random spray)
         let spray_x = (self.next_random() - 0.5) * self.config.spray_angle;
         let spray_z = (self.next_random() - 0.5) * self.config.spray_angle;
@@ -263,10 +263,10 @@ impl WaterfallSystem {
             source.facing.y * 0.5 + spray_z,
         );
 
-        let lifetime = self.config.lifetime_range.0 
+        let lifetime = self.config.lifetime_range.0
             + self.next_random() * (self.config.lifetime_range.1 - self.config.lifetime_range.0);
-        
-        let size = self.config.size_range.0 
+
+        let size = self.config.size_range.0
             + self.next_random() * (self.config.size_range.1 - self.config.size_range.0);
 
         self.particles.push(WaterParticle {
@@ -326,7 +326,7 @@ impl WaterfallSystem {
     /// Spawn splash particles at impact
     fn spawn_splash(&mut self, position: Vec3, intensity: f32) {
         let count = (intensity * 10.0) as u32;
-        
+
         for _ in 0..count {
             if self.particles.len() >= self.config.max_particles as usize {
                 break;
@@ -339,11 +339,7 @@ impl WaterfallSystem {
             let lifetime_rand = self.next_random();
             let size_rand = self.next_random();
 
-            let velocity = Vec3::new(
-                angle.cos() * speed,
-                up_speed,
-                angle.sin() * speed,
-            );
+            let velocity = Vec3::new(angle.cos() * speed, up_speed, angle.sin() * speed);
 
             let lifetime = 0.5 + lifetime_rand * 0.5;
             let size = self.config.size_range.0 * (1.0 + size_rand);
@@ -368,10 +364,10 @@ impl WaterfallSystem {
         // Spawn new particles from sources
         self.spawn_accum += dt;
         let spawn_interval = 1.0 / self.config.spawn_rate;
-        
+
         while self.spawn_accum >= spawn_interval {
             self.spawn_accum -= spawn_interval;
-            
+
             // Clone sources to avoid borrow issues
             let sources: Vec<WaterfallSource> = self.sources.clone();
             for source in &sources {
@@ -391,7 +387,9 @@ impl WaterfallSystem {
             }
 
             match p.particle_type {
-                WaterParticleType::Droplet | WaterParticleType::Spray | WaterParticleType::Splash => {
+                WaterParticleType::Droplet
+                | WaterParticleType::Spray
+                | WaterParticleType::Splash => {
                     // Apply gravity
                     p.velocity.y -= gravity * dt;
                     // Apply drag
@@ -432,7 +430,8 @@ impl WaterfallSystem {
 
     /// Get particles by type
     pub fn get_particles_by_type(&self, particle_type: WaterParticleType) -> Vec<&WaterParticle> {
-        self.particles.iter()
+        self.particles
+            .iter()
             .filter(|p| p.particle_type == particle_type)
             .collect()
     }
@@ -497,7 +496,7 @@ impl RapidsSystem {
 
                 let t = i as f32 / particles_per_segment as f32;
                 let base_pos = start.lerp(end, t);
-                
+
                 // Pre-compute all random values to avoid borrow issues
                 let offset_rand = self.next_random();
                 let turb_x = self.next_random();
@@ -505,7 +504,7 @@ impl RapidsSystem {
                 let turb_z = self.next_random();
                 let size_rand = self.next_random();
                 let lifetime_rand = self.next_random();
-                
+
                 // Add random offset perpendicular to flow
                 let offset = (offset_rand - 0.5) * width;
                 let perp = Vec3::new(-flow_velocity.z, 0.0, flow_velocity.x).normalize_or_zero();
@@ -590,11 +589,7 @@ mod tests {
 
     #[test]
     fn test_waterfall_source() {
-        let source = WaterfallSource::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::new(0.0, 0.0, 0.0),
-            5.0,
-        );
+        let source = WaterfallSource::new(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.0, 0.0, 0.0), 5.0);
 
         assert_eq!(source.height(), 10.0);
         assert_eq!(source.width, 5.0);
@@ -615,7 +610,7 @@ mod tests {
         let center = source.random_top_point(0.5);
 
         assert_eq!(center.y, 10.0); // Same height as top
-        // With valid facing, left and right should be different
+                                    // With valid facing, left and right should be different
         assert!((left - right).length() > 0.01);
     }
 
@@ -629,7 +624,7 @@ mod tests {
     #[test]
     fn test_waterfall_add_source() {
         let mut system = WaterfallSystem::new(WaterfallConfig::default());
-        
+
         system.add_source(WaterfallSource::new(
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(0.0, 0.0, 0.0),
@@ -646,7 +641,7 @@ mod tests {
             ..Default::default()
         };
         let mut system = WaterfallSystem::new(config);
-        
+
         system.add_source(WaterfallSource::new(
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(0.0, 0.0, 0.0),
@@ -666,7 +661,7 @@ mod tests {
             ..Default::default()
         };
         let mut system = WaterfallSystem::new(config);
-        
+
         system.add_source(WaterfallSource::new(
             Vec3::new(0.0, 100.0, 0.0), // High up
             Vec3::new(5.0, 0.0, 0.0),   // Valid XZ offset for facing
@@ -676,20 +671,25 @@ mod tests {
         system.update(0.1);
         let initial_count = system.particle_count();
         assert!(initial_count > 0, "Should have spawned particles");
-        
+
         // Track initial Y values (prefix with _ since we only assert on post-fall)
-        let _initial_avg_y: f32 = system.get_gpu_particles().iter()
+        let _initial_avg_y: f32 = system
+            .get_gpu_particles()
+            .iter()
             .map(|p| p.position_size[1])
-            .sum::<f32>() / initial_count as f32;
+            .sum::<f32>()
+            / initial_count as f32;
 
         // Update with gravity applied
         system.update(0.5);
-        
+
         // Check that at least some particles have fallen below their spawn height
-        let fallen_particles = system.get_gpu_particles().iter()
+        let fallen_particles = system
+            .get_gpu_particles()
+            .iter()
             .filter(|p| p.position_size[1] < 100.0) // Below spawn height
             .count();
-        
+
         // Most particles should have fallen below spawn point
         assert!(fallen_particles > 0, "Particles should fall due to gravity");
     }
@@ -735,7 +735,7 @@ mod tests {
     #[test]
     fn test_rapids_spawn_along_path() {
         let mut system = RapidsSystem::new(1000, 0.5);
-        
+
         let path = vec![
             Vec3::new(0.0, 0.0, 0.0),
             Vec3::new(10.0, 0.0, 0.0),
@@ -749,11 +749,8 @@ mod tests {
     #[test]
     fn test_rapids_update() {
         let mut system = RapidsSystem::new(1000, 0.5);
-        
-        let path = vec![
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(10.0, 0.0, 0.0),
-        ];
+
+        let path = vec![Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 0.0, 0.0)];
 
         system.spawn_along_path(&path, Vec3::new(1.0, 0.0, 0.0), 1.0);
         let initial_count = system.particle_count();
@@ -776,7 +773,7 @@ mod tests {
             5.0,
         ));
         system.update(0.1);
-        
+
         system.clear();
         assert_eq!(system.particle_count(), 0);
     }
@@ -804,20 +801,17 @@ mod tests {
         let config1 = WaterfallConfig::default();
         let config2 = WaterfallConfig::default();
         let config3 = WaterfallConfig::gentle();
-        
+
         assert_eq!(config1, config2);
         assert_ne!(config1, config3);
     }
 
     #[test]
     fn test_waterfall_source_flow_rate() {
-        let mut source = WaterfallSource::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::new(0.0, 0.0, 0.0),
-            5.0,
-        );
+        let mut source =
+            WaterfallSource::new(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.0, 0.0, 0.0), 5.0);
         assert_eq!(source.flow_rate, 1.0);
-        
+
         source.flow_rate = 0.5;
         assert_eq!(source.flow_rate, 0.5);
     }
@@ -836,7 +830,7 @@ mod tests {
             3.0,
         ));
         assert_eq!(system.source_count(), 2);
-        
+
         system.clear_sources();
         assert_eq!(system.source_count(), 0);
     }
@@ -849,18 +843,18 @@ mod tests {
             ..Default::default()
         };
         let mut system = WaterfallSystem::new(config);
-        
+
         system.add_source(WaterfallSource::new(
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(5.0, 0.0, 0.0),
             5.0,
         ));
-        
+
         system.update(0.1);
-        
+
         let droplets = system.get_particles_by_type(WaterParticleType::Droplet);
         assert!(droplets.len() > 0 || system.particle_count() == 0);
-        
+
         // All returned particles should be droplets
         for p in droplets {
             assert_eq!(p.particle_type, WaterParticleType::Droplet);
@@ -870,15 +864,12 @@ mod tests {
     #[test]
     fn test_rapids_system_clear() {
         let mut system = RapidsSystem::new(1000, 0.5);
-        
-        let path = vec![
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(10.0, 0.0, 0.0),
-        ];
-        
+
+        let path = vec![Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 0.0, 0.0)];
+
         system.spawn_along_path(&path, Vec3::new(1.0, 0.0, 0.0), 2.0);
         assert!(system.particle_count() > 0);
-        
+
         system.clear();
         assert_eq!(system.particle_count(), 0);
     }
@@ -886,14 +877,11 @@ mod tests {
     #[test]
     fn test_rapids_get_gpu_particles() {
         let mut system = RapidsSystem::new(100, 0.5);
-        
-        let path = vec![
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(10.0, 0.0, 0.0),
-        ];
-        
+
+        let path = vec![Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 0.0, 0.0)];
+
         system.spawn_along_path(&path, Vec3::new(1.0, 0.0, 0.0), 2.0);
-        
+
         let gpu_particles = system.get_gpu_particles();
         assert_eq!(gpu_particles.len(), system.particle_count());
     }
@@ -913,15 +901,15 @@ mod tests {
             ..Default::default()
         };
         let mut system = WaterfallSystem::new(config);
-        
+
         system.add_source(WaterfallSource::new(
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(5.0, 0.0, 0.0),
             5.0,
         ));
-        
+
         system.update(0.1);
-        
+
         let gpu_particles = system.get_gpu_particles();
         assert_eq!(gpu_particles.len(), system.particle_count());
     }
@@ -929,12 +917,12 @@ mod tests {
     #[test]
     fn test_rapids_spawn_empty_path() {
         let mut system = RapidsSystem::new(1000, 0.5);
-        
+
         // Empty path should do nothing
         let empty_path: Vec<Vec3> = vec![];
         system.spawn_along_path(&empty_path, Vec3::new(1.0, 0.0, 0.0), 2.0);
         assert_eq!(system.particle_count(), 0);
-        
+
         // Single point path should also do nothing
         let single_path = vec![Vec3::ZERO];
         system.spawn_along_path(&single_path, Vec3::new(1.0, 0.0, 0.0), 2.0);
@@ -944,12 +932,12 @@ mod tests {
     #[test]
     fn test_rapids_max_particles() {
         let mut system = RapidsSystem::new(10, 0.5); // Very low max
-        
+
         let path = vec![
             Vec3::new(0.0, 0.0, 0.0),
             Vec3::new(100.0, 0.0, 0.0), // Long path
         ];
-        
+
         system.spawn_along_path(&path, Vec3::new(1.0, 0.0, 0.0), 2.0);
         assert!(system.particle_count() <= 10);
     }
@@ -963,27 +951,23 @@ mod tests {
             ..Default::default()
         };
         let mut system = WaterfallSystem::new(config);
-        
+
         system.add_source(WaterfallSource::new(
             Vec3::new(0.0, 10.0, 0.0),
             Vec3::new(5.0, 0.0, 0.0),
             5.0,
         ));
-        
+
         system.update(1.0); // Update for a full second
-        
+
         assert!(system.particle_count() <= 5);
     }
 
     #[test]
     fn test_waterfall_source_clone() {
-        let source = WaterfallSource::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::new(5.0, 0.0, 0.0),
-            5.0,
-        );
+        let source = WaterfallSource::new(Vec3::new(0.0, 10.0, 0.0), Vec3::new(5.0, 0.0, 0.0), 5.0);
         let cloned = source.clone();
-        
+
         assert_eq!(cloned.top, source.top);
         assert_eq!(cloned.bottom, source.bottom);
         assert_eq!(cloned.width, source.width);
@@ -994,7 +978,7 @@ mod tests {
         let t1 = WaterParticleType::Droplet;
         let t2 = t1;
         let t3 = t1.clone();
-        
+
         assert_eq!(t1, t2);
         assert_eq!(t1, t3);
     }
@@ -1024,21 +1008,17 @@ mod tests {
             max_lifetime: 1.0,
             particle_type: WaterParticleType::Droplet,
         };
-        
+
         let copied = p;
         let cloned = p.clone();
-        
+
         assert_eq!(copied.position, p.position);
         assert_eq!(cloned.size, p.size);
     }
 
     #[test]
     fn test_waterfall_source_debug() {
-        let source = WaterfallSource::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::new(0.0, 0.0, 0.0),
-            5.0,
-        );
+        let source = WaterfallSource::new(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.0, 0.0, 0.0), 5.0);
         let debug = format!("{:?}", source);
         assert!(debug.contains("WaterfallSource"));
     }
@@ -1069,7 +1049,7 @@ mod tests {
             particle_type: WaterParticleType::Droplet,
         };
         assert_eq!(p.opacity(), 0.0);
-        
+
         // Lifetime > max_lifetime should clamp to 1
         let p2 = WaterParticle {
             position: Vec3::ZERO,
@@ -1096,7 +1076,7 @@ mod tests {
     fn test_waterfall_config_clone() {
         let config = WaterfallConfig::powerful();
         let cloned = config.clone();
-        
+
         assert_eq!(cloned.max_particles, config.max_particles);
         assert_eq!(cloned.spawn_rate, config.spawn_rate);
     }

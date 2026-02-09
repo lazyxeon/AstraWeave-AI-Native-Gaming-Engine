@@ -51,9 +51,7 @@ fn bench_biome_visuals_for_biome(c: &mut Criterion) {
 
     // Benchmark single lookup
     group.bench_function("for_biome_single", |b| {
-        b.iter(|| {
-            black_box(BiomeVisuals::for_biome(BiomeType::Forest))
-        })
+        b.iter(|| black_box(BiomeVisuals::for_biome(BiomeType::Forest)))
     });
 
     // Benchmark all 8 biomes
@@ -69,9 +67,7 @@ fn bench_biome_visuals_for_biome(c: &mut Criterion) {
     group.bench_function("lerp_single", |b| {
         let from = BiomeVisuals::for_biome(BiomeType::Forest);
         let to = BiomeVisuals::for_biome(BiomeType::Tundra);
-        b.iter(|| {
-            black_box(BiomeVisuals::lerp(&from, &to, 0.5))
-        })
+        b.iter(|| black_box(BiomeVisuals::lerp(&from, &to, 0.5)))
     });
 
     // Benchmark lerp at multiple t values (simulating transition)
@@ -108,9 +104,7 @@ fn bench_transition_effect(c: &mut Criterion) {
             apply_tint: true,
             tint_alpha: 0.15,
         };
-        b.iter(|| {
-            black_box(TransitionEffect::new(config.clone()))
-        })
+        b.iter(|| black_box(TransitionEffect::new(config.clone())))
     });
 
     // Benchmark starting a transition
@@ -167,9 +161,7 @@ fn bench_scene_environment(c: &mut Criterion) {
 
     // Benchmark default creation
     group.bench_function("default", |b| {
-        b.iter(|| {
-            black_box(SceneEnvironment::default())
-        })
+        b.iter(|| black_box(SceneEnvironment::default()))
     });
 
     // Benchmark set_biome
@@ -196,9 +188,7 @@ fn bench_scene_environment(c: &mut Criterion) {
     // Benchmark to_ubo conversion
     group.bench_function("to_ubo", |b| {
         let env = SceneEnvironment::default();
-        b.iter(|| {
-            black_box(env.to_ubo())
-        })
+        b.iter(|| black_box(env.to_ubo()))
     });
 
     group.finish();
@@ -231,10 +221,10 @@ fn bench_full_pipeline(c: &mut Criterion) {
         let config = TransitionConfig::default();
         let mut effect = TransitionEffect::new(config);
         effect.start(Some(BiomeType::Forest), BiomeType::Tundra);
-        
+
         let mut env = SceneEnvironment::default();
         let dt = 1.0 / 60.0;
-        
+
         b.iter(|| {
             // Update transition
             effect.update(dt);
@@ -256,7 +246,7 @@ fn bench_full_pipeline(c: &mut Criterion) {
         b.iter(|| {
             let mut effect = TransitionEffect::new(config.clone());
             effect.start(Some(BiomeType::Forest), BiomeType::Desert);
-            
+
             let mut env = SceneEnvironment::default();
             env.visuals = effect.current_visuals();
             env.apply_weather(WeatherKind::Sandstorm);
@@ -297,7 +287,7 @@ fn bench_scaling(c: &mut Criterion) {
             &count,
             |b, &count| {
                 let dt = 1.0 / 60.0;
-                
+
                 b.iter(|| {
                     // Create effects fresh each iteration (measures creation + update cost)
                     for _ in 0..count {
@@ -305,13 +295,13 @@ fn bench_scaling(c: &mut Criterion) {
                         let mut effect = TransitionEffect::new(config);
                         effect.start(Some(BiomeType::Forest), BiomeType::Tundra);
                         effect.update(dt);
-                        
+
                         let mut env = SceneEnvironment::default();
                         env.visuals = effect.current_visuals();
                         black_box(env.to_ubo());
                     }
                 })
-            }
+            },
         );
     }
 

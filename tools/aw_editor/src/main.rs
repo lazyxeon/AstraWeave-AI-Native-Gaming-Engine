@@ -729,8 +729,10 @@ impl EditorApp {
                 fn GlobalMemoryStatusEx(buffer: *mut MemoryStatusEx) -> i32;
             }
             
+            // SAFETY: Calling Win32 `GetProcessMemoryInfo` and `GlobalMemoryStatusEx`
+            // with properly sized and initialized structs. These are safe Win32 API calls
+            // that only read process memory statistics.
             unsafe {
-                // Get process memory
                 let mut counters = MaybeUninit::<ProcessMemoryCounters>::uninit();
                 (*counters.as_mut_ptr()).cb = std::mem::size_of::<ProcessMemoryCounters>() as u32;
                 

@@ -18,27 +18,53 @@ use glam::vec3;
 #[inline]
 fn assert_listener_valid(pose: &ListenerPose, context: &str) {
     // Position must be finite
-    assert!(pose.position.x.is_finite() && pose.position.y.is_finite() && pose.position.z.is_finite(),
-        "[CORRECTNESS FAILURE] {}: listener position non-finite {:?}", context, pose.position);
+    assert!(
+        pose.position.x.is_finite() && pose.position.y.is_finite() && pose.position.z.is_finite(),
+        "[CORRECTNESS FAILURE] {}: listener position non-finite {:?}",
+        context,
+        pose.position
+    );
     // Forward must be finite and non-zero
-    assert!(pose.forward.x.is_finite() && pose.forward.y.is_finite() && pose.forward.z.is_finite(),
-        "[CORRECTNESS FAILURE] {}: listener forward non-finite {:?}", context, pose.forward);
-    assert!(pose.forward.length_squared() > 0.001,
-        "[CORRECTNESS FAILURE] {}: listener forward is zero", context);
+    assert!(
+        pose.forward.x.is_finite() && pose.forward.y.is_finite() && pose.forward.z.is_finite(),
+        "[CORRECTNESS FAILURE] {}: listener forward non-finite {:?}",
+        context,
+        pose.forward
+    );
+    assert!(
+        pose.forward.length_squared() > 0.001,
+        "[CORRECTNESS FAILURE] {}: listener forward is zero",
+        context
+    );
     // Up must be finite and non-zero
-    assert!(pose.up.x.is_finite() && pose.up.y.is_finite() && pose.up.z.is_finite(),
-        "[CORRECTNESS FAILURE] {}: listener up non-finite {:?}", context, pose.up);
-    assert!(pose.up.length_squared() > 0.001,
-        "[CORRECTNESS FAILURE] {}: listener up is zero", context);
+    assert!(
+        pose.up.x.is_finite() && pose.up.y.is_finite() && pose.up.z.is_finite(),
+        "[CORRECTNESS FAILURE] {}: listener up non-finite {:?}",
+        context,
+        pose.up
+    );
+    assert!(
+        pose.up.length_squared() > 0.001,
+        "[CORRECTNESS FAILURE] {}: listener up is zero",
+        context
+    );
 }
 
 /// CORRECTNESS: Validate volume is in valid range
 #[inline]
 fn assert_volume_valid(volume: f32, context: &str) {
-    assert!((0.0..=1.0).contains(&volume),
-        "[CORRECTNESS FAILURE] {}: volume out of range [0,1]: {}", context, volume);
-    assert!(volume.is_finite(),
-        "[CORRECTNESS FAILURE] {}: volume non-finite: {}", context, volume);
+    assert!(
+        (0.0..=1.0).contains(&volume),
+        "[CORRECTNESS FAILURE] {}: volume out of range [0,1]: {}",
+        context,
+        volume
+    );
+    assert!(
+        volume.is_finite(),
+        "[CORRECTNESS FAILURE] {}: volume non-finite: {}",
+        context,
+        volume
+    );
 }
 
 // ============================================================================
@@ -73,15 +99,18 @@ fn bench_tick_varying_sources(c: &mut Criterion) {
                 // Spawn N concurrent beeps
                 for i in 0..count {
                     let freq = 440.0 + (i as f32 * 10.0); // Varying frequencies
-                    // CORRECTNESS: Validate frequency is positive and finite
-                    assert!(freq > 0.0 && freq.is_finite(),
-                        "[CORRECTNESS FAILURE] tick_sources: invalid frequency {}", freq);
+                                                          // CORRECTNESS: Validate frequency is positive and finite
+                    assert!(
+                        freq > 0.0 && freq.is_finite(),
+                        "[CORRECTNESS FAILURE] tick_sources: invalid frequency {}",
+                        freq
+                    );
                     engine.play_sfx_beep(freq, 2.0, 0.8);
                 }
 
                 b.iter(|| {
                     engine.tick(black_box(0.016)); // 60 FPS
-                    // Engine should not panic during tick
+                                                   // Engine should not panic during tick
                 })
             },
         );
@@ -129,8 +158,11 @@ fn bench_spatial_audio_updates(c: &mut Criterion) {
             let angle = (i as f32 / 10.0) * std::f32::consts::TAU;
             let pos = vec3(angle.cos() * 10.0, 0.0, angle.sin() * 10.0);
             // CORRECTNESS: Validate emitter positions
-            assert!(pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
-                "[CORRECTNESS FAILURE] 10_emitters: emitter {} position non-finite", i);
+            assert!(
+                pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
+                "[CORRECTNESS FAILURE] 10_emitters: emitter {} position non-finite",
+                i
+            );
             engine
                 .play_sfx_3d_beep(i as u64, pos, 440.0 + (i as f32 * 50.0), 5.0, 0.8)
                 .expect("Failed to play 3D beep");
@@ -229,10 +261,14 @@ fn bench_beep_generation(c: &mut Criterion) {
             let freq = 440.0f32;
             let duration = 0.5f32;
             let volume = 0.8f32;
-            assert!(freq > 0.0 && freq.is_finite(),
-                "[CORRECTNESS FAILURE] sfx_beep: invalid frequency");
-            assert!(duration > 0.0 && duration.is_finite(),
-                "[CORRECTNESS FAILURE] sfx_beep: invalid duration");
+            assert!(
+                freq > 0.0 && freq.is_finite(),
+                "[CORRECTNESS FAILURE] sfx_beep: invalid frequency"
+            );
+            assert!(
+                duration > 0.0 && duration.is_finite(),
+                "[CORRECTNESS FAILURE] sfx_beep: invalid duration"
+            );
             assert_volume_valid(volume, "sfx_beep");
             engine.play_sfx_beep(black_box(freq), black_box(duration), black_box(volume));
         })
@@ -243,8 +279,10 @@ fn bench_beep_generation(c: &mut Criterion) {
         b.iter(|| {
             // CORRECTNESS: Validate char code is reasonable
             let char_code: usize = 50;
-            assert!(char_code < 256,
-                "[CORRECTNESS FAILURE] voice_beep: char code out of range");
+            assert!(
+                char_code < 256,
+                "[CORRECTNESS FAILURE] voice_beep: char code out of range"
+            );
             engine.play_voice_beep(black_box(char_code));
         })
     });
@@ -254,8 +292,10 @@ fn bench_beep_generation(c: &mut Criterion) {
         b.iter(|| {
             let pos = vec3(5.0, 0.0, 0.0);
             // CORRECTNESS: Validate 3D position is finite
-            assert!(pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
-                "[CORRECTNESS FAILURE] 3d_beep: position non-finite");
+            assert!(
+                pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
+                "[CORRECTNESS FAILURE] 3d_beep: position non-finite"
+            );
             engine
                 .play_sfx_3d_beep(
                     black_box(0),

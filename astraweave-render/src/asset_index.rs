@@ -131,7 +131,9 @@ impl AssetIndex {
     /// Find a material set by biome name (case-insensitive).
     pub fn material_set(&self, biome: &str) -> Option<&MaterialSetEntry> {
         let b = biome.to_lowercase();
-        self.material_sets.iter().find(|m| m.biome.to_lowercase() == b)
+        self.material_sets
+            .iter()
+            .find(|m| m.biome.to_lowercase() == b)
     }
 
     /// Find a texture by name (case-insensitive).
@@ -178,7 +180,11 @@ impl AssetIndex {
         for ms in &self.material_sets {
             let p = base.join(&ms.dir);
             if !p.is_dir() {
-                missing.push(format!("material_set[{}]: dir not found: {}", ms.biome, p.display()));
+                missing.push(format!(
+                    "material_set[{}]: dir not found: {}",
+                    ms.biome,
+                    p.display()
+                ));
             }
         }
 
@@ -186,7 +192,11 @@ impl AssetIndex {
         for tex in &self.textures {
             let p = base.join(&tex.dir);
             if !p.is_dir() {
-                missing.push(format!("texture[{}]: dir not found: {}", tex.name, p.display()));
+                missing.push(format!(
+                    "texture[{}]: dir not found: {}",
+                    tex.name,
+                    p.display()
+                ));
             }
         }
 

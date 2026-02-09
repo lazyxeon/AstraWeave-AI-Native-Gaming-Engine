@@ -266,12 +266,17 @@ impl UnderwaterState {
         UnderwaterConfig {
             fog_color: a.fog_color.lerp(b.fog_color, t),
             fog_density: a.fog_density + (b.fog_density - a.fog_density) * t,
-            caustics_intensity: a.caustics_intensity + (b.caustics_intensity - a.caustics_intensity) * t,
+            caustics_intensity: a.caustics_intensity
+                + (b.caustics_intensity - a.caustics_intensity) * t,
             caustics_scale: a.caustics_scale + (b.caustics_scale - a.caustics_scale) * t,
-            distortion_strength: a.distortion_strength + (b.distortion_strength - a.distortion_strength) * t,
+            distortion_strength: a.distortion_strength
+                + (b.distortion_strength - a.distortion_strength) * t,
             absorption_rates: a.absorption_rates.lerp(b.absorption_rates, t),
-            god_ray_intensity: a.god_ray_intensity + (b.god_ray_intensity - a.god_ray_intensity) * t,
-            god_ray_samples: ((a.god_ray_samples as f32 + (b.god_ray_samples as f32 - a.god_ray_samples as f32) * t) as u32),
+            god_ray_intensity: a.god_ray_intensity
+                + (b.god_ray_intensity - a.god_ray_intensity) * t,
+            god_ray_samples: ((a.god_ray_samples as f32
+                + (b.god_ray_samples as f32 - a.god_ray_samples as f32) * t)
+                as u32),
         }
     }
 }
@@ -310,7 +315,11 @@ impl DepthZoneManager {
     pub fn add_zone(&mut self, max_depth: f32, config: UnderwaterConfig) {
         self.zones.push(DepthZone { max_depth, config });
         // Keep sorted by depth
-        self.zones.sort_by(|a, b| a.max_depth.partial_cmp(&b.max_depth).unwrap_or(std::cmp::Ordering::Equal));
+        self.zones.sort_by(|a, b| {
+            a.max_depth
+                .partial_cmp(&b.max_depth)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     }
 
     /// Get the blended configuration for a given depth
@@ -337,7 +346,11 @@ impl DepthZoneManager {
         }
 
         // Deeper than all zones, use last config
-        self.zones.last().expect("zones must not be empty").config.clone()
+        self.zones
+            .last()
+            .expect("zones must not be empty")
+            .config
+            .clone()
     }
 }
 
@@ -356,12 +369,12 @@ mod tests {
     #[test]
     fn test_underwater_state_update() {
         let mut state = UnderwaterState::default();
-        
+
         // Above water
         state.update(10.0, 5.0, 0.016);
         assert!(!state.is_underwater);
         assert_eq!(state.depth, 0.0);
-        
+
         // Underwater
         state.update(3.0, 5.0, 0.016);
         assert!(state.is_underwater);
@@ -371,17 +384,17 @@ mod tests {
     #[test]
     fn test_underwater_transition() {
         let mut state = UnderwaterState::default();
-        
+
         // Start above water
         state.update(10.0, 5.0, 0.016);
         assert!(state.transition < 0.01);
-        
+
         // Go underwater
         for _ in 0..20 {
             state.update(3.0, 5.0, 0.1);
         }
         assert!((state.transition - 1.0).abs() < 0.01);
-        
+
         // Go above water
         for _ in 0..20 {
             state.update(10.0, 5.0, 0.1);
@@ -400,21 +413,30 @@ mod tests {
     #[test]
     fn test_depth_zone_manager() {
         let manager = DepthZoneManager::ocean_default();
-        
+
         // Surface (crystal clear at depth <= 5.0)
         let config = manager.get_config_at_depth(2.0);
-        assert!(config.caustics_intensity > 0.5, 
-            "Surface caustics should be high, got {}", config.caustics_intensity);
-        
+        assert!(
+            config.caustics_intensity > 0.5,
+            "Surface caustics should be high, got {}",
+            config.caustics_intensity
+        );
+
         // Very deep (past max zone, uses deep_ocean preset = 0.05)
         let config = manager.get_config_at_depth(150.0);
-        assert!(config.caustics_intensity < 0.1, 
-            "Very deep caustics should be < 0.1, got {}", config.caustics_intensity);
-        
+        assert!(
+            config.caustics_intensity < 0.1,
+            "Very deep caustics should be < 0.1, got {}",
+            config.caustics_intensity
+        );
+
         // Mid-depth blending check (between zones)
         let config_mid = manager.get_config_at_depth(60.0);
-        assert!(config_mid.caustics_intensity < config.caustics_intensity + 0.3,
-            "Mid-depth should blend caustics, got {}", config_mid.caustics_intensity);
+        assert!(
+            config_mid.caustics_intensity < config.caustics_intensity + 0.3,
+            "Mid-depth should blend caustics, got {}",
+            config_mid.caustics_intensity
+        );
     }
 
     #[test]
@@ -423,13 +445,13 @@ mod tests {
         let crystal = UnderwaterConfig::crystal_clear();
         let deep = UnderwaterConfig::deep_ocean();
         let swamp = UnderwaterConfig::swamp();
-        
+
         // Murky should have lower visibility
         assert!(murky.fog_density > crystal.fog_density);
-        
+
         // Swamp should have no caustics
         assert_eq!(swamp.caustics_intensity, 0.0);
-        
+
         // Deep ocean should have less god rays than crystal
         assert!(deep.god_ray_intensity < crystal.god_ray_intensity);
     }
@@ -439,10 +461,10 @@ mod tests {
         let mut state = UnderwaterState::new(UnderwaterConfig::crystal_clear());
         state.is_underwater = true;
         state.depth = 5.0;
-        
+
         let vis = state.visibility_distance();
         assert!(vis > 100.0); // Crystal clear should have good visibility
-        
+
         state.set_config(UnderwaterConfig::murky());
         let vis = state.visibility_distance();
         assert!(vis < 20.0); // Murky should have poor visibility
@@ -464,24 +486,24 @@ mod tests {
             god_ray_intensity: 0.6,
             god_ray_samples: 48,
         };
-        
+
         let uniforms = UnderwaterUniforms::from_config(&config, 1.5, 10.0);
-        
+
         assert_eq!(uniforms.fog_color_density[0], 0.1);
         assert_eq!(uniforms.fog_color_density[1], 0.2);
         assert_eq!(uniforms.fog_color_density[2], 0.3);
         assert_eq!(uniforms.fog_color_density[3], 0.15);
-        
+
         assert_eq!(uniforms.caustics_params[0], 0.4);
         assert_eq!(uniforms.caustics_params[1], 12.0);
         assert_eq!(uniforms.caustics_params[2], 0.02);
         assert_eq!(uniforms.caustics_params[3], 0.6);
-        
+
         assert_eq!(uniforms.absorption_samples[0], 0.3);
         assert_eq!(uniforms.absorption_samples[1], 0.2);
         assert_eq!(uniforms.absorption_samples[2], 0.1);
         assert_eq!(uniforms.absorption_samples[3], 48.0);
-        
+
         assert_eq!(uniforms.time_depth[0], 1.5);
         assert_eq!(uniforms.time_depth[1], 10.0);
     }
@@ -489,12 +511,12 @@ mod tests {
     #[test]
     fn test_underwater_uniforms_update() {
         let mut uniforms = UnderwaterUniforms::default();
-        
+
         assert_eq!(uniforms.time_depth[0], 0.0);
         assert_eq!(uniforms.time_depth[1], 0.0);
-        
+
         uniforms.update(5.0, 15.0);
-        
+
         assert_eq!(uniforms.time_depth[0], 5.0);
         assert_eq!(uniforms.time_depth[1], 15.0);
     }
@@ -503,7 +525,7 @@ mod tests {
     fn test_underwater_state_new() {
         let config = UnderwaterConfig::murky();
         let state = UnderwaterState::new(config.clone());
-        
+
         assert!(!state.is_underwater);
         assert_eq!(state.depth, 0.0);
         assert_eq!(state.transition, 0.0);
@@ -514,18 +536,18 @@ mod tests {
     #[test]
     fn test_underwater_state_should_render_effects() {
         let mut state = UnderwaterState::default();
-        
+
         // Above water, no transition
         assert!(!state.should_render_effects());
-        
+
         // Slightly transitioned
         state.transition = 0.02;
         assert!(state.should_render_effects());
-        
+
         // Just at threshold
         state.transition = 0.011;
         assert!(state.should_render_effects());
-        
+
         // Below threshold
         state.transition = 0.005;
         assert!(!state.should_render_effects());
@@ -536,9 +558,9 @@ mod tests {
         let mut state = UnderwaterState::new(UnderwaterConfig::deep_ocean());
         state.time = 2.5;
         state.depth = 50.0;
-        
+
         let uniforms = state.get_uniforms();
-        
+
         assert_eq!(uniforms.time_depth[0], 2.5);
         assert_eq!(uniforms.time_depth[1], 50.0);
         assert_eq!(uniforms.caustics_params[0], state.config.caustics_intensity);
@@ -548,24 +570,24 @@ mod tests {
     fn test_underwater_state_blend_configs() {
         let a = UnderwaterConfig::crystal_clear();
         let b = UnderwaterConfig::murky();
-        
+
         // t=0 should be config a
         let blended_0 = UnderwaterState::blend_configs(&a, &b, 0.0);
         assert_eq!(blended_0.fog_density, a.fog_density);
-        
+
         // t=1 should be config b
         let blended_1 = UnderwaterState::blend_configs(&a, &b, 1.0);
         assert_eq!(blended_1.fog_density, b.fog_density);
-        
+
         // t=0.5 should be midpoint
         let blended_half = UnderwaterState::blend_configs(&a, &b, 0.5);
         let expected_density = (a.fog_density + b.fog_density) / 2.0;
         assert!((blended_half.fog_density - expected_density).abs() < 0.001);
-        
+
         // t<0 should clamp to 0
         let blended_neg = UnderwaterState::blend_configs(&a, &b, -1.0);
         assert_eq!(blended_neg.fog_density, a.fog_density);
-        
+
         // t>1 should clamp to 1
         let blended_over = UnderwaterState::blend_configs(&a, &b, 2.0);
         assert_eq!(blended_over.fog_density, b.fog_density);
@@ -575,10 +597,10 @@ mod tests {
     fn test_depth_zone_manager_new_and_add() {
         let mut manager = DepthZoneManager::new();
         assert!(manager.zones.is_empty());
-        
+
         manager.add_zone(10.0, UnderwaterConfig::crystal_clear());
         assert_eq!(manager.zones.len(), 1);
-        
+
         // Add out of order - should sort
         manager.add_zone(5.0, UnderwaterConfig::default());
         assert_eq!(manager.zones.len(), 2);
@@ -589,7 +611,7 @@ mod tests {
     #[test]
     fn test_depth_zone_manager_empty() {
         let manager = DepthZoneManager::new();
-        
+
         // Empty zones should return default config
         let config = manager.get_config_at_depth(50.0);
         let default_config = UnderwaterConfig::default();
@@ -603,7 +625,7 @@ mod tests {
             ..Default::default()
         };
         let state = UnderwaterState::new(config);
-        
+
         let vis = state.visibility_distance();
         assert_eq!(vis, f32::MAX);
     }
@@ -612,7 +634,7 @@ mod tests {
     fn test_underwater_config_clone() {
         let config = UnderwaterConfig::swamp();
         let cloned = config.clone();
-        
+
         assert_eq!(cloned.fog_density, config.fog_density);
         assert_eq!(cloned.caustics_intensity, config.caustics_intensity);
         assert_eq!(cloned.god_ray_samples, config.god_ray_samples);
@@ -646,7 +668,7 @@ mod tests {
         let uniforms = UnderwaterUniforms::default();
         let copied = uniforms;
         let cloned = uniforms.clone();
-        
+
         assert_eq!(copied.time_depth, uniforms.time_depth);
         assert_eq!(cloned.fog_color_density, uniforms.fog_color_density);
     }
@@ -661,7 +683,7 @@ mod tests {
             time: 10.0,
         };
         let cloned = state.clone();
-        
+
         assert_eq!(cloned.is_underwater, state.is_underwater);
         assert_eq!(cloned.depth, state.depth);
         assert_eq!(cloned.transition, state.transition);
@@ -674,10 +696,10 @@ mod tests {
             max_depth: 50.0,
             config: UnderwaterConfig::deep_ocean(),
         };
-        
+
         let cloned = zone.clone();
         assert_eq!(cloned.max_depth, zone.max_depth);
-        
+
         let debug = format!("{:?}", zone);
         assert!(debug.contains("DepthZone"));
         assert!(debug.contains("max_depth"));
@@ -687,9 +709,9 @@ mod tests {
     fn test_depth_zone_manager_clone_debug() {
         let manager = DepthZoneManager::ocean_default();
         let cloned = manager.clone();
-        
+
         assert_eq!(cloned.zones.len(), manager.zones.len());
-        
+
         let debug = format!("{:?}", manager);
         assert!(debug.contains("DepthZoneManager"));
     }
@@ -697,10 +719,10 @@ mod tests {
     #[test]
     fn test_underwater_state_time_accumulation() {
         let mut state = UnderwaterState::default();
-        
+
         state.update(3.0, 5.0, 0.5);
         assert!((state.time - 0.5).abs() < 0.001);
-        
+
         state.update(3.0, 5.0, 0.5);
         assert!((state.time - 1.0).abs() < 0.001);
     }
@@ -708,21 +730,21 @@ mod tests {
     #[test]
     fn test_depth_zone_blending_between_zones() {
         let mut manager = DepthZoneManager::new();
-        
+
         // Zone 1: depth 0-10, density 0.1
         let config1 = UnderwaterConfig {
             fog_density: 0.1,
             ..Default::default()
         };
         manager.add_zone(10.0, config1);
-        
+
         // Zone 2: depth 10-20, density 0.5
         let config2 = UnderwaterConfig {
             fog_density: 0.5,
             ..Default::default()
         };
         manager.add_zone(20.0, config2);
-        
+
         // At depth 15, should be halfway between 0.1 and 0.5 = 0.3
         let blended = manager.get_config_at_depth(15.0);
         assert!((blended.fog_density - 0.3).abs() < 0.01);

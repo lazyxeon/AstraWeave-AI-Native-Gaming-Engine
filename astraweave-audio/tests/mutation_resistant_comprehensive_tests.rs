@@ -30,7 +30,7 @@ fn pan_mode_eq() {
 fn pan_mode_clone_copy() {
     let m = PanMode::StereoAngle;
     let m2 = m; // Copy
-    let _ = m;  // Still usable
+    let _ = m; // Still usable
     assert_eq!(m2, PanMode::StereoAngle);
 }
 
@@ -64,7 +64,7 @@ fn listener_pose_copy() {
         up: Vec3::Y,
     };
     let lp2 = lp; // Copy
-    let _ = lp;   // Still usable
+    let _ = lp; // Still usable
     assert_eq!(lp2.position, Vec3::ZERO);
 }
 
@@ -181,7 +181,10 @@ tts_voice = "en_male_1"
     assert_eq!(vb.speakers["merchant"].files.len(), 1);
     assert_eq!(vb.speakers["guard"].folder, "voices/guard");
     assert!(vb.speakers["guard"].files.is_empty());
-    assert_eq!(vb.speakers["guard"].tts_voice, Some("en_male_1".to_string()));
+    assert_eq!(
+        vb.speakers["guard"].tts_voice,
+        Some("en_male_1".to_string())
+    );
 }
 
 #[test]
@@ -222,8 +225,14 @@ node_warn = "guard_warning.ogg"
     assert_eq!(dam.map.len(), 2);
     assert!(dam.map.contains_key("dlg_blacksmith"));
     assert_eq!(dam.map["dlg_blacksmith"].len(), 2);
-    assert_eq!(dam.map["dlg_blacksmith"]["node_greet"], "blacksmith_hello.ogg");
-    assert_eq!(dam.map["dlg_blacksmith"]["node_quest"], "blacksmith_quest.ogg");
+    assert_eq!(
+        dam.map["dlg_blacksmith"]["node_greet"],
+        "blacksmith_hello.ogg"
+    );
+    assert_eq!(
+        dam.map["dlg_blacksmith"]["node_quest"],
+        "blacksmith_quest.ogg"
+    );
     assert_eq!(dam.map["dlg_guard"]["node_warn"], "guard_warning.ogg");
 }
 
@@ -258,8 +267,10 @@ fn audio_engine_new_succeeds() {
     let result = AudioEngine::new();
     // If audio device available, should succeed
     if let Ok(engine) = result {
-        assert!((engine.master_volume - 1.0).abs() < 1e-6,
-            "master_volume default should be 1.0");
+        assert!(
+            (engine.master_volume - 1.0).abs() < 1e-6,
+            "master_volume default should be 1.0"
+        );
     }
     // If Err, that's acceptable on headless systems
 }
@@ -268,8 +279,10 @@ fn audio_engine_new_succeeds() {
 fn audio_engine_set_master_volume_clamps_high() {
     if let Ok(mut engine) = AudioEngine::new() {
         engine.set_master_volume(2.0);
-        assert!((engine.master_volume - 1.0).abs() < 1e-6,
-            "master_volume should clamp to 1.0");
+        assert!(
+            (engine.master_volume - 1.0).abs() < 1e-6,
+            "master_volume should clamp to 1.0"
+        );
     }
 }
 
@@ -277,8 +290,10 @@ fn audio_engine_set_master_volume_clamps_high() {
 fn audio_engine_set_master_volume_clamps_low() {
     if let Ok(mut engine) = AudioEngine::new() {
         engine.set_master_volume(-1.0);
-        assert!((engine.master_volume - 0.0).abs() < 1e-6,
-            "master_volume should clamp to 0.0");
+        assert!(
+            (engine.master_volume - 0.0).abs() < 1e-6,
+            "master_volume should clamp to 0.0"
+        );
     }
 }
 
@@ -333,7 +348,7 @@ fn audio_engine_play_sfx_beep() {
 fn audio_engine_play_voice_beep() {
     if let Ok(mut engine) = AudioEngine::new() {
         engine.play_voice_beep(20); // 20 chars
-        // No panic = success
+                                    // No panic = success
     }
 }
 

@@ -6,9 +6,9 @@
 //! - Checking boundary conditions and edge cases
 //! - Testing return values from all public methods
 
-use astraweave_scene::*;
 use astraweave_scene::streaming::*;
 use astraweave_scene::world_partition::*;
+use astraweave_scene::*;
 use glam::{Mat4, Quat, Vec3, Vec4};
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -435,7 +435,7 @@ mod scene_tests {
         let mut s = Scene::new();
         s.root.add_child(Node::new("A"));
         s.root.add_child(Node::new("B"));
-        
+
         let mut count = 0;
         s.traverse(&mut |_node, _mat| {
             count += 1;
@@ -447,7 +447,7 @@ mod scene_tests {
     fn test_scene_traverse_with_path() {
         let mut s = Scene::new();
         s.root.add_child(Node::new("Child"));
-        
+
         let mut paths: Vec<Vec<String>> = Vec::new();
         s.traverse_with_path(&mut |_node, _mat, path| {
             paths.push(path.iter().map(|s| s.to_string()).collect());
@@ -985,12 +985,7 @@ mod frustum_tests {
 
     #[test]
     fn test_frustum_from_view_projection() {
-        let view_proj = Mat4::perspective_lh(
-            std::f32::consts::FRAC_PI_4,
-            16.0 / 9.0,
-            0.1,
-            1000.0,
-        );
+        let view_proj = Mat4::perspective_lh(std::f32::consts::FRAC_PI_4, 16.0 / 9.0, 0.1, 1000.0);
         let frustum = Frustum::from_view_projection(view_proj);
         // Should have 6 planes
         assert_eq!(frustum.planes.len(), 6);
@@ -998,12 +993,7 @@ mod frustum_tests {
 
     #[test]
     fn test_frustum_planes_normalized() {
-        let view_proj = Mat4::perspective_lh(
-            std::f32::consts::FRAC_PI_4,
-            1.0,
-            0.1,
-            100.0,
-        );
+        let view_proj = Mat4::perspective_lh(std::f32::consts::FRAC_PI_4, 1.0, 0.1, 100.0);
         let frustum = Frustum::from_view_projection(view_proj);
         for plane in &frustum.planes {
             let normal_len = Vec3::new(plane.x, plane.y, plane.z).length();
@@ -1022,12 +1012,7 @@ mod frustum_tests {
 
     #[test]
     fn test_frustum_cells_in_frustum() {
-        let view_proj = Mat4::perspective_lh(
-            std::f32::consts::FRAC_PI_4,
-            1.0,
-            0.1,
-            1000.0,
-        );
+        let view_proj = Mat4::perspective_lh(std::f32::consts::FRAC_PI_4, 1.0, 0.1, 1000.0);
         let frustum = Frustum::from_view_projection(view_proj);
         let cells = frustum.cells_in_frustum(Vec3::ZERO, 100.0, 200.0);
         assert!(!cells.is_empty());

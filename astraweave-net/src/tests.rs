@@ -626,7 +626,10 @@ fn test_apply_delta_creates_new_entity() {
         tick: 2,
         changed: vec![EntityDelta {
             id: 100,
-            mask: EntityDeltaMask::POS | EntityDeltaMask::HP | EntityDeltaMask::TEAM | EntityDeltaMask::AMMO,
+            mask: EntityDeltaMask::POS
+                | EntityDeltaMask::HP
+                | EntityDeltaMask::TEAM
+                | EntityDeltaMask::AMMO,
             pos: Some(IVec2 { x: 10, y: 20 }),
             hp: Some(75),
             team: Some(1),
@@ -723,7 +726,11 @@ fn test_msg_serialization() {
     let json = serde_json::to_string(&msg).unwrap();
     let decoded: Msg = serde_json::from_str(&json).unwrap();
     match decoded {
-        Msg::ClientHello { name, token, policy } => {
+        Msg::ClientHello {
+            name,
+            token,
+            policy,
+        } => {
             assert_eq!(name, "test");
             assert_eq!(token, Some("dev".to_string()));
             assert_eq!(policy, Some("radius".to_string()));
@@ -845,7 +852,7 @@ fn test_has_los_negative_sx() {
     let b = IVec2 { x: 0, y: 0 };
     // x0 > x1, so sx should be -1
     assert!(has_los(a, b, &obstacles));
-    
+
     obstacles.insert((2, 0));
     assert!(!has_los(a, b, &obstacles));
 }
@@ -904,7 +911,7 @@ fn test_fov_los_interest_same_position_enemy() {
 
 #[test]
 fn test_diff_snapshots_team_change() {
-    use crate::{EntityState, Snapshot, FullInterest, diff_snapshots, EntityDeltaMask};
+    use crate::{diff_snapshots, EntityDeltaMask, EntityState, FullInterest, Snapshot};
     let base_state = EntityState {
         id: 1,
         pos: IVec2 { x: 0, y: 0 },
@@ -938,13 +945,16 @@ fn test_diff_snapshots_team_change() {
     let viewer = base_state;
     let delta = diff_snapshots(&base, &head, &FullInterest, &viewer);
     assert_eq!(delta.changed.len(), 1);
-    assert_eq!(delta.changed[0].mask & EntityDeltaMask::TEAM, EntityDeltaMask::TEAM);
+    assert_eq!(
+        delta.changed[0].mask & EntityDeltaMask::TEAM,
+        EntityDeltaMask::TEAM
+    );
     assert_eq!(delta.changed[0].team, Some(1));
 }
 
 #[test]
 fn test_diff_snapshots_with_exclusion() {
-    use crate::{EntityState, Snapshot, RadiusTeamInterest, diff_snapshots};
+    use crate::{diff_snapshots, EntityState, RadiusTeamInterest, Snapshot};
     let viewer = EntityState {
         id: 1,
         pos: IVec2 { x: 0, y: 0 },

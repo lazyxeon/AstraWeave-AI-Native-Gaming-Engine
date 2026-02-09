@@ -353,7 +353,11 @@ mod tests {
             traps: 0,
         };
         let plan = director.step(&snap, &budget);
-        assert!(plan.director.ops.iter().any(|op| matches!(op, DirectorOp::Fortify { .. })));
+        assert!(plan
+            .director
+            .ops
+            .iter()
+            .any(|op| matches!(op, DirectorOp::Fortify { .. })));
     }
 
     #[test]
@@ -372,7 +376,11 @@ mod tests {
             traps: 0,
         };
         let plan = director.step(&snap, &budget);
-        assert!(plan.director.ops.iter().any(|op| matches!(op, DirectorOp::SpawnWave { .. })));
+        assert!(plan
+            .director
+            .ops
+            .iter()
+            .any(|op| matches!(op, DirectorOp::SpawnWave { .. })));
     }
 
     #[test]
@@ -488,7 +496,10 @@ mod tests {
             traps: 0,
         };
         let plan = director.step(&snap, &budget);
-        if let Some(DirectorOp::SpawnWave { archetype, count, .. }) = plan.director.ops.first() {
+        if let Some(DirectorOp::SpawnWave {
+            archetype, count, ..
+        }) = plan.director.ops.first()
+        {
             assert_eq!(archetype, "phase_add");
             assert_eq!(*count, 4);
         } else {

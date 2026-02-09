@@ -48,13 +48,13 @@ fn test_listener_right_vector() {
     // But this is actually right = up.cross(forward) for conventional right-handed systems
     // Let's calculate properly: forward cross up in right-handed = left vector
     // For ears: right = forward.cross(up).normalize() gives us the lateral axis
-    
+
     // Actually for (0,0,-1) x (0,1,0):
     // x = 0*0 - (-1)*1 = 1
     // y = (-1)*0 - 0*0 = 0
     // z = 0*1 - 0*0 = 0
     // So right = (1, 0, 0) which is correct!
-    
+
     assert!(
         (right.x - 1.0).abs() < 0.001,
         "Right should be +X, got {}",
@@ -77,10 +77,7 @@ fn test_ear_positions_formula() {
     let right_ear = position + right * (ear_sep * 0.5);
 
     // Left ear should be at X = 5 - 0.1 = 4.9
-    assert!(
-        (left_ear.x - 4.9).abs() < 0.001,
-        "Left ear X should be 4.9"
-    );
+    assert!((left_ear.x - 4.9).abs() < 0.001, "Left ear X should be 4.9");
     // Right ear should be at X = 5 + 0.1 = 5.1
     assert!(
         (right_ear.x - 5.1).abs() < 0.001,
@@ -112,14 +109,14 @@ fn test_ear_positions_rotated() {
     // = (0*0 - 0*1, 0*0 - 1*0, 1*1 - 0*0)
     // = (0, 0, 1)
     // So right = (0, 0, 1) which is +Z, not -Z
-    
+
     // Check the actual calculation
     assert!(
         (right.z - 1.0).abs() < 0.001,
         "Right vector should be +Z when looking +X, got {:?}",
         right
     );
-    
+
     // Right ear at Z = +0.1, Left ear at Z = -0.1
     assert!((right_ear.z - 0.1).abs() < 0.001, "Right ear at Z=+0.1");
     assert!((left_ear.z - (-0.1)).abs() < 0.001, "Left ear at Z=-0.1");
@@ -468,7 +465,10 @@ folder = "assets/voices/Sidekick"
     let sidekick = bank.speakers.get("Sidekick").unwrap();
     assert_eq!(sidekick.folder, "assets/voices/Sidekick");
     assert!(sidekick.files.is_empty(), "Default files should be empty");
-    assert!(sidekick.tts_voice.is_none(), "Default tts_voice should be None");
+    assert!(
+        sidekick.tts_voice.is_none(),
+        "Default tts_voice should be None"
+    );
 
     std::fs::remove_file(test_path).ok();
 }
@@ -533,7 +533,8 @@ fn test_tts_duration_estimation() {
     // Formula: (text.len() as f32 / 12.0).clamp(0.5, 8.0)
     let short = "Hi"; // 2 chars / 12 = 0.167 -> clamps to 0.5
     let medium = "Hello there, friend!"; // 20 chars / 12 = 1.67
-    let long = "This is a very long piece of text that would take quite a while to speak out loud in full"; // 90 chars / 12 = 7.5
+    let long =
+        "This is a very long piece of text that would take quite a while to speak out loud in full"; // 90 chars / 12 = 7.5
 
     let dur_short = (short.len() as f32 / 12.0).clamp(0.5, 8.0);
     let dur_medium = (medium.len() as f32 / 12.0).clamp(0.5, 8.0);
@@ -543,10 +544,15 @@ fn test_tts_duration_estimation() {
     assert_eq!(short.len(), 2, "Short text is 2 chars");
     assert_eq!(medium.len(), 20, "Medium text is 20 chars");
     let long_len = long.len();
-    
+
     assert!((dur_short - 0.5).abs() < 0.001, "Short clamps to 0.5");
     assert!((dur_medium - (20.0 / 12.0)).abs() < 0.01, "Medium = 1.67s");
-    assert!((dur_long - (long_len as f32 / 12.0)).abs() < 0.01, "Long = {} / 12 = {:.2}s", long_len, long_len as f32 / 12.0);
+    assert!(
+        (dur_long - (long_len as f32 / 12.0)).abs() < 0.01,
+        "Long = {} / 12 = {:.2}s",
+        long_len,
+        long_len as f32 / 12.0
+    );
 }
 
 /// Test TTS max duration clamp

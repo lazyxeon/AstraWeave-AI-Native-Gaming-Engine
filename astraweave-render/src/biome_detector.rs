@@ -116,7 +116,9 @@ impl BiomeDetector {
             let dx = (x - lx) as f32;
             let dz = (z - lz) as f32;
             let dist_sq = dx * dx + dz * dz;
-            if dist_sq < self.config.sample_distance_threshold * self.config.sample_distance_threshold {
+            if dist_sq
+                < self.config.sample_distance_threshold * self.config.sample_distance_threshold
+            {
                 return None; // Haven't moved far enough
             }
         }

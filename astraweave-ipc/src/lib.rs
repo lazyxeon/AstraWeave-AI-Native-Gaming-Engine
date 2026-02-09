@@ -52,7 +52,7 @@ pub async fn ws_client_roundtrip(addr: &str, snapshot: &WorldSnapshot) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::schema::{CompanionState, EnemyState, PlayerState, Poi, IVec2};
+    use astraweave_core::schema::{CompanionState, EnemyState, IVec2, PlayerState, Poi};
     use std::collections::BTreeMap;
 
     fn create_test_snapshot() -> WorldSnapshot {
@@ -91,7 +91,7 @@ mod tests {
         let snap = create_test_snapshot();
         let json = serde_json::to_string(&snap).unwrap();
         assert!(json.contains("extraction point"));
-        
+
         let deserialized: WorldSnapshot = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.t, snap.t);
         assert_eq!(deserialized.player.hp, 100);
@@ -101,18 +101,22 @@ mod tests {
     #[test]
     fn test_plan_intent_serialization() {
         use astraweave_core::ActionStep;
-        
+
         let plan = PlanIntent {
             plan_id: "test-plan-001".to_string(),
             steps: vec![
-                ActionStep::MoveTo { x: 10, y: 10, speed: None },
+                ActionStep::MoveTo {
+                    x: 10,
+                    y: 10,
+                    speed: None,
+                },
                 ActionStep::Attack { target_id: 0 },
             ],
         };
-        
+
         let json = serde_json::to_string(&plan).unwrap();
         assert!(json.contains("test-plan-001"));
-        
+
         let deserialized: PlanIntent = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.plan_id, plan.plan_id);
         assert_eq!(deserialized.steps.len(), 2);
@@ -123,7 +127,7 @@ mod tests {
         let snap = create_test_snapshot();
         let orch = RuleOrchestrator;
         let plan = orch.propose_plan(&snap);
-        
+
         // RuleOrchestrator should produce a valid plan
         assert!(!plan.plan_id.is_empty());
     }
@@ -149,7 +153,7 @@ mod tests {
             obstacles: vec![],
             objective: None,
         };
-        
+
         let json = serde_json::to_string(&snap).unwrap();
         let deserialized: WorldSnapshot = serde_json::from_str(&json).unwrap();
         assert!(deserialized.enemies.is_empty());
@@ -164,11 +168,15 @@ mod tests {
                 id: i as u32,
                 pos: IVec2::new(i * 2, i * 2),
                 hp: 50,
-                cover: if i % 2 == 0 { "none".to_string() } else { "wall".to_string() },
+                cover: if i % 2 == 0 {
+                    "none".to_string()
+                } else {
+                    "wall".to_string()
+                },
                 last_seen: i as f32 * 0.5,
             })
             .collect();
-        
+
         let json = serde_json::to_string(&snap).unwrap();
         let deserialized: WorldSnapshot = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.enemies.len(), 10);
@@ -182,10 +190,10 @@ mod tests {
         snap.me.cooldowns.insert("attack".to_string(), 2.5);
         snap.me.cooldowns.insert("heal".to_string(), 5.0);
         snap.me.cooldowns.insert("special".to_string(), 0.0);
-        
+
         let json = serde_json::to_string(&snap).unwrap();
         let deserialized: WorldSnapshot = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.me.cooldowns.len(), 3);
         assert_eq!(deserialized.me.cooldowns.get("attack"), Some(&2.5));
         assert_eq!(deserialized.me.cooldowns.get("heal"), Some(&5.0));
@@ -209,14 +217,23 @@ mod tests {
             },
             enemies: vec![],
             pois: vec![
-                Poi { k: "objective".to_string(), pos: IVec2::new(10, 10) },
-                Poi { k: "ammo".to_string(), pos: IVec2::new(5, 5) },
-                Poi { k: "cover".to_string(), pos: IVec2::new(7, 3) },
+                Poi {
+                    k: "objective".to_string(),
+                    pos: IVec2::new(10, 10),
+                },
+                Poi {
+                    k: "ammo".to_string(),
+                    pos: IVec2::new(5, 5),
+                },
+                Poi {
+                    k: "cover".to_string(),
+                    pos: IVec2::new(7, 3),
+                },
             ],
             obstacles: vec![],
             objective: Some("Collect supplies".to_string()),
         };
-        
+
         let json = serde_json::to_string(&snap).unwrap();
         let deserialized: WorldSnapshot = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.pois.len(), 3);
@@ -241,14 +258,10 @@ mod tests {
             },
             enemies: vec![],
             pois: vec![],
-            obstacles: vec![
-                IVec2::new(3, 3),
-                IVec2::new(4, 4),
-                IVec2::new(5, 5),
-            ],
+            obstacles: vec![IVec2::new(3, 3), IVec2::new(4, 4), IVec2::new(5, 5)],
             objective: None,
         };
-        
+
         let json = serde_json::to_string(&snap).unwrap();
         let deserialized: WorldSnapshot = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.obstacles.len(), 3);
@@ -256,4 +269,3 @@ mod tests {
         assert_eq!(deserialized.obstacles[0].y, 3);
     }
 }
-

@@ -169,12 +169,20 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Merchant);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("I want to buy something")).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("I want to buy something"))
+            .unwrap();
+
         // Should say something and open shop
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::OpenShop)));
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::OpenShop)));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
     }
 
     #[test]
@@ -182,10 +190,15 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Merchant);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("show me your shop")).unwrap();
-        
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::OpenShop)));
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("show me your shop"))
+            .unwrap();
+
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::OpenShop)));
     }
 
     #[test]
@@ -193,12 +206,22 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Merchant);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("hello there")).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("hello there"))
+            .unwrap();
+
         // Should greet and maybe emote
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Emote { kind: EmoteKind::Nod })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan.actions.iter().any(|a| matches!(
+            a,
+            NpcAction::Emote {
+                kind: EmoteKind::Nod
+            }
+        )));
     }
 
     #[test]
@@ -206,10 +229,12 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Merchant);
         let view = make_view();
-        
+
         // No utterance - idle behavior (may or may not wave randomly)
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
-        
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, None)
+            .unwrap();
+
         // Plan should be valid (may be empty or have a wave)
         assert!(plan.actions.len() <= 1);
     }
@@ -220,12 +245,20 @@ mod tests {
         let profile = make_profile(Role::Guard);
         let mut view = make_view();
         view.nearby_threat = true;
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, None)
+            .unwrap();
+
         // Should call guards due to threat
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })));
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::CallGuards { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
     }
 
     #[test]
@@ -233,10 +266,15 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Guard);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("there's danger ahead!")).unwrap();
-        
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })));
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("there's danger ahead!"))
+            .unwrap();
+
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::CallGuards { .. })));
     }
 
     #[test]
@@ -244,10 +282,15 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Guard);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("help me please")).unwrap();
-        
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::CallGuards { .. })));
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("help me please"))
+            .unwrap();
+
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::CallGuards { .. })));
     }
 
     #[test]
@@ -255,11 +298,16 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Guard);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("nice weather")).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("nice weather"))
+            .unwrap();
+
         // Should tell player to move along
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
     }
 
     #[test]
@@ -267,11 +315,21 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Civilian);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("hello")).unwrap();
-        
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Emote { kind: EmoteKind::Wave })));
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("hello"))
+            .unwrap();
+
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan.actions.iter().any(|a| matches!(
+            a,
+            NpcAction::Emote {
+                kind: EmoteKind::Wave
+            }
+        )));
     }
 
     #[test]
@@ -279,11 +337,16 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Civilian);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("what's the news?")).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("what's the news?"))
+            .unwrap();
+
         // Should say they're busy
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
     }
 
     #[test]
@@ -291,9 +354,11 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::Civilian);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, None)
+            .unwrap();
+
         // No response when not spoken to
         assert!(plan.actions.is_empty());
     }
@@ -303,11 +368,19 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::QuestGiver);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("do you have a quest for me?")).unwrap();
-        
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })));
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("do you have a quest for me?"))
+            .unwrap();
+
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::GiveQuest { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
     }
 
     #[test]
@@ -315,10 +388,15 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::QuestGiver);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("I'm looking for work")).unwrap();
-        
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })));
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("I'm looking for work"))
+            .unwrap();
+
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::GiveQuest { .. })));
     }
 
     #[test]
@@ -326,12 +404,20 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::QuestGiver);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, Some("tell me about the world")).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, Some("tell me about the world"))
+            .unwrap();
+
         // Should give cryptic response about threads
-        assert!(plan.actions.iter().any(|a| matches!(a, NpcAction::Say { .. })));
-        assert!(!plan.actions.iter().any(|a| matches!(a, NpcAction::GiveQuest { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::Say { .. })));
+        assert!(!plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, NpcAction::GiveQuest { .. })));
     }
 
     #[test]
@@ -339,11 +425,12 @@ mod tests {
         let llm = MockLlm;
         let profile = make_profile(Role::QuestGiver);
         let view = make_view();
-        
-        let plan = llm.plan_dialogue_and_behaviour(&profile, &view, None).unwrap();
-        
+
+        let plan = llm
+            .plan_dialogue_and_behaviour(&profile, &view, None)
+            .unwrap();
+
         // No response when not spoken to
         assert!(plan.actions.is_empty());
     }
 }
-

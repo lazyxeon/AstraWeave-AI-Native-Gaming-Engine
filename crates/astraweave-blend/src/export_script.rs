@@ -4,8 +4,8 @@
 //! .blend files to glTF/GLB format with all configured options.
 
 use crate::options::{
-    AnimationOptions, ConversionOptions, GltfExportOptions, LinkedLibraryOptions,
-    MaterialOptions, MeshOptions, TextureOptions,
+    AnimationOptions, ConversionOptions, GltfExportOptions, LinkedLibraryOptions, MaterialOptions,
+    MeshOptions, TextureOptions,
 };
 use std::path::Path;
 
@@ -25,7 +25,12 @@ pub fn generate_export_script(
     script.push_str(&generate_imports());
 
     // Configuration variables
-    script.push_str(&generate_config(blend_path, output_path, options, blend_hash));
+    script.push_str(&generate_config(
+        blend_path,
+        output_path,
+        options,
+        blend_hash,
+    ));
 
     // Texture unpacking function
     script.push_str(&generate_texture_unpacking(&options.textures, blend_hash));
@@ -36,7 +41,12 @@ pub fn generate_export_script(
     }
 
     // Main export function
-    script.push_str(&generate_main_export(&options.gltf, &options.mesh, &options.animation, &options.materials));
+    script.push_str(&generate_main_export(
+        &options.gltf,
+        &options.mesh,
+        &options.animation,
+        &options.materials,
+    ));
 
     // Script entry point
     script.push_str(&generate_entry_point());
@@ -97,7 +107,10 @@ MAX_TEXTURE_RESOLUTION = {max_res}
         draco = python_bool(options.gltf.draco_compression),
         draco_level = options.gltf.draco_compression_level,
         unpack = python_bool(options.textures.unpack_embedded),
-        max_res = options.textures.max_resolution.map_or("None".to_string(), |r| r.to_string()),
+        max_res = options
+            .textures
+            .max_resolution
+            .map_or("None".to_string(), |r| r.to_string()),
     )
 }
 
@@ -362,7 +375,11 @@ def export_gltf():
         export_vertex_colors = python_bool(mesh.export_vertex_colors),
         export_loose_edges = python_bool(mesh.export_loose_edges),
         export_loose_points = python_bool(mesh.export_loose_points),
-        export_materials = if materials.export_materials { "EXPORT" } else { "NONE" },
+        export_materials = if materials.export_materials {
+            "EXPORT"
+        } else {
+            "NONE"
+        },
         export_animations = python_bool(animation.export_animations),
         export_shape_keys = python_bool(animation.export_shape_keys),
         export_nla_strips = python_bool(animation.export_nla_strips),
@@ -375,7 +392,13 @@ def export_gltf():
         selected_only = python_bool(gltf.selected_only),
         visible_only = python_bool(gltf.visible_only),
         active_collection_only = python_bool(gltf.active_collection_only),
-        copyright = gltf.copyright.as_ref().map_or("None".to_string(), |c| format!("\"{}\"", c.replace('"', "\\\""))),
+        copyright = gltf
+            .copyright
+            .as_ref()
+            .map_or("None".to_string(), |c| format!(
+                "\"{}\"",
+                c.replace('"', "\\\"")
+            )),
     )
 }
 
@@ -424,7 +447,11 @@ if __name__ == '__main__':
 
 /// Converts a bool to Python boolean string.
 fn python_bool(b: bool) -> &'static str {
-    if b { "True" } else { "False" }
+    if b {
+        "True"
+    } else {
+        "False"
+    }
 }
 
 #[cfg(test)]
@@ -438,9 +465,9 @@ mod tests {
         let blend_path = PathBuf::from("/test/model.blend");
         let output_path = PathBuf::from("/output/model.glb");
         let options = ConversionOptions::default();
-        
+
         let script = generate_export_script(&blend_path, &output_path, &options, "abc123");
-        
+
         assert!(script.contains("BLEND_FILE"));
         assert!(script.contains("OUTPUT_FILE"));
         assert!(script.contains("def export_gltf"));
@@ -454,9 +481,9 @@ mod tests {
         let output_path = PathBuf::from("/output/model.glb");
         let mut options = ConversionOptions::default();
         options.gltf.draco_compression = true;
-        
+
         let script = generate_export_script(&blend_path, &output_path, &options, "hash");
-        
+
         assert!(script.contains("DRACO_COMPRESSION = True"));
         assert!(script.contains("export_draco_mesh_compression_enable"));
     }
@@ -467,9 +494,9 @@ mod tests {
         let output_path = PathBuf::from("/output/model.glb");
         let mut options = ConversionOptions::default();
         options.linked_libraries.process_recursively = true;
-        
+
         let script = generate_export_script(&blend_path, &output_path, &options, "hash");
-        
+
         assert!(script.contains("process_linked_libraries"));
         assert!(script.contains("_processed_libraries"));
     }

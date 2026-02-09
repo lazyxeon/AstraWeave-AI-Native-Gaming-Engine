@@ -50,63 +50,77 @@ fn missing_library_action_strategy() -> impl Strategy<Value = MissingLibraryActi
 
 /// Strategy for generating valid file paths.
 fn valid_path_strategy() -> impl Strategy<Value = PathBuf> {
-    prop::collection::vec("[a-zA-Z0-9_-]{1,20}", 1..5)
-        .prop_map(|segments| {
-            let mut path = PathBuf::new();
-            for seg in segments {
-                path.push(seg);
-            }
-            path
-        })
+    prop::collection::vec("[a-zA-Z0-9_-]{1,20}", 1..5).prop_map(|segments| {
+        let mut path = PathBuf::new();
+        for seg in segments {
+            path.push(seg);
+        }
+        path
+    })
 }
 
 /// Strategy for generating valid GltfExportOptions.
 fn gltf_export_options_strategy() -> impl Strategy<Value = GltfExportOptions> {
     (
-        any::<bool>(),                    // draco_compression
-        0u8..11,                          // draco_compression_level
-        any::<bool>(),                    // export_extras
-        any::<bool>(),                    // export_lights
-        any::<bool>(),                    // export_cameras
-        any::<bool>(),                    // y_up
-        any::<bool>(),                    // selected_only
-        any::<bool>(),                    // visible_only
-        any::<bool>(),                    // active_collection_only
-        any::<bool>(),                    // export_armatures
-        any::<bool>(),                    // export_skins
+        any::<bool>(),                              // draco_compression
+        0u8..11,                                    // draco_compression_level
+        any::<bool>(),                              // export_extras
+        any::<bool>(),                              // export_lights
+        any::<bool>(),                              // export_cameras
+        any::<bool>(),                              // y_up
+        any::<bool>(),                              // selected_only
+        any::<bool>(),                              // visible_only
+        any::<bool>(),                              // active_collection_only
+        any::<bool>(),                              // export_armatures
+        any::<bool>(),                              // export_skins
         proptest::option::of("[a-zA-Z0-9 ]{0,50}"), // copyright
     )
-        .prop_map(|(draco, level, extras, lights, cameras, y_up, selected, visible, active, armatures, skins, copyright)| {
-            GltfExportOptions {
-                draco_compression: draco,
-                draco_compression_level: level,
-                export_extras: extras,
-                export_lights: lights,
-                export_cameras: cameras,
+        .prop_map(
+            |(
+                draco,
+                level,
+                extras,
+                lights,
+                cameras,
                 y_up,
-                selected_only: selected,
-                visible_only: visible,
-                active_collection_only: active,
-                export_armatures: armatures,
-                export_skins: skins,
+                selected,
+                visible,
+                active,
+                armatures,
+                skins,
                 copyright,
-            }
-        })
+            )| {
+                GltfExportOptions {
+                    draco_compression: draco,
+                    draco_compression_level: level,
+                    export_extras: extras,
+                    export_lights: lights,
+                    export_cameras: cameras,
+                    y_up,
+                    selected_only: selected,
+                    visible_only: visible,
+                    active_collection_only: active,
+                    export_armatures: armatures,
+                    export_skins: skins,
+                    copyright,
+                }
+            },
+        )
 }
 
 /// Strategy for generating valid TextureOptions.
 fn texture_options_strategy() -> impl Strategy<Value = TextureOptions> {
     (
         texture_format_strategy(),
-        proptest::option::of(128u32..8192),  // max_resolution
-        1u8..101,                             // jpeg_quality
-        1u8..101,                             // webp_quality
-        any::<bool>(),                        // unpack_embedded
-        any::<bool>(),                        // generate_mipmaps
-        any::<bool>(),                        // flip_y
+        proptest::option::of(128u32..8192), // max_resolution
+        1u8..101,                           // jpeg_quality
+        1u8..101,                           // webp_quality
+        any::<bool>(),                      // unpack_embedded
+        any::<bool>(),                      // generate_mipmaps
+        any::<bool>(),                      // flip_y
     )
-        .prop_map(|(format, max_res, jpeg_q, webp_q, unpack, mipmaps, flip)| {
-            TextureOptions {
+        .prop_map(
+            |(format, max_res, jpeg_q, webp_q, unpack, mipmaps, flip)| TextureOptions {
                 format,
                 max_resolution: max_res,
                 jpeg_quality: jpeg_q,
@@ -114,52 +128,54 @@ fn texture_options_strategy() -> impl Strategy<Value = TextureOptions> {
                 unpack_embedded: unpack,
                 generate_mipmaps: mipmaps,
                 flip_y: flip,
-            }
-        })
+            },
+        )
 }
 
 /// Strategy for generating valid AnimationOptions.
 fn animation_options_strategy() -> impl Strategy<Value = AnimationOptions> {
     (
-        any::<bool>(),  // export_animations
-        any::<bool>(),  // export_shape_keys
-        any::<bool>(),  // merge_animations
-        any::<bool>(),  // optimize_animation_size
-        any::<bool>(),  // force_linear_interpolation
-        any::<bool>(),  // export_nla_strips
-        proptest::option::of(1.0f32..120.0),  // sampling_rate
-        any::<bool>(),  // force_sampling
+        any::<bool>(),                       // export_animations
+        any::<bool>(),                       // export_shape_keys
+        any::<bool>(),                       // merge_animations
+        any::<bool>(),                       // optimize_animation_size
+        any::<bool>(),                       // force_linear_interpolation
+        any::<bool>(),                       // export_nla_strips
+        proptest::option::of(1.0f32..120.0), // sampling_rate
+        any::<bool>(),                       // force_sampling
     )
-        .prop_map(|(exp_anim, exp_shape, merge, opt, force_lin, nla, rate, force_samp)| {
-            AnimationOptions {
-                export_animations: exp_anim,
-                export_shape_keys: exp_shape,
-                merge_animations: merge,
-                optimize_animation_size: opt,
-                force_linear_interpolation: force_lin,
-                export_nla_strips: nla,
-                sampling_rate: rate,
-                force_sampling: force_samp,
-            }
-        })
+        .prop_map(
+            |(exp_anim, exp_shape, merge, opt, force_lin, nla, rate, force_samp)| {
+                AnimationOptions {
+                    export_animations: exp_anim,
+                    export_shape_keys: exp_shape,
+                    merge_animations: merge,
+                    optimize_animation_size: opt,
+                    force_linear_interpolation: force_lin,
+                    export_nla_strips: nla,
+                    sampling_rate: rate,
+                    force_sampling: force_samp,
+                }
+            },
+        )
 }
 
 /// Strategy for generating valid MeshOptions.
 fn mesh_options_strategy() -> impl Strategy<Value = MeshOptions> {
     (
-        any::<bool>(),  // apply_modifiers
-        any::<bool>(),  // triangulate
-        any::<bool>(),  // export_vertex_colors
-        any::<bool>(),  // export_uvs
-        any::<bool>(),  // export_normals
-        any::<bool>(),  // export_tangents
-        any::<bool>(),  // use_mesh_instancing
-        proptest::option::of(0.0001f32..0.1),  // merge_vertices_distance
-        any::<bool>(),  // export_loose_edges
-        any::<bool>(),  // export_loose_points
+        any::<bool>(),                        // apply_modifiers
+        any::<bool>(),                        // triangulate
+        any::<bool>(),                        // export_vertex_colors
+        any::<bool>(),                        // export_uvs
+        any::<bool>(),                        // export_normals
+        any::<bool>(),                        // export_tangents
+        any::<bool>(),                        // use_mesh_instancing
+        proptest::option::of(0.0001f32..0.1), // merge_vertices_distance
+        any::<bool>(),                        // export_loose_edges
+        any::<bool>(),                        // export_loose_points
     )
-        .prop_map(|(mods, tri, colors, uvs, normals, tangents, inst, merge, edges, points)| {
-            MeshOptions {
+        .prop_map(
+            |(mods, tri, colors, uvs, normals, tangents, inst, merge, edges, points)| MeshOptions {
                 apply_modifiers: mods,
                 triangulate: tri,
                 export_vertex_colors: colors,
@@ -170,40 +186,40 @@ fn mesh_options_strategy() -> impl Strategy<Value = MeshOptions> {
                 merge_vertices_distance: merge,
                 export_loose_edges: edges,
                 export_loose_points: points,
-            }
-        })
+            },
+        )
 }
 
 /// Strategy for generating valid LinkedLibraryOptions.
 fn linked_library_options_strategy() -> impl Strategy<Value = LinkedLibraryOptions> {
     (
-        any::<bool>(),  // process_recursively
-        1u32..50,       // max_recursion_depth
-        prop::collection::vec(valid_path_strategy(), 0..5),  // search_paths
-        missing_library_action_strategy(),  // missing_library_action
-        any::<bool>(),  // detect_circular_references
+        any::<bool>(),                                      // process_recursively
+        1u32..50,                                           // max_recursion_depth
+        prop::collection::vec(valid_path_strategy(), 0..5), // search_paths
+        missing_library_action_strategy(),                  // missing_library_action
+        any::<bool>(),                                      // detect_circular_references
     )
-        .prop_map(|(recursive, depth, paths, action, detect)| {
-            LinkedLibraryOptions {
+        .prop_map(
+            |(recursive, depth, paths, action, detect)| LinkedLibraryOptions {
                 process_recursively: recursive,
                 max_recursion_depth: depth,
                 search_paths: paths,
                 missing_library_action: action,
                 detect_circular_references: detect,
-            }
-        })
+            },
+        )
 }
 
 /// Strategy for generating valid ProcessOptions.
 fn process_options_strategy() -> impl Strategy<Value = ProcessOptions> {
     (
-        10u64..3600,    // timeout seconds
-        any::<bool>(),  // cancellable
-        any::<bool>(),  // capture_output
-        0u32..32,       // threads
+        10u64..3600,   // timeout seconds
+        any::<bool>(), // cancellable
+        any::<bool>(), // capture_output
+        0u32..32,      // threads
     )
-        .prop_map(|(timeout_secs, cancellable, capture, threads)| {
-            ProcessOptions {
+        .prop_map(
+            |(timeout_secs, cancellable, capture, threads)| ProcessOptions {
                 timeout: Duration::from_secs(timeout_secs),
                 cancellable,
                 working_directory: None,
@@ -211,26 +227,24 @@ fn process_options_strategy() -> impl Strategy<Value = ProcessOptions> {
                 environment: Vec::new(),
                 capture_output: capture,
                 threads,
-            }
-        })
+            },
+        )
 }
 
 /// Strategy for generating valid CacheOptions.
 fn cache_options_strategy() -> impl Strategy<Value = CacheOptions> {
     (
-        any::<bool>(),  // enabled
-        proptest::option::of(1024u64..10_000_000_000),  // max_cache_size
-        proptest::option::of(3600u64..86400 * 365),     // max_age seconds
-        any::<bool>(),  // validate_on_access
+        any::<bool>(),                                 // enabled
+        proptest::option::of(1024u64..10_000_000_000), // max_cache_size
+        proptest::option::of(3600u64..86400 * 365),    // max_age seconds
+        any::<bool>(),                                 // validate_on_access
     )
-        .prop_map(|(enabled, max_size, max_age_secs, validate)| {
-            CacheOptions {
-                enabled,
-                cache_directory: None,
-                max_cache_size: max_size,
-                max_age: max_age_secs.map(Duration::from_secs),
-                validate_on_access: validate,
-            }
+        .prop_map(|(enabled, max_size, max_age_secs, validate)| CacheOptions {
+            enabled,
+            cache_directory: None,
+            max_cache_size: max_size,
+            max_age: max_age_secs.map(Duration::from_secs),
+            validate_on_access: validate,
         })
 }
 
@@ -246,8 +260,8 @@ fn conversion_options_strategy() -> impl Strategy<Value = ConversionOptions> {
         process_options_strategy(),
         cache_options_strategy(),
     )
-        .prop_map(|(format, gltf, textures, animation, mesh, linked, process, cache)| {
-            ConversionOptions {
+        .prop_map(
+            |(format, gltf, textures, animation, mesh, linked, process, cache)| ConversionOptions {
                 format,
                 gltf,
                 textures,
@@ -257,8 +271,8 @@ fn conversion_options_strategy() -> impl Strategy<Value = ConversionOptions> {
                 linked_libraries: linked,
                 process,
                 cache,
-            }
-        })
+            },
+        )
 }
 
 // ============================================================================

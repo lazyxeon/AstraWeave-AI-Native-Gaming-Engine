@@ -4,10 +4,10 @@
 //! GizmoMode, AxisConstraint, SnappingConfig, PanelType, PanelCategory,
 //! and more — exact values, boundary conditions, state transitions.
 
-use aw_editor::editor_mode::EditorMode;
-use aw_editor::gizmo::snapping::SnappingConfig;
-use aw_editor::gizmo::state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
-use aw_editor::runtime::{RuntimeIssue, RuntimeState};
+use aw_editor_lib::editor_mode::EditorMode;
+use aw_editor_lib::gizmo::snapping::SnappingConfig;
+use aw_editor_lib::gizmo::state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
+use aw_editor_lib::runtime::{RuntimeIssue, RuntimeState};
 use glam::{Vec2, Vec3};
 
 // =========================================================================
@@ -651,6 +651,7 @@ fn gizmo_state_new_same_as_default() {
 #[test]
 fn gizmo_state_start_translate() {
     let mut gs = GizmoState::new();
+    gs.selected_entity = Some(1);
     gs.start_translate();
     assert!(gs.mode.is_translate());
     assert!(gs.is_active());
@@ -659,6 +660,7 @@ fn gizmo_state_start_translate() {
 #[test]
 fn gizmo_state_start_rotate() {
     let mut gs = GizmoState::new();
+    gs.selected_entity = Some(1);
     gs.start_rotate();
     assert!(gs.mode.is_rotate());
 }
@@ -666,6 +668,7 @@ fn gizmo_state_start_rotate() {
 #[test]
 fn gizmo_state_start_scale() {
     let mut gs = GizmoState::new();
+    gs.selected_entity = Some(1);
     gs.start_scale(false);
     assert!(gs.mode.is_scale());
 }
@@ -673,6 +676,7 @@ fn gizmo_state_start_scale() {
 #[test]
 fn gizmo_state_cancel_resets_to_inactive() {
     let mut gs = GizmoState::new();
+    gs.selected_entity = Some(1);
     gs.start_translate();
     gs.cancel_transform();
     assert!(gs.cancelled);
@@ -681,6 +685,7 @@ fn gizmo_state_cancel_resets_to_inactive() {
 #[test]
 fn gizmo_state_confirm() {
     let mut gs = GizmoState::new();
+    gs.selected_entity = Some(1);
     gs.start_translate();
     gs.confirm_transform();
     assert!(gs.confirmed);
@@ -689,6 +694,7 @@ fn gizmo_state_confirm() {
 #[test]
 fn gizmo_state_add_constraint() {
     let mut gs = GizmoState::new();
+    gs.selected_entity = Some(1);
     gs.start_translate();
     gs.add_constraint(AxisConstraint::X);
     if let GizmoMode::Translate { constraint } = gs.mode {
@@ -708,6 +714,7 @@ fn gizmo_state_mouse_delta_initial_zero() {
 fn gizmo_state_is_active_when_translating() {
     let mut gs = GizmoState::new();
     assert!(!gs.is_active());
+    gs.selected_entity = Some(1);
     gs.start_translate();
     assert!(gs.is_active());
 }

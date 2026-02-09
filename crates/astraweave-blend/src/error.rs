@@ -21,7 +21,6 @@ pub enum BlendError {
     // ========================================================================
     // Blender Discovery Errors
     // ========================================================================
-
     /// Blender executable was not found on the system.
     #[error("Blender not found. Searched paths: {searched_paths:?}. Please install Blender 2.93+ from https://www.blender.org/download/")]
     BlenderNotFound {
@@ -92,7 +91,6 @@ pub enum BlendError {
     // ========================================================================
     // File and Path Errors
     // ========================================================================
-
     /// The source .blend file does not exist.
     #[error("Blend file not found: {path}")]
     BlendFileNotFound {
@@ -140,7 +138,6 @@ pub enum BlendError {
     // ========================================================================
     // Cache Errors
     // ========================================================================
-
     /// Failed to create cache directory.
     #[error("Failed to create cache directory {path}: {message}")]
     CacheDirectoryError {
@@ -206,7 +203,6 @@ pub enum BlendError {
     // ========================================================================
     // Conversion Process Errors
     // ========================================================================
-
     /// Failed to spawn Blender subprocess.
     #[error("Failed to start Blender process: {source}")]
     ProcessSpawnError {
@@ -262,7 +258,6 @@ pub enum BlendError {
     // ========================================================================
     // Linked Library Errors
     // ========================================================================
-
     /// A linked library file is missing.
     #[error("Linked library not found: {library_path} (referenced from {source_blend})")]
     LinkedLibraryNotFound {
@@ -291,7 +286,6 @@ pub enum BlendError {
     // ========================================================================
     // Post-Processing Errors
     // ========================================================================
-
     /// Failed to load the converted glTF file.
     #[error("Failed to load converted glTF from {path}: {reason}")]
     GltfLoadError {
@@ -315,7 +309,6 @@ pub enum BlendError {
     // ========================================================================
     // Configuration Errors
     // ========================================================================
-
     /// Configuration error (invalid settings, missing requirements).
     #[error("Configuration error: {message}")]
     ConfigurationError {
@@ -342,7 +335,6 @@ pub enum BlendError {
     // ========================================================================
     // Generic/Wrapper Errors
     // ========================================================================
-
     /// Generic I/O error (from std::io::Error conversion).
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
@@ -456,11 +448,17 @@ mod tests {
 
     #[test]
     fn test_error_categorization() {
-        assert!(BlendError::BlenderNotFound { searched_paths: vec![] }.is_blender_missing());
+        assert!(BlendError::BlenderNotFound {
+            searched_paths: vec![]
+        }
+        .is_blender_missing());
         assert!(!BlendError::Cancelled.is_blender_missing());
 
         assert!(BlendError::Cancelled.is_cancelled());
-        assert!(!BlendError::BlenderNotFound { searched_paths: vec![] }.is_cancelled());
+        assert!(!BlendError::BlenderNotFound {
+            searched_paths: vec![]
+        }
+        .is_cancelled());
 
         let timeout = BlendError::Timeout {
             operation: "conversion".to_string(),
@@ -473,9 +471,11 @@ mod tests {
 
     #[test]
     fn test_error_suggestions() {
-        assert!(BlendError::BlenderNotFound { searched_paths: vec![] }
-            .suggestion()
-            .is_some());
+        assert!(BlendError::BlenderNotFound {
+            searched_paths: vec![]
+        }
+        .suggestion()
+        .is_some());
 
         let version_err = BlendError::BlenderVersionTooOld {
             found: "2.80".to_string(),

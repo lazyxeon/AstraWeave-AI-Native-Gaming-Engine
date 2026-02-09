@@ -671,7 +671,10 @@ impl SkyRenderer {
         // 3. Procedural (Fallback)
         if !drawn {
             render_pass.set_pipeline(pipeline);
-            let bind_group = self.bind_group.as_ref().expect("bind_group must be initialized");
+            let bind_group = self
+                .bind_group
+                .as_ref()
+                .expect("bind_group must be initialized");
             render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.set_vertex_buffer(0, vertices.slice(..));
             render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);
@@ -1259,7 +1262,8 @@ impl WeatherSystem {
         // Interpolate between current and target
         self.rain_intensity = current_rain + (target_rain - current_rain) * t;
         self.snow_intensity = current_snow + (target_snow - current_snow) * t;
-        self.fog_density = current_fog + (target_fog - current_fog) / /* ~ changed by cargo-mutants ~ */ t;
+        self.fog_density =
+            current_fog + (target_fog - current_fog) / /* ~ changed by cargo-mutants ~ */ t;
         self.wind_strength = current_wind + (target_wind - current_wind) * t;
     }
 }

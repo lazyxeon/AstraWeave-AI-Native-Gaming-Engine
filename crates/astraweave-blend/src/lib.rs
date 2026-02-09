@@ -75,34 +75,41 @@
 #![warn(clippy::all)]
 #![deny(unsafe_code)]
 
+pub mod cache;
+pub mod conversion;
 pub mod discovery;
 pub mod error;
-pub mod version;
-pub mod conversion;
-pub mod cache;
+pub mod export_script;
 pub mod importer;
 pub mod options;
 pub mod progress;
-pub mod export_script;
+pub mod version;
 
 /// Test utilities, mock implementations, and property generators.
-/// 
+///
 /// Enable the `test-utils` feature to use these utilities.
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils;
 
 // Re-exports for convenience - core types
-pub use discovery::{BlenderDiscovery, BlenderDiscoveryConfig, BlenderInstallation, DiscoveryMethod};
+pub use discovery::{
+    BlenderDiscovery, BlenderDiscoveryConfig, BlenderInstallation, DiscoveryMethod,
+};
 pub use error::{BlendError, BlendResult};
-pub use version::{BlenderCapabilities, BlenderVersion, MINIMUM_BLENDER_VERSION, RECOMMENDED_BLENDER_VERSION};
+pub use version::{
+    BlenderCapabilities, BlenderVersion, MINIMUM_BLENDER_VERSION, RECOMMENDED_BLENDER_VERSION,
+};
 
 // Re-exports - conversion pipeline
-pub use conversion::{ConversionJob, ConversionJobBuilder, ConversionResult};
 pub use cache::{CacheLookup, CacheMissReason, CacheStats, ConversionCache};
+pub use conversion::{ConversionJob, ConversionJobBuilder, ConversionResult};
 pub use options::{ConversionOptions, ConversionOptionsBuilder, OutputFormat};
-pub use progress::{CancellationToken, ConversionProgress, ConversionStage, ProgressReceiver, ProgressTracker};
+pub use progress::{
+    CancellationToken, ConversionProgress, ConversionStage, ProgressReceiver, ProgressTracker,
+};
 
 // Re-exports - high-level API
+pub use importer::{
+    blender_version, import_blend, import_blend_with_options, is_blender_available,
+};
 pub use importer::{BlendImporter, BlendImporterConfig, ImportHandle};
-pub use importer::{blender_version, import_blend, import_blend_with_options, is_blender_available};
-

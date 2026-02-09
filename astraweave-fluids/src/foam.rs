@@ -232,7 +232,7 @@ impl FoamSystem {
             let angle = self.next_random() * std::f32::consts::TAU;
             let dist = self.next_random() * radius;
             let offset = Vec3::new(angle.cos() * dist, angle.sin() * dist, 0.0);
-            
+
             let velocity = Vec2::new(
                 (self.next_random() - 0.5) * 0.5,
                 (self.next_random() - 0.5) * 0.5,
@@ -246,7 +246,7 @@ impl FoamSystem {
     pub fn generate_whitecaps(&mut self, wave_positions: &[(Vec3, f32)]) {
         for &(pos, steepness) in wave_positions {
             if steepness > self.config.whitecap_threshold {
-                let intensity = (steepness - self.config.whitecap_threshold) 
+                let intensity = (steepness - self.config.whitecap_threshold)
                     / (1.0 - self.config.whitecap_threshold);
                 let count = (intensity * 5.0) as u32 + 1;
                 self.spawn_burst(pos, count, 0.3, FoamSource::Whitecap);
@@ -259,7 +259,7 @@ impl FoamSystem {
         for &pos in collision_points {
             let splash_velocity = -water_velocity * 0.3;
             self.spawn_burst(pos, 8, 0.5, FoamSource::Shore);
-            
+
             // Add some directed particles
             for _ in 0..4 {
                 let rand_mult = 0.5 + self.next_random();
@@ -285,7 +285,7 @@ impl FoamSystem {
 
         for i in 0..particle_count {
             let t = i as f32 / particle_count as f32;
-            
+
             // Left wake arm
             let left_offset = -dir * (t * 2.0) + perp * (t * object_width * wake_angle);
             let left_pos = object_pos + Vec3::new(left_offset.x, left_offset.y, 0.0);
@@ -300,7 +300,12 @@ impl FoamSystem {
         }
 
         // Center turbulence
-        self.spawn_burst(object_pos - Vec3::new(dir.x, dir.y, 0.0), 3, 0.2, FoamSource::Wake);
+        self.spawn_burst(
+            object_pos - Vec3::new(dir.x, dir.y, 0.0),
+            3,
+            0.2,
+            FoamSource::Wake,
+        );
     }
 
     /// Update foam simulation
@@ -443,10 +448,10 @@ mod tests {
 
         // Stormy should have more particles than calm
         assert!(stormy.max_particles > calm.max_particles);
-        
+
         // Stormy should have lower whitecap threshold (more whitecaps)
         assert!(stormy.whitecap_threshold < calm.whitecap_threshold);
-        
+
         // Rapids should have short lifetime
         assert!(rapids.lifetime < stormy.lifetime);
     }
@@ -460,10 +465,10 @@ mod tests {
     #[test]
     fn test_foam_spawn() {
         let mut system = FoamSystem::new(FoamConfig::default());
-        
+
         system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Whitecap);
         assert_eq!(system.particle_count(), 1);
-        
+
         system.spawn_foam(Vec3::ONE, Vec2::ONE, FoamSource::Shore);
         assert_eq!(system.particle_count(), 2);
     }
@@ -471,7 +476,7 @@ mod tests {
     #[test]
     fn test_foam_spawn_burst() {
         let mut system = FoamSystem::new(FoamConfig::default());
-        
+
         system.spawn_burst(Vec3::ZERO, 10, 1.0, FoamSource::Waterfall);
         assert_eq!(system.particle_count(), 10);
     }
@@ -483,12 +488,12 @@ mod tests {
             ..Default::default()
         };
         let mut system = FoamSystem::new(config);
-        
+
         // Try to spawn more than max
         for _ in 0..10 {
             system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Whitecap);
         }
-        
+
         assert_eq!(system.particle_count(), 5);
     }
 
@@ -500,10 +505,10 @@ mod tests {
             ..Default::default()
         };
         let mut system = FoamSystem::new(config);
-        
+
         system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Whitecap);
         assert_eq!(system.particle_count(), 1);
-        
+
         // Update past lifetime
         system.update(2.0);
         assert_eq!(system.particle_count(), 0);
@@ -518,9 +523,9 @@ mod tests {
             ..Default::default()
         };
         let mut system = FoamSystem::new(config);
-        
+
         system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Whitecap);
-        
+
         // Update to fade out
         system.update(1.5);
         assert_eq!(system.particle_count(), 0);
@@ -529,10 +534,10 @@ mod tests {
     #[test]
     fn test_foam_wake_generation() {
         let mut system = FoamSystem::new(FoamConfig::default());
-        
+
         // Generate wake behind moving object
         system.generate_wake(Vec3::ZERO, Vec2::new(1.0, 0.0), 2.0);
-        
+
         // Should have spawned particles
         assert!(system.particle_count() > 0);
     }
@@ -544,11 +549,11 @@ mod tests {
             ..Default::default()
         };
         let mut system = FoamSystem::new(config);
-        
+
         // Wave below threshold - no foam
         system.generate_whitecaps(&[(Vec3::ZERO, 0.3)]);
         assert_eq!(system.particle_count(), 0);
-        
+
         // Wave above threshold - foam generated
         system.generate_whitecaps(&[(Vec3::ONE, 0.8)]);
         assert!(system.particle_count() > 0);
@@ -565,9 +570,9 @@ mod tests {
             rotation: 0.5,
             source: FoamSource::Whitecap,
         };
-        
+
         let gpu: GpuFoamParticle = (&particle).into();
-        
+
         assert_eq!(gpu.position_size[0], 1.0);
         assert_eq!(gpu.position_size[1], 2.0);
         assert_eq!(gpu.position_size[2], 3.0);
@@ -578,15 +583,15 @@ mod tests {
     #[test]
     fn test_foam_trail() {
         let mut trail = FoamTrail::new(10, 1.0, 2.0);
-        
+
         trail.add_point(Vec3::ZERO);
         trail.add_point(Vec3::ONE);
         assert_eq!(trail.points().len(), 2);
-        
+
         // Update ages
         trail.update(1.0);
         assert_eq!(trail.points().len(), 2);
-        
+
         // Age past fade time
         trail.update(1.5);
         assert_eq!(trail.points().len(), 0);
@@ -595,11 +600,11 @@ mod tests {
     #[test]
     fn test_foam_trail_max_points() {
         let mut trail = FoamTrail::new(3, 1.0, 10.0);
-        
+
         for i in 0..5 {
             trail.add_point(Vec3::new(i as f32, 0.0, 0.0));
         }
-        
+
         assert_eq!(trail.points().len(), 3);
         // Oldest points should be removed
         assert_eq!(trail.points()[0].position.x, 2.0);
@@ -617,10 +622,10 @@ mod tests {
     #[test]
     fn test_foam_clear() {
         let mut system = FoamSystem::new(FoamConfig::default());
-        
+
         system.spawn_burst(Vec3::ZERO, 50, 1.0, FoamSource::Shore);
         assert!(system.particle_count() > 0);
-        
+
         system.clear();
         assert_eq!(system.particle_count(), 0);
     }
