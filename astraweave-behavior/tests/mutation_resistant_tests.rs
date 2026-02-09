@@ -26,7 +26,11 @@ mod cache_stats_tests {
             invalidations: 0,
         };
         let rate = stats.hit_rate();
-        assert!((rate - 0.9).abs() < 1e-9, "hit rate should be 0.9, got {}", rate);
+        assert!(
+            (rate - 0.9).abs() < 1e-9,
+            "hit rate should be 0.9, got {}",
+            rate
+        );
     }
 
     #[test]
@@ -38,7 +42,11 @@ mod cache_stats_tests {
             invalidations: 0,
         };
         let rate = stats.hit_rate();
-        assert!((rate - 0.5).abs() < 1e-9, "hit rate should be 0.5, got {}", rate);
+        assert!(
+            (rate - 0.5).abs() < 1e-9,
+            "hit rate should be 0.5, got {}",
+            rate
+        );
     }
 
     #[test]
@@ -50,7 +58,11 @@ mod cache_stats_tests {
             invalidations: 0,
         };
         let rate = stats.hit_rate();
-        assert!((rate - 1.0).abs() < 1e-9, "hit rate should be 1.0, got {}", rate);
+        assert!(
+            (rate - 1.0).abs() < 1e-9,
+            "hit rate should be 1.0, got {}",
+            rate
+        );
     }
 
     #[test]
@@ -74,7 +86,11 @@ mod cache_stats_tests {
             invalidations: 0,
         };
         let rate = stats.hit_rate();
-        assert!(rate.abs() < 1e-9, "hit rate with no accesses should be 0.0, got {}", rate);
+        assert!(
+            rate.abs() < 1e-9,
+            "hit rate with no accesses should be 0.0, got {}",
+            rate
+        );
     }
 
     #[test]
@@ -86,7 +102,11 @@ mod cache_stats_tests {
             invalidations: 0,
         };
         let rate = stats.hit_rate();
-        assert!((rate - 0.25).abs() < 1e-9, "hit rate should be 0.25, got {}", rate);
+        assert!(
+            (rate - 0.25).abs() < 1e-9,
+            "hit rate should be 0.25, got {}",
+            rate
+        );
     }
 
     // ---------------------------------------------------------------------
@@ -147,11 +167,9 @@ mod plan_cache_tests {
     }
 
     fn create_actions() -> Vec<GoapAction> {
-        vec![
-            GoapAction::new("action1")
-                .with_precondition("a", true)
-                .with_effect("done", true),
-        ]
+        vec![GoapAction::new("action1")
+            .with_precondition("a", true)
+            .with_effect("done", true)]
     }
 
     // ---------------------------------------------------------------------
@@ -286,7 +304,7 @@ mod plan_cache_tests {
 
         cache.put(&state, &goal, &actions, vec![]);
         let _ = cache.get(&state, &goal, &actions);
-        
+
         cache.clear();
 
         assert_eq!(cache.stats().hits, 0);
@@ -404,7 +422,7 @@ mod world_state_tests {
         let mut state = WorldState::default();
         state.set("key", true);
         assert_eq!(state.get("key"), Some(true));
-        
+
         state.set("key", false);
         assert_eq!(state.get("key"), Some(false));
     }
@@ -447,13 +465,21 @@ mod goap_action_tests {
     #[test]
     fn new_action_has_default_cost_1() {
         let action = GoapAction::new("test");
-        assert!((action.cost - 1.0).abs() < 1e-6, "default cost should be 1.0, got {}", action.cost);
+        assert!(
+            (action.cost - 1.0).abs() < 1e-6,
+            "default cost should be 1.0, got {}",
+            action.cost
+        );
     }
 
     #[test]
     fn with_cost_sets_cost() {
         let action = GoapAction::new("test").with_cost(5.0);
-        assert!((action.cost - 5.0).abs() < 1e-6, "cost should be 5.0, got {}", action.cost);
+        assert!(
+            (action.cost - 5.0).abs() < 1e-6,
+            "cost should be 5.0, got {}",
+            action.cost
+        );
     }
 
     #[test]
@@ -464,16 +490,14 @@ mod goap_action_tests {
 
     #[test]
     fn with_precondition_adds_precondition() {
-        let action = GoapAction::new("test")
-            .with_precondition("has_weapon", true);
+        let action = GoapAction::new("test").with_precondition("has_weapon", true);
         assert!(action.preconditions.get("has_weapon").is_some());
         assert_eq!(action.preconditions.get("has_weapon"), Some(true));
     }
 
     #[test]
     fn with_effect_adds_effect() {
-        let action = GoapAction::new("test")
-            .with_effect("enemy_dead", true);
+        let action = GoapAction::new("test").with_effect("enemy_dead", true);
         assert!(action.effects.get("enemy_dead").is_some());
         assert_eq!(action.effects.get("enemy_dead"), Some(true));
     }
@@ -498,24 +522,21 @@ mod goap_action_tests {
     #[test]
     fn can_apply_returns_true_when_preconditions_met() {
         let state = WorldState::from_facts(&[("has_weapon", true)]);
-        let action = GoapAction::new("attack")
-            .with_precondition("has_weapon", true);
+        let action = GoapAction::new("attack").with_precondition("has_weapon", true);
         assert!(action.can_apply(&state));
     }
 
     #[test]
     fn can_apply_returns_false_when_preconditions_not_met() {
         let state = WorldState::from_facts(&[("has_weapon", false)]);
-        let action = GoapAction::new("attack")
-            .with_precondition("has_weapon", true);
+        let action = GoapAction::new("attack").with_precondition("has_weapon", true);
         assert!(!action.can_apply(&state));
     }
 
     #[test]
     fn apply_returns_new_state_with_effects() {
         let state = WorldState::from_facts(&[("enemy_dead", false)]);
-        let action = GoapAction::new("attack")
-            .with_effect("enemy_dead", true);
+        let action = GoapAction::new("attack").with_effect("enemy_dead", true);
         let new_state = action.apply(&state);
         assert_eq!(new_state.get("enemy_dead"), Some(true));
     }
@@ -530,7 +551,10 @@ mod goap_goal_tests {
 
     #[test]
     fn goal_name_is_set() {
-        let goal = GoapGoal::new("defeat_enemy", WorldState::from_facts(&[("enemy_dead", true)]));
+        let goal = GoapGoal::new(
+            "defeat_enemy",
+            WorldState::from_facts(&[("enemy_dead", true)]),
+        );
         assert_eq!(goal.name, "defeat_enemy");
     }
 
@@ -568,11 +592,9 @@ mod goap_planner_tests {
         let planner = GoapPlanner::new();
         let state = WorldState::from_facts(&[("has_key", true)]);
         let goal = GoapGoal::new("open_door", WorldState::from_facts(&[("door_open", true)]));
-        let actions = vec![
-            GoapAction::new("open_door")
-                .with_precondition("has_key", true)
-                .with_effect("door_open", true),
-        ];
+        let actions = vec![GoapAction::new("open_door")
+            .with_precondition("has_key", true)
+            .with_effect("door_open", true)];
 
         let plan = planner.plan(&state, &goal, &actions);
         assert!(plan.is_some());
@@ -607,11 +629,9 @@ mod goap_planner_tests {
         let planner = GoapPlanner::new();
         let state = WorldState::from_facts(&[("trapped", true)]);
         let goal = GoapGoal::new("escape", WorldState::from_facts(&[("escaped", true)]));
-        let actions = vec![
-            GoapAction::new("walk")
-                .with_precondition("not_trapped", true) // Can never be satisfied
-                .with_effect("escaped", true),
-        ];
+        let actions = vec![GoapAction::new("walk")
+            .with_precondition("not_trapped", true) // Can never be satisfied
+            .with_effect("escaped", true)];
 
         let plan = planner.plan(&state, &goal, &actions);
         assert!(plan.is_none());
@@ -664,11 +684,9 @@ mod cached_goap_planner_tests {
     fn create_scenario() -> (WorldState, GoapGoal, Vec<GoapAction>) {
         let state = WorldState::from_facts(&[("has_key", true)]);
         let goal = GoapGoal::new("open", WorldState::from_facts(&[("door_open", true)]));
-        let actions = vec![
-            GoapAction::new("open_door")
-                .with_precondition("has_key", true)
-                .with_effect("door_open", true),
-        ];
+        let actions = vec![GoapAction::new("open_door")
+            .with_precondition("has_key", true)
+            .with_effect("door_open", true)];
         (state, goal, actions)
     }
 
@@ -715,7 +733,10 @@ mod cached_goap_planner_tests {
         let plan1 = planner.plan(&state, &goal, &actions);
         let plan2 = planner.plan(&state, &goal, &actions);
 
-        assert_eq!(plan1.as_ref().map(|p| p.len()), plan2.as_ref().map(|p| p.len()));
+        assert_eq!(
+            plan1.as_ref().map(|p| p.len()),
+            plan2.as_ref().map(|p| p.len())
+        );
         assert_eq!(
             plan1.as_ref().map(|p| &p[0].name),
             plan2.as_ref().map(|p| &p[0].name)

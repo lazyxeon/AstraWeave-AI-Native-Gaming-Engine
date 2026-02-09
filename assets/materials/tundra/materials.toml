@@ -1,0 +1,45 @@
+# Tundra biome — frozen permafrost terrain with ice, snowdrifts, and exposed rock
+# Used for extreme cold regions, arctic tundra, ice sheets
+
+[biome]
+name = "tundra"
+
+[[layer]]
+key = "snow"
+albedo = "../snow.png"
+normal = "../snow_n.png"
+mra    = "../snow_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 28.0
+
+[[layer]]
+key = "ice"
+albedo = "../ice.png"
+normal = "../ice_n.png"
+mra    = "../ice_mra.png"
+tiling = [1.5, 1.5]
+triplanar_scale = 16.0
+
+[[layer]]
+key = "gravel"
+albedo = "../gravel.png"
+normal = "../gravel_n.png"
+mra    = "../gravel_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "mountain_rock"
+albedo = "../mountain_rock.png"
+normal = "../mountain_rock_n.png"
+mra    = "../mountain_rock_mra.png"
+tiling = [1.5, 1.5]
+triplanar_scale = 16.0
+
+[[layer]]
+key = "dirt"
+albedo = "../dirt.png"
+normal = "../dirt_n.png"
+mra    = "../dirt_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0

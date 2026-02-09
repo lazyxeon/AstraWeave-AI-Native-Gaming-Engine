@@ -8,6 +8,7 @@ use wgpu;
 
 /// MSAA sample count configuration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum MsaaMode {
     /// No anti-aliasing
     Off,

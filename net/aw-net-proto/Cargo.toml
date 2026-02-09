@@ -15,6 +15,7 @@ rand = "0.9"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+serde_json = "1"
 
 [[bench]]
 name = "proto_bench"

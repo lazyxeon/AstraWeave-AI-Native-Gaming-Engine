@@ -27,7 +27,7 @@ impl PersistedHistory {
     pub fn new(history: ActionHistory) -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system clock before UNIX epoch")
             .as_secs();
 
         let checksum = Self::calculate_checksum(&history);
@@ -77,7 +77,7 @@ impl PersistedHistory {
     pub fn age_seconds(&self) -> u64 {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system clock before UNIX epoch")
             .as_secs();
 
         now.saturating_sub(self.timestamp)
@@ -86,6 +86,7 @@ impl PersistedHistory {
 
 /// Persistence format selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PersistenceFormat {
     /// Human-readable JSON (larger files, easy debugging)
     Json,
@@ -98,6 +99,8 @@ pub type PersistenceResult<T> = Result<T, PersistenceError>;
 
 /// Errors that can occur during persistence operations
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum PersistenceError {
     /// Failed to serialize history
     SerializationFailed(String),

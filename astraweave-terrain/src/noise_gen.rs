@@ -69,6 +69,7 @@ pub struct NoiseLayer {
 
 /// Types of noise functions available
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum NoiseType {
     Perlin,
     RidgedNoise,
@@ -207,7 +208,7 @@ impl TerrainNoise {
     /// Generate a density map for cave/overhang generation (future use)
     pub fn sample_density(&self, x: f64, y: f64, z: f64) -> f32 {
         // Use 3D noise for density - this could be used for caves
-        
+
         self.base_elevation.get([x * 0.01, y * 0.01, z * 0.01]) as f32
     }
 

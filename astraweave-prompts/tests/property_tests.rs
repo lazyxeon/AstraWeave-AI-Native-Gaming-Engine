@@ -46,13 +46,13 @@ fn potentially_malicious_strategy() -> impl Strategy<Value = String> {
 /// Strategy for generating different SanitizationConfig variations
 fn config_strategy() -> impl Strategy<Value = SanitizationConfig> {
     (
-        100usize..50000,     // max_user_input_length
-        10usize..200,        // max_variable_name_length
-        any::<bool>(),       // allow_control_chars
-        any::<bool>(),       // allow_unicode
-        1usize..20,          // max_nesting_depth
-        any::<bool>(),       // escape_html
-        any::<bool>(),       // block_injection_patterns
+        100usize..50000, // max_user_input_length
+        10usize..200,    // max_variable_name_length
+        any::<bool>(),   // allow_control_chars
+        any::<bool>(),   // allow_unicode
+        1usize..20,      // max_nesting_depth
+        any::<bool>(),   // escape_html
+        any::<bool>(),   // block_injection_patterns
     )
         .prop_map(
             |(max_len, max_var, ctrl, unicode, depth, html, block)| SanitizationConfig {
@@ -138,7 +138,7 @@ proptest! {
         max_length in 10usize..1000
     ) {
         let result = truncate_input(&input, max_length);
-        prop_assert!(result.len() <= max_length + 3, 
+        prop_assert!(result.len() <= max_length + 3,
             "Result {} longer than max {} + 3", result.len(), max_length);
     }
 
@@ -247,11 +247,11 @@ proptest! {
     #[test]
     fn prop_trusted_input_passthrough(input in mixed_content_strategy()) {
         let config = SanitizationConfig::default();
-        
+
         let dev_result = sanitize_input(&input, TrustLevel::Developer, &config);
         prop_assert!(dev_result.is_ok());
         prop_assert_eq!(dev_result.unwrap(), input.clone());
-        
+
         let sys_result = sanitize_input(&input, TrustLevel::System, &config);
         prop_assert!(sys_result.is_ok());
         prop_assert_eq!(sys_result.unwrap(), input);
@@ -266,7 +266,7 @@ proptest! {
         let mut config = SanitizationConfig::default();
         config.max_user_input_length = 100;
         config.block_injection_patterns = false; // Focus on length check
-        
+
         let long_input = base.repeat(mult);
         let result = sanitize_input(&long_input, TrustLevel::User, &config);
         prop_assert!(result.is_err(), "Should reject input of length {}", long_input.len());
@@ -287,7 +287,7 @@ proptest! {
         let mut config = SanitizationConfig::default();
         config.escape_html = true;
         config.block_injection_patterns = false;
-        
+
         if let Ok(result) = sanitize_input(&input, TrustLevel::User, &config) {
             // Should not contain raw HTML characters
             let should_be_escaped = ['<', '>', '"', '\''];
@@ -310,7 +310,7 @@ proptest! {
     #[test]
     fn prop_sanitization_idempotent_after_first_pass(input in "[a-zA-Z0-9 ]{0,100}") {
         let config = SanitizationConfig::default();
-        
+
         if let Ok(first_pass) = sanitize_input(&input, TrustLevel::User, &config) {
             // Sanitizing the result of sanitization should produce same result
             // (only for clean inputs that pass the first time)

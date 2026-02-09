@@ -72,11 +72,11 @@ fn path_traversal_strategy() -> impl Strategy<Value = String> {
 /// Strategy for generating SecurityConfig values
 fn security_config_strategy() -> impl Strategy<Value = SecurityConfig> {
     (
-        any::<bool>(),       // enable_sandboxing
-        any::<bool>(),       // enable_llm_validation
-        any::<bool>(),       // enable_script_sandbox
-        100u64..60000,       // max_script_execution_time_ms
-        1usize..1024,        // max_memory_usage_mb
+        any::<bool>(), // enable_sandboxing
+        any::<bool>(), // enable_llm_validation
+        any::<bool>(), // enable_script_sandbox
+        100u64..60000, // max_script_execution_time_ms
+        1usize..1024,  // max_memory_usage_mb
     )
         .prop_map(|(sandbox, llm, script, time, mem)| SecurityConfig {
             enable_sandboxing: sandbox,
@@ -111,7 +111,7 @@ proptest! {
         let path_str = format!("{}.{}", filename, ext);
         let path = Path::new(&path_str);
         let allowed = ["png", "jpg", "jpeg", "gif", "webp", "json", "toml", "ron", "txt", "md"];
-        
+
         let result = validate_extension(path, &allowed);
         prop_assert!(result.is_ok(), "Should accept extension: {}", ext);
     }
@@ -125,7 +125,7 @@ proptest! {
         let path_str = format!("{}.{}", filename, ext);
         let path = Path::new(&path_str);
         let allowed = ["png", "jpg", "json"];  // Restricted list
-        
+
         let result = validate_extension(path, &allowed);
         prop_assert!(result.is_err(), "Should reject extension: {}", ext);
     }
@@ -135,7 +135,7 @@ proptest! {
     fn prop_validate_extension_requires_extension(filename in "[a-zA-Z0-9_]{1,20}") {
         let path = Path::new(&filename);
         let allowed = ["png", "jpg", "json"];
-        
+
         let result = validate_extension(path, &allowed);
         prop_assert!(result.is_err(), "Should reject file without extension");
     }
@@ -252,7 +252,7 @@ proptest! {
         let path = Path::new(&path_str);
         // Lowercase-only allowlist
         let allowed = ["png", "jpg", "json"];
-        
+
         let result = validate_extension(path, &allowed);
         // Extension matching is case-sensitive, so uppercase should fail
         // unless ext.to_lowercase() is in allowed
@@ -270,7 +270,7 @@ proptest! {
     /// Property: Script timeout is always positive
     #[test]
     fn prop_timeout_positive(config in security_config_strategy()) {
-        prop_assert!(config.max_script_execution_time_ms > 0, 
+        prop_assert!(config.max_script_execution_time_ms > 0,
             "Script timeout should be positive");
     }
 

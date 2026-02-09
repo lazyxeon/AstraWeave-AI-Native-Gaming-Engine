@@ -24,6 +24,7 @@ use tracing::debug;
 
 /// Actions that require prefab manager access
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PrefabAction {
     RevertToOriginal(Entity),
     ApplyChangesToFile(Entity),
@@ -64,6 +65,7 @@ impl PrefabAction {
 
 /// Actions that can be performed by the entity panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum EntityAction {
     // Entity selection
     SelectEntity(Entity),
@@ -163,6 +165,7 @@ impl std::fmt::Display for EntityAction {
 
 /// Entity template archetype
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum EntityArchetype {
     Player,
     Companion,
@@ -279,6 +282,7 @@ pub struct ValidationIssue {
 
 /// Validation severity
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ValidationSeverity {
     Error,
     Warning,

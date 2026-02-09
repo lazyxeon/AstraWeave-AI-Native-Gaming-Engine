@@ -10,6 +10,7 @@ use crate::volume_grid::{CellFlags, WaterVolumeGrid};
 
 /// Direction for water emission/flow
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum FlowDirection {
     /// Emit downward (gravity)
     #[default]
@@ -373,6 +374,7 @@ pub struct WaterWheel {
 
 /// Axis of rotation for water wheel
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum WheelAxis {
     /// Rotates around X axis (water flows in Z direction)
     #[default]

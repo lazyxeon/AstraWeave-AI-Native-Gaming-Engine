@@ -88,37 +88,44 @@ impl VectorStoreInterface for VectorStoreWrapper {
 
     async fn insert_memory(&self, memory: Memory, vector: Vec<f32>) -> Result<()> {
         let mut metadata = HashMap::new();
-        metadata.insert("entities".to_string(), serde_json::to_string(&memory.entities)?);
-        metadata.insert("category".to_string(), serde_json::to_string(&memory.category)?);
+        metadata.insert(
+            "entities".to_string(),
+            serde_json::to_string(&memory.entities)?,
+        );
+        metadata.insert(
+            "category".to_string(),
+            serde_json::to_string(&memory.category)?,
+        );
         metadata.insert("valence".to_string(), memory.valence.to_string());
-        
+
         for (k, v) in memory.context {
             metadata.insert(format!("ctx_{}", k), v);
         }
 
-        self.inner.insert_with_metadata(
-            memory.id,
-            vector,
-            memory.text,
-            memory.importance,
-            metadata,
-        )
+        self.inner
+            .insert_with_metadata(memory.id, vector, memory.text, memory.importance, metadata)
     }
 
     async fn get(&self, id: &str) -> Option<Memory> {
         self.inner.get(id).map(|stored| {
-            let entities: Vec<String> = stored.metadata.get("entities")
+            let entities: Vec<String> = stored
+                .metadata
+                .get("entities")
                 .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap_or_default();
-            
-            let category: MemoryCategory = stored.metadata.get("category")
+
+            let category: MemoryCategory = stored
+                .metadata
+                .get("category")
                 .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap_or(MemoryCategory::Gameplay);
-                
-            let valence: f32 = stored.metadata.get("valence")
+
+            let valence: f32 = stored
+                .metadata
+                .get("valence")
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(0.0);
-                
+
             let mut context = HashMap::new();
             for (k, v) in &stored.metadata {
                 if let Some(key) = k.strip_prefix("ctx_") {
@@ -300,18 +307,27 @@ impl RagPipeline {
         let mut retrieved_memories = Vec::new();
         for (rank, result) in search_results.into_iter().enumerate() {
             // Convert SearchResult to Memory
-            let entities: Vec<String> = result.vector.metadata.get("entities")
+            let entities: Vec<String> = result
+                .vector
+                .metadata
+                .get("entities")
                 .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap_or_default();
-            
-            let category: MemoryCategory = result.vector.metadata.get("category")
+
+            let category: MemoryCategory = result
+                .vector
+                .metadata
+                .get("category")
                 .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap_or(MemoryCategory::Gameplay);
-                
-            let valence: f32 = result.vector.metadata.get("valence")
+
+            let valence: f32 = result
+                .vector
+                .metadata
+                .get("valence")
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(0.0);
-                
+
             let mut context = HashMap::new();
             for (k, v) in &result.vector.metadata {
                 if let Some(key) = k.strip_prefix("ctx_") {
@@ -794,12 +810,12 @@ impl RagPipeline {
         } else {
             false
         };
-        
+
         // Drop the read lock before attempting write lock for removal
         if should_remove {
             self.cache.remove(cache_key);
         }
-        
+
         None
     }
 
@@ -1014,7 +1030,7 @@ mod tests {
     fn test_passes_filters_time_range() {
         let pipeline = create_test_pipeline();
         let now = current_timestamp();
-        
+
         let memory = Memory {
             id: "1".to_string(),
             text: "Test memory".to_string(),
@@ -1027,20 +1043,18 @@ mod tests {
         };
 
         // Memory within range
-        let query = MemoryQuery::text("test")
-            .with_time_range(now - 1000, now + 1000);
+        let query = MemoryQuery::text("test").with_time_range(now - 1000, now + 1000);
         assert!(pipeline.passes_filters(&memory, &query));
 
         // Memory outside range (too old)
-        let query_old = MemoryQuery::text("test")
-            .with_time_range(now + 1000, now + 2000);
+        let query_old = MemoryQuery::text("test").with_time_range(now + 1000, now + 2000);
         assert!(!pipeline.passes_filters(&memory, &query_old));
     }
 
     #[test]
     fn test_passes_filters_entities() {
         let pipeline = create_test_pipeline();
-        
+
         let memory = Memory {
             id: "1".to_string(),
             text: "The dragon attacked the village".to_string(),
@@ -1053,18 +1067,15 @@ mod tests {
         };
 
         // Entity in list
-        let query = MemoryQuery::text("test")
-            .with_entity("dragon");
+        let query = MemoryQuery::text("test").with_entity("dragon");
         assert!(pipeline.passes_filters(&memory, &query));
 
         // Entity in text (case-insensitive)
-        let query_text = MemoryQuery::text("test")
-            .with_entity("Village");
+        let query_text = MemoryQuery::text("test").with_entity("Village");
         assert!(pipeline.passes_filters(&memory, &query_text));
 
         // Entity not found
-        let query_missing = MemoryQuery::text("test")
-            .with_entity("goblin");
+        let query_missing = MemoryQuery::text("test").with_entity("goblin");
         assert!(!pipeline.passes_filters(&memory, &query_missing));
     }
 
@@ -1072,7 +1083,7 @@ mod tests {
     fn test_passes_filters_max_age() {
         let pipeline = create_test_pipeline();
         let now = current_timestamp();
-        
+
         // Create memory at current timestamp - filters don't have max_age builder
         // but passes_filters checks max_age field directly. Test other filters instead.
         let memory = Memory {
@@ -1095,11 +1106,11 @@ mod tests {
     #[test]
     fn test_generate_cache_key_deterministic() {
         let pipeline = create_test_pipeline();
-        
+
         let query = MemoryQuery::text("combat strategies");
         let key1 = pipeline.generate_cache_key(&query, 5);
         let key2 = pipeline.generate_cache_key(&query, 5);
-        
+
         assert_eq!(key1, key2);
         assert!(key1.starts_with("rag_query_"));
     }
@@ -1107,24 +1118,24 @@ mod tests {
     #[test]
     fn test_generate_cache_key_different_k() {
         let pipeline = create_test_pipeline();
-        
+
         let query = MemoryQuery::text("combat");
         let key_5 = pipeline.generate_cache_key(&query, 5);
         let key_10 = pipeline.generate_cache_key(&query, 10);
-        
+
         assert_ne!(key_5, key_10);
     }
 
     #[test]
     fn test_generate_cache_key_different_queries() {
         let pipeline = create_test_pipeline();
-        
+
         let query1 = MemoryQuery::text("combat");
         let query2 = MemoryQuery::text("social");
-        
+
         let key1 = pipeline.generate_cache_key(&query1, 5);
         let key2 = pipeline.generate_cache_key(&query2, 5);
-        
+
         assert_ne!(key1, key2);
     }
 
@@ -1132,15 +1143,15 @@ mod tests {
     fn test_order_results_similarity_desc() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::SimilarityDesc;
-        
+
         let mut memories = vec![
             create_retrieved_memory("1", 0.5),
             create_retrieved_memory("2", 0.9),
             create_retrieved_memory("3", 0.7),
         ];
-        
+
         pipeline.order_results(memories.as_mut_slice());
-        
+
         assert_eq!(memories[0].memory.id, "2"); // 0.9
         assert_eq!(memories[1].memory.id, "3"); // 0.7
         assert_eq!(memories[2].memory.id, "1"); // 0.5
@@ -1150,15 +1161,15 @@ mod tests {
     fn test_order_results_similarity_asc() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::SimilarityAsc;
-        
+
         let mut memories = vec![
             create_retrieved_memory("1", 0.5),
             create_retrieved_memory("2", 0.9),
             create_retrieved_memory("3", 0.7),
         ];
-        
+
         pipeline.order_results(memories.as_mut_slice());
-        
+
         assert_eq!(memories[0].memory.id, "1"); // 0.5
         assert_eq!(memories[1].memory.id, "3"); // 0.7
         assert_eq!(memories[2].memory.id, "2"); // 0.9
@@ -1168,15 +1179,15 @@ mod tests {
     fn test_order_results_importance_desc() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::ImportanceDesc;
-        
+
         let mut memories = vec![
             create_retrieved_memory_with_importance("1", 0.3),
             create_retrieved_memory_with_importance("2", 0.9),
             create_retrieved_memory_with_importance("3", 0.6),
         ];
-        
+
         pipeline.order_results(memories.as_mut_slice());
-        
+
         assert_eq!(memories[0].memory.id, "2"); // 0.9
         assert_eq!(memories[1].memory.id, "3"); // 0.6
         assert_eq!(memories[2].memory.id, "1"); // 0.3
@@ -1186,16 +1197,16 @@ mod tests {
     fn test_order_results_recency_desc() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::RecencyDesc;
-        
+
         let now = current_timestamp();
         let mut memories = vec![
             create_retrieved_memory_with_timestamp("1", now.saturating_sub(1000)),
             create_retrieved_memory_with_timestamp("2", now),
             create_retrieved_memory_with_timestamp("3", now.saturating_sub(500)),
         ];
-        
+
         pipeline.order_results(memories.as_mut_slice());
-        
+
         assert_eq!(memories[0].memory.id, "2"); // most recent
         assert_eq!(memories[1].memory.id, "3");
         assert_eq!(memories[2].memory.id, "1"); // oldest
@@ -1204,43 +1215,49 @@ mod tests {
     #[test]
     fn test_apply_diversity_single_memory() {
         let pipeline = create_test_pipeline();
-        
+
         let memories = vec![create_retrieved_memory("1", 0.9)];
         let result = pipeline.apply_diversity(memories);
-        
+
         assert_eq!(result.len(), 1);
     }
 
     #[test]
     fn test_apply_diversity_empty() {
         let pipeline = create_test_pipeline();
-        
+
         let memories: Vec<RetrievedMemory> = vec![];
         let result = pipeline.apply_diversity(memories);
-        
+
         assert!(result.is_empty());
     }
 
     #[test]
     fn test_clear_cache() {
         let pipeline = create_test_pipeline();
-        
+
         // Add some items to cache
-        pipeline.cache.insert("key1".to_string(), CachedResult {
-            memories: vec![],
-            timestamp: current_timestamp(),
-            query_hash: 0,
-        });
-        pipeline.cache.insert("key2".to_string(), CachedResult {
-            memories: vec![],
-            timestamp: current_timestamp(),
-            query_hash: 0,
-        });
-        
+        pipeline.cache.insert(
+            "key1".to_string(),
+            CachedResult {
+                memories: vec![],
+                timestamp: current_timestamp(),
+                query_hash: 0,
+            },
+        );
+        pipeline.cache.insert(
+            "key2".to_string(),
+            CachedResult {
+                memories: vec![],
+                timestamp: current_timestamp(),
+                query_hash: 0,
+            },
+        );
+
         assert_eq!(pipeline.cache.len(), 2);
-        
+
         pipeline.clear_cache();
-        
+
         assert_eq!(pipeline.cache.len(), 0);
     }
 
@@ -1248,7 +1265,7 @@ mod tests {
     fn test_get_metrics_initial() {
         let pipeline = create_test_pipeline();
         let metrics = pipeline.get_metrics();
-        
+
         assert_eq!(metrics.total_queries, 0);
         assert_eq!(metrics.successful_retrievals, 0);
         assert_eq!(metrics.failed_retrievals, 0);
@@ -1260,21 +1277,27 @@ mod tests {
         let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
         let config = RagConfig::default();
 
-        let pipeline_no_llm = RagPipeline::new(embedding_client.clone(), vector_store.clone(), None, config.clone());
+        let pipeline_no_llm = RagPipeline::new(
+            embedding_client.clone(),
+            vector_store.clone(),
+            None,
+            config.clone(),
+        );
         assert!(!pipeline_no_llm.has_llm_client());
 
         let llm_client = Arc::new(MockLlm);
-        let pipeline_with_llm = RagPipeline::new(embedding_client, vector_store, Some(llm_client), config);
+        let pipeline_with_llm =
+            RagPipeline::new(embedding_client, vector_store, Some(llm_client), config);
         assert!(pipeline_with_llm.has_llm_client());
     }
 
     #[test]
     fn test_update_retrieval_metrics_success() {
         let pipeline = create_test_pipeline();
-        
+
         pipeline.update_retrieval_metrics(5, 10.0, true);
         let metrics = pipeline.get_metrics();
-        
+
         assert_eq!(metrics.total_queries, 1);
         assert_eq!(metrics.successful_retrievals, 1);
         assert_eq!(metrics.failed_retrievals, 0);
@@ -1285,10 +1308,10 @@ mod tests {
     #[test]
     fn test_update_retrieval_metrics_failure() {
         let pipeline = create_test_pipeline();
-        
+
         pipeline.update_retrieval_metrics(0, 5.0, false);
         let metrics = pipeline.get_metrics();
-        
+
         assert_eq!(metrics.total_queries, 1);
         assert_eq!(metrics.successful_retrievals, 0);
         assert_eq!(metrics.failed_retrievals, 1);
@@ -1324,16 +1347,16 @@ mod tests {
     fn test_order_results_recency_asc() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::RecencyAsc;
-        
+
         let now = current_timestamp();
         let mut memories = vec![
             create_retrieved_memory_with_timestamp("1", now.saturating_sub(1000)),
             create_retrieved_memory_with_timestamp("2", now),
             create_retrieved_memory_with_timestamp("3", now.saturating_sub(500)),
         ];
-        
+
         pipeline.order_results(memories.as_mut_slice());
-        
+
         assert_eq!(memories[0].memory.id, "1"); // oldest
         assert_eq!(memories[1].memory.id, "3");
         assert_eq!(memories[2].memory.id, "2"); // most recent
@@ -1343,15 +1366,15 @@ mod tests {
     fn test_order_results_importance_asc() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::ImportanceAsc;
-        
+
         let mut memories = vec![
             create_retrieved_memory_with_importance("1", 0.3),
             create_retrieved_memory_with_importance("2", 0.9),
             create_retrieved_memory_with_importance("3", 0.6),
         ];
-        
+
         pipeline.order_results(memories.as_mut_slice());
-        
+
         assert_eq!(memories[0].memory.id, "1"); // 0.3
         assert_eq!(memories[1].memory.id, "3"); // 0.6
         assert_eq!(memories[2].memory.id, "2"); // 0.9
@@ -1361,13 +1384,13 @@ mod tests {
     fn test_order_results_mixed_shuffles() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.injection.ordering_strategy = crate::OrderingStrategy::Mixed;
-        
+
         let mut memories = vec![
             create_retrieved_memory("1", 0.5),
             create_retrieved_memory("2", 0.9),
             create_retrieved_memory("3", 0.7),
         ];
-        
+
         // Just verify it doesn't panic and returns same number of elements
         pipeline.order_results(memories.as_mut_slice());
         assert_eq!(memories.len(), 3);
@@ -1378,14 +1401,17 @@ mod tests {
     #[test]
     fn test_get_cached_result_valid() {
         let pipeline = create_test_pipeline();
-        
+
         let memories = vec![create_retrieved_memory("1", 0.9)];
-        pipeline.cache.insert("test_key".to_string(), CachedResult {
-            memories: memories.clone(),
-            timestamp: current_timestamp(),
-            query_hash: 0,
-        });
-        
+        pipeline.cache.insert(
+            "test_key".to_string(),
+            CachedResult {
+                memories: memories.clone(),
+                timestamp: current_timestamp(),
+                query_hash: 0,
+            },
+        );
+
         let result = pipeline.get_cached_result("test_key");
         assert!(result.is_some());
         assert_eq!(result.unwrap().memories.len(), 1);
@@ -1394,14 +1420,17 @@ mod tests {
     #[test]
     fn test_get_cached_result_expired() {
         let pipeline = create_test_pipeline();
-        
+
         // Insert with old timestamp (expired)
-        pipeline.cache.insert("test_key".to_string(), CachedResult {
-            memories: vec![],
-            timestamp: 0, // Very old timestamp
-            query_hash: 0,
-        });
-        
+        pipeline.cache.insert(
+            "test_key".to_string(),
+            CachedResult {
+                memories: vec![],
+                timestamp: 0, // Very old timestamp
+                query_hash: 0,
+            },
+        );
+
         // Should return None and remove the expired entry
         let result = pipeline.get_cached_result("test_key");
         assert!(result.is_none());
@@ -1411,7 +1440,7 @@ mod tests {
     #[test]
     fn test_get_cached_result_nonexistent() {
         let pipeline = create_test_pipeline();
-        
+
         let result = pipeline.get_cached_result("nonexistent");
         assert!(result.is_none());
     }
@@ -1419,14 +1448,14 @@ mod tests {
     #[test]
     fn test_cache_result_basic() {
         let pipeline = create_test_pipeline();
-        
+
         let memories = vec![
             create_retrieved_memory("1", 0.9),
             create_retrieved_memory("2", 0.8),
         ];
-        
+
         pipeline.cache_result("test_key", &memories);
-        
+
         assert!(pipeline.cache.get("test_key").is_some());
         assert_eq!(pipeline.cache.get("test_key").unwrap().memories.len(), 2);
     }
@@ -1435,12 +1464,12 @@ mod tests {
     fn test_cache_result_eviction() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.performance.cache_size = 4; // Small cache for testing
-        
+
         // Fill cache beyond capacity
         for i in 0..6 {
             pipeline.cache_result(&format!("key_{}", i), &[]);
         }
-        
+
         // Should have evicted some entries
         assert!(pipeline.cache.len() <= pipeline.config.performance.cache_size);
     }
@@ -1450,13 +1479,13 @@ mod tests {
     #[test]
     fn test_update_cache_hit_metrics() {
         let pipeline = create_test_pipeline();
-        
+
         // First, update with some retrieval metrics to set total_queries
         pipeline.update_retrieval_metrics(1, 5.0, true);
-        
+
         // Now update cache hit
         pipeline.update_cache_hit_metrics();
-        
+
         let metrics = pipeline.get_metrics();
         // After one query and one hit, rate should be non-zero
         assert!(metrics.cache_hit_rate > 0.0);
@@ -1469,15 +1498,15 @@ mod tests {
         let mut pipeline = create_test_pipeline();
         pipeline.config.diversity.enabled = true;
         pipeline.config.diversity.diversity_factor = 0.5;
-        
+
         let memories = vec![
             create_retrieved_memory_with_text("1", 0.95, "combat dragon attack sword shield"),
             create_retrieved_memory_with_text("2", 0.90, "combat dragon attack sword shield helm"), // Very similar
             create_retrieved_memory_with_text("3", 0.85, "peaceful village market trade gold"), // Different
         ];
-        
+
         let result = pipeline.apply_diversity(memories);
-        
+
         // Should return results (at least 1 for most similar)
         assert!(!result.is_empty());
     }
@@ -1485,14 +1514,14 @@ mod tests {
     #[test]
     fn test_apply_diversity_two_items() {
         let pipeline = create_test_pipeline();
-        
+
         let memories = vec![
             create_retrieved_memory("1", 0.9),
             create_retrieved_memory("2", 0.8),
         ];
-        
+
         let result = pipeline.apply_diversity(memories);
-        
+
         // Both should be present since we only have 2
         assert_eq!(result.len(), 2);
         // First should be most similar
@@ -1505,7 +1534,7 @@ mod tests {
     async fn test_should_consolidate_disabled() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.consolidation.enabled = false;
-        
+
         let should = pipeline.should_consolidate().await;
         assert!(!should);
     }
@@ -1514,12 +1543,12 @@ mod tests {
     async fn test_should_consolidate_in_progress() {
         let mut pipeline = create_test_pipeline();
         pipeline.config.consolidation.enabled = true;
-        
+
         {
             let mut state = pipeline.consolidation_state.write();
             state.consolidation_in_progress = true;
         }
-        
+
         let should = pipeline.should_consolidate().await;
         assert!(!should);
     }
@@ -1529,12 +1558,12 @@ mod tests {
         let mut pipeline = create_test_pipeline();
         pipeline.config.consolidation.enabled = true;
         pipeline.config.consolidation.trigger_threshold = 5;
-        
+
         {
             let mut state = pipeline.consolidation_state.write();
             state.memories_since_consolidation = 10; // Exceeds threshold
         }
-        
+
         let should = pipeline.should_consolidate().await;
         assert!(should);
     }
@@ -1544,11 +1573,11 @@ mod tests {
     #[test]
     fn test_update_retrieval_metrics_multiple_successes() {
         let pipeline = create_test_pipeline();
-        
+
         pipeline.update_retrieval_metrics(5, 10.0, true);
         pipeline.update_retrieval_metrics(3, 20.0, true);
         pipeline.update_retrieval_metrics(7, 15.0, true);
-        
+
         let metrics = pipeline.get_metrics();
         assert_eq!(metrics.total_queries, 3);
         assert_eq!(metrics.successful_retrievals, 3);

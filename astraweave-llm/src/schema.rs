@@ -25,6 +25,8 @@ use serde_json::Value;
 
 /// Error types for schema validation
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum ValidationError {
     /// JSON parsing failed
     ParseError(String),

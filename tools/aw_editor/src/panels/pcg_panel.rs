@@ -15,6 +15,7 @@ use crate::panels::Panel;
 
 /// PCG generation type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GenerationType {
     #[default]
     Encounter,
@@ -72,6 +73,7 @@ impl GenerationType {
 
 /// Encounter difficulty
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum EncounterDifficulty {
     Trivial,
     Easy,
@@ -188,6 +190,7 @@ impl Default for EncounterConfig {
 
 /// Room type for dungeon generation
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RoomType {
     #[default]
     Normal,
@@ -308,6 +311,7 @@ impl Default for DungeonSettings {
 
 /// Loot rarity
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LootRarity {
     #[default]
     Common,
@@ -422,6 +426,7 @@ pub struct GenerationPreview {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PcgTab {
     #[default]
     Seeds,

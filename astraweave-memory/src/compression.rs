@@ -283,10 +283,10 @@ mod tests {
             max_compression_ratio: 0.3,
             preserve_emotional_context: false,
         };
-        
+
         let json = serde_json::to_string(&config).unwrap();
         let deserialized: CompressionConfig = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.min_age_days, 60.0);
         assert_eq!(deserialized.importance_threshold, 0.5);
         assert!(!deserialized.preserve_emotional_context);
@@ -335,7 +335,7 @@ mod tests {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let memory = Memory::sensory("Recent memory".to_string(), None);
         // Memory is too young (default is 30 days)
-        
+
         let should_compress = engine.should_compress(&memory).unwrap();
         assert!(!should_compress);
     }
@@ -346,7 +346,7 @@ mod tests {
         let mut memory = Memory::episodic("Important event".to_string(), vec![], None);
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(35);
         memory.metadata.importance = 0.8; // High importance
-        
+
         let should_compress = engine.should_compress(&memory).unwrap();
         assert!(!should_compress);
     }
@@ -358,7 +358,7 @@ mod tests {
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(35);
         memory.metadata.importance = 0.1;
         memory.metadata.tags.push("compressed".to_string());
-        
+
         let should_compress = engine.should_compress(&memory).unwrap();
         assert!(!should_compress);
     }
@@ -372,11 +372,11 @@ mod tests {
             preserve_emotional_context: true,
         };
         let engine = CompressionEngine::new(config);
-        
+
         let mut memory = Memory::sensory("Old unimportant memory".to_string(), None);
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(10);
         memory.metadata.importance = 0.2;
-        
+
         let should_compress = engine.should_compress(&memory).unwrap();
         assert!(should_compress);
     }
@@ -408,7 +408,7 @@ mod tests {
     fn test_compress_short_text() {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let short_text = "Brief note";
-        
+
         let compressed = engine.compress_text(short_text);
         assert_eq!(compressed, short_text);
     }
@@ -422,10 +422,10 @@ mod tests {
             preserve_emotional_context: true,
         };
         let engine = CompressionEngine::new(config);
-        
+
         let long_text = "This is a very long memory text that needs to be compressed into a shorter form while preserving essential information about the event";
         let compressed = engine.compress_text(long_text);
-        
+
         assert!(compressed.contains("[...]"));
         assert!(compressed.len() < long_text.len());
     }
@@ -439,11 +439,11 @@ mod tests {
             preserve_emotional_context: true,
         };
         let engine = CompressionEngine::new(config);
-        
+
         // Short text that's close to threshold
         let text = "One two three four five six seven eight nine ten eleven twelve";
         let compressed = engine.compress_text(text);
-        
+
         // Should still be processed
         assert!(!compressed.is_empty());
     }
@@ -457,20 +457,25 @@ mod tests {
             preserve_emotional_context: false, // Don't preserve
         };
         let engine = CompressionEngine::new(config);
-        
+
         let sensory = SensoryData {
-            visual: Some("A very long visual description that needs compression into shorter form".to_string()),
-            auditory: Some("Long audio description with lots of detail that needs shortening".to_string()),
+            visual: Some(
+                "A very long visual description that needs compression into shorter form"
+                    .to_string(),
+            ),
+            auditory: Some(
+                "Long audio description with lots of detail that needs shortening".to_string(),
+            ),
             tactile: Some("Detailed tactile feedback information to compress".to_string()),
             environmental: Some("Long environmental description with many details".to_string()),
         };
-        
+
         let mut memory = Memory::sensory("Main content".to_string(), Some(sensory));
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(35);
         memory.metadata.importance = 0.1;
-        
+
         engine.compress_memory(&mut memory).unwrap();
-        
+
         // Sensory data should be compressed when preserve_emotional_context is false
         assert!(memory.metadata.tags.contains(&"compressed".to_string()));
     }
@@ -478,18 +483,32 @@ mod tests {
     #[test]
     fn test_compress_truncates_context() {
         let engine = CompressionEngine::new(CompressionConfig::default());
-        
+
         let mut memory = Memory::episodic(
             "Event".to_string(),
-            vec!["P1".into(), "P2".into(), "P3".into(), "P4".into(), "P5".into(), "P6".into(), "P7".into()],
+            vec![
+                "P1".into(),
+                "P2".into(),
+                "P3".into(),
+                "P4".into(),
+                "P5".into(),
+                "P6".into(),
+                "P7".into(),
+            ],
             None,
         );
-        memory.content.context.related_events = vec!["E1".into(), "E2".into(), "E3".into(), "E4".into(), "E5".into()];
+        memory.content.context.related_events = vec![
+            "E1".into(),
+            "E2".into(),
+            "E3".into(),
+            "E4".into(),
+            "E5".into(),
+        ];
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(35);
         memory.metadata.importance = 0.1;
-        
+
         engine.compress_memory(&mut memory).unwrap();
-        
+
         assert!(memory.content.context.participants.len() <= 5);
         assert!(memory.content.context.related_events.len() <= 3);
     }
@@ -507,10 +526,13 @@ mod tests {
             preserve_emotional_context: true,
         };
         let engine = CompressionEngine::new(config);
-        
+
         let mut memories = vec![
             {
-                let mut m = Memory::sensory("Long text that should be compressed into shorter form".to_string(), None);
+                let mut m = Memory::sensory(
+                    "Long text that should be compressed into shorter form".to_string(),
+                    None,
+                );
                 m.metadata.created_at = Utc::now() - chrono::Duration::days(5);
                 m.metadata.importance = 0.2;
                 m
@@ -523,9 +545,9 @@ mod tests {
             },
             Memory::semantic("Important".to_string(), "fact".to_string()), // Permanent, won't compress
         ];
-        
+
         let result = engine.compress_memories(&mut memories).unwrap();
-        
+
         assert_eq!(result.memories_processed, 3);
         assert!(result.memories_compressed > 0);
         let _ = result.processing_time_ms; // Verify it exists
@@ -535,9 +557,9 @@ mod tests {
     fn test_compress_empty_batch() {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let mut memories: Vec<Memory> = vec![];
-        
+
         let result = engine.compress_memories(&mut memories).unwrap();
-        
+
         assert_eq!(result.memories_processed, 0);
         assert_eq!(result.memories_compressed, 0);
         assert_eq!(result.size_reduction, 0);
@@ -551,9 +573,9 @@ mod tests {
     fn test_estimate_memory_size_basic() {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let memory = Memory::sensory("Test content".to_string(), None);
-        
+
         let size = engine.estimate_memory_size(&memory);
-        
+
         assert!(size > 0);
         assert!(size >= "Test content".len());
     }
@@ -561,14 +583,14 @@ mod tests {
     #[test]
     fn test_estimate_memory_size_with_all_fields() {
         let engine = CompressionEngine::new(CompressionConfig::default());
-        
+
         let sensory = SensoryData {
             visual: Some("Visual".to_string()),
             auditory: Some("Auditory".to_string()),
             tactile: Some("Tactile".to_string()),
             environmental: Some("Environmental".to_string()),
         };
-        
+
         let mut memory = Memory::sensory("Content".to_string(), Some(sensory));
         memory.content.context.location = Some("Location".to_string());
         memory.content.context.time_period = Some("Morning".to_string());
@@ -577,9 +599,9 @@ mod tests {
         memory.metadata.tags.push("tag1".to_string());
         memory.add_association("other".to_string(), AssociationType::Temporal, 0.5);
         memory.embedding = Some(vec![0.1, 0.2, 0.3, 0.4]);
-        
+
         let size = engine.estimate_memory_size(&memory);
-        
+
         // Should include all components
         assert!(size > "Content".len());
         assert!(size > 100); // Should be substantial with all fields
@@ -588,12 +610,12 @@ mod tests {
     #[test]
     fn test_estimate_memory_size_with_embedding() {
         let engine = CompressionEngine::new(CompressionConfig::default());
-        
+
         let mut memory = Memory::working("Text".to_string());
         memory.embedding = Some(vec![0.0; 384]); // Standard embedding size
-        
+
         let size = engine.estimate_memory_size(&memory);
-        
+
         // 384 floats * 4 bytes = 1536 bytes just for embedding
         assert!(size >= 1536);
     }
@@ -619,9 +641,9 @@ mod tests {
     fn test_compression_stats_empty() {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let memories: Vec<Memory> = vec![];
-        
+
         let stats = engine.get_compression_stats(&memories);
-        
+
         assert_eq!(stats.total_memories, 0);
         assert_eq!(stats.compressed_memories, 0);
         assert_eq!(stats.total_size_bytes, 0);
@@ -632,17 +654,20 @@ mod tests {
     #[test]
     fn test_compression_stats_with_compressed() {
         let engine = CompressionEngine::new(CompressionConfig::default());
-        
+
         let mut compressed_memory = Memory::sensory("Compressed".to_string(), None);
-        compressed_memory.metadata.tags.push("compressed".to_string());
-        
+        compressed_memory
+            .metadata
+            .tags
+            .push("compressed".to_string());
+
         let memories = vec![
             Memory::sensory("Not compressed".to_string(), None),
             compressed_memory,
         ];
-        
+
         let stats = engine.get_compression_stats(&memories);
-        
+
         assert_eq!(stats.total_memories, 2);
         assert_eq!(stats.compressed_memories, 1);
         assert_eq!(stats.compression_ratio, 0.5);
@@ -655,7 +680,7 @@ mod tests {
     #[test]
     fn test_compression_result_default() {
         let result = CompressionResult::default();
-        
+
         assert_eq!(result.memories_processed, 0);
         assert_eq!(result.memories_compressed, 0);
         assert_eq!(result.size_reduction, 0);
@@ -670,10 +695,10 @@ mod tests {
             size_reduction: 50000,
             processing_time_ms: 150,
         };
-        
+
         let json = serde_json::to_string(&result).unwrap();
         let deserialized: CompressionResult = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.memories_processed, 100);
         assert_eq!(deserialized.memories_compressed, 25);
         assert_eq!(deserialized.size_reduction, 50000);
@@ -688,10 +713,10 @@ mod tests {
             average_size_bytes: 5000,
             compression_ratio: 0.3,
         };
-        
+
         let json = serde_json::to_string(&stats).unwrap();
         let deserialized: CompressionStats = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.total_memories, 1000);
         assert_eq!(deserialized.compression_ratio, 0.3);
     }
@@ -705,7 +730,7 @@ mod tests {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let mut memory = Memory::working("Test".to_string());
         memory.metadata.tags.push("compressed".to_string());
-        
+
         assert!(engine.is_compressed(&memory));
     }
 
@@ -713,7 +738,7 @@ mod tests {
     fn test_is_compressed_false() {
         let engine = CompressionEngine::new(CompressionConfig::default());
         let memory = Memory::working("Test".to_string());
-        
+
         assert!(!engine.is_compressed(&memory));
     }
 
@@ -723,7 +748,7 @@ mod tests {
         let mut memory = Memory::working("Test".to_string());
         memory.metadata.tags.push("important".to_string());
         memory.metadata.tags.push("reviewed".to_string());
-        
+
         assert!(!engine.is_compressed(&memory));
     }
 }

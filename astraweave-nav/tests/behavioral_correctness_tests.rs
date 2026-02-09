@@ -9,7 +9,7 @@
 //! - NavMesh: Baking, adjacency, pathfinding
 //! - A*: Optimal path, heuristic admissibility
 //!
-//! IMPORTANT: For NavMesh baking, triangles need proper CCW winding to produce 
+//! IMPORTANT: For NavMesh baking, triangles need proper CCW winding to produce
 //! upward (+Y) facing normals. For XZ-plane triangles:
 //! - CCW when viewed from +Y: (0,0,0) -> (1,0,0) -> (1,0,1) gives -Y normal (BAD)
 //! - CCW when viewed from +Y: (0,0,0) -> (0,0,1) -> (1,0,0) gives +Y normal (GOOD)
@@ -33,18 +33,9 @@ fn test_triangle_centroid_formula() {
     let center = tri.center();
 
     // Expected: (0+3+0)/3 = 1, (0+0+3)/3 = 1, (0+0+0)/3 = 0
-    assert!(
-        (center.x - 1.0).abs() < 0.001,
-        "Centroid X should be 1.0"
-    );
-    assert!(
-        (center.y - 1.0).abs() < 0.001,
-        "Centroid Y should be 1.0"
-    );
-    assert!(
-        center.z.abs() < 0.001,
-        "Centroid Z should be 0.0"
-    );
+    assert!((center.x - 1.0).abs() < 0.001, "Centroid X should be 1.0");
+    assert!((center.y - 1.0).abs() < 0.001, "Centroid Y should be 1.0");
+    assert!(center.z.abs() < 0.001, "Centroid Z should be 0.0");
 }
 
 /// Test triangle area formula: |cross(b-a, c-a)| / 2
@@ -98,18 +89,9 @@ fn test_triangle_normal_perpendicular() {
     let normal = tri.normal_normalized();
 
     // Normal should be along Z axis (perpendicular to XY plane)
-    assert!(
-        normal.x.abs() < 0.001,
-        "Normal X should be ~0"
-    );
-    assert!(
-        normal.y.abs() < 0.001,
-        "Normal Y should be ~0"
-    );
-    assert!(
-        normal.z.abs() > 0.99,
-        "Normal Z should be ~±1"
-    );
+    assert!(normal.x.abs() < 0.001, "Normal X should be ~0");
+    assert!(normal.y.abs() < 0.001, "Normal Y should be ~0");
+    assert!(normal.z.abs() > 0.99, "Normal Z should be ~±1");
 }
 
 /// Test triangle normal direction follows winding order
@@ -217,75 +199,60 @@ fn test_triangle_edge_lengths() {
 /// Test AABB contains point inside
 #[test]
 fn test_aabb_contains_inside() {
-    let aabb = Aabb::new(
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(10.0, 10.0, 10.0),
-    );
+    let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
 
     let inside = Vec3::new(5.0, 5.0, 5.0);
     assert!(aabb.contains(inside), "Center point should be inside");
 
     let corner = Vec3::new(0.0, 0.0, 0.0);
-    assert!(aabb.contains(corner), "Corner point should be inside (inclusive)");
+    assert!(
+        aabb.contains(corner),
+        "Corner point should be inside (inclusive)"
+    );
 }
 
 /// Test AABB contains point outside
 #[test]
 fn test_aabb_contains_outside() {
-    let aabb = Aabb::new(
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(10.0, 10.0, 10.0),
-    );
+    let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
 
     let outside = Vec3::new(15.0, 5.0, 5.0);
-    assert!(!aabb.contains(outside), "Point outside should not be contained");
+    assert!(
+        !aabb.contains(outside),
+        "Point outside should not be contained"
+    );
 
     let negative = Vec3::new(-1.0, 5.0, 5.0);
-    assert!(!aabb.contains(negative), "Negative point should not be contained");
+    assert!(
+        !aabb.contains(negative),
+        "Negative point should not be contained"
+    );
 }
 
 /// Test AABB intersection
 #[test]
 fn test_aabb_intersects() {
-    let a = Aabb::new(
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(10.0, 10.0, 10.0),
-    );
+    let a = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
 
     // Overlapping box
-    let b = Aabb::new(
-        Vec3::new(5.0, 5.0, 5.0),
-        Vec3::new(15.0, 15.0, 15.0),
-    );
+    let b = Aabb::new(Vec3::new(5.0, 5.0, 5.0), Vec3::new(15.0, 15.0, 15.0));
     assert!(a.intersects(&b), "Overlapping boxes should intersect");
 
     // Touching box (edge contact)
-    let c = Aabb::new(
-        Vec3::new(10.0, 0.0, 0.0),
-        Vec3::new(20.0, 10.0, 10.0),
-    );
+    let c = Aabb::new(Vec3::new(10.0, 0.0, 0.0), Vec3::new(20.0, 10.0, 10.0));
     assert!(a.intersects(&c), "Touching boxes should intersect");
 
     // Separated box
-    let d = Aabb::new(
-        Vec3::new(20.0, 0.0, 0.0),
-        Vec3::new(30.0, 10.0, 10.0),
-    );
+    let d = Aabb::new(Vec3::new(20.0, 0.0, 0.0), Vec3::new(30.0, 10.0, 10.0));
     assert!(!a.intersects(&d), "Separated boxes should not intersect");
 }
 
 /// Test AABB merge produces bounding box of both
 #[test]
 fn test_aabb_merge() {
-    let a = Aabb::new(
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(5.0, 5.0, 5.0),
-    );
+    let a = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(5.0, 5.0, 5.0));
 
-    let b = Aabb::new(
-        Vec3::new(3.0, 3.0, 3.0),
-        Vec3::new(10.0, 10.0, 10.0),
-    );
+    let b = Aabb::new(Vec3::new(3.0, 3.0, 3.0), Vec3::new(10.0, 10.0, 10.0));
 
     let merged = a.merge(&b);
 
@@ -301,10 +268,7 @@ fn test_aabb_merge() {
 /// Test AABB center calculation
 #[test]
 fn test_aabb_center() {
-    let aabb = Aabb::new(
-        Vec3::new(2.0, 4.0, 6.0),
-        Vec3::new(8.0, 10.0, 12.0),
-    );
+    let aabb = Aabb::new(Vec3::new(2.0, 4.0, 6.0), Vec3::new(8.0, 10.0, 12.0));
 
     let center = aabb.center();
 
@@ -317,10 +281,7 @@ fn test_aabb_center() {
 /// Test AABB size calculation
 #[test]
 fn test_aabb_size() {
-    let aabb = Aabb::new(
-        Vec3::new(1.0, 2.0, 3.0),
-        Vec3::new(4.0, 7.0, 11.0),
-    );
+    let aabb = Aabb::new(Vec3::new(1.0, 2.0, 3.0), Vec3::new(4.0, 7.0, 11.0));
 
     let size = aabb.size();
 
@@ -333,10 +294,7 @@ fn test_aabb_size() {
 /// Test AABB volume
 #[test]
 fn test_aabb_volume() {
-    let aabb = Aabb::new(
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(2.0, 3.0, 4.0),
-    );
+    let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(2.0, 3.0, 4.0));
 
     let volume = aabb.volume();
 
@@ -347,10 +305,7 @@ fn test_aabb_volume() {
 /// Test AABB surface area
 #[test]
 fn test_aabb_surface_area() {
-    let aabb = Aabb::new(
-        Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(2.0, 3.0, 4.0),
-    );
+    let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(2.0, 3.0, 4.0));
 
     let area = aabb.surface_area();
 
@@ -381,10 +336,7 @@ fn test_aabb_from_triangle() {
 /// Test AABB expand
 #[test]
 fn test_aabb_expand() {
-    let aabb = Aabb::new(
-        Vec3::new(5.0, 5.0, 5.0),
-        Vec3::new(10.0, 10.0, 10.0),
-    );
+    let aabb = Aabb::new(Vec3::new(5.0, 5.0, 5.0), Vec3::new(10.0, 10.0, 10.0));
 
     let expanded = aabb.expand(2.0);
 
@@ -399,10 +351,7 @@ fn test_aabb_is_empty() {
     let zero = Aabb::zero();
     assert!(zero.is_empty(), "Zero AABB should be empty");
 
-    let inverted = Aabb::new(
-        Vec3::new(10.0, 10.0, 10.0),
-        Vec3::new(5.0, 5.0, 5.0),
-    );
+    let inverted = Aabb::new(Vec3::new(10.0, 10.0, 10.0), Vec3::new(5.0, 5.0, 5.0));
     assert!(inverted.is_empty(), "Inverted AABB should be empty");
 
     let valid = Aabb::unit();
@@ -412,10 +361,7 @@ fn test_aabb_is_empty() {
 /// Test AABB from center and half-extents
 #[test]
 fn test_aabb_from_center_half_extents() {
-    let aabb = Aabb::from_center_half_extents(
-        Vec3::new(5.0, 5.0, 5.0),
-        Vec3::new(2.0, 2.0, 2.0),
-    );
+    let aabb = Aabb::from_center_half_extents(Vec3::new(5.0, 5.0, 5.0), Vec3::new(2.0, 2.0, 2.0));
 
     // Min should be 5-2=3, Max should be 5+2=7
     assert!((aabb.min.x - 3.0).abs() < 0.001);
@@ -457,12 +403,7 @@ fn test_navtri_slope_flat() {
 fn test_navtri_slope_45() {
     // Normal at 45 degrees from vertical
     let normal = Vec3::new(1.0, 1.0, 0.0).normalize();
-    let tri = NavTri::new(
-        0,
-        [Vec3::ZERO, Vec3::X, Vec3::Z],
-        normal,
-        Vec3::ZERO,
-    );
+    let tri = NavTri::new(0, [Vec3::ZERO, Vec3::X, Vec3::Z], normal, Vec3::ZERO);
 
     let slope = tri.slope_degrees();
 
@@ -492,12 +433,7 @@ fn test_navtri_is_walkable() {
 /// Test NavTri distance calculations
 #[test]
 fn test_navtri_distance() {
-    let tri = NavTri::new(
-        0,
-        [Vec3::ZERO; 3],
-        Vec3::Y,
-        Vec3::new(5.0, 0.0, 0.0),
-    );
+    let tri = NavTri::new(0, [Vec3::ZERO; 3], Vec3::Y, Vec3::new(5.0, 0.0, 0.0));
 
     let point = Vec3::new(8.0, 0.0, 4.0);
 
@@ -506,7 +442,10 @@ fn test_navtri_distance() {
 
     // Distance from (5,0,0) to (8,0,4) = sqrt(9 + 16) = 5
     assert!((dist - 5.0).abs() < 0.001, "Distance should be 5.0");
-    assert!((dist_sq - 25.0).abs() < 0.001, "Distance squared should be 25.0");
+    assert!(
+        (dist_sq - 25.0).abs() < 0.001,
+        "Distance squared should be 25.0"
+    );
 }
 
 /// Test NavTri neighbor tracking
@@ -521,7 +460,10 @@ fn test_navtri_neighbors() {
     tri.neighbors.push(1);
     tri.neighbors.push(2);
 
-    assert!(!tri.is_isolated(), "Triangle with neighbors is not isolated");
+    assert!(
+        !tri.is_isolated(),
+        "Triangle with neighbors is not isolated"
+    );
     assert!(tri.has_neighbor(1), "Should have neighbor 1");
     assert!(!tri.has_neighbor(3), "Should not have neighbor 3");
     assert!(tri.is_edge(), "< 3 neighbors is still edge");
@@ -542,7 +484,7 @@ fn test_navmesh_bake_count() {
     let tris = vec![
         Triangle::new(
             Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(0.0, 0.0, 1.0),  // Changed order for +Y normal
+            Vec3::new(0.0, 0.0, 1.0), // Changed order for +Y normal
             Vec3::new(1.0, 0.0, 0.0),
         ),
         Triangle::new(
@@ -554,11 +496,7 @@ fn test_navmesh_bake_count() {
 
     let nav = NavMesh::bake(&tris, 0.4, 60.0);
 
-    assert_eq!(
-        nav.triangle_count(),
-        2,
-        "Should have 2 walkable triangles"
-    );
+    assert_eq!(nav.triangle_count(), 2, "Should have 2 walkable triangles");
 }
 
 /// Test NavMesh filters steep slopes
@@ -625,16 +563,14 @@ fn test_navmesh_adjacency() {
 #[test]
 fn test_navmesh_bounds() {
     // Single large triangle with +Y normal
-    let tris = vec![
-        Triangle::new(
-            Vec3::new(-5.0, 0.0, -5.0),
-            Vec3::new(-5.0, 0.0, 5.0),  // CCW for +Y normal
-            Vec3::new(5.0, 0.0, -5.0),
-        ),
-    ];
+    let tris = vec![Triangle::new(
+        Vec3::new(-5.0, 0.0, -5.0),
+        Vec3::new(-5.0, 0.0, 5.0), // CCW for +Y normal
+        Vec3::new(5.0, 0.0, -5.0),
+    )];
 
     let nav = NavMesh::bake(&tris, 0.4, 60.0);
-    
+
     assert_eq!(nav.triangle_count(), 1, "Should have 1 triangle");
     let bounds = nav.bounds().expect("Should have bounds");
 

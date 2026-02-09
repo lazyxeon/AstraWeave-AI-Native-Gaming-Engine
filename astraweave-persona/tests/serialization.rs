@@ -1,7 +1,7 @@
 // Test for deterministic persona/memory serialization
-use astraweave_memory::{CompanionProfile, Skill, Fact};
-use std::io::Write;
+use astraweave_memory::{CompanionProfile, Fact, Skill};
 use std::fs::File;
+use std::io::Write;
 use tempfile::tempdir;
 use zip::write::SimpleFileOptions;
 
@@ -26,26 +26,27 @@ fn test_persona_serialization_roundtrip() {
 fn test_load_persona_zip_basic() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona.zip");
-    
+
     // Create a test zip file
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = r#"
 tone = "friendly"
 risk = "low"
 humor = "high"
 voice = "TestBot"
 "#;
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let profile = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap()).unwrap();
-    
+
     assert_eq!(profile.persona.tone, "friendly");
     assert_eq!(profile.persona.risk, "low");
     assert_eq!(profile.persona.humor, "high");
@@ -57,11 +58,11 @@ voice = "TestBot"
 fn test_load_persona_zip_with_skills() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_skills.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = r#"
 tone = "serious"
 risk = "medium"
@@ -78,14 +79,15 @@ name = "Tactics"
 level = 3
 notes = "Strategic thinker"
 "#;
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let profile = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap()).unwrap();
-    
+
     assert_eq!(profile.skills.len(), 2);
     assert_eq!(profile.skills[0].name, "Combat");
     assert_eq!(profile.skills[0].level, 5);
@@ -98,11 +100,11 @@ notes = "Strategic thinker"
 fn test_load_persona_zip_with_facts() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_facts.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = r#"
 tone = "curious"
 risk = "high"
@@ -119,14 +121,15 @@ k = "favorite_color"
 v = "blue"
 t = "preference"
 "#;
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let profile = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap()).unwrap();
-    
+
     assert_eq!(profile.facts.len(), 2);
     assert_eq!(profile.facts[0].k, "origin");
     assert_eq!(profile.facts[0].v, "Mars Colony");
@@ -137,11 +140,11 @@ t = "preference"
 fn test_load_persona_zip_with_prefs_json() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_prefs.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = r#"
 tone = "helpful"
 risk = "low"
@@ -149,14 +152,15 @@ humor = "low"
 voice = "Assistant"
 prefs_json = '{"theme": "dark", "language": "en"}'
 "#;
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let profile = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap()).unwrap();
-    
+
     assert!(profile.player_prefs.is_object());
     assert_eq!(profile.player_prefs["theme"], "dark");
     assert_eq!(profile.player_prefs["language"], "en");
@@ -166,20 +170,24 @@ prefs_json = '{"theme": "dark", "language": "en"}'
 fn test_load_persona_zip_missing_manifest() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_empty.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         // Create zip without manifest
-        zip.start_file("other_file.txt", SimpleFileOptions::default()).unwrap();
+        zip.start_file("other_file.txt", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(b"test").unwrap();
         zip.finish().unwrap();
     }
-    
+
     let result = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap());
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("persona_manifest.toml missing"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("persona_manifest.toml missing"));
 }
 
 #[test]
@@ -192,18 +200,19 @@ fn test_load_persona_zip_invalid_path() {
 fn test_load_persona_zip_invalid_toml() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_invalid.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = "invalid toml content ][[ }";
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let result = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap());
     assert!(result.is_err());
 }
@@ -212,25 +221,26 @@ fn test_load_persona_zip_invalid_toml() {
 fn test_load_persona_zip_signature() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_sig.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = r#"
 tone = "test"
 risk = "test"
 humor = "test"
 voice = "Test"
 "#;
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let profile = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap()).unwrap();
-    
+
     // Profile should be signed after loading
     assert!(profile.verify());
 }
@@ -253,7 +263,7 @@ fn test_companion_profile_with_multiple_skills() {
         level: 4,
         notes: "Basic combat training".into(),
     });
-    
+
     assert_eq!(p.skills.len(), 3);
     assert_eq!(p.skills[0].level, 8);
     assert_eq!(p.skills[2].name, "Combat");
@@ -272,7 +282,7 @@ fn test_companion_profile_with_multiple_facts() {
         v: "28".into(),
         t: "personal".into(),
     });
-    
+
     assert_eq!(p.facts.len(), 2);
     assert_eq!(p.facts[1].k, "age");
 }
@@ -280,7 +290,7 @@ fn test_companion_profile_with_multiple_facts() {
 #[test]
 fn test_persona_default_values() {
     let p = CompanionProfile::new_default();
-    
+
     // Check that defaults are set
     assert!(p.skills.is_empty());
     assert!(p.facts.is_empty());
@@ -291,11 +301,11 @@ fn test_persona_default_values() {
 fn test_load_persona_zip_complete_profile() {
     let dir = tempdir().unwrap();
     let zip_path = dir.path().join("test_persona_complete.zip");
-    
+
     {
         let file = File::create(&zip_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        
+
         let manifest = r#"
 tone = "adventurous"
 risk = "high"
@@ -323,14 +333,15 @@ k = "crew_size"
 v = "50"
 t = "stat"
 "#;
-        
-        zip.start_file("persona_manifest.toml", SimpleFileOptions::default()).unwrap();
+
+        zip.start_file("persona_manifest.toml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(manifest.as_bytes()).unwrap();
         zip.finish().unwrap();
     }
-    
+
     let profile = astraweave_persona::load_persona_zip(zip_path.to_str().unwrap()).unwrap();
-    
+
     // Verify all components
     assert_eq!(profile.persona.tone, "adventurous");
     assert_eq!(profile.persona.risk, "high");

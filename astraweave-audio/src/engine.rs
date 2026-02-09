@@ -17,6 +17,7 @@ pub struct ListenerPose {
 
 /// How to spatialize when using non-spatial SFX.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PanMode {
     /// Stereo balance by angle; distance -> volume attenuation.
     StereoAngle,
@@ -137,6 +138,7 @@ pub struct AudioEngine {
 
     // channels
     music: MusicChannel,
+    ambient: MusicChannel, // biome ambient loops (same A/B crossfade pattern)
     voice: Sink,
     sfx_bus: Sink, // non-spatial SFX bus
 
@@ -146,6 +148,7 @@ pub struct AudioEngine {
     // global state
     pub master_volume: f32,
     music_base_volume: f32,
+    ambient_base_volume: f32,
     voice_base_volume: f32,
     sfx_base_volume: f32,
 
@@ -164,6 +167,7 @@ impl AudioEngine {
         let (stream, handle) = OutputStream::try_default()?;
 
         let music = MusicChannel::new(&handle, 0.8)?;
+        let ambient = MusicChannel::new(&handle, 0.5)?;
         let voice = Sink::try_new(&handle)?;
         voice.set_volume(1.0);
 
@@ -174,11 +178,13 @@ impl AudioEngine {
             _stream: stream,
             handle,
             music,
+            ambient,
             voice,
             sfx_bus: sfx,
             spat: HashMap::new(),
             master_volume: 1.0,
             music_base_volume: 0.8,
+            ambient_base_volume: 0.5,
             voice_base_volume: 1.0,
             sfx_base_volume: 1.0,
             listener: ListenerPose {
@@ -198,6 +204,7 @@ impl AudioEngine {
         // rodio has no global master; we approximate by scaling channel bases
         let m = self.master_volume;
         self.music.set_volume(self.music_base_volume * m);
+        self.ambient.set_volume(self.ambient_base_volume * m);
         self.voice.set_volume(self.voice_base_volume * m);
         self.sfx_bus.set_volume(self.sfx_base_volume * m);
         for sink in self.spat.values() {
@@ -232,6 +239,7 @@ impl AudioEngine {
     pub fn tick(&mut self, dt: f32) {
         // music crossfade & duck restore
         self.music.update(dt);
+        self.ambient.update(dt);
         if self.duck_timer > 0.0 {
             self.duck_timer -= dt;
             if self.duck_timer <= 0.0 {
@@ -252,6 +260,36 @@ impl AudioEngine {
         // let sinks finish; not strictly required to stop
         self.music.a.stop();
         self.music.b.stop();
+    }
+
+    // ── Ambient loop (biome atmosphere) ──────────────────────────
+
+    /// Start playing an ambient loop with crossfade from the current one.
+    ///
+    /// Works identically to [`Self::play_music`] but on the dedicated
+    /// ambient bus, so music and ambient can layer independently.
+    pub fn play_ambient(&mut self, track: MusicTrack, crossfade_sec: f32) -> Result<()> {
+        self.ambient
+            .set_volume(self.ambient_base_volume * self.master_volume);
+        self.ambient.play(&self.handle, &track, crossfade_sec)
+    }
+
+    /// Stop ambient playback.
+    pub fn stop_ambient(&self) {
+        self.ambient.a.stop();
+        self.ambient.b.stop();
+    }
+
+    /// Set the base volume for the ambient bus (0.0 – 1.0).
+    pub fn set_ambient_volume(&mut self, v: f32) {
+        self.ambient_base_volume = v.clamp(0.0, 1.0);
+        self.ambient
+            .set_volume(self.ambient_base_volume * self.master_volume);
+    }
+
+    /// Returns `true` while an ambient crossfade is still in progress.
+    pub fn is_ambient_crossfading(&self) -> bool {
+        self.ambient.crossfade_left > 0.0
     }
 
     pub fn play_voice_file(&mut self, path: &str, approximate_sec: Option<f32>) -> Result<()> {
@@ -341,6 +379,56 @@ impl AudioEngine {
             self.spat.insert(emitter, sink);
         }
         Ok(())
+    }
+}
+
+/// Test-only accessor methods for asserting private engine state in mutation tests.
+#[cfg(test)]
+impl AudioEngine {
+    pub fn test_duck_timer(&self) -> f32 {
+        self.duck_timer
+    }
+    pub fn test_duck_factor(&self) -> f32 {
+        self.duck_factor
+    }
+    pub fn test_music_base_volume(&self) -> f32 {
+        self.music_base_volume
+    }
+    pub fn test_voice_base_volume(&self) -> f32 {
+        self.voice_base_volume
+    }
+    pub fn test_sfx_base_volume(&self) -> f32 {
+        self.sfx_base_volume
+    }
+    pub fn test_ear_sep(&self) -> f32 {
+        self.ear_sep
+    }
+    pub fn test_pan_mode(&self) -> PanMode {
+        self.pan_mode
+    }
+    pub fn test_music_target_vol(&self) -> f32 {
+        self.music.target_vol
+    }
+    pub fn test_music_using_a(&self) -> bool {
+        self.music.using_a
+    }
+    pub fn test_music_crossfade_left(&self) -> f32 {
+        self.music.crossfade_left
+    }
+    pub fn test_music_crossfade_time(&self) -> f32 {
+        self.music.crossfade_time
+    }
+    pub fn test_compute_ears(&self) -> ([f32; 3], [f32; 3]) {
+        self.compute_ears()
+    }
+    pub fn test_ambient_base_volume(&self) -> f32 {
+        self.ambient_base_volume
+    }
+    pub fn test_ambient_crossfade_left(&self) -> f32 {
+        self.ambient.crossfade_left
+    }
+    pub fn test_ambient_using_a(&self) -> bool {
+        self.ambient.using_a
     }
 }
 

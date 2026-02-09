@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Stress Testing and Benchmarking for AstraWeave
 //!
 //! This crate provides comprehensive stress tests and benchmarks for:

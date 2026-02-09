@@ -93,6 +93,7 @@ impl Default for InferenceParameters {
 
 /// Priority levels for requests
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum RequestPriority {
     Low,
     Normal,
@@ -138,6 +139,7 @@ pub struct BatchResult {
 
 /// Adaptive batching strategy
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum BatchingStrategy {
     /// Fixed batch size and timeout
     Fixed,
@@ -217,7 +219,7 @@ impl BatchInferenceEngine {
             parameters,
             priority,
             created_at: Utc::now(),
-            timeout_at: Utc::now() + chrono::Duration::from_std(self.config.request_timeout).unwrap(),
+            timeout_at: Utc::now() + chrono::Duration::from_std(self.config.request_timeout).unwrap_or_default(),
             response_sender: Some(response_tx),
         };
 

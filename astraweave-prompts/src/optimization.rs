@@ -265,7 +265,10 @@ impl ABTestingEngine {
             }
             // Simple round-robin or random selection
             // For determinism in tests, we'll pick based on total selections
-            let metrics = self.metrics.get_mut(test_name).unwrap();
+            let metrics = self
+                .metrics
+                .get_mut(test_name)
+                .expect("metric entry must exist");
             let total_selections: u64 = metrics.selections.values().sum();
             let index = (total_selections as usize) % variants.len();
             let selected = variants[index].clone();
@@ -279,7 +282,10 @@ impl ABTestingEngine {
 
     pub fn record_success(&mut self, test_name: &str, variant_name: &str) {
         if let Some(metrics) = self.metrics.get_mut(test_name) {
-            *metrics.successes.entry(variant_name.to_string()).or_default() += 1;
+            *metrics
+                .successes
+                .entry(variant_name.to_string())
+                .or_default() += 1;
         }
     }
 
@@ -333,11 +339,11 @@ mod tests {
     fn test_optimize_prompt_short() {
         let config = OptimizationConfig::default();
         let mut engine = OptimizationEngine::new(config);
-        
+
         let prompt = "Hello world";
         let result = engine.optimize_prompt(prompt).unwrap();
         assert_eq!(result, prompt);
-        
+
         let metrics = engine.get_metrics();
         assert_eq!(metrics.templates_processed, 1);
     }
@@ -348,10 +354,10 @@ mod tests {
         config.max_prompt_length = 50; // Low threshold
         config.enable_compression = true;
         let mut engine = OptimizationEngine::new(config);
-        
+
         let prompt = "  Line 1  \n\n  Line 2  \n  Line 3  \n  More content here for testing  ";
         let result = engine.optimize_prompt(prompt).unwrap();
-        
+
         // Compression should join lines with single spaces
         assert!(!result.contains("\n"));
         assert!(!result.contains("  ")); // No double spaces
@@ -363,10 +369,10 @@ mod tests {
         config.enable_compression = false;
         config.max_prompt_length = 10;
         let mut engine = OptimizationEngine::new(config);
-        
+
         let prompt = "  Line 1  \n\n  Line 2  ";
         let result = engine.optimize_prompt(prompt).unwrap();
-        
+
         // Without compression, should return as-is
         assert_eq!(result, prompt);
     }
@@ -375,12 +381,12 @@ mod tests {
     fn test_metrics_update() {
         let config = OptimizationConfig::default();
         let mut engine = OptimizationEngine::new(config);
-        
+
         // Process multiple prompts
         for i in 0..5 {
             engine.optimize_prompt(&format!("Prompt {}", i)).unwrap();
         }
-        
+
         let metrics = engine.get_metrics();
         assert_eq!(metrics.templates_processed, 5);
         assert!(metrics.avg_processing_time_ms >= 0.0);
@@ -390,10 +396,10 @@ mod tests {
     fn test_reset_metrics() {
         let config = OptimizationConfig::default();
         let mut engine = OptimizationEngine::new(config);
-        
+
         engine.optimize_prompt("test").unwrap();
         assert_eq!(engine.get_metrics().templates_processed, 1);
-        
+
         engine.reset_metrics();
         assert_eq!(engine.get_metrics().templates_processed, 0);
         assert_eq!(engine.get_metrics().avg_processing_time_ms, 0.0);
@@ -412,12 +418,12 @@ mod tests {
     fn test_template_cache_put_get() {
         let config = CacheConfig::default();
         let mut cache = TemplateCache::new(config);
-        
+
         cache.put("key1".to_string(), "template1".to_string());
-        
+
         let result = cache.get("key1");
         assert_eq!(result, Some("template1".to_string()));
-        
+
         // Access count should increase
         let _ = cache.get("key1");
         let stats = cache.stats();
@@ -428,7 +434,7 @@ mod tests {
     fn test_template_cache_miss() {
         let config = CacheConfig::default();
         let mut cache = TemplateCache::new(config);
-        
+
         let result = cache.get("nonexistent");
         assert!(result.is_none());
     }
@@ -437,14 +443,14 @@ mod tests {
     fn test_template_cache_clear() {
         let config = CacheConfig::default();
         let mut cache = TemplateCache::new(config);
-        
+
         cache.put("key1".to_string(), "template1".to_string());
         cache.put("key2".to_string(), "template2".to_string());
-        
+
         assert_eq!(cache.stats().size, 2);
-        
+
         cache.clear();
-        
+
         assert_eq!(cache.stats().size, 0);
     }
 
@@ -453,17 +459,17 @@ mod tests {
         let mut config = CacheConfig::default();
         config.max_size = 2; // Small limit
         let mut cache = TemplateCache::new(config);
-        
+
         cache.put("key1".to_string(), "template1".to_string());
         cache.put("key2".to_string(), "template2".to_string());
-        
+
         // Access key2 more to increase its access_count
         cache.get("key2");
         cache.get("key2");
-        
+
         // Adding key3 should evict LRU (key1)
         cache.put("key3".to_string(), "template3".to_string());
-        
+
         // key1 should be evicted (LRU)
         assert!(cache.get("key1").is_none());
         // key2 and key3 should still exist
@@ -481,10 +487,10 @@ mod tests {
     #[test]
     fn test_ab_testing_register_variant() {
         let mut engine = ABTestingEngine::new();
-        
+
         engine.register_variant("test1".to_string(), "variant_a".to_string());
         engine.register_variant("test1".to_string(), "variant_b".to_string());
-        
+
         assert!(engine.variants.contains_key("test1"));
         assert_eq!(engine.variants["test1"].len(), 2);
     }
@@ -492,18 +498,18 @@ mod tests {
     #[test]
     fn test_ab_testing_select_variant() {
         let mut engine = ABTestingEngine::new();
-        
+
         engine.register_variant("test1".to_string(), "variant_a".to_string());
         engine.register_variant("test1".to_string(), "variant_b".to_string());
-        
+
         // First selection should be variant_a (index 0)
         let selected1 = engine.select_variant("test1");
         assert_eq!(selected1, Some("variant_a".to_string()));
-        
+
         // Second selection should be variant_b (index 1)
         let selected2 = engine.select_variant("test1");
         assert_eq!(selected2, Some("variant_b".to_string()));
-        
+
         // Third selection should cycle back to variant_a
         let selected3 = engine.select_variant("test1");
         assert_eq!(selected3, Some("variant_a".to_string()));
@@ -512,7 +518,7 @@ mod tests {
     #[test]
     fn test_ab_testing_select_variant_nonexistent() {
         let mut engine = ABTestingEngine::new();
-        
+
         let result = engine.select_variant("nonexistent");
         assert!(result.is_none());
     }
@@ -520,11 +526,13 @@ mod tests {
     #[test]
     fn test_ab_testing_select_variant_empty() {
         let mut engine = ABTestingEngine::new();
-        
+
         // Register but with no variants pushed
         engine.variants.insert("empty_test".to_string(), Vec::new());
-        engine.metrics.insert("empty_test".to_string(), ABMetrics::default());
-        
+        engine
+            .metrics
+            .insert("empty_test".to_string(), ABMetrics::default());
+
         let result = engine.select_variant("empty_test");
         assert!(result.is_none());
     }
@@ -532,13 +540,13 @@ mod tests {
     #[test]
     fn test_ab_testing_record_success() {
         let mut engine = ABTestingEngine::new();
-        
+
         engine.register_variant("test1".to_string(), "variant_a".to_string());
         engine.select_variant("test1");
-        
+
         engine.record_success("test1", "variant_a");
         engine.record_success("test1", "variant_a");
-        
+
         let metrics = engine.get_metrics("test1").unwrap();
         assert_eq!(metrics.successes["variant_a"], 2);
     }
@@ -546,7 +554,7 @@ mod tests {
     #[test]
     fn test_ab_testing_record_success_no_test() {
         let mut engine = ABTestingEngine::new();
-        
+
         // Should not panic on nonexistent test
         engine.record_success("nonexistent", "variant");
     }
@@ -554,7 +562,7 @@ mod tests {
     #[test]
     fn test_ab_testing_get_metrics_none() {
         let engine = ABTestingEngine::new();
-        
+
         let metrics = engine.get_metrics("nonexistent");
         assert!(metrics.is_none());
     }
@@ -566,10 +574,10 @@ mod tests {
             max_size: 100,
             hit_count: 50,
         };
-        
+
         let json = serde_json::to_string(&stats).unwrap();
         let deserialized: CacheStats = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.size, 10);
         assert_eq!(deserialized.max_size, 100);
         assert_eq!(deserialized.hit_count, 50);
@@ -589,10 +597,10 @@ mod tests {
         config.max_prompt_length = 10;
         config.enable_compression = true;
         let mut engine = OptimizationEngine::new(config);
-        
+
         let prompt = "\n\n\n\nLine 1\n\n\nLine 2\n\n\n";
         let result = engine.optimize_prompt(prompt).unwrap();
-        
+
         // Should remove empty lines and trim
         assert!(!result.is_empty());
         assert!(!result.starts_with('\n'));

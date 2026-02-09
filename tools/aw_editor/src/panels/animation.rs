@@ -14,6 +14,7 @@ use glam::Vec3;
 
 /// Animation playback state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum PlaybackState {
     #[default]
     Stopped,
@@ -59,6 +60,7 @@ impl PlaybackState {
 
 /// Animation property that can be animated
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum AnimatedProperty {
     #[default]
     PositionY,

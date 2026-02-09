@@ -12,6 +12,7 @@ use std::collections::VecDeque;
 
 /// Weather type with associated properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum WeatherType {
     #[default]
     Clear,
@@ -153,6 +154,7 @@ impl Default for WeatherSettings {
 
 /// Time of day presets
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum TimePreset {
     Midnight,
     Dawn,
@@ -372,6 +374,7 @@ impl WorldBounds {
 
 /// Environment preset for quick setup
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum EnvironmentPreset {
     #[default]
     Sunny,
@@ -456,6 +459,7 @@ pub struct WorldEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum WorldEventType {
     TerrainGenerated,
     WeatherChanged,

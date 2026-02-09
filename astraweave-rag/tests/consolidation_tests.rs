@@ -1,9 +1,11 @@
 #![allow(clippy::field_reassign_with_default)]
 
 use astraweave_embeddings::{Memory, MemoryCategory};
-use astraweave_rag::consolidation::{ConsolidationConfig, ConsolidationEngine, ConsolidationStrategy};
-use std::collections::HashMap;
+use astraweave_rag::consolidation::{
+    ConsolidationConfig, ConsolidationEngine, ConsolidationStrategy,
+};
 use chrono::Utc;
+use std::collections::HashMap;
 
 fn create_memory(id: &str, text: &str, category: MemoryCategory) -> Memory {
     Memory {
@@ -30,12 +32,12 @@ fn test_consolidation_merging() {
     ];
 
     let (consolidated, result) = engine.consolidate(memories).unwrap();
-    
+
     // Should merge into 1
     assert_eq!(consolidated.len(), 1);
     assert_eq!(result.merged_count, 1);
     assert_eq!(result.removed_count, 1);
-    
+
     // Check merged content
     assert!(consolidated[0].text.contains("the cat is sleeping"));
 }
@@ -52,7 +54,7 @@ fn test_consolidation_threshold() {
     ];
 
     let (consolidated, result) = engine.consolidate(memories).unwrap();
-    
+
     // Should NOT merge
     assert_eq!(consolidated.len(), 2);
     assert_eq!(result.merged_count, 0);
@@ -70,7 +72,7 @@ fn test_consolidation_category_mismatch() {
     ];
 
     let (consolidated, result) = engine.consolidate(memories).unwrap();
-    
+
     // Should NOT merge due to category mismatch
     assert_eq!(consolidated.len(), 2);
     assert_eq!(result.merged_count, 0);
@@ -91,10 +93,10 @@ fn test_consolidation_context_merging() {
     let memories = vec![m1, m2];
 
     let (consolidated, _) = engine.consolidate(memories).unwrap();
-    
+
     assert_eq!(consolidated.len(), 1);
     let merged = &consolidated[0];
-    
+
     assert_eq!(merged.context.get("key1").unwrap(), "value1");
     assert_eq!(merged.context.get("key2").unwrap(), "value2");
 }
@@ -224,7 +226,11 @@ fn test_consolidation_single_memory() {
     let config = ConsolidationConfig::default();
     let engine = ConsolidationEngine::new(config);
 
-    let memories = vec![create_memory("1", "single memory", MemoryCategory::Gameplay)];
+    let memories = vec![create_memory(
+        "1",
+        "single memory",
+        MemoryCategory::Gameplay,
+    )];
     let (consolidated, result) = engine.consolidate(memories).unwrap();
 
     assert_eq!(consolidated.len(), 1);

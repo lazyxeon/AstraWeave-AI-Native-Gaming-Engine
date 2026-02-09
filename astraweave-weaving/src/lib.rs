@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Weaving System - Emergent Behavior Layer + Anchor System
 //!
 //! The weaving system detects patterns in the world state and proposes

@@ -1,14 +1,14 @@
 #![allow(clippy::field_reassign_with_default)]
 
-use astraweave_prompts::engine::{TemplateEngine, EngineConfig, PromptEngine};
-use astraweave_prompts::template::PromptTemplate;
 use astraweave_prompts::context::PromptContext;
+use astraweave_prompts::engine::{EngineConfig, PromptEngine, TemplateEngine};
+use astraweave_prompts::template::PromptTemplate;
 
 #[test]
 fn test_engine_registration() {
     let mut engine = TemplateEngine::new();
     let t = PromptTemplate::new("greet", "Hello {{name}}");
-    
+
     assert!(engine.register_template("greet", t).is_ok());
 }
 
@@ -29,7 +29,7 @@ fn test_engine_render() {
 fn test_engine_missing_template() {
     let engine = TemplateEngine::new();
     let ctx = PromptContext::new();
-    
+
     assert!(engine.render("missing", &ctx).is_err());
 }
 
@@ -38,7 +38,7 @@ fn test_prompt_engine_limits() {
     let mut config = EngineConfig::default();
     config.max_template_size = 10;
     let mut engine = PromptEngine::new(config);
-    
+
     // "Hello World" is 11 bytes, should fail
     let result = engine.register_template("large".to_string(), "Hello World".to_string());
     assert!(result.is_err());
@@ -61,4 +61,3 @@ fn test_load_templates_from_dir() {
     let result = engine.render("t1", &ctx).unwrap();
     assert_eq!(result.trim(), "Template 1");
 }
-

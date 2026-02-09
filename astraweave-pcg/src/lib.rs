@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Procedural Content Generation (PCG) with seed reproducibility
 //!
 //! This crate provides deterministic procedural generation for AstraWeave:

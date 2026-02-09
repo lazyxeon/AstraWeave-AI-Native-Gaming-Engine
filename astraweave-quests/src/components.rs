@@ -131,6 +131,7 @@ pub struct CActiveQuest {
 
 /// State of an active quest
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum QuestState {
     Active,
     Paused,

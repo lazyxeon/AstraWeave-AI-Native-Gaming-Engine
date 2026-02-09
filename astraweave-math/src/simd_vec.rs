@@ -60,6 +60,8 @@ use glam::Vec3;
 #[inline(always)]
 pub fn dot_simd(a: Vec3, b: Vec3) -> f32 {
     #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+    // SAFETY: cfg guard guarantees SSE2 is available. dot_simd_sse2 is a
+    // #[target_feature(enable = "sse2")] fn that only uses SSE2 intrinsics.
     unsafe {
         dot_simd_sse2(a, b)
     }
@@ -90,6 +92,8 @@ pub fn dot_simd(a: Vec3, b: Vec3) -> f32 {
 #[inline(always)]
 pub fn cross_simd(a: Vec3, b: Vec3) -> Vec3 {
     #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+    // SAFETY: cfg guard guarantees SSE2 is available. cross_simd_sse2 uses
+    // only SSE2 shuffle/mul/sub intrinsics on valid Vec3 data.
     unsafe {
         cross_simd_sse2(a, b)
     }

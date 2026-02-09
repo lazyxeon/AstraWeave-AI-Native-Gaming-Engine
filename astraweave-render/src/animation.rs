@@ -62,6 +62,7 @@ pub struct Skeleton {
 
 /// Animation keyframe interpolation mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Interpolation {
     Step,
     Linear,
@@ -70,6 +71,7 @@ pub enum Interpolation {
 
 /// Animation channel data (one property per channel)
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ChannelData {
     Translation(Vec<Vec3>),
     Rotation(Vec<Quat>),

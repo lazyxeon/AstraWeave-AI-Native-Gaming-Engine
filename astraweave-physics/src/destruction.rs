@@ -19,6 +19,7 @@ pub struct DebrisId(pub u64);
 
 /// Shape of debris pieces
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum DebrisShape {
     /// Box-shaped debris
     Box { half_extents: Vec3 },
@@ -199,6 +200,7 @@ impl FracturePattern {
 
 /// Destruction trigger type
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum DestructionTrigger {
     /// Destroy when force exceeds threshold
     Force { threshold: f32 },
@@ -254,6 +256,7 @@ impl Default for DestructibleConfig {
 
 /// State of a destructible object
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum DestructibleState {
     /// Object is intact
     Intact,

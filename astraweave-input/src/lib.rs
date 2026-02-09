@@ -1,3 +1,20 @@
+#![forbid(unsafe_code)]
+//! # AstraWeave Input
+//!
+//! Input binding and action mapping system for AstraWeave.
+//!
+//! Provides unified handling for keyboard, mouse, and gamepad input with:
+//!
+//! - **[`bindings`]** — Serializable key/mouse/gamepad bindings ([`Binding`], [`BindingSet`]).
+//! - **[`actions`]** — Game action definitions and enums.
+//! - **[`manager`]** — Runtime input state polling and action queries.
+//! - **[`save`]** — Input configuration persistence (save/load).
+//!
+//! # Dependencies
+//!
+//! - **winit** — Window event handling (keyboard/mouse)
+//! - **gilrs** — Gamepad/controller input
+
 pub mod actions;
 pub mod bindings;
 pub mod manager;

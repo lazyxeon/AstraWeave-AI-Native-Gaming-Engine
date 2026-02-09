@@ -117,6 +117,7 @@ impl Default for StreamingConfig {
 
 /// Background chunk loader status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LoaderStatus {
     Idle,
     Loading,
@@ -144,6 +145,7 @@ pub struct StreamingStats {
 
 /// Terrain modification task types
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum TerrainTask {
     /// Generate terrain feature at resolved location
     Generate {
@@ -261,6 +263,8 @@ impl Default for TerrainRateLimiter {
 
 /// Result of attempting to queue a terrain task
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum TerrainTaskResult {
     /// Task was queued successfully
     Queued { request_id: String },

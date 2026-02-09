@@ -171,6 +171,7 @@ impl AnchorAudioState {
 
 /// Audio command sent from anchor audio system to audio engine
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum AudioCommand {
     /// Play sound at position (3D spatial audio)
     PlaySound {

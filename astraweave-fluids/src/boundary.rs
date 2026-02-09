@@ -113,6 +113,7 @@ impl BoundaryParticle {
 
 /// Boundary handling method selection
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum BoundaryMethod {
     /// Traditional Akinci particle sampling
     /// Accurate but expensive for complex geometry
@@ -147,6 +148,7 @@ impl Default for BoundaryMethod {
 
 /// Boundary slip condition
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum SlipCondition {
     /// No-slip: velocity equals boundary velocity
     NoSlip,

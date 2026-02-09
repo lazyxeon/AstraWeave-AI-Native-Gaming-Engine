@@ -24,6 +24,7 @@ pub struct RsxAttr {
 
 /// Attribute value can be string literal or code block
 #[derive(Clone)]
+#[non_exhaustive]
 pub enum RsxAttrValue {
     Literal(LitStr),
     Expr(syn::Expr), // Day 3: Code blocks like {|| count += 1}
@@ -40,6 +41,7 @@ impl std::fmt::Debug for RsxAttrValue {
 
 /// RSX node can be element or text
 #[derive(Clone)]
+#[non_exhaustive]
 pub enum RsxNode {
     Element(RsxElement),
     Text(String), // Changed from LitStr to String for Debug

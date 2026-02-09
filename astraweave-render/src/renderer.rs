@@ -15,7 +15,7 @@ use crate::types::{Instance, InstanceRaw, Mesh};
 use astraweave_cinematics as awc;
 use astraweave_materials::MaterialPackage;
 
-const SHADER_SRC: &str = r#"
+pub(crate) const SHADER_SRC: &str = r#"
 struct VSIn {
     @location(0) position: vec3<f32>,
     @location(1) normal:   vec3<f32>,
@@ -75,6 +75,38 @@ struct MainLightUbo {
 @group(3) @binding(3) var mr_samp: sampler;
 @group(3) @binding(4) var normal_tex: texture_2d<f32>;  // tangent-space normal in RGB
 @group(3) @binding(5) var normal_samp: sampler;
+
+// ── Scene Environment (fog, ambient, tint) ─────────
+struct SceneEnv {
+    fog_color: vec3<f32>,
+    fog_density: f32,
+    fog_start: f32,
+    fog_end: f32,
+    _pad0: vec2<f32>,
+    ambient_color: vec3<f32>,
+    ambient_intensity: f32,
+    tint_color: vec3<f32>,
+    tint_alpha: f32,
+    blend_factor: f32,
+    _pad1: vec3<f32>,
+};
+@group(4) @binding(0) var<uniform> uScene: SceneEnv;
+
+// Distance-based fog (linear + exponential blend)
+fn apply_scene_fog(color: vec3<f32>, dist: f32) -> vec3<f32> {
+    // Linear fog component
+    let linear_fog = clamp((dist - uScene.fog_start) / max(uScene.fog_end - uScene.fog_start, 0.001), 0.0, 1.0);
+    // Exponential fog component (denser -> more fog)
+    let exp_fog = 1.0 - exp(-uScene.fog_density * dist);
+    // Combine: use linear as primary, exponential adds density
+    let fog_factor = clamp(max(linear_fog, exp_fog), 0.0, 1.0);
+    return mix(color, uScene.fog_color, fog_factor);
+}
+
+// Apply screen tint overlay
+fn apply_scene_tint(color: vec3<f32>) -> vec3<f32> {
+    return mix(color, uScene.tint_color, uScene.tint_alpha);
+}
 
 
 
@@ -195,16 +227,25 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             if (use_c0) { tint = vec3<f32>(1.0, 0.3, 0.0); } else { tint = vec3<f32>(0.0, 0.2, 1.0); }
             base_color = mix(base_color, tint, 0.35);
         }
-    // Add a modest ambient lift to avoid overly dark scene when sun is low
-    var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.2;
+    // Add ambient from scene environment UBO (replaces hardcoded 0.2)
+    let ambient = uScene.ambient_color * uScene.ambient_intensity;
+    var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * ambient;
         // Clustered point lights accumulation (Lambert + simple attenuation)
     // Clustered lighting disabled for this example build; use lit_color directly
+
+    // Apply distance-based fog from biome scene environment
+    let frag_dist = length(input.world_pos);
+    lit_color = apply_scene_fog(lit_color, frag_dist);
+
+    // Apply screen tint overlay (peaks during biome transitions)
+    lit_color = apply_scene_tint(lit_color);
+
     return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
 }
 "#;
 
 #[cfg(not(feature = "postfx"))]
-const POST_SHADER: &str = r#"
+pub(crate) const POST_SHADER: &str = r#"
 struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex
 fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
@@ -222,6 +263,22 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
 @group(0) @binding(0) var hdr_tex: texture_2d<f32>;
 @group(0) @binding(1) var samp: sampler;
 
+// Scene environment for screen-space tint overlay
+struct PostSceneEnv {
+    fog_color: vec3<f32>,
+    fog_density: f32,
+    fog_start: f32,
+    fog_end: f32,
+    _pad0: vec2<f32>,
+    ambient_color: vec3<f32>,
+    ambient_intensity: f32,
+    tint_color: vec3<f32>,
+    tint_alpha: f32,
+    blend_factor: f32,
+    _pad1: vec3<f32>,
+};
+@group(1) @binding(0) var<uniform> uPostScene: PostSceneEnv;
+
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -234,13 +291,15 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
 @fragment
 fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let hdr = textureSampleLevel(hdr_tex, samp, in.uv, 0.0);
-    let mapped = aces_tonemap(vec3<f32>(hdr.r, hdr.g, hdr.b));
-    return vec4<f32>(mapped, 1.0);
+    var color = aces_tonemap(vec3<f32>(hdr.r, hdr.g, hdr.b));
+    // Screen-space tint overlay from biome transitions
+    color = mix(color, uPostScene.tint_color, uPostScene.tint_alpha);
+    return vec4<f32>(color, 1.0);
 }
 "#;
 
 #[cfg(feature = "postfx")]
-const POST_SHADER_FX: &str = r#"
+pub(crate) const POST_SHADER_FX: &str = r#"
 struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex
 fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
@@ -260,6 +319,22 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
 @group(0) @binding(2) var gi_tex: texture_2d<f32>;
 @group(0) @binding(3) var samp: sampler;
 
+// Scene environment for screen-space tint overlay
+struct PostSceneEnv {
+    fog_color: vec3<f32>,
+    fog_density: f32,
+    fog_start: f32,
+    fog_end: f32,
+    _pad0: vec2<f32>,
+    ambient_color: vec3<f32>,
+    ambient_intensity: f32,
+    tint_color: vec3<f32>,
+    tint_alpha: f32,
+    blend_factor: f32,
+    _pad1: vec3<f32>,
+};
+@group(1) @binding(0) var<uniform> uPostScene: PostSceneEnv;
+
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -273,8 +348,10 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let ao_strength = 0.6;
     let gi_strength = 0.2;
     let comp = hdr * (1.0 - ao * ao_strength) + gi * gi_strength;
-    let mapped = aces_tonemap(comp);
-    return vec4<f32>(mapped, 1.0);
+    var color = aces_tonemap(comp);
+    // Screen-space tint overlay from biome transitions
+    color = mix(color, uPostScene.tint_color, uPostScene.tint_alpha);
+    return vec4<f32>(color, 1.0);
 }
 "#;
 
@@ -309,7 +386,6 @@ pub struct Renderer {
     material_bg: wgpu::BindGroup,
     post_pipeline: wgpu::RenderPipeline,
     post_bind_group: wgpu::BindGroup,
-    #[allow(dead_code)]
     post_bgl: wgpu::BindGroupLayout,
     hdr_tex: wgpu::Texture,
     hdr_view: wgpu::TextureView,
@@ -435,6 +511,23 @@ pub struct Renderer {
 
     // Water rendering
     water_renderer: Option<crate::water::WaterRenderer>,
+
+    // Biome material system — bridges terrain BiomeType → materials + IBL
+    biome_system: crate::biome_material::BiomeMaterialSystem,
+
+    // Biome transition detection and visual blending
+    biome_detector: crate::biome_detector::BiomeDetector,
+    transition_effect: crate::biome_transition::TransitionEffect,
+    scene_env: crate::scene_environment::SceneEnvironment,
+
+    // Scene environment GPU resources (fog, ambient, tint UBO)
+    scene_env_buf: wgpu::Buffer,
+    #[allow(dead_code)]
+    scene_env_bgl: wgpu::BindGroupLayout,
+    scene_env_bg: wgpu::BindGroup,
+
+    // Terrain material manager — loads biome texture arrays onto GPU
+    pub material_manager: crate::material::MaterialManager,
 }
 
 impl Renderer {
@@ -493,7 +586,10 @@ impl Renderer {
                         f
                     }
                 },
-                required_limits: wgpu::Limits::default(),
+                required_limits: wgpu::Limits {
+                    max_bind_groups: 8,
+                    ..wgpu::Limits::default()
+                },
                 memory_hints: Default::default(),
                 trace: Default::default(),
             })
@@ -537,7 +633,10 @@ impl Renderer {
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("headless device"),
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
+                required_limits: wgpu::Limits {
+                    max_bind_groups: 8,
+                    ..wgpu::Limits::default()
+                },
                 memory_hints: Default::default(),
                 trace: Default::default(),
             })
@@ -640,6 +739,22 @@ impl Renderer {
         // Seed the material buffer with a bright-ish default so geometry renders visibly out of the box.
         let default_material: [f32; 8] = [0.85, 0.78, 0.72, 1.0, 0.05, 0.6, 0.0, 0.0];
         queue.write_buffer(&material_buf, 0, bytemuck::cast_slice(&default_material));
+
+        // Scene environment bind group layout (created early so it can be used in pipeline layout)
+        let scene_env_bgl =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("scene env bgl"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
         let material_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("material bg"),
             layout: &material_bgl,
@@ -1128,7 +1243,7 @@ impl Renderer {
         #[cfg(feature = "postfx")]
         let post_fx_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("post fx layout"),
-            bind_group_layouts: &[&post_fx_bgl],
+            bind_group_layouts: &[&post_fx_bgl, &scene_env_bgl],
             push_constant_ranges: &[],
         });
 
@@ -1254,8 +1369,8 @@ impl Renderer {
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("pipeline layout"),
-            // Group indices: 0: camera, 1: material, 2: shadow/light, 3: combined textures + skin
-            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl],
+            // Group indices: 0: camera, 1: material, 2: shadow/light, 3: textures, 4: scene environment
+            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &scene_env_bgl],
             push_constant_ranges: &[],
         });
 
@@ -1309,7 +1424,7 @@ impl Renderer {
         #[cfg(not(feature = "postfx"))]
         let post_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("post layout"),
-            bind_group_layouts: &[&post_bgl],
+            bind_group_layouts: &[&post_bgl, &scene_env_bgl],
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
@@ -2273,6 +2388,27 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let ibl = crate::ibl::IblManager::new(&device, crate::ibl::IblQuality::Medium)
             .context("Failed to init IBL")?;
 
+        // ── Scene Environment UBO (fog, ambient, tint) ──────────────────
+        let scene_env_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("scene env ubo"),
+            size: std::mem::size_of::<crate::scene_environment::SceneEnvironmentUBO>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let scene_env_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("scene env bg"),
+            layout: &scene_env_bgl,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: scene_env_buf.as_entire_binding(),
+            }],
+        });
+        // Seed with sensible defaults
+        {
+            let default_ubo = crate::scene_environment::SceneEnvironmentUBO::default();
+            queue.write_buffer(&scene_env_buf, 0, bytemuck::bytes_of(&default_ubo));
+        }
+
         Ok(Self {
             surface,
             device,
@@ -2371,6 +2507,20 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             ibl,
             ibl_resources: None,
             water_renderer: None,
+            biome_system: crate::biome_material::BiomeMaterialSystem::new(
+                crate::biome_material::BiomeMaterialConfig::default(),
+            ),
+            biome_detector: crate::biome_detector::BiomeDetector::new(
+                crate::biome_detector::BiomeDetectorConfig::default(),
+            ),
+            transition_effect: crate::biome_transition::TransitionEffect::new(
+                crate::biome_transition::TransitionConfig::default(),
+            ),
+            scene_env: crate::scene_environment::SceneEnvironment::default(),
+            scene_env_buf,
+            scene_env_bgl,
+            scene_env_bg,
+            material_manager: crate::material::MaterialManager::new(),
         })
     }
 
@@ -2447,6 +2597,282 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .bake_environment(&self.device, &self.queue, quality)?;
         self.ibl_resources = Some(resources);
         Ok(())
+    }
+
+    // ── Biome Material System ────────────────────────────────────────────
+
+    /// Get immutable reference to the biome material system.
+    pub fn biome_system(&self) -> &crate::biome_material::BiomeMaterialSystem {
+        &self.biome_system
+    }
+
+    /// Get mutable reference to the biome material system.
+    pub fn biome_system_mut(&mut self) -> &mut crate::biome_material::BiomeMaterialSystem {
+        &mut self.biome_system
+    }
+
+    /// Transition to a new biome.
+    ///
+    /// This:
+    /// 1. Checks if a transition is needed (same biome → no-op).
+    /// 2. Resolves the best HDRI for the biome + current time-of-day.
+    /// 3. Updates `IblManager` sky mode from the HDRI catalog.
+    /// 4. Rebakes environment maps (irradiance + specular).
+    /// 5. Marks the biome as loaded in the tracking state.
+    ///
+    /// For the full pipeline (HDRI + terrain textures), use
+    /// [`transition_biome_full`] which also calls `MaterialManager::load_biome()`.
+    ///
+    /// Returns `true` if a transition occurred, `false` if already in that biome.
+    pub fn transition_biome(
+        &mut self,
+        biome: astraweave_terrain::biome::BiomeType,
+        quality: crate::ibl::IblQuality,
+    ) -> Result<bool> {
+        if !self.biome_system.needs_transition(biome) {
+            return Ok(false);
+        }
+
+        // Resolve HDRI for this biome + time
+        let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
+        let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
+
+        // Update IBL manager
+        self.ibl.mode = sky_mode;
+
+        // Rebake environment
+        let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
+        self.ibl_resources = Some(resources);
+
+        // Track state
+        self.biome_system.mark_loaded(biome, hdri_path);
+
+        log::info!(
+            "Biome transition → {:?} (HDRI: {:?})",
+            biome,
+            self.biome_system.current_biome()
+        );
+
+        Ok(true)
+    }
+
+    /// Full biome transition: HDRI environment + terrain material textures.
+    ///
+    /// This is the batteries-included version of [`transition_biome`]. It:
+    /// 1. Resolves + loads the HDRI for the biome + time-of-day.
+    /// 2. Rebakes the IBL environment maps.
+    /// 3. Loads the biome's terrain material texture arrays via [`MaterialManager`].
+    ///
+    /// Returns `Ok(None)` if already in that biome (no-op).
+    /// Returns `Ok(Some(stats))` with material load statistics on success.
+    #[cfg(feature = "textures")]
+    pub async fn transition_biome_full(
+        &mut self,
+        biome: astraweave_terrain::biome::BiomeType,
+        quality: crate::ibl::IblQuality,
+    ) -> Result<Option<crate::material::MaterialLoadStats>> {
+        if !self.biome_system.needs_transition(biome) {
+            return Ok(None);
+        }
+
+        // 1. HDRI + IBL
+        let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
+        let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
+        self.ibl.mode = sky_mode;
+        let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
+        self.ibl_resources = Some(resources);
+
+        // 2. Terrain material textures
+        let mat_dir = self.biome_system.material_dir_for(biome);
+        let stats = self
+            .material_manager
+            .load_biome(&self.device, &self.queue, &mat_dir)
+            .await?;
+
+        // 3. Track state
+        self.biome_system.mark_loaded(biome, hdri_path);
+
+        log::info!(
+            "Full biome transition → {:?} (materials: {} layers, {:.2} MiB)",
+            biome,
+            stats.layers_total,
+            stats.gpu_memory_bytes as f64 / (1024.0 * 1024.0),
+        );
+
+        Ok(Some(stats))
+    }
+
+    /// Update the biome system's time-of-day from the renderer's continuous
+    /// `TimeOfDay` hours. If the discrete `DayPeriod` changed, rebake the
+    /// environment HDRI.
+    ///
+    /// Call this once per frame (or less frequently) to keep sky lighting in
+    /// sync with the time-of-day system.
+    pub fn sync_biome_time_of_day(
+        &mut self,
+        quality: crate::ibl::IblQuality,
+    ) -> Result<bool> {
+        let hours = self.sky.time_of_day().current_time;
+        let period = crate::hdri_catalog::DayPeriod::from_game_hours(hours);
+
+        if !self.biome_system.set_time_of_day(period) {
+            return Ok(false); // No change
+        }
+
+        // Period changed — if we have a loaded biome, refresh the HDRI
+        if let Some(biome) = self.biome_system.current_biome() {
+            let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
+            let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
+            self.ibl.mode = sky_mode;
+            let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
+            self.ibl_resources = Some(resources);
+            self.biome_system.mark_loaded(biome, hdri_path);
+
+            log::info!(
+                "Day period changed → {:?} for biome {:?}",
+                period,
+                biome
+            );
+        }
+
+        Ok(true)
+    }
+
+    // ── Biome Transition Pipeline ────────────────────────────────────────
+
+    /// Access the biome detector for direct queries.
+    pub fn biome_detector(&self) -> &crate::biome_detector::BiomeDetector {
+        &self.biome_detector
+    }
+
+    /// Access the transition effect for direct queries.
+    pub fn transition_effect(&self) -> &crate::biome_transition::TransitionEffect {
+        &self.transition_effect
+    }
+
+    /// Access the current scene environment (fog, ambient, tint).
+    pub fn scene_environment(&self) -> &crate::scene_environment::SceneEnvironment {
+        &self.scene_env
+    }
+
+    /// Mutably access the scene environment (e.g. to set weather multipliers).
+    pub fn scene_environment_mut(&mut self) -> &mut crate::scene_environment::SceneEnvironment {
+        &mut self.scene_env
+    }
+
+    /// Get the GPU-ready scene environment UBO for the current frame.
+    ///
+    /// This applies weather multipliers and returns the final uniform buffer
+    /// data ready for `queue.write_buffer()`.
+    pub fn scene_environment_ubo(&self) -> crate::scene_environment::SceneEnvironmentUBO {
+        self.scene_env.to_ubo()
+    }
+
+    /// Update the player's world position and tick the biome transition
+    /// pipeline. Call this once per frame (or whenever the player moves).
+    ///
+    /// This:
+    /// 1. Feeds position to the `BiomeDetector` to check for biome changes.
+    /// 2. On biome change: starts a `TransitionEffect` crossfade.
+    /// 3. Advances the transition effect by `delta_time`.
+    /// 4. Updates `SceneEnvironment` with interpolated fog/ambient.
+    ///
+    /// Returns `Some(biome)` if a new biome transition was started this frame.
+    pub fn update_player_biome(
+        &mut self,
+        climate: &astraweave_terrain::climate::ClimateMap,
+        x: f64,
+        z: f64,
+        height: f32,
+        delta_time: f32,
+    ) -> Option<astraweave_terrain::biome::BiomeType> {
+        // 1. Check for biome transition
+        let new_biome = if let Some(transition) =
+            self.biome_detector.update(climate, x, z, height)
+        {
+            self.transition_effect
+                .start(transition.old_biome, transition.new_biome);
+            log::info!(
+                "Biome transition detected: {:?} → {:?}",
+                transition.old_biome,
+                transition.new_biome,
+            );
+            // Trigger HDRI / IBL swap for the new biome (best-effort; non-fatal)
+            if let Err(e) =
+                self.transition_biome(transition.new_biome, crate::ibl::IblQuality::Medium)
+            {
+                log::warn!(
+                    "IBL transition to {:?} failed (non-fatal): {e}",
+                    transition.new_biome,
+                );
+            }
+            Some(transition.new_biome)
+        } else {
+            None
+        };
+
+        // 2. Tick transition effect
+        if self.transition_effect.is_active() {
+            self.transition_effect.update(delta_time);
+        }
+
+        // 3. Update scene environment
+        self.scene_env
+            .update_from_transition(&self.transition_effect);
+
+        // 4. Sync sky + water colours from the interpolated BiomeVisuals
+        self.sync_biome_sky_water();
+
+        new_biome
+    }
+
+    /// Configure the transition effect (duration, easing, etc.).
+    pub fn set_transition_config(&mut self, config: crate::biome_transition::TransitionConfig) {
+        self.transition_effect = crate::biome_transition::TransitionEffect::new(config);
+    }
+
+    /// Configure the biome detector (distance threshold, hysteresis).
+    pub fn set_biome_detector_config(&mut self, config: crate::biome_detector::BiomeDetectorConfig) {
+        self.biome_detector = crate::biome_detector::BiomeDetector::new(config);
+    }
+
+    /// Push current BiomeVisuals sky/water colours to the SkyRenderer and
+    /// WaterRenderer.  Called automatically from [`Self::update_player_biome`]
+    /// every frame while a transition is active (or at rest, so the colours
+    /// stay clamped to the final biome).
+    fn sync_biome_sky_water(&mut self) {
+        let vis = &self.scene_env.visuals;
+
+        // Sky — merge biome colours and cloud parameters into SkyConfig.
+        let mut sky = self.sky.config().clone();
+        sky.day_color_top = vis.sky_day_top;
+        sky.day_color_horizon = vis.sky_day_horizon;
+        sky.sunset_color_top = vis.sky_sunset_top;
+        sky.sunset_color_horizon = vis.sky_sunset_horizon;
+        sky.night_color_top = vis.sky_night_top;
+        sky.night_color_horizon = vis.sky_night_horizon;
+        sky.cloud_coverage = vis.cloud_coverage;
+        sky.cloud_speed = vis.cloud_speed;
+        self.sky.set_config(sky);
+
+        // Water — update colours; they reach the GPU on the next
+        // `WaterRenderer::update()` call done by `update_water()`.
+        if let Some(ref mut water) = self.water_renderer {
+            water.set_water_colors(vis.water_deep, vis.water_shallow, vis.water_foam);
+        }
+
+        // Weather particles — set biome-specific density and tint.
+        self.weather.set_density(vis.weather_particle_density);
+
+        // Use fog colour as a subtle tint so rain/wind matches the atmosphere.
+        // Normalize to avoid darkening too much.
+        let fog_avg = (vis.fog_color.x + vis.fog_color.y + vis.fog_color.z) / 3.0;
+        let tint = if fog_avg > 0.01 {
+            vis.fog_color / fog_avg * 0.9 + glam::Vec3::splat(0.1)
+        } else {
+            glam::Vec3::ONE
+        };
+        self.weather.set_biome_tint(tint);
     }
 
     pub fn resize(&mut self, new_w: u32, new_h: u32) {
@@ -2771,6 +3197,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
     pub fn set_weather(&mut self, kind: crate::effects::WeatherKind) {
         self.weather.set_kind(kind);
+        // Bridge: update scene environment fog/ambient from weather kind
+        self.scene_env.apply_weather(kind);
     }
 
     pub fn tick_weather(&mut self, dt: f32) {
@@ -2780,6 +3208,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     pub fn tick_environment(&mut self, dt: f32) {
         // Advance time-of-day; derive sky params
         self.sky.update(dt);
+        // Bridge: feed time-of-day ambient into scene environment
+        let tod = self.sky.time_of_day().clone();
+        self.scene_env.apply_time_of_day(&tod);
     }
 
     /// Get immutable reference to time-of-day system
@@ -2913,15 +3344,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 0,
                 bytemuck::cast_slice(&offsets_cpu),
             );
-            // Zero counts
-            let clusters =
-                (self.clustered_dims.x * self.clustered_dims.y * self.clustered_dims.z) as usize;
-            let zero_counts = vec![0u32; clusters];
-            self.queue.write_buffer(
-                &self.clustered_counts_buf,
-                0,
-                bytemuck::cast_slice(&zero_counts),
-            );
+            // Zero counts — GPU-side clear, no CPU allocation
+            enc.clear_buffer(&self.clustered_counts_buf, 0, None);
             // Run compute to fill counts/indices
             #[cfg(feature = "gpu-tests")]
             {
@@ -3041,6 +3465,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             None,
         )?;
 
+        // Upload scene environment UBO (fog, ambient, tint) for this frame
+        {
+            let scene_ubo = self.scene_env.to_ubo();
+            self.queue
+                .write_buffer(&self.scene_env_buf, 0, bytemuck::bytes_of(&scene_ubo));
+        }
+
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main pass"),
@@ -3071,6 +3502,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(1, &self.material_bg, &[]);
             rp.set_bind_group(2, &self.light_bg, &[]);
             rp.set_bind_group(3, &self.tex_bg, &[]);
+            rp.set_bind_group(4, &self.scene_env_bg, &[]);
 
             // Ground plane (scaled) - DISABLED (Interferes with Terrain)
             /*
@@ -3190,11 +3622,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             {
                 pp.set_pipeline(&self.post_pipeline);
                 pp.set_bind_group(0, &self.post_bind_group, &[]);
+                pp.set_bind_group(1, &self.scene_env_bg, &[]);
             }
             #[cfg(not(feature = "postfx"))]
             {
                 pp.set_pipeline(&self.post_pipeline);
                 pp.set_bind_group(0, &self.post_bind_group, &[]);
+                pp.set_bind_group(1, &self.scene_env_bg, &[]);
             }
             pp.draw(0..3, 0..1);
         }
@@ -3254,14 +3688,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             0,
             bytemuck::cast_slice(&offsets_cpu),
         );
-        let clusters =
-            (self.clustered_dims.x * self.clustered_dims.y * self.clustered_dims.z) as usize;
-        let zero_counts = vec![0u32; clusters];
-        self.queue.write_buffer(
-            &self.clustered_counts_buf,
-            0,
-            bytemuck::cast_slice(&zero_counts),
-        );
+        // Zero counts — GPU-side clear, no CPU allocation
+        enc.clear_buffer(&self.clustered_counts_buf, 0, None);
         {
             let mut cpass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("cluster bin"),
@@ -3403,6 +3831,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(1, &self.material_bg, &[]);
             rp.set_bind_group(2, &self.light_bg, &[]);
             rp.set_bind_group(3, &self.tex_bg, &[]);
+            rp.set_bind_group(4, &self.scene_env_bg, &[]);
 
             // Ground plane
             rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
@@ -3463,6 +3892,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         });
         pp.set_pipeline(&self.post_pipeline);
         pp.set_bind_group(0, &self.post_bind_group, &[]);
+        pp.set_bind_group(1, &self.scene_env_bg, &[]);
         pp.draw(0..3, 0..1);
 
         Ok(())

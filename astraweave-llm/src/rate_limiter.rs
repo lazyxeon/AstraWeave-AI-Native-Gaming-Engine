@@ -269,6 +269,7 @@ pub struct RateLimitContext {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum RequestPriority {
     Low,
     Normal,

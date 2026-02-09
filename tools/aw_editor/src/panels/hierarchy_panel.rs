@@ -10,6 +10,7 @@ pub struct HierarchyNode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum HierarchyAction {
     CreatePrefab(Entity),
     DeleteEntity(Entity),

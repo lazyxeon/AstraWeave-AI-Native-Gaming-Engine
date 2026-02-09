@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! AstraWeave Asset CLI library
 //!
 //! This crate provides texture baking and asset processing functionality.

@@ -24,6 +24,7 @@ use crate::validation::MetricsHistory;
 
 /// Quality preset for the solver
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum QualityPreset {
     /// Mobile/Low-end: PBD, XSPH, 50-100k particles
     Mobile,
@@ -45,6 +46,7 @@ impl Default for QualityPreset {
 
 /// Solver type selection
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum SolverType {
     /// Position-Based Dynamics (fast, visual)
     Pbd,
@@ -59,6 +61,7 @@ pub enum SolverType {
 
 /// Viscosity solver selection
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum ViscositySolverType {
     /// XSPH velocity smoothing (artificial)
     Xsph,
@@ -412,6 +415,7 @@ impl UnifiedSolverConfig {
 
 /// Common fluid types
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum FluidType {
     Water,
     Oil,

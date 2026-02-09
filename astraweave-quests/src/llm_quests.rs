@@ -112,6 +112,7 @@ pub struct QuestObjective {
 
 /// Types of quest objectives
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ObjectiveType {
     Collect,
     Defeat,

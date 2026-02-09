@@ -5,6 +5,7 @@ use glam::Vec3;
 
 /// Ability types available to the player
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AbilityType {
     EchoDash,
     EchoShield,

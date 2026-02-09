@@ -147,7 +147,7 @@ impl TemplateProcessor {
     pub fn extract_variables(&self, template: &str) -> Vec<String> {
         // Simple regex extraction for Handlebars variables {{var}}
         // This is an approximation.
-        let re = regex::Regex::new(r"\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}").unwrap();
+        let re = regex::Regex::new(r"\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}").expect("valid regex");
         let mut variables = Vec::new();
 
         for cap in re.captures_iter(template) {

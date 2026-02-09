@@ -78,6 +78,7 @@ impl Default for Phi3Config {
 
 /// Device selection for Phi-3 inference
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Phi3Device {
     /// Auto-detect best device (GPU if available, else CPU)
     Auto,

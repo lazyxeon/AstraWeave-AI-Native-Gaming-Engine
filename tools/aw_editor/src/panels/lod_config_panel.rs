@@ -14,6 +14,7 @@ use crate::panels::Panel;
 
 /// LOD bias mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LodBiasMode {
     #[default]
     Auto,
@@ -111,6 +112,7 @@ pub struct LodGroup {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FadeMode {
     #[default]
     None,
@@ -233,6 +235,7 @@ pub struct LodGenerationSettings {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ReductionMethod {
     #[default]
     QuadricErrorMetric,
@@ -293,6 +296,7 @@ impl Default for LodGenerationSettings {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LodTab {
     #[default]
     Groups,
@@ -342,6 +346,7 @@ impl LodTab {
 
 /// Actions that can be triggered from the LOD configuration panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum LodConfigAction {
     // Tab navigation
     SetActiveTab(LodTab),

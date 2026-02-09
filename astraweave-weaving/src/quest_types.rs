@@ -174,6 +174,7 @@ impl TimeTrialObjective {
 
 /// Boss fight phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BossPhase {
     Phase1, // 100% - 66% health
     Phase2, // 66% - 33% health

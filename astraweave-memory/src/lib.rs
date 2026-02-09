@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Advanced memory management system for LLM-powered game entities
 //!
 //! This crate provides sophisticated memory management including:

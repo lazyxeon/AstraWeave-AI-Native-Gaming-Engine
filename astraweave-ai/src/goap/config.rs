@@ -60,6 +60,7 @@ pub struct SmoothingConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum SmoothingMethod {
     Ewma,
     Bayesian,
@@ -116,6 +117,7 @@ pub struct PersistenceConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum PersistenceFormat {
     Json,
     Bincode,
@@ -340,6 +342,8 @@ impl GOAPConfig {
 
 /// Configuration errors
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum ConfigError {
     ReadFailed(String),
     ParseFailed(String),

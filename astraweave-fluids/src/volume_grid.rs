@@ -11,6 +11,7 @@ use std::collections::VecDeque;
 /// Material types affecting water absorption and flow
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[repr(u8)]
+#[non_exhaustive]
 pub enum MaterialType {
     /// Empty space - water flows freely
     #[default]

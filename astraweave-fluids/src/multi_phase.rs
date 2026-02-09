@@ -40,6 +40,7 @@ pub const MIN_KERNEL_SUPPORT: f32 = 1e-6;
 
 /// Surface tension computation method
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SurfaceTensionModel {
     /// No surface tension
     None,
@@ -54,6 +55,7 @@ pub enum SurfaceTensionModel {
 
 /// Adhesion model for fluid-solid interaction
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AdhesionModel {
     /// No adhesion
     #[default]
@@ -154,10 +156,11 @@ impl MultiPhaseConfig {
     
     /// Create config for water with bubbles
     pub fn water_with_air() -> Self {
-        let mut config = Self::default();
-        config.phases = vec![FluidPhase::water(), FluidPhase::air()];
-        config.enable_air_phase = true;
-        config
+        Self {
+            phases: vec![FluidPhase::water(), FluidPhase::air()],
+            enable_air_phase: true,
+            ..Default::default()
+        }
     }
     
     /// Create config for oil-water separation
@@ -413,6 +416,7 @@ pub fn compute_color_field_curvature(
 
 /// Compute interface sharpening shift for multi-phase boundaries
 /// Based on Sun et al. 2019 δ⁺-SPH corrections
+#[allow(clippy::too_many_arguments)]
 pub fn compute_interface_shift(
     pos_i: [f32; 3],
     phase_i: u32,

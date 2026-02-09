@@ -19,6 +19,7 @@ use crate::panels::Panel;
 
 /// Actions emitted by the procedural filler panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum FillerAction {
     /// Request to generate scatter objects
     GenerateScatter {
@@ -64,6 +65,7 @@ pub enum FillerAction {
 
 /// Procedural filler operation mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FillerMode {
     #[default]
     ScatterFill,
@@ -147,6 +149,7 @@ impl FillerMode {
 
 /// Category of objects to scatter
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ScatterCategory {
     #[default]
     All,
@@ -249,6 +252,7 @@ impl ScatterCategory {
 
 /// Biome-based scatter presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BiomePreset {
     #[default]
     Custom,
@@ -390,6 +394,7 @@ impl BiomePreset {
 
 /// Pre-configured environment lighting/atmosphere presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum EnvironmentPreset {
     #[default]
     Custom,
@@ -630,6 +635,7 @@ impl EnvironmentPreset {
 
 /// Road generation style presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RoadPreset {
     #[default]
     Custom,

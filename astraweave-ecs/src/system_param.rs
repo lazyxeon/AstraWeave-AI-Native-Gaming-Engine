@@ -144,6 +144,9 @@ impl<'w, T: Component> Iterator for Query<'w, T> {
                 .get::<T>(entity)
                 .expect("BUG: entity should have component T in archetype");
             let component_ptr = component as *const T;
+            // SAFETY: We convert to raw pointer then back to extend the lifetime to 'w.
+            // This is safe because the World reference outlives the iterator ('w lifetime),
+            // and we only read from disjoint (entity, archetype) pairs.
             return Some((entity, unsafe { &*component_ptr }));
         }
     }
@@ -212,6 +215,10 @@ impl<'w, A: Component, B: Component> Iterator for Query2<'w, A, B> {
             let ptr_a = component_a as *const A;
             let ptr_b = component_b as *const B;
 
+            // SAFETY: Raw pointers extend component lifetimes to 'w. This is safe because:
+            // 1. World reference lives for 'w (borrowed in Query2::new)
+            // 2. No mutation occurs (both are shared references)
+            // 3. Each (entity, archetype) pair is visited exactly once
             return Some((entity, unsafe { &*ptr_a }, unsafe { &*ptr_b }));
         }
     }

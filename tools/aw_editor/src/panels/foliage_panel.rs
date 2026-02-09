@@ -14,6 +14,7 @@ use crate::panels::Panel;
 
 /// Foliage type category
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FoliageCategory {
     #[default]
     Grass,
@@ -155,6 +156,7 @@ impl Default for FoliageType {
 
 /// Brush tool type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BrushTool {
     #[default]
     Paint,
@@ -248,6 +250,7 @@ pub struct ProceduralRule {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DistributionType {
     #[default]
     Random,
@@ -333,6 +336,7 @@ impl Default for FoliageLayer {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FoliageTab {
     #[default]
     Paint,
@@ -390,6 +394,7 @@ impl FoliageTab {
 
 /// Actions that can be triggered from the foliage panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum FoliageAction {
     // Tab navigation
     SetActiveTab(FoliageTab),

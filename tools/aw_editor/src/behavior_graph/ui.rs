@@ -346,6 +346,7 @@ fn count_runtime_nodes(node: &BehaviorNode) -> usize {
             1 + children.iter().map(count_runtime_nodes).sum::<usize>()
         }
         BehaviorNode::Decorator(_, child) => 1 + count_runtime_nodes(child),
+        _ => 1, // Future node types count as 1
     }
 }
 

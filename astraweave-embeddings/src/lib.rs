@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 /*!
 # AstraWeave Embeddings
 
@@ -77,6 +78,7 @@ impl Default for EmbeddingConfig {
 
 /// Distance metrics for vector similarity
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum DistanceMetric {
     /// Cosine similarity (default for semantic search)
     Cosine,
@@ -139,6 +141,7 @@ pub struct Memory {
 
 /// Categories of game memories
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum MemoryCategory {
     /// Interactions with other entities
     Social,

@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 /// State value with deterministic hashing and extended comparison support
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum StateValue {
     Bool(bool),
     Int(i32),

@@ -13,6 +13,7 @@ use crate::panels::Panel;
 
 /// Navigation area type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum NavAreaType {
     #[default]
     Walkable,
@@ -167,6 +168,7 @@ pub struct NavLink {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum NavLinkType {
     #[default]
     Walk,
@@ -276,6 +278,7 @@ impl Default for NavMeshBakeSettings {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum NavigationTab {
     #[default]
     Mesh,
@@ -363,6 +366,7 @@ impl Default for NavDebugOptions {
 
 /// Actions that can be triggered from the navigation panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum NavigationAction {
     // Tab navigation
     SetActiveTab(NavigationTab),

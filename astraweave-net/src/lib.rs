@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! # AstraWeave Networking
 //!
 //! Snapshot-based networking for multiplayer games with delta compression.
@@ -14,8 +15,11 @@
 //! - Built-in server with `GameServer`
 //! - **TLS/SSL support** (enable with `tls` feature)
 
+pub mod error;
 #[cfg(feature = "tls")]
 pub mod tls;
+
+pub use error::{NetError, NetResult};
 
 use anyhow::Result;
 use astraweave_core::*;
@@ -204,6 +208,7 @@ impl Interest for FovLosInterest {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum InterestPolicy {
     Radius {
         radius: i32,
@@ -439,6 +444,7 @@ pub fn apply_delta(base: &mut Snapshot, delta: &Delta) {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
+#[non_exhaustive]
 pub enum Msg {
     ClientHello {
         name: String,
@@ -475,6 +481,7 @@ pub enum Msg {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ServerEvent {
     Snapshot(Snapshot),
     ForceSnapshot(Snapshot),

@@ -42,19 +42,6 @@ impl<E: Event> EventQueue<E> {
         self.events.iter()
     }
 
-    /// Remove events older than N frames
-    #[allow(dead_code)]
-    fn cleanup(&mut self, current_frame: u64, keep_frames: u64) {
-        while let Some(&frame) = self.frame_added.front() {
-            if current_frame.saturating_sub(frame) > keep_frames {
-                self.events.pop_front();
-                self.frame_added.pop_front();
-            } else {
-                break;
-            }
-        }
-    }
-
     fn len(&self) -> usize {
         self.events.len()
     }
@@ -76,6 +63,15 @@ pub struct Events {
 }
 
 impl Events {
+    /// Creates a new event registry with the default retention of 2 frames.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::Events;
+    ///
+    /// let events = Events::new();
+    /// ```
     pub fn new() -> Self {
         Self {
             queues: HashMap::new(),
@@ -89,7 +85,22 @@ impl Events {
         self
     }
 
-    /// Send an event
+    /// Send an event of type `E`.
+    ///
+    /// The event is queued and can be read by any [`EventReader<E>`] until
+    /// it is cleaned up after the configured retention period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use astraweave_ecs::{Event, Events};
+    ///
+    /// struct DamageEvent { amount: i32 }
+    /// impl Event for DamageEvent {}
+    ///
+    /// let mut events = Events::new();
+    /// events.send(DamageEvent { amount: 10 });
+    /// ```
     pub fn send<E: Event>(&mut self, event: E) {
         let queue = self
             .queues

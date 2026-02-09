@@ -71,6 +71,7 @@ impl Default for SummarizerConfig {
 
 /// Strategies for conversation summarization
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum SummaryStrategy {
     /// Extract key points and decisions
     KeyPoints,
@@ -172,13 +173,9 @@ impl ConversationSummarizer {
         let prompt = self.build_summary_prompt(&conversation_text, messages)?;
 
         // Generate summary using LLM
-        let summary_text = self
-            .llm_client
-            .complete(&prompt)
-            .await
-            .inspect_err(|_e| {
-                self.update_metrics_failed();
-            })?;
+        let summary_text = self.llm_client.complete(&prompt).await.inspect_err(|_e| {
+            self.update_metrics_failed();
+        })?;
 
         // Clean and validate summary
         let cleaned_summary = self.clean_summary(&summary_text);
@@ -832,16 +829,15 @@ mod tests {
         let summarizer = ConversationSummarizer::new(llm_client, config);
 
         // Test with preserved vs non-preserved messages
-        let preserved_msgs = vec![
-            Message::new_preserved(Role::User, "Critical info".to_string()),
-        ];
-        let normal_msgs = vec![
-            Message::new(Role::User, "Regular info".to_string()),
-        ];
+        let preserved_msgs = vec![Message::new_preserved(
+            Role::User,
+            "Critical info".to_string(),
+        )];
+        let normal_msgs = vec![Message::new(Role::User, "Regular info".to_string())];
 
         let preserved_importance = summarizer.calculate_importance(&preserved_msgs);
         let normal_importance = summarizer.calculate_importance(&normal_msgs);
-        
+
         // Preserved messages should have higher importance
         assert!(preserved_importance >= normal_importance);
     }
@@ -875,15 +871,13 @@ mod tests {
     fn test_common_word_detection_all_words() {
         // Test a sampling of common words from the list
         let common_words = [
-            "the", "and", "for", "are", "but", "not", "you", "all", "can", "had",
-            "her", "was", "one", "our", "out", "day", "get", "has", "him", "his",
-            "how", "its", "may", "new", "now", "old", "see", "two", "way", "who",
-            "boy", "did", "she", "use", "your", "said", "each", "make", "most",
-            "over", "some", "time", "very", "when", "come", "here", "just", "like",
-            "long", "many", "such", "take", "than", "them", "well", "were", "will",
-            "with", "have", "this", "that", "from", "they", "know", "want", "been",
-            "good", "much", "work", "life", "only", "think", "also", "back", "after",
-            "first", "year", "where",
+            "the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was",
+            "one", "our", "out", "day", "get", "has", "him", "his", "how", "its", "may", "new",
+            "now", "old", "see", "two", "way", "who", "boy", "did", "she", "use", "your", "said",
+            "each", "make", "most", "over", "some", "time", "very", "when", "come", "here", "just",
+            "like", "long", "many", "such", "take", "than", "them", "well", "were", "will", "with",
+            "have", "this", "that", "from", "they", "know", "want", "been", "good", "much", "work",
+            "life", "only", "think", "also", "back", "after", "first", "year", "where",
         ];
 
         for word in common_words {
@@ -1012,11 +1006,17 @@ mod tests {
         let summarizer = ConversationSummarizer::new(llm_client, config);
 
         let messages = vec![
-            Message::new(Role::User, "programming programming programming coding".to_string()),
-            Message::new(Role::Assistant, "programming is great for coding".to_string()),
+            Message::new(
+                Role::User,
+                "programming programming programming coding".to_string(),
+            ),
+            Message::new(
+                Role::Assistant,
+                "programming is great for coding".to_string(),
+            ),
         ];
         let topics = summarizer.extract_simple_topics(&messages);
-        
+
         // "programming" appears 4 times, should be first
         if !topics.is_empty() {
             // Most frequent word should be near the top
@@ -1045,7 +1045,9 @@ mod tests {
         let summarizer = ConversationSummarizer::new(llm_client, config);
 
         let messages: Vec<Message> = vec![];
-        let prompt = summarizer.build_summary_prompt("test conversation", &messages).unwrap();
+        let prompt = summarizer
+            .build_summary_prompt("test conversation", &messages)
+            .unwrap();
         assert!(prompt.contains("key points"));
         assert!(prompt.contains("test conversation"));
     }
@@ -1082,7 +1084,9 @@ mod tests {
         let summarizer = ConversationSummarizer::new(llm_client, config);
 
         let messages: Vec<Message> = vec![];
-        let prompt = summarizer.build_summary_prompt("conversation text", &messages).unwrap();
+        let prompt = summarizer
+            .build_summary_prompt("conversation text", &messages)
+            .unwrap();
         assert!(prompt.contains("Custom instruction here"));
         assert!(prompt.contains("conversation text"));
     }
@@ -1234,9 +1238,10 @@ mod tests {
         let config = SummarizerConfig::default();
         let summarizer = ConversationSummarizer::new(llm_client, config);
 
-        let messages = vec![
-            Message::new(Role::User, "Let's discuss programming".to_string()),
-        ];
+        let messages = vec![Message::new(
+            Role::User,
+            "Let's discuss programming".to_string(),
+        )];
 
         // This will use the MockLlm which returns a simple response
         let result = summarizer.extract_topics(&messages).await;

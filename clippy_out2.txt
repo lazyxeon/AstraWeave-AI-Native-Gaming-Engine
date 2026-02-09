@@ -1,0 +1,1156 @@
+    Blocking waiting for file lock on build directory
+    Checking astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+    Checking astraweave-nav v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+    Checking astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+    Checking astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+    Checking astraweave-input v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+    Checking astraweave-cinematics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-cinematics)
+    Checking asset_signing v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\asset_signing)
+    Checking astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+    Checking astraweave-embeddings v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-embeddings)
+   Compiling astract-macro v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\crates\astract\astract-macro)
+    Checking aw-net-proto v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\net\aw-net-proto)
+    Checking aw-save v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\persistence\aw-save)
+    Checking astraweave-pcg v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-pcg)
+    Checking astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+    Checking astraweave-observability v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+    Checking astraweave-profiling v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-profiling)
+    Checking astraweave-weaving v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-weaving)
+    Checking astraweave-asset-pipeline v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset-pipeline)
+    Checking aw_debug v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_debug)
+    Checking astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+    Checking astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+    Checking aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
+    Checking astraweave-secrets v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-secrets)
+    Checking astraweave-assets v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\astraweave-assets)
+    Checking astract v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\crates\astract)
+    Checking aw_headless v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_headless)
+    Checking astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+    Checking astraweave-math v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-math)
+    Checking aw_release v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_release)
+    Checking world_partition_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\world_partition_demo)
+    Checking advanced_content_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\advanced_content_demo)
+    Checking veilweaver_quest_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\veilweaver_quest_demo)
+    Checking astraweave-persistence-player v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\crates\astraweave-persistence-player)
+    Checking astract_gallery v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\astract_gallery)
+    Checking astraweave-blend v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\crates\astraweave-blend)
+    Checking profiling_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\profiling_demo)
+    Checking astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+    Checking astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+    Checking astraweave-author v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-author)
+    Checking astraweave-net v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net)
+    Checking astraweave-net-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net-ecs)
+    Checking rhai_authoring v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\rhai_authoring)
+    Checking save_integration v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\save_integration)
+    Checking weaving_pcg_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\weaving_pcg_demo)
+    Checking astraweave-sdk v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-sdk)
+    Checking debug_overlay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\debug_overlay)
+    Checking aw-net-server v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\net\aw-net-server)
+    Checking coop_client v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\coop_client)
+    Checking coop_server v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\coop_server)
+    Checking astraweave-steam v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-steam)
+    Checking greybox_generator v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\greybox_generator)
+    Checking astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+    Checking astraweave-audio v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio)
+    Checking astraweave-ui v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui)
+    Checking veilweaver_slice_runtime v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\veilweaver_slice_runtime)
+    Checking crafting_combat_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\crafting_combat_demo)
+    Checking combat_physics_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\combat_physics_demo)
+    Checking quest_dialogue_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\quest_dialogue_demo)
+    Checking astraweave-npc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-npc)
+    Checking dialogue_voice_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\dialogue_voice_demo)
+    Checking dialogue_audio_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\dialogue_audio_cli)
+warning: the loop variable `i` is used to index `point`
+   --> astraweave-fluids\src\editor.rs:358:18
+    |
+358 |         for i in 0..3 {
+    |                  ^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+    = note: `-W clippy::needless-range-loop` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::needless_range_loop)]`
+help: consider using an iterator and enumerate()
+    |
+358 -         for i in 0..3 {
+358 +         for (i, <item>) in point.iter().enumerate() {
+    |
+
+    Checking veilweaver_slice_loader v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\veilweaver_slice_loader)
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+    --> astraweave-fluids\src\editor.rs:3329:17
+     |
+3329 |         cost += (self.max_particles / 10_000) as u32 * 5;
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `(self.max_particles / 10_000)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast
+     = note: `-W clippy::unnecessary-cast` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::unnecessary_cast)]`
+
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+    --> astraweave-fluids\src\editor.rs:3338:44
+     |
+3338 |         if self.god_rays.enabled { cost += (self.god_rays.samples / 8) as u32; }
+     |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `(self.god_rays.samples / 8)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast
+
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+    --> astraweave-fluids\src\editor.rs:3339:40
+     |
+3339 |         if self.foam.enabled { cost += (self.foam.max_particles / 5000) as u32 * 2; }
+     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `(self.foam.max_particles / 5000)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast
+
+warning: using `clone` on type `WaterBodyPreset` which implements the `Copy` trait
+    --> astraweave-fluids\src\editor.rs:3427:34
+     |
+3427 |             preset: if t < 0.5 { self.preset.clone() } else { other.preset.clone() },
+     |                                  ^^^^^^^^^^^^^^^^^^^ help: try removing the `clone` call: `self.preset`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+     = note: `-W clippy::clone-on-copy` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::clone_on_copy)]`
+
+warning: using `clone` on type `WaterBodyPreset` which implements the `Copy` trait
+    --> astraweave-fluids\src\editor.rs:3427:63
+     |
+3427 |             preset: if t < 0.5 { self.preset.clone() } else { other.preset.clone() },
+     |                                                               ^^^^^^^^^^^^^^^^^^^^ help: try removing the `clone` call: `other.preset`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+
+    Checking nav_physics_bridge v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\nav_physics_bridge)
+    Checking aw_save_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_save_cli)
+warning: casting to the same type is unnecessary (`u64` -> `u64`)
+    --> astraweave-fluids\src\optimization.rs:1823:51
+     |
+1823 |             let time_us = metrics.total_time_us / metrics.frames_processed as u64;
+     |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `metrics.frames_processed`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\research.rs:674:9
+    |
+674 |         params.particle_count = particle_count;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchSimParams { particle_count: particle_count, max_iterations: self.max_iterations, min_iterations: self.min_iterations, density_error_threshold: self.density_error_threshold, warm_start_factor: self.warm_start_factor, vorticity_epsilon: self.vorticity_epsilon, solver_type: match self.solver {
+                  SolverType::PBD => 0,
+                  SolverType::PCISPH => 1,
+                  SolverType::DFSPH => 2,
+                  SolverType::IISPH => 3,
+              }, kernel_type: match self.kernel_type {
+                  KernelType::CubicSpline => 0,
+                  KernelType::WendlandC2 => 1,
+                  KernelType::WendlandC4 => 2,
+                  KernelType::WendlandC6 => 3,
+              }, enable_shifting: u32::from(self.enable_particle_shifting), enable_vorticity: u32::from(self.enable_vorticity_confinement), enable_warm_start: u32::from(self.enable_warm_start), ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\research.rs:672:9
+    |
+672 |         let mut params = ResearchSimParams::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+    = note: `-W clippy::field-reassign-with-default` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::field_reassign_with_default)]`
+
+warning: manual implementation of an assign operation
+   --> astraweave-fluids\src\viscosity.rs:550:13
+    |
+550 |             mu = mu * (nn_mu / self.config.non_newtonian_model.viscosity_0);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace it with: `mu *= (nn_mu / self.config.non_newtonian_model.viscosity_0)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assign_op_pattern
+    = note: `-W clippy::assign-op-pattern` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::assign_op_pattern)]`
+
+warning: the loop variable `b` is used to index `grad_dir`
+   --> astraweave-fluids\src\viscosity.rs:903:22
+    |
+903 |             for b in 0..3 {
+    |                      ^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+    |
+903 -             for b in 0..3 {
+903 +             for (b, <item>) in grad_dir.iter().enumerate() {
+    |
+
+warning: the loop variable `a` is only used to index `d`
+   --> astraweave-fluids\src\viscosity.rs:919:14
+    |
+919 |     for a in 0..3 {
+    |              ^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator
+    |
+919 -     for a in 0..3 {
+919 +     for <item> in &d {
+    |
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\multi_phase.rs:158:9
+    |
+158 |         config.phases = vec![FluidPhase::water(), FluidPhase::air()];
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `multi_phase::MultiPhaseConfig { phases: vec![FluidPhase::water(), FluidPhase::air()], enable_air_phase: true, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\multi_phase.rs:157:9
+    |
+157 |         let mut config = Self::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+warning: this function has too many arguments (8/7)
+   --> astraweave-fluids\src\multi_phase.rs:416:1
+    |
+416 | / pub fn compute_interface_shift(
+417 | |     pos_i: [f32; 3],
+418 | |     phase_i: u32,
+419 | |     neighbors: &[(usize, u32)], // (neighbor_idx, neighbor_phase)
+...   |
+424 | |     strength: f32,
+425 | | ) -> [f32; 3] {
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+    = note: `-W clippy::too-many-arguments` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::too_many_arguments)]`
+
+    Checking aw-net-client v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\net\aw-net-client)
+    Checking cinematics_timeline_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\cinematics_timeline_demo)
+warning: this function has too many arguments (8/7)
+   --> astraweave-fluids\src\turbulence.rs:321:1
+    |
+321 | / pub fn compute_vorticity_confinement(
+322 | |     particle_idx: usize,
+323 | |     positions: &[[f32; 3]],
+324 | |     vorticities: &[[f32; 3]],
+...   |
+329 | |     config: &VorticityConfinementConfig,
+330 | | ) -> [f32; 3] {
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+   --> astraweave-fluids\src\turbulence.rs:422:1
+    |
+422 | / pub fn compute_particle_torque(
+423 | |     particle_idx: usize,
+424 | |     positions: &[[f32; 3]],
+425 | |     velocities: &[[f32; 3]],
+...   |
+431 | |     _config: &MicropolarConfig,
+432 | | ) -> [f32; 3] {
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+   --> astraweave-fluids\src\turbulence.rs:518:1
+    |
+518 | / pub fn spin_velocity_correction(
+519 | |     particle_idx: usize,
+520 | |     positions: &[[f32; 3]],
+521 | |     spins: &[ParticleSpin],
+...   |
+526 | |     config: &MicropolarConfig,
+527 | | ) -> [f32; 3] {
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `i` is used to index `vorticities`
+   --> astraweave-fluids\src\turbulence.rs:627:18
+    |
+627 |         for i in 0..n {
+    |                  ^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+    |
+627 -         for i in 0..n {
+627 +         for (i, <item>) in vorticities.iter_mut().enumerate().take(n) {
+    |
+
+warning: the loop variable `i` is used to index `forces`
+   --> astraweave-fluids\src\turbulence.rs:648:18
+    |
+648 |         for i in 0..n {
+    |                  ^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+    |
+648 -         for i in 0..n {
+648 +         for (i, <item>) in forces.iter_mut().enumerate().take(n) {
+    |
+
+warning: this function has too many arguments (9/7)
+  --> astraweave-fluids\src\validation.rs:53:5
+   |
+53 | /     pub fn compute(
+54 | |         densities: &[f32],
+55 | |         velocities: &[[f32; 3]],
+56 | |         pressures: &[f32],
+...  |
+62 | |         time: f32,
+63 | |     ) -> Self {
+   | |_____________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `i` is used to index `distances`
+    --> astraweave-fluids\src\simd_ops.rs:1047:14
+     |
+1047 |     for i in 0..n {
+     |              ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+1047 -     for i in 0..n {
+1047 +     for (i, <item>) in distances.iter_mut().enumerate().take(n) {
+     |
+
+warning: the loop variable `i` is used to index `distances_sq`
+    --> astraweave-fluids\src\simd_ops.rs:1069:14
+     |
+1069 |     for i in 0..n {
+     |              ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+1069 -     for i in 0..n {
+1069 +     for (i, <item>) in distances_sq.iter_mut().enumerate().take(n) {
+     |
+
+warning: the loop variable `i` is used to index `values`
+    --> astraweave-fluids\src\simd_ops.rs:1154:14
+     |
+1154 |     for i in 0..n {
+     |              ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+1154 -     for i in 0..n {
+1154 +     for (i, <item>) in values.iter_mut().enumerate().take(n) {
+     |
+
+warning: the loop variable `i` is used to index `neighbor_positions`
+    --> astraweave-fluids\src\simd_ops.rs:1311:14
+     |
+1311 |     for i in 0..n {
+     |              ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+1311 -     for i in 0..n {
+1311 +     for (i, <item>) in neighbor_positions.iter().enumerate().take(n) {
+     |
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:1409:1
+     |
+1409 | / pub fn compute_viscosity_force_optimized(
+1410 | |     velocity_i: [f32; 3],
+1411 | |     neighbor_velocities: &[[f32; 3]],
+1412 | |     neighbor_densities: &[f32],
+...    |
+1417 | |     count: usize,
+1418 | | ) -> [f32; 3] {
+     | |_____________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `i` is used to index `cell_counts`
+    --> astraweave-fluids\src\simd_ops.rs:1975:18
+     |
+1975 |         for i in 0..self.table_size {
+     |                  ^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+1975 -         for i in 0..self.table_size {
+1975 +         for (i, <item>) in cell_counts.iter_mut().enumerate().take(self.table_size) {
+     |
+
+warning: this function has too many arguments (9/7)
+    --> astraweave-fluids\src\simd_ops.rs:2153:1
+     |
+2153 | / pub fn compute_forces_spatial(
+2154 | |     positions: &[[f32; 3]],
+2155 | |     velocities: &[[f32; 3]],
+2156 | |     densities: &[f32],
+...    |
+2162 | |     forces: &mut [[f32; 3]],
+2163 | | ) {
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `i` is used to index `contributions`
+    --> astraweave-fluids\src\simd_ops.rs:2322:22
+     |
+2322 |             for i in 0..4 {
+     |                      ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+2322 -             for i in 0..4 {
+2322 +             for (i, <item>) in contributions.iter_mut().enumerate() {
+     |
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:2422:1
+     |
+2422 | / pub fn compute_forces_tiled(
+2423 | |     positions: &[[f32; 3]],
+2424 | |     velocities: &[[f32; 3]],
+2425 | |     densities: &[f32],
+...    |
+2430 | |     forces: &mut [[f32; 3]],
+2431 | | ) {
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `k` is used to index `local_sum`
+    --> astraweave-fluids\src\simd_ops.rs:2533:18
+     |
+2533 |         for k in 0..8 {
+     |                  ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+2533 -         for k in 0..8 {
+2533 +         for (k, <item>) in local_sum.iter_mut().enumerate() {
+     |
+
+warning: the loop variable `i` is used to index `distances`
+    --> astraweave-fluids\src\simd_ops.rs:2770:18
+     |
+2770 |         for i in 0..self.count {
+     |                  ^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+2770 -         for i in 0..self.count {
+2770 +         for (i, <item>) in distances.iter_mut().enumerate().take(self.count) {
+     |
+
+warning: the loop variable `i` is used to index `kernels`
+    --> astraweave-fluids\src\simd_ops.rs:2803:18
+     |
+2803 |         for i in 0..self.count {
+     |                  ^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+2803 -         for i in 0..self.count {
+2803 +         for (i, <item>) in kernels.iter().enumerate().take(self.count) {
+     |
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:2942:5
+     |
+2942 | /     pub fn execute(
+2943 | |         &self,
+2944 | |         positions: &mut [[f32; 3]],
+2945 | |         velocities: &mut [[f32; 3]],
+...    |
+2950 | |         grid: &mut SpatialHashGrid,
+2951 | |     ) {
+     | |_____^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+    Checking ui_menu_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ui_menu_demo)
+warning: the loop variable `i` is used to index `positions`
+    --> astraweave-fluids\src\simd_ops.rs:3389:18
+     |
+3389 |         for i in 0..n {
+     |                  ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+3389 -         for i in 0..n {
+3389 +         for (i, <item>) in positions.iter_mut().enumerate().take(n) {
+     |
+
+warning: this function has too many arguments (9/7)
+    --> astraweave-fluids\src\simd_ops.rs:3451:1
+     |
+3451 | / pub fn predict_density_change(
+3452 | |     pos_i: [f32; 3],
+3453 | |     vel_i: [f32; 3],
+3454 | |     neighbors_pos: &[[f32; 3]],
+...    |
+3460 | |     dt: f32,
+3461 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+    --> astraweave-fluids\src\simd_ops.rs:3719:1
+     |
+3719 | / pub fn compute_artificial_viscosity(
+3720 | |     pos_i: [f32; 3],
+3721 | |     pos_j: [f32; 3],
+3722 | |     vel_i: [f32; 3],
+...    |
+3728 | |     c_sound: f32,
+3729 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `j` is only used to index `positions`
+    --> astraweave-fluids\src\simd_ops.rs:3834:18
+     |
+3834 |         for j in 1..positions.len() {
+     |                  ^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator
+     |
+3834 -         for j in 1..positions.len() {
+3834 +         for <item> in positions.iter().skip(1) {
+     |
+
+warning: the loop variable `i` is used to index `densities`
+    --> astraweave-fluids\src\simd_ops.rs:4310:18
+     |
+4310 |         for i in 0..densities.len() {
+     |                  ^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+4310 -         for i in 0..densities.len() {
+4310 +         for (i, <item>) in densities.iter().enumerate() {
+     |
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:4554:1
+     |
+4554 | / pub fn compute_akinci_boundary_force(
+4555 | |     pos_fluid: [f32; 3],
+4556 | |     _vel_fluid: [f32; 3],
+4557 | |     pressure_fluid: f32,
+...    |
+4562 | |     h: f32,
+4563 | | ) -> [f32; 3] {
+     | |_____________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+    Checking aw_build v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_build)
+warning: manual `!Range::contains` implementation
+    --> astraweave-fluids\src\simd_ops.rs:5131:8
+     |
+5131 |     if q >= 3.0 || q < 1e-8 {
+     |        ^^^^^^^^^^^^^^^^^^^^ help: use: `!(1e-8..3.0).contains(&q)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+     = note: `-W clippy::manual-range-contains` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::manual_range_contains)]`
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:6746:1
+     |
+6746 | / pub fn jacobi_pressure_iteration(
+6747 | |     pressures: &mut [f32],
+6748 | |     divergences: &[f32],
+6749 | |     positions: &[[f32; 3]],
+...    |
+6754 | |     omega: f32,
+6755 | | ) {
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+    --> astraweave-fluids\src\simd_ops.rs:6862:1
+     |
+6862 | / pub fn apply_pressure_gradient(
+6863 | |     particle_idx: usize,
+6864 | |     velocity: &mut [f32; 3],
+6865 | |     positions: &[[f32; 3]],
+...    |
+6871 | |     dt: f32,
+6872 | | ) {
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this `impl` can be derived
+    --> astraweave-fluids\src\simd_ops.rs:6928:1
+     |
+6928 | / impl Default for LevelSetCellState {
+6929 | |     fn default() -> Self {
+6930 | |         LevelSetCellState::Far
+6931 | |     }
+6932 | | }
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls
+     = note: `-W clippy::derivable-impls` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::derivable_impls)]`
+help: replace the manual implementation with a derive attribute and mark the default variant
+     |
+6919 + #[derive(Default)]
+6920 ~ pub enum LevelSetCellState {
+6921 |     /// Far from surface (outside narrow band)
+6922 ~     #[default]
+6923 ~     Far,
+     |
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:6966:1
+     |
+6966 | / pub fn fast_marching_update(
+6967 | |     phi_xm: f32, phi_xp: f32,
+6968 | |     phi_ym: f32, phi_yp: f32,
+6969 | |     phi_zm: f32, phi_zp: f32,
+6970 | |     dx: f32,
+6971 | |     sign: f32,  // Sign of original phi
+6972 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+    --> astraweave-fluids\src\simd_ops.rs:7025:48
+     |
+7025 | ...   let (x_range, _y_range, _z_range): (Box<dyn Iterator<Item=usize>>, Box<dyn Iterator<Item=usize>>, Box<dyn Iterator<Item=usize>>) = ...
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+     = note: `-W clippy::type-complexity` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::type_complexity)]`
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:7220:1
+     |
+7220 | / pub fn apic_p2g_transfer(
+7221 | |     particle_pos: [f32; 3],
+7222 | |     particle_vel: [f32; 3],
+7223 | |     particle_mass: f32,
+...    |
+7228 | |     grid: &mut [MpmGridCell],
+7229 | | ) {
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (10/7)
+    --> astraweave-fluids\src\simd_ops.rs:7659:1
+     |
+7659 | / pub fn compute_fluid_solid_force(
+7660 | |     fluid_pos: [f32; 3],
+7661 | |     fluid_vel: [f32; 3],
+7662 | |     fluid_density: f32,
+...    |
+7669 | |     h: f32,
+7670 | | ) -> [f32; 3] {
+     | |_____________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+    --> astraweave-fluids\src\simd_ops.rs:8161:1
+     |
+8161 | / pub fn apply_density_diffusion(
+8162 | |     particle_idx: usize,
+8163 | |     positions: &[[f32; 3]],
+8164 | |     densities: &[f32],
+...    |
+8170 | |     c_s: f32,  // Speed of sound
+8171 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:8335:1
+     |
+8335 | / pub fn iter_cell_neighbors<F>(
+8336 | |     particle_idx: usize,
+8337 | |     positions: &[[f32; 3]],
+8338 | |     config: &GpuCellListConfig,
+...    |
+8343 | |     mut callback: F,
+8344 | | ) where
+     | |_^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:8586:1
+     |
+8586 | / pub fn compute_heat_transfer(
+8587 | |     particle_idx: usize,
+8588 | |     temperatures: &[f32],
+8589 | |     positions: &[[f32; 3]],
+...    |
+8594 | |     h: f32,
+8595 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: the loop variable `i` is used to index `l`
+    --> astraweave-fluids\src\simd_ops.rs:8899:14
+     |
+8899 |     for i in 0..3 {
+     |              ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+8899 -     for i in 0..3 {
+8899 +     for (i, <item>) in l.iter().enumerate().take(3) {
+     |
+
+warning: the loop variable `k` is used to index `f`
+    --> astraweave-fluids\src\simd_ops.rs:8902:22
+     |
+8902 |             for k in 0..3 {
+     |                      ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+     |
+8902 -             for k in 0..3 {
+8902 +             for (k, <item>) in f.iter().enumerate() {
+     |
+
+warning: this function has too many arguments (10/7)
+    --> astraweave-fluids\src\simd_ops.rs:9295:1
+     |
+9295 | / pub fn build_viscosity_matrix_entry(
+9296 | |     _i: usize,
+9297 | |     _j: usize,
+9298 | |     r: f32,
+...    |
+9305 | |     theta: f32,
+9306 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: returning the result of a `let` binding from a block
+    --> astraweave-fluids\src\simd_ops.rs:9309:5
+     |
+9308 |     let coeff = -theta * dt * viscosity * mass_j * grad_w / (rho_i * rho_j * (r + 0.01));
+     |     ------------------------------------------------------------------------------------- unnecessary `let` binding
+9309 |     coeff
+     |     ^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#let_and_return
+     = note: `-W clippy::let-and-return` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::let_and_return)]`
+help: return the expression directly
+     |
+9308 ~     
+9309 ~     -theta * dt * viscosity * mass_j * grad_w / (rho_i * rho_j * (r + 0.01))
+     |
+
+warning: approximate value of `f{32, 64}::consts::FRAC_PI_6` found
+    --> astraweave-fluids\src\simd_ops.rs:9647:29
+     |
+9647 |             friction_angle: 0.5236,      // ~30 degrees
+     |                             ^^^^^^
+     |
+     = help: consider using the constant directly
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#approx_constant
+     = note: `-W clippy::approx-constant` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::approx_constant)]`
+
+warning: the loop variable `i` is only used to index `strain_rate`
+    --> astraweave-fluids\src\simd_ops.rs:9805:14
+     |
+9805 |     for i in 0..3 {
+     |              ^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator
+     |
+9805 -     for i in 0..3 {
+9805 +     for <item> in strain_rate.iter().take(3) {
+     |
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\simd_ops.rs:9976:1
+     |
+9976 | / pub fn compute_adaptive_time_step(
+9977 | |     max_velocity: f32,
+9978 | |     max_acceleration: f32,
+9979 | |     viscosity: f32,
+...    |
+9984 | |     config: &TimeStepConfig,
+9985 | | ) -> f32 {
+     | |________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: float has excessive precision
+     --> astraweave-fluids\src\simd_ops.rs:14261:33
+      |
+14261 |     const SQRT_2_OVER_PI: f32 = 0.7978845608;
+      |                                 ^^^^^^^^^^^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#excessive_precision
+      = note: `-W clippy::excessive-precision` implied by `-W clippy::all`
+      = help: to override `-W clippy::all` add `#[allow(clippy::excessive_precision)]`
+help: consider changing the type or truncating it to
+      |
+14261 -     const SQRT_2_OVER_PI: f32 = 0.7978845608;
+14261 +     const SQRT_2_OVER_PI: f32 = 0.797_884_6;
+      |
+
+    Checking unified_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\unified_showcase)
+    Checking ollama_probe_example v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ollama_probe)
+warning: this function has too many arguments (10/7)
+     --> astraweave-fluids\src\simd_ops.rs:16397:1
+      |
+16397 | / pub fn compute_ignition_delay_time(
+16398 | |     pre_factor: f32,
+16399 | |     activation_energy: f32,
+16400 | |     gas_constant: f32,
+...     |
+16407 | |     pressure_exp: f32,
+16408 | | ) -> f32 {
+      | |________^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+     --> astraweave-fluids\src\simd_ops.rs:16466:1
+      |
+16466 | / pub fn compute_lighthill_stress_tensor(
+16467 | |     density: f32,
+16468 | |     vel_i: f32,
+16469 | |     vel_j: f32,
+...     |
+16474 | |     is_diagonal: bool,
+16475 | | ) -> f32 {
+      | |________^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: manual `!Range::contains` implementation
+     --> astraweave-fluids\src\simd_ops.rs:18115:12
+      |
+18115 |         if q >= 1.0 || q < 1e-8 {
+      |            ^^^^^^^^^^^^^^^^^^^^ help: use: `!(1e-8..1.0).contains(&q)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+warning: this function has too many arguments (8/7)
+     --> astraweave-fluids\src\simd_ops.rs:18272:1
+      |
+18272 | / pub fn compute_delta_sph_diffusion(
+18273 | |     density_i: f32,
+18274 | |     neighbor_densities: &[f32],
+18275 | |     distances: &[f32],
+...     |
+18280 | |     h: f32,
+18281 | | ) -> f32 {
+      | |________^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (8/7)
+     --> astraweave-fluids\src\simd_ops.rs:18324:1
+      |
+18324 | / pub fn compute_xsph_position_correction(
+18325 | |     particle_velocity: [f32; 3],
+18326 | |     neighbor_velocities: &[[f32; 3]],
+18327 | |     kernel_values: &[f32],
+...     |
+18332 | |     dt: f32,
+18333 | | ) -> [f32; 3] {
+      | |_____________^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: this function has too many arguments (9/7)
+     --> astraweave-fluids\src\simd_ops.rs:19907:1
+      |
+19907 | / pub fn compute_morris_viscosity_force(
+19908 | |     velocity_i: [f32; 3],
+19909 | |     neighbor_velocities: &[[f32; 3]],
+19910 | |     neighbor_masses: &[f32],
+...     |
+19916 | |     viscosity: f32,
+19917 | | ) -> [f32; 3] {
+      | |_____________^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: manual implementation of `Option::map`
+    --> astraweave-fluids\src\lib.rs:2101:26
+     |
+2101 |           let lod_result = if let Some(ref mut lod) = self.lod_manager {
+     |  __________________________^
+2102 | |             Some(lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms))
+2103 | |         } else {
+2104 | |             None
+2105 | |         };
+     | |_________^ help: try: `self.lod_manager.as_mut().map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms))`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_map
+     = note: `-W clippy::manual-map` implied by `-W clippy::all`
+     = help: to override `-W clippy::all` add `#[allow(clippy::manual_map)]`
+
+warning: this function has too many arguments (8/7)
+    --> astraweave-fluids\src\lib.rs:2127:5
+     |
+2127 | /     pub fn step_with_budget(
+2128 | |         &mut self,
+2129 | |         system: &mut FluidSystem,
+2130 | |         device: &wgpu::Device,
+...    |
+2135 | |         camera_position: [f32; 3],
+2136 | |     ) -> OptimizedStepResult {
+     | |____________________________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+
+warning: manual implementation of `Option::map`
+    --> astraweave-fluids\src\lib.rs:2151:26
+     |
+2151 |           let lod_result = if let Some(ref mut lod) = self.lod_manager {
+     |  __________________________^
+2152 | |             Some(lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms))
+2153 | |         } else {
+2154 | |             None
+2155 | |         };
+     | |_________^ help: try: `self.lod_manager.as_mut().map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms))`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_map
+
+warning: returning the result of a `let` binding from a block
+    --> astraweave-fluids\src\lib.rs:2322:9
+     |
+2320 |         let elapsed = self.elapsed_ms();
+     |         -------------------------------- unnecessary `let` binding
+2321 |         // Drop will handle recording
+2322 |         elapsed
+     |         ^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#let_and_return
+help: return the expression directly
+     |
+2320 ~         
+2321 |         // Drop will handle recording
+2322 ~         self.elapsed_ms()
+     |
+
+    Checking ollama_probe v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\ollama_probe)
+warning: `astraweave-fluids` (lib) generated 67 warnings (run `cargo clippy --fix --lib -p astraweave-fluids` to apply 15 suggestions)
+    Checking astraweave-ai v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+    Checking astraweave-prompts v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+    Checking astraweave-context v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+    Checking astraweave-llm-eval v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm-eval)
+    Checking llm_streaming_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_streaming_demo)
+    Checking phi3_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\phi3_demo)
+    Checking astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+    Checking llm_toolcall v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_toolcall)
+warning: this `impl` can be derived
+   --> astraweave-ai\src\ai_arbiter.rs:115:1
+    |
+115 | / impl Default for AIControlMode {
+116 | |     fn default() -> Self {
+117 | |         AIControlMode::GOAP
+118 | |     }
+119 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls
+    = note: `-W clippy::derivable-impls` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::derivable_impls)]`
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+86  + #[derive(Default)]
+87  ~ pub enum AIControlMode {
+88  |     /// GOAP provides instant tactical decisions (5-30 ┬╡s).
+89  |     /// This is the default mode and fallback when LLM plans are exhausted.
+90  ~     #[default]
+91  ~     GOAP,
+    |
+
+warning: `astraweave-ai` (lib) generated 1 warning (run `cargo clippy --fix --lib -p astraweave-ai` to apply 1 suggestion)
+    Checking astraweave-security v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-security)
+    Checking astraweave-ipc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ipc)
+    Checking ecs_ai_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ecs_ai_showcase)
+    Checking orchestrator_async_tick v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\orchestrator_async_tick)
+    Checking core_loop_goap_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\core_loop_goap_demo)
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+    Checking core_loop_bt_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\core_loop_bt_demo)
+    Checking ecs_ai_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ecs_ai_demo)
+    Checking ipc_loopback v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ipc_loopback)
+    Checking astraweave-scripting v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scripting)
+    Checking aw_texture_gen v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_texture_gen)
+    Checking astraweave-rag v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-rag)
+    Checking aw_demo_builder v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_demo_builder)
+    Checking scripting_advanced_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\scripting_advanced_demo)
+    Checking astraweave-memory v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-memory)
+    Checking astraweave-director v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director)
+    Checking astraweave-quests v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-quests)
+    Checking astraweave-coordination v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-coordination)
+warning: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`
+   --> astraweave-render\src\asset_index.rs:124:5
+    |
+124 | /     pub fn from_str(text: &str) -> Result<Self> {
+125 | |         let idx: Self = toml::from_str(text).context("parsing asset_index.toml")?;
+126 | |         Ok(idx)
+127 | |     }
+    | |_____^
+    |
+    = help: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait
+    = note: `-W clippy::should-implement-trait` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::should_implement_trait)]`
+
+warning: `astraweave-render` (lib) generated 1 warning
+    Checking shadow_csm_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\shadow_csm_demo)
+    Checking navmesh_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\navmesh_demo)
+    Checking physics_demo3d v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\physics_demo3d)
+    Checking biome_gpu_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\biome_gpu_demo)
+    Checking weaving_playground v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\weaving_playground)
+    Checking phase_director v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\phase_director)
+    Checking veilweaver_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\veilweaver_demo)
+    Checking adaptive_boss v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\adaptive_boss)
+    Checking ui_controls_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ui_controls_demo)
+    Checking skinning_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\skinning_demo)
+    Checking debug_toolkit_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\debug_toolkit_demo)
+    Checking visual_3d v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\visual_3d)
+    Checking audio_spatial_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\audio_spatial_demo)
+    Checking renderer_integration_test v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\renderer_integration_test)
+    Checking biome_transition_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\biome_transition_demo)
+    Checking npc_town_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\npc_town_demo)
+    Checking cutscene_render_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\cutscene_render_demo)
+    Checking astraweave-persona v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-persona)
+    Checking astraweave-persistence-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-persistence-ecs)
+    Checking companion_profile v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\companion_profile)
+    Checking biome_showcase v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\biome_showcase)
+    Checking terrain_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\terrain_demo)
+    Checking astraweave-stress-test v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-stress-test)
+    Checking astraweave-dialogue v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-dialogue)
+    Checking persona_loader v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\persona_loader)
+    Checking llm_integration v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_integration)
+    Checking aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+    Checking llm_comprehensive_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_comprehensive_demo)
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> tools\aw_editor\src\panels\graph_panel.rs:143:51
+    |
+143 |         let max_depth = Self::calculate_max_depth(&nodes, &edges);
+    |                                                   ^^^^^^ help: change this to: `nodes`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrow
+    = note: `-W clippy::needless-borrow` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> tools\aw_editor\src\panels\graph_panel.rs:143:59
+    |
+143 |         let max_depth = Self::calculate_max_depth(&nodes, &edges);
+    |                                                           ^^^^^^ help: change this to: `edges`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrow
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> tools\aw_editor\src\panels\environment_preset_panel.rs:780:9
+    |
+780 |         settings.mood = mood;
+    |         ^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `panels::environment_preset_panel::EnvironmentSettings { mood: mood, tonemapper: mood.recommended_tonemapper(), contrast: mood.contrast(), saturation: mood.saturation(), ..Default::default() }` and removing relevant reassignments
+   --> tools\aw_editor\src\panels\environment_preset_panel.rs:779:9
+    |
+779 |         let mut settings = Self::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+    = note: `-W clippy::field-reassign-with-default` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::field_reassign_with_default)]`
+
+warning: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`
+   --> tools\aw_editor\src\ui\menu_bar.rs:527:5
+    |
+527 | /     pub fn from_str(name: &str) -> Option<Self> {
+528 | |         match name {
+529 | |             "Default" => Some(Self::Default),
+530 | |             "Wide" => Some(Self::Wide),
+...   |
+537 | |     }
+    | |_____^
+    |
+    = help: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait
+    = note: `-W clippy::should-implement-trait` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::should_implement_trait)]`
+
+warning: `aw_editor` (lib) generated 4 warnings (run `cargo clippy --fix --lib -p aw_editor` to apply 2 suggestions)
+warning: name `ORM` contains a capitalized acronym
+   --> tools\aw_editor\src\panels\import_doctor_panel.rs:219:5
+    |
+219 |     ORM, // Occlusion-Roughness-Metallic (Unreal, Substance)
+    |     ^^^ help: consider making the acronym lowercase, except the initial letter: `Orm`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#upper_case_acronyms
+    = note: `-W clippy::upper-case-acronyms` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::upper_case_acronyms)]`
+
+warning: name `MRA` contains a capitalized acronym
+   --> tools\aw_editor\src\panels\import_doctor_panel.rs:220:5
+    |
+220 |     MRA, // Metallic-Roughness-AO (Unity)
+    |     ^^^ help: consider making the acronym lowercase, except the initial letter: `Mra`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#upper_case_acronyms
+
+warning: name `RMA` contains a capitalized acronym
+   --> tools\aw_editor\src\panels\import_doctor_panel.rs:221:5
+    |
+221 |     RMA, // Roughness-Metallic-AO (some custom workflows)
+    |     ^^^ help: consider making the acronym lowercase, except the initial letter: `Rma`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#upper_case_acronyms
+
+warning: name `ARM` contains a capitalized acronym
+   --> tools\aw_editor\src\panels\import_doctor_panel.rs:222:5
+    |
+222 |     ARM, // AO-Roughness-Metallic (alternative)
+    |     ^^^ help: consider making the acronym lowercase, except the initial letter: `Arm`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#upper_case_acronyms
+
+warning: name `MRO` contains a capitalized acronym
+   --> tools\aw_editor\src\panels\import_doctor_panel.rs:223:5
+    |
+223 |     MRO, // Metallic-Roughness-Occlusion (GLTF)
+    |     ^^^ help: consider making the acronym lowercase, except the initial letter: `Mro`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#upper_case_acronyms
+
+warning: `aw_editor` (bin "aw_editor") generated 8 warnings (3 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 30s
+

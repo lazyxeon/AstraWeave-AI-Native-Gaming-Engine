@@ -389,14 +389,35 @@ mod tests {
     #[test]
     fn test_memory_manager_config_default_values() {
         let config = MemoryManagerConfig::default();
-        
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Sensory), Some(&100));
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Working), Some(&50));
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Episodic), Some(&1000));
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Semantic), Some(&5000));
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Procedural), Some(&500));
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Emotional), Some(&200));
-        assert_eq!(config.max_memories_per_type.get(&MemoryType::Social), Some(&500));
+
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Sensory),
+            Some(&100)
+        );
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Working),
+            Some(&50)
+        );
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Episodic),
+            Some(&1000)
+        );
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Semantic),
+            Some(&5000)
+        );
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Procedural),
+            Some(&500)
+        );
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Emotional),
+            Some(&200)
+        );
+        assert_eq!(
+            config.max_memories_per_type.get(&MemoryType::Social),
+            Some(&500)
+        );
         assert_eq!(config.importance_threshold, 0.3);
         assert!(config.auto_consolidation);
         assert!(config.enable_forgetting);
@@ -405,7 +426,7 @@ mod tests {
     #[test]
     fn test_memory_stats_default() {
         let stats = MemoryStats::default();
-        
+
         assert_eq!(stats.total_memories, 0);
         assert!(stats.memories_by_type.is_empty());
         assert_eq!(stats.average_importance, 0.0);
@@ -439,7 +460,7 @@ mod tests {
         manager.store_memory(social).unwrap();
 
         assert_eq!(manager.get_stats().total_memories, 7);
-        
+
         let stats = manager.get_stats();
         assert_eq!(stats.memories_by_type.len(), 7);
     }
@@ -498,7 +519,8 @@ mod tests {
     #[test]
     fn test_create_cluster_with_invalid_memory_id() {
         let mut manager = MemoryManager::new();
-        let result = manager.create_cluster("Test Cluster".to_string(), vec!["invalid_id".to_string()]);
+        let result =
+            manager.create_cluster("Test Cluster".to_string(), vec!["invalid_id".to_string()]);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Memory not found"));
     }
@@ -515,7 +537,10 @@ mod tests {
         let manager = MemoryManager::new();
         let result = manager.get_cluster_memories("non_existent_cluster");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cluster not found"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cluster not found"));
     }
 
     #[test]
@@ -525,19 +550,26 @@ mod tests {
         let mut manager = MemoryManager::with_config(config);
 
         // Store up to capacity
-        manager.store_memory(Memory::sensory("Memory 1".to_string(), None)).unwrap();
-        manager.store_memory(Memory::sensory("Memory 2".to_string(), None)).unwrap();
+        manager
+            .store_memory(Memory::sensory("Memory 1".to_string(), None))
+            .unwrap();
+        manager
+            .store_memory(Memory::sensory("Memory 2".to_string(), None))
+            .unwrap();
 
         // Try to exceed capacity
         let result = manager.store_memory(Memory::sensory("Memory 3".to_string(), None));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("reached maximum capacity"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("reached maximum capacity"));
     }
 
     #[test]
     fn test_update_config() {
         let mut manager = MemoryManager::new();
-        
+
         let new_config = MemoryManagerConfig {
             importance_threshold: 0.8,
             auto_consolidation: false,
@@ -545,7 +577,7 @@ mod tests {
         };
 
         manager.update_config(new_config);
-        
+
         assert_eq!(manager.get_config().importance_threshold, 0.8);
         assert!(!manager.get_config().auto_consolidation);
     }
@@ -553,7 +585,7 @@ mod tests {
     #[test]
     fn test_stats_update_after_operations() {
         let mut manager = MemoryManager::new();
-        
+
         // Initial stats
         assert_eq!(manager.get_stats().total_memories, 0);
         assert_eq!(manager.get_stats().total_clusters, 0);
@@ -569,7 +601,9 @@ mod tests {
         assert_eq!(manager.get_stats().total_memories, 2);
 
         // After creating cluster
-        manager.create_cluster("Cluster".to_string(), vec![id1.clone(), id2.clone()]).unwrap();
+        manager
+            .create_cluster("Cluster".to_string(), vec![id1.clone(), id2.clone()])
+            .unwrap();
         assert_eq!(manager.get_stats().total_clusters, 1);
 
         // After deleting memory
@@ -583,7 +617,7 @@ mod tests {
 
         let mut memory1 = Memory::sensory("Memory 1".to_string(), None);
         memory1.metadata.importance = 0.4;
-        
+
         let mut memory2 = Memory::sensory("Memory 2".to_string(), None);
         memory2.metadata.importance = 0.6;
 
@@ -597,7 +631,7 @@ mod tests {
     #[test]
     fn test_cleanup_weak_memories_none_removed() {
         let mut manager = MemoryManager::new();
-        
+
         // Store a strong memory
         let mut memory = Memory::sensory("Strong memory".to_string(), None);
         memory.metadata.importance = 0.9;
@@ -614,7 +648,7 @@ mod tests {
     #[test]
     fn test_cleanup_weak_memories_permanent_not_removed() {
         let mut manager = MemoryManager::new();
-        
+
         // Store a weak but permanent memory
         let mut memory = Memory::sensory("Permanent memory".to_string(), None);
         memory.metadata.importance = 0.05;
@@ -631,13 +665,13 @@ mod tests {
     #[test]
     fn test_cleanup_actually_removes_weak_memories() {
         use chrono::Duration;
-        
+
         let config = MemoryManagerConfig {
             importance_threshold: 0.5, // Set a reasonable threshold
             ..Default::default()
         };
         let mut manager = MemoryManager::with_config(config);
-        
+
         // Create a memory that will be considered weak
         let mut weak_memory = Memory::sensory("Weak memory".to_string(), None);
         weak_memory.metadata.importance = 0.1;
@@ -680,7 +714,7 @@ mod tests {
 
         let initial_count = manager.get_stats().total_memories;
         let removed = manager.cleanup_weak_memories().unwrap();
-        
+
         // Strong and permanent memories should not be removed
         assert_eq!(manager.get_stats().total_memories, initial_count - removed);
     }
@@ -727,7 +761,7 @@ mod tests {
             time_window: None,
             limit: 10,
         };
-        
+
         let results = manager.retrieve_memories(&context).unwrap();
         assert!(results.is_empty());
     }
@@ -738,11 +772,8 @@ mod tests {
 
         // Add multiple memories
         for i in 0..20 {
-            let memory = Memory::episodic(
-                format!("Event {}", i),
-                vec![],
-                Some("location".to_string()),
-            );
+            let memory =
+                Memory::episodic(format!("Event {}", i), vec![], Some("location".to_string()));
             manager.store_memory(memory).unwrap();
         }
 
@@ -764,8 +795,12 @@ mod tests {
     fn test_retrieve_memories_preferred_types() {
         let mut manager = MemoryManager::new();
 
-        manager.store_memory(Memory::episodic("Event".to_string(), vec![], None)).unwrap();
-        manager.store_memory(Memory::semantic("Fact".to_string(), "concept".to_string())).unwrap();
+        manager
+            .store_memory(Memory::episodic("Event".to_string(), vec![], None))
+            .unwrap();
+        manager
+            .store_memory(Memory::semantic("Fact".to_string(), "concept".to_string()))
+            .unwrap();
 
         let context = RetrievalContext {
             query: "".to_string(),
@@ -790,8 +825,10 @@ mod tests {
         let memory_id = memory.id.clone();
         manager.store_memory(memory).unwrap();
 
-        let cluster_id = manager.create_cluster("Test".to_string(), vec![memory_id]).unwrap();
-        
+        let cluster_id = manager
+            .create_cluster("Test".to_string(), vec![memory_id])
+            .unwrap();
+
         let cluster = manager.get_cluster(&cluster_id);
         assert!(cluster.is_some());
         assert_eq!(cluster.unwrap().name, "Test");
@@ -802,8 +839,11 @@ mod tests {
         let config = MemoryManagerConfig::default();
         let json = serde_json::to_string(&config).unwrap();
         let deserialized: MemoryManagerConfig = serde_json::from_str(&json).unwrap();
-        
-        assert_eq!(config.importance_threshold, deserialized.importance_threshold);
+
+        assert_eq!(
+            config.importance_threshold,
+            deserialized.importance_threshold
+        );
         assert_eq!(config.auto_consolidation, deserialized.auto_consolidation);
         assert_eq!(config.enable_forgetting, deserialized.enable_forgetting);
     }
@@ -813,7 +853,7 @@ mod tests {
         let stats = MemoryStats::default();
         let json = serde_json::to_string(&stats).unwrap();
         let deserialized: MemoryStats = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(stats.total_memories, deserialized.total_memories);
         assert_eq!(stats.average_importance, deserialized.average_importance);
         assert_eq!(stats.total_clusters, deserialized.total_clusters);
@@ -824,12 +864,12 @@ mod tests {
         let mut manager = MemoryManager::new();
         let memory = Memory::sensory("Test".to_string(), None);
         let memory_id = memory.id.clone();
-        
+
         manager.store_memory(memory).unwrap();
-        
+
         // Get the memory (which calls accessed())
         let memory_ref = manager.get_memory(&memory_id).unwrap();
-        
+
         // Access count should be increased
         assert!(memory_ref.metadata.access_count >= 1);
     }
@@ -849,16 +889,18 @@ mod tests {
         let memories: Vec<Memory> = (0..5)
             .map(|i| Memory::episodic(format!("Event {}", i), vec![], None))
             .collect();
-        
+
         let ids: Vec<String> = memories.iter().map(|m| m.id.clone()).collect();
-        
+
         for memory in memories {
             manager.store_memory(memory).unwrap();
         }
 
-        let cluster_id = manager.create_cluster("Multi Cluster".to_string(), ids.clone()).unwrap();
+        let cluster_id = manager
+            .create_cluster("Multi Cluster".to_string(), ids.clone())
+            .unwrap();
         let cluster_memories = manager.get_cluster_memories(&cluster_id).unwrap();
-        
+
         assert_eq!(cluster_memories.len(), 5);
     }
 
@@ -868,12 +910,21 @@ mod tests {
 
         // Add various memory types
         for i in 0..3 {
-            manager.store_memory(Memory::episodic(format!("Episodic {}", i), vec![], None)).unwrap();
+            manager
+                .store_memory(Memory::episodic(format!("Episodic {}", i), vec![], None))
+                .unwrap();
         }
         for i in 0..2 {
-            manager.store_memory(Memory::semantic(format!("Semantic {}", i), "cat".to_string())).unwrap();
+            manager
+                .store_memory(Memory::semantic(
+                    format!("Semantic {}", i),
+                    "cat".to_string(),
+                ))
+                .unwrap();
         }
-        manager.store_memory(Memory::sensory("Sensory".to_string(), None)).unwrap();
+        manager
+            .store_memory(Memory::sensory("Sensory".to_string(), None))
+            .unwrap();
 
         let stats = manager.get_stats();
         assert_eq!(stats.memories_by_type.get(&MemoryType::Episodic), Some(&3));
@@ -881,4 +932,3 @@ mod tests {
         assert_eq!(stats.memories_by_type.get(&MemoryType::Sensory), Some(&1));
     }
 }
-

@@ -12,9 +12,9 @@
 //! - Harvesting: Resource depletion, respawn mechanics
 
 use astraweave_gameplay::{
-    AttackKind, AttackState, ComboChain, ComboStep, CraftBench, CraftCost, CraftRecipe,
-    DamageType, FactionStanding, Inventory, ItemKind, Rarity, RecipeBook, ResourceKind,
-    ResourceNode, Stats, StatusEffect,
+    AttackKind, AttackState, ComboChain, ComboStep, CraftBench, CraftCost, CraftRecipe, DamageType,
+    FactionStanding, Inventory, ItemKind, Rarity, RecipeBook, ResourceKind, ResourceNode, Stats,
+    StatusEffect,
 };
 use glam::vec3;
 use rand::rngs::StdRng;
@@ -86,10 +86,7 @@ fn test_bleed_dot_damage_formula() {
     // Expected DoT: dps * dt = 10 * 1.0 = 10
     let dot = stats.tick(1.0);
 
-    assert_eq!(
-        dot, 10,
-        "Bleed DoT should deal dps * dt = 10 * 1.0 = 10"
-    );
+    assert_eq!(dot, 10, "Bleed DoT should deal dps * dt = 10 * 1.0 = 10");
     assert_eq!(stats.hp, 90, "HP should be 100 - 10 = 90");
 }
 
@@ -203,7 +200,10 @@ fn test_attack_state_new() {
     let state = AttackState::new(chain.clone());
 
     assert_eq!(state.idx, 0, "Initial index should be 0");
-    assert!((state.t_since_last - 0.0).abs() < 1e-6, "Initial time should be 0");
+    assert!(
+        (state.t_since_last - 0.0).abs() < 1e-6,
+        "Initial time should be 0"
+    );
     assert!(!state.active, "Attack should not be active initially");
 }
 
@@ -219,7 +219,10 @@ fn test_attack_state_start() {
 
     assert!(state.active, "Attack should be active after start");
     assert_eq!(state.idx, 0, "Index should reset to 0");
-    assert!((state.t_since_last - 0.0).abs() < 1e-6, "Time should reset to 0");
+    assert!(
+        (state.t_since_last - 0.0).abs() < 1e-6,
+        "Time should reset to 0"
+    );
 }
 
 /// Test attack hit requires being within reach
@@ -304,9 +307,9 @@ fn test_attack_applies_stagger() {
     assert!(hit, "Attack should hit");
 
     // Check stagger was applied
-    let has_stagger = target_stats.effects.iter().any(|e| {
-        matches!(e, StatusEffect::Stagger { time } if (*time - stagger_time).abs() < 1e-6)
-    });
+    let has_stagger = target_stats.effects.iter().any(
+        |e| matches!(e, StatusEffect::Stagger { time } if (*time - stagger_time).abs() < 1e-6),
+    );
     assert!(has_stagger, "Target should have stagger effect applied");
 }
 
@@ -324,7 +327,16 @@ fn test_combo_advances_on_hit() {
     let mut target_stats = Stats::new(100);
 
     // First hit
-    state.tick(0.0, true, false, attacker_pos, target_pos, &attacker_stats, None, &mut target_stats);
+    state.tick(
+        0.0,
+        true,
+        false,
+        attacker_pos,
+        target_pos,
+        &attacker_stats,
+        None,
+        &mut target_stats,
+    );
 
     assert_eq!(state.idx, 1, "Combo should advance to step 1 after hit");
 
@@ -332,9 +344,21 @@ fn test_combo_advances_on_hit() {
     state.t_since_last = 0.2;
 
     // Second hit (heavy)
-    state.tick(0.0, false, true, attacker_pos, target_pos, &attacker_stats, None, &mut target_stats);
+    state.tick(
+        0.0,
+        false,
+        true,
+        attacker_pos,
+        target_pos,
+        &attacker_stats,
+        None,
+        &mut target_stats,
+    );
 
-    assert_eq!(state.idx, 2, "Combo should advance to step 2 after second hit");
+    assert_eq!(
+        state.idx, 2,
+        "Combo should advance to step 2 after second hit"
+    );
 }
 
 /// Test combo ends after final step
@@ -359,7 +383,16 @@ fn test_combo_ends_after_final_step() {
     let attacker_stats = Stats::new(100);
     let mut target_stats = Stats::new(50);
 
-    state.tick(0.0, true, false, attacker_pos, target_pos, &attacker_stats, None, &mut target_stats);
+    state.tick(
+        0.0,
+        true,
+        false,
+        attacker_pos,
+        target_pos,
+        &attacker_stats,
+        None,
+        &mut target_stats,
+    );
 
     assert!(!state.active, "Combo should end after final step");
 }
@@ -438,10 +471,7 @@ fn test_inventory_add_stacks() {
     inv.add_resource(ResourceKind::Ore, 7);
 
     assert_eq!(inv.resources.len(), 1, "Should still be one resource type");
-    assert_eq!(
-        inv.resources[0].1, 12,
-        "Resources should stack: 5 + 7 = 12"
-    );
+    assert_eq!(inv.resources[0].1, 12, "Resources should stack: 5 + 7 = 12");
 }
 
 /// Test adding different resources creates separate entries
@@ -464,10 +494,7 @@ fn test_inventory_remove_success() {
     let removed = inv.remove_resource(ResourceKind::Fiber, 8);
 
     assert!(removed, "Remove should succeed");
-    assert_eq!(
-        inv.resources[0].1, 12,
-        "Should have 20 - 8 = 12 remaining"
-    );
+    assert_eq!(inv.resources[0].1, 12, "Should have 20 - 8 = 12 remaining");
 }
 
 /// Test removing resources fails with insufficient amount
@@ -558,10 +585,7 @@ fn test_craft_bench_power_bonus() {
 
     // With power 0: 0.75
     // With power 100: 0.75 + 100 * 0.003 = 0.75 + 0.30 = 1.05 → clamped to 0.98
-    assert!(
-        (chance_0 - 0.75).abs() < 0.01,
-        "Power 0 should give 0.75"
-    );
+    assert!((chance_0 - 0.75).abs() < 0.01, "Power 0 should give 0.75");
     assert!(
         (chance_100 - 0.98).abs() < 0.01,
         "Power 100 should cap at 0.98, got {}",
@@ -659,7 +683,10 @@ fn test_recipe_requires_resources() {
     // Recipe requires 10 wood, only have 5
     let result = recipe_book.craft_seeded("wooden_sword", &mut inv, &mut rng);
 
-    assert!(result.is_none(), "Craft should fail with insufficient resources");
+    assert!(
+        result.is_none(),
+        "Craft should fail with insufficient resources"
+    );
     assert_eq!(
         inv.resources[0].1, 5,
         "Resources should not be consumed on failure"
@@ -678,11 +705,24 @@ fn test_recipe_consumes_resources() {
 
     let result = recipe_book.craft_seeded("iron_sword", &mut inv, &mut rng);
 
-    assert!(result.is_some(), "Craft should succeed with sufficient resources");
+    assert!(
+        result.is_some(),
+        "Craft should succeed with sufficient resources"
+    );
 
     // Check resources were consumed
-    let wood = inv.resources.iter().find(|(k, _)| *k == ResourceKind::Wood).map(|(_, n)| *n).unwrap_or(0);
-    let ore = inv.resources.iter().find(|(k, _)| *k == ResourceKind::Ore).map(|(_, n)| *n).unwrap_or(0);
+    let wood = inv
+        .resources
+        .iter()
+        .find(|(k, _)| *k == ResourceKind::Wood)
+        .map(|(_, n)| *n)
+        .unwrap_or(0);
+    let ore = inv
+        .resources
+        .iter()
+        .find(|(k, _)| *k == ResourceKind::Ore)
+        .map(|(_, n)| *n)
+        .unwrap_or(0);
 
     // iron_sword requires 5 wood and 3 ore
     assert_eq!(wood, 10, "Wood should be 15 - 5 = 10");
@@ -706,7 +746,10 @@ fn test_seeded_crafting_deterministic() {
     let item1 = recipe_book.craft_seeded("wooden_sword", &mut inv1, &mut rng1);
     let item2 = recipe_book.craft_seeded("wooden_sword", &mut inv2, &mut rng2);
 
-    assert!(item1.is_some() && item2.is_some(), "Both crafts should succeed");
+    assert!(
+        item1.is_some() && item2.is_some(),
+        "Both crafts should succeed"
+    );
     assert_eq!(
         item1.unwrap().id,
         item2.unwrap().id,
@@ -812,10 +855,7 @@ fn test_seeded_tick_respawns_after_timer() {
     node.tick_seeded(10.5, &mut rng);
 
     assert!(node.amount > 0, "Node should respawn after timer expires");
-    assert!(
-        (node.timer - 0.0).abs() < 1e-6,
-        "Timer should reset to 0"
-    );
+    assert!((node.timer - 0.0).abs() < 1e-6, "Timer should reset to 0");
 }
 
 /// Test seeded tick is deterministic
@@ -856,7 +896,10 @@ fn test_no_respawn_while_not_depleted() {
 
     node.tick_seeded(100.0, &mut rng); // Long time
 
-    assert_eq!(node.amount, 5, "Amount should not change while not depleted");
+    assert_eq!(
+        node.amount, 5,
+        "Amount should not change while not depleted"
+    );
 }
 
 // ============================================================================

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 
 /// Quest state machine
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum QuestState {
     /// Quest exists but not yet activated
     Inactive,
@@ -19,6 +20,7 @@ pub enum QuestState {
 
 /// Objective types for quest progression
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ObjectiveType {
     /// Kill N enemies of specific type
     Kill {
@@ -209,6 +211,7 @@ impl ObjectiveType {
 
 /// Quest reward types
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum QuestReward {
     /// Echo currency reward
     EchoCurrency(i32),
@@ -449,7 +452,7 @@ impl QuestManager {
         }
 
         // Activate quest
-        let quest = self.quests.get_mut(quest_id).unwrap();
+        let quest = self.quests.get_mut(quest_id).expect("quest must exist");
         quest.activate();
         self.active_quest_id = Some(quest_id.to_string());
 

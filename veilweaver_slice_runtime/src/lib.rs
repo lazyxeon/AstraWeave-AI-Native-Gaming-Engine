@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 use astraweave_core::ecs_adapter;
 use astraweave_core::ecs_bridge::EntityBridge;

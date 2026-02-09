@@ -38,6 +38,7 @@ impl DecoratorNode {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DecoratorKind {
     Inverter,
     Succeeder,
@@ -127,11 +128,13 @@ impl DecoratorKind {
             DecoratorType::Failer => DecoratorKind::Failer,
             DecoratorType::Repeat(max) => DecoratorKind::Repeat(*max),
             DecoratorType::Retry(max) => DecoratorKind::Retry(*max),
+            _ => DecoratorKind::Succeeder, // Fallback for future decorator types
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum BehaviorGraphNodeKind {
     Action {
         name: String,
@@ -615,6 +618,13 @@ impl BehaviorGraphDocument {
                 ));
                 id
             }
+            _ => {
+                // Future node types: create a placeholder action node
+                self.add_node(
+                    "Unknown".to_string(),
+                    BehaviorGraphNodeKind::Action { name: "unknown".to_string() },
+                )
+            }
         }
     }
 
@@ -624,6 +634,8 @@ impl BehaviorGraphDocument {
 }
 
 #[derive(Debug, Error)]
+#[non_exhaustive]
+#[must_use]
 pub enum BehaviorGraphDocumentError {
     #[error("node {0} not found in behavior document")]
     MissingNode(NodeId),

@@ -13,6 +13,7 @@ use crate::panels::Panel;
 
 /// Emitter shape type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum EmitterShape {
     #[default]
     Point,
@@ -79,6 +80,7 @@ impl EmitterShape {
 
 /// Simulation space
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SimulationSpace {
     #[default]
     Local,
@@ -113,6 +115,7 @@ impl SimulationSpace {
 
 /// Particle blend mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ParticleBlendMode {
     #[default]
     Alpha,
@@ -163,6 +166,7 @@ impl ParticleBlendMode {
 
 /// Particle render mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ParticleRenderMode {
     #[default]
     Billboard,
@@ -221,6 +225,7 @@ impl ParticleRenderMode {
 
 /// Value over lifetime curve type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CurveType {
     #[default]
     Constant,
@@ -338,6 +343,7 @@ pub struct EmitterModule {
 
 /// Module types
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ModuleType {
     Velocity { direction: [f32; 3], speed: RangeValue },
     Force { force: [f32; 3], space: SimulationSpace },
@@ -436,6 +442,7 @@ impl ModuleType {
 
 /// Sub-emitter trigger event
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SubEmitterEvent {
     #[default]
     Birth,
@@ -554,6 +561,7 @@ impl Default for EmissionBurst {
 
 /// Sort mode for particles
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SortMode {
     #[default]
     None,
@@ -691,6 +699,7 @@ pub struct ParticleStats {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ParticleTab {
     #[default]
     Emitter,
@@ -752,6 +761,7 @@ impl ParticleTab {
 
 /// Actions that can be performed on the particle system panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ParticleAction {
     /// Play preview
     Play,

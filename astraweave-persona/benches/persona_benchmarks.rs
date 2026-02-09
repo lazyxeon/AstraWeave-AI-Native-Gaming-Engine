@@ -273,18 +273,15 @@ fn bench_profile_add_facts(c: &mut Criterion) {
 
     for count in [10, 50, 100] {
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
-            b.iter_with_setup(
-                CompanionProfile::new_default,
-                |mut profile| {
-                    for i in 0..count {
-                        profile.facts.push(create_test_fact(
-                            &format!("key_{}", i),
-                            &format!("value_{}", i),
-                        ));
-                    }
-                    black_box(profile)
-                },
-            )
+            b.iter_with_setup(CompanionProfile::new_default, |mut profile| {
+                for i in 0..count {
+                    profile.facts.push(create_test_fact(
+                        &format!("key_{}", i),
+                        &format!("value_{}", i),
+                    ));
+                }
+                black_box(profile)
+            })
         });
     }
 
@@ -296,17 +293,14 @@ fn bench_profile_add_skills(c: &mut Criterion) {
 
     for count in [10, 50, 100] {
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
-            b.iter_with_setup(
-                CompanionProfile::new_default,
-                |mut profile| {
-                    for i in 0..count {
-                        profile
-                            .skills
-                            .push(create_test_skill(&format!("skill_{}", i), (i % 10) as u8));
-                    }
-                    black_box(profile)
-                },
-            )
+            b.iter_with_setup(CompanionProfile::new_default, |mut profile| {
+                for i in 0..count {
+                    profile
+                        .skills
+                        .push(create_test_skill(&format!("skill_{}", i), (i % 10) as u8));
+                }
+                black_box(profile)
+            })
         });
     }
 

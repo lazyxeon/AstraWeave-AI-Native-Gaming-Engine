@@ -446,6 +446,7 @@ pub struct ShiftingQualityMetrics {
 
 /// Quality grades for shifting
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ShiftingQualityGrade {
     /// Excellent: minimal clustering, good uniformity
     Excellent,

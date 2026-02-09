@@ -17,3 +17,6 @@ crossbeam-channel = "0.5"
 anyhow = { workspace = true }
 wgpu = { workspace = true }
 bytemuck = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

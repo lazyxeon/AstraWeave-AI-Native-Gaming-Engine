@@ -6,6 +6,7 @@ use glam::Quat;
 
 /// High-level gizmo operation classification (used by telemetry/tests).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum GizmoOperationKind {
     Translate,
     Rotate,
@@ -54,6 +55,7 @@ impl std::fmt::Display for GizmoOperationKind {
 
 /// Measurement payload captured when committing a gizmo operation.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum GizmoMeasurement {
     Translate {
         from: IVec2,

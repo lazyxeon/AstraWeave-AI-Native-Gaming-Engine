@@ -318,6 +318,7 @@ pub fn vorticity_magnitude(omega: [f32; 3]) -> f32 {
 /// Compute vorticity confinement force
 /// 
 /// F = ε (N × ω), where N is the normalized gradient of vorticity magnitude
+#[allow(clippy::too_many_arguments)]
 pub fn compute_vorticity_confinement(
     particle_idx: usize,
     positions: &[[f32; 3]],
@@ -419,6 +420,7 @@ impl ParticleSpin {
 }
 
 /// Compute torque on particle from neighbors
+#[allow(clippy::too_many_arguments)]
 pub fn compute_particle_torque(
     particle_idx: usize,
     positions: &[[f32; 3]],
@@ -515,6 +517,7 @@ pub fn update_particle_spin(
 }
 
 /// Compute velocity correction from neighboring spins
+#[allow(clippy::too_many_arguments)]
 pub fn spin_velocity_correction(
     particle_idx: usize,
     positions: &[[f32; 3]],
@@ -613,6 +616,7 @@ impl TurbulenceSystem {
     }
     
     /// Compute vorticities for all particles
+    #[allow(clippy::needless_range_loop)]
     pub fn compute_all_vorticities(
         &self,
         positions: &[[f32; 3]],
@@ -634,6 +638,7 @@ impl TurbulenceSystem {
     }
     
     /// Compute vorticity confinement forces
+    #[allow(clippy::needless_range_loop)]
     pub fn compute_confinement_forces(
         &self,
         positions: &[[f32; 3]],

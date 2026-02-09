@@ -1,3 +1,31 @@
+//! # AstraWeave AI
+//!
+//! AI orchestration and planning layer for AstraWeave.
+//!
+//! This crate implements the engine's AI-native architecture, providing:
+//!
+//! - **[`orchestrator`]** — The [`Orchestrator`] trait that abstracts AI planning
+//!   (rule-based, behavior-tree, LLM, or hybrid).
+//! - **[`core_loop`]** — The perception → reasoning → planning → action pipeline.
+//! - **[`ecs_ai_plugin`]** — ECS integration via [`AiPlanningPlugin`] and
+//!   [`build_app_with_ai()`].
+//! - **[`tool_sandbox`]** — Runtime validation of AI-generated action plans.
+//!
+//! # Feature Flags
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `llm_orchestrator` | Enables LLM executor and async task infrastructure |
+//! | `veilweaver_slice` | Veilweaver-specific companion orchestrator |
+//! | `planner_advanced` | GOAP planner with caching and visualization |
+//!
+//! # Performance
+//!
+//! - GOAP planning: 1.01 µs cache hit, 47.2 µs cache miss
+//! - Behavior trees: 57–253 ns per tick (66,000 agents @ 60 FPS)
+//! - Arbiter cycle: 313.7 ns (GOAP + LLM poll + metrics)
+//! - Validated capacity: 12,700+ agents @ 60 FPS
+
 pub mod core_loop;
 pub mod ecs_ai_plugin;
 pub mod orchestrator;

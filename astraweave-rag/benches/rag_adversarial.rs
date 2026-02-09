@@ -320,7 +320,12 @@ fn bench_context_injection(c: &mut Criterion) {
             let memory_text = if memories.is_empty() {
                 "No relevant memories found.".to_string()
             } else {
-                memories.iter().map(|m| &m.content).cloned().collect::<Vec<_>>().join("\n")
+                memories
+                    .iter()
+                    .map(|m| &m.content)
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join("\n")
             };
 
             let injected = template
@@ -646,11 +651,14 @@ fn bench_diversity_sampling(c: &mut Criterion) {
                 let mut best_score = f32::NEG_INFINITY;
 
                 for (i, &mem_idx) in remaining.iter().enumerate() {
-                    let relevance = cosine_similarity(&query_embedding, &memories[mem_idx].embedding);
+                    let relevance =
+                        cosine_similarity(&query_embedding, &memories[mem_idx].embedding);
 
                     let max_sim_to_selected = selected
                         .iter()
-                        .map(|&s| cosine_similarity(&memories[mem_idx].embedding, &memories[s].embedding))
+                        .map(|&s| {
+                            cosine_similarity(&memories[mem_idx].embedding, &memories[s].embedding)
+                        })
                         .fold(0.0f32, |a, b| a.max(b));
 
                     let mmr_score = lambda * relevance - (1.0 - lambda) * max_sim_to_selected;
@@ -805,10 +813,7 @@ fn bench_query_processing(c: &mut Criterion) {
         ];
 
         bencher.iter(|| {
-            let processed: Vec<String> = queries
-                .iter()
-                .map(|q| q.to_lowercase())
-                .collect();
+            let processed: Vec<String> = queries.iter().map(|q| q.to_lowercase()).collect();
 
             std_black_box(processed.len())
         });

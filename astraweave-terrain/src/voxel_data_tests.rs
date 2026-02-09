@@ -259,11 +259,13 @@ mod tests {
         let mut chunk = VoxelChunk::new(ChunkCoord::new(0, 0, 0));
 
         // Valid boundary positions (0 to CHUNK_SIZE-1)
-        let corners = [IVec3::new(0, 0, 0),
+        let corners = [
+            IVec3::new(0, 0, 0),
             IVec3::new(CHUNK_SIZE - 1, 0, 0),
             IVec3::new(0, CHUNK_SIZE - 1, 0),
             IVec3::new(0, 0, CHUNK_SIZE - 1),
-            IVec3::new(CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1)];
+            IVec3::new(CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1),
+        ];
 
         for (i, pos) in corners.iter().enumerate() {
             let voxel = Voxel::new(0.5 + i as f32 * 0.1, i as u16);

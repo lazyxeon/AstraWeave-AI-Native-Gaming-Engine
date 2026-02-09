@@ -126,9 +126,11 @@ impl NpcManager {
                         if let Some(pd) = view.player_dist {
                             if pd < 2.0 {
                                 // step aside a bit
-                                let dir =
-                                    (view.self_pos - view.player_pos.unwrap()).normalize_or_zero();
-                                glue.move_character(npc.body, dir, 0.6);
+                                if let Some(player_pos) = view.player_pos {
+                                    let dir =
+                                        (view.self_pos - player_pos).normalize_or_zero();
+                                    glue.move_character(npc.body, dir, 0.6);
+                                }
                             }
                         }
                     }

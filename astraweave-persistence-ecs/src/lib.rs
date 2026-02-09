@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! ECS Persistence Integration for AstraWeave
 //!
 //! This crate provides ECS plugins and systems for save/load functionality,

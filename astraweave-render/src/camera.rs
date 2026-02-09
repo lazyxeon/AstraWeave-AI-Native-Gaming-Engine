@@ -36,6 +36,7 @@ impl Camera {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum CameraMode {
     FreeFly,
     Orbit,

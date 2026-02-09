@@ -1,8 +1,10 @@
+#![forbid(unsafe_code)]
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 /// Minimal material graph nodes (Phase 2 foundation)
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum Node {
     Texture2D { id: String, uv: String },
     Constant3 { value: [f32; 3] },

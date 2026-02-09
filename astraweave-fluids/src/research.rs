@@ -42,6 +42,7 @@
 /// Incompressibility solver selection
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum SolverType {
     /// Position-Based Dynamics - Fast, visual (games)
     #[default]
@@ -76,6 +77,7 @@ impl SolverType {
 /// Viscosity solver selection
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum ViscositySolver {
     /// XSPH - Fast, artificial (games)
     #[default]
@@ -97,6 +99,7 @@ impl ViscositySolver {
 /// Particle shifting method for tensile instability
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum ShiftingMethod {
     /// No particle shifting
     #[default]
@@ -110,6 +113,7 @@ pub enum ShiftingMethod {
 /// Shear rate estimation method for non-Newtonian fluids
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum ShearRateMethod {
     /// Strain tensor - Accurate but noisy
     StrainTensor,
@@ -133,6 +137,7 @@ pub enum ShearRateMethod {
 /// - Dehnen & Aly (2012) "Improving convergence in SPH simulations without pairing instability"
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum KernelType {
     /// Classic cubic spline kernel (legacy compatibility)
     CubicSpline,
@@ -178,6 +183,7 @@ impl KernelType {
 /// Boundary handling method
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum BoundaryMethod {
     /// Traditional Akinci particle sampling
     AkinciOnly,
@@ -191,6 +197,7 @@ pub enum BoundaryMethod {
 /// Quality tier for performance scaling
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum ResearchQualityTier {
     /// 50-100k particles, 60 FPS, PBD + XSPH
     Low,
@@ -669,34 +676,30 @@ impl ResearchFluidConfig {
 
     /// Convert to GPU simulation parameters
     pub fn to_sim_params(&self, particle_count: u32) -> ResearchSimParams {
-        let mut params = ResearchSimParams::default();
-
-        params.particle_count = particle_count;
-        params.max_iterations = self.max_iterations;
-        params.min_iterations = self.min_iterations;
-        params.density_error_threshold = self.density_error_threshold;
-        params.warm_start_factor = self.warm_start_factor;
-        params.vorticity_epsilon = self.vorticity_epsilon;
-
-        params.solver_type = match self.solver {
-            SolverType::PBD => 0,
-            SolverType::PCISPH => 1,
-            SolverType::DFSPH => 2,
-            SolverType::IISPH => 3,
-        };
-
-        params.kernel_type = match self.kernel_type {
-            KernelType::CubicSpline => 0,
-            KernelType::WendlandC2 => 1,
-            KernelType::WendlandC4 => 2,
-            KernelType::WendlandC6 => 3,
-        };
-
-        params.enable_shifting = u32::from(self.enable_particle_shifting);
-        params.enable_vorticity = u32::from(self.enable_vorticity_confinement);
-        params.enable_warm_start = u32::from(self.enable_warm_start);
-
-        params
+        ResearchSimParams {
+            particle_count,
+            max_iterations: self.max_iterations,
+            min_iterations: self.min_iterations,
+            density_error_threshold: self.density_error_threshold,
+            warm_start_factor: self.warm_start_factor,
+            vorticity_epsilon: self.vorticity_epsilon,
+            solver_type: match self.solver {
+                SolverType::PBD => 0,
+                SolverType::PCISPH => 1,
+                SolverType::DFSPH => 2,
+                SolverType::IISPH => 3,
+            },
+            kernel_type: match self.kernel_type {
+                KernelType::CubicSpline => 0,
+                KernelType::WendlandC2 => 1,
+                KernelType::WendlandC4 => 2,
+                KernelType::WendlandC6 => 3,
+            },
+            enable_shifting: u32::from(self.enable_particle_shifting),
+            enable_vorticity: u32::from(self.enable_vorticity_confinement),
+            enable_warm_start: u32::from(self.enable_warm_start),
+            ..Default::default()
+        }
     }
 }
 

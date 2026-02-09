@@ -218,6 +218,7 @@ impl ViscosityConfig {
 
 /// Non-Newtonian viscosity model selection
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub enum NonNewtonianType {
     /// Newtonian (constant viscosity)
     #[default]
@@ -366,6 +367,7 @@ impl NonNewtonianModel {
 
 /// Temperature-dependent viscosity model
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub enum TemperatureType {
     /// Constant (no temperature dependence)
     #[default]
@@ -547,7 +549,7 @@ impl ViscositySolverCpu {
             let shear_rate = particle.shear_rate.max(1e-6);
             // Scale the non-Newtonian model using base viscosity ratio
             let nn_mu = self.config.non_newtonian_model.compute_viscosity(shear_rate);
-            mu = mu * (nn_mu / self.config.non_newtonian_model.viscosity_0);
+            mu *= nn_mu / self.config.non_newtonian_model.viscosity_0;
         }
 
         mu
@@ -859,6 +861,7 @@ fn compute_shear_rate_vorticity(particle_idx: usize, particles: &[ResearchPartic
 }
 
 /// Compute shear rate from strain tensor (more accurate but noisy)
+#[allow(clippy::needless_range_loop)]
 fn compute_shear_rate_strain(particle_idx: usize, particles: &[ResearchParticle], h: f32) -> f32 {
     let pos_i = [
         particles[particle_idx].position[0],

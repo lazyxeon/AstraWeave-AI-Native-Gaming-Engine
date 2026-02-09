@@ -23,6 +23,7 @@ pub struct GamepadManager {
 
 /// UI action from gamepad input
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum GamepadAction {
     /// Navigate up in menu
     Up,
@@ -393,13 +394,34 @@ mod tests {
         assert_eq!(GamepadBindings::to_button("West"), Some(Button::West));
         assert_eq!(GamepadBindings::to_button("Select"), Some(Button::Select));
         assert_eq!(GamepadBindings::to_button("DPadUp"), Some(Button::DPadUp));
-        assert_eq!(GamepadBindings::to_button("DPadDown"), Some(Button::DPadDown));
-        assert_eq!(GamepadBindings::to_button("DPadLeft"), Some(Button::DPadLeft));
-        assert_eq!(GamepadBindings::to_button("DPadRight"), Some(Button::DPadRight));
-        assert_eq!(GamepadBindings::to_button("LeftTrigger"), Some(Button::LeftTrigger));
-        assert_eq!(GamepadBindings::to_button("RightTrigger"), Some(Button::RightTrigger));
-        assert_eq!(GamepadBindings::to_button("LeftTrigger2"), Some(Button::LeftTrigger2));
-        assert_eq!(GamepadBindings::to_button("RightTrigger2"), Some(Button::RightTrigger2));
+        assert_eq!(
+            GamepadBindings::to_button("DPadDown"),
+            Some(Button::DPadDown)
+        );
+        assert_eq!(
+            GamepadBindings::to_button("DPadLeft"),
+            Some(Button::DPadLeft)
+        );
+        assert_eq!(
+            GamepadBindings::to_button("DPadRight"),
+            Some(Button::DPadRight)
+        );
+        assert_eq!(
+            GamepadBindings::to_button("LeftTrigger"),
+            Some(Button::LeftTrigger)
+        );
+        assert_eq!(
+            GamepadBindings::to_button("RightTrigger"),
+            Some(Button::RightTrigger)
+        );
+        assert_eq!(
+            GamepadBindings::to_button("LeftTrigger2"),
+            Some(Button::LeftTrigger2)
+        );
+        assert_eq!(
+            GamepadBindings::to_button("RightTrigger2"),
+            Some(Button::RightTrigger2)
+        );
     }
 
     #[test]

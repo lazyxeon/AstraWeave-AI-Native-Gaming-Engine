@@ -165,25 +165,6 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
         )
     }
 
-    /// Get all grid cells that an AABB overlaps
-    fn get_overlapping_cells(&self, aabb: &AABB) -> Vec<GridCell> {
-        let min_cell = self.world_to_cell(aabb.min);
-        let max_cell = self.world_to_cell(aabb.max);
-
-        let mut cells = Vec::new();
-
-        // Iterate over all cells that the AABB spans
-        for x in min_cell.0..=max_cell.0 {
-            for y in min_cell.1..=max_cell.1 {
-                for z in min_cell.2..=max_cell.2 {
-                    cells.push((x, y, z));
-                }
-            }
-        }
-
-        cells
-    }
-
     /// Insert object into grid based on its AABB
     ///
     /// Objects that span multiple cells are inserted into all overlapping cells.
@@ -202,10 +183,15 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// grid.insert(entity_id, aabb);
     /// ```
     pub fn insert(&mut self, id: T, aabb: AABB) {
-        let cells = self.get_overlapping_cells(&aabb);
+        let min_cell = self.world_to_cell(aabb.min);
+        let max_cell = self.world_to_cell(aabb.max);
 
-        for cell in cells {
-            self.grid.entry(cell).or_default().push(id);
+        for x in min_cell.0..=max_cell.0 {
+            for y in min_cell.1..=max_cell.1 {
+                for z in min_cell.2..=max_cell.2 {
+                    self.grid.entry((x, y, z)).or_default().push(id);
+                }
+            }
         }
 
         self.object_count += 1;
@@ -237,12 +223,17 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// }
     /// ```
     pub fn query(&self, aabb: AABB) -> Vec<T> {
-        let cells = self.get_overlapping_cells(&aabb);
+        let min_cell = self.world_to_cell(aabb.min);
+        let max_cell = self.world_to_cell(aabb.max);
         let mut results = Vec::new();
 
-        for cell in cells {
-            if let Some(objects) = self.grid.get(&cell) {
-                results.extend_from_slice(objects);
+        for x in min_cell.0..=max_cell.0 {
+            for y in min_cell.1..=max_cell.1 {
+                for z in min_cell.2..=max_cell.2 {
+                    if let Some(objects) = self.grid.get(&(x, y, z)) {
+                        results.extend_from_slice(objects);
+                    }
+                }
             }
         }
 
@@ -843,6 +834,166 @@ mod tests {
         
         assert!(results1.contains(&1));
         assert!(results2.contains(&1));
+    }
+
+    // ============================================================================
+    // REBUILD PATTERN TESTS (Audit Recommendation)
+    // ============================================================================
+
+    #[test]
+    fn test_rebuild_each_frame_pattern() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Simulate 10 frames of clear-and-rebuild
+        for frame in 0..10u32 {
+            grid.clear();
+            assert_eq!(grid.object_count(), 0);
+            assert_eq!(grid.cell_count(), 0);
+
+            // Re-insert entities at new positions (simulating movement)
+            for i in 0..50 {
+                let offset = frame as f32 * 0.1;
+                let x = (i % 10) as f32 * 5.0 + offset;
+                let y = (i / 10) as f32 * 5.0 + offset;
+                grid.insert(i, AABB::from_sphere(Vec3::new(x, y, 0.0), 1.0));
+            }
+
+            assert_eq!(grid.object_count(), 50);
+            // Verify queries still work after rebuild
+            let results = grid.query(AABB::from_sphere(Vec3::new(0.0, 0.0, 0.0), 10.0));
+            assert!(!results.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_clear_then_query_returns_empty() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        for i in 0..100 {
+            grid.insert(i, AABB::from_sphere(Vec3::new(i as f32, 0.0, 0.0), 1.0));
+        }
+        assert_eq!(grid.object_count(), 100);
+
+        grid.clear();
+
+        let results = grid.query(AABB {
+            min: Vec3::new(-1000.0, -1000.0, -1000.0),
+            max: Vec3::new(1000.0, 1000.0, 1000.0),
+        });
+        assert!(results.is_empty(), "Cleared grid should have no results");
+    }
+
+    // ============================================================================
+    // NAN/INF HANDLING TESTS (Audit Recommendation)
+    // ============================================================================
+
+    #[test]
+    fn test_nan_coordinates_insert_does_not_panic() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // NaN coordinates — should not panic, may produce unusual behavior
+        let nan_aabb = AABB {
+            min: Vec3::new(f32::NAN, 0.0, 0.0),
+            max: Vec3::new(f32::NAN, 10.0, 10.0),
+        };
+
+        // Should not panic
+        grid.insert(1, nan_aabb);
+    }
+
+    #[test]
+    fn test_inf_coordinates_query_returns_empty() {
+        let grid = SpatialHash::<u32>::new(10.0);
+
+        // Querying with finite AABB on empty grid is fine
+        // (We do NOT insert infinite AABBs as they would generate
+        //  billions of cell entries and exhaust memory.)
+        let results = grid.query(AABB::from_sphere(Vec3::splat(f32::MAX / 2.0), 1.0));
+        assert!(results.is_empty());
+    }
+
+    // ============================================================================
+    // DENSITY & STATISTICS TESTS (Audit Recommendation)
+    // ============================================================================
+
+    #[test]
+    fn test_average_cell_density_empty() {
+        let grid = SpatialHash::<u32>::new(10.0);
+        assert_eq!(grid.average_cell_density(), 0.0);
+    }
+
+    #[test]
+    fn test_average_cell_density_uniform() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // 10 entities each in distinct cells (large spacing, tiny radius)
+        for i in 0..10 {
+            grid.insert(i, AABB::from_sphere(
+                Vec3::new(i as f32 * 20.0 + 5.0, 5.0, 5.0), 0.01,
+            ));
+        }
+
+        let density = grid.average_cell_density();
+        // With tiny radius and large spacing, each entity is in 1 cell
+        // density = objects_in_cells / num_cells which should be ~1.0
+        assert!(density >= 0.5 && density <= 2.0,
+            "Uniform distribution density should be near 1.0, got {}", density);
+    }
+
+    #[test]
+    fn test_stats_max_objects_per_cell() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Put 20 entities in same cell, 1 in another
+        for i in 0..20 {
+            grid.insert(i, AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 0.1));
+        }
+        grid.insert(100, AABB::from_sphere(Vec3::new(50.0, 50.0, 50.0), 0.1));
+
+        let stats = grid.stats();
+        assert_eq!(stats.max_objects_per_cell, 20);
+        assert_eq!(stats.object_count, 21);
+    }
+
+    #[test]
+    fn test_from_sphere_correctness() {
+        let center = Vec3::new(10.0, 20.0, 30.0);
+        let radius = 5.0;
+        let aabb = AABB::from_sphere(center, radius);
+
+        assert!((aabb.min.x - 5.0).abs() < 0.001);
+        assert!((aabb.min.y - 15.0).abs() < 0.001);
+        assert!((aabb.min.z - 25.0).abs() < 0.001);
+        assert!((aabb.max.x - 15.0).abs() < 0.001);
+        assert!((aabb.max.y - 25.0).abs() < 0.001);
+        assert!((aabb.max.z - 35.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_from_sphere_zero_radius() {
+        let aabb = AABB::from_sphere(Vec3::new(1.0, 2.0, 3.0), 0.0);
+        assert_eq!(aabb.min, aabb.max, "Zero-radius sphere should be a point");
+    }
+
+    #[test]
+    fn test_query_unique_no_false_negatives() {
+        let mut grid = SpatialHash::<u32>::new(10.0);
+
+        // Insert 50 entities in known positions
+        for i in 0..50 {
+            let x = (i % 10) as f32 * 2.0;
+            let y = (i / 10) as f32 * 2.0;
+            grid.insert(i, AABB::from_sphere(Vec3::new(x, y, 0.0), 0.5));
+        }
+
+        // Query the entire space — should find all 50
+        let results = grid.query_unique(AABB {
+            min: Vec3::new(-10.0, -10.0, -10.0),
+            max: Vec3::new(100.0, 100.0, 100.0),
+        });
+
+        assert_eq!(results.len(), 50,
+            "Full-space query should find all 50 entities, got {}", results.len());
     }
 }
 

@@ -13,6 +13,7 @@ use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 /// Gizmo handle type (for picking).
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GizmoHandle {
     TranslateX,
     TranslateY,

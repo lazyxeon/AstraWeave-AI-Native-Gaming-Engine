@@ -260,7 +260,13 @@ pub async fn start_network_server(
 
     tokio::spawn(async move {
         while let Ok((stream, _)) = listener.accept().await {
-            let ws_stream = accept_async(stream).await.unwrap();
+            let ws_stream = match accept_async(stream).await {
+                Ok(ws) => ws,
+                Err(e) => {
+                    eprintln!("WebSocket accept error: {e}");
+                    continue;
+                }
+            };
             let (_write, mut read) = ws_stream.split();
             let tx_clone = tx.clone();
 

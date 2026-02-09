@@ -135,6 +135,8 @@ impl TerrainRenderer {
             astraweave_terrain::BiomeType::Swamp => 5,
             astraweave_terrain::BiomeType::Beach => 6,
             astraweave_terrain::BiomeType::River => 7,
+            // Fallback for future biome types
+            _ => 0,
         }
     }
 

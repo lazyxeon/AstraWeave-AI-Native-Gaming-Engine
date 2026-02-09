@@ -405,6 +405,7 @@ pub fn compress_astc(_rgba: &RgbaImage, _block_size: AstcBlockSize) -> Result<Ve
 
 /// ASTC block size options
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AstcBlockSize {
     /// 4×4 blocks (8 bpp, highest quality)
     Block4x4,

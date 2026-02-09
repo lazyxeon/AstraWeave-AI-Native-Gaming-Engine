@@ -144,7 +144,10 @@ fn test_rule_mode_multi_tick_determinism() {
 
     // Subsequent plans should have 2 steps (move + cover, smoke on cooldown)
     for step_count in plan_step_counts.iter().skip(1) {
-        assert_eq!(*step_count, 2, "Plans with smoke on cooldown should have 2 steps");
+        assert_eq!(
+            *step_count, 2,
+            "Plans with smoke on cooldown should have 2 steps"
+        );
     }
 }
 

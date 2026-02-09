@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Menu states
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum MenuState {
     /// Main menu (game not started)
     MainMenu,
@@ -18,6 +19,7 @@ pub enum MenuState {
 
 /// Graphics quality presets
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum QualityPreset {
     Low,
     Medium,
@@ -162,6 +164,7 @@ pub struct SettingsState {
 
 /// Actions that can be triggered by menus
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MenuAction {
     /// Start new game
     NewGame,

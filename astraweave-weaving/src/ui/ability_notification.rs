@@ -7,6 +7,7 @@ use crate::AbilityType;
 
 /// Notification animation state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum NotificationState {
     /// Hidden (not showing)
     Hidden,
@@ -215,8 +216,6 @@ impl AbilityUnlockNotification {
                     });
             });
     }
-
-
 }
 
 impl Default for AbilityUnlockNotification {

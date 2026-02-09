@@ -317,7 +317,10 @@ mod tests {
             .unwrap();
 
         let mut ctx = PromptContext::new();
-        ctx.set("name".to_string(), ContextValue::String("World".to_string()));
+        ctx.set(
+            "name".to_string(),
+            ContextValue::String("World".to_string()),
+        );
 
         let result = engine.render("greeting", &ctx);
         assert!(result.is_ok());
@@ -388,10 +391,7 @@ mod tests {
     #[test]
     fn test_template_context_with_values() {
         let mut ctx: TemplateContext = PromptContext::new();
-        ctx.set(
-            "key".to_string(),
-            ContextValue::String("value".to_string()),
-        );
+        ctx.set("key".to_string(), ContextValue::String("value".to_string()));
 
         let map = ctx.to_string_map();
         assert!(map.contains_key("key"));

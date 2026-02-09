@@ -1,10 +1,11 @@
-use rhai::{Engine, ImmutableString, Dynamic};
-use glam::{Vec3, IVec2, Quat};
-use astraweave_physics::PhysicsWorld;
 use astraweave_nav::NavMesh;
-use rapier3d::prelude::{Ray, QueryFilter};
+use astraweave_physics::PhysicsWorld;
+use glam::{IVec2, Quat, Vec3};
+use rapier3d::prelude::{QueryFilter, Ray};
+use rhai::{Dynamic, Engine, ImmutableString};
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum ScriptCommand {
     Spawn { prefab: String, position: Vec3 },
     Despawn { entity: i64 },
@@ -30,25 +31,32 @@ impl ScriptCommands {
             position,
         });
     }
-    
+
     pub fn despawn(&mut self, entity: i64) {
         self.commands.push(ScriptCommand::Despawn { entity });
     }
 
     pub fn set_position(&mut self, entity: i64, position: Vec3) {
-        self.commands.push(ScriptCommand::SetPosition { entity, position });
+        self.commands
+            .push(ScriptCommand::SetPosition { entity, position });
     }
 
     pub fn apply_damage(&mut self, entity: i64, amount: f32) {
-        self.commands.push(ScriptCommand::ApplyDamage { entity, amount });
+        self.commands
+            .push(ScriptCommand::ApplyDamage { entity, amount });
     }
 
     pub fn play_sound(&mut self, path: &str) {
-        self.commands.push(ScriptCommand::PlaySound { path: path.to_string() });
+        self.commands.push(ScriptCommand::PlaySound {
+            path: path.to_string(),
+        });
     }
 
     pub fn spawn_particle(&mut self, effect: &str, position: Vec3) {
-        self.commands.push(ScriptCommand::SpawnParticle { effect: effect.to_string(), position });
+        self.commands.push(ScriptCommand::SpawnParticle {
+            effect: effect.to_string(),
+            position,
+        });
     }
 }
 
@@ -75,48 +83,50 @@ pub struct RaycastHit {
 
 impl PhysicsProxy {
     pub fn raycast(&mut self, origin: Vec3, dir: Vec3, max_dist: f32) -> Dynamic {
-        if self.ptr.is_null() { return Dynamic::UNIT; }
-        
+        if self.ptr.is_null() {
+            return Dynamic::UNIT;
+        }
+
         let physics = unsafe { &*self.ptr };
         let ray = Ray::new(
             rapier3d::na::Point3::new(origin.x, origin.y, origin.z),
             rapier3d::na::Vector3::new(dir.x, dir.y, dir.z),
         );
-        
+
         let filter = QueryFilter::default();
-        
+
         if let Some((handle, hit)) = physics.query_pipeline.cast_ray_and_get_normal(
             &physics.bodies,
             &physics.colliders,
             &ray,
             max_dist,
             true,
-            filter
+            filter,
         ) {
             let collider = physics.colliders.get(handle);
             let body_handle = collider.and_then(|c| c.parent());
-            
+
             let body_id = if let Some(bh) = body_handle {
                 physics.id_of(bh).unwrap_or(0)
             } else {
                 0
             };
-            
+
             let entity_id = self.body_map.get(&body_id).copied().unwrap_or(0) as i64;
-            
+
             // Calculate hit point manually
             let point = ray.point_at(hit.time_of_impact);
-            
+
             let hit_result = RaycastHit {
                 entity_id,
                 position: Vec3::new(point.x, point.y, point.z),
                 normal: Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z),
                 distance: hit.time_of_impact,
             };
-            
+
             return rhai::Dynamic::from(hit_result);
         }
-        
+
         Dynamic::UNIT
     }
 }
@@ -132,7 +142,9 @@ unsafe impl Sync for NavMeshProxy {}
 
 impl NavMeshProxy {
     pub fn find_path(&mut self, start: Vec3, goal: Vec3) -> Vec<Dynamic> {
-        if self.ptr.is_null() { return vec![]; }
+        if self.ptr.is_null() {
+            return vec![];
+        }
         let nav = unsafe { &*self.ptr };
         let path = nav.find_path(start, goal);
         path.into_iter().map(Dynamic::from).collect()
@@ -141,7 +153,8 @@ impl NavMeshProxy {
 
 pub fn register_api(engine: &mut Engine) {
     // Register Vec3
-    engine.register_type_with_name::<Vec3>("Vec3")
+    engine
+        .register_type_with_name::<Vec3>("Vec3")
         .register_fn("vec3", |x: f32, y: f32, z: f32| Vec3::new(x, y, z))
         .register_get("x", |v: &mut Vec3| v.x)
         .register_get("y", |v: &mut Vec3| v.y)
@@ -152,10 +165,13 @@ pub fn register_api(engine: &mut Engine) {
         .register_fn("+", |a: Vec3, b: Vec3| a + b)
         .register_fn("-", |a: Vec3, b: Vec3| a - b)
         .register_fn("*", |a: Vec3, f: f32| a * f)
-        .register_fn("to_string", |v: Vec3| ImmutableString::from(format!("Vec3({}, {}, {})", v.x, v.y, v.z)));
+        .register_fn("to_string", |v: Vec3| {
+            ImmutableString::from(format!("Vec3({}, {}, {})", v.x, v.y, v.z))
+        });
 
     // Register IVec2
-    engine.register_type_with_name::<IVec2>("IVec2")
+    engine
+        .register_type_with_name::<IVec2>("IVec2")
         .register_fn("ivec2", |x: i64, y: i64| IVec2::new(x as i32, y as i32))
         .register_get("x", |v: &mut IVec2| v.x as i64)
         .register_get("y", |v: &mut IVec2| v.y as i64)
@@ -163,39 +179,79 @@ pub fn register_api(engine: &mut Engine) {
         .register_set("y", |v: &mut IVec2, val: i64| v.y = val as i32)
         .register_fn("+", |a: IVec2, b: IVec2| a + b)
         .register_fn("-", |a: IVec2, b: IVec2| a - b)
-        .register_fn("to_string", |v: IVec2| ImmutableString::from(format!("IVec2({}, {})", v.x, v.y)));
+        .register_fn("to_string", |v: IVec2| {
+            ImmutableString::from(format!("IVec2({}, {})", v.x, v.y))
+        });
 
     // Register Quat
-    engine.register_type_with_name::<Quat>("Quat")
-        .register_fn("quat", |x: f32, y: f32, z: f32, w: f32| Quat::from_xyzw(x, y, z, w))
-        .register_fn("to_string", |v: Quat| ImmutableString::from(format!("Quat({}, {}, {}, {})", v.x, v.y, v.z, v.w)));
+    engine
+        .register_type_with_name::<Quat>("Quat")
+        .register_fn("quat", |x: f32, y: f32, z: f32, w: f32| {
+            Quat::from_xyzw(x, y, z, w)
+        })
+        .register_fn("to_string", |v: Quat| {
+            ImmutableString::from(format!("Quat({}, {}, {}, {})", v.x, v.y, v.z, v.w))
+        });
 
     // Register Global Functions
     engine.register_fn("log", |s: ImmutableString| println!("[Script] {}", s));
 
     // Register ScriptCommands
-    engine.register_type_with_name::<ScriptCommands>("Commands")
-        .register_fn("spawn_prefab", |cmds: &mut ScriptCommands, prefab: &str, pos: Vec3| cmds.spawn(prefab, pos))
-        .register_fn("despawn", |cmds: &mut ScriptCommands, entity: i64| cmds.despawn(entity))
-        .register_fn("set_position", |cmds: &mut ScriptCommands, entity: i64, pos: Vec3| cmds.set_position(entity, pos))
-        .register_fn("apply_damage", |cmds: &mut ScriptCommands, entity: i64, amount: f32| cmds.apply_damage(entity, amount))
-        .register_fn("play_sound", |cmds: &mut ScriptCommands, path: &str| cmds.play_sound(path))
-        .register_fn("spawn_particle", |cmds: &mut ScriptCommands, effect: &str, pos: Vec3| cmds.spawn_particle(effect, pos));
+    engine
+        .register_type_with_name::<ScriptCommands>("Commands")
+        .register_fn(
+            "spawn_prefab",
+            |cmds: &mut ScriptCommands, prefab: &str, pos: Vec3| cmds.spawn(prefab, pos),
+        )
+        .register_fn("despawn", |cmds: &mut ScriptCommands, entity: i64| {
+            cmds.despawn(entity)
+        })
+        .register_fn(
+            "set_position",
+            |cmds: &mut ScriptCommands, entity: i64, pos: Vec3| cmds.set_position(entity, pos),
+        )
+        .register_fn(
+            "apply_damage",
+            |cmds: &mut ScriptCommands, entity: i64, amount: f32| cmds.apply_damage(entity, amount),
+        )
+        .register_fn("play_sound", |cmds: &mut ScriptCommands, path: &str| {
+            cmds.play_sound(path)
+        })
+        .register_fn(
+            "spawn_particle",
+            |cmds: &mut ScriptCommands, effect: &str, pos: Vec3| cmds.spawn_particle(effect, pos),
+        );
 
     // Register Physics API
-    engine.register_type_with_name::<RaycastHit>("RaycastHit")
+    engine
+        .register_type_with_name::<RaycastHit>("RaycastHit")
         .register_get("entity_id", |h: &mut RaycastHit| h.entity_id)
         .register_get("position", |h: &mut RaycastHit| h.position)
         .register_get("normal", |h: &mut RaycastHit| h.normal)
         .register_get("distance", |h: &mut RaycastHit| h.distance)
-        .register_fn("to_string", |h: RaycastHit| ImmutableString::from(format!("Hit(Entity: {}, Dist: {:.2})", h.entity_id, h.distance)));
+        .register_fn("to_string", |h: RaycastHit| {
+            ImmutableString::from(format!(
+                "Hit(Entity: {}, Dist: {:.2})",
+                h.entity_id, h.distance
+            ))
+        });
 
-    engine.register_type_with_name::<PhysicsProxy>("Physics")
-        .register_fn("raycast", |p: &mut PhysicsProxy, origin: Vec3, dir: Vec3, max_dist: f32| p.raycast(origin, dir, max_dist));
+    engine
+        .register_type_with_name::<PhysicsProxy>("Physics")
+        .register_fn(
+            "raycast",
+            |p: &mut PhysicsProxy, origin: Vec3, dir: Vec3, max_dist: f32| {
+                p.raycast(origin, dir, max_dist)
+            },
+        );
 
     // Register NavMesh API
-    engine.register_type_with_name::<NavMeshProxy>("NavMesh")
-        .register_fn("find_path", |n: &mut NavMeshProxy, start: Vec3, goal: Vec3| n.find_path(start, goal));
+    engine
+        .register_type_with_name::<NavMeshProxy>("NavMesh")
+        .register_fn(
+            "find_path",
+            |n: &mut NavMeshProxy, start: Vec3, goal: Vec3| n.find_path(start, goal),
+        );
 }
 
 #[cfg(test)]

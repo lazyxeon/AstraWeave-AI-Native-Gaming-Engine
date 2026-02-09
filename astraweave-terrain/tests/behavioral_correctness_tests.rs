@@ -10,10 +10,10 @@
 //! - Biome classification: Scoring logic, condition matching, slope suitability
 //! - Voxel data: Chunk coordinates, density thresholds
 
+use astraweave_terrain::noise_gen::{NoiseLayer, NoiseType};
 use astraweave_terrain::{
     BiomeConfig, BiomeType, Heightmap, HeightmapConfig, NoiseConfig, TerrainNoise,
 };
-use astraweave_terrain::noise_gen::{NoiseLayer, NoiseType};
 
 /// Helper function to create a disabled NoiseLayer
 fn disabled_noise_layer() -> NoiseLayer {
@@ -222,26 +222,29 @@ fn test_heightmap_bounds_update_on_set() {
     heightmap.set_height(2, 2, 75.0);
 
     // Min/max should reflect actual range
-    assert!(
-        heightmap.min_height() <= -50.0,
-        "Min should include -50.0"
-    );
-    assert!(
-        heightmap.max_height() >= 150.0,
-        "Max should include 150.0"
-    );
+    assert!(heightmap.min_height() <= -50.0, "Min should include -50.0");
+    assert!(heightmap.max_height() >= 150.0, "Max should include 150.0");
 }
 
 /// Test from_data calculates bounds correctly
 #[test]
 fn test_heightmap_from_data_bounds() {
     let resolution = 4;
-    let data = vec![10.0, 20.0, 30.0, 40.0, 5.0, 15.0, 25.0, 35.0, 0.0, 10.0, 20.0, 30.0, 100.0, 90.0, 80.0, 70.0];
-    
+    let data = vec![
+        10.0, 20.0, 30.0, 40.0, 5.0, 15.0, 25.0, 35.0, 0.0, 10.0, 20.0, 30.0, 100.0, 90.0, 80.0,
+        70.0,
+    ];
+
     let heightmap = Heightmap::from_data(data, resolution).unwrap();
-    
-    assert!((heightmap.min_height() - 0.0).abs() < 1e-6, "Min should be 0.0");
-    assert!((heightmap.max_height() - 100.0).abs() < 1e-6, "Max should be 100.0");
+
+    assert!(
+        (heightmap.min_height() - 0.0).abs() < 1e-6,
+        "Min should be 0.0"
+    );
+    assert!(
+        (heightmap.max_height() - 100.0).abs() < 1e-6,
+        "Max should be 100.0"
+    );
 }
 
 /// Test from_data rejects mismatched sizes
@@ -249,7 +252,7 @@ fn test_heightmap_from_data_bounds() {
 fn test_heightmap_from_data_size_validation() {
     let resolution = 4; // Expects 16 elements
     let data = vec![1.0, 2.0, 3.0]; // Only 3 elements
-    
+
     let result = Heightmap::from_data(data, resolution);
     assert!(result.is_err(), "Should reject mismatched data size");
 }
@@ -262,19 +265,25 @@ fn test_heightmap_recalculate_bounds() {
         ..Default::default()
     };
     let mut heightmap = Heightmap::new(config).unwrap();
-    
+
     // Bulk modify data
     let data = heightmap.data_mut();
     for (i, h) in data.iter_mut().enumerate() {
         *h = i as f32 * 10.0;
     }
-    
+
     // Recalculate bounds
     heightmap.recalculate_bounds();
-    
+
     // Resolution 4 = 16 elements, last element is 150.0
-    assert!((heightmap.min_height() - 0.0).abs() < 1e-6, "Min should be 0.0");
-    assert!((heightmap.max_height() - 150.0).abs() < 1e-6, "Max should be 150.0");
+    assert!(
+        (heightmap.min_height() - 0.0).abs() < 1e-6,
+        "Min should be 0.0"
+    );
+    assert!(
+        (heightmap.max_height() - 150.0).abs() < 1e-6,
+        "Max should be 150.0"
+    );
 }
 
 /// Test normal calculation points upward for flat terrain
@@ -720,7 +729,7 @@ fn test_slope_suitability_threshold() {
 #[test]
 fn test_biome_priority_bonus() {
     let grassland = BiomeConfig::grassland(); // priority: 1
-    let beach = BiomeConfig::beach();         // priority: 7
+    let beach = BiomeConfig::beach(); // priority: 7
 
     // Use identical conditions that fit both
     // Beach height: -5 to 5, temp: 0.5-0.9, moisture: 0.3-0.6
@@ -944,9 +953,7 @@ fn test_noise_type_variety() {
     assert!(
         !all_same,
         "Different noise types should produce different values. Perlin: {}, Ridged: {}, Billow: {}",
-        h_perlin,
-        h_ridged,
-        h_billow
+        h_perlin, h_ridged, h_billow
     );
 }
 

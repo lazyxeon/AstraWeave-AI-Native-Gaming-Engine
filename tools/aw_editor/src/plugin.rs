@@ -51,6 +51,7 @@ impl PluginMetadata {
 
 /// Plugin lifecycle events
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PluginEvent {
     /// Plugin was just loaded
     Loaded,
@@ -170,6 +171,8 @@ pub type PluginResult<T> = Result<T, PluginError>;
 
 /// Plugin-specific error type
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum PluginError {
     /// Plugin initialization failed
     InitFailed(String),
@@ -301,6 +304,7 @@ impl PluginMenuItem {
 
 /// Plugin state tracking
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PluginState {
     /// Plugin is loaded but not yet initialized
     Loaded,

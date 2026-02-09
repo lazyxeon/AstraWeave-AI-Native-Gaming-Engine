@@ -17,6 +17,7 @@ pub struct CombatRewardEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EnemyType {
     RiftStalker, // +1 Echo
     Sentinel,    // +2 Echoes
@@ -38,6 +39,7 @@ pub struct PickupEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PickupType {
     EchoShard, // +1 Echo
 }

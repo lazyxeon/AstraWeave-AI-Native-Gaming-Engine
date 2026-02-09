@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! # AstraWeave Persona
 //!
 //! AI personality system for NPCs with LLM-enhanced behavior.
@@ -205,7 +206,7 @@ notes = "Elite hacker"
         struct TestSkills {
             skills: Vec<SkillEntry>,
         }
-        
+
         let parsed: TestSkills = toml::from_str(toml_str).unwrap();
         assert_eq!(parsed.skills[0].name, "Hacking");
         assert_eq!(parsed.skills[0].level, 8);
@@ -224,7 +225,7 @@ t = "personal"
         struct TestFacts {
             facts: Vec<FactEntry>,
         }
-        
+
         let parsed: TestFacts = toml::from_str(toml_str).unwrap();
         assert_eq!(parsed.facts[0].k, "age");
         assert_eq!(parsed.facts[0].v, "25");
@@ -296,7 +297,7 @@ prefs_json = 'invalid json {'
         // TOML should parse fine, but the JSON will be invalid
         let manifest: Manifest = toml::from_str(toml_str).unwrap();
         assert!(manifest.prefs_json.is_some());
-        
+
         // Test that invalid JSON is handled gracefully in load_persona_zip
         // (it returns Value::Null on error)
     }

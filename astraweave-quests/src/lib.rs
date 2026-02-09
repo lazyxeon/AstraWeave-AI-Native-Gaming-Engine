@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Quest system: authorable quest steps, validation, and execution
 use serde::{Deserialize, Serialize};
 

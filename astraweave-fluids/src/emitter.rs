@@ -26,6 +26,7 @@ pub struct FluidEmitter {
 }
 
 /// Shape of the fluid emitter source
+#[non_exhaustive]
 pub enum EmitterShape {
     /// Single point emitter
     Point,

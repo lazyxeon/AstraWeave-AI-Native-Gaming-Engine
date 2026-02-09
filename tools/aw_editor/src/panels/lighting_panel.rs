@@ -15,6 +15,7 @@ use crate::panels::Panel;
 
 /// Light type enumeration
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LightType {
     #[default]
     Directional,
@@ -82,6 +83,7 @@ impl LightType {
 
 /// Shadow quality preset
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ShadowQuality {
     Off,
     Low,
@@ -145,6 +147,7 @@ impl ShadowQuality {
 
 /// Shadow type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ShadowType {
     None,
     #[default]
@@ -203,6 +206,7 @@ impl ShadowType {
 
 /// Light unit
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LightUnit {
     #[default]
     Unitless,
@@ -345,6 +349,7 @@ impl Default for Light {
 
 /// Global illumination mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GiMode {
     #[default]
     None,
@@ -492,6 +497,7 @@ pub struct ReflectionProbe {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RefreshMode {
     #[default]
     OnAwake,
@@ -584,6 +590,7 @@ pub struct EnvironmentSettings {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AmbientMode {
     #[default]
     Skybox,
@@ -623,6 +630,7 @@ impl AmbientMode {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FogMode {
     #[default]
     Linear,
@@ -699,6 +707,7 @@ impl Default for EnvironmentSettings {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LightingTab {
     #[default]
     Lights,
@@ -711,6 +720,7 @@ pub enum LightingTab {
 
 /// Actions that can be performed by the lighting panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum LightingAction {
     // Light management
     AddLight(LightType),

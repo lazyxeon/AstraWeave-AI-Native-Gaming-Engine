@@ -1,0 +1,7 @@
+# Tundra biome — stable GPU array indices for terrain splatmap layers
+[layers]
+snow = 0
+ice = 1
+gravel = 2
+mountain_rock = 3
+dirt = 4

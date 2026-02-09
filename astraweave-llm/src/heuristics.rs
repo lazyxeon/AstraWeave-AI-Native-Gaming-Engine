@@ -56,6 +56,7 @@ pub struct HeuristicRule {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[non_exhaustive]
 pub enum HeuristicCondition {
     LowMorale { threshold: f32 },
     LowAmmo { threshold: u32 },
@@ -67,6 +68,7 @@ pub enum HeuristicCondition {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[non_exhaustive]
 pub enum HeuristicAction {
     HealSelf,
     Reload,

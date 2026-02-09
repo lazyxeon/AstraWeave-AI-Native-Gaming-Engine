@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 use astraweave_ecs::{App, Plugin, World};
 

@@ -10,6 +10,7 @@ use std::collections::HashMap;
 
 /// Detected playstyle pattern
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum PlaystylePattern {
     /// Aggressive combat approach (high damage, risky actions)
     Aggressive,

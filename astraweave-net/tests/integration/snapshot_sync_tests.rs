@@ -208,7 +208,7 @@ fn test_entity_spawn_despawn_sync() {
     
     // Initial world
     let mut w = World::new();
-    let player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 50);
+    let _player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 50);
     let enemy1 = w.spawn("Enemy1", IVec2 { x: 5, y: 5 }, Team { id: 1 }, 100, 30);
     
     let base = build_snapshot(&w, 0, 0);

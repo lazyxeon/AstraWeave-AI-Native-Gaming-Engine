@@ -539,6 +539,10 @@ Consider:
                         warn!("Skipping terrain operation due to budget constraints");
                     }
                 }
+                _ => {
+                    // Unknown/future operations are passed through
+                    validated_ops.push(op.clone());
+                }
             }
         }
 

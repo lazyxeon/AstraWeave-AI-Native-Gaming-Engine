@@ -18,6 +18,7 @@ pub struct WaterVolumeId(pub u64);
 
 /// Shape of a wind zone
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum WindZoneShape {
     /// Infinite directional wind (global)
     Global,
@@ -37,6 +38,7 @@ impl Default for WindZoneShape {
 
 /// Type of wind behavior
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum WindType {
     /// Constant directional wind
     Directional,

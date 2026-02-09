@@ -23,6 +23,7 @@ pub struct CombatEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CombatEventType {
     EnemyKilled,
     PlayerDamaged,

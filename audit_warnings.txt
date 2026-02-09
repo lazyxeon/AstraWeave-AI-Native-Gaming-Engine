@@ -1,0 +1,305 @@
+   Compiling astraweave-ai v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+   Compiling profiling_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\profiling_demo)
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:189:13
+    |
+189 |     let n = unsafe { aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len()) };
+    |             ^^^^^^ unnecessary `unsafe` block
+    |
+    = note: `#[warn(unused_unsafe)]` on by default
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:191:5
+    |
+191 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:198:5
+    |
+198 |     unsafe { aw_world_destroy(null_world) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:207:14
+    |
+207 |     let _n = unsafe { aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len()) };
+    |              ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:218:5
+    |
+218 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:227:5
+    |
+227 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:237:5
+    |
+237 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:246:5
+    |
+246 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:253:13
+    |
+253 |     let n = unsafe { aw_world_snapshot_json(null_world, buf.as_mut_ptr(), buf.len()) };
+    |             ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:276:5
+    |
+276 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:288:5
+    |
+288 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:300:5
+    |
+300 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:311:5
+    |
+311 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:322:5
+    |
+322 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:333:5
+    |
+333 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:344:5
+    |
+344 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:355:5
+    |
+355 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:366:5
+    |
+366 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:380:5
+    |
+380 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:409:5
+    |
+409 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:424:5
+    |
+424 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:433:13
+    |
+433 |     let n = unsafe { aw_last_error_string(std::ptr::null_mut(), 0) };
+    |             ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:445:13
+    |
+445 |     let n = unsafe { aw_last_error_string(buf.as_mut_ptr(), buf.len()) };
+    |             ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:516:5
+    |
+516 |     unsafe { aw_world_tick(null_world, 1.0 / 60.0) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:523:5
+    |
+523 |     unsafe { aw_world_tick(w, 1.0 / 60.0) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:526:13
+    |
+526 |     let n = unsafe { aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len()) };
+    |             ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:528:5
+    |
+528 |     unsafe { aw_world_destroy(w) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:538:5
+    |
+538 |     unsafe { aw_world_set_snapshot_callback(null_world, None) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: unnecessary `unsafe` block
+   --> astraweave-sdk\tests\mutation_resistant_comprehensive_tests.rs:545:5
+    |
+545 |     unsafe { aw_world_set_delta_callback(null_world, None) };
+    |     ^^^^^^ unnecessary `unsafe` block
+
+warning: `astraweave-sdk` (test "mutation_resistant_comprehensive_tests") generated 29 warnings
+   Compiling astraweave-math v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-math)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1165:29
+     |
+1165 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+     |
+     = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1182:29
+     |
+1182 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1199:29
+     |
+1199 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1216:29
+     |
+1216 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1233:29
+     |
+1233 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1250:29
+     |
+1250 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+    --> astraweave-quests\tests\mutation_resistant_comprehensive_tests.rs:1267:29
+     |
+1267 |         let mut rng = rand::thread_rng();
+     |                             ^^^^^^^^^^
+
+warning: `astraweave-quests` (test "mutation_resistant_comprehensive_tests") generated 7 warnings
+   Compiling rhai_authoring v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\rhai_authoring)
+   Compiling astraweave-coordination v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-coordination)
+   Compiling astraweave-sdk v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-sdk)
+   Compiling astraweave-dialogue v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-dialogue)
+   Compiling astraweave-security v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-security)
+   Compiling astraweave-ipc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ipc)
+   Compiling astraweave-stress-test v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-stress-test)
+   Compiling astraweave-scripting v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scripting)
+   Compiling adaptive_boss v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\adaptive_boss)
+   Compiling phase_director v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\phase_director)
+   Compiling astraweave-net-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net-ecs)
+   Compiling astraweave-director v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director)
+warning: unused import: `BlendResult`
+  --> crates\astraweave-blend\tests\mutation_resistant_comprehensive_tests.rs:16:43
+   |
+16 | use astraweave_blend::error::{BlendError, BlendResult};
+   |                                           ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `BlenderCapabilities`
+  --> crates\astraweave-blend\tests\mutation_resistant_comprehensive_tests.rs:21:5
+   |
+21 |     BlenderCapabilities, BlenderVersion, MINIMUM_BLENDER_VERSION, RECOMMENDED_BLENDER_VERSION,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::*`
+    --> crates\astraweave-blend\tests\mutation_resistant_comprehensive_tests.rs:2052:9
+     |
+2052 |     use super::*;
+     |         ^^^^^^^^
+
+warning: `astraweave-blend` (test "mutation_resistant_comprehensive_tests") generated 3 warnings (run `cargo fix --test "mutation_resistant_comprehensive_tests"` to apply 3 suggestions)
+   Compiling astraweave-assets v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\astraweave-assets)
+error[E0599]: no method named `build` found for struct `astraweave_net_ecs::NetworkClientPlugin` in the current scope
+   --> astraweave-net-ecs\tests\mutation_resistant_comprehensive_tests.rs:259:12
+    |
+259 |     plugin.build(&mut app);
+    |            ^^^^^ method not found in `astraweave_net_ecs::NetworkClientPlugin`
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs\src\lib.rs:719:8
+    |
+719 |     fn build(&self, app: &mut App);
+    |        ----- the method is available for `astraweave_net_ecs::NetworkClientPlugin` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Plugin` which provides `build` is implemented but not in scope; perhaps you want to import it
+    |
+3   + use astraweave_ecs::Plugin;
+    |
+
+error[E0599]: no method named `build` found for struct `astraweave_net_ecs::NetworkServerPlugin` in the current scope
+   --> astraweave-net-ecs\tests\mutation_resistant_comprehensive_tests.rs:267:12
+    |
+267 |     plugin.build(&mut app);
+    |            ^^^^^ method not found in `astraweave_net_ecs::NetworkServerPlugin`
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs\src\lib.rs:719:8
+    |
+719 |     fn build(&self, app: &mut App);
+    |        ----- the method is available for `astraweave_net_ecs::NetworkServerPlugin` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Plugin` which provides `build` is implemented but not in scope; perhaps you want to import it
+    |
+3   + use astraweave_ecs::Plugin;
+    |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `astraweave-net-ecs` (test "mutation_resistant_comprehensive_tests") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+warning: unused import: `DirectorPlan`
+ --> astraweave-director\tests\mutation_resistant_comprehensive_tests.rs:7:49
+  |
+7 |     CompanionState, DirectorBudget, DirectorOp, DirectorPlan, EnemyState, IVec2, PlayerState,
+  |                                                 ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-director` (test "mutation_resistant_comprehensive_tests") generated 1 warning (run `cargo fix --test "mutation_resistant_comprehensive_tests"` to apply 1 suggestion)

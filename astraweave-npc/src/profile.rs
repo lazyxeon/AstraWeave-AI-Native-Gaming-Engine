@@ -3,6 +3,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Role {
     Merchant,
     Guard,

@@ -5,6 +5,7 @@ use tracing::info;
 
 /// Structured telemetry event stream for aw_editor interactions.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum EditorTelemetryEvent {
     SelectionChanged {
         primary: Option<u32>,

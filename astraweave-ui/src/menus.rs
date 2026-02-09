@@ -259,7 +259,6 @@ pub fn show_settings_menu(
                 );
                 ui.add_space(10.0);
 
-
                 let current_res_text = format!(
                     "{}x{}",
                     settings.graphics.resolution.0, settings.graphics.resolution.1

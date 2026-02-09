@@ -18,6 +18,7 @@ use crate::panels::Panel;
 
 /// Actions emitted by the environment preset panel
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum EnvironmentAction {
     /// Apply current settings to the scene
     ApplySettings {
@@ -51,6 +52,7 @@ pub enum EnvironmentAction {
 
 /// Time of day presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TimeOfDay {
     Dawn,
     EarlyMorning,
@@ -194,6 +196,7 @@ impl TimeOfDay {
 
 /// Weather conditions
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum WeatherCondition {
     #[default]
     Clear,
@@ -359,6 +362,7 @@ impl WeatherCondition {
 
 /// Sky rendering type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SkyType {
     #[default]
     Procedural,
@@ -416,6 +420,7 @@ impl SkyType {
 
 /// Fog calculation type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FogType {
     None,
     #[default]
@@ -488,6 +493,7 @@ impl FogType {
 
 /// Tonemapping algorithm
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Tonemapper {
     None,
     Reinhard,
@@ -569,6 +575,7 @@ impl Tonemapper {
 
 /// Artistic mood presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MoodPreset {
     #[default]
     Neutral,
@@ -776,12 +783,13 @@ impl Default for EnvironmentSettings {
 impl EnvironmentSettings {
     /// Create from mood preset
     pub fn from_mood(mood: MoodPreset) -> Self {
-        let mut settings = Self::default();
-        settings.mood = mood;
-        settings.tonemapper = mood.recommended_tonemapper();
-        settings.contrast = mood.contrast();
-        settings.saturation = mood.saturation();
-        settings
+        Self {
+            mood,
+            tonemapper: mood.recommended_tonemapper(),
+            contrast: mood.contrast(),
+            saturation: mood.saturation(),
+            ..Self::default()
+        }
     }
 
     /// Apply time of day settings

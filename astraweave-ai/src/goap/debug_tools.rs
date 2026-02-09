@@ -85,7 +85,9 @@ impl PlanDebugger {
 
     /// Get current world state
     pub fn current_state(&self) -> &WorldState {
-        self.state_history.last().unwrap()
+        self.state_history
+            .last()
+            .expect("state_history must not be empty")
     }
 
     /// Step forward one action

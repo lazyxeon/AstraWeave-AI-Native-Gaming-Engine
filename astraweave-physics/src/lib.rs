@@ -1,5 +1,75 @@
+#![forbid(unsafe_code)]
+//! # AstraWeave Physics
+//!
+//! Full-featured physics simulation for AstraWeave, wrapping **Rapier3D 0.22**.
+//!
+//! This crate provides:
+//!
+//! - **[`PhysicsWorld`]** — Central simulation state (rigid bodies, colliders, joints, queries).
+//! - **[`CharacterController`]** — Kinematic character movement with ground detection.
+//! - **[`SpatialHash`]** — Grid-based broadphase for O(n log n) collision culling
+//!   (99.96% pair reduction vs brute-force).
+//! - **[`ProjectileManager`]** — Ballistic projectiles with penetration and explosions.
+//! - **[`GravityManager`]** — Composable gravity zones (sphere, box, cylinder).
+//! - **[`Ragdoll`] / [`RagdollBuilder`]** — Multi-bone ragdoll creation and simulation.
+//! - **[`Vehicle`] / [`VehicleManager`]** — Vehicle dynamics with drivetrain and wheels.
+//! - **[`EnvironmentManager`]** — Wind zones, water volumes, and buoyancy.
+//! - **[`DestructionManager`]** — Fracture patterns and debris spawning.
+//! - **[`ClothManager`]** — Particle-based cloth with distance constraints.
+//!
+//! # Feature Flags
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `async-physics` | Parallel 3-stage pipeline via Rayon |
+//! | `profiling` | Tracy integration for performance profiling |
+//! | `ecs` | ECS system integration |
+//!
+//! # Performance
+//!
+//! - Character move: 114 ns
+//! - Full physics tick: 6.52 µs
+//! - Rigid body step: 2.97 µs
+//! - Spatial hash: 3.77 ms (FxHashMap, vs 5.61 ms SipHash)
+
 use glam::{vec3, Mat4, Vec3};
-pub use rapier3d::prelude::*;
+
+// Rapier3D explicit re-exports (replaces glob `pub use rapier3d::prelude::*`)
+pub use rapier3d::prelude::{
+    // Sets & Pipelines (PhysicsWorld pub fields)
+    RigidBodySet, ColliderSet, ImpulseJointSet, MultibodyJointSet,
+    PhysicsPipeline, IntegrationParameters, IslandManager,
+    DefaultBroadPhase, NarrowPhase, QueryPipeline, CCDSolver,
+    // Event handling
+    ChannelEventCollector, CollisionEvent, ContactForceEvent,
+    // Handle types
+    RigidBodyHandle, ColliderHandle,
+    // Builders
+    RigidBodyBuilder, ColliderBuilder,
+    GenericJointBuilder, RevoluteJointBuilder, PrismaticJointBuilder, SphericalJointBuilder,
+    // Collision configuration
+    InteractionGroups, Group, ActiveEvents,
+    // Query / Raycast
+    QueryFilter, Ray,
+    // Math types & aliases used by PhysicsWorld and shape construction
+    Real, Point, Vector, UnitVector,
+    // Joint configuration
+    JointAxesMask,
+    // Debug rendering
+    DebugRenderPipeline, DebugRenderBackend, DebugRenderObject,
+    // Rigid body enum types
+    RigidBodyType, LockedAxes,
+    // Shape types
+    SharedShape,
+};
+// Nalgebra re-exports used by rapier3d APIs
+pub use rapier3d::na::{
+    Point3 as NaPoint3, UnitVector3 as NaUnitVector3, Vector3 as NaVector3,
+};
+// Rapier3d macros (`point!`/`vector!` expand to `nalgebra::...` internally)
+use rapier3d::na as nalgebra;
+pub use rapier3d::prelude::{point, vector};
+
 use std::collections::HashMap;
 
 #[cfg(feature = "profiling")]
@@ -79,6 +149,7 @@ mod mutation_tests;
 pub type BodyId = u64;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ActorKind {
     Static,
     Dynamic,
@@ -280,6 +351,7 @@ bitflags::bitflags! {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CharState {
     Grounded,
 }
@@ -522,6 +594,7 @@ impl std::fmt::Display for PhysicsConfig {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum JointType {
     Fixed,
     Revolute {

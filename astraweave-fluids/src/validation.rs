@@ -50,6 +50,7 @@ pub struct ValidationMetrics {
 
 impl ValidationMetrics {
     /// Compute metrics from simulation state
+    #[allow(clippy::too_many_arguments)]
     pub fn compute(
         densities: &[f32],
         velocities: &[[f32; 3]],
@@ -166,6 +167,7 @@ impl ValidationMetrics {
 
 /// Validation quality grade
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ValidationGrade {
     /// Excellent: <0.1% density error, >99.99% mass conservation
     Excellent,
@@ -421,6 +423,7 @@ impl ComparisonResult {
 
 /// Export format options
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ExportFormat {
     /// Comma-separated values
     Csv,

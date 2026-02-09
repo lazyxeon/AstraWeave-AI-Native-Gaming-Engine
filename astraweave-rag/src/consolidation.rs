@@ -52,6 +52,7 @@ impl Default for ConsolidationConfig {
 
 /// Strategies for memory consolidation
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum ConsolidationStrategy {
     /// Consolidate based on importance scores
     Importance,
@@ -224,7 +225,11 @@ mod tests {
         }
     }
 
-    fn create_test_memory_with_context(id: &str, text: &str, context: HashMap<String, String>) -> Memory {
+    fn create_test_memory_with_context(
+        id: &str,
+        text: &str,
+        context: HashMap<String, String>,
+    ) -> Memory {
         Memory {
             id: id.to_string(),
             text: text.to_string(),
@@ -268,18 +273,33 @@ mod tests {
         let cloned = config.clone();
         assert_eq!(cloned.enabled, config.enabled);
         assert_eq!(cloned.trigger_threshold, config.trigger_threshold);
-        assert_eq!(cloned.merge_similarity_threshold, config.merge_similarity_threshold);
+        assert_eq!(
+            cloned.merge_similarity_threshold,
+            config.merge_similarity_threshold
+        );
         assert_eq!(cloned.strategy, config.strategy);
     }
 
     #[test]
     fn test_consolidation_strategy_variants() {
-        assert_eq!(ConsolidationStrategy::Importance, ConsolidationStrategy::Importance);
-        assert_eq!(ConsolidationStrategy::Recency, ConsolidationStrategy::Recency);
-        assert_eq!(ConsolidationStrategy::Similarity, ConsolidationStrategy::Similarity);
+        assert_eq!(
+            ConsolidationStrategy::Importance,
+            ConsolidationStrategy::Importance
+        );
+        assert_eq!(
+            ConsolidationStrategy::Recency,
+            ConsolidationStrategy::Recency
+        );
+        assert_eq!(
+            ConsolidationStrategy::Similarity,
+            ConsolidationStrategy::Similarity
+        );
         assert_eq!(ConsolidationStrategy::Hybrid, ConsolidationStrategy::Hybrid);
-        
-        assert_ne!(ConsolidationStrategy::Importance, ConsolidationStrategy::Recency);
+
+        assert_ne!(
+            ConsolidationStrategy::Importance,
+            ConsolidationStrategy::Recency
+        );
     }
 
     // ========================================================================

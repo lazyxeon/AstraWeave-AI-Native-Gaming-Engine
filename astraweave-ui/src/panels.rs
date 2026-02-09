@@ -395,12 +395,18 @@ mod tests {
         // Move to in-game so Quit path is deterministic (PauseMenu quit goes to MainMenu)
         menu_manager.handle_action(MenuAction::NewGame);
         menu_manager.toggle_pause();
-        assert_eq!(menu_manager.current_state(), crate::menu::MenuState::PauseMenu);
+        assert_eq!(
+            menu_manager.current_state(),
+            crate::menu::MenuState::PauseMenu
+        );
 
         let mut out = UiResult::default();
         apply_menu_action(&mut menu_manager, MenuAction::Quit, &mut out);
         assert_eq!(out.menu_action, Some(MenuAction::Quit));
-        assert_eq!(menu_manager.current_state(), crate::menu::MenuState::MainMenu);
+        assert_eq!(
+            menu_manager.current_state(),
+            crate::menu::MenuState::MainMenu
+        );
     }
 
     #[test]
@@ -422,9 +428,18 @@ mod tests {
         assert_eq!(colorblind_mode_to_index(Some("unknown")), 0);
 
         assert_eq!(colorblind_mode_from_index(0), None);
-        assert_eq!(colorblind_mode_from_index(1), Some("protanopia".to_string()));
-        assert_eq!(colorblind_mode_from_index(2), Some("deuteranopia".to_string()));
-        assert_eq!(colorblind_mode_from_index(3), Some("tritanopia".to_string()));
+        assert_eq!(
+            colorblind_mode_from_index(1),
+            Some("protanopia".to_string())
+        );
+        assert_eq!(
+            colorblind_mode_from_index(2),
+            Some("deuteranopia".to_string())
+        );
+        assert_eq!(
+            colorblind_mode_from_index(3),
+            Some("tritanopia".to_string())
+        );
         assert_eq!(colorblind_mode_from_index(99), None);
     }
 

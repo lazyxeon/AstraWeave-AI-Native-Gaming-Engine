@@ -1,6 +1,7 @@
 use crate::{ActionStep, EngineError};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ToolBlockReason {
     Cooldown,
     LineOfSight,

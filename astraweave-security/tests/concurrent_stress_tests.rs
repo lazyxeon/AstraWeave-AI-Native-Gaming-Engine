@@ -38,7 +38,8 @@ fn test_concurrent_sanitize_llm_prompt_no_panic() {
         handles.push(std::thread::spawn(move || {
             for i in 0..2000 {
                 let s = &inputs[(i + t) % inputs.len()];
-                let out = sanitize_llm_prompt(s, &v).expect("sanitization should succeed for these inputs");
+                let out = sanitize_llm_prompt(s, &v)
+                    .expect("sanitization should succeed for these inputs");
                 assert!(out.len() <= v.max_prompt_length);
             }
         }));

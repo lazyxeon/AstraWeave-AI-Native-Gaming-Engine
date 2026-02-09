@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 /// Behavior tree node type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BehaviorNodeType {
     /// Combat-focused actions
     Combat,

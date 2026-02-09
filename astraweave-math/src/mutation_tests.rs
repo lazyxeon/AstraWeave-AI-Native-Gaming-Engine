@@ -37,9 +37,18 @@ mod boundary_condition_tests {
         let zero = Vec3::ZERO;
         let result = normalize_simd(zero);
         // Zero vector should normalize to zero (not NaN or panic)
-        assert!(result.x.is_finite(), "Zero vector normalize should not produce NaN");
-        assert!(result.y.is_finite(), "Zero vector normalize should not produce NaN");
-        assert!(result.z.is_finite(), "Zero vector normalize should not produce NaN");
+        assert!(
+            result.x.is_finite(),
+            "Zero vector normalize should not produce NaN"
+        );
+        assert!(
+            result.y.is_finite(),
+            "Zero vector normalize should not produce NaN"
+        );
+        assert!(
+            result.z.is_finite(),
+            "Zero vector normalize should not produce NaN"
+        );
     }
 
     #[test]
@@ -90,9 +99,18 @@ mod boundary_condition_tests {
         let unit_y = Vec3::new(0.0, 1.0, 0.0);
         let unit_z = Vec3::new(0.0, 0.0, 1.0);
 
-        assert!((length_simd(unit_x) - 1.0).abs() < 1e-6, "Unit X length should be 1.0");
-        assert!((length_simd(unit_y) - 1.0).abs() < 1e-6, "Unit Y length should be 1.0");
-        assert!((length_simd(unit_z) - 1.0).abs() < 1e-6, "Unit Z length should be 1.0");
+        assert!(
+            (length_simd(unit_x) - 1.0).abs() < 1e-6,
+            "Unit X length should be 1.0"
+        );
+        assert!(
+            (length_simd(unit_y) - 1.0).abs() < 1e-6,
+            "Unit Y length should be 1.0"
+        );
+        assert!(
+            (length_simd(unit_z) - 1.0).abs() < 1e-6,
+            "Unit Z length should be 1.0"
+        );
     }
 
     #[test]
@@ -127,7 +145,11 @@ mod boundary_condition_tests {
         let a = Vec3::new(1.0, 0.0, 0.0);
         let b = Vec3::new(2.0, 0.0, 0.0);
         let result = cross_simd(a, b);
-        assert_eq!(result, Vec3::ZERO, "Parallel vectors cross product must be zero");
+        assert_eq!(
+            result,
+            Vec3::ZERO,
+            "Parallel vectors cross product must be zero"
+        );
     }
 
     // ========================================================================
@@ -223,11 +245,9 @@ mod boundary_condition_tests {
         // Scaled quaternion - should normalize to unit length
         let scaled = Quat::from_xyzw(0.0, 0.0, 0.0, 2.0); // Length 2
         let result = normalize_quat_simd(scaled);
-        let length = (result.x * result.x
-            + result.y * result.y
-            + result.z * result.z
-            + result.w * result.w)
-            .sqrt();
+        let length =
+            (result.x * result.x + result.y * result.y + result.z * result.z + result.w * result.w)
+                .sqrt();
         assert!(
             (length - 1.0).abs() < 1e-6,
             "Normalized quat length should be 1.0"
@@ -314,7 +334,11 @@ mod boundary_condition_tests {
         let mut positions = vec![Vec3::new(1.0, 2.0, 3.0)];
         let velocities = vec![Vec3::new(100.0, 200.0, 300.0)];
         update_positions_simd(&mut positions, &velocities, 0.0);
-        assert_eq!(positions[0], Vec3::new(1.0, 2.0, 3.0), "Zero dt should not move");
+        assert_eq!(
+            positions[0],
+            Vec3::new(1.0, 2.0, 3.0),
+            "Zero dt should not move"
+        );
     }
 
     #[test]
@@ -323,7 +347,11 @@ mod boundary_condition_tests {
         let mut positions = vec![Vec3::new(1.0, 2.0, 3.0)];
         let velocities = vec![Vec3::ZERO];
         update_positions_simd(&mut positions, &velocities, 1.0);
-        assert_eq!(positions[0], Vec3::new(1.0, 2.0, 3.0), "Zero velocity should not move");
+        assert_eq!(
+            positions[0],
+            Vec3::new(1.0, 2.0, 3.0),
+            "Zero velocity should not move"
+        );
     }
 
     #[test]
@@ -342,7 +370,11 @@ mod boundary_condition_tests {
         let velocities = vec![Vec3::new(1.0, 0.0, 0.0); 4];
         update_positions_simd(&mut positions, &velocities, 1.0);
         for (i, pos) in positions.iter().enumerate() {
-            assert!((pos.x - 1.0).abs() < 1e-6, "Entity {} should move by 1.0", i);
+            assert!(
+                (pos.x - 1.0).abs() < 1e-6,
+                "Entity {} should move by 1.0",
+                i
+            );
         }
     }
 
@@ -353,7 +385,11 @@ mod boundary_condition_tests {
         let velocities = vec![Vec3::new(2.0, 0.0, 0.0); 5];
         update_positions_simd(&mut positions, &velocities, 0.5);
         for (i, pos) in positions.iter().enumerate() {
-            assert!((pos.x - 1.0).abs() < 1e-6, "Entity {} should move by 1.0", i);
+            assert!(
+                (pos.x - 1.0).abs() < 1e-6,
+                "Entity {} should move by 1.0",
+                i
+            );
         }
     }
 }
@@ -380,11 +416,17 @@ mod comparison_operator_tests {
         // Parallel same direction: positive
         let a = Vec3::new(1.0, 0.0, 0.0);
         let b = Vec3::new(1.0, 0.0, 0.0);
-        assert!(dot_simd(a, b) > 0.0, "Same direction dot should be positive");
+        assert!(
+            dot_simd(a, b) > 0.0,
+            "Same direction dot should be positive"
+        );
 
         // Parallel opposite direction: negative
         let c = Vec3::new(-1.0, 0.0, 0.0);
-        assert!(dot_simd(a, c) < 0.0, "Opposite direction dot should be negative");
+        assert!(
+            dot_simd(a, c) < 0.0,
+            "Opposite direction dot should be negative"
+        );
     }
 
     #[test]
@@ -397,7 +439,10 @@ mod comparison_operator_tests {
         let dot_short = dot_simd(a, b_short);
         let dot_long = dot_simd(a, b_long);
 
-        assert!(dot_long > dot_short, "Longer vector should produce larger dot product");
+        assert!(
+            dot_long > dot_short,
+            "Longer vector should produce larger dot product"
+        );
     }
 
     #[test]
@@ -420,14 +465,26 @@ mod comparison_operator_tests {
         // Positive components should stay positive
         let positive = Vec3::new(3.0, 4.0, 5.0);
         let result = normalize_simd(positive);
-        assert!(result.x > 0.0, "Positive X should stay positive after normalize");
-        assert!(result.y > 0.0, "Positive Y should stay positive after normalize");
-        assert!(result.z > 0.0, "Positive Z should stay positive after normalize");
+        assert!(
+            result.x > 0.0,
+            "Positive X should stay positive after normalize"
+        );
+        assert!(
+            result.y > 0.0,
+            "Positive Y should stay positive after normalize"
+        );
+        assert!(
+            result.z > 0.0,
+            "Positive Z should stay positive after normalize"
+        );
 
         // Negative components should stay negative
         let negative = Vec3::new(-3.0, -4.0, -5.0);
         let result_neg = normalize_simd(negative);
-        assert!(result_neg.x < 0.0, "Negative X should stay negative after normalize");
+        assert!(
+            result_neg.x < 0.0,
+            "Negative X should stay negative after normalize"
+        );
     }
 
     #[test]
@@ -483,8 +540,14 @@ mod comparison_operator_tests {
         let dist_50 = (1.0 - dot_quat_simd(a, t_50)).abs();
         let dist_75 = (1.0 - dot_quat_simd(a, t_75)).abs();
 
-        assert!(dist_50 > dist_25, "t=0.5 should be farther from a than t=0.25");
-        assert!(dist_75 > dist_50, "t=0.75 should be farther from a than t=0.5");
+        assert!(
+            dist_50 > dist_25,
+            "t=0.5 should be farther from a than t=0.25"
+        );
+        assert!(
+            dist_75 > dist_50,
+            "t=0.75 should be farther from a than t=0.5"
+        );
     }
 
     #[test]
@@ -502,28 +565,33 @@ mod comparison_operator_tests {
             + (q1_then_q2.z - q2_then_q1.z).abs()
             + (q1_then_q2.w - q2_then_q1.w).abs();
 
-        assert!(diff > 0.01, "Quaternion multiplication should be non-commutative");
+        assert!(
+            diff > 0.01,
+            "Quaternion multiplication should be non-commutative"
+        );
     }
 
     #[test]
     fn test_normalize_quat_length_comparison() {
         // Unnormalized quaternion should have different length before vs after
         let unnorm = Quat::from_xyzw(2.0, 0.0, 0.0, 2.0);
-        let len_before = (unnorm.x * unnorm.x
-            + unnorm.y * unnorm.y
-            + unnorm.z * unnorm.z
-            + unnorm.w * unnorm.w)
-            .sqrt();
+        let len_before =
+            (unnorm.x * unnorm.x + unnorm.y * unnorm.y + unnorm.z * unnorm.z + unnorm.w * unnorm.w)
+                .sqrt();
 
         let normed = normalize_quat_simd(unnorm);
-        let len_after = (normed.x * normed.x
-            + normed.y * normed.y
-            + normed.z * normed.z
-            + normed.w * normed.w)
-            .sqrt();
+        let len_after =
+            (normed.x * normed.x + normed.y * normed.y + normed.z * normed.z + normed.w * normed.w)
+                .sqrt();
 
-        assert!(len_before > len_after, "Unnormalized should be longer before normalize");
-        assert!((len_after - 1.0).abs() < 1e-6, "Normalized length should be 1.0");
+        assert!(
+            len_before > len_after,
+            "Unnormalized should be longer before normalize"
+        );
+        assert!(
+            (len_after - 1.0).abs() < 1e-6,
+            "Normalized length should be 1.0"
+        );
     }
 
     // ========================================================================
@@ -546,7 +614,11 @@ mod comparison_operator_tests {
         let p2 = rotate_then_translate.transform_point3(test_point);
 
         let diff = (p1.x - p2.x).abs() + (p1.y - p2.y).abs() + (p1.z - p2.z).abs();
-        assert!(diff > 0.1, "Matrix multiplication should be non-commutative: diff = {}", diff);
+        assert!(
+            diff > 0.1,
+            "Matrix multiplication should be non-commutative: diff = {}",
+            diff
+        );
     }
 
     #[test]
@@ -573,12 +645,18 @@ mod comparison_operator_tests {
         // Invertible matrix should have non-zero determinant
         let invertible = Mat4::from_scale(Vec3::new(2.0, 3.0, 4.0));
         let det = invertible.determinant();
-        assert!(det.abs() > 1e-6, "Invertible matrix determinant should be non-zero");
+        assert!(
+            det.abs() > 1e-6,
+            "Invertible matrix determinant should be non-zero"
+        );
 
         // Inverse should also be invertible
         let inv = inverse_simd(invertible);
         let inv_det = inv.determinant();
-        assert!(inv_det.abs() > 1e-6, "Inverse determinant should be non-zero");
+        assert!(
+            inv_det.abs() > 1e-6,
+            "Inverse determinant should be non-zero"
+        );
     }
 }
 
@@ -593,7 +671,9 @@ mod boolean_return_path_tests {
 
     use crate::simd_mat::{inverse_simd, mul_simd, transform_point_simd, transform_points_batch};
     use crate::simd_movement::update_positions_simd;
-    use crate::simd_quat::{normalize_batch as normalize_quat_batch, normalize_quat_simd, slerp_batch, slerp_simd};
+    use crate::simd_quat::{
+        normalize_batch as normalize_quat_batch, normalize_quat_simd, slerp_batch, slerp_simd,
+    };
     use crate::simd_vec::{length_simd, normalize_simd};
 
     // ========================================================================
@@ -605,8 +685,8 @@ mod boolean_return_path_tests {
         // All inputs should return finite, non-NaN results
         let test_cases = [
             Vec3::ZERO,
-            Vec3::new(1e-20, 0.0, 0.0),  // Near zero
-            Vec3::new(1e20, 0.0, 0.0),   // Large
+            Vec3::new(1e-20, 0.0, 0.0), // Near zero
+            Vec3::new(1e20, 0.0, 0.0),  // Large
             Vec3::ONE,
             Vec3::NEG_ONE,
         ];
@@ -698,7 +778,11 @@ mod boolean_return_path_tests {
         // Single element batch
         let pairs = vec![(Quat::IDENTITY, Quat::from_rotation_z(1.0))];
         let result = slerp_batch(&pairs, 0.0);
-        assert_eq!(result.len(), 1, "Single element batch should produce one result");
+        assert_eq!(
+            result.len(),
+            1,
+            "Single element batch should produce one result"
+        );
         assert!(
             (result[0].w - Quat::IDENTITY.w).abs() < 1e-6,
             "slerp(a, b, 0.0) should equal a"
@@ -716,8 +800,7 @@ mod boolean_return_path_tests {
         let result = normalize_quat_batch(&input);
 
         for (i, q) in result.iter().enumerate() {
-            let len =
-                (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w).sqrt();
+            let len = (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w).sqrt();
             assert!(
                 (len - 1.0).abs() < 1e-5,
                 "Batch element {} should have unit length, got {}",
@@ -864,8 +947,14 @@ mod mathematical_identity_tests {
         let dot_a = dot_simd(cross, a);
         let dot_b = dot_simd(cross, b);
 
-        assert!(dot_a.abs() < 1e-5, "Cross product should be orthogonal to A");
-        assert!(dot_b.abs() < 1e-5, "Cross product should be orthogonal to B");
+        assert!(
+            dot_a.abs() < 1e-5,
+            "Cross product should be orthogonal to A"
+        );
+        assert!(
+            dot_b.abs() < 1e-5,
+            "Cross product should be orthogonal to B"
+        );
     }
 
     #[test]
@@ -877,18 +966,9 @@ mod mathematical_identity_tests {
         let ab = cross_simd(a, b);
         let ba = cross_simd(b, a);
 
-        assert!(
-            (ab.x + ba.x).abs() < 1e-6,
-            "A × B should equal -(B × A)"
-        );
-        assert!(
-            (ab.y + ba.y).abs() < 1e-6,
-            "A × B should equal -(B × A)"
-        );
-        assert!(
-            (ab.z + ba.z).abs() < 1e-6,
-            "A × B should equal -(B × A)"
-        );
+        assert!((ab.x + ba.x).abs() < 1e-6, "A × B should equal -(B × A)");
+        assert!((ab.y + ba.y).abs() < 1e-6, "A × B should equal -(B × A)");
+        assert!((ab.z + ba.z).abs() < 1e-6, "A × B should equal -(B × A)");
     }
 
     #[test]
@@ -903,10 +983,7 @@ mod mathematical_identity_tests {
             (product.x).abs() < 1e-5,
             "q * q* should have zero imaginary part"
         );
-        assert!(
-            (product.w - 1.0).abs() < 1e-5,
-            "q * q* should have w = 1"
-        );
+        assert!((product.w - 1.0).abs() < 1e-5, "q * q* should have w = 1");
     }
 
     #[test]
@@ -972,7 +1049,10 @@ mod mathematical_identity_tests {
         let normalized = normalize_simd(v);
         let len = length_simd(normalized);
 
-        assert!((len - 1.0).abs() < 1e-6, "Normalized vector length should be 1.0");
+        assert!(
+            (len - 1.0).abs() < 1e-6,
+            "Normalized vector length should be 1.0"
+        );
     }
 }
 
@@ -1155,7 +1235,7 @@ mod simd_scalar_consistency_tests {
         let a = Mat4::from_scale(Vec3::new(2.0, 2.0, 2.0));
         let b = Mat4::from_scale(Vec3::new(3.0, 3.0, 3.0));
         let result = mul_simd(a, b);
-        
+
         // Expected: scale of 6, NOT 5
         let expected_scale = 6.0;
         assert!(
@@ -1178,7 +1258,7 @@ mod simd_scalar_consistency_tests {
         let a = Mat4::from_scale(Vec3::new(6.0, 6.0, 6.0));
         let b = Mat4::from_scale(Vec3::new(2.0, 2.0, 2.0));
         let result = mul_simd(a, b);
-        
+
         // Expected: scale of 12, NOT 3
         let expected_scale = 12.0;
         assert!(
@@ -1193,7 +1273,7 @@ mod simd_scalar_consistency_tests {
         // Identity * q = q, but identity + q would be different
         let q = Quat::from_rotation_y(1.0);
         let result = mul_quat_simd(Quat::IDENTITY, q);
-        
+
         assert!(
             (result.x - q.x).abs() < 1e-5,
             "Quat identity * q should equal q.x"
@@ -1214,12 +1294,13 @@ mod simd_scalar_consistency_tests {
         let q = Quat::from_rotation_y(std::f32::consts::FRAC_PI_2);
         let result = mul_quat_simd(q, q);
         let expected = Quat::from_rotation_y(std::f32::consts::PI);
-        
+
         // Check that double rotation is correct (catches * -> + or / mutations)
         assert!(
             (result.w - expected.w).abs() < 1e-4 || (result.w + expected.w).abs() < 1e-4,
             "Quat 90+90 deg should equal 180 deg: got w={}, expected w={}",
-            result.w, expected.w
+            result.w,
+            expected.w
         );
     }
 
@@ -1230,7 +1311,7 @@ mod simd_scalar_consistency_tests {
         let mut positions = vec![Vec3::new(10.0, 0.0, 0.0)];
         let velocities = vec![Vec3::new(5.0, 0.0, 0.0)];
         update_positions_simd(&mut positions, &velocities, 2.0);
-        
+
         // Expected: 10 + 5*2 = 20, NOT 10 + 5 + 2 = 17
         assert!(
             (positions[0].x - 20.0).abs() < 1e-5,
@@ -1254,7 +1335,7 @@ mod simd_scalar_consistency_tests {
             Vec3::new(40.0, 0.0, 0.0),
         ];
         update_positions_simd(&mut positions, &velocities, 0.5);
-        
+
         // Expected: pos + vel * 0.5
         assert!((positions[0].x - 6.0).abs() < 1e-5, "1 + 10*0.5 = 6");
         assert!((positions[1].x - 12.0).abs() < 1e-5, "2 + 20*0.5 = 12");
@@ -1262,4 +1343,3 @@ mod simd_scalar_consistency_tests {
         assert!((positions[3].x - 24.0).abs() < 1e-5, "4 + 40*0.5 = 24");
     }
 }
-

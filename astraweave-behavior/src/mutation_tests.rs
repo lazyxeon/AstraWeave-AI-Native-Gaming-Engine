@@ -54,10 +54,8 @@ mod behavior_node_tests {
 
     #[test]
     fn test_sequence_node_creation() {
-        let node = BehaviorNode::sequence(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
+        let node =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
         assert!(node.is_sequence(), "Should be sequence node");
         assert!(!node.is_selector(), "Should not be selector");
         assert_eq!(node.child_count(), 2);
@@ -87,10 +85,7 @@ mod behavior_node_tests {
 
     #[test]
     fn test_decorator_node_creation() {
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("check"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("check"));
         assert!(node.is_decorator(), "Should be decorator node");
         assert_eq!(node.child_count(), 1);
     }
@@ -145,10 +140,7 @@ mod behavior_node_tests {
     fn test_total_node_count_tree() {
         let tree = BehaviorNode::sequence(vec![
             BehaviorNode::action("a"),
-            BehaviorNode::selector(vec![
-                BehaviorNode::action("b"),
-                BehaviorNode::action("c"),
-            ]),
+            BehaviorNode::selector(vec![BehaviorNode::action("b"), BehaviorNode::action("c")]),
         ]);
         // 1 sequence + 1 action + 1 selector + 2 actions = 5
         assert_eq!(tree.total_node_count(), 5);
@@ -164,12 +156,10 @@ mod behavior_node_tests {
     fn test_max_depth_nested() {
         let tree = BehaviorNode::sequence(vec![
             BehaviorNode::action("a"),
-            BehaviorNode::selector(vec![
-                BehaviorNode::decorator(
-                    DecoratorType::Inverter,
-                    BehaviorNode::action("b"),
-                ),
-            ]),
+            BehaviorNode::selector(vec![BehaviorNode::decorator(
+                DecoratorType::Inverter,
+                BehaviorNode::action("b"),
+            )]),
         ]);
         // sequence -> selector -> decorator -> action = depth 4
         assert_eq!(tree.max_depth(), 4);
@@ -221,20 +211,32 @@ mod tick_tests {
             ("running_action", BehaviorStatus::Running),
         ]);
 
-        assert_eq!(BehaviorNode::action("success_action").tick(&ctx), BehaviorStatus::Success);
-        assert_eq!(BehaviorNode::action("failure_action").tick(&ctx), BehaviorStatus::Failure);
-        assert_eq!(BehaviorNode::action("running_action").tick(&ctx), BehaviorStatus::Running);
+        assert_eq!(
+            BehaviorNode::action("success_action").tick(&ctx),
+            BehaviorStatus::Success
+        );
+        assert_eq!(
+            BehaviorNode::action("failure_action").tick(&ctx),
+            BehaviorStatus::Failure
+        );
+        assert_eq!(
+            BehaviorNode::action("running_action").tick(&ctx),
+            BehaviorStatus::Running
+        );
     }
 
     #[test]
     fn test_condition_tick_returns_handler_result() {
-        let ctx = create_context_with_conditions(&[
-            ("is_true", true),
-            ("is_false", false),
-        ]);
+        let ctx = create_context_with_conditions(&[("is_true", true), ("is_false", false)]);
 
-        assert_eq!(BehaviorNode::condition("is_true").tick(&ctx), BehaviorStatus::Success);
-        assert_eq!(BehaviorNode::condition("is_false").tick(&ctx), BehaviorStatus::Failure);
+        assert_eq!(
+            BehaviorNode::condition("is_true").tick(&ctx),
+            BehaviorStatus::Success
+        );
+        assert_eq!(
+            BehaviorNode::condition("is_false").tick(&ctx),
+            BehaviorStatus::Failure
+        );
     }
 
     #[test]
@@ -275,10 +277,8 @@ mod tick_tests {
             ("a", BehaviorStatus::Success),
             ("b", BehaviorStatus::Running),
         ]);
-        let seq = BehaviorNode::sequence(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
+        let seq =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
 
         assert_eq!(seq.tick(&ctx), BehaviorStatus::Running);
     }
@@ -305,10 +305,8 @@ mod tick_tests {
             ("a", BehaviorStatus::Failure),
             ("b", BehaviorStatus::Failure),
         ]);
-        let sel = BehaviorNode::selector(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
+        let sel =
+            BehaviorNode::selector(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
 
         assert_eq!(sel.tick(&ctx), BehaviorStatus::Failure);
     }
@@ -319,10 +317,8 @@ mod tick_tests {
             ("a", BehaviorStatus::Failure),
             ("b", BehaviorStatus::Running),
         ]);
-        let sel = BehaviorNode::selector(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
+        let sel =
+            BehaviorNode::selector(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
 
         assert_eq!(sel.tick(&ctx), BehaviorStatus::Running);
     }
@@ -330,10 +326,7 @@ mod tick_tests {
     #[test]
     fn test_inverter_inverts_success() {
         let ctx = create_context_with_actions(&[("a", BehaviorStatus::Success)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("a"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("a"));
 
         assert_eq!(node.tick(&ctx), BehaviorStatus::Failure);
     }
@@ -341,10 +334,7 @@ mod tick_tests {
     #[test]
     fn test_inverter_inverts_failure() {
         let ctx = create_context_with_actions(&[("a", BehaviorStatus::Failure)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("a"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("a"));
 
         assert_eq!(node.tick(&ctx), BehaviorStatus::Success);
     }
@@ -352,10 +342,7 @@ mod tick_tests {
     #[test]
     fn test_inverter_preserves_running() {
         let ctx = create_context_with_actions(&[("a", BehaviorStatus::Running)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("a"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("a"));
 
         assert_eq!(node.tick(&ctx), BehaviorStatus::Running);
     }
@@ -363,10 +350,7 @@ mod tick_tests {
     #[test]
     fn test_succeeder_always_succeeds() {
         let ctx = create_context_with_actions(&[("a", BehaviorStatus::Failure)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Succeeder,
-            BehaviorNode::action("a"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Succeeder, BehaviorNode::action("a"));
 
         assert_eq!(node.tick(&ctx), BehaviorStatus::Success);
     }
@@ -374,10 +358,7 @@ mod tick_tests {
     #[test]
     fn test_failer_always_fails() {
         let ctx = create_context_with_actions(&[("a", BehaviorStatus::Success)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Failer,
-            BehaviorNode::action("a"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Failer, BehaviorNode::action("a"));
 
         assert_eq!(node.tick(&ctx), BehaviorStatus::Failure);
     }
@@ -473,7 +454,7 @@ mod behavioral_tests {
     fn test_total_nodes_includes_self() {
         let single = BehaviorNode::action("a");
         assert_eq!(single.total_node_count(), 1);
-        
+
         let with_child = BehaviorNode::sequence(vec![BehaviorNode::action("a")]);
         assert_eq!(with_child.total_node_count(), 2);
     }
@@ -482,11 +463,9 @@ mod behavioral_tests {
     fn test_summary_format() {
         let action = BehaviorNode::action("test");
         assert!(action.summary().contains("test"));
-        
-        let seq = BehaviorNode::sequence(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
+
+        let seq =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
         assert!(seq.summary().contains("2"));
     }
 }
@@ -595,8 +574,7 @@ mod boundary_condition_tests {
     #[test]
     fn test_repeat_one_boundary() {
         // Repeat(1): execute exactly once
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Success)]);
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Success)]);
         let node =
             BehaviorNode::decorator(DecoratorType::Repeat(1), BehaviorNode::action("action"));
         assert_eq!(
@@ -610,8 +588,7 @@ mod boundary_condition_tests {
     fn test_retry_zero_boundary() {
         // Retry(0): should fail immediately
         let ctx = BehaviorContext::default();
-        let node =
-            BehaviorNode::decorator(DecoratorType::Retry(0), BehaviorNode::action("action"));
+        let node = BehaviorNode::decorator(DecoratorType::Retry(0), BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Failure,
@@ -623,10 +600,8 @@ mod boundary_condition_tests {
     fn test_retry_exactly_needed_boundary() {
         // Retry(3) with success on 3rd try: boundary case
         // We can't easily test this with our mock, but we can test that Retry(1) with success works
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Success)]);
-        let node =
-            BehaviorNode::decorator(DecoratorType::Retry(1), BehaviorNode::action("action"));
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Success)]);
+        let node = BehaviorNode::decorator(DecoratorType::Retry(1), BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Success,
@@ -727,9 +702,10 @@ mod boundary_condition_tests {
     #[test]
     fn test_total_nodes_deeply_nested() {
         // 1 root + 1 child + 1 grandchild = 3
-        let nested = BehaviorNode::sequence(vec![BehaviorNode::sequence(vec![
-            BehaviorNode::action("leaf"),
-        ])]);
+        let nested =
+            BehaviorNode::sequence(vec![BehaviorNode::sequence(vec![BehaviorNode::action(
+                "leaf",
+            )])]);
         assert_eq!(
             nested.total_node_count(),
             3,
@@ -781,12 +757,8 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_inverter_success_becomes_failure() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Success)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("action"),
-        );
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Success)]);
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Failure,
@@ -796,12 +768,8 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_inverter_failure_becomes_success() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Failure)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("action"),
-        );
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Failure)]);
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Success,
@@ -811,12 +779,8 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_inverter_running_unchanged() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Running)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("action"),
-        );
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Running)]);
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Running,
@@ -830,12 +794,9 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_succeeder_overrides_failure() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Failure)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Succeeder,
-            BehaviorNode::action("action"),
-        );
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Failure)]);
+        let node =
+            BehaviorNode::decorator(DecoratorType::Succeeder, BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Success,
@@ -845,12 +806,8 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_failer_overrides_success() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Success)]);
-        let node = BehaviorNode::decorator(
-            DecoratorType::Failer,
-            BehaviorNode::action("action"),
-        );
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Success)]);
+        let node = BehaviorNode::decorator(DecoratorType::Failer, BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Failure,
@@ -870,14 +827,10 @@ mod comparison_operator_tests {
             ("b", BehaviorStatus::Failure),
         ]);
 
-        let seq = BehaviorNode::sequence(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
-        let sel = BehaviorNode::selector(vec![
-            BehaviorNode::action("a"),
-            BehaviorNode::action("b"),
-        ]);
+        let seq =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
+        let sel =
+            BehaviorNode::selector(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
 
         assert_eq!(
             seq.tick(&ctx),
@@ -1003,10 +956,7 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_is_decorator_returns_correct_boolean() {
-        let dec = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("a"),
-        );
+        let dec = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("a"));
         let action = BehaviorNode::action("a");
 
         assert!(dec.is_decorator(), "Decorator must return true");
@@ -1151,8 +1101,7 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_repeat_returns_failure_on_child_failure() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Failure)]);
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Failure)]);
         let node =
             BehaviorNode::decorator(DecoratorType::Repeat(5), BehaviorNode::action("action"));
         assert_eq!(
@@ -1164,10 +1113,8 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_retry_returns_success_on_child_success() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Success)]);
-        let node =
-            BehaviorNode::decorator(DecoratorType::Retry(5), BehaviorNode::action("action"));
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Success)]);
+        let node = BehaviorNode::decorator(DecoratorType::Retry(5), BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Success,
@@ -1177,8 +1124,7 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_repeat_running_propagation() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Running)]);
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Running)]);
         let node =
             BehaviorNode::decorator(DecoratorType::Repeat(5), BehaviorNode::action("action"));
         assert_eq!(
@@ -1190,10 +1136,8 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_retry_running_propagation() {
-        let ctx =
-            create_context_with_actions(&[("action", BehaviorStatus::Running)]);
-        let node =
-            BehaviorNode::decorator(DecoratorType::Retry(5), BehaviorNode::action("action"));
+        let ctx = create_context_with_actions(&[("action", BehaviorStatus::Running)]);
+        let node = BehaviorNode::decorator(DecoratorType::Retry(5), BehaviorNode::action("action"));
         assert_eq!(
             node.tick(&ctx),
             BehaviorStatus::Running,

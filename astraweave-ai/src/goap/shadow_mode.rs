@@ -282,7 +282,7 @@ impl ShadowModeRunner {
         }
 
         self.comparisons.push(comparison);
-        self.comparisons.last().unwrap()
+        self.comparisons.last().expect("just pushed comparison")
     }
 
     /// Get all comparisons

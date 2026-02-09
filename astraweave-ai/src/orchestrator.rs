@@ -20,6 +20,7 @@ pub trait OrchestratorAsync {
 }
 
 pub trait Orchestrator {
+    /// Propose a plan based on a world snapshot.
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent;
 }
 
@@ -27,6 +28,28 @@ pub trait Orchestrator {
 /// If enemy in LOS-ish and "smoke" not on cooldown:
 ///   throw smoke midway, move up, cover fire.
 /// Else: advance towards nearest enemy.
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_ai::orchestrator::{RuleOrchestrator, Orchestrator};
+/// use astraweave_core::*;
+/// use std::collections::BTreeMap;
+///
+/// let orch = RuleOrchestrator::new();
+/// let snap = WorldSnapshot {
+///     t: 0.0,
+///     player: PlayerState { hp: 100, pos: IVec2::new(0, 0), stance: "stand".into(), orders: vec![] },
+///     me: CompanionState { ammo: 10, cooldowns: BTreeMap::new(), morale: 1.0, pos: IVec2::new(1, 1) },
+///     enemies: vec![],
+///     pois: vec![],
+///     obstacles: vec![],
+///     objective: None,
+/// };
+/// let plan = orch.propose_plan(&snap);
+/// // An empty battlefield produces a plan (may be empty or a fallback advance)
+/// assert!(plan.plan_id.starts_with("plan-"));
+/// ```
 pub struct RuleOrchestrator;
 
 impl std::fmt::Display for RuleOrchestrator {
@@ -417,6 +440,13 @@ where
                         Ok(PlanIntent {
                             plan_id: "llm-fallback".into(),
                             steps: plan.steps,
+                        })
+                    }
+                    _ => {
+                        tracing::warn!("Unknown PlanSource variant, using empty plan");
+                        Ok(PlanIntent {
+                            plan_id: "unknown-source-fallback".into(),
+                            steps: vec![],
                         })
                     }
                 }
@@ -1438,7 +1468,10 @@ mod tests {
         // Verify it works by calling next_action
         let snap = snap_basic(0, 0, 5, 0, 0.0);
         let action = goap.next_action(&snap);
-        assert!(matches!(action, ActionStep::MoveTo { .. } | ActionStep::CoverFire { .. }));
+        assert!(matches!(
+            action,
+            ActionStep::MoveTo { .. } | ActionStep::CoverFire { .. }
+        ));
     }
 
     #[test]

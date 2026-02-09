@@ -2,6 +2,7 @@ use astraweave_core::{Ammo, Entity, Health, Pose, Team, World};
 use egui::Ui;
 
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum ComponentEdit {
     Health {
         entity: Entity,
@@ -285,6 +286,7 @@ impl InspectorUI for Ammo {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ComponentType {
     Pose,
     Health,

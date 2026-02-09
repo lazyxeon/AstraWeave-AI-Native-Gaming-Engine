@@ -28,6 +28,7 @@ profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/ena
 
 [dependencies]
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 wgpu = { workspace = true }
 glam = { workspace = true }
 winit = { workspace = true }
@@ -138,4 +139,8 @@ harness = false
 
 [[bench]]
 name = "gpu_memory_terrain_skinning_depth_overlay"
+harness = false
+
+[[bench]]
+name = "biome_transition"
 harness = false

@@ -12,6 +12,7 @@ use std::collections::{HashMap, VecDeque};
 
 /// Performance monitoring category
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PerfCategory {
     Frame,
     Cpu,
@@ -155,6 +156,7 @@ impl PerfMetric {
 
 /// Metric unit for display
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MetricUnit {
     Milliseconds,
     Microseconds,
@@ -360,6 +362,7 @@ pub struct GpuStats {
 
 /// Performance alert severity
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AlertSeverity {
     Info,
     Warning,
@@ -437,6 +440,7 @@ impl PerfAlert {
 
 /// Actions that can be triggered from the performance panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum PerformanceAction {
     // Display toggles
     ToggleSubsystems(bool),

@@ -2,6 +2,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum Cue {
     CameraTo {
         pos: Vec3,

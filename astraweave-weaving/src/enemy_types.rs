@@ -5,6 +5,7 @@ use glam::Vec3;
 
 /// Enemy archetype determines behavior and stats
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EnemyArchetype {
     /// Basic enemy (existing Enemy type)
     Standard,
@@ -191,6 +192,7 @@ impl Sentinel {
 
 /// VoidBoss phase states
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum VoidBossPhase {
     Phase1, // 100% - 66% health (normal attacks)
     Phase2, // 66% - 33% health (summons adds)
@@ -199,6 +201,7 @@ pub enum VoidBossPhase {
 
 /// Special attack types for VoidBoss
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BossSpecialAttack {
     VoidPulse,      // AOE damage around boss
     SummonAdds,     // Spawn 3 standard enemies

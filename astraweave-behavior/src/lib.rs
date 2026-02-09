@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Behavior Graphs (BT/HTN) and GOAP for AstraWeave AI
 
 #[cfg(test)]
@@ -14,6 +15,7 @@ use std::fmt;
 
 /// Node types for behavior trees and HTN
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum BehaviorNode {
     Sequence(Vec<BehaviorNode>),
     Selector(Vec<BehaviorNode>),
@@ -105,7 +107,10 @@ impl BehaviorNode {
     /// Returns true if this is a composite node (sequence, selector, or parallel).
     #[must_use]
     pub fn is_composite(&self) -> bool {
-        matches!(self, Self::Sequence(_) | Self::Selector(_) | Self::Parallel(_, _))
+        matches!(
+            self,
+            Self::Sequence(_) | Self::Selector(_) | Self::Parallel(_, _)
+        )
     }
 
     /// Returns the number of direct children.
@@ -277,6 +282,7 @@ impl fmt::Display for BehaviorNode {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DecoratorType {
     Inverter,
     Succeeder,
@@ -908,10 +914,8 @@ mod tests {
 
     #[test]
     fn test_behavior_node_sequence_factory() {
-        let node = BehaviorNode::sequence(vec![
-            BehaviorNode::action("a1"),
-            BehaviorNode::action("a2"),
-        ]);
+        let node =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a1"), BehaviorNode::action("a2")]);
         assert!(node.is_sequence());
         assert_eq!(node.child_count(), 2);
     }
@@ -942,10 +946,7 @@ mod tests {
 
     #[test]
     fn test_behavior_node_decorator_factory() {
-        let node = BehaviorNode::decorator(
-            DecoratorType::Inverter,
-            BehaviorNode::action("test"),
-        );
+        let node = BehaviorNode::decorator(DecoratorType::Inverter, BehaviorNode::action("test"));
         assert!(node.is_decorator());
         assert_eq!(node.child_count(), 1);
     }
@@ -1006,10 +1007,7 @@ mod tests {
 
         // Nested structure
         let nested = BehaviorNode::selector(vec![
-            BehaviorNode::sequence(vec![
-                BehaviorNode::action("a1"),
-                BehaviorNode::action("a2"),
-            ]),
+            BehaviorNode::sequence(vec![BehaviorNode::action("a1"), BehaviorNode::action("a2")]),
             BehaviorNode::action("a3"),
         ]);
         assert_eq!(nested.total_node_count(), 5);
@@ -1021,10 +1019,8 @@ mod tests {
         assert_eq!(BehaviorNode::action("test").max_depth(), 1);
 
         // Sequence with actions
-        let seq = BehaviorNode::sequence(vec![
-            BehaviorNode::action("a1"),
-            BehaviorNode::action("a2"),
-        ]);
+        let seq =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a1"), BehaviorNode::action("a2")]);
         assert_eq!(seq.max_depth(), 2);
 
         // Nested structure
@@ -1038,7 +1034,10 @@ mod tests {
     #[test]
     fn test_behavior_node_summary() {
         assert_eq!(BehaviorNode::action("attack").summary(), "Action(attack)");
-        assert_eq!(BehaviorNode::condition("ready").summary(), "Condition(ready)");
+        assert_eq!(
+            BehaviorNode::condition("ready").summary(),
+            "Condition(ready)"
+        );
         assert_eq!(
             BehaviorNode::sequence(vec![BehaviorNode::action("a1")]).summary(),
             "Sequence[1]"
@@ -1138,9 +1137,9 @@ mod tests {
 
     #[test]
     fn test_behavior_graph_max_depth() {
-        let graph = BehaviorGraph::new(BehaviorNode::selector(vec![
-            BehaviorNode::sequence(vec![BehaviorNode::action("a1")]),
-        ]));
+        let graph = BehaviorGraph::new(BehaviorNode::selector(vec![BehaviorNode::sequence(vec![
+            BehaviorNode::action("a1"),
+        ])]));
         assert_eq!(graph.max_depth(), 3);
     }
 
@@ -1170,9 +1169,7 @@ mod tests {
 
     #[test]
     fn test_behavior_graph_summary() {
-        let graph = BehaviorGraph::new(BehaviorNode::sequence(vec![
-            BehaviorNode::action("a1"),
-        ]));
+        let graph = BehaviorGraph::new(BehaviorNode::sequence(vec![BehaviorNode::action("a1")]));
         let summary = graph.summary();
         assert!(summary.contains("Sequence"));
         assert!(summary.contains("nodes=2"));
@@ -1445,6 +1442,7 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BehaviorStatus {
     Success,
     Failure,

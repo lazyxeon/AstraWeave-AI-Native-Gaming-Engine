@@ -15,6 +15,8 @@ pub type BlendResult<T> = Result<T, BlendError>;
 /// Each variant provides context-specific information to help diagnose
 /// and resolve issues during the import process.
 #[derive(Error, Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum BlendError {
     // ========================================================================
     // Blender Discovery Errors

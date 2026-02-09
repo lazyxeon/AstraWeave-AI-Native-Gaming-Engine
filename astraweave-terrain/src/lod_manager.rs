@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 /// LOD level for terrain chunks
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum LodLevel {
     /// L0: Full detail (all vertices)
     Full = 0,
@@ -254,10 +255,7 @@ impl LodManager {
 
     /// Store mesh in cache (Phase 2 optimization)
     pub fn cache_mesh(&mut self, chunk_id: ChunkId, lod: LodLevel, mesh: Arc<ChunkMesh>) {
-        let cache = self
-            .mesh_cache
-            .entry(chunk_id)
-            .or_default();
+        let cache = self.mesh_cache.entry(chunk_id).or_default();
         cache.set_mesh(lod, mesh);
     }
 
@@ -516,12 +514,12 @@ mod tests {
     #[test]
     fn test_lod_level_eq_hash() {
         use std::collections::HashSet;
-        
+
         let mut set = HashSet::new();
         set.insert(LodLevel::Full);
         set.insert(LodLevel::Half);
         set.insert(LodLevel::Full); // Duplicate
-        
+
         assert_eq!(set.len(), 2);
         assert!(set.contains(&LodLevel::Full));
         assert!(set.contains(&LodLevel::Half));
@@ -551,7 +549,7 @@ mod tests {
         let config = LodConfig::default();
         let json = serde_json::to_string(&config).unwrap();
         let deserialized: LodConfig = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(config.distance_thresholds, deserialized.distance_thresholds);
         assert_eq!(config.hysteresis_margin, deserialized.hysteresis_margin);
         assert_eq!(config.blend_zone_size, deserialized.blend_zone_size);
@@ -561,7 +559,7 @@ mod tests {
     #[test]
     fn test_lod_config_invalid_transition() {
         let config = LodConfig::default();
-        
+
         // Full to Skybox is not a valid single-step transition
         let threshold = config.get_threshold(LodLevel::Full, LodLevel::Skybox, true);
         assert_eq!(threshold, f32::MAX);
@@ -593,7 +591,7 @@ mod tests {
             blend_factor: 0.5,
             distance: 300.0,
         };
-        
+
         let cloned = state.clone();
         assert_eq!(cloned.current_lod, LodLevel::Half);
         assert_eq!(cloned.target_lod, Some(LodLevel::Full));
@@ -618,7 +616,7 @@ mod tests {
     fn test_lod_manager_cache_hit_rate_zero() {
         let config = LodConfig::default();
         let manager = LodManager::new(config, 256.0);
-        
+
         // No operations = 0% hit rate (0/0 case returns 0.0)
         assert_eq!(manager.cache_hit_rate(), 0.0);
     }
@@ -627,7 +625,7 @@ mod tests {
     fn test_lod_manager_cache_memory_empty() {
         let config = LodConfig::default();
         let manager = LodManager::new(config, 256.0);
-        
+
         assert_eq!(manager.cache_memory_usage(), 0);
     }
 
@@ -682,7 +680,7 @@ mod tests {
     fn test_lod_manager_get_stats_empty() {
         let config = LodConfig::default();
         let manager = LodManager::new(config, 256.0);
-        
+
         let stats = manager.get_stats();
         assert_eq!(stats.total_chunks, 0);
         assert_eq!(stats.full_count, 0);
@@ -692,7 +690,7 @@ mod tests {
     fn test_lod_manager_update_all_chunks_empty() {
         let config = LodConfig::default();
         let mut manager = LodManager::new(config, 256.0);
-        
+
         let changed = manager.update_all_chunks(&[], Vec3::ZERO);
         assert_eq!(changed, 0);
     }
@@ -706,12 +704,12 @@ mod tests {
             enable_blending: false,
         };
         let mut manager = LodManager::new(config, 256.0);
-        
+
         let chunks = vec![ChunkId::new(0, 0), ChunkId::new(1, 0), ChunkId::new(2, 0)];
-        
+
         // First update - all chunks get initialized
         manager.update_all_chunks(&chunks, Vec3::ZERO);
-        
+
         let stats = manager.get_stats();
         assert_eq!(stats.total_chunks, 3);
     }
@@ -720,7 +718,7 @@ mod tests {
     fn test_lod_manager_evict_distant_cache() {
         let config = LodConfig::default();
         let mut manager = LodManager::new(config, 256.0);
-        
+
         // Evicting with empty cache should return 0
         let evicted = manager.evict_distant_cache(Vec3::ZERO, 1000.0);
         assert_eq!(evicted, 0);
@@ -729,10 +727,10 @@ mod tests {
     #[test]
     fn test_lod_config_threshold_half_to_quarter() {
         let config = LodConfig::default();
-        
+
         let threshold_down = config.get_threshold(LodLevel::Half, LodLevel::Quarter, false);
         let threshold_up = config.get_threshold(LodLevel::Quarter, LodLevel::Half, true);
-        
+
         // Should be different due to hysteresis
         assert!(threshold_down > threshold_up);
     }
@@ -740,10 +738,10 @@ mod tests {
     #[test]
     fn test_lod_config_threshold_quarter_to_skybox() {
         let config = LodConfig::default();
-        
+
         let threshold_down = config.get_threshold(LodLevel::Quarter, LodLevel::Skybox, false);
         let threshold_up = config.get_threshold(LodLevel::Skybox, LodLevel::Quarter, true);
-        
+
         assert!(threshold_down > threshold_up);
     }
 
@@ -761,7 +759,7 @@ mod tests {
         // Initialize chunk at center
         let chunk_center = chunk_id.to_center_pos(256.0);
         manager.update_chunk_lod(chunk_id, chunk_center);
-        
+
         // Verify it starts in Full LOD
         assert_eq!(manager.get_chunk_lod(chunk_id), Some(LodLevel::Full));
     }
@@ -776,7 +774,7 @@ mod tests {
             skybox_count: 1,
             transitioning_count: 2,
         };
-        
+
         let cloned = stats.clone();
         assert_eq!(stats.total_chunks, cloned.total_chunks);
         assert_eq!(stats.full_count, cloned.full_count);

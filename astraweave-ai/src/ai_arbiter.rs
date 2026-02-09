@@ -82,10 +82,12 @@ use tracing::{debug, info, warn};
 /// AI control mode for the arbiter.
 ///
 /// Determines which AI system is currently providing actions.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum AIControlMode {
     /// GOAP provides instant tactical decisions (5-30 µs).
     /// This is the default mode and fallback when LLM plans are exhausted.
+    #[default]
     GOAP,
 
     /// Executing a multi-step LLM plan.
@@ -109,12 +111,6 @@ impl std::fmt::Display for AIControlMode {
             }
             AIControlMode::BehaviorTree => write!(f, "BehaviorTree"),
         }
-    }
-}
-
-impl Default for AIControlMode {
-    fn default() -> Self {
-        AIControlMode::GOAP
     }
 }
 
@@ -368,14 +364,15 @@ impl AIArbiter {
                 // Return instant GOAP action (first step of plan)
                 self.goap_actions += 1;
                 let plan = self.goap.propose_plan(snap);
-                #[allow(clippy::unnecessary_lazy_evaluations)] // Closure has side effects (warn!, transition_to_bt)
+                #[allow(clippy::unnecessary_lazy_evaluations)]
+                // Closure has side effects (warn!, transition_to_bt)
                 plan.steps.first().cloned().unwrap_or_else(|| {
                     warn!("GOAP plan has no steps, falling back to BehaviorTree");
                     self.transition_to_bt();
                     let bt_plan = self.bt.propose_plan(snap);
                     bt_plan.steps.first().cloned().unwrap_or(
                         // Ultimate fallback: Wait 1 second
-                        ActionStep::Wait { duration: 1.0 }
+                        ActionStep::Wait { duration: 1.0 },
                     )
                 })
             }
@@ -1563,28 +1560,49 @@ mod tests {
     #[test]
     fn test_ai_control_mode_step_index() {
         assert_eq!(AIControlMode::GOAP.step_index(), None);
-        assert_eq!(AIControlMode::ExecutingLLM { step_index: 0 }.step_index(), Some(0));
-        assert_eq!(AIControlMode::ExecutingLLM { step_index: 42 }.step_index(), Some(42));
+        assert_eq!(
+            AIControlMode::ExecutingLLM { step_index: 0 }.step_index(),
+            Some(0)
+        );
+        assert_eq!(
+            AIControlMode::ExecutingLLM { step_index: 42 }.step_index(),
+            Some(42)
+        );
         assert_eq!(AIControlMode::BehaviorTree.step_index(), None);
     }
 
     #[test]
     fn test_ai_control_mode_executing_llm_factory() {
         let mode = AIControlMode::executing_llm(5);
-        assert!(matches!(mode, AIControlMode::ExecutingLLM { step_index: 5 }));
+        assert!(matches!(
+            mode,
+            AIControlMode::ExecutingLLM { step_index: 5 }
+        ));
 
         let mode_zero = AIControlMode::executing_llm(0);
-        assert!(matches!(mode_zero, AIControlMode::ExecutingLLM { step_index: 0 }));
+        assert!(matches!(
+            mode_zero,
+            AIControlMode::ExecutingLLM { step_index: 0 }
+        ));
 
         let mode_large = AIControlMode::executing_llm(1000);
-        assert!(matches!(mode_large, AIControlMode::ExecutingLLM { step_index: 1000 }));
+        assert!(matches!(
+            mode_large,
+            AIControlMode::ExecutingLLM { step_index: 1000 }
+        ));
     }
 
     #[test]
     fn test_ai_control_mode_mode_name() {
         assert_eq!(AIControlMode::GOAP.mode_name(), "GOAP");
-        assert_eq!(AIControlMode::ExecutingLLM { step_index: 0 }.mode_name(), "ExecutingLLM");
-        assert_eq!(AIControlMode::ExecutingLLM { step_index: 99 }.mode_name(), "ExecutingLLM");
+        assert_eq!(
+            AIControlMode::ExecutingLLM { step_index: 0 }.mode_name(),
+            "ExecutingLLM"
+        );
+        assert_eq!(
+            AIControlMode::ExecutingLLM { step_index: 99 }.mode_name(),
+            "ExecutingLLM"
+        );
         assert_eq!(AIControlMode::BehaviorTree.mode_name(), "BehaviorTree");
     }
 
@@ -1651,9 +1669,16 @@ mod tests {
                 mode.is_goap(),
                 mode.is_executing_llm(),
                 mode.is_behavior_tree(),
-            ].iter().filter(|&&b| b).count();
-            
-            assert_eq!(count, 1, "Mode {:?} should match exactly one category", mode);
+            ]
+            .iter()
+            .filter(|&&b| b)
+            .count();
+
+            assert_eq!(
+                count, 1,
+                "Mode {:?} should match exactly one category",
+                mode
+            );
         }
     }
 }

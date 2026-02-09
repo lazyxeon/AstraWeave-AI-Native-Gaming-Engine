@@ -222,10 +222,7 @@ fn test_importance_modifier_linearity() {
         .collect();
 
     // Check linearity: difference between consecutive modifiers should be constant
-    let diffs: Vec<f32> = modifiers
-        .windows(2)
-        .map(|w| (w[1] - w[0]).abs())
-        .collect();
+    let diffs: Vec<f32> = modifiers.windows(2).map(|w| (w[1] - w[0]).abs()).collect();
 
     let avg_diff = diffs.iter().sum::<f32>() / diffs.len() as f32;
 
@@ -366,17 +363,11 @@ fn test_retention_threshold_boundary() {
 
     // Just below threshold - should forget
     let below = 0.14;
-    assert!(
-        below < threshold,
-        "0.14 should be below threshold 0.15"
-    );
+    assert!(below < threshold, "0.14 should be below threshold 0.15");
 
     // Just above threshold - should retain
     let above = 0.16;
-    assert!(
-        above > threshold,
-        "0.16 should be above threshold 0.15"
-    );
+    assert!(above > threshold, "0.16 should be above threshold 0.15");
 
     // At threshold - behavior depends on < vs <=
     let at_threshold = 0.15;
@@ -519,7 +510,9 @@ fn test_forgetting_removes_weak_memories() {
 
     // Semantic memory with immune=true should survive
     assert!(
-        memories.iter().any(|m| m.memory_type == MemoryType::Semantic),
+        memories
+            .iter()
+            .any(|m| m.memory_type == MemoryType::Semantic),
         "Immune semantic memory should survive"
     );
 }
@@ -545,7 +538,10 @@ fn test_forgetting_result_metrics() {
         result.total_strength_lost >= 0.0,
         "Total strength lost should be non-negative"
     );
-    assert!(result.processing_time_ms >= 0, "Processing time should be measured");
+    assert!(
+        result.processing_time_ms >= 0,
+        "Processing time should be measured"
+    );
 }
 
 // ============================================================================
@@ -645,7 +641,9 @@ fn test_forgetting_reverse_order_removal() {
 
     // Should have survived memories
     assert!(
-        memories.iter().all(|m| m.memory_type == MemoryType::Working),
+        memories
+            .iter()
+            .all(|m| m.memory_type == MemoryType::Working),
         "Only working memories should survive"
     );
 }
@@ -674,7 +672,7 @@ fn test_nan_inf_safety() {
 
     // The implementation uses: if half_life > 0.0 { use half-life formula } else { use decay_rate }
     // This should prevent NaN/Inf
-    
+
     // Simulate what happens with zero half-life
     let result = if half_life > 0.0 {
         (-0.693_f32 * age / half_life).exp()
@@ -707,10 +705,7 @@ fn test_forgetting_curve_fields() {
         (curve.initial_strength - 1.0).abs() < 0.001,
         "Initial strength should be 1.0"
     );
-    assert!(
-        curve.half_life > 0.0,
-        "Half-life should be positive"
-    );
+    assert!(curve.half_life > 0.0, "Half-life should be positive");
     assert!(
         curve.retention_threshold > 0.0 && curve.retention_threshold < 1.0,
         "Threshold should be between 0 and 1"
@@ -770,8 +765,7 @@ fn test_forgetting_determinism() {
     // Note: Results may differ due to timestamps being slightly different
     // But the logic should be deterministic for same inputs
     assert_eq!(
-        result_1.memories_processed,
-        result_2.memories_processed,
+        result_1.memories_processed, result_2.memories_processed,
         "Processed count should be deterministic"
     );
 }

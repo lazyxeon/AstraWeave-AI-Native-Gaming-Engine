@@ -434,7 +434,7 @@ impl PcisphSystem {
                             std::num::NonZeroU64::new(
                                 std::mem::size_of::<ResearchSimParams>() as u64,
                             )
-                            .unwrap(),
+                            .expect("non-zero struct size"),
                         ),
                     },
                     count: None,
@@ -470,7 +470,7 @@ impl PcisphSystem {
                         has_dynamic_offset: false,
                         min_binding_size: Some(
                             std::num::NonZeroU64::new(std::mem::size_of::<IterationState>() as u64)
-                                .unwrap(),
+                                .expect("non-zero struct size"),
                         ),
                     },
                     count: None,
@@ -1162,6 +1162,8 @@ impl PcisphSystem {
 
 /// PCISPH system errors
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+#[must_use]
 pub enum PcisphError {
     #[error("Too many particles: {requested} requested, maximum is {maximum}")]
     TooManyParticles { requested: u32, maximum: u32 },

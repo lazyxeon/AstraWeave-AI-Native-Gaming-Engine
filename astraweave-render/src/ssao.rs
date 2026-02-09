@@ -7,6 +7,7 @@ use wgpu::util::DeviceExt;
 
 /// SSAO quality presets
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SsaoQuality {
     /// 8 samples, small radius, no blur
     Low,

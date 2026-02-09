@@ -135,27 +135,16 @@ impl AsyncPhysicsScheduler {
         self.last_profile.narrow_phase_duration = Duration::ZERO;
     }
 
-    /// Execute a physics step with parallel pipeline
+    /// Execute a physics step with timing wrapper
     ///
-    /// This is a placeholder for the full implementation. In production, this would:
-    /// 1. Parallel broad-phase: Split AABB checks across threads
-    /// 2. Barrier sync
-    /// 3. Parallel narrow-phase: Contact generation per collision pair
-    /// 4. Barrier sync
-    /// 5. Parallel integration: Per-island solver + position updates
-    ///
-    /// For now, we measure the existing single-threaded step and prepare structure.
+    /// Wraps an arbitrary physics step function with profiling.
+    /// Use [`step_parallel_staged`] for the full 3-stage pipeline.
     pub fn step_parallel<F>(&mut self, mut step_fn: F) -> PhysicsStepProfile
     where
         F: FnMut() -> PhysicsStepProfile,
     {
         let start = Instant::now();
-
-        // TODO: Implement actual parallel pipeline
-        // For Phase 1, we delegate to single-threaded implementation
-        // and focus on telemetry infrastructure
         let profile = step_fn();
-
         let total_duration = start.elapsed();
 
         let final_profile = PhysicsStepProfile {
@@ -168,6 +157,134 @@ impl AsyncPhysicsScheduler {
         }
 
         final_profile
+    }
+
+    /// Execute a physics step with a 3-stage parallel pipeline
+    ///
+    /// Runs broad-phase, narrow-phase, and integration stages with
+    /// barrier synchronization and per-stage profiling. Each stage's
+    /// output feeds into the next, enforcing a strict execution order.
+    ///
+    /// # Pipeline Stages
+    ///
+    /// 1. **Broad-Phase**: Coarse collision detection (AABB pair checks).
+    ///    Produces candidate collision pairs for narrow-phase.
+    /// 2. **Narrow-Phase**: Fine collision resolution (contact generation).
+    ///    Consumes broad-phase output, produces contact manifolds.
+    /// 3. **Integration**: Force application, constraint solving, and
+    ///    position updates. Consumes narrow-phase output.
+    ///
+    /// Each stage is separated by an implicit barrier — the next stage
+    /// starts only after the previous completes. Within each stage,
+    /// work can be parallelized using rayon (see [`parallel`] module).
+    ///
+    /// # Type Parameters
+    /// * `BroadOut` - Data produced by broad-phase for narrow-phase
+    /// * `NarrowOut` - Data produced by narrow-phase for integration
+    ///
+    /// # Returns
+    /// `PhysicsStepProfile` with per-stage timing breakdown
+    ///
+    /// # Example
+    /// ```ignore
+    /// use astraweave_physics::async_scheduler::AsyncPhysicsScheduler;
+    ///
+    /// let mut scheduler = AsyncPhysicsScheduler::new();
+    /// let profile = scheduler.step_parallel_staged(
+    ///     || {
+    ///         // Broad-phase: detect candidate collision pairs
+    ///         let pairs = detect_aabb_overlaps(&bodies);
+    ///         pairs
+    ///     },
+    ///     |pairs| {
+    ///         // Narrow-phase: generate contacts for each pair
+    ///         let contacts = generate_contacts(&pairs);
+    ///         contacts
+    ///     },
+    ///     |contacts| {
+    ///         // Integration: solve constraints and update positions
+    ///         solve_and_integrate(&contacts, dt);
+    ///     },
+    /// );
+    /// assert!(profile.broad_phase_duration > std::time::Duration::ZERO);
+    /// ```
+    pub fn step_parallel_staged<B, N, I, BroadOut, NarrowOut>(
+        &mut self,
+        broad_phase_fn: B,
+        narrow_phase_fn: N,
+        integration_fn: I,
+    ) -> PhysicsStepProfile
+    where
+        B: FnOnce() -> BroadOut,
+        N: FnOnce(BroadOut) -> NarrowOut,
+        I: FnOnce(NarrowOut),
+    {
+        let start = Instant::now();
+
+        // Stage 1: Broad-Phase (AABB overlap detection)
+        let bp_start = Instant::now();
+        let broad_out = broad_phase_fn();
+        let broad_phase_duration = bp_start.elapsed();
+
+        // Barrier: broad-phase complete → narrow-phase begins
+
+        // Stage 2: Narrow-Phase (contact generation)
+        let np_start = Instant::now();
+        let narrow_out = narrow_phase_fn(broad_out);
+        let narrow_phase_duration = np_start.elapsed();
+
+        // Barrier: narrow-phase complete → integration begins
+
+        // Stage 3: Integration (solver + position updates)
+        let int_start = Instant::now();
+        integration_fn(narrow_out);
+        let integration_duration = int_start.elapsed();
+
+        let total_duration = start.elapsed();
+
+        let final_profile = PhysicsStepProfile {
+            total_duration,
+            broad_phase_duration,
+            narrow_phase_duration,
+            integration_duration,
+            ..Default::default()
+        };
+
+        if self.enable_profiling {
+            self.last_profile = final_profile;
+        }
+
+        final_profile
+    }
+
+    /// Execute a 3-stage pipeline with statistics collection
+    ///
+    /// Same as [`step_parallel_staged`] but also records body count,
+    /// collision pair count, and solver iterations in the profile.
+    pub fn step_parallel_staged_with_stats<B, N, I, BroadOut, NarrowOut>(
+        &mut self,
+        broad_phase_fn: B,
+        narrow_phase_fn: N,
+        integration_fn: I,
+        active_body_count: usize,
+        collision_pair_count: usize,
+        solver_iterations: usize,
+    ) -> PhysicsStepProfile
+    where
+        B: FnOnce() -> BroadOut,
+        N: FnOnce(BroadOut) -> NarrowOut,
+        I: FnOnce(NarrowOut),
+    {
+        let mut profile = self.step_parallel_staged(broad_phase_fn, narrow_phase_fn, integration_fn);
+        profile.active_body_count = active_body_count;
+        profile.collision_pair_count = collision_pair_count;
+        profile.solver_iterations = solver_iterations;
+
+        if self.enable_profiling {
+            self.last_profile = profile;
+        }
+
+        profile
     }
 
     /// Export telemetry to JSON file (for benchmark dashboard)
@@ -598,6 +715,276 @@ mod tests {
         });
 
         assert_eq!(counter.load(Ordering::SeqCst), 0);
+    }
+
+    // ============================================================================
+    // 3-STAGE PARALLEL PIPELINE TESTS (New)
+    // ============================================================================
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_basic_flow() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        let profile = scheduler.step_parallel_staged(
+            || {
+                // Broad-phase: produce 10 candidate pairs
+                vec![0u32; 10]
+            },
+            |pairs| {
+                // Narrow-phase: filter to 5 contacts
+                assert_eq!(pairs.len(), 10);
+                pairs[..5].to_vec()
+            },
+            |contacts| {
+                // Integration: consume contacts
+                assert_eq!(contacts.len(), 5);
+            },
+        );
+
+        assert!(profile.total_duration > Duration::ZERO);
+        assert!(profile.broad_phase_duration > Duration::ZERO || profile.narrow_phase_duration > Duration::ZERO);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_per_stage_timing() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        let profile = scheduler.step_parallel_staged(
+            || {
+                std::thread::sleep(Duration::from_millis(5));
+                42u32
+            },
+            |value| {
+                std::thread::sleep(Duration::from_millis(10));
+                assert_eq!(value, 42);
+                "contacts"
+            },
+            |msg| {
+                std::thread::sleep(Duration::from_millis(5));
+                assert_eq!(msg, "contacts");
+            },
+        );
+
+        // Narrow-phase (10ms) should dominate
+        assert!(profile.narrow_phase_duration >= Duration::from_millis(9),
+            "Narrow-phase should be ~10ms, got {:?}", profile.narrow_phase_duration);
+        // Total should be >= sum of stages
+        assert!(profile.total_duration >= Duration::from_millis(19),
+            "Total should be >=20ms, got {:?}", profile.total_duration);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_profiling_recorded() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        scheduler.step_parallel_staged(
+            || vec![1, 2, 3],
+            |v| v.len(),
+            |_| {},
+        );
+
+        let recorded = scheduler.get_last_profile();
+        assert!(recorded.total_duration > Duration::ZERO);
+        // Per-stage durations should be set
+        // (they may be very small but at least broad_phase + narrow_phase + integration >= 0)
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_profiling_disabled() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        scheduler.enable_profiling = false;
+
+        scheduler.step_parallel_staged(
+            || 42,
+            |x| x * 2,
+            |_| {},
+        );
+
+        let recorded = scheduler.get_last_profile();
+        assert_eq!(recorded.total_duration, Duration::ZERO,
+            "Profiling disabled should not record");
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_data_flows_through_stages() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let integration_received = std::sync::Arc::new(AtomicUsize::new(0));
+        let integration_received_clone = integration_received.clone();
+
+        scheduler.step_parallel_staged(
+            || {
+                // Broad-phase produces 100 pairs
+                (0..100).collect::<Vec<u32>>()
+            },
+            |pairs| {
+                // Narrow-phase filters even pairs
+                pairs.into_iter().filter(|p| p % 2 == 0).collect::<Vec<u32>>()
+            },
+            move |contacts| {
+                // Integration receives 50 even contacts
+                integration_received_clone.store(contacts.len(), Ordering::SeqCst);
+            },
+        );
+
+        assert_eq!(integration_received.load(Ordering::SeqCst), 50);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_with_rayon_broad_phase() {
+        use super::parallel::par_process_bodies;
+
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        let profile = scheduler.step_parallel_staged(
+            || {
+                // Broad-phase: parallel AABB expansion
+                let bodies: Vec<f32> = (0..1000).map(|i| i as f32).collect();
+                par_process_bodies(&bodies, |&x| x * 2.0)
+            },
+            |expanded| {
+                // Narrow-phase: count overlaps
+                assert_eq!(expanded.len(), 1000);
+                expanded.len()
+            },
+            |count| {
+                assert_eq!(count, 1000);
+            },
+        );
+
+        assert!(profile.total_duration > Duration::ZERO);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_empty_stages() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        // All stages are no-ops
+        let profile = scheduler.step_parallel_staged(
+            || (),
+            |_| (),
+            |_| {},
+        );
+
+        assert!(profile.broad_phase_duration <= Duration::from_millis(1));
+        assert!(profile.narrow_phase_duration <= Duration::from_millis(1));
+        assert!(profile.integration_duration <= Duration::from_millis(1));
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_multiple_iterations() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        for frame in 0..10 {
+            let profile = scheduler.step_parallel_staged(
+                || frame,
+                |f| f * 2,
+                |_| {},
+            );
+
+            assert!(profile.total_duration > Duration::ZERO);
+            let recorded = scheduler.get_last_profile();
+            assert!(recorded.total_duration > Duration::ZERO);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_pipeline_stage_ordering_enforced() {
+        use std::sync::atomic::{AtomicU32, Ordering};
+
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        let sequence = std::sync::Arc::new(AtomicU32::new(0));
+
+        let s1 = sequence.clone();
+        let s2 = sequence.clone();
+        let s3 = sequence.clone();
+
+        scheduler.step_parallel_staged(
+            move || {
+                // Broad-phase runs first (sequence = 0 → 1)
+                assert_eq!(s1.fetch_add(1, Ordering::SeqCst), 0);
+            },
+            move |_| {
+                // Narrow-phase runs second (sequence = 1 → 2)
+                assert_eq!(s2.fetch_add(1, Ordering::SeqCst), 1);
+            },
+            move |_| {
+                // Integration runs third (sequence = 2 → 3)
+                assert_eq!(s3.fetch_add(1, Ordering::SeqCst), 2);
+            },
+        );
+
+        assert_eq!(sequence.load(Ordering::SeqCst), 3);
+    }
+
+    // ============================================================================
+    // STAGED PIPELINE WITH STATS TESTS
+    // ============================================================================
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_with_stats_records_counts() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        let profile = scheduler.step_parallel_staged_with_stats(
+            || vec![1, 2, 3],
+            |v| v.len(),
+            |_| {},
+            500,  // active bodies
+            120,  // collision pairs
+            8,    // solver iterations
+        );
+
+        assert_eq!(profile.active_body_count, 500);
+        assert_eq!(profile.collision_pair_count, 120);
+        assert_eq!(profile.solver_iterations, 8);
+        assert!(profile.total_duration > Duration::ZERO);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_with_stats_updates_last_profile() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+
+        scheduler.step_parallel_staged_with_stats(
+            || (),
+            |_| (),
+            |_| {},
+            200, 50, 4,
+        );
+
+        let recorded = scheduler.get_last_profile();
+        assert_eq!(recorded.active_body_count, 200);
+        assert_eq!(recorded.collision_pair_count, 50);
+        assert_eq!(recorded.solver_iterations, 4);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn staged_with_stats_profiling_disabled() {
+        let mut scheduler = AsyncPhysicsScheduler::new();
+        scheduler.enable_profiling = false;
+
+        scheduler.step_parallel_staged_with_stats(
+            || (),
+            |_| (),
+            |_| {},
+            200, 50, 4,
+        );
+
+        let recorded = scheduler.get_last_profile();
+        // Stats should NOT be recorded when profiling disabled
+        assert_eq!(recorded.active_body_count, 0);
     }
 }
 

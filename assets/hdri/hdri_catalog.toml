@@ -1,0 +1,144 @@
+# HDRI Environment Catalog
+# Maps available HDRIs to biome types and time-of-day for dynamic environment lighting.
+# The renderer selects the best HDRI based on current biome + world time.
+
+[catalog]
+version = 3
+default = "kloppenheim_02_puresky"  # Fallback if no biome match
+
+# === AVAILABLE HDRIs ===
+# Each entry maps a logical name to a file path and metadata.
+# 11 HDRIs across 4 time periods, covering all 8 biomes.
+
+[[hdri]]
+name = "kloppenheim_daytime"
+file = "polyhaven/kloppenheim_02_puresky_2k.hdr"
+time_of_day = "day"
+biomes = ["grassland", "river"]
+intensity = 1.0
+sky_color = [0.53, 0.71, 0.90]  # Light blue
+
+[[hdri]]
+name = "kloppenheim_clear"
+file = "polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr"
+time_of_day = "day"
+biomes = ["beach"]
+intensity = 1.2
+sky_color = [0.58, 0.76, 0.96]  # Bright blue
+
+[[hdri]]
+name = "goegap_desert"
+file = "polyhaven/goegap/goegap_2k.hdr"
+time_of_day = "day"
+biomes = ["desert"]
+intensity = 1.3
+sky_color = [0.62, 0.78, 0.92]  # Hot blue
+
+[[hdri]]
+name = "table_mountain"
+file = "polyhaven/table_mountain_2/table_mountain_2_2k.hdr"
+time_of_day = "day"
+biomes = ["mountain", "tundra"]
+intensity = 1.0
+sky_color = [0.50, 0.65, 0.85]  # Cool blue-grey
+
+[[hdri]]
+name = "rainforest"
+file = "polyhaven/rainforest_trail/rainforest_trail_2k.hdr"
+time_of_day = "day"
+biomes = ["forest"]
+intensity = 0.85
+sky_color = [0.40, 0.55, 0.35]  # Green-dappled canopy light
+
+[[hdri]]
+name = "misty_swamp"
+file = "polyhaven/misty_pines/misty_pines_2k.hdr"
+time_of_day = "day"
+biomes = ["swamp"]
+intensity = 0.65
+sky_color = [0.55, 0.58, 0.55]  # Muted grey-green overcast
+
+[[hdri]]
+name = "spruit_sunrise"
+file = "polyhaven/spruit_sunrise/spruit_sunrise_2k.hdr"
+time_of_day = "morning"
+biomes = ["grassland", "forest", "beach", "river"]
+intensity = 0.8
+sky_color = [0.93, 0.73, 0.48]  # Warm orange
+
+[[hdri]]
+name = "venice_sunset"
+file = "polyhaven/venice_sunset/venice_sunset_2k.hdr"
+time_of_day = "evening"
+biomes = ["desert", "beach", "grassland"]
+intensity = 0.7
+sky_color = [0.96, 0.55, 0.35]  # Sunset orange
+
+[[hdri]]
+name = "qwantani_moonrise"
+file = "polyhaven/qwantani_moonrise_puresky_2k.hdr"
+time_of_day = "night"
+biomes = ["grassland", "forest", "mountain", "tundra", "swamp", "beach", "river", "desert"]
+intensity = 0.15
+sky_color = [0.10, 0.12, 0.22]  # Deep blue-black
+
+[[hdri]]
+name = "rogland_night"
+file = "polyhaven/rogland_clear_night_2k.hdr"
+time_of_day = "night"
+biomes = ["grassland", "forest", "mountain", "beach"]
+intensity = 0.12
+sky_color = [0.08, 0.10, 0.18]  # Dark blue
+
+[[hdri]]
+name = "sky_equirect"
+file = "sky_equirect.png"
+time_of_day = "day"
+biomes = ["grassland"]
+intensity = 1.0
+sky_color = [0.50, 0.70, 0.90]
+
+# === BIOME-TIME FALLBACK MATRIX ===
+# If a specific biome+time combo has no dedicated HDRI, use this priority order.
+# The renderer will traverse this list until it finds a match.
+
+[fallback]
+# Day fallbacks — each biome now has a dedicated HDRI
+grassland_day = "kloppenheim_daytime"
+forest_day = "rainforest"
+desert_day = "goegap_desert"
+mountain_day = "table_mountain"
+tundra_day = "table_mountain"
+swamp_day = "misty_swamp"
+beach_day = "kloppenheim_clear"
+river_day = "kloppenheim_daytime"
+
+# Morning fallbacks
+grassland_morning = "spruit_sunrise"
+forest_morning = "spruit_sunrise"
+desert_morning = "spruit_sunrise"
+mountain_morning = "spruit_sunrise"
+tundra_morning = "spruit_sunrise"
+swamp_morning = "spruit_sunrise"
+beach_morning = "spruit_sunrise"
+river_morning = "spruit_sunrise"
+
+# Evening fallbacks
+grassland_evening = "venice_sunset"
+forest_evening = "venice_sunset"
+desert_evening = "venice_sunset"
+mountain_evening = "venice_sunset"
+tundra_evening = "venice_sunset"
+swamp_evening = "venice_sunset"
+beach_evening = "venice_sunset"
+river_evening = "venice_sunset"
+
+# Night fallbacks
+grassland_night = "qwantani_moonrise"
+forest_night = "rogland_night"
+desert_night = "qwantani_moonrise"
+mountain_night = "rogland_night"
+tundra_night = "rogland_night"
+swamp_night = "qwantani_moonrise"
+beach_night = "qwantani_moonrise"
+river_night = "rogland_night"

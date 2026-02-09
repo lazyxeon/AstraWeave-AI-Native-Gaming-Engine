@@ -19,9 +19,9 @@ use std::collections::BTreeMap;
 fn ivec2_new_constructs_correctly() {
     let x: i32 = kani::any();
     let y: i32 = kani::any();
-    
+
     let v = IVec2::new(x, y);
-    
+
     kani::assert(v.x == x, "x must match constructor argument");
     kani::assert(v.y == y, "y must match constructor argument");
 }
@@ -30,7 +30,7 @@ fn ivec2_new_constructs_correctly() {
 #[kani::proof]
 fn ivec2_zero_is_zero() {
     let zero = IVec2::zero();
-    
+
     kani::assert(zero.x == 0, "zero.x must be 0");
     kani::assert(zero.y == 0, "zero.y must be 0");
     kani::assert(zero.is_zero(), "zero.is_zero() must be true");
@@ -41,13 +41,13 @@ fn ivec2_zero_is_zero() {
 fn ivec2_is_zero_correct() {
     let x: i32 = kani::any();
     let y: i32 = kani::any();
-    
+
     let v = IVec2::new(x, y);
-    
+
     if v.is_zero() {
         kani::assert(x == 0 && y == 0, "is_zero implies both components are 0");
     }
-    
+
     if x == 0 && y == 0 {
         kani::assert(v.is_zero(), "(0,0) must be zero");
     }
@@ -60,7 +60,7 @@ fn manhattan_distance_non_negative() {
     let ay: i32 = kani::any();
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
-    
+
     // Bound inputs to prevent ALL overflow scenarios:
     // 1. Subtraction: diff = a - b, max |diff| = 1B (from -500M to +500M)
     // 2. Abs: |diff| < i32::MAX, satisfied by above
@@ -69,12 +69,12 @@ fn manhattan_distance_non_negative() {
     kani::assume(ay >= -500_000_000 && ay <= 500_000_000);
     kani::assume(bx >= -500_000_000 && bx <= 500_000_000);
     kani::assume(by >= -500_000_000 && by <= 500_000_000);
-    
+
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
-    
+
     let dist = a.manhattan_distance(&b);
-    
+
     kani::assert(dist >= 0, "Manhattan distance must be non-negative");
 }
 
@@ -85,19 +85,19 @@ fn manhattan_distance_symmetric() {
     let ay: i32 = kani::any();
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
-    
+
     // Same bounds as manhattan_distance_non_negative
     kani::assume(ax >= -500_000_000 && ax <= 500_000_000);
     kani::assume(ay >= -500_000_000 && ay <= 500_000_000);
     kani::assume(bx >= -500_000_000 && bx <= 500_000_000);
     kani::assume(by >= -500_000_000 && by <= 500_000_000);
-    
+
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
-    
+
     let dist_ab = a.manhattan_distance(&b);
     let dist_ba = b.manhattan_distance(&a);
-    
+
     kani::assert(dist_ab == dist_ba, "Manhattan distance must be symmetric");
 }
 
@@ -105,9 +105,9 @@ fn manhattan_distance_symmetric() {
 #[kani::proof]
 fn manhattan_distance_to_self_is_zero() {
     let a = IVec2::new(kani::any(), kani::any());
-    
+
     let dist = a.manhattan_distance(&a);
-    
+
     kani::assert(dist == 0, "Distance to self must be zero");
 }
 
@@ -118,7 +118,7 @@ fn distance_squared_non_negative() {
     let ay: i32 = kani::any();
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
-    
+
     // Bound to avoid overflow:
     // Max diff = 20000 (from -10000 to +10000)
     // Max dx^2 = 400_000_000
@@ -127,12 +127,12 @@ fn distance_squared_non_negative() {
     kani::assume(ay >= -10000 && ay <= 10000);
     kani::assume(bx >= -10000 && bx <= 10000);
     kani::assume(by >= -10000 && by <= 10000);
-    
+
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
-    
+
     let dist_sq = a.distance_squared(&b);
-    
+
     kani::assert(dist_sq >= 0, "Squared distance must be non-negative");
 }
 
@@ -143,19 +143,19 @@ fn distance_squared_non_negative() {
 fn distance_squared_symmetric() {
     // Test with representative concrete values
     let test_cases: [(i32, i32, i32, i32); 4] = [
-        (0, 0, 5, 5),        // Origin to positive
-        (-10, -10, 10, 10),  // Negative to positive
-        (100, 0, 0, 100),    // Axis-aligned
-        (-50, 25, 75, -25),  // Mixed signs
+        (0, 0, 5, 5),       // Origin to positive
+        (-10, -10, 10, 10), // Negative to positive
+        (100, 0, 0, 100),   // Axis-aligned
+        (-50, 25, 75, -25), // Mixed signs
     ];
-    
+
     for (ax, ay, bx, by) in test_cases {
         let a = IVec2::new(ax, ay);
         let b = IVec2::new(bx, by);
-        
+
         let dist_ab = a.distance_squared(&b);
         let dist_ba = b.distance_squared(&a);
-        
+
         kani::assert(dist_ab == dist_ba, "Squared distance must be symmetric");
     }
 }
@@ -164,9 +164,9 @@ fn distance_squared_symmetric() {
 #[kani::proof]
 fn distance_squared_to_self_is_zero() {
     let a = IVec2::new(kani::any(), kani::any());
-    
+
     let dist = a.distance_squared(&a);
-    
+
     kani::assert(dist == 0, "Squared distance to self must be zero");
 }
 
@@ -177,19 +177,19 @@ fn ivec2_add_commutative() {
     let ay: i32 = kani::any();
     let bx: i32 = kani::any();
     let by: i32 = kani::any();
-    
+
     // Bound to avoid overflow: sum of two values must fit in i32
     kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
     kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
     kani::assume(bx > -1_000_000_000 && bx < 1_000_000_000);
     kani::assume(by > -1_000_000_000 && by < 1_000_000_000);
-    
+
     let a = IVec2::new(ax, ay);
     let b = IVec2::new(bx, by);
-    
+
     let ab = a + b;
     let ba = b + a;
-    
+
     kani::assert(ab.x == ba.x && ab.y == ba.y, "Addition must be commutative");
 }
 
@@ -198,10 +198,13 @@ fn ivec2_add_commutative() {
 fn ivec2_add_identity() {
     let a = IVec2::new(kani::any(), kani::any());
     let zero = IVec2::zero();
-    
+
     let result = a + zero;
-    
-    kani::assert(result.x == a.x && result.y == a.y, "Adding zero must return original");
+
+    kani::assert(
+        result.x == a.x && result.y == a.y,
+        "Adding zero must return original",
+    );
 }
 
 /// Verify Sub inverse
@@ -209,12 +212,12 @@ fn ivec2_add_identity() {
 fn ivec2_sub_inverse() {
     let ax: i32 = kani::any();
     let ay: i32 = kani::any();
-    
+
     let a = IVec2::new(ax, ay);
-    
+
     // a - a is always 0, no overflow possible since same values cancel
     let result = a - a;
-    
+
     kani::assert(result.x == 0 && result.y == 0, "a - a must be zero");
 }
 
@@ -225,21 +228,21 @@ fn ivec2_offset_correct() {
     let ay: i32 = kani::any();
     let dx: i32 = kani::any();
     let dy: i32 = kani::any();
-    
+
     // Bound to avoid overflow
     kani::assume(ax > -1_000_000_000 && ax < 1_000_000_000);
     kani::assume(ay > -1_000_000_000 && ay < 1_000_000_000);
     kani::assume(dx > -1_000_000_000 && dx < 1_000_000_000);
     kani::assume(dy > -1_000_000_000 && dy < 1_000_000_000);
-    
+
     let a = IVec2::new(ax, ay);
-    
+
     let offset_result = a.offset(dx, dy);
     let add_result = a + IVec2::new(dx, dy);
-    
+
     kani::assert(
         offset_result.x == add_result.x && offset_result.y == add_result.y,
-        "offset must be equivalent to add"
+        "offset must be equivalent to add",
     );
 }
 
@@ -251,10 +254,10 @@ fn ivec2_offset_correct() {
 #[kani::proof]
 fn enemy_count_matches_len() {
     let snap = WorldSnapshot::default();
-    
+
     kani::assert(
         snap.enemy_count() == snap.enemies.len(),
-        "enemy_count must match Vec::len"
+        "enemy_count must match Vec::len",
     );
 }
 
@@ -262,10 +265,10 @@ fn enemy_count_matches_len() {
 #[kani::proof]
 fn has_no_enemies_correct() {
     let snap = WorldSnapshot::default();
-    
+
     kani::assert(
         snap.has_no_enemies() == snap.enemies.is_empty(),
-        "has_no_enemies must match is_empty"
+        "has_no_enemies must match is_empty",
     );
 }
 
@@ -273,13 +276,13 @@ fn has_no_enemies_correct() {
 #[kani::proof]
 fn has_ammo_correct() {
     let ammo: i32 = kani::any();
-    
+
     let mut snap = WorldSnapshot::default();
     snap.me.ammo = ammo;
-    
+
     kani::assert(
         snap.has_ammo() == (ammo > 0),
-        "has_ammo must be true iff ammo > 0"
+        "has_ammo must be true iff ammo > 0",
     );
 }
 
@@ -287,10 +290,10 @@ fn has_ammo_correct() {
 #[kani::proof]
 fn has_pois_correct() {
     let snap = WorldSnapshot::default();
-    
+
     kani::assert(
         snap.has_pois() == !snap.pois.is_empty(),
-        "has_pois must match !is_empty"
+        "has_pois must match !is_empty",
     );
 }
 
@@ -298,10 +301,10 @@ fn has_pois_correct() {
 #[kani::proof]
 fn has_objective_correct() {
     let snap = WorldSnapshot::default();
-    
+
     kani::assert(
         snap.has_objective() == snap.objective.is_some(),
-        "has_objective must match is_some"
+        "has_objective must match is_some",
     );
 }
 
@@ -313,26 +316,32 @@ fn has_objective_correct() {
 #[kani::proof]
 fn player_state_default_valid() {
     let player = PlayerState::default();
-    
+
     kani::assert(player.hp == 100, "Default HP must be 100");
-    kani::assert(player.pos.x == 0 && player.pos.y == 0, "Default pos must be origin");
+    kani::assert(
+        player.pos.x == 0 && player.pos.y == 0,
+        "Default pos must be origin",
+    );
 }
 
 /// Verify CompanionState default has valid ammo
 #[kani::proof]
 fn companion_state_default_valid() {
     let companion = CompanionState::default();
-    
+
     kani::assert(companion.ammo == 10, "Default ammo must be 10");
     kani::assert(companion.morale == 1.0, "Default morale must be 1.0");
-    kani::assert(companion.cooldowns.is_empty(), "Default cooldowns must be empty");
+    kani::assert(
+        companion.cooldowns.is_empty(),
+        "Default cooldowns must be empty",
+    );
 }
 
 /// Verify EnemyState default has valid health
 #[kani::proof]
 fn enemy_state_default_valid() {
     let enemy = EnemyState::default();
-    
+
     kani::assert(enemy.hp == 100, "Default HP must be 100");
     kani::assert(enemy.id == 0, "Default ID must be 0");
 }
@@ -341,7 +350,7 @@ fn enemy_state_default_valid() {
 #[kani::proof]
 fn world_snapshot_default_consistent() {
     let snap = WorldSnapshot::default();
-    
+
     kani::assert(snap.t == 0.0, "Default time must be 0.0");
     kani::assert(snap.has_no_enemies(), "Default must have no enemies");
     kani::assert(!snap.has_pois(), "Default must have no POIs");

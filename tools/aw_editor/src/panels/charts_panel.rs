@@ -22,6 +22,7 @@ use std::time::Instant;
 
 /// Chart type enum for switching visualization modes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ChartType {
     Line,
     Bar,
@@ -77,6 +78,7 @@ impl ChartType {
 
 /// Data source for charts
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DataSource {
     FrameTiming,
     EntityCounts,
@@ -140,6 +142,7 @@ impl DataSource {
 
 /// Export format options
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ExportFormat {
     Csv,
     Json,
@@ -239,6 +242,7 @@ impl ChartStats {
 /// External action events emitted by the charts panel.
 /// These represent high-level user actions that external systems can respond to.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ChartsAction {
     /// Export chart data to CSV format
     ExportCsv { data: String },

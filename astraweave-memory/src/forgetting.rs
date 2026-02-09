@@ -447,13 +447,17 @@ mod tests {
     #[test]
     fn test_forgetting_engine_all_memory_types_have_curves() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         assert!(engine.forgetting_curves.contains_key(&MemoryType::Sensory));
         assert!(engine.forgetting_curves.contains_key(&MemoryType::Working));
         assert!(engine.forgetting_curves.contains_key(&MemoryType::Episodic));
         assert!(engine.forgetting_curves.contains_key(&MemoryType::Semantic));
-        assert!(engine.forgetting_curves.contains_key(&MemoryType::Procedural));
-        assert!(engine.forgetting_curves.contains_key(&MemoryType::Emotional));
+        assert!(engine
+            .forgetting_curves
+            .contains_key(&MemoryType::Procedural));
+        assert!(engine
+            .forgetting_curves
+            .contains_key(&MemoryType::Emotional));
         assert!(engine.forgetting_curves.contains_key(&MemoryType::Social));
     }
 
@@ -477,9 +481,9 @@ mod tests {
     fn test_apply_forgetting_empty_vec() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memories: Vec<Memory> = vec![];
-        
+
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         assert_eq!(result.memories_processed, 0);
         assert_eq!(result.memories_forgotten, 0);
         assert!((result.total_strength_lost - 0.0).abs() < 0.001);
@@ -493,9 +497,9 @@ mod tests {
             create_working_memory("Working memory"),
             Memory::episodic("Episodic".to_string(), vec![], None),
         ];
-        
+
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         // Fresh memories should not be forgotten
         assert_eq!(result.memories_processed, 3);
         assert_eq!(result.memories_forgotten, 0);
@@ -506,14 +510,14 @@ mod tests {
     fn test_apply_forgetting_old_weak_memories_removed() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = Memory::sensory("Very old memory".to_string(), None);
-        
+
         // Age and weaken the memory significantly
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(365);
         memory.metadata.strength = 0.01; // Below any threshold
-        
+
         let mut memories = vec![memory];
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         assert_eq!(result.memories_processed, 1);
         assert_eq!(result.memories_forgotten, 1);
         assert!(memories.is_empty());
@@ -526,10 +530,10 @@ mod tests {
         memory.metadata.permanent = true;
         memory.metadata.strength = 0.001; // Very weak but permanent
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(1000);
-        
+
         let mut memories = vec![memory];
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         // Permanent memory should not be processed
         assert_eq!(result.memories_processed, 0);
         assert_eq!(result.memories_forgotten, 0);
@@ -539,23 +543,23 @@ mod tests {
     #[test]
     fn test_apply_forgetting_multiple_memories_mixed_results() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         // Fresh memory
         let fresh = create_working_memory("Fresh");
-        
+
         // Old weak memory (will be forgotten)
         let mut old = Memory::sensory("Old".to_string(), None);
         old.metadata.created_at = Utc::now() - chrono::Duration::days(365);
         old.metadata.strength = 0.01;
-        
+
         // Permanent memory (won't be processed)
         let mut permanent = Memory::semantic("Permanent".to_string(), "facts".to_string());
         permanent.metadata.permanent = true;
         permanent.metadata.strength = 0.5;
-        
+
         let mut memories = vec![fresh, old, permanent];
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         assert_eq!(result.memories_processed, 2); // fresh + old (not permanent)
         assert_eq!(result.memories_forgotten, 1); // only old
         assert_eq!(memories.len(), 2); // fresh + permanent remain
@@ -565,9 +569,9 @@ mod tests {
     fn test_apply_forgetting_processing_time_recorded() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memories = vec![create_working_memory("Test")];
-        
+
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         // Should have recorded some processing time (may be 0 for fast operations)
         let _ = result.processing_time_ms; // Just verify it exists
     }
@@ -577,13 +581,13 @@ mod tests {
     fn test_update_strength_working_memory_decay() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = create_working_memory("Test");
-        
+
         // Age the memory
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(7);
         let initial = memory.metadata.strength;
-        
+
         engine.update_memory_strength(&mut memory).unwrap();
-        
+
         assert!(memory.metadata.strength < initial);
         assert!(memory.metadata.strength > 0.0);
     }
@@ -591,18 +595,18 @@ mod tests {
     #[test]
     fn test_update_strength_importance_modifier_high() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut low_importance = create_working_memory("Low");
         low_importance.metadata.importance = 0.1;
         low_importance.metadata.created_at = Utc::now() - chrono::Duration::days(5);
-        
+
         let mut high_importance = create_working_memory("High");
         high_importance.metadata.importance = 0.9;
         high_importance.metadata.created_at = Utc::now() - chrono::Duration::days(5);
-        
+
         engine.update_memory_strength(&mut low_importance).unwrap();
         engine.update_memory_strength(&mut high_importance).unwrap();
-        
+
         // High importance should retain more strength
         assert!(high_importance.metadata.strength > low_importance.metadata.strength);
     }
@@ -610,18 +614,20 @@ mod tests {
     #[test]
     fn test_update_strength_access_frequency_modifier() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut never_accessed = Memory::episodic("Never".to_string(), vec![], None);
         never_accessed.metadata.access_count = 0;
         never_accessed.metadata.created_at = Utc::now() - chrono::Duration::days(10);
-        
+
         let mut frequently_accessed = Memory::episodic("Frequent".to_string(), vec![], None);
         frequently_accessed.metadata.access_count = 100;
         frequently_accessed.metadata.created_at = Utc::now() - chrono::Duration::days(10);
-        
+
         engine.update_memory_strength(&mut never_accessed).unwrap();
-        engine.update_memory_strength(&mut frequently_accessed).unwrap();
-        
+        engine
+            .update_memory_strength(&mut frequently_accessed)
+            .unwrap();
+
         // Frequently accessed should be stronger
         assert!(frequently_accessed.metadata.strength > never_accessed.metadata.strength);
     }
@@ -633,22 +639,24 @@ mod tests {
             ..Default::default()
         };
         let engine = ForgettingEngine::new(config);
-        
+
         let mut memory = Memory::episodic("Test".to_string(), vec![], None);
         memory.metadata.access_count = 10;
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(5);
-        
+
         let config_enabled = ForgettingConfig {
             spaced_repetition: true,
             ..Default::default()
         };
         let engine_enabled = ForgettingEngine::new(config_enabled);
-        
+
         let mut memory_with_sr = memory.clone();
-        
+
         engine.update_memory_strength(&mut memory).unwrap();
-        engine_enabled.update_memory_strength(&mut memory_with_sr).unwrap();
-        
+        engine_enabled
+            .update_memory_strength(&mut memory_with_sr)
+            .unwrap();
+
         // With spaced repetition enabled, memory should be stronger
         assert!(memory_with_sr.metadata.strength >= memory.metadata.strength);
     }
@@ -657,14 +665,14 @@ mod tests {
     fn test_update_strength_clamps_to_valid_range() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = create_working_memory("Test");
-        
+
         // Set extreme values
         memory.metadata.importance = 10.0; // Unrealistically high
         memory.metadata.access_count = 10000;
         memory.metadata.created_at = Utc::now(); // Very fresh
-        
+
         engine.update_memory_strength(&mut memory).unwrap();
-        
+
         // Should be clamped to [0, 1]
         assert!(memory.metadata.strength >= 0.0);
         assert!(memory.metadata.strength <= 1.0);
@@ -675,7 +683,7 @@ mod tests {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = create_working_memory("Test");
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(30);
-        
+
         // This should work with the default Working curve
         engine.update_memory_strength(&mut memory).unwrap();
         assert!(memory.metadata.strength >= 0.0);
@@ -688,7 +696,7 @@ mod tests {
         let mut memory = create_working_memory("Test");
         memory.metadata.permanent = true;
         memory.metadata.strength = 0.0; // Zero strength
-        
+
         assert!(!engine.should_forget(&memory).unwrap());
     }
 
@@ -697,7 +705,7 @@ mod tests {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = Memory::semantic("Knowledge".to_string(), "facts".to_string());
         memory.metadata.strength = 0.0; // Zero strength
-        
+
         // Semantic is immune
         assert!(!engine.should_forget(&memory).unwrap());
     }
@@ -707,7 +715,7 @@ mod tests {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = create_working_memory("Test");
         memory.metadata.strength = 0.01; // Below default 0.2 threshold for working
-        
+
         assert!(engine.should_forget(&memory).unwrap());
     }
 
@@ -716,7 +724,7 @@ mod tests {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let mut memory = create_working_memory("Test");
         memory.metadata.strength = 0.9; // Well above threshold
-        
+
         assert!(!engine.should_forget(&memory).unwrap());
     }
 
@@ -725,9 +733,9 @@ mod tests {
     fn test_adaptive_half_life_base_value() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let memory = Memory::episodic("Test".to_string(), vec![], None);
-        
+
         let half_life = engine.calculate_adaptive_half_life(&memory);
-        
+
         // Episodic base is 14 days, result should be positive
         assert!(half_life > 0.0);
     }
@@ -735,45 +743,45 @@ mod tests {
     #[test]
     fn test_adaptive_half_life_increases_with_access() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut low_access = Memory::episodic("Low".to_string(), vec![], None);
         low_access.metadata.access_count = 1;
-        
+
         let mut high_access = Memory::episodic("High".to_string(), vec![], None);
         high_access.metadata.access_count = 100;
-        
+
         let low_half_life = engine.calculate_adaptive_half_life(&low_access);
         let high_half_life = engine.calculate_adaptive_half_life(&high_access);
-        
+
         assert!(high_half_life > low_half_life);
     }
 
     #[test]
     fn test_adaptive_half_life_increases_with_importance() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut low_importance = create_working_memory("Low");
         low_importance.metadata.importance = 0.1;
-        
+
         let mut high_importance = create_working_memory("High");
         high_importance.metadata.importance = 0.9;
-        
+
         let low_half_life = engine.calculate_adaptive_half_life(&low_importance);
         let high_half_life = engine.calculate_adaptive_half_life(&high_importance);
-        
+
         assert!(high_half_life > low_half_life);
     }
 
     #[test]
     fn test_adaptive_half_life_different_memory_types() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let sensory = Memory::sensory("Sense".to_string(), None);
         let semantic = Memory::semantic("Knowledge".to_string(), "facts".to_string());
-        
+
         let sensory_half_life = engine.calculate_adaptive_half_life(&sensory);
         let semantic_half_life = engine.calculate_adaptive_half_life(&semantic);
-        
+
         // Semantic should have much longer half-life (180 days vs 0.25 days)
         assert!(semantic_half_life > sensory_half_life * 10.0);
     }
@@ -783,9 +791,9 @@ mod tests {
     fn test_type_statistics_empty_memories() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let memories: Vec<Memory> = vec![];
-        
+
         let stats = engine.get_type_statistics(&MemoryType::Working, &memories);
-        
+
         assert_eq!(stats.total_memories, 0);
         assert!((stats.average_strength - 0.0).abs() < 0.001);
         assert_eq!(stats.weak_memories, 0);
@@ -798,9 +806,9 @@ mod tests {
             create_working_memory("Work1"),
             create_working_memory("Work2"),
         ];
-        
+
         let stats = engine.get_type_statistics(&MemoryType::Sensory, &memories);
-        
+
         assert_eq!(stats.total_memories, 0);
     }
 
@@ -813,9 +821,9 @@ mod tests {
             create_working_memory("Work3"),
             Memory::sensory("Sense1".to_string(), None),
         ];
-        
+
         let stats = engine.get_type_statistics(&MemoryType::Working, &memories);
-        
+
         assert_eq!(stats.total_memories, 3);
         assert_eq!(stats.memory_type, MemoryType::Working);
     }
@@ -823,15 +831,15 @@ mod tests {
     #[test]
     fn test_type_statistics_average_strength() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut m1 = create_working_memory("W1");
         m1.metadata.strength = 0.8;
         let mut m2 = create_working_memory("W2");
         m2.metadata.strength = 0.6;
-        
+
         let memories = vec![m1, m2];
         let stats = engine.get_type_statistics(&MemoryType::Working, &memories);
-        
+
         // Average should be (0.8 + 0.6) / 2 = 0.7
         assert!((stats.average_strength - 0.7).abs() < 0.001);
     }
@@ -839,35 +847,35 @@ mod tests {
     #[test]
     fn test_type_statistics_weak_memories_count() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut strong = create_working_memory("Strong");
         strong.metadata.strength = 0.9;
-        
+
         let mut weak = create_working_memory("Weak");
         weak.metadata.strength = 0.05; // Below working threshold (0.2)
-        
+
         let mut medium = create_working_memory("Medium");
         medium.metadata.strength = 0.3;
-        
+
         let memories = vec![strong, weak, medium];
         let stats = engine.get_type_statistics(&MemoryType::Working, &memories);
-        
+
         assert_eq!(stats.weak_memories, 1); // Only 'weak' is below threshold
     }
 
     #[test]
     fn test_type_statistics_average_age() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut m1 = create_working_memory("W1");
         m1.metadata.created_at = Utc::now() - chrono::Duration::days(10);
-        
+
         let mut m2 = create_working_memory("W2");
         m2.metadata.created_at = Utc::now() - chrono::Duration::days(20);
-        
+
         let memories = vec![m1, m2];
         let stats = engine.get_type_statistics(&MemoryType::Working, &memories);
-        
+
         // Average age should be around 15 days
         assert!(stats.average_age_days > 14.0);
         assert!(stats.average_age_days < 16.0);
@@ -899,7 +907,7 @@ mod tests {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let sensory = engine.forgetting_curves.get(&MemoryType::Sensory).unwrap();
         let episodic = engine.forgetting_curves.get(&MemoryType::Episodic).unwrap();
-        
+
         // Sensory should decay much faster than episodic
         assert!(sensory.half_life < episodic.half_life);
         assert!(sensory.decay_rate > episodic.decay_rate);
@@ -908,8 +916,11 @@ mod tests {
     #[test]
     fn test_forgetting_curve_procedural_month_half_life() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        let procedural = engine.forgetting_curves.get(&MemoryType::Procedural).unwrap();
-        
+        let procedural = engine
+            .forgetting_curves
+            .get(&MemoryType::Procedural)
+            .unwrap();
+
         assert!((procedural.half_life - 30.0).abs() < 0.1);
     }
 
@@ -917,7 +928,7 @@ mod tests {
     fn test_forgetting_curve_social_three_weeks() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
         let social = engine.forgetting_curves.get(&MemoryType::Social).unwrap();
-        
+
         assert!((social.half_life - 21.0).abs() < 0.1);
     }
 
@@ -925,21 +936,21 @@ mod tests {
     #[test]
     fn test_apply_forgetting_strength_loss_accumulated() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         let mut m1 = create_working_memory("W1");
         m1.metadata.created_at = Utc::now() - chrono::Duration::days(30);
-        
+
         let mut m2 = create_working_memory("W2");
         m2.metadata.created_at = Utc::now() - chrono::Duration::days(30);
-        
+
         let initial_strength = m1.metadata.strength + m2.metadata.strength;
         let mut memories = vec![m1, m2];
-        
+
         let result = engine.apply_forgetting(&mut memories).unwrap();
-        
+
         let final_strength: f32 = memories.iter().map(|m| m.metadata.strength).sum();
         let actual_loss = initial_strength - final_strength;
-        
+
         // Loss should be positive (memories decayed)
         assert!(result.total_strength_lost > 0.0);
         assert!((result.total_strength_lost - actual_loss).abs() < 0.01);
@@ -948,21 +959,21 @@ mod tests {
     #[test]
     fn test_apply_forgetting_removal_order_correct() {
         let engine = ForgettingEngine::new(ForgettingConfig::default());
-        
+
         // Create 3 memories, mark first and third for removal
         let mut m1 = Memory::sensory("First".to_string(), None);
         m1.metadata.strength = 0.001;
         m1.metadata.created_at = Utc::now() - chrono::Duration::days(100);
-        
+
         let m2 = Memory::sensory("Second".to_string(), None); // Fresh, will stay
-        
+
         let mut m3 = Memory::sensory("Third".to_string(), None);
         m3.metadata.strength = 0.001;
         m3.metadata.created_at = Utc::now() - chrono::Duration::days(100);
-        
+
         let mut memories = vec![m1, m2, m3];
         engine.apply_forgetting(&mut memories).unwrap();
-        
+
         // Only the fresh memory should remain
         assert_eq!(memories.len(), 1);
         assert!(memories[0].content.text.contains("Second"));

@@ -67,6 +67,7 @@ pub struct Experiment {
 
 /// Status of an experiment
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum ExperimentStatus {
     Draft,
     Running,
@@ -109,6 +110,7 @@ pub struct SuccessCriteria {
 
 /// Optimization direction for metrics
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum OptimizationDirection {
     Maximize, // Higher values are better
     Minimize, // Lower values are better
@@ -116,6 +118,7 @@ pub enum OptimizationDirection {
 
 /// Strategy for assigning users to variants
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AssignmentStrategy {
     /// Hash-based deterministic assignment
     Hash,
@@ -141,6 +144,8 @@ pub struct ExperimentResults {
 
 /// Status of experiment results
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+#[must_use]
 pub enum ResultStatus {
     InProgress,
     SignificantResult,

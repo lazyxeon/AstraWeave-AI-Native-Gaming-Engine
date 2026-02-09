@@ -29,23 +29,20 @@ impl MetricsRegistry {
 
     /// Add a value to a counter.
     pub fn add(&self, key: &str, value: u64) {
-        let mut counters = self.counters.lock().unwrap();
+        let mut counters = self.counters.lock().expect("metrics lock poisoned");
         *counters.entry(key.to_string()).or_insert(0) += value;
     }
 
     /// Set a gauge value.
     pub fn gauge(&self, key: &str, value: f64) {
-        let mut gauges = self.gauges.lock().unwrap();
+        let mut gauges = self.gauges.lock().expect("metrics lock poisoned");
         gauges.insert(key.to_string(), value);
     }
 
     /// Record a value in a histogram.
     pub fn histogram(&self, key: &str, value: f64) {
-        let mut histograms = self.histograms.lock().unwrap();
-        histograms
-            .entry(key.to_string())
-            .or_default()
-            .push(value);
+        let mut histograms = self.histograms.lock().expect("metrics lock poisoned");
+        histograms.entry(key.to_string()).or_default().push(value);
     }
 
     /// Record a duration in milliseconds.
@@ -55,18 +52,18 @@ impl MetricsRegistry {
 
     /// Get a snapshot of all counters.
     pub fn get_counters(&self) -> HashMap<String, u64> {
-        self.counters.lock().unwrap().clone()
+        self.counters.lock().expect("metrics lock poisoned").clone()
     }
 
     /// Get a snapshot of all gauges.
     pub fn get_gauges(&self) -> HashMap<String, f64> {
-        self.gauges.lock().unwrap().clone()
+        self.gauges.lock().expect("metrics lock poisoned").clone()
     }
 
     /// Get summary statistics for a histogram.
     /// Returns (count, min, max, avg).
     pub fn get_histogram_stats(&self, key: &str) -> Option<(usize, f64, f64, f64)> {
-        let histograms = self.histograms.lock().unwrap();
+        let histograms = self.histograms.lock().expect("metrics lock poisoned");
         let values = histograms.get(key)?;
 
         if values.is_empty() {
@@ -228,10 +225,10 @@ mod tests {
     fn test_metrics_registry_clone() {
         let metrics = MetricsRegistry::new();
         metrics.increment("cloned.counter");
-        
+
         let cloned = metrics.clone();
         cloned.increment("cloned.counter");
-        
+
         // Both share the same Arc'd data
         let counters = metrics.get_counters();
         assert_eq!(counters.get("cloned.counter"), Some(&2));

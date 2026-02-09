@@ -145,6 +145,7 @@ async fn fetch_command(
                 AssetType::Audio => "🔊",
                 AssetType::Sprite => "🖌️ ",
                 AssetType::Tileset => "🗺️ ",
+                _ => "📦",
             };
             println!(
                 "{} Fetching {}: {} ({})",
@@ -386,6 +387,7 @@ impl AssetTypeDisplay for UnifiedAssetEntry {
             AssetType::Audio => "audio",
             AssetType::Sprite => "sprite",
             AssetType::Tileset => "tileset",
+            _ => "unknown",
         }
     }
 }

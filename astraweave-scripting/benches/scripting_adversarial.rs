@@ -16,12 +16,28 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 enum ScriptCommand {
-    Spawn { prefab: String, position: (f32, f32, f32) },
-    Despawn { entity: i64 },
-    SetPosition { entity: i64, position: (f32, f32, f32) },
-    ApplyDamage { entity: i64, amount: f32 },
-    PlaySound { path: String },
-    SpawnParticle { effect: String, position: (f32, f32, f32) },
+    Spawn {
+        prefab: String,
+        position: (f32, f32, f32),
+    },
+    Despawn {
+        entity: i64,
+    },
+    SetPosition {
+        entity: i64,
+        position: (f32, f32, f32),
+    },
+    ApplyDamage {
+        entity: i64,
+        amount: f32,
+    },
+    PlaySound {
+        path: String,
+    },
+    SpawnParticle {
+        effect: String,
+        position: (f32, f32, f32),
+    },
 }
 
 #[derive(Clone, Debug, Default)]
@@ -46,11 +62,13 @@ impl ScriptCommands {
     }
 
     fn set_position(&mut self, entity: i64, position: (f32, f32, f32)) {
-        self.commands.push(ScriptCommand::SetPosition { entity, position });
+        self.commands
+            .push(ScriptCommand::SetPosition { entity, position });
     }
 
     fn apply_damage(&mut self, entity: i64, amount: f32) {
-        self.commands.push(ScriptCommand::ApplyDamage { entity, amount });
+        self.commands
+            .push(ScriptCommand::ApplyDamage { entity, amount });
     }
 }
 
@@ -124,10 +142,7 @@ fn simulate_script_execute(ast: &str, state: &mut HashMap<String, i64>) -> Vec<S
             commands.push(ScriptCommand::Despawn { entity: 0 });
         } else if trimmed.starts_with("let ") {
             // Simple variable tracking
-            if let Some((var, val)) = trimmed
-                .strip_prefix("let ")
-                .and_then(|s| s.split_once('='))
-            {
+            if let Some((var, val)) = trimmed.strip_prefix("let ").and_then(|s| s.split_once('=')) {
                 let var_name = var.trim().to_string();
                 let value: i64 = val.trim().trim_end_matches(';').parse().unwrap_or(0);
                 state.insert(var_name, value);
@@ -251,9 +266,7 @@ fn bench_execution_stress(c: &mut Criterion) {
 
     // Test 3: Many command emissions
     group.bench_function("many_commands_100", |bencher| {
-        let ast: String = (0..100)
-            .map(|_| "spawn(enemy, 0, 0, 0);\n")
-            .collect();
+        let ast: String = (0..100).map(|_| "spawn(enemy, 0, 0, 0);\n").collect();
         let mut state = HashMap::new();
 
         bencher.iter(|| {
@@ -265,9 +278,8 @@ fn bench_execution_stress(c: &mut Criterion) {
     // Test 4: State persistence
     group.bench_function("state_persistence_stress", |bencher| {
         let ast = "let counter = 1;";
-        let mut state: HashMap<String, i64> = (0..100)
-            .map(|i| (format!("var_{}", i), i as i64))
-            .collect();
+        let mut state: HashMap<String, i64> =
+            (0..100).map(|i| (format!("var_{}", i), i as i64)).collect();
 
         bencher.iter(|| {
             let _commands = simulate_script_execute(ast, &mut state);
@@ -358,9 +370,7 @@ fn bench_command_processing(c: &mut Criterion) {
                     ScriptCommand::SetPosition { entity, position } => {
                         *entity >= 0 && position.0.is_finite()
                     }
-                    ScriptCommand::ApplyDamage { entity, amount } => {
-                        *entity >= 0 && *amount >= 0.0
-                    }
+                    ScriptCommand::ApplyDamage { entity, amount } => *entity >= 0 && *amount >= 0.0,
                     _ => true,
                 })
                 .count();
@@ -414,9 +424,7 @@ fn bench_security_limits(c: &mut Criterion) {
     // Test 3: String size limit
     group.bench_function("string_size_limit", |bencher| {
         let limits = SecurityLimits::default();
-        let test_strings: Vec<String> = (0..100)
-            .map(|i| "x".repeat(i * 20))
-            .collect();
+        let test_strings: Vec<String> = (0..100).map(|i| "x".repeat(i * 20)).collect();
 
         bencher.iter(|| {
             let violations: Vec<_> = test_strings
@@ -516,9 +524,7 @@ fn bench_hot_reload(c: &mut Criterion) {
             .map(|i| (format!("script_{}.rhai", i), Arc::new(format!("// v{}", i))))
             .collect();
 
-        let modified_scripts: Vec<String> = (0..10)
-            .map(|i| format!("script_{}.rhai", i))
-            .collect();
+        let modified_scripts: Vec<String> = (0..10).map(|i| format!("script_{}.rhai", i)).collect();
 
         bencher.iter(|| {
             for script in &modified_scripts {
@@ -529,10 +535,7 @@ fn bench_hot_reload(c: &mut Criterion) {
 
         // Restore cache for next iteration
         for i in 0..10 {
-            cache.insert(
-                format!("script_{}.rhai", i),
-                Arc::new(format!("// v{}", i)),
-            );
+            cache.insert(format!("script_{}.rhai", i), Arc::new(format!("// v{}", i)));
         }
     });
 
@@ -608,15 +611,30 @@ fn bench_callback_events(c: &mut Criterion) {
     #[derive(Clone, Debug)]
     #[allow(dead_code)]
     enum ScriptEvent {
-        OnCollision { entity: i64, other: i64 },
-        OnTrigger { entity: i64, trigger_name: String },
-        OnDamage { entity: i64, damage: f32, source: i64 },
-        OnSpawn { entity: i64 },
+        OnCollision {
+            entity: i64,
+            other: i64,
+        },
+        OnTrigger {
+            entity: i64,
+            trigger_name: String,
+        },
+        OnDamage {
+            entity: i64,
+            damage: f32,
+            source: i64,
+        },
+        OnSpawn {
+            entity: i64,
+        },
     }
 
     // Test 1: Single event dispatch
     group.bench_function("single_event_dispatch", |bencher| {
-        let event = ScriptEvent::OnCollision { entity: 1, other: 2 };
+        let event = ScriptEvent::OnCollision {
+            entity: 1,
+            other: 2,
+        };
 
         bencher.iter(|| {
             let callback = match &event {
@@ -633,7 +651,10 @@ fn bench_callback_events(c: &mut Criterion) {
     group.bench_function("batch_events_100", |bencher| {
         let events: Vec<ScriptEvent> = (0..100)
             .map(|i| match i % 4 {
-                0 => ScriptEvent::OnCollision { entity: i, other: i + 1 },
+                0 => ScriptEvent::OnCollision {
+                    entity: i,
+                    other: i + 1,
+                },
                 1 => ScriptEvent::OnTrigger {
                     entity: i,
                     trigger_name: format!("trigger_{}", i),

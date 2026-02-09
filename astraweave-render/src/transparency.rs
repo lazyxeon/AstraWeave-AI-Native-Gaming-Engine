@@ -19,6 +19,7 @@ pub struct TransparentInstance {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BlendMode {
     /// Standard alpha blending (src_alpha, one_minus_src_alpha)
     Alpha,

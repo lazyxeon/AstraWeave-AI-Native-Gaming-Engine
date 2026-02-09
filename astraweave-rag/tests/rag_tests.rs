@@ -27,7 +27,7 @@ fn test_retrieval_basic_search() {
 
     let results = engine.search(&query, &memories).unwrap();
     assert!(!results.is_empty());
-    
+
     if results.len() >= 2 {
         assert!(results[0].score >= results[1].score);
     }
@@ -120,7 +120,10 @@ fn test_retrieval_multiple_categories() {
     let results = engine.search(&query, &memories).unwrap();
 
     for result in &results {
-        assert!(result.memory.category == MemoryCategory::Combat || result.memory.category == MemoryCategory::Dialogue);
+        assert!(
+            result.memory.category == MemoryCategory::Combat
+                || result.memory.category == MemoryCategory::Dialogue
+        );
     }
 }
 

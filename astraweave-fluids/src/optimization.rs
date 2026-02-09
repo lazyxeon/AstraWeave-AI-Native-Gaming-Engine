@@ -51,6 +51,7 @@ use std::collections::VecDeque;
 
 /// Known GPU vendors for optimization tuning.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum GpuVendor {
     /// NVIDIA GPUs (GeForce, RTX, Quadro)
     Nvidia,
@@ -404,6 +405,7 @@ impl SimulationBudget {
 
 /// Quality tier for feature gating
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum QualityTier {
     /// Always enabled (core simulation)
     Essential,
@@ -1820,7 +1822,7 @@ impl OptimizationProfiler {
         self.metrics.total_time_us += metrics.total_time_us;
         
         if metrics.total_time_us > 0 && metrics.frames_processed > 0 {
-            let time_us = metrics.total_time_us / metrics.frames_processed as u64;
+            let time_us = metrics.total_time_us / metrics.frames_processed;
             
             if self.frame_history.len() >= self.history_size {
                 self.frame_history.pop_front();
@@ -1957,6 +1959,7 @@ impl OptimizationProfiler {
 
 /// Optimization recommendation based on metrics analysis.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum OptimizationRecommendation {
     /// Current settings are optimal
     Optimal,

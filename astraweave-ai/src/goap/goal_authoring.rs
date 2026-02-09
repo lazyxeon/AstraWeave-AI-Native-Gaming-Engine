@@ -19,6 +19,7 @@ pub struct GoalDefinition {
 /// TOML-friendly state value definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[non_exhaustive]
 pub enum StateValueDef {
     Bool(bool),
     Int(i32),

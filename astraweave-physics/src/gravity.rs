@@ -54,6 +54,7 @@ pub type BodyGravityId = u64;
 
 /// Shape of a gravity zone
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum GravityZoneShape {
     /// Axis-aligned box zone
     Box { min: Vec3, max: Vec3 },

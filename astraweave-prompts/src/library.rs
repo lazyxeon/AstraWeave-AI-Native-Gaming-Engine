@@ -124,7 +124,11 @@ pub struct LibraryMetadata {
 
 impl LibraryMetadata {
     /// Creates a new library metadata.
-    pub fn new(version: impl Into<String>, description: impl Into<String>, author: impl Into<String>) -> Self {
+    pub fn new(
+        version: impl Into<String>,
+        description: impl Into<String>,
+        author: impl Into<String>,
+    ) -> Self {
         Self {
             version: version.into(),
             description: description.into(),
@@ -193,7 +197,11 @@ impl CollectionMetadata {
     }
 
     /// Creates a new collection metadata with tags.
-    pub fn with_tags(version: impl Into<String>, description: impl Into<String>, tags: Vec<String>) -> Self {
+    pub fn with_tags(
+        version: impl Into<String>,
+        description: impl Into<String>,
+        tags: Vec<String>,
+    ) -> Self {
         Self {
             version: version.into(),
             description: description.into(),
@@ -457,10 +465,11 @@ mod tests {
     #[test]
     fn test_prompt_library_add_and_get() {
         let mut lib = PromptLibrary::new();
-        let template = crate::template::PromptTemplate::new("test".to_string(), "Hello {{name}}".to_string());
-        
+        let template =
+            crate::template::PromptTemplate::new("test".to_string(), "Hello {{name}}".to_string());
+
         lib.add_template("greeting", template);
-        
+
         let result = lib.get_template("greeting");
         assert!(result.is_ok());
     }
@@ -475,11 +484,12 @@ mod tests {
     #[test]
     fn test_prompt_library_delete_template() {
         let mut lib = PromptLibrary::new();
-        let template = crate::template::PromptTemplate::new("test".to_string(), "content".to_string());
-        
+        let template =
+            crate::template::PromptTemplate::new("test".to_string(), "content".to_string());
+
         lib.add_template("test", template);
         assert!(!lib.list_templates().is_empty());
-        
+
         let deleted = lib.delete_template("test");
         assert!(deleted.is_some());
         assert!(lib.list_templates().is_empty());
@@ -495,11 +505,20 @@ mod tests {
     #[test]
     fn test_prompt_library_list_templates() {
         let mut lib = PromptLibrary::new();
-        
-        lib.add_template("a", crate::template::PromptTemplate::new("a".to_string(), "A".to_string()));
-        lib.add_template("b", crate::template::PromptTemplate::new("b".to_string(), "B".to_string()));
-        lib.add_template("c", crate::template::PromptTemplate::new("c".to_string(), "C".to_string()));
-        
+
+        lib.add_template(
+            "a",
+            crate::template::PromptTemplate::new("a".to_string(), "A".to_string()),
+        );
+        lib.add_template(
+            "b",
+            crate::template::PromptTemplate::new("b".to_string(), "B".to_string()),
+        );
+        lib.add_template(
+            "c",
+            crate::template::PromptTemplate::new("c".to_string(), "C".to_string()),
+        );
+
         let list = lib.list_templates();
         assert_eq!(list.len(), 3);
         assert!(list.contains(&"a".to_string()));
@@ -526,9 +545,9 @@ mod tests {
             tags: vec![],
         };
         let mut collection = TemplateCollection::new("test".to_string(), meta);
-        
+
         collection.add_template("greeting".to_string(), "Hello {{name}}".to_string());
-        
+
         let result = collection.get_template("greeting");
         assert_eq!(result, Some(&"Hello {{name}}".to_string()));
     }
@@ -541,7 +560,7 @@ mod tests {
             tags: vec![],
         };
         let collection = TemplateCollection::new("test".to_string(), meta);
-        
+
         let result = collection.get_template("nonexistent");
         assert!(result.is_none());
     }
@@ -554,9 +573,9 @@ mod tests {
             tags: vec![],
         };
         let mut collection = TemplateCollection::new("test".to_string(), meta);
-        
+
         collection.add_template("greeting".to_string(), "Hello".to_string());
-        
+
         let removed = collection.remove_template("greeting");
         assert_eq!(removed, Some("Hello".to_string()));
         assert!(collection.get_template("greeting").is_none());
@@ -570,10 +589,10 @@ mod tests {
             tags: vec![],
         };
         let mut collection = TemplateCollection::new("test".to_string(), meta);
-        
+
         collection.add_template("a".to_string(), "A".to_string());
         collection.add_template("b".to_string(), "B".to_string());
-        
+
         let list = collection.list_templates();
         assert_eq!(list.len(), 2);
     }
@@ -599,16 +618,16 @@ mod tests {
             created_at: "2025-01-01".to_string(),
         };
         let mut library = TemplateLibrary::new("lib".to_string(), lib_meta);
-        
+
         let col_meta = CollectionMetadata {
             version: "1.0".to_string(),
             description: "Coll".to_string(),
             tags: vec![],
         };
         let collection = TemplateCollection::new("my_collection".to_string(), col_meta);
-        
+
         library.add_collection(collection);
-        
+
         let result = library.get_collection("my_collection");
         assert!(result.is_some());
     }
@@ -622,7 +641,7 @@ mod tests {
             created_at: "2025-01-01".to_string(),
         };
         let library = TemplateLibrary::new("lib".to_string(), meta);
-        
+
         let result = library.get_collection("nonexistent");
         assert!(result.is_none());
     }
@@ -636,7 +655,7 @@ mod tests {
             created_at: "2025-01-01".to_string(),
         };
         let mut library = TemplateLibrary::new("lib".to_string(), lib_meta);
-        
+
         let col_meta1 = CollectionMetadata {
             version: "1.0".to_string(),
             description: "A".to_string(),
@@ -647,10 +666,10 @@ mod tests {
             description: "B".to_string(),
             tags: vec![],
         };
-        
+
         library.add_collection(TemplateCollection::new("col1".to_string(), col_meta1));
         library.add_collection(TemplateCollection::new("col2".to_string(), col_meta2));
-        
+
         let list = library.list_collections();
         assert_eq!(list.len(), 2);
     }
@@ -664,7 +683,7 @@ mod tests {
             created_at: "2025-01-01".to_string(),
         };
         let library = TemplateLibrary::new("lib".to_string(), meta);
-        
+
         // Stub should succeed
         let result = library.save_to_directory(std::path::PathBuf::from("/tmp/test"));
         assert!(result.is_ok());
@@ -678,10 +697,10 @@ mod tests {
             author: "Developer".to_string(),
             created_at: "2025-06-15".to_string(),
         };
-        
+
         let json = serde_json::to_string(&meta).unwrap();
         let restored: LibraryMetadata = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(restored.version, "2.0.0");
         assert_eq!(restored.author, "Developer");
     }
@@ -693,10 +712,10 @@ mod tests {
             description: "Test collection".to_string(),
             tags: vec!["ai".to_string(), "prompts".to_string()],
         };
-        
+
         let json = serde_json::to_string(&meta).unwrap();
         let restored: CollectionMetadata = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(restored.tags.len(), 2);
         assert!(restored.tags.contains(&"ai".to_string()));
     }
@@ -829,7 +848,11 @@ mod tests {
 
     #[test]
     fn test_collection_metadata_with_tags() {
-        let meta = CollectionMetadata::with_tags("1.0", "Desc", vec!["ai".to_string(), "game".to_string()]);
+        let meta = CollectionMetadata::with_tags(
+            "1.0",
+            "Desc",
+            vec!["ai".to_string(), "game".to_string()],
+        );
         assert_eq!(meta.tags.len(), 2);
     }
 
@@ -844,7 +867,11 @@ mod tests {
 
     #[test]
     fn test_collection_metadata_has_tag() {
-        let meta = CollectionMetadata::with_tags("1.0", "Desc", vec!["ai".to_string(), "game".to_string()]);
+        let meta = CollectionMetadata::with_tags(
+            "1.0",
+            "Desc",
+            vec!["ai".to_string(), "game".to_string()],
+        );
         assert!(meta.has_tag("ai"));
         assert!(meta.has_tag("game"));
         assert!(!meta.has_tag("missing"));
@@ -852,7 +879,11 @@ mod tests {
 
     #[test]
     fn test_collection_metadata_tag_count() {
-        let meta = CollectionMetadata::with_tags("1.0", "Desc", vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        let meta = CollectionMetadata::with_tags(
+            "1.0",
+            "Desc",
+            vec!["a".to_string(), "b".to_string(), "c".to_string()],
+        );
         assert_eq!(meta.tag_count(), 3);
     }
 
@@ -885,7 +916,10 @@ mod tests {
         let mut lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
         assert_eq!(lib.collection_count(), 0);
 
-        lib.add_collection(TemplateCollection::new("col1".to_string(), CollectionMetadata::default()));
+        lib.add_collection(TemplateCollection::new(
+            "col1".to_string(),
+            CollectionMetadata::default(),
+        ));
         assert_eq!(lib.collection_count(), 1);
     }
 
@@ -894,7 +928,10 @@ mod tests {
         let mut lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
         assert!(!lib.has_collection("col1"));
 
-        lib.add_collection(TemplateCollection::new("col1".to_string(), CollectionMetadata::default()));
+        lib.add_collection(TemplateCollection::new(
+            "col1".to_string(),
+            CollectionMetadata::default(),
+        ));
         assert!(lib.has_collection("col1"));
     }
 
@@ -912,14 +949,17 @@ mod tests {
 
     #[test]
     fn test_template_library_metadata() {
-        let lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::new("2.0", "Desc", "Author"));
+        let lib = TemplateLibrary::new(
+            "test".to_string(),
+            LibraryMetadata::new("2.0", "Desc", "Author"),
+        );
         assert_eq!(lib.metadata().version, "2.0");
     }
 
     #[test]
     fn test_template_library_total_template_count() {
         let mut lib = TemplateLibrary::new("test".to_string(), LibraryMetadata::default());
-        
+
         let mut col1 = TemplateCollection::new("col1".to_string(), CollectionMetadata::default());
         col1.add_template("t1".to_string(), "Template 1".to_string());
         col1.add_template("t2".to_string(), "Template 2".to_string());
@@ -951,13 +991,15 @@ mod tests {
 
     #[test]
     fn test_template_collection_name() {
-        let col = TemplateCollection::new("my_collection".to_string(), CollectionMetadata::default());
+        let col =
+            TemplateCollection::new("my_collection".to_string(), CollectionMetadata::default());
         assert_eq!(col.name(), "my_collection");
     }
 
     #[test]
     fn test_template_collection_metadata() {
-        let col = TemplateCollection::new("test".to_string(), CollectionMetadata::new("2.0", "Desc"));
+        let col =
+            TemplateCollection::new("test".to_string(), CollectionMetadata::new("2.0", "Desc"));
         assert_eq!(col.metadata().version, "2.0");
     }
 

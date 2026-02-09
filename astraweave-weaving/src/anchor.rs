@@ -248,6 +248,7 @@ impl Anchor {
 
 /// VFX state computed from anchor stability
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AnchorVfxState {
     /// Perfect (1.0): Bright blue glow, 440 Hz hum, no distortion
     Perfect,
@@ -335,6 +336,7 @@ impl fmt::Display for AnchorVfxState {
 
 /// Ability types that can be unlocked by repairing anchors
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AbilityType {
     /// Echo Dash: 5m teleport (1 Echo per use)
     /// Unlocked by Z2 vista_tutorial_anchor repair

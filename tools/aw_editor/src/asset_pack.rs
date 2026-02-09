@@ -28,6 +28,7 @@ pub type ProgressCallback = Box<dyn Fn(f32, &str) + Send>;
 
 /// Compression method for assets
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum CompressionMethod {
     /// No compression
     None,
@@ -509,6 +510,8 @@ impl PackResult {
 
 /// Errors that can occur during packing
 #[derive(Debug)]
+#[non_exhaustive]
+#[must_use]
 pub enum PackError {
     NoAssets,
     Io(String),

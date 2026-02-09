@@ -29,6 +29,8 @@ pub struct RepairEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+#[must_use]
 pub enum RepairResult {
     Success,             // Repair successful
     InsufficientEchoes,  // Not enough Echoes
@@ -49,7 +51,7 @@ pub fn anchor_repair_system(
         if anchor_entry.is_none() {
             continue;
         }
-        let (anchor_id, anchor) = anchor_entry.unwrap();
+        let (anchor_id, anchor) = anchor_entry.expect("anchor entry must exist");
 
         // Check if already at max stability
         if anchor.stability() >= 1.0 {

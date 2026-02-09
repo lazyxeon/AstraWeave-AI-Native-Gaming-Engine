@@ -12,6 +12,7 @@ pub struct Pattern {
 
 /// Pattern strength categorization
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PatternStrength {
     Weak,
     Moderate,

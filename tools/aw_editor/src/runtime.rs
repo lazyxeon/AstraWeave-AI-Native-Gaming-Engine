@@ -13,6 +13,7 @@ use crate::scene_serialization::SceneData;
 
 /// Runtime execution state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RuntimeState {
     /// Not running (edit mode)
     Editing,
@@ -133,6 +134,7 @@ impl std::fmt::Display for RuntimeState {
 
 /// Issues detected in runtime state
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RuntimeIssue {
     /// No simulation world when one is expected
     MissingSimulation,

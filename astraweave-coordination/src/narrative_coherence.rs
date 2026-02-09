@@ -84,6 +84,7 @@ pub struct PlotPoint {
 
 /// Types of plot points
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum PlotType {
     MainQuest,
     SideQuest,
@@ -97,6 +98,7 @@ pub enum PlotType {
 
 /// Status of plot points
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum PlotStatus {
     Dormant,     // Not yet active
     Active,      // Currently relevant
@@ -150,6 +152,7 @@ pub struct Relationship {
 
 /// Types of relationships
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum RelationshipType {
     Family,
     Friend,
@@ -226,6 +229,7 @@ pub struct PacingState {
 
 /// Types of narrative pacing
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum PaceType {
     Slow,
     Steady,
@@ -249,6 +253,7 @@ pub struct ConsistencyRule {
 
 /// Types of consistency rules
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum RuleType {
     Character,
     World,
@@ -271,6 +276,7 @@ pub struct RuleViolation {
 
 /// Severity of rule violations
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum ViolationSeverity {
     Minor,
     Moderate,
@@ -294,6 +300,7 @@ pub struct StoryThread {
 
 /// Status of story threads
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum ThreadStatus {
     Introduced,
     Developing,

@@ -64,6 +64,7 @@ pub struct VoxelOp {
 
 /// Types of voxel operations
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum VoxelOpType {
     /// Set a voxel to a specific value
     Set(Voxel),
@@ -632,7 +633,11 @@ mod tests {
 
     #[test]
     fn test_voxel_op_clone() {
-        let op = VoxelOp::set(IVec3::new(1, 2, 3), Voxel::new(0.5, 1), "clone-test".to_string());
+        let op = VoxelOp::set(
+            IVec3::new(1, 2, 3),
+            Voxel::new(0.5, 1),
+            "clone-test".to_string(),
+        );
         let cloned = op.clone();
         assert_eq!(op.position, cloned.position);
         assert_eq!(op.priority, cloned.priority);
@@ -669,11 +674,13 @@ mod tests {
     #[test]
     fn test_navmesh_dirty_regions_getter() {
         let mut modifier = create_test_modifier();
-        modifier.navmesh_dirty_regions.push(NavMeshRegion::new(Vec3::ZERO, Vec3::ONE));
-        
+        modifier
+            .navmesh_dirty_regions
+            .push(NavMeshRegion::new(Vec3::ZERO, Vec3::ONE));
+
         let regions = modifier.navmesh_dirty_regions();
         assert_eq!(regions.len(), 1);
-        
+
         // Getter doesn't remove regions
         assert_eq!(modifier.navmesh_dirty_regions.len(), 1);
     }
@@ -681,9 +688,13 @@ mod tests {
     #[test]
     fn test_take_navmesh_dirty_regions() {
         let mut modifier = create_test_modifier();
-        modifier.navmesh_dirty_regions.push(NavMeshRegion::new(Vec3::ZERO, Vec3::ONE));
-        modifier.navmesh_dirty_regions.push(NavMeshRegion::new(Vec3::ONE, Vec3::splat(2.0)));
-        
+        modifier
+            .navmesh_dirty_regions
+            .push(NavMeshRegion::new(Vec3::ZERO, Vec3::ONE));
+        modifier
+            .navmesh_dirty_regions
+            .push(NavMeshRegion::new(Vec3::ONE, Vec3::splat(2.0)));
+
         let taken = modifier.take_navmesh_dirty_regions();
         assert_eq!(taken.len(), 2);
         assert!(modifier.navmesh_dirty_regions.is_empty());
@@ -700,8 +711,12 @@ mod tests {
     fn test_pending_ops() {
         let mut modifier = create_test_modifier();
         assert_eq!(modifier.pending_ops(), 0);
-        
-        modifier.queue_operation(VoxelOp::set(IVec3::ZERO, Voxel::new(0.5, 0), "test".to_string()));
+
+        modifier.queue_operation(VoxelOp::set(
+            IVec3::ZERO,
+            Voxel::new(0.5, 0),
+            "test".to_string(),
+        ));
         assert_eq!(modifier.pending_ops(), 1);
     }
 
@@ -709,7 +724,7 @@ mod tests {
     fn test_pending_remeshes() {
         let mut modifier = create_test_modifier();
         assert_eq!(modifier.pending_remeshes(), 0);
-        
+
         modifier.dirty_chunks.insert(ChunkCoord::new(0, 0, 0));
         assert_eq!(modifier.pending_remeshes(), 1);
     }
@@ -718,7 +733,7 @@ mod tests {
     fn test_navmesh_region_no_overlap_z_axis() {
         let region1 = NavMeshRegion::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
         let region2 = NavMeshRegion::new(Vec3::new(0.0, 0.0, 20.0), Vec3::new(10.0, 10.0, 30.0));
-        
+
         assert!(!region1.overlaps(&region2));
     }
 
@@ -726,7 +741,7 @@ mod tests {
     fn test_navmesh_region_edge_overlap() {
         let region1 = NavMeshRegion::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
         let region2 = NavMeshRegion::new(Vec3::new(10.0, 0.0, 0.0), Vec3::new(20.0, 10.0, 10.0));
-        
+
         // Edge-touching should still count as overlap
         assert!(region1.overlaps(&region2));
     }

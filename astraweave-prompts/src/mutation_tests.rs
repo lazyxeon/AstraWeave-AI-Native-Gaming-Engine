@@ -177,10 +177,10 @@ mod sanitization_config_tests {
 
 #[cfg(test)]
 mod boundary_condition_tests {
-    use crate::{CacheConfig, ValidationConfig, SanitizationConfig, TrustLevel};
+    use crate::{CacheConfig, SanitizationConfig, TrustLevel, ValidationConfig};
 
     // --- TrustLevel boundary tests ---
-    
+
     #[test]
     fn trust_level_user_is_level_zero() {
         assert_eq!(TrustLevel::User.level(), 0);
@@ -192,13 +192,17 @@ mod boundary_condition_tests {
     }
 
     // --- CacheConfig TTL boundaries ---
-    
+
     #[test]
     fn cache_ttl_display_seconds_below_minute() {
         let mut config = CacheConfig::default();
         config.ttl_seconds = 59;
         let display = config.ttl_display();
-        assert!(display.ends_with('s'), "TTL {} should end with 's'", display);
+        assert!(
+            display.ends_with('s'),
+            "TTL {} should end with 's'",
+            display
+        );
     }
 
     #[test]
@@ -206,7 +210,11 @@ mod boundary_condition_tests {
         let mut config = CacheConfig::default();
         config.ttl_seconds = 3599; // Just under 1 hour
         let display = config.ttl_display();
-        assert!(display.ends_with('m'), "TTL {} should end with 'm'", display);
+        assert!(
+            display.ends_with('m'),
+            "TTL {} should end with 'm'",
+            display
+        );
     }
 
     #[test]
@@ -214,11 +222,15 @@ mod boundary_condition_tests {
         let mut config = CacheConfig::default();
         config.ttl_seconds = 3600; // Exactly 1 hour
         let display = config.ttl_display();
-        assert!(display.ends_with('h'), "TTL {} should end with 'h'", display);
+        assert!(
+            display.ends_with('h'),
+            "TTL {} should end with 'h'",
+            display
+        );
     }
 
     // --- CacheConfig validity boundaries ---
-    
+
     #[test]
     fn cache_config_valid_when_enabled_with_positive_values() {
         let mut config = CacheConfig::default();
@@ -253,7 +265,7 @@ mod boundary_condition_tests {
     }
 
     // --- ValidationConfig depth boundaries ---
-    
+
     #[test]
     fn validation_default_depth_is_ten() {
         let config = ValidationConfig::default();
@@ -268,7 +280,7 @@ mod boundary_condition_tests {
     }
 
     // --- SanitizationConfig length boundaries ---
-    
+
     #[test]
     fn sanitization_default_max_input_is_10000() {
         let config = SanitizationConfig::default();
@@ -294,10 +306,10 @@ mod boundary_condition_tests {
 
 #[cfg(test)]
 mod comparison_operator_tests {
-    use crate::{TemplateFormat, TrustLevel, CacheConfig, ValidationConfig};
+    use crate::{CacheConfig, TemplateFormat, TrustLevel, ValidationConfig};
 
     // --- TemplateFormat equality ---
-    
+
     #[test]
     fn template_format_handlebars_equals_handlebars() {
         assert_eq!(TemplateFormat::Handlebars, TemplateFormat::Handlebars);
@@ -324,7 +336,7 @@ mod comparison_operator_tests {
     }
 
     // --- TrustLevel ordering ---
-    
+
     #[test]
     fn trust_user_less_than_developer() {
         assert!(TrustLevel::User < TrustLevel::Developer);
@@ -341,7 +353,7 @@ mod comparison_operator_tests {
     }
 
     // --- TrustLevel equality ---
-    
+
     #[test]
     fn trust_user_equals_user() {
         assert_eq!(TrustLevel::User, TrustLevel::User);
@@ -353,7 +365,7 @@ mod comparison_operator_tests {
     }
 
     // --- CacheConfig comparisons ---
-    
+
     #[test]
     fn cache_default_ttl_greater_than_zero() {
         let config = CacheConfig::default();
@@ -367,7 +379,7 @@ mod comparison_operator_tests {
     }
 
     // --- ValidationConfig strictness comparison ---
-    
+
     #[test]
     fn strict_validation_depth_equals_default_depth() {
         let strict = ValidationConfig::strict();
@@ -382,10 +394,10 @@ mod comparison_operator_tests {
 
 #[cfg(test)]
 mod boolean_return_path_tests {
-    use crate::{TemplateFormat, TrustLevel, CacheConfig, ValidationConfig};
+    use crate::{CacheConfig, TemplateFormat, TrustLevel, ValidationConfig};
 
     // --- TemplateFormat.is_handlebars() paths ---
-    
+
     #[test]
     fn is_handlebars_returns_true() {
         assert!(TemplateFormat::Handlebars.is_handlebars());
@@ -402,7 +414,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TemplateFormat.is_simple() paths ---
-    
+
     #[test]
     fn is_simple_returns_true() {
         assert!(TemplateFormat::Simple.is_simple());
@@ -414,7 +426,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TemplateFormat.is_jinja2() paths ---
-    
+
     #[test]
     fn is_jinja2_returns_true() {
         assert!(TemplateFormat::Jinja2.is_jinja2());
@@ -426,7 +438,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TemplateFormat.supports_helpers() paths ---
-    
+
     #[test]
     fn supports_helpers_true_for_handlebars() {
         assert!(TemplateFormat::Handlebars.supports_helpers());
@@ -443,7 +455,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TemplateFormat.supports_partials() paths ---
-    
+
     #[test]
     fn supports_partials_true_for_handlebars() {
         assert!(TemplateFormat::Handlebars.supports_partials());
@@ -455,7 +467,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TrustLevel.is_user() paths ---
-    
+
     #[test]
     fn is_user_returns_true() {
         assert!(TrustLevel::User.is_user());
@@ -472,7 +484,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TrustLevel.is_developer() paths ---
-    
+
     #[test]
     fn is_developer_returns_true() {
         assert!(TrustLevel::Developer.is_developer());
@@ -484,7 +496,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TrustLevel.is_system() paths ---
-    
+
     #[test]
     fn is_system_returns_true() {
         assert!(TrustLevel::System.is_system());
@@ -496,7 +508,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TrustLevel.is_trusted() paths ---
-    
+
     #[test]
     fn is_trusted_false_for_user() {
         assert!(!TrustLevel::User.is_trusted());
@@ -513,7 +525,7 @@ mod boolean_return_path_tests {
     }
 
     // --- TrustLevel.requires_sanitization() paths ---
-    
+
     #[test]
     fn requires_sanitization_true_for_user() {
         assert!(TrustLevel::User.requires_sanitization());
@@ -530,7 +542,7 @@ mod boolean_return_path_tests {
     }
 
     // --- CacheConfig.is_enabled() paths ---
-    
+
     #[test]
     fn is_enabled_true_for_default() {
         let config = CacheConfig::default();
@@ -544,7 +556,7 @@ mod boolean_return_path_tests {
     }
 
     // --- CacheConfig.is_valid() paths ---
-    
+
     #[test]
     fn is_valid_true_for_default() {
         let config = CacheConfig::default();
@@ -558,7 +570,7 @@ mod boolean_return_path_tests {
     }
 
     // --- ValidationConfig.is_enabled() paths ---
-    
+
     #[test]
     fn validation_is_enabled_true_for_default() {
         let config = ValidationConfig::default();
@@ -572,7 +584,7 @@ mod boolean_return_path_tests {
     }
 
     // --- ValidationConfig.is_strict() paths ---
-    
+
     #[test]
     fn validation_is_strict_false_for_default() {
         let config = ValidationConfig::default();
@@ -586,7 +598,7 @@ mod boolean_return_path_tests {
     }
 
     // --- ValidationConfig.has_schema_validation() paths ---
-    
+
     #[test]
     fn has_schema_validation_false_for_default() {
         let config = ValidationConfig::default();
@@ -636,7 +648,7 @@ mod behavioral_correctness_tests {
         let default = ValidationConfig::default();
         let strict = ValidationConfig::strict();
         let permissive = ValidationConfig::permissive();
-        
+
         assert_ne!(default.strictness_level(), strict.strictness_level());
         assert_ne!(strict.strictness_level(), permissive.strictness_level());
     }

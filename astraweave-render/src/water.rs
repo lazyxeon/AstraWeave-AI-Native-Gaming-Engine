@@ -264,6 +264,25 @@ impl WaterRenderer {
         // Water level is controlled by the uniform, already at y=0 in mesh
     }
 
+    /// Set biome-driven water colors (deep, shallow, foam).
+    ///
+    /// Colours are applied on the next [`Self::update`] call which
+    /// uploads the uniform buffer to the GPU.
+    pub fn set_water_colors(&mut self, deep: Vec3, shallow: Vec3, foam: Vec3) {
+        self.uniforms.water_color_deep = deep.into();
+        self.uniforms.water_color_shallow = shallow.into();
+        self.uniforms.foam_color = foam.into();
+    }
+
+    /// Get current water colors (deep, shallow, foam).
+    pub fn water_colors(&self) -> (Vec3, Vec3, Vec3) {
+        (
+            Vec3::from(self.uniforms.water_color_deep),
+            Vec3::from(self.uniforms.water_color_shallow),
+            Vec3::from(self.uniforms.foam_color),
+        )
+    }
+
     /// Render the water surface
     pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         render_pass.set_pipeline(&self.pipeline);

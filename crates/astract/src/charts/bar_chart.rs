@@ -20,6 +20,7 @@ pub struct BarGroup {
 
 /// Bar chart display mode.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum BarChartMode {
     /// Bars side-by-side
     Grouped,

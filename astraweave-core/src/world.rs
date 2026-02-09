@@ -624,4 +624,3 @@ mod tests {
         assert_eq!(w.ammo(e2).unwrap().rounds, 20);
     }
 }
-

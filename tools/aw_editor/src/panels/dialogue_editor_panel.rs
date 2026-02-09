@@ -19,6 +19,7 @@ use crate::panels::Panel;
 
 /// Dialogue node type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DialogueNodeType {
     #[default]
     Speech,
@@ -173,6 +174,7 @@ pub struct DialogueVariable {
 
 /// Variable type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum VariableType {
     #[default]
     Boolean,
@@ -256,6 +258,7 @@ pub struct LocalizationEntry {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DialogueTab {
     #[default]
     Graph,
@@ -321,6 +324,7 @@ impl DialogueTab {
 
 /// Auto-layout algorithm
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LayoutAlgorithm {
     #[default]
     Hierarchical,
@@ -375,6 +379,7 @@ impl LayoutAlgorithm {
 
 /// Export format
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ExportFormat {
     #[default]
     Json,
@@ -446,6 +451,7 @@ pub struct ValidationIssue {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum IssueSeverity {
     #[default]
     Info,
@@ -575,6 +581,7 @@ impl Default for SearchFilter {
 
 /// Undo/redo action
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum EditorAction {
     AddNode(DialogueNode),
     DeleteNode(u32),
@@ -664,6 +671,7 @@ impl EditorAction {
 /// External action events emitted by the dialogue editor panel.
 /// These represent high-level user actions that external systems can respond to.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum DialogueEditorAction {
     /// Export dialogue to file with specified format and path
     ExportDialogue { format: ExportFormat, path: String },

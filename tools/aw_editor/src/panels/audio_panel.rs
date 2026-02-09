@@ -25,6 +25,7 @@ pub struct MusicTrackEntry {
 
 /// Music mood categories
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MusicMood {
     #[default]
     Ambient,
@@ -108,6 +109,7 @@ impl MusicMood {
 
 /// Spatial audio preset configurations
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SpatialPreset {
     #[default]
     Standard,
@@ -181,6 +183,7 @@ impl SpatialPreset {
 
 /// Reverb environment presets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ReverbEnvironment {
     #[default]
     None,
@@ -288,6 +291,7 @@ pub struct AudioEmitterInfo {
 
 /// Panel tab selection
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AudioTab {
     #[default]
     Mixer,
@@ -337,6 +341,7 @@ impl AudioTab {
 
 /// Actions that can be performed on the audio panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum AudioAction {
     /// Set master volume
     SetMasterVolume(f32),
@@ -454,6 +459,7 @@ pub struct AudioPanel {
 
 /// Distance attenuation model
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DistanceModel {
     #[default]
     Linear,

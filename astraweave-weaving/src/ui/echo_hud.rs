@@ -175,8 +175,6 @@ impl EchoHud {
                 });
         }
     }
-
-
 }
 
 impl Default for EchoHud {

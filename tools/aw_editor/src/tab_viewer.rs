@@ -290,6 +290,7 @@ impl TabViewer for SimpleTabViewer {
 
 /// Panel events that can be emitted from the tab viewer
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum PanelEvent {
     /// A panel was closed
     PanelClosed(PanelType),
@@ -677,6 +678,7 @@ impl Default for MaterialInfo {
 
 /// Theme settings for theme manager
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum EditorTheme {
     Dark,
     Light,
@@ -813,6 +815,7 @@ pub struct BehaviorNode {
 
 /// Behavior node categories
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BehaviorNodeType {
     Root,
     Sequence,

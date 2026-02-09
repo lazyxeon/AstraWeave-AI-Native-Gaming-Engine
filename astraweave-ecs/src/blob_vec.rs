@@ -123,6 +123,7 @@ impl BlobVec {
 
         let new_data = if self.capacity == 0 {
             // First allocation
+            // SAFETY: `new_layout` has non-zero size (validated above) and correct alignment.
             unsafe { NonNull::new(alloc(new_layout)).expect("allocation failed") }
         } else {
             // Reallocate existing memory
@@ -132,6 +133,7 @@ impl BlobVec {
             )
             .expect("invalid layout");
 
+            // SAFETY: `self.data` was allocated with `old_layout`. `new_layout.size()` >= old size.
             unsafe {
                 let new_ptr = realloc(self.data.as_ptr(), old_layout, new_layout.size());
                 NonNull::new(new_ptr).expect("reallocation failed")
@@ -151,6 +153,8 @@ impl BlobVec {
             self.reserve(1);
         }
 
+        // SAFETY: Caller guarantees T matches this BlobVec's type. `reserve(1)` ensures
+        // capacity. Offset is within bounds because `self.len < self.capacity`.
         let ptr = self.data.as_ptr().add(self.len * self.item_layout.size());
         ptr.cast::<T>().write(value);
         self.len += 1;
@@ -173,6 +177,8 @@ impl BlobVec {
             self.reserve(1);
         }
 
+        // SAFETY: Caller guarantees `src` is valid and `clone_fn` copies correctly.
+        // `reserve(1)` ensures capacity. Offset is within allocation bounds.
         let dst = self.data.as_ptr().add(self.len * self.item_layout.size());
         clone_fn(src, dst);
         self.len += 1;
@@ -188,6 +194,7 @@ impl BlobVec {
         if index >= self.len {
             return None;
         }
+        // SAFETY: Bounds check above ensures index < len, so offset is within allocation.
         Some(unsafe { self.data.as_ptr().add(index * self.item_layout.size()) })
     }
 
@@ -202,6 +209,8 @@ impl BlobVec {
         if index >= self.len {
             return None;
         }
+        // SAFETY: Bounds check above ensures index < len, so offset is within allocation.
+        // Mutable borrow of `self` prevents aliasing.
         Some(unsafe { self.data.as_ptr().add(index * self.item_layout.size()) })
     }
 
@@ -220,6 +229,8 @@ impl BlobVec {
 
         // Drop the element at index
         if let Some(drop_fn) = self.drop_fn {
+            // SAFETY: `index < len` (asserted above), so pointer is within allocation.
+            // drop_fn matches the component type registered at construction.
             unsafe {
                 let ptr = self.data.as_ptr().add(index * item_size);
                 drop_fn(ptr);
@@ -228,6 +239,8 @@ impl BlobVec {
 
         // If not the last element, copy last element to this position
         if index != last_index {
+            // SAFETY: Both `index` and `last_index` are within bounds. src != dst
+            // since index != last_index, so copy_nonoverlapping is safe.
             unsafe {
                 let src = self.data.as_ptr().add(last_index * item_size);
                 let dst = self.data.as_ptr().add(index * item_size);
@@ -383,6 +396,8 @@ impl BlobVec {
     pub fn clear(&mut self) {
         if let Some(drop_fn) = self.drop_fn {
             for i in 0..self.len {
+                // SAFETY: Each `i < self.len`, so offset is within allocation.
+                // Elements are dropped once (loop runs exactly `len` times, then len = 0).
                 unsafe {
                     let ptr = self.data.as_ptr().add(i * self.item_layout.size());
                     drop_fn(ptr);
@@ -404,6 +419,8 @@ impl Drop for BlobVec {
             )
             .expect("invalid layout");
 
+            // SAFETY: `self.data` was allocated with this layout. capacity > 0 ensures
+            // the layout is non-zero-sized.
             unsafe {
                 dealloc(self.data.as_ptr(), layout);
             }
@@ -411,7 +428,12 @@ impl Drop for BlobVec {
     }
 }
 
+// SAFETY: BlobVec's data pointer is heap-allocated and not shared across threads
+// without synchronization. The type-erased storage is only accessed through &self
+// (shared) or &mut self (exclusive), maintaining Rust's aliasing guarantees.
 unsafe impl Send for BlobVec {}
+// SAFETY: Same reasoning as Send — concurrent &BlobVec access is safe because
+// shared references cannot mutate the underlying data.
 unsafe impl Sync for BlobVec {}
 
 #[cfg(test)]

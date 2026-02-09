@@ -36,14 +36,14 @@ impl ResourceNode {
     }
 
     /// Deterministic tick using seeded RNG.
-    /// 
+    ///
     /// # Determinism
-    /// 
+    ///
     /// This method guarantees identical results given:
     /// - Same initial state
     /// - Same delta time
     /// - Same RNG state
-    /// 
+    ///
     /// Use this for gameplay systems requiring determinism (multiplayer, replay).
     pub fn tick_seeded<R: rand::Rng>(&mut self, dt: f32, rng: &mut R) {
         if self.amount == 0 {

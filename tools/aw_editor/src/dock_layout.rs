@@ -33,6 +33,7 @@ use serde::{Deserialize, Serialize};
 
 /// Predefined layout configurations
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum LayoutPreset {
     /// Default layout: Left (Hierarchy/Assets), Center (Viewport), Right (Inspector), Bottom (Console)
     Default,

@@ -114,6 +114,7 @@ impl ConversionOptions {
 
 /// Output format for glTF export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum OutputFormat {
     /// Single binary .glb file (embedded textures).
     #[default]
@@ -226,6 +227,7 @@ impl Default for TextureOptions {
 
 /// Texture output format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum TextureFormat {
     /// PNG format (lossless, larger files).
     #[default]
@@ -381,6 +383,7 @@ impl Default for LinkedLibraryOptions {
 
 /// Action to take when a linked library is missing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum MissingLibraryAction {
     /// Skip missing libraries silently.
     Skip,

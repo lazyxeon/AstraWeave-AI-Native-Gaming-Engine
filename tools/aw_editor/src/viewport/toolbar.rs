@@ -13,6 +13,7 @@
 
 /// Grid display type for viewport
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum GridType {
     /// Infinite ground plane grid with distance fading
     #[default]
@@ -352,6 +353,7 @@ impl ViewportToolbar {
 
 /// Shading mode for viewport rendering
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ShadingMode {
     /// Full lighting with shadows
     Lit,

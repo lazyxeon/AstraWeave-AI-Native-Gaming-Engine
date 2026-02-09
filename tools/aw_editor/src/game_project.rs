@@ -342,6 +342,8 @@ impl AssetSettings {
 
 /// Errors that can occur when working with game projects
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum GameProjectError {
     Io(String),
     Parse(String),

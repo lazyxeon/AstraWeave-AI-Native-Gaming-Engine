@@ -29,6 +29,7 @@ pub(crate) mod material_loader_impl {
                 "albedo" => match meta.color_space {
                     ColorSpace::Srgb => wgpu::TextureFormat::Rgba8UnormSrgb,
                     ColorSpace::Linear => wgpu::TextureFormat::Rgba8Unorm,
+                    _ => default_format,
                 },
                 "normal" => {
                     // Normal maps are always linear, use RG for BC5-compressed normals

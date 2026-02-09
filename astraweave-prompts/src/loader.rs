@@ -48,7 +48,11 @@ impl PromptLoader {
             let entry = entry?;
             if entry.file_type().is_file() {
                 if let Some(ext) = entry.path().extension() {
-                    if self.extensions.iter().any(|e| e == ext.to_string_lossy().as_ref()) {
+                    if self
+                        .extensions
+                        .iter()
+                        .any(|e| e == ext.to_string_lossy().as_ref())
+                    {
                         match self.load_file(entry.path()) {
                             Ok(template) => templates.push(template),
                             Err(e) => {
@@ -66,9 +70,9 @@ impl PromptLoader {
     pub fn load_file<P: AsRef<Path>>(&self, path: P) -> Result<PromptTemplate> {
         let content = fs::read_to_string(&path)
             .with_context(|| format!("Failed to read template file: {:?}", path.as_ref()))?;
-        
+
         let (metadata, template_content) = self.parse_frontmatter(&content)?;
-        
+
         // Use filename as ID if not specified in metadata
         let id = if let Some(ref meta) = metadata {
             meta.name.clone()
@@ -79,10 +83,10 @@ impl PromptLoader {
                 .to_string_lossy()
                 .to_string()
         };
-        
+
         let mut template = PromptTemplate::new(id, template_content);
         template.metadata = metadata;
-        
+
         Ok(template)
     }
 
@@ -94,13 +98,13 @@ impl PromptLoader {
                 let frontmatter = &stripped[..end];
                 let body = &stripped[end + 3..];
 
-                let metadata: TemplateMetadata = toml::from_str(frontmatter)
-                    .context("Failed to parse TOML frontmatter")?;
+                let metadata: TemplateMetadata =
+                    toml::from_str(frontmatter).context("Failed to parse TOML frontmatter")?;
 
                 return Ok((Some(metadata), body.trim().to_string()));
             }
         }
-        
+
         Ok((None, content.to_string()))
     }
 }
@@ -126,9 +130,9 @@ mod tests {
 
     #[test]
     fn test_prompt_loader_with_extensions() {
-        let loader = PromptLoader::new()
-            .with_extensions(vec!["txt".to_string(), "tpl".to_string()]);
-        
+        let loader =
+            PromptLoader::new().with_extensions(vec!["txt".to_string(), "tpl".to_string()]);
+
         assert!(loader.extensions.contains(&"txt".to_string()));
         assert!(loader.extensions.contains(&"tpl".to_string()));
         assert!(!loader.extensions.contains(&"hbs".to_string()));
@@ -138,7 +142,7 @@ mod tests {
     fn test_load_from_nonexistent_dir() {
         let loader = PromptLoader::new();
         let result = loader.load_from_dir("/nonexistent/path/xyz123");
-        
+
         assert!(result.is_ok());
         assert!(result.unwrap().is_empty());
     }
@@ -147,7 +151,7 @@ mod tests {
     fn test_load_from_empty_dir() {
         let dir = tempdir().unwrap();
         let loader = PromptLoader::new();
-        
+
         let result = loader.load_from_dir(dir.path());
         assert!(result.is_ok());
         assert!(result.unwrap().is_empty());
@@ -157,13 +161,13 @@ mod tests {
     fn test_load_file_simple() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.hbs");
-        
+
         let mut file = std::fs::File::create(&file_path).unwrap();
         writeln!(file, "Hello {{{{name}}}}!").unwrap();
-        
+
         let loader = PromptLoader::new();
         let result = loader.load_file(&file_path);
-        
+
         assert!(result.is_ok());
         let template = result.unwrap();
         assert_eq!(template.id, "test");
@@ -174,19 +178,19 @@ mod tests {
     fn test_load_file_with_frontmatter() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("greeting.hbs");
-        
+
         let content = r#"+++
 name = "greeting"
 description = "A greeting template"
 version = "1.0"
 +++
 Hello {{name}}!"#;
-        
+
         std::fs::write(&file_path, content).unwrap();
-        
+
         let loader = PromptLoader::new();
         let result = loader.load_file(&file_path);
-        
+
         assert!(result.is_ok());
         let template = result.unwrap();
         assert_eq!(template.id, "greeting");
@@ -196,15 +200,15 @@ Hello {{name}}!"#;
     #[test]
     fn test_load_from_dir_with_files() {
         let dir = tempdir().unwrap();
-        
+
         // Create some template files
         std::fs::write(dir.path().join("template1.hbs"), "Template 1 content").unwrap();
         std::fs::write(dir.path().join("template2.hbs"), "Template 2 content").unwrap();
         std::fs::write(dir.path().join("ignored.txt"), "This should be ignored").unwrap();
-        
+
         let loader = PromptLoader::new();
         let result = loader.load_from_dir(dir.path());
-        
+
         assert!(result.is_ok());
         let templates = result.unwrap();
         assert_eq!(templates.len(), 2); // Only .hbs files
@@ -215,13 +219,13 @@ Hello {{name}}!"#;
         let dir = tempdir().unwrap();
         let subdir = dir.path().join("subdir");
         std::fs::create_dir(&subdir).unwrap();
-        
+
         std::fs::write(dir.path().join("root.hbs"), "Root template").unwrap();
         std::fs::write(subdir.join("nested.hbs"), "Nested template").unwrap();
-        
+
         let loader = PromptLoader::new();
         let result = loader.load_from_dir(dir.path());
-        
+
         assert!(result.is_ok());
         let templates = result.unwrap();
         assert_eq!(templates.len(), 2); // Both root and nested
@@ -231,7 +235,7 @@ Hello {{name}}!"#;
     fn test_load_file_nonexistent() {
         let loader = PromptLoader::new();
         let result = loader.load_file("/nonexistent/file.hbs");
-        
+
         assert!(result.is_err());
     }
 
@@ -239,7 +243,7 @@ Hello {{name}}!"#;
     fn test_parse_frontmatter_no_frontmatter() {
         let loader = PromptLoader::new();
         let content = "Just plain content";
-        
+
         let result = loader.parse_frontmatter(content);
         assert!(result.is_ok());
         let (meta, body) = result.unwrap();
@@ -256,7 +260,7 @@ description = "Test template"
 version = "1.0"
 +++
 Body content here"#;
-        
+
         let result = loader.parse_frontmatter(content);
         assert!(result.is_ok());
         let (meta, body) = result.unwrap();
@@ -273,7 +277,7 @@ Body content here"#;
         let content = r#"+++
 name = "test"
 Body without closing delimiter"#;
-        
+
         let result = loader.parse_frontmatter(content);
         assert!(result.is_ok());
         let (meta, body) = result.unwrap();
@@ -286,12 +290,12 @@ Body without closing delimiter"#;
     fn test_load_prompt_extension() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("custom.prompt");
-        
+
         std::fs::write(&file_path, "Custom prompt content").unwrap();
-        
+
         let loader = PromptLoader::new();
         let result = loader.load_from_dir(dir.path());
-        
+
         assert!(result.is_ok());
         let templates = result.unwrap();
         assert_eq!(templates.len(), 1);
@@ -300,17 +304,16 @@ Body without closing delimiter"#;
     #[test]
     fn test_custom_extensions() {
         let dir = tempdir().unwrap();
-        
+
         std::fs::write(dir.path().join("file.txt"), "TXT content").unwrap();
         std::fs::write(dir.path().join("file.hbs"), "HBS content").unwrap();
-        
-        let loader = PromptLoader::new()
-            .with_extensions(vec!["txt".to_string()]);
-        
+
+        let loader = PromptLoader::new().with_extensions(vec!["txt".to_string()]);
+
         let result = loader.load_from_dir(dir.path());
         assert!(result.is_ok());
         let templates = result.unwrap();
-        
+
         // Only .txt files
         assert_eq!(templates.len(), 1);
         assert!(templates[0].template.contains("TXT"));

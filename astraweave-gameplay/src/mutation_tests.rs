@@ -41,7 +41,10 @@ mod stats_creation_tests {
     #[test]
     fn test_stats_new_default_echo_amp() {
         let stats = Stats::new(50);
-        assert!((stats.echo_amp - 1.0).abs() < f32::EPSILON, "Default echo_amp should be 1.0");
+        assert!(
+            (stats.echo_amp - 1.0).abs() < f32::EPSILON,
+            "Default echo_amp should be 1.0"
+        );
     }
 
     #[test]
@@ -107,7 +110,10 @@ mod damage_tests {
         // mitigated = max(30 - 10, 1) = 20
         let returned = stats.apply_damage(30, DamageType::Physical);
         let expected = (30.0_f32 - 20.0_f32 * 0.5_f32).max(1.0_f32) as i32;
-        assert_eq!(returned, expected, "Should return the mitigated damage amount");
+        assert_eq!(
+            returned, expected,
+            "Should return the mitigated damage amount"
+        );
     }
 }
 
@@ -121,7 +127,10 @@ mod status_effect_tests {
     #[test]
     fn test_bleed_deals_damage_over_time() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 5.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 5.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 10, "Bleed should deal dps * dt damage");
         assert_eq!(stats.hp, 90, "HP should be reduced by bleed damage");
@@ -130,10 +139,16 @@ mod status_effect_tests {
     #[test]
     fn test_bleed_time_decreases() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 3.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 3.0,
+        });
         stats.tick(1.0);
         if let StatusEffect::Bleed { time, .. } = &stats.effects[0] {
-            assert!((time - 2.0).abs() < f32::EPSILON, "Bleed time should decrease by dt");
+            assert!(
+                (time - 2.0).abs() < f32::EPSILON,
+                "Bleed time should decrease by dt"
+            );
         } else {
             panic!("Effect should be Bleed");
         }
@@ -142,9 +157,15 @@ mod status_effect_tests {
     #[test]
     fn test_bleed_expires_when_time_zero() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 0.5 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 0.5,
+        });
         stats.tick(1.0);
-        assert!(stats.effects.is_empty(), "Bleed should expire when time <= 0");
+        assert!(
+            stats.effects.is_empty(),
+            "Bleed should expire when time <= 0"
+        );
     }
 
     #[test]
@@ -167,7 +188,10 @@ mod status_effect_tests {
     #[test]
     fn test_chill_does_not_deal_damage() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Chill { slow: 0.5, time: 3.0 });
+        stats.effects.push(StatusEffect::Chill {
+            slow: 0.5,
+            time: 3.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 0, "Chill should not deal damage");
         assert_eq!(stats.hp, 100, "HP should not change from chill");
@@ -176,7 +200,10 @@ mod status_effect_tests {
     #[test]
     fn test_chill_expires() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Chill { slow: 0.5, time: 0.3 });
+        stats.effects.push(StatusEffect::Chill {
+            slow: 0.5,
+            time: 0.3,
+        });
         stats.tick(1.0);
         assert!(stats.effects.is_empty(), "Chill should expire");
     }
@@ -184,8 +211,14 @@ mod status_effect_tests {
     #[test]
     fn test_multiple_bleeds_stack() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 2.0 });
-        stats.effects.push(StatusEffect::Bleed { dps: 3.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 2.0,
+        });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 3.0,
+            time: 2.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 8, "Multiple bleeds should stack: 5 + 3 = 8");
         assert_eq!(stats.hp, 92);
@@ -202,7 +235,10 @@ mod status_effect_tests {
     #[test]
     fn test_partial_tick_bleed() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        });
         let dot = stats.tick(0.5); // Half second tick
         assert_eq!(dot, 5, "Bleed damage should scale with dt: 10 * 0.5 = 5");
         assert_eq!(stats.hp, 95);
@@ -211,9 +247,15 @@ mod status_effect_tests {
     #[test]
     fn test_mixed_effects_only_bleed_deals_damage() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        });
         stats.effects.push(StatusEffect::Stagger { time: 2.0 });
-        stats.effects.push(StatusEffect::Chill { slow: 0.5, time: 2.0 });
+        stats.effects.push(StatusEffect::Chill {
+            slow: 0.5,
+            time: 2.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 10, "Only bleed should contribute to DoT");
         assert_eq!(stats.hp, 90);
@@ -231,7 +273,10 @@ mod tick_timing_tests {
     #[test]
     fn test_tick_zero_dt() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 100.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 100.0,
+            time: 2.0,
+        });
         let dot = stats.tick(0.0);
         assert_eq!(dot, 0, "Zero dt should deal no damage");
         assert_eq!(stats.hp, 100);
@@ -240,9 +285,12 @@ mod tick_timing_tests {
     #[test]
     fn test_tick_large_dt_expires_effect() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 1.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 1.0,
+        });
         let dot = stats.tick(2.0); // dt > time
-        // Deals 10 * 2.0 = 20 damage even though effect expires
+                                   // Deals 10 * 2.0 = 20 damage even though effect expires
         assert_eq!(dot, 20);
         assert!(stats.effects.is_empty(), "Effect should expire");
     }
@@ -250,16 +298,28 @@ mod tick_timing_tests {
     #[test]
     fn test_effect_removal_order() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 1.0, time: 0.5 }); // Will expire
-        stats.effects.push(StatusEffect::Bleed { dps: 2.0, time: 2.0 }); // Will remain
-        stats.effects.push(StatusEffect::Bleed { dps: 3.0, time: 0.3 }); // Will expire
-        
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 1.0,
+            time: 0.5,
+        }); // Will expire
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 2.0,
+            time: 2.0,
+        }); // Will remain
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 3.0,
+            time: 0.3,
+        }); // Will expire
+
         stats.tick(1.0);
-        
+
         // Only the 2.0 time bleed should remain
         assert_eq!(stats.effects.len(), 1);
         if let StatusEffect::Bleed { dps, .. } = stats.effects[0] {
-            assert!((dps - 2.0).abs() < f32::EPSILON, "The 2.0 dps bleed should remain");
+            assert!(
+                (dps - 2.0).abs() < f32::EPSILON,
+                "The 2.0 dps bleed should remain"
+            );
         }
     }
 }
@@ -277,18 +337,29 @@ mod behavioral_tests {
             let mut stats = Stats::new(100);
             stats.defense = defense;
             let damage = stats.apply_damage(1, DamageType::Physical);
-            assert!(damage >= 1, "Damage should always be at least 1, got {} with defense {}", damage, defense);
+            assert!(
+                damage >= 1,
+                "Damage should always be at least 1, got {} with defense {}",
+                damage,
+                defense
+            );
         }
     }
 
     #[test]
     fn test_bleed_damage_proportional_to_time() {
         let mut stats1 = Stats::new(1000);
-        stats1.effects.push(StatusEffect::Bleed { dps: 10.0, time: 10.0 });
+        stats1.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 10.0,
+        });
         let dot1 = stats1.tick(1.0);
 
         let mut stats2 = Stats::new(1000);
-        stats2.effects.push(StatusEffect::Bleed { dps: 10.0, time: 10.0 });
+        stats2.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 10.0,
+        });
         let dot2 = stats2.tick(2.0);
 
         assert_eq!(dot2, dot1 * 2, "Double dt should deal double damage");
@@ -307,7 +378,10 @@ mod behavioral_tests {
     #[test]
     fn test_tick_hp_change_equals_returned_dot() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 7.0, time: 5.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 7.0,
+            time: 5.0,
+        });
         let initial_hp = stats.hp;
         let dot = stats.tick(1.0);
         let hp_lost = initial_hp - stats.hp;
@@ -324,7 +398,10 @@ mod behavioral_tests {
         high_def.defense = 10;
         let damage_high = high_def.apply_damage(20, DamageType::Physical);
 
-        assert!(damage_high < damage_low, "Higher defense should reduce damage");
+        assert!(
+            damage_high < damage_low,
+            "Higher defense should reduce damage"
+        );
     }
 
     #[test]
@@ -332,7 +409,10 @@ mod behavioral_tests {
         let mut stats = Stats::new(75);
         stats.power = 15;
         stats.defense = 8;
-        stats.effects.push(StatusEffect::Bleed { dps: 5.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 5.0,
+            time: 2.0,
+        });
 
         let json = serde_json::to_string(&stats).expect("serialize");
         let deserialized: Stats = serde_json::from_str(&json).expect("deserialize");
@@ -435,25 +515,44 @@ mod boundary_condition_tests {
     #[test]
     fn test_bleed_time_exactly_zero_expires() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 1.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 1.0,
+        });
         stats.tick(1.0); // time becomes 0.0
-        assert!(stats.effects.is_empty(), "Effect with time 0.0 should expire (> 0.0 check)");
+        assert!(
+            stats.effects.is_empty(),
+            "Effect with time 0.0 should expire (> 0.0 check)"
+        );
     }
 
     #[test]
     fn test_bleed_time_just_above_zero_persists() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 1.001 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 1.001,
+        });
         stats.tick(1.0); // time becomes 0.001
-        assert_eq!(stats.effects.len(), 1, "Effect with time 0.001 should persist (> 0.0 check)");
+        assert_eq!(
+            stats.effects.len(),
+            1,
+            "Effect with time 0.001 should persist (> 0.0 check)"
+        );
     }
 
     #[test]
     fn test_bleed_time_just_below_zero_expires() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 0.5 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 0.5,
+        });
         stats.tick(1.0); // time becomes -0.5
-        assert!(stats.effects.is_empty(), "Effect with negative time should expire");
+        assert!(
+            stats.effects.is_empty(),
+            "Effect with negative time should expire"
+        );
     }
 
     #[test]
@@ -461,15 +560,24 @@ mod boundary_condition_tests {
         let mut stats = Stats::new(100);
         stats.effects.push(StatusEffect::Stagger { time: 1.0 });
         stats.tick(1.0);
-        assert!(stats.effects.is_empty(), "Stagger with time 0.0 should expire");
+        assert!(
+            stats.effects.is_empty(),
+            "Stagger with time 0.0 should expire"
+        );
     }
 
     #[test]
     fn test_chill_time_exactly_zero_expires() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Chill { slow: 0.5, time: 1.0 });
+        stats.effects.push(StatusEffect::Chill {
+            slow: 0.5,
+            time: 1.0,
+        });
         stats.tick(1.0);
-        assert!(stats.effects.is_empty(), "Chill with time 0.0 should expire");
+        assert!(
+            stats.effects.is_empty(),
+            "Chill with time 0.0 should expire"
+        );
     }
 
     // --- Tick dt Boundaries ---
@@ -477,7 +585,10 @@ mod boundary_condition_tests {
     #[test]
     fn test_tick_dt_zero_boundary() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 100.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 100.0,
+            time: 2.0,
+        });
         let dot = stats.tick(0.0);
         assert_eq!(dot, 0, "Zero dt should deal zero damage");
         assert_eq!(stats.hp, 100, "HP should not change with zero dt");
@@ -486,7 +597,10 @@ mod boundary_condition_tests {
     #[test]
     fn test_tick_dt_epsilon_boundary() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 100.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 100.0,
+            time: 2.0,
+        });
         let dot = stats.tick(f32::EPSILON);
         // Very small damage, might be 0 due to integer conversion
         assert!(dot >= 0, "Epsilon dt should deal non-negative damage");
@@ -495,7 +609,10 @@ mod boundary_condition_tests {
     #[test]
     fn test_tick_dt_one_boundary() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        });
         let dot = stats.tick(1.0);
         assert_eq!(dot, 10, "dt=1.0 should deal exactly dps damage");
     }
@@ -523,9 +640,27 @@ mod boundary_condition_tests {
         let mut target = Stats::new(100);
 
         // Tick to exactly window start
-        state.tick(0.5, false, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        state.tick(
+            0.5,
+            false,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         // Now at t_since_last = 0.5, should be in window
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(hit, "Attack at exactly window start should hit");
     }
 
@@ -550,9 +685,27 @@ mod boundary_condition_tests {
         let mut target = Stats::new(100);
 
         // Tick to exactly window end
-        state.tick(1.0, false, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        state.tick(
+            1.0,
+            false,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         // Now at t_since_last = 1.0, should still be in window (<= check)
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(hit, "Attack at exactly window end should hit");
     }
 
@@ -577,9 +730,27 @@ mod boundary_condition_tests {
         let mut target = Stats::new(100);
 
         // Tick to just before window
-        state.tick(0.49, false, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        state.tick(
+            0.49,
+            false,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         // Attack before window shouldn't hit
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(!hit, "Attack just before window should not hit");
     }
 
@@ -607,7 +778,16 @@ mod boundary_condition_tests {
         let mut target = Stats::new(100);
 
         // Exactly at reach distance
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::new(reach, 0.0, 0.0), &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::new(reach, 0.0, 0.0),
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(hit, "Attack at exactly reach should hit (<= check)");
     }
 
@@ -633,7 +813,16 @@ mod boundary_condition_tests {
         let mut target = Stats::new(100);
 
         // Just beyond reach
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::new(reach + 0.01, 0.0, 0.0), &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::new(reach + 0.01, 0.0, 0.0),
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(!hit, "Attack just beyond reach should not hit");
     }
 
@@ -647,7 +836,10 @@ mod boundary_condition_tests {
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Wood, 0);
         // Should still create entry with 0
-        assert!(inv.resources.iter().any(|(k, c)| *k == ResourceKind::Wood && *c == 0));
+        assert!(inv
+            .resources
+            .iter()
+            .any(|(k, c)| *k == ResourceKind::Wood && *c == 0));
     }
 
     #[test]
@@ -659,7 +851,10 @@ mod boundary_condition_tests {
         inv.add_resource(ResourceKind::Wood, 10);
         let result = inv.remove_resource(ResourceKind::Wood, 10);
         assert!(result, "Should succeed removing exactly available amount");
-        assert!(inv.resources.iter().any(|(k, c)| *k == ResourceKind::Wood && *c == 0));
+        assert!(inv
+            .resources
+            .iter()
+            .any(|(k, c)| *k == ResourceKind::Wood && *c == 0));
     }
 
     #[test]
@@ -670,7 +865,10 @@ mod boundary_condition_tests {
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Wood, 10);
         let result = inv.remove_resource(ResourceKind::Wood, 11);
-        assert!(!result, "Should fail removing more than available (>= check)");
+        assert!(
+            !result,
+            "Should fail removing more than available (>= check)"
+        );
     }
 
     // --- Quest Progress Boundaries ---
@@ -685,7 +883,10 @@ mod boundary_condition_tests {
             title: "Test".into(),
             tasks: vec![Task {
                 id: "t1".into(),
-                kind: TaskKind::Gather { kind: "wood".into(), count: 10 },
+                kind: TaskKind::Gather {
+                    kind: "wood".into(),
+                    count: 10,
+                },
                 done: false,
             }],
             reward_text: "".into(),
@@ -708,7 +909,10 @@ mod boundary_condition_tests {
             title: "Test".into(),
             tasks: vec![Task {
                 id: "t1".into(),
-                kind: TaskKind::Gather { kind: "wood".into(), count: 10 },
+                kind: TaskKind::Gather {
+                    kind: "wood".into(),
+                    count: 10,
+                },
                 done: false,
             }],
             reward_text: "".into(),
@@ -730,7 +934,10 @@ mod boundary_condition_tests {
             title: "Test".into(),
             tasks: vec![Task {
                 id: "t1".into(),
-                kind: TaskKind::Gather { kind: "wood".into(), count: 10 },
+                kind: TaskKind::Gather {
+                    kind: "wood".into(),
+                    count: 10,
+                },
                 done: false,
             }],
             reward_text: "".into(),
@@ -784,8 +991,12 @@ mod comparison_operator_tests {
         for i in 0..types.len() {
             for j in 0..types.len() {
                 if i != j {
-                    let same = std::mem::discriminant(&types[i]) == std::mem::discriminant(&types[j]);
-                    assert!(!same, "Different DamageType variants should have different discriminants");
+                    let same =
+                        std::mem::discriminant(&types[i]) == std::mem::discriminant(&types[j]);
+                    assert!(
+                        !same,
+                        "Different DamageType variants should have different discriminants"
+                    );
                 }
             }
         }
@@ -795,7 +1006,10 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_status_effect_bleed_vs_stagger() {
-        let bleed = StatusEffect::Bleed { dps: 10.0, time: 2.0 };
+        let bleed = StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        };
         let stagger = StatusEffect::Stagger { time: 2.0 };
 
         assert!(matches!(bleed, StatusEffect::Bleed { .. }));
@@ -806,8 +1020,14 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_status_effect_bleed_vs_chill() {
-        let bleed = StatusEffect::Bleed { dps: 10.0, time: 2.0 };
-        let chill = StatusEffect::Chill { slow: 0.5, time: 2.0 };
+        let bleed = StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        };
+        let chill = StatusEffect::Chill {
+            slow: 0.5,
+            time: 2.0,
+        };
 
         assert!(!matches!(bleed, StatusEffect::Chill { .. }));
         assert!(!matches!(chill, StatusEffect::Bleed { .. }));
@@ -816,7 +1036,10 @@ mod comparison_operator_tests {
     #[test]
     fn test_status_effect_stagger_vs_chill() {
         let stagger = StatusEffect::Stagger { time: 2.0 };
-        let chill = StatusEffect::Chill { slow: 0.5, time: 2.0 };
+        let chill = StatusEffect::Chill {
+            slow: 0.5,
+            time: 2.0,
+        };
 
         assert!(!matches!(stagger, StatusEffect::Chill { .. }));
         assert!(!matches!(chill, StatusEffect::Stagger { .. }));
@@ -858,7 +1081,16 @@ mod comparison_operator_tests {
         let mut target = Stats::new(100);
 
         // Light attack with light button
-        let (hit_light, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit_light, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(hit_light, "Light attack should respond to light button");
     }
 
@@ -883,7 +1115,16 @@ mod comparison_operator_tests {
         let mut target = Stats::new(100);
 
         // Light attack with heavy button - should not hit
-        let (hit, _) = state.tick(0.0, false, true, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            false,
+            true,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(!hit, "Light attack should not respond to heavy button");
     }
 
@@ -908,7 +1149,16 @@ mod comparison_operator_tests {
         let mut target = Stats::new(100);
 
         // Heavy attack with heavy button
-        let (hit, _) = state.tick(0.0, false, true, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            false,
+            true,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(hit, "Heavy attack should respond to heavy button");
     }
 
@@ -936,8 +1186,16 @@ mod comparison_operator_tests {
 
         inv.add_resource(ResourceKind::Wood, 5);
         // Wood should have 15, Crystal should still have 5
-        let wood = inv.resources.iter().find(|(k, _)| *k == ResourceKind::Wood).map(|(_, c)| *c);
-        let crystal = inv.resources.iter().find(|(k, _)| *k == ResourceKind::Crystal).map(|(_, c)| *c);
+        let wood = inv
+            .resources
+            .iter()
+            .find(|(k, _)| *k == ResourceKind::Wood)
+            .map(|(_, c)| *c);
+        let crystal = inv
+            .resources
+            .iter()
+            .find(|(k, _)| *k == ResourceKind::Crystal)
+            .map(|(_, c)| *c);
 
         assert_eq!(wood, Some(15), "Wood should be 15 (== comparison)");
         assert_eq!(crystal, Some(5), "Crystal should be 5 (== comparison)");
@@ -954,8 +1212,16 @@ mod comparison_operator_tests {
 
         inv.remove_resource(ResourceKind::Wood, 3);
 
-        let wood = inv.resources.iter().find(|(k, _)| *k == ResourceKind::Wood).map(|(_, c)| *c);
-        let crystal = inv.resources.iter().find(|(k, _)| *k == ResourceKind::Crystal).map(|(_, c)| *c);
+        let wood = inv
+            .resources
+            .iter()
+            .find(|(k, _)| *k == ResourceKind::Wood)
+            .map(|(_, c)| *c);
+        let crystal = inv
+            .resources
+            .iter()
+            .find(|(k, _)| *k == ResourceKind::Crystal)
+            .map(|(_, c)| *c);
 
         assert_eq!(wood, Some(7), "Only Wood should be affected");
         assert_eq!(crystal, Some(10), "Crystal should be unaffected");
@@ -980,9 +1246,17 @@ mod comparison_operator_tests {
     fn test_task_kind_gather_pattern_match() {
         use crate::quests::TaskKind;
 
-        let gather = TaskKind::Gather { kind: "wood".into(), count: 10 };
-        let visit = TaskKind::Visit { marker: "town".into() };
-        let defeat = TaskKind::Defeat { enemy: "goblin".into(), count: 5 };
+        let gather = TaskKind::Gather {
+            kind: "wood".into(),
+            count: 10,
+        };
+        let visit = TaskKind::Visit {
+            marker: "town".into(),
+        };
+        let defeat = TaskKind::Defeat {
+            enemy: "goblin".into(),
+            count: 5,
+        };
 
         assert!(matches!(gather, TaskKind::Gather { .. }));
         assert!(!matches!(gather, TaskKind::Visit { .. }));
@@ -1030,7 +1304,10 @@ mod comparison_operator_tests {
         stats2.defense = 5;
         let dmg2 = stats2.apply_damage(20, DamageType::Physical);
 
-        assert!(dmg1 < dmg2, "Higher defense should result in less damage (< comparison)");
+        assert!(
+            dmg1 < dmg2,
+            "Higher defense should result in less damage (< comparison)"
+        );
     }
 
     // --- Quest Completion Comparison ---
@@ -1056,8 +1333,14 @@ mod comparison_operator_tests {
         });
 
         assert!(log.is_done("done"), "Completed quest should return true");
-        assert!(!log.is_done("notdone"), "Incomplete quest should return false");
-        assert!(log.is_done("done") != log.is_done("notdone"), "Results should differ");
+        assert!(
+            !log.is_done("notdone"),
+            "Incomplete quest should return false"
+        );
+        assert!(
+            log.is_done("done") != log.is_done("notdone"),
+            "Results should differ"
+        );
     }
 }
 
@@ -1078,14 +1361,20 @@ mod boolean_return_path_tests {
     #[test]
     fn test_effects_is_empty_true_path() {
         let stats = Stats::new(100);
-        assert!(stats.effects.is_empty(), "New stats should have empty effects");
+        assert!(
+            stats.effects.is_empty(),
+            "New stats should have empty effects"
+        );
     }
 
     #[test]
     fn test_effects_is_empty_false_path() {
         let mut stats = Stats::new(100);
         stats.effects.push(StatusEffect::Stagger { time: 1.0 });
-        assert!(!stats.effects.is_empty(), "Stats with effect should not be empty");
+        assert!(
+            !stats.effects.is_empty(),
+            "Stats with effect should not be empty"
+        );
     }
 
     // --- Quest is_done Return Paths ---
@@ -1182,7 +1471,10 @@ mod boolean_return_path_tests {
     fn test_attack_state_active_initially_false() {
         use crate::combat::{AttackState, ComboChain};
 
-        let chain = ComboChain { name: "test".into(), steps: vec![] };
+        let chain = ComboChain {
+            name: "test".into(),
+            steps: vec![],
+        };
         let state = AttackState::new(chain);
 
         assert!(!state.active, "New AttackState should not be active");
@@ -1193,7 +1485,10 @@ mod boolean_return_path_tests {
     fn test_attack_state_active_after_start_true() {
         use crate::combat::{AttackState, ComboChain};
 
-        let chain = ComboChain { name: "test".into(), steps: vec![] };
+        let chain = ComboChain {
+            name: "test".into(),
+            steps: vec![],
+        };
         let mut state = AttackState::new(chain);
         state.start();
 
@@ -1222,9 +1517,21 @@ mod boolean_return_path_tests {
         let mut target = Stats::new(100);
 
         // Complete the combo
-        state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
 
-        assert!(!state.active, "AttackState should not be active after combo completes");
+        assert!(
+            !state.active,
+            "AttackState should not be active after combo completes"
+        );
         assert_eq!(state.active, false, "active should be exactly false");
     }
 
@@ -1240,7 +1547,10 @@ mod boolean_return_path_tests {
     #[test]
     fn test_tick_returns_nonzero_with_bleed() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 2.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 2.0,
+        });
         let dot = stats.tick(1.0);
         assert_ne!(dot, 0, "Tick should return non-zero with bleed effect");
         assert!(dot > 0, "DoT should be positive");
@@ -1251,19 +1561,33 @@ mod boolean_return_path_tests {
     #[test]
     fn test_effect_retain_returns_true_when_time_positive() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 5.0 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 5.0,
+        });
         stats.tick(1.0); // time becomes 4.0
 
-        assert_eq!(stats.effects.len(), 1, "Effect should be retained (return true path)");
+        assert_eq!(
+            stats.effects.len(),
+            1,
+            "Effect should be retained (return true path)"
+        );
     }
 
     #[test]
     fn test_effect_retain_returns_false_when_time_zero_or_negative() {
         let mut stats = Stats::new(100);
-        stats.effects.push(StatusEffect::Bleed { dps: 10.0, time: 0.5 });
+        stats.effects.push(StatusEffect::Bleed {
+            dps: 10.0,
+            time: 0.5,
+        });
         stats.tick(1.0); // time becomes -0.5
 
-        assert_eq!(stats.effects.len(), 0, "Effect should be removed (return false path)");
+        assert_eq!(
+            stats.effects.len(),
+            0,
+            "Effect should be removed (return false path)"
+        );
     }
 
     // --- Task done Boolean ---
@@ -1274,7 +1598,10 @@ mod boolean_return_path_tests {
 
         let task = Task {
             id: "t1".into(),
-            kind: TaskKind::Gather { kind: "wood".into(), count: 10 },
+            kind: TaskKind::Gather {
+                kind: "wood".into(),
+                count: 10,
+            },
             done: false,
         };
 
@@ -1292,7 +1619,10 @@ mod boolean_return_path_tests {
             title: "Test".into(),
             tasks: vec![Task {
                 id: "t1".into(),
-                kind: TaskKind::Gather { kind: "wood".into(), count: 5 },
+                kind: TaskKind::Gather {
+                    kind: "wood".into(),
+                    count: 5,
+                },
                 done: false,
             }],
             reward_text: "".into(),
@@ -1333,8 +1663,22 @@ mod boolean_return_path_tests {
             id: "q1".into(),
             title: "Test".into(),
             tasks: vec![
-                Task { id: "t1".into(), kind: TaskKind::Gather { kind: "wood".into(), count: 5 }, done: false },
-                Task { id: "t2".into(), kind: TaskKind::Gather { kind: "wood".into(), count: 5 }, done: false },
+                Task {
+                    id: "t1".into(),
+                    kind: TaskKind::Gather {
+                        kind: "wood".into(),
+                        count: 5,
+                    },
+                    done: false,
+                },
+                Task {
+                    id: "t2".into(),
+                    kind: TaskKind::Gather {
+                        kind: "wood".into(),
+                        count: 5,
+                    },
+                    done: false,
+                },
             ],
             reward_text: "".into(),
             completed: false,
@@ -1356,8 +1700,21 @@ mod boolean_return_path_tests {
             id: "q1".into(),
             title: "Test".into(),
             tasks: vec![
-                Task { id: "t1".into(), kind: TaskKind::Gather { kind: "wood".into(), count: 5 }, done: false },
-                Task { id: "t2".into(), kind: TaskKind::Visit { marker: "town".into() }, done: false },
+                Task {
+                    id: "t1".into(),
+                    kind: TaskKind::Gather {
+                        kind: "wood".into(),
+                        count: 5,
+                    },
+                    done: false,
+                },
+                Task {
+                    id: "t2".into(),
+                    kind: TaskKind::Visit {
+                        marker: "town".into(),
+                    },
+                    done: false,
+                },
             ],
             reward_text: "".into(),
             completed: false,
@@ -1366,7 +1723,10 @@ mod boolean_return_path_tests {
         log.progress_gather("q1", "wood", 100); // Complete only gather task
 
         let q = log.quests.get("q1").unwrap();
-        assert!(!q.completed, "Quest should not be completed with incomplete tasks");
+        assert!(
+            !q.completed,
+            "Quest should not be completed with incomplete tasks"
+        );
         assert_eq!(q.completed, false, "completed should be exactly false");
     }
 
@@ -1392,7 +1752,16 @@ mod boolean_return_path_tests {
         state.start();
         let mut target = Stats::new(100);
 
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(hit, "hit should be true when attack lands");
         assert_eq!(hit, true, "hit should be exactly true");
     }
@@ -1402,12 +1771,24 @@ mod boolean_return_path_tests {
         use crate::combat::{AttackState, ComboChain};
         use glam::Vec3;
 
-        let chain = ComboChain { name: "test".into(), steps: vec![] };
+        let chain = ComboChain {
+            name: "test".into(),
+            steps: vec![],
+        };
         let mut state = AttackState::new(chain);
         // Don't call start() - state is inactive
         let mut target = Stats::new(100);
 
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::ZERO, &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(!hit, "hit should be false when state is inactive");
         assert_eq!(hit, false, "hit should be exactly false");
     }
@@ -1433,7 +1814,16 @@ mod boolean_return_path_tests {
         let mut target = Stats::new(100);
 
         // Target is 100 units away
-        let (hit, _) = state.tick(0.0, true, false, Vec3::ZERO, Vec3::new(100.0, 0.0, 0.0), &Stats::new(100), None, &mut target);
+        let (hit, _) = state.tick(
+            0.0,
+            true,
+            false,
+            Vec3::ZERO,
+            Vec3::new(100.0, 0.0, 0.0),
+            &Stats::new(100),
+            None,
+            &mut target,
+        );
         assert!(!hit, "hit should be false when out of reach");
         assert_eq!(hit, false, "hit should be exactly false");
     }

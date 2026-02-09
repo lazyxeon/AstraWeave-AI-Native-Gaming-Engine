@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 /// Water body types for terrain integration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum WaterBodyType {
     /// Flowing water following terrain gradient
     River,

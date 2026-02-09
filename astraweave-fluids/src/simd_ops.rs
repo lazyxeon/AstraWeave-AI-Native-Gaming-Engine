@@ -1032,6 +1032,7 @@ impl AlignedVelocities {
 /// High-performance batch distance computation (SOA layout).
 /// 
 /// Uses cache-friendly SOA layout for 2-3x speedup over AOS.
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn batch_distances_soa(
     center_x: f32,
@@ -1055,6 +1056,7 @@ pub fn batch_distances_soa(
 /// High-performance batch distance squared (SOA, no sqrt).
 /// 
 /// Avoids sqrt entirely - use for kernel cutoff checks.
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn batch_distances_squared_soa(
     center_x: f32,
@@ -1133,6 +1135,7 @@ pub fn apply_gravity_soa(
 /// Batch kernel evaluation with SOA positions.
 /// 
 /// Uses early-out and avoids sqrt for particles outside support.
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn batch_kernel_wendland_soa(
     center_x: f32,
@@ -1291,6 +1294,7 @@ impl SphScratchBuffers {
 /// Compute all kernel values and gradients in one pass.
 /// 
 /// More efficient than separate distance + kernel + gradient calls.
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn compute_kernel_data_batch(
     center: [f32; 3],
@@ -1405,6 +1409,7 @@ pub fn compute_pressure_force_optimized(
 }
 
 /// Compute viscosity force with pre-computed kernel data (Morris formulation).
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_viscosity_force_optimized(
     velocity_i: [f32; 3],
@@ -1946,6 +1951,7 @@ impl SpatialHashGrid {
     }
     
     /// Build grid from particle positions.
+    #[allow(clippy::needless_range_loop)]
     pub fn build(&mut self, positions: &[[f32; 3]]) {
         self.clear();
         let n = positions.len();
@@ -2150,6 +2156,7 @@ pub fn compute_densities_spatial(
 /// Compute forces with spatial hash acceleration.
 /// 
 /// Combines pressure and viscosity in a single pass.
+#[allow(clippy::too_many_arguments)]
 pub fn compute_forces_spatial(
     positions: &[[f32; 3]],
     velocities: &[[f32; 3]],
@@ -2307,6 +2314,7 @@ impl NeighborBatch {
     }
     
     /// Process batch to compute density contribution for center particle.
+    #[allow(clippy::needless_range_loop)]
     #[inline]
     pub fn compute_density_contribution(&self, center: [f32; 3], h: f32) -> f32 {
         let h_sq = h * h;
@@ -2419,6 +2427,7 @@ pub fn compute_densities_blocked(
 /// Tile-based force computation for large simulations.
 /// 
 /// Processes particle pairs in tiles that fit in cache, maximizing data reuse.
+#[allow(clippy::too_many_arguments)]
 pub fn compute_forces_tiled(
     positions: &[[f32; 3]],
     velocities: &[[f32; 3]],
@@ -2511,6 +2520,7 @@ pub fn compute_forces_tiled(
 /// Compute density with loop unrolling for small neighbor counts.
 /// 
 /// Uses explicit unrolling for the common case of <16 neighbors.
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn compute_density_unrolled(
     center: [f32; 3],
@@ -2764,6 +2774,7 @@ impl SimdBatch8 {
     }
     
     /// Compute distances from center to all particles in batch.
+    #[allow(clippy::needless_range_loop)]
     #[inline]
     pub fn compute_distances(&self, center: [f32; 3]) -> [f32; 8] {
         let mut distances = [f32::MAX; 8];
@@ -2777,6 +2788,7 @@ impl SimdBatch8 {
     }
     
     /// Compute Wendland C2 kernel values for all particles.
+    #[allow(clippy::needless_range_loop)]
     #[inline]
     pub fn compute_kernels(&self, center: [f32; 3], h: f32) -> [f32; 8] {
         let norm = kernel_constants::wendland_c2_norm(h);
@@ -2796,6 +2808,7 @@ impl SimdBatch8 {
     }
     
     /// Accumulate density from batch.
+    #[allow(clippy::needless_range_loop)]
     #[inline]
     pub fn accumulate_density(&self, center: [f32; 3], h: f32) -> f32 {
         let kernels = self.compute_kernels(center, h);
@@ -2939,6 +2952,7 @@ impl SphSimulationStep {
     }
     
     /// Execute simulation step using spatial hash grid.
+    #[allow(clippy::too_many_arguments)]
     pub fn execute(
         &self,
         positions: &mut [[f32; 3]],
@@ -3382,6 +3396,7 @@ impl RungeKutta4State {
     }
     
     /// Compute final positions using RK4 formula.
+    #[allow(clippy::needless_range_loop)]
     pub fn finalize_positions(&self, positions: &mut [[f32; 3]], dt: f32) {
         let n = positions.len();
         let dt_6 = dt / 6.0;
@@ -3447,6 +3462,7 @@ pub fn compute_kernel_sum(
 /// Density diffusion for DFSPH (Divergence-Free SPH).
 /// 
 /// Predicts density change: Δρ = dt * ρ * ∇·v
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn predict_density_change(
     pos_i: [f32; 3],
@@ -3715,6 +3731,7 @@ pub fn compute_xsph_correction(
 /// Compute artificial viscosity (Monaghan-style).
 /// 
 /// Used in SPH to handle shocks and prevent particle penetration.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_artificial_viscosity(
     pos_i: [f32; 3],
@@ -3811,6 +3828,7 @@ impl PcisphState {
     /// 
     /// δ = -1 / (β * (-Σ∇W_ij · Σ∇W_ij - Σ(∇W_ij · ∇W_ij)))
     /// where β = dt² * m² * 2 / ρ₀²
+    #[allow(clippy::needless_range_loop)]
     pub fn compute_delta(
         &mut self,
         positions: &[[f32; 3]],
@@ -4299,6 +4317,7 @@ impl IisphState {
     }
     
     /// Compute source term from density error.
+    #[allow(clippy::needless_range_loop)]
     pub fn compute_source(
         &mut self,
         densities: &[f32],
@@ -4355,6 +4374,7 @@ impl Default for IisphState {
 
 /// Secondary particle types for visual effects.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SecondaryParticleType {
     /// Spray droplets (high velocity, low curvature)
     Spray,
@@ -4550,6 +4570,7 @@ pub fn compute_boundary_volume(
 }
 
 /// Compute boundary force using Akinci pressure mirroring.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_akinci_boundary_force(
     pos_fluid: [f32; 3],
@@ -5128,7 +5149,7 @@ pub fn quintic_spline_gradient(r: f32, h: f32) -> f32 {
     let q = r / h;
     let norm = 81.0 / (359.0 * std::f32::consts::PI * h.powi(4));
     
-    if q >= 3.0 || q < 1e-8 {
+    if !(1e-8..3.0).contains(&q) {
         0.0
     } else if q >= 2.0 {
         let t = 3.0 - q;
@@ -6742,6 +6763,7 @@ pub fn apply_pressure_laplacian(
 }
 
 /// Jacobi iteration for pressure solve.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn jacobi_pressure_iteration(
     pressures: &mut [f32],
@@ -6858,6 +6880,7 @@ pub fn compute_velocity_divergence_sph(
 }
 
 /// Apply pressure gradient to velocity.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn apply_pressure_gradient(
     particle_idx: usize,
@@ -6915,20 +6938,16 @@ pub fn apply_pressure_gradient(
 // -----------------------------------------------------------------------------
 
 /// Narrow-band level set cell state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum LevelSetCellState {
     /// Far from surface (outside narrow band)
+    #[default]
     Far,
     /// In narrow band (actively tracked)
     NarrowBand,
     /// Frozen (converged during reinitialization)
     Frozen,
-}
-
-impl Default for LevelSetCellState {
-    fn default() -> Self {
-        LevelSetCellState::Far
-    }
 }
 
 /// Level set grid cell for narrow-band tracking.
@@ -6962,6 +6981,7 @@ pub fn compute_levelset_gradient(
 
 /// Fast marching update for level set reinitialization.
 /// Returns updated phi value using Godunov upwind scheme.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn fast_marching_update(
     phi_xm: f32, phi_xp: f32,
@@ -7011,6 +7031,7 @@ pub fn fast_marching_update(
 
 /// Reinitialize level set to signed distance function.
 /// Uses fast sweeping method.
+#[allow(clippy::type_complexity)]
 pub fn reinitialize_levelset(
     phi: &mut [f32],
     dims: (usize, usize, usize),
@@ -7216,6 +7237,7 @@ pub fn mpm_quadratic_weight_gradient(x: f32) -> f32 {
 }
 
 /// Particle-to-grid (P2G) transfer for APIC.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn apic_p2g_transfer(
     particle_pos: [f32; 3],
@@ -7655,6 +7677,7 @@ impl RigidBodyState {
 }
 
 /// Compute fluid-solid coupling force using Akinci's method.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_fluid_solid_force(
     fluid_pos: [f32; 3],
@@ -7840,6 +7863,7 @@ pub struct CsfConfig {
 
 /// Curvature computation method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum CurvatureMethod {
     /// Direct divergence of normal
     #[default]
@@ -8157,6 +8181,7 @@ pub fn compute_mls_density(
 // -----------------------------------------------------------------------------
 
 /// Apply density diffusion for smoother pressure field (δ-SPH).
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn apply_density_diffusion(
     particle_idx: usize,
@@ -8331,6 +8356,7 @@ pub fn scatter_to_sorted(
 }
 
 /// Iterate neighbors using cell list.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn iter_cell_neighbors<F>(
     particle_idx: usize,
@@ -8565,6 +8591,7 @@ impl Default for ThermalProperties {
 
 /// Particle phase state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum ParticlePhase {
     Solid,
     #[default]
@@ -8582,6 +8609,7 @@ pub fn thermal_diffusivity(props: &ThermalProperties) -> f32 {
 
 /// Compute heat transfer rate using Cleary's formulation (SPH).
 /// dT/dt = (2 * k_i * k_j) / (k_i + k_j) * (T_j - T_i) * ∇W / (ρ * c * r_ij)
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_heat_transfer(
     particle_idx: usize,
@@ -8885,6 +8913,7 @@ impl NeoHookeanMaterial {
 }
 
 /// Update deformation gradient from velocity gradient.
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn update_deformation_gradient(
     def_grad: &mut DeformationGradient,
@@ -9291,6 +9320,7 @@ pub fn conjugate_gradient_solve(
 }
 
 /// Build implicit viscosity matrix entry for particle pair.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn build_viscosity_matrix_entry(
     _i: usize,
@@ -9305,8 +9335,7 @@ pub fn build_viscosity_matrix_entry(
     theta: f32,
 ) -> f32 {
     // Coefficient for implicit viscosity: -θ * dt * ν * m_j / (ρ_i * ρ_j) * ∇W / r
-    let coeff = -theta * dt * viscosity * mass_j * grad_w / (rho_i * rho_j * (r + 0.01));
-    coeff
+    -theta * dt * viscosity * mass_j * grad_w / (rho_i * rho_j * (r + 0.01))
 }
 
 // =============================================================================
@@ -9644,7 +9673,7 @@ pub struct GranularMaterialProperties {
 impl Default for GranularMaterialProperties {
     fn default() -> Self {
         Self {
-            friction_angle: 0.5236,      // ~30 degrees
+            friction_angle: std::f32::consts::FRAC_PI_6, // ~30 degrees
             cohesion: 0.0,               // Cohesionless sand
             dilatancy_angle: 0.1745,     // ~10 degrees
             bulk_modulus: 1e6,
@@ -9797,6 +9826,7 @@ pub fn compute_strain_rate_tensor(
 }
 
 /// Compute magnitude of strain rate tensor |S| = √(2 * S_ij * S_ij).
+#[allow(clippy::needless_range_loop)]
 #[inline]
 pub fn compute_strain_rate_magnitude(
     strain_rate: &[[f32; 3]; 3],
@@ -9972,6 +10002,7 @@ pub fn compute_dt_surface_tension(
 }
 
 /// Compute adaptive time step from all constraints.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_adaptive_time_step(
     max_velocity: f32,
@@ -10388,6 +10419,7 @@ pub fn compute_alfven_velocity(
 
 /// Viscoelastic constitutive model type.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum ViscoelasticModel {
     /// Maxwell model: single relaxation time
     Maxwell,
@@ -10958,6 +10990,7 @@ pub fn compute_mushy_permeability(
 
 /// Crystal nucleation model.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum NucleationModel {
     /// Classical nucleation theory
     Classical,
@@ -11172,6 +11205,7 @@ pub fn compute_ostwald_ripening_rate(
 
 /// Rheological model classification for complex fluids.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum RheologicalModel {
     /// Newtonian fluid (constant viscosity)
     Newtonian,
@@ -11435,6 +11469,7 @@ pub fn update_structural_parameter(
 
 /// Wetting behavior classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum WettingType {
     /// Complete wetting (θ = 0°)
     Complete,
@@ -11907,6 +11942,7 @@ pub fn compute_acoustic_wavelength(sound_speed: f32, frequency: f32) -> f32 {
 
 /// Reaction type classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum ReactionType {
     /// A → B (first order)
     FirstOrder,
@@ -12233,6 +12269,7 @@ pub fn compute_yield(conversion: f32, selectivity: f32) -> f32 {
 
 /// Combustion regime classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum CombustionRegime {
     /// Premixed laminar flame
     PremixedLaminar,
@@ -12472,6 +12509,7 @@ pub fn compute_stoichiometric_mixture_fraction(
 
 /// Plasma regime classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum PlasmaRegime {
     /// Weakly ionized (ionization < 0.1%)
     WeaklyIonized,
@@ -12759,6 +12797,7 @@ pub fn compute_plasma_beta(
 
 /// Electromagnetic wave polarization.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum Polarization {
     /// Electric field oscillates in one direction
     Linear,
@@ -13036,6 +13075,7 @@ pub fn compute_radiation_pressure_em(
 
 /// Optimization algorithm type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum OptimizationMethod {
     /// Gradient descent
     GradientDescent,
@@ -13440,6 +13480,7 @@ pub fn saxpy(a: &[f32], b: &[f32], scalar: f32, out: &mut [f32]) {
 
 /// Radiation mode classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum RadiationMode {
     /// Surface-to-surface radiation
     SurfaceToSurface,
@@ -13683,6 +13724,7 @@ pub fn compute_radiation_source_term(
 
 /// Geophysical regime classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum GeophysicalRegime {
     /// Continental crust
     ContinentalCrust,
@@ -13924,6 +13966,7 @@ pub fn compute_isostatic_root(
 
 /// Aeroacoustic source type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum AeroacousticSource {
     /// Monopole (mass injection)
     Monopole,
@@ -14160,6 +14203,7 @@ pub fn is_acoustically_compact(helmholtz: f32) -> bool {
 
 /// ML model type for SPH enhancement.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum MLModelType {
     /// Neural network for kernel correction
     KernelCorrection,
@@ -14258,7 +14302,7 @@ pub fn softplus(x: f32) -> f32 {
 /// GELU(x) ≈ 0.5 * x * (1 + tanh(√(2/π) * (x + 0.044715 * x³)))
 #[inline]
 pub fn gelu(x: f32) -> f32 {
-    const SQRT_2_OVER_PI: f32 = 0.7978845608;
+    const SQRT_2_OVER_PI: f32 = 0.797_884_6;
     0.5 * x * (1.0 + (SQRT_2_OVER_PI * (x + 0.044715 * x.powi(3))).tanh())
 }
 
@@ -14454,6 +14498,7 @@ pub fn cosine_annealing_lr(lr_max: f32, lr_min: f32, step: u32, total_steps: u32
 
 /// Quantum state classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum QuantumRegime {
     /// Classical (high temperature, large scale)
     Classical,
@@ -14660,6 +14705,7 @@ pub fn compute_bec_critical_temperature(number_density: f32, mass: f32, hbar: f3
 
 /// Astrophysical regime classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum AstrophysicalRegime {
     /// Stellar interior (radiation-dominated)
     StellarInterior,
@@ -14893,6 +14939,7 @@ pub fn compute_bremsstrahlung_cooling(
 
 /// Biological fluid type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum BiofluidType {
     /// Blood (shear-thinning, viscoelastic)
     Blood,
@@ -15135,6 +15182,7 @@ pub fn compute_pulse_wave_velocity(
 
 /// Numerical integration method.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum IntegrationMethod {
     /// Forward Euler (1st order)
     Euler,
@@ -15154,6 +15202,7 @@ pub enum IntegrationMethod {
 
 /// Sparse matrix format type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum SparseFormat {
     /// Coordinate (COO)
     Coordinate,
@@ -15434,6 +15483,7 @@ pub fn matrix_one_norm(col_sums: &[f32]) -> f32 {
 
 /// Relativistic regime classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum RelativisticRegime {
     /// Newtonian (v << c)
     Newtonian,
@@ -15607,6 +15657,7 @@ pub fn compute_beaming_angle(gamma: f32) -> f32 {
 
 /// Granular flow regime classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum GranularFlowRegime {
     /// Quasi-static (slow deformation)
     QuasiStatic,
@@ -15795,6 +15846,7 @@ pub fn compute_entrainment_rate(
 
 /// Neural network architecture type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum NNArchitecture {
     /// Multi-layer perceptron
     MLP,
@@ -15984,6 +16036,7 @@ pub fn compute_attention_weight(
 
 /// Multi-scale coupling strategy.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum CouplingStrategy {
     /// One-way coupling (coarse → fine)
     OneWay,
@@ -15999,6 +16052,7 @@ pub enum CouplingStrategy {
 
 /// Domain decomposition method.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum DecompositionMethod {
     /// Uniform grid partitioning
     UniformGrid,
@@ -16234,6 +16288,7 @@ pub fn compute_sync_time(
 
 /// MHD wave types for dispersion analysis.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum MHDWaveType {
     Alfven,
     FastMagnetoacoustic,
@@ -16393,6 +16448,7 @@ pub fn compute_species_net_production_rate(
 }
 
 /// Compute ignition delay time (empirical correlation).
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_ignition_delay_time(
     pre_factor: f32,
@@ -16422,6 +16478,7 @@ pub fn compute_ignition_delay_time(
 
 /// Acoustic source type classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum AcousticSourceType {
     Monopole,
     Dipole,
@@ -16462,6 +16519,7 @@ pub fn compute_acoustic_doppler_shift(sound_speed: f32, source_velocity: f32, co
 }
 
 /// Compute Lighthill stress tensor component.
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_lighthill_stress_tensor(
     density: f32,
@@ -16525,6 +16583,7 @@ pub fn compute_helmholtz_wavenumber(frequency: f32, length_scale: f32, sound_spe
 
 /// Phase state for phase transition modeling.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum PhaseState {
     Solid,
     Liquid,
@@ -16645,6 +16704,7 @@ pub fn compute_phase_change_shrinkage(liquid_density: f32, solid_density: f32) -
 
 /// Sediment transport mode classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum SedimentTransportMode {
     /// No motion (below threshold)
     Static,
@@ -16824,6 +16884,7 @@ pub fn compute_exner_bed_change(
 
 /// Wave type classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum WaveType {
     DeepWater,
     Intermediate,
@@ -16984,6 +17045,7 @@ pub fn compute_wave_power(wave_energy: f32, group_velocity: f32) -> f32 {
 
 /// Density current type classification.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum DensityCurrentType {
     /// Particle-laden turbidity current
     TurbidityCurrent,
@@ -17119,6 +17181,7 @@ pub fn compute_plunge_point_depth(
 
 /// Hydraulic structure type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum HydraulicStructureType {
     /// Sharp-crested weir
     SharpWeir,
@@ -17136,6 +17199,7 @@ pub enum HydraulicStructureType {
 
 /// Flow regime through structure.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum StructureFlowRegime {
     /// Controlled by upstream head
     Free,
@@ -17308,6 +17372,7 @@ pub fn classify_structure_flow_regime(
 
 /// Ice rheology type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum IceRheology {
     /// Glen's flow law (standard glacier ice)
     Glen,
@@ -17449,6 +17514,7 @@ pub fn compute_firn_densification_rate(
 
 /// Magnetic field configuration type.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum MagneticFieldType {
     /// Uniform external field
     Uniform,
@@ -17614,6 +17680,7 @@ pub fn compute_effective_relaxation_time(
 
 /// Droplet breakup regime.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum BreakupRegime {
     /// No breakup (stable)
     Stable,
@@ -17785,6 +17852,7 @@ pub fn compute_child_diameter(
 
 /// Atmospheric stability class (Pasquill-Gifford).
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum StabilityClass {
     A,  // Extremely unstable
     B,  // Moderately unstable
@@ -18112,7 +18180,7 @@ pub fn batch_wendland_c2_with_gradient(
     for (i, &r) in distances.iter().enumerate() {
         let q = r * h_inv;
         
-        if q >= 1.0 || q < 1e-8 {
+        if !(1e-8..1.0).contains(&q) {
             values[i] = 0.0;
             gradient_mags[i] = 0.0;
         } else {
@@ -18268,6 +18336,7 @@ impl NeighborCache {
 /// * `delta` - Diffusion coefficient (typically 0.1)
 /// * `c_sound` - Sound speed
 /// * `h` - Smoothing length
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_delta_sph_diffusion(
     density_i: f32,
@@ -18320,6 +18389,7 @@ pub fn compute_delta_sph_diffusion(
 /// * `neighbor_masses` - Masses of neighbors
 /// * `epsilon` - XSPH coefficient (typically 0.01-0.1)
 /// * `dt` - Time step
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_xsph_position_correction(
     particle_velocity: [f32; 3],
@@ -19248,6 +19318,7 @@ pub struct AdaptiveTimestepResult {
 
 /// Which physical constraint limits the timestep
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TimestepConstraint {
     /// Courant-Friedrichs-Lewy (velocity)
     Cfl,
@@ -19903,6 +19974,7 @@ pub fn compute_boundary_friction_force(
 /// * `gradient_mags` - Kernel gradient magnitudes
 /// * `h` - Smoothing length
 /// * `viscosity` - Dynamic viscosity coefficient
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn compute_morris_viscosity_force(
     velocity_i: [f32; 3],
@@ -20042,6 +20114,7 @@ pub fn compute_dfsph_alpha(
 
 /// Liquid crystal phase types
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum LiquidCrystalPhase {
     Isotropic,
     Nematic,
@@ -20196,6 +20269,7 @@ pub fn compute_director_relaxation_time(
 
 /// Polymer constitutive model types
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum PolymerModel {
     Maxwell,
     OldroydB,
@@ -20327,6 +20401,7 @@ pub fn compute_giesekus_factor(
 
 /// Microchannel cross-section types
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum MicrochannelType {
     Rectangular,
     Circular,
@@ -20494,6 +20569,7 @@ pub fn compute_peclet_number(
 
 /// Mantle rheology types
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum MantleRheology {
     Newtonian,
     DiffusionCreep,
@@ -20668,6 +20744,7 @@ pub fn compute_convective_velocity(
 
 /// Oscillatory test type
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum OscillatoryTestType {
     SmallAmplitude,   // SAOS
     LargeAmplitude,   // LAOS
@@ -20836,6 +20913,7 @@ pub fn compute_relaxation_modulus(
 
 /// Lubrication regime classification
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum LubricationRegime {
     Hydrodynamic,       // Full fluid film
     Elastohydrodynamic, // EHL - elastic deformation
@@ -20990,6 +21068,7 @@ pub fn compute_hydrodynamic_friction(
 
 /// Bubble collapse type
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum BubbleCollapseType {
     Spherical,
     Asymmetric,
@@ -21141,6 +21220,7 @@ pub fn compute_damped_oscillation_radius(
 
 /// Rotating flow regime
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum RotatingFlowRegime {
     Geostrophic,
     Ageostrophic,

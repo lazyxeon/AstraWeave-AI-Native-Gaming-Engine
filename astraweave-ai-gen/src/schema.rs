@@ -21,6 +21,7 @@ pub struct MeshGenerationParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AiAssetRequest {
     Texture(TextureGenerationParams),
     Mesh(MeshGenerationParams),

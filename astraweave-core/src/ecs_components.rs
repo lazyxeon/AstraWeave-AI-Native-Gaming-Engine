@@ -29,6 +29,7 @@ pub mod cooldowns {
     /// Efficient key for cooldown kinds. Known variants can be matched statically;
     /// unknown/custom keys fall back to `Custom(String)`.
     #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[non_exhaustive]
     pub enum CooldownKey {
         ThrowSmoke,
         Custom(String),

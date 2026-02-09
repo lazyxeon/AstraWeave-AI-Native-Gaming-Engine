@@ -16,6 +16,7 @@ pub struct Memory {
 
 /// Types of memories in the hierarchical memory system
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum MemoryType {
     /// Short-term sensory impressions
     Sensory,
@@ -104,6 +105,7 @@ pub struct MemoryMetadata {
 
 /// Source of a memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum MemorySource {
     DirectExperience,
     Conversation,
@@ -128,6 +130,7 @@ pub struct MemoryAssociation {
 
 /// Types of associations between memories
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AssociationType {
     /// Temporal - happened at the same time
     Temporal,
@@ -160,6 +163,7 @@ pub struct MemoryCluster {
 
 /// Types of memory clusters
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ClusterType {
     Event,        // Memories of a specific event
     Person,       // Memories related to a person
@@ -242,6 +246,7 @@ pub struct SharingMetadata {
 
 /// Types of memory sharing
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum SharingType {
     /// Full memory content can be shared
     Full,
@@ -255,6 +260,7 @@ pub enum SharingType {
 
 /// Privacy levels for memories
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum PrivacyLevel {
     Public,   // Can be shared with anyone
     Group,    // Can be shared within group
@@ -640,7 +646,7 @@ mod tests {
         assert_eq!(MemoryType::Procedural, MemoryType::Procedural);
         assert_eq!(MemoryType::Emotional, MemoryType::Emotional);
         assert_eq!(MemoryType::Social, MemoryType::Social);
-        
+
         assert_ne!(MemoryType::Sensory, MemoryType::Working);
     }
 
@@ -659,7 +665,7 @@ mod tests {
     #[test]
     fn test_sensory_memory_creation() {
         let memory = Memory::sensory("I see a red apple".to_string(), None);
-        
+
         assert_eq!(memory.memory_type, MemoryType::Sensory);
         assert_eq!(memory.metadata.importance, 0.2);
         assert_eq!(memory.metadata.decay_factor, 2.0);
@@ -674,9 +680,9 @@ mod tests {
             tactile: Some("smooth".to_string()),
             environmental: Some("kitchen".to_string()),
         };
-        
+
         let memory = Memory::sensory("Apple experience".to_string(), Some(sensory.clone()));
-        
+
         assert!(memory.content.sensory_data.is_some());
         let data = memory.content.sensory_data.unwrap();
         assert_eq!(data.visual, Some("red apple".to_string()));
@@ -691,18 +697,21 @@ mod tests {
             participants.clone(),
             Some("cafe".to_string()),
         );
-        
+
         assert_eq!(memory.memory_type, MemoryType::Episodic);
         assert_eq!(memory.metadata.importance, 0.7);
         assert_eq!(memory.content.context.participants, participants);
         assert_eq!(memory.content.context.location, Some("cafe".to_string()));
-        assert_eq!(memory.content.context.time_period, Some("current".to_string()));
+        assert_eq!(
+            memory.content.context.time_period,
+            Some("current".to_string())
+        );
     }
 
     #[test]
     fn test_semantic_memory_creation() {
         let memory = Memory::semantic("Water boils at 100C".to_string(), "temperature".to_string());
-        
+
         assert_eq!(memory.memory_type, MemoryType::Semantic);
         assert_eq!(memory.metadata.importance, 0.8);
         assert!(memory.metadata.permanent);
@@ -712,16 +721,19 @@ mod tests {
     #[test]
     fn test_working_memory_creation() {
         let memory = Memory::working("Current task".to_string());
-        
+
         assert_eq!(memory.memory_type, MemoryType::Working);
         assert_eq!(memory.metadata.importance, 0.6);
-        assert_eq!(memory.content.context.time_period, Some("current".to_string()));
+        assert_eq!(
+            memory.content.context.time_period,
+            Some("current".to_string())
+        );
     }
 
     #[test]
     fn test_procedural_memory_creation() {
         let memory = Memory::procedural("Tying shoelaces".to_string(), "motor".to_string());
-        
+
         assert_eq!(memory.memory_type, MemoryType::Procedural);
         assert_eq!(memory.metadata.importance, 0.7);
         assert!(memory.content.data.is_object());
@@ -730,10 +742,10 @@ mod tests {
     #[test]
     fn test_emotional_memory_creation() {
         let memory = Memory::emotional("Lost my pet".to_string(), "sadness".to_string(), 0.9);
-        
+
         assert_eq!(memory.memory_type, MemoryType::Emotional);
         assert_eq!(memory.metadata.importance, 0.8);
-        
+
         let emotional = memory.content.emotional_context.unwrap();
         assert_eq!(emotional.primary_emotion, "sadness");
         assert_eq!(emotional.intensity, 0.9);
@@ -744,7 +756,7 @@ mod tests {
     fn test_social_memory_creation() {
         let participants = vec!["John".to_string(), "Jane".to_string()];
         let memory = Memory::social("Party together".to_string(), participants.clone());
-        
+
         assert_eq!(memory.memory_type, MemoryType::Social);
         assert_eq!(memory.metadata.importance, 0.75);
         assert_eq!(memory.content.context.participants, participants);
@@ -771,9 +783,9 @@ mod tests {
         let mut memory = Memory::working("Test".to_string());
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(5);
         memory.metadata.last_accessed = Utc::now();
-        
+
         let strength = memory.calculate_current_strength();
-        
+
         // Recent access should boost strength
         assert!(strength > 0.0);
     }
@@ -783,7 +795,7 @@ mod tests {
         let mut memory = Memory::semantic("Fact".to_string(), "science".to_string());
         memory.metadata.permanent = true;
         memory.metadata.strength = 0.0; // Even with zero strength
-        
+
         assert!(!memory.should_forget(0.5));
     }
 
@@ -793,7 +805,7 @@ mod tests {
         memory.metadata.strength = 0.1;
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(100);
         memory.metadata.last_accessed = Utc::now() - chrono::Duration::days(100);
-        
+
         // With high decay and old age, should be below threshold
         assert!(memory.should_forget(0.5));
     }
@@ -801,7 +813,7 @@ mod tests {
     #[test]
     fn test_should_forget_strong_memory() {
         let memory = Memory::semantic("Important fact".to_string(), "knowledge".to_string());
-        
+
         // Recent, important memory should not be forgotten
         assert!(!memory.should_forget(0.3));
     }
@@ -811,13 +823,13 @@ mod tests {
         let mut memory = Memory::working("Task".to_string());
         let initial_count = memory.metadata.access_count;
         let _initial_strength = memory.metadata.strength;
-        
+
         // Set strength below 1.0 so we can observe the boost
         memory.metadata.strength = 0.5;
         let pre_access_strength = memory.metadata.strength;
-        
+
         memory.accessed();
-        
+
         assert_eq!(memory.metadata.access_count, initial_count + 1);
         assert!(memory.metadata.strength > pre_access_strength);
         assert!(memory.metadata.strength <= 1.0);
@@ -827,11 +839,11 @@ mod tests {
     fn test_accessed_strength_caps_at_one() {
         let mut memory = Memory::working("Task".to_string());
         memory.metadata.strength = 0.95;
-        
+
         memory.accessed();
         memory.accessed();
         memory.accessed();
-        
+
         assert_eq!(memory.metadata.strength, 1.0);
     }
 
@@ -863,10 +875,10 @@ mod tests {
     #[test]
     fn test_add_association_clamps_strength() {
         let mut memory = Memory::working("Test".to_string());
-        
+
         memory.add_association("m1".to_string(), AssociationType::Causal, 1.5);
         assert_eq!(memory.associations[0].strength, 1.0);
-        
+
         memory.add_association("m2".to_string(), AssociationType::Causal, -0.5);
         assert_eq!(memory.associations[1].strength, 0.0);
     }
@@ -874,11 +886,11 @@ mod tests {
     #[test]
     fn test_get_strong_associations() {
         let mut memory = Memory::working("Test".to_string());
-        
+
         memory.add_association("m1".to_string(), AssociationType::Temporal, 0.9);
         memory.add_association("m2".to_string(), AssociationType::Causal, 0.5);
         memory.add_association("m3".to_string(), AssociationType::Conceptual, 0.8);
-        
+
         let strong = memory.get_strong_associations(0.7);
         assert_eq!(strong.len(), 2);
     }
@@ -887,7 +899,7 @@ mod tests {
     fn test_get_strong_associations_empty() {
         let mut memory = Memory::working("Test".to_string());
         memory.add_association("m1".to_string(), AssociationType::Temporal, 0.3);
-        
+
         let strong = memory.get_strong_associations(0.5);
         assert!(strong.is_empty());
     }
@@ -901,7 +913,7 @@ mod tests {
         assert_eq!(AssociationType::Emotional, AssociationType::Emotional);
         assert_eq!(AssociationType::Sequential, AssociationType::Sequential);
         assert_eq!(AssociationType::Contrast, AssociationType::Contrast);
-        
+
         assert_ne!(AssociationType::Temporal, AssociationType::Spatial);
     }
 
@@ -936,7 +948,7 @@ mod tests {
     #[test]
     fn test_matches_context_wrong_type() {
         let memory = Memory::sensory("Sound".to_string(), None);
-        
+
         let context = RetrievalContext {
             query: "test".to_string(),
             emotional_state: None,
@@ -946,14 +958,14 @@ mod tests {
             time_window: None,
             limit: 10,
         };
-        
+
         assert!(!memory.matches_context(&context));
     }
 
     #[test]
     fn test_matches_context_empty_preferred_types() {
         let memory = Memory::sensory("Sound".to_string(), None);
-        
+
         let context = RetrievalContext {
             query: "test".to_string(),
             emotional_state: None,
@@ -963,7 +975,7 @@ mod tests {
             time_window: None,
             limit: 10,
         };
-        
+
         assert!(memory.matches_context(&context));
     }
 
@@ -971,7 +983,7 @@ mod tests {
     fn test_matches_context_time_window() {
         let mut memory = Memory::working("Test".to_string());
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(5);
-        
+
         let context_in_window = RetrievalContext {
             query: "test".to_string(),
             emotional_state: None,
@@ -984,9 +996,9 @@ mod tests {
             }),
             limit: 10,
         };
-        
+
         assert!(memory.matches_context(&context_in_window));
-        
+
         let context_outside = RetrievalContext {
             query: "test".to_string(),
             emotional_state: None,
@@ -999,18 +1011,14 @@ mod tests {
             }),
             limit: 10,
         };
-        
+
         assert!(!memory.matches_context(&context_outside));
     }
 
     #[test]
     fn test_matches_context_location_mismatch() {
-        let memory = Memory::episodic(
-            "Test".to_string(),
-            vec![],
-            Some("library".to_string()),
-        );
-        
+        let memory = Memory::episodic("Test".to_string(), vec![], Some("library".to_string()));
+
         let context = RetrievalContext {
             query: "test".to_string(),
             emotional_state: None,
@@ -1020,14 +1028,14 @@ mod tests {
             time_window: None,
             limit: 10,
         };
-        
+
         assert!(!memory.matches_context(&context));
     }
 
     #[test]
     fn test_calculate_relevance_empty_query() {
         let memory = Memory::working("Some content".to_string());
-        
+
         let context = RetrievalContext {
             query: "".to_string(),
             emotional_state: None,
@@ -1037,7 +1045,7 @@ mod tests {
             time_window: None,
             limit: 10,
         };
-        
+
         let relevance = memory.calculate_relevance(&context);
         // Should still have relevance from importance and strength
         assert!(relevance > 0.0);
@@ -1046,7 +1054,7 @@ mod tests {
     #[test]
     fn test_calculate_relevance_matching_words() {
         let memory = Memory::working("apple banana cherry".to_string());
-        
+
         let context = RetrievalContext {
             query: "apple banana".to_string(),
             emotional_state: None,
@@ -1056,7 +1064,7 @@ mod tests {
             time_window: None,
             limit: 10,
         };
-        
+
         let relevance = memory.calculate_relevance(&context);
         assert!(relevance > 0.4); // High text similarity
     }
@@ -1084,60 +1092,48 @@ mod tests {
 
     #[test]
     fn test_cluster_add_duplicate() {
-        let mut cluster = MemoryCluster::new(
-            "Test".to_string(),
-            ClusterType::Event,
-            "event".to_string(),
-        );
-        
+        let mut cluster =
+            MemoryCluster::new("Test".to_string(), ClusterType::Event, "event".to_string());
+
         cluster.add_memory("m1".to_string());
         cluster.add_memory("m1".to_string());
-        
+
         assert_eq!(cluster.memory_ids.len(), 1);
     }
 
     #[test]
     fn test_cluster_remove_nonexistent() {
-        let mut cluster = MemoryCluster::new(
-            "Test".to_string(),
-            ClusterType::Event,
-            "event".to_string(),
-        );
-        
+        let mut cluster =
+            MemoryCluster::new("Test".to_string(), ClusterType::Event, "event".to_string());
+
         cluster.add_memory("m1".to_string());
         cluster.remove_memory("nonexistent");
-        
+
         assert_eq!(cluster.memory_ids.len(), 1);
     }
 
     #[test]
     fn test_cluster_calculate_importance_empty() {
-        let cluster = MemoryCluster::new(
-            "Test".to_string(),
-            ClusterType::Event,
-            "event".to_string(),
-        );
-        
+        let cluster =
+            MemoryCluster::new("Test".to_string(), ClusterType::Event, "event".to_string());
+
         let memories: Vec<&Memory> = vec![];
         let importance = cluster.calculate_importance(&memories);
-        
+
         assert_eq!(importance, 0.0);
     }
 
     #[test]
     fn test_cluster_calculate_importance() {
-        let cluster = MemoryCluster::new(
-            "Test".to_string(),
-            ClusterType::Event,
-            "event".to_string(),
-        );
-        
+        let cluster =
+            MemoryCluster::new("Test".to_string(), ClusterType::Event, "event".to_string());
+
         let m1 = Memory::working("Test 1".to_string());
         let m2 = Memory::semantic("Test 2".to_string(), "concept".to_string());
         let memories: Vec<&Memory> = vec![&m1, &m2];
-        
+
         let importance = cluster.calculate_importance(&memories);
-        
+
         assert!(importance > 0.0);
         assert!(importance <= 1.0);
     }
@@ -1157,7 +1153,7 @@ mod tests {
             MemoryType::Emotional,
             MemoryType::Social,
         ];
-        
+
         for mem_type in types {
             let json = serde_json::to_string(&mem_type).unwrap();
             let deserialized: MemoryType = serde_json::from_str(&json).unwrap();
@@ -1175,7 +1171,7 @@ mod tests {
             MemorySource::SharedMemory,
             MemorySource::SystemGenerated,
         ];
-        
+
         for source in sources {
             let json = serde_json::to_string(&source).unwrap();
             let _deserialized: MemorySource = serde_json::from_str(&json).unwrap();
@@ -1190,7 +1186,7 @@ mod tests {
             SharingType::Metadata,
             SharingType::Restricted,
         ];
-        
+
         for sharing_type in types {
             let json = serde_json::to_string(&sharing_type).unwrap();
             let deserialized: SharingType = serde_json::from_str(&json).unwrap();
@@ -1206,7 +1202,7 @@ mod tests {
             PrivacyLevel::Personal,
             PrivacyLevel::Secret,
         ];
-        
+
         for level in levels {
             let json = serde_json::to_string(&level).unwrap();
             let deserialized: PrivacyLevel = serde_json::from_str(&json).unwrap();
@@ -1224,7 +1220,7 @@ mod tests {
             ClusterType::Skill,
             ClusterType::Relationship,
         ];
-        
+
         for cluster_type in types {
             let json = serde_json::to_string(&cluster_type).unwrap();
             let _deserialized: ClusterType = serde_json::from_str(&json).unwrap();
@@ -1238,10 +1234,10 @@ mod tests {
             vec!["friend".to_string()],
             Some("museum".to_string()),
         );
-        
+
         let json = serde_json::to_string(&memory).unwrap();
         let deserialized: Memory = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.content.text, memory.content.text);
         assert_eq!(deserialized.memory_type, memory.memory_type);
     }
@@ -1258,10 +1254,10 @@ mod tests {
             valence: 0.9,
             arousal: 0.7,
         };
-        
+
         let json = serde_json::to_string(&emotional).unwrap();
         let deserialized: EmotionalContext = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.primary_emotion, "joy");
         assert_eq!(deserialized.intensity, 0.8);
     }
@@ -1275,10 +1271,10 @@ mod tests {
             participants: vec!["Alice".to_string()],
             related_events: vec!["picnic".to_string()],
         };
-        
+
         let json = serde_json::to_string(&context).unwrap();
         let deserialized: SpatialTemporalContext = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.location, Some("park".to_string()));
         assert_eq!(deserialized.duration, Some(3600000));
     }
@@ -1292,10 +1288,10 @@ mod tests {
             needs_consolidation: true,
             priority: 0.7,
         };
-        
+
         let json = serde_json::to_string(&state).unwrap();
         let deserialized: ConsolidationState = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.consolidation_level, 0.5);
         assert_eq!(deserialized.passes, 3);
         assert!(deserialized.needs_consolidation);
@@ -1310,10 +1306,10 @@ mod tests {
             retention_threshold: 0.3,
             immune: false,
         };
-        
+
         let json = serde_json::to_string(&curve).unwrap();
         let deserialized: ForgettingCurve = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.initial_strength, 1.0);
         assert!(!deserialized.immune);
     }
@@ -1324,10 +1320,10 @@ mod tests {
             start: Utc::now() - chrono::Duration::days(7),
             end: Utc::now(),
         };
-        
+
         let json = serde_json::to_string(&window).unwrap();
         let deserialized: TimeWindow = serde_json::from_str(&json).unwrap();
-        
+
         assert!(deserialized.start < deserialized.end);
     }
 
@@ -1340,10 +1336,10 @@ mod tests {
             privacy_level: PrivacyLevel::Group,
             sharing_conditions: vec!["must_be_online".to_string()],
         };
-        
+
         let json = serde_json::to_string(&metadata).unwrap();
         let deserialized: SharingMetadata = serde_json::from_str(&json).unwrap();
-        
+
         assert!(deserialized.shareable);
         assert_eq!(deserialized.authorized_entities.len(), 2);
         assert_eq!(deserialized.sharing_type, SharingType::Summary);

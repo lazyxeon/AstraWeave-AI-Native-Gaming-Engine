@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 /*!
 # AstraWeave Context Management
 
@@ -97,6 +98,7 @@ impl Default for ContextConfig {
 
 /// Strategies for handling context overflow
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum OverflowStrategy {
     /// Remove oldest messages (FIFO)
     SlidingWindow,
@@ -139,6 +141,7 @@ impl Default for SharingConfig {
 
 /// Role of a message participant
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum Role {
     /// System message (instructions, context)
     System,
@@ -265,6 +268,7 @@ pub struct ContextMetrics {
 
 /// Context operation types for monitoring
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ContextOperation {
     AddMessage,
     GetContext,

@@ -1,0 +1,7 @@
+# Swamp biome — stable GPU array indices for terrain splatmap layers
+[layers]
+mud = 0
+moss = 1
+dirt = 2
+tree_bark = 3
+rock_lichen = 4

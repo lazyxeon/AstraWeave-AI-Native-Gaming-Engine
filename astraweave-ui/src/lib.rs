@@ -1,3 +1,26 @@
+//! # AstraWeave UI
+//!
+//! In-game UI framework for AstraWeave, built on **egui**.
+//!
+//! Provides a complete UI stack for game development:
+//!
+//! - **Menus** — Main menu, pause menu, and settings panels (graphics, audio, controls)
+//!   with TOML persistence ([`persistence::save_settings`], [`persistence::load_settings`]).
+//! - **HUD** — Health bars (smooth transitions, flash/glow), damage numbers (arc motion,
+//!   combos), quest tracker, minimap with POI markers, dialogue system with branching
+//!   choices, and tooltip overlays.
+//! - **Accessibility** — Colorblind modes (protanopia, deuteranopia, tritanopia),
+//!   high-contrast support, and configurable color transforms.
+//! - **Gamepad** — Controller support via gilrs with configurable bindings.
+//!
+//! # Key Types
+//!
+//! - [`hud::HudManager`] — Central HUD state and rendering coordinator.
+//! - [`menu::MenuManager`] — Menu navigation state machine.
+//! - [`panels::draw_ui`] — Main rendering entry point.
+//! - [`accessibility::AccessibilitySettings`] — Colorblind and contrast options.
+//! - [`gamepad::GamepadManager`] — Controller input handling.
+
 pub mod accessibility;
 pub mod gamepad;
 pub mod hud;

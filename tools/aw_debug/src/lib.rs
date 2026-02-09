@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use anyhow::Result;
 use egui::{self, Color32};
 use egui_plot::{Line, Plot, PlotPoints};

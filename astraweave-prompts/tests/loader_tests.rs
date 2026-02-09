@@ -23,7 +23,7 @@ fn test_load_with_frontmatter() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("meta.hbs");
     let mut file = File::create(&file_path).unwrap();
-    
+
     let content = r#"+++
 name = "greeting"
 version = "1.0.0"
@@ -38,7 +38,7 @@ Hello {{name}}! How are you?"#;
     // But wait, writeln!(file, "{}", content) uses formatting.
     // So braces in content need to be escaped if passed to format string.
     // Or just use file.write_all(content.as_bytes())
-    
+
     file.write_all(content.as_bytes()).unwrap();
 
     let loader = PromptLoader::new();
@@ -46,7 +46,7 @@ Hello {{name}}! How are you?"#;
 
     assert_eq!(template.id, "greeting");
     assert_eq!(template.template.trim(), "Hello {{name}}! How are you?");
-    
+
     let meta = template.metadata.unwrap();
     assert_eq!(meta.name, "greeting");
     assert_eq!(meta.version, "1.0.0");
@@ -57,19 +57,19 @@ Hello {{name}}! How are you?"#;
 #[test]
 fn test_load_from_dir() {
     let dir = TempDir::new().unwrap();
-    
+
     // File 1
     let p1 = dir.path().join("t1.hbs");
     let mut f1 = File::create(&p1).unwrap();
     writeln!(f1, "Template 1").unwrap();
-    
+
     // File 2 in subdir
     let sub = dir.path().join("subdir");
     std::fs::create_dir(&sub).unwrap();
     let p2 = sub.join("t2.prompt");
     let mut f2 = File::create(&p2).unwrap();
     writeln!(f2, "Template 2").unwrap();
-    
+
     // Ignored file
     let p3 = dir.path().join("ignored.txt");
     let mut f3 = File::create(&p3).unwrap();

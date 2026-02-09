@@ -97,6 +97,7 @@ impl SplashSequence {
 
 /// Loading screen style
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum LoadingStyle {
     /// Simple centered spinner
     Spinner,

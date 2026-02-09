@@ -94,6 +94,7 @@ pub struct EventTrigger {
 
 /// Types of event triggers
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum TriggerType {
     Time,           // Time-based triggers
     PlayerAction,   // Based on player behavior
@@ -240,6 +241,7 @@ pub struct Storyline {
 
 /// Status of a storyline
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub enum StorylineStatus {
     Planning,
     Active,

@@ -297,9 +297,6 @@ pub struct FluidSystem {
     pub temporal_coherence: TemporalCoherence,
     /// Batch spawner for efficient particle creation
     pub batch_spawner: BatchSpawner,
-    /// Last frame's simulation time in seconds (for budget tracking)
-    #[allow(dead_code)]
-    last_sim_time: f32,
     /// Optimization statistics
     pub optimization_stats: OptimizationStats,
 }
@@ -808,7 +805,6 @@ impl FluidSystem {
             simulation_budget: SimulationBudget::new(8.0), // 8ms budget (half of 60fps frame)
             temporal_coherence: TemporalCoherence::new(0.01, 5),
             batch_spawner: BatchSpawner::new(1024),
-            last_sim_time: 0.0,
             optimization_stats: OptimizationStats::default(),
         }
     }
@@ -852,7 +848,7 @@ impl FluidSystem {
         let spawned = count.min(self.free_list.len());
 
         for i in 0..spawned {
-            let idx = self.free_list.pop().unwrap() as usize;
+            let idx = self.free_list.pop().expect("free_list must not be empty") as usize;
             let pos = positions[i];
             let vel = velocities[i];
             let color = colors.map(|c| c[i]).unwrap_or([0.2, 0.5, 0.8, 1.0]);
@@ -1188,12 +1184,9 @@ impl FluidSystem {
                 let error_scaled = u32::from_ne_bytes(bytes);
                 let avg_error = (error_scaled as f32 / 1000.0) / self.particle_count as f32;
 
-                // Adjust iterations based on error
-                if avg_error > 0.05 {
-                    self.iterations = (self.iterations + 1).min(8);
-                } else if avg_error < 0.01 {
-                    self.iterations = (self.iterations.saturating_sub(1)).max(2);
-                }
+                // Delegate to the smoothed AdaptiveIterations controller
+                // (replaces inline duplicate logic, gains error-history smoothing)
+                self.iterations = self.adaptive_iterations.update(avg_error);
             }
             self.density_error_staging_buffers[other_idx].unmap();
             self.staging_mapped[other_idx] = false;
@@ -1311,15 +1304,12 @@ impl FluidSystem {
             recommended.min(self.adaptive_iterations.current())
         };
         
-        // Temporarily set iterations for this frame
-        let original_iterations = self.iterations;
+        // Set iterations for this frame (step()'s density-error feedback will
+        // adaptively adjust self.iterations at the end of each frame)
         self.iterations = target_iterations;
         
         // Execute the simulation step
         self.step(device, encoder, queue, dt);
-        
-        // Restore original and update adaptive controller
-        self.iterations = original_iterations;
         
         // Update optimization stats
         self.optimization_stats = OptimizationStats {
@@ -1797,7 +1787,7 @@ impl FluidOptimizationController {
         // Update LOD if enabled - compute config and camera position first to avoid borrow conflicts
         if self.lod_manager.is_some() {
             let lod_config = self.lod_config_for_tier(self.quality_tier);
-            let camera_pos = self.lod_manager.as_ref().unwrap().camera_position();
+            let camera_pos = self.lod_manager.as_ref().expect("lod_manager must be initialized").camera_position();
             self.lod_manager = Some(OptimizedLodManager::with_camera_position(lod_config, camera_pos));
         }
     }
@@ -2098,11 +2088,7 @@ impl FluidOptimizationController {
         self.record_frame(frame_time_ms);
 
         // Update LOD manager with camera position and get result
-        let lod_result = if let Some(ref mut lod) = self.lod_manager {
-            Some(lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms))
-        } else {
-            None
-        };
+        let lod_result = self.lod_manager.as_mut().map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms));
 
         // Update streaming manager if enabled
         if let Some(ref mut streaming) = self.streaming_manager {
@@ -2124,6 +2110,7 @@ impl FluidOptimizationController {
     ///
     /// This uses FluidSystem's step_with_budget which automatically
     /// adjusts iterations based on frame time feedback.
+    #[allow(clippy::too_many_arguments)]
     pub fn step_with_budget(
         &mut self,
         system: &mut FluidSystem,
@@ -2148,11 +2135,7 @@ impl FluidOptimizationController {
         self.record_frame(frame_time_ms);
 
         // Update LOD manager with camera position and get result
-        let lod_result = if let Some(ref mut lod) = self.lod_manager {
-            Some(lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms))
-        } else {
-            None
-        };
+        let lod_result = self.lod_manager.as_mut().map(|lod| lod.update_with_timing(camera_position, [0.0, 0.0, 0.0], frame_time_ms));
 
         // Update streaming manager if enabled
         if let Some(ref mut streaming) = self.streaming_manager {
@@ -2317,9 +2300,8 @@ impl<'a> FluidFrameGuard<'a> {
 
     /// End the frame manually and get the recorded frame time.
     pub fn finish(self) -> f32 {
-        let elapsed = self.elapsed_ms();
         // Drop will handle recording
-        elapsed
+        self.elapsed_ms()
     }
 }
 

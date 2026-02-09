@@ -1,3 +1,20 @@
+//! # AstraWeave Gameplay
+//!
+//! High-level gameplay systems and mechanics for AstraWeave.
+//!
+//! This crate provides production-ready game systems:
+//!
+//! - **Combat** — Raycast-based attack sweep with cone filtering, parry, and i-frames
+//!   ([`combat_physics::perform_attack_sweep`]).
+//! - **Crafting** — Recipe system with material requirements.
+//! - **Quests** — Quest tracking with objectives and completion logic.
+//! - **Dialogue** — Branching NPC conversation trees.
+//! - **Stats** — Character statistics and damage calculation.
+//! - **Items** — Inventory management and item definitions.
+//! - **Biome** — Biome definitions, spawn rules, and biome transitions.
+//! - **Veilweaver** — Game-specific mechanics (weaving, portals, telemetry, tutorial).
+//! - **ECS Integration** — System registration for all gameplay subsystems.
+
 pub mod biome;
 pub mod biome_spawn;
 pub mod combat;

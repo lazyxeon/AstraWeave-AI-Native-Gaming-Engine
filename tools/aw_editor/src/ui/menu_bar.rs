@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use crate::panel_type::PanelType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AlignDirection {
     Left,
     Right,
@@ -13,6 +14,7 @@ pub enum AlignDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DistributeDirection {
     X,
     Z,
@@ -465,6 +467,7 @@ impl std::fmt::Display for DistributeDirection {
 
 /// Layout preset names available in the editor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LayoutPreset {
     Default,
     Wide,
@@ -524,7 +527,7 @@ impl LayoutPreset {
     }
 
     /// Parse a preset from a string name.
-    pub fn from_str(name: &str) -> Option<Self> {
+    pub fn parse_name(name: &str) -> Option<Self> {
         match name {
             "Default" => Some(Self::Default),
             "Wide" => Some(Self::Wide),
@@ -732,14 +735,14 @@ mod tests {
 
     #[test]
     fn test_layout_preset_from_str() {
-        assert_eq!(LayoutPreset::from_str("Default"), Some(LayoutPreset::Default));
-        assert_eq!(LayoutPreset::from_str("Wide"), Some(LayoutPreset::Wide));
-        assert_eq!(LayoutPreset::from_str("Compact"), Some(LayoutPreset::Compact));
-        assert_eq!(LayoutPreset::from_str("Modeling"), Some(LayoutPreset::Modeling));
-        assert_eq!(LayoutPreset::from_str("Animation"), Some(LayoutPreset::Animation));
-        assert_eq!(LayoutPreset::from_str("Debug"), Some(LayoutPreset::Debug));
-        assert_eq!(LayoutPreset::from_str("InvalidPreset"), None);
-        assert_eq!(LayoutPreset::from_str(""), None);
+        assert_eq!(LayoutPreset::parse_name("Default"), Some(LayoutPreset::Default));
+        assert_eq!(LayoutPreset::parse_name("Wide"), Some(LayoutPreset::Wide));
+        assert_eq!(LayoutPreset::parse_name("Compact"), Some(LayoutPreset::Compact));
+        assert_eq!(LayoutPreset::parse_name("Modeling"), Some(LayoutPreset::Modeling));
+        assert_eq!(LayoutPreset::parse_name("Animation"), Some(LayoutPreset::Animation));
+        assert_eq!(LayoutPreset::parse_name("Debug"), Some(LayoutPreset::Debug));
+        assert_eq!(LayoutPreset::parse_name("InvalidPreset"), None);
+        assert_eq!(LayoutPreset::parse_name(""), None);
     }
 
     #[test]
@@ -768,7 +771,7 @@ mod tests {
     fn test_layout_preset_roundtrip() {
         for preset in LayoutPreset::all() {
             let name = preset.name();
-            let parsed = LayoutPreset::from_str(name);
+            let parsed = LayoutPreset::parse_name(name);
             assert_eq!(parsed, Some(*preset));
         }
     }

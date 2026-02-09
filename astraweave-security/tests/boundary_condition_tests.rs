@@ -40,7 +40,10 @@ fn test_sanitize_llm_prompt_one_over_max_length_err() {
     let input = "x".repeat(v.max_prompt_length + 1);
     let err = sanitize_llm_prompt(&input, &v).unwrap_err();
     let msg = format!("{err}");
-    assert!(msg.contains("Prompt too long"), "unexpected error message: {msg}");
+    assert!(
+        msg.contains("Prompt too long"),
+        "unexpected error message: {msg}"
+    );
 }
 
 #[test]

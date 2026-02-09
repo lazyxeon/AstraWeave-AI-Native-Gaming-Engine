@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// Movement mode in water
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum WaterMovementMode {
     /// Not in water, normal movement
     #[default]
@@ -61,6 +62,7 @@ impl WaterMovementMode {
 
 /// Wet status debuff levels (matching Enshrouded)
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum WetStatus {
     /// Player is completely dry
     #[default]
@@ -477,8 +479,8 @@ impl Default for WaterMovementHelper {
     fn default() -> Self {
         Self {
             buoyancy_force: 15.0, // Upward force when submerged
-            water_drag: 3.0,     // Slows movement
-            swim_force: 8.0,     // Force from swimming input
+            water_drag: 3.0,      // Slows movement
+            swim_force: 8.0,      // Force from swimming input
         }
     }
 }
@@ -506,7 +508,10 @@ impl WaterMovementHelper {
         }
 
         // Swim force from input
-        if matches!(mode, WaterMovementMode::Swimming | WaterMovementMode::Diving) {
+        if matches!(
+            mode,
+            WaterMovementMode::Swimming | WaterMovementMode::Diving
+        ) {
             forces.swim = swim_input * self.swim_force;
         }
 

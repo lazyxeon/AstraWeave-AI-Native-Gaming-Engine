@@ -125,6 +125,7 @@ pub struct MaterialTextures {
 
 /// Display modes for texture viewer
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DisplayMode {
     Albedo,
     Normal,
@@ -188,6 +189,7 @@ impl std::fmt::Display for DisplayMode {
 
 /// Channel isolation filter
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ChannelFilter {
     All, // RGB
     Red,
@@ -255,6 +257,7 @@ impl Default for ChannelFilter {
 
 /// Color space for display
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ColorSpace {
     Linear,
     Srgb,

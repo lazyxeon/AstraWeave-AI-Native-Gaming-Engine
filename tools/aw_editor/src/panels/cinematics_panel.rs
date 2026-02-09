@@ -14,6 +14,7 @@ use crate::panels::Panel;
 
 /// Track type for cinematics
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TrackType {
     #[default]
     Camera,
@@ -78,6 +79,7 @@ impl TrackType {
 
 /// Camera interpolation mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CameraInterpolation {
     #[default]
     Linear,
@@ -121,6 +123,7 @@ impl CameraInterpolation {
 
 /// Playback state
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PlaybackState {
     #[default]
     Stopped,
@@ -161,6 +164,7 @@ impl PlaybackState {
 
 /// Playback speed
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[non_exhaustive]
 pub enum PlaybackSpeed {
     Quarter,
     Half,
@@ -269,6 +273,7 @@ pub struct TrackClip {
 
 /// Clip-specific data
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ClipData {
     Camera { keyframes: Vec<CameraKeyframe> },
     Animation { target_id: u32, clip_name: String },
@@ -339,6 +344,7 @@ pub struct TimelineMarker {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CinematicsTab {
     #[default]
     Timeline,
@@ -392,6 +398,7 @@ impl CinematicsTab {
 
 /// Actions that can be performed on the cinematics panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum CinematicsAction {
     /// Start playback
     Play,

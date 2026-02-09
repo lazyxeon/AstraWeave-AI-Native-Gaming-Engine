@@ -271,6 +271,7 @@ impl SceneData {
 
 /// Scene validation issue types.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum SceneValidationIssue {
     /// Critical issue that must be fixed
     Error(String),

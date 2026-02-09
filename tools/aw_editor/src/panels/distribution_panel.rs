@@ -20,6 +20,7 @@ use crate::panels::Panel;
 
 /// Build optimization profile
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum BuildProfile {
     /// Debug build with symbols
     Debug,
@@ -95,6 +96,7 @@ impl BuildProfile {
 
 /// Actions that can be triggered from the distribution panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum DistributionAction {
     // Configuration
     SetGameName(String),
@@ -222,6 +224,7 @@ impl std::fmt::Display for DistributionAction {
 
 /// Target platform for cross-compilation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum TargetPlatform {
     #[default]
     Native,
@@ -370,6 +373,7 @@ impl Default for AssetOptions {
 
 /// Texture compression format
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum TextureFormat {
     None,
     #[default]
@@ -423,6 +427,7 @@ impl TextureFormat {
 
 /// Audio compression format
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+#[non_exhaustive]
 pub enum AudioFormat {
     None,
     #[default]
@@ -480,6 +485,7 @@ impl AudioFormat {
 
 /// Build pipeline step
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BuildStep {
     Preparing,
     CleaningBuild,

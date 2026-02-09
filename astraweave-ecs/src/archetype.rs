@@ -194,6 +194,8 @@ impl Archetype {
 
         if let Some(blob_components) = &mut self.blob_components {
             if let Some(blob) = blob_components.get_mut(&type_id) {
+                // SAFETY: Caller ensures T matches the component type registered
+                // for this column. BlobVec handles capacity internally.
                 unsafe {
                     blob.push(component);
                 }
@@ -232,6 +234,8 @@ impl Archetype {
                 blob_components.get_mut(type_id),
                 component_metas.get(type_id),
             ) {
+                // SAFETY: `src_ptr` points to valid component data (caller guarantee).
+                // `meta.clone_fn` is the matching clone function from component registration.
                 unsafe {
                     blob.push_raw(*src_ptr, meta.clone_fn);
                 }
@@ -246,6 +250,8 @@ impl Archetype {
         // Fast path: BlobVec storage
         if self.uses_blob {
             let blob = self.blob_components.as_ref()?.get(&TypeId::of::<T>())?;
+            // SAFETY: T matches the type this column was created for (same TypeId lookup).
+            // `row` is a valid index from entity_index.
             return unsafe { blob.get::<T>(row) };
         }
 
@@ -262,6 +268,8 @@ impl Archetype {
         // Fast path: BlobVec storage
         if self.uses_blob {
             let blob = self.blob_components.as_mut()?.get_mut(&TypeId::of::<T>())?;
+            // SAFETY: T matches the type this column was created for (same TypeId lookup).
+            // `row` is a valid index from entity_index. Mutable borrow of self prevents aliasing.
             return unsafe { blob.get_mut::<T>(row) };
         }
 
@@ -389,6 +397,8 @@ impl Archetype {
         }
 
         let blob = self.blob_components.as_ref()?.get(&TypeId::of::<T>())?;
+        // SAFETY: T matches the column type (same TypeId). Immutable borrow of self
+        // ensures no concurrent modification. Slice is valid for the lifetime of &self.
         let components = unsafe { blob.as_slice::<T>() };
         Some((&self.entities, components))
     }
@@ -406,6 +416,8 @@ impl Archetype {
         }
 
         let blob = self.blob_components.as_mut()?.get_mut(&TypeId::of::<T>())?;
+        // SAFETY: T matches the column type (same TypeId). Mutable borrow of self
+        // prevents aliasing. Slice is valid for the lifetime of &mut self.
         let components = unsafe { blob.as_slice_mut::<T>() };
         Some((&self.entities, components))
     }
@@ -444,6 +456,9 @@ pub struct ArchetypeStorage {
     /// Entity to archetype mapping (sparse array indexed by entity ID for zero-alloc lookup)
     /// Uses Vec<Option<ArchetypeId>> instead of HashMap for zero-alloc hot path.
     entity_to_archetype: Vec<Option<ArchetypeId>>,
+    /// Inverted index: component TypeId → Vec of ArchetypeIds containing that component.
+    /// Turns O(n_archetypes) linear scan into O(n_matching) lookup for query resolution.
+    component_to_archetypes: HashMap<TypeId, Vec<ArchetypeId>>,
 }
 
 impl ArchetypeStorage {
@@ -453,6 +468,7 @@ impl ArchetypeStorage {
             signature_to_id: HashMap::new(),
             archetypes: BTreeMap::new(),
             entity_to_archetype: Vec::new(),
+            component_to_archetypes: HashMap::new(),
         }
     }
 
@@ -464,6 +480,11 @@ impl ArchetypeStorage {
 
         let id = ArchetypeId(self.next_id);
         self.next_id += 1;
+
+        // Update inverted index: register this archetype for each component type
+        for &ty in &signature.components {
+            self.component_to_archetypes.entry(ty).or_default().push(id);
+        }
 
         let archetype = Archetype::new(id, signature.clone());
         self.archetypes.insert(id, archetype);
@@ -493,6 +514,11 @@ impl ArchetypeStorage {
 
         let id = ArchetypeId(self.next_id);
         self.next_id += 1;
+
+        // Update inverted index: register this archetype for each component type
+        for &ty in &signature.components {
+            self.component_to_archetypes.entry(ty).or_default().push(id);
+        }
 
         let archetype = Archetype::new_with_blob(id, signature.clone(), metas);
         self.archetypes.insert(id, archetype);
@@ -552,14 +578,22 @@ impl ArchetypeStorage {
         self.archetypes.values_mut()
     }
 
-    /// Find archetypes that contain a specific component
+    /// Find archetypes that contain a specific component.
+    ///
+    /// Uses an inverted index (`component_to_archetypes`) for O(1) lookup
+    /// instead of scanning every archetype.
     pub fn archetypes_with_component(&self, ty: TypeId) -> impl Iterator<Item = &Archetype> {
         #[cfg(feature = "profiling")]
         span!("ECS::Archetype::archetypes_with_component");
 
-        self.archetypes
-            .values()
-            .filter(move |arch| arch.signature.contains(ty))
+        // Empty slice fallback avoids an Option branch in the iterator chain.
+        let ids = self
+            .component_to_archetypes
+            .get(&ty)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[]);
+
+        ids.iter().filter_map(move |id| self.archetypes.get(id))
     }
 }
 

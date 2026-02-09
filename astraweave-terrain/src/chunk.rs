@@ -374,7 +374,7 @@ mod tests {
     fn test_chunk_id_hash() {
         use std::collections::HashSet;
         let mut set = HashSet::new();
-        
+
         set.insert(ChunkId::new(0, 0));
         set.insert(ChunkId::new(1, 1));
         set.insert(ChunkId::new(0, 0)); // duplicate
@@ -415,10 +415,10 @@ mod tests {
     #[test]
     fn test_terrain_chunk_mesh_dirty() {
         let mut chunk = create_test_chunk(ChunkId::new(0, 0));
-        
+
         // Initially dirty
         assert!(chunk.is_mesh_dirty());
-        
+
         // Mark clean
         chunk.mark_mesh_clean();
         assert!(!chunk.is_mesh_dirty());
@@ -428,7 +428,7 @@ mod tests {
     fn test_terrain_chunk_heightmap_access() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let heightmap = chunk.heightmap();
-        
+
         assert!(heightmap.resolution() > 0);
     }
 
@@ -436,7 +436,7 @@ mod tests {
     fn test_terrain_chunk_biome_map_access() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let biome_map = chunk.biome_map();
-        
+
         assert!(!biome_map.is_empty());
         assert_eq!(biome_map[0], BiomeType::Grassland);
     }
@@ -445,11 +445,11 @@ mod tests {
     fn test_terrain_chunk_get_height_at_world_pos_valid() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let chunk_size = 256.0;
-        
+
         // Position within chunk
         let world_pos = Vec3::new(128.0, 0.0, 128.0);
         let height = chunk.get_height_at_world_pos(world_pos, chunk_size);
-        
+
         assert!(height.is_some());
     }
 
@@ -457,11 +457,11 @@ mod tests {
     fn test_terrain_chunk_get_height_at_world_pos_outside() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let chunk_size = 256.0;
-        
+
         // Position outside chunk (negative x)
         let world_pos = Vec3::new(-10.0, 0.0, 128.0);
         let height = chunk.get_height_at_world_pos(world_pos, chunk_size);
-        
+
         assert!(height.is_none());
     }
 
@@ -469,11 +469,11 @@ mod tests {
     fn test_terrain_chunk_get_height_at_world_pos_outside_z() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let chunk_size = 256.0;
-        
+
         // Position outside chunk (z >= chunk_size)
         let world_pos = Vec3::new(128.0, 0.0, 300.0);
         let height = chunk.get_height_at_world_pos(world_pos, chunk_size);
-        
+
         assert!(height.is_none());
     }
 
@@ -481,11 +481,11 @@ mod tests {
     fn test_terrain_chunk_get_biome_at_world_pos_valid() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let chunk_size = 256.0;
-        
+
         // Position within chunk
         let world_pos = Vec3::new(128.0, 0.0, 128.0);
         let biome = chunk.get_biome_at_world_pos(world_pos, chunk_size);
-        
+
         assert_eq!(biome, Some(BiomeType::Grassland));
     }
 
@@ -493,26 +493,26 @@ mod tests {
     fn test_terrain_chunk_get_biome_at_world_pos_outside() {
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         let chunk_size = 256.0;
-        
+
         // Position outside chunk
         let world_pos = Vec3::new(-10.0, 0.0, -10.0);
         let biome = chunk.get_biome_at_world_pos(world_pos, chunk_size);
-        
+
         assert!(biome.is_none());
     }
 
     #[test]
     fn test_terrain_chunk_apply_erosion() {
         let mut chunk = create_test_chunk(ChunkId::new(0, 0));
-        
+
         // Mark clean first
         chunk.mark_mesh_clean();
         assert!(!chunk.is_mesh_dirty());
-        
+
         // Apply erosion
         let result = chunk.apply_erosion(0.1);
         assert!(result.is_ok());
-        
+
         // Should mark mesh dirty
         assert!(chunk.is_mesh_dirty());
     }
@@ -528,9 +528,9 @@ mod tests {
     fn test_chunk_manager_add_and_get() {
         let mut manager = ChunkManager::new(256.0, 64);
         let chunk = create_test_chunk(ChunkId::new(5, 5));
-        
+
         manager.add_chunk(chunk);
-        
+
         let retrieved = manager.get_chunk(ChunkId::new(5, 5));
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().id(), ChunkId::new(5, 5));
@@ -541,13 +541,13 @@ mod tests {
         let mut manager = ChunkManager::new(256.0, 64);
         let chunk = create_test_chunk(ChunkId::new(0, 0));
         manager.add_chunk(chunk);
-        
+
         let chunk_mut = manager.get_chunk_mut(ChunkId::new(0, 0));
         assert!(chunk_mut.is_some());
-        
+
         // Modify the chunk
         chunk_mut.unwrap().mark_mesh_clean();
-        
+
         // Verify modification
         let chunk = manager.get_chunk(ChunkId::new(0, 0)).unwrap();
         assert!(!chunk.is_mesh_dirty());
@@ -558,7 +558,7 @@ mod tests {
         let mut manager = ChunkManager::new(256.0, 64);
         let chunk = create_test_chunk(ChunkId::new(1, 2));
         manager.add_chunk(chunk);
-        
+
         assert!(manager.has_chunk(ChunkId::new(1, 2)));
         assert!(!manager.has_chunk(ChunkId::new(9, 9)));
     }
@@ -566,11 +566,11 @@ mod tests {
     #[test]
     fn test_chunk_manager_loaded_chunks() {
         let mut manager = ChunkManager::new(256.0, 64);
-        
+
         for i in 0..3 {
             manager.add_chunk(create_test_chunk(ChunkId::new(i, i)));
         }
-        
+
         let loaded = manager.loaded_chunks();
         assert_eq!(loaded.len(), 3);
     }
@@ -578,17 +578,17 @@ mod tests {
     #[test]
     fn test_chunk_manager_unload_distant_chunks() {
         let mut manager = ChunkManager::new(256.0, 64);
-        
+
         // Add some nearby and distant chunks
         manager.add_chunk(create_test_chunk(ChunkId::new(0, 0)));
         manager.add_chunk(create_test_chunk(ChunkId::new(1, 0)));
         manager.add_chunk(create_test_chunk(ChunkId::new(10, 10))); // Distant
-        
+
         assert_eq!(manager.chunk_count(), 3);
-        
+
         // Unload chunks more than 5 chunk units away from center
         manager.unload_distant_chunks(Vec3::new(128.0, 0.0, 128.0), 5);
-        
+
         assert_eq!(manager.chunk_count(), 2);
         assert!(manager.has_chunk(ChunkId::new(0, 0)));
         assert!(manager.has_chunk(ChunkId::new(1, 0)));
@@ -599,11 +599,11 @@ mod tests {
     fn test_chunk_manager_get_height_at_world_pos() {
         let mut manager = ChunkManager::new(256.0, 64);
         manager.add_chunk(create_test_chunk(ChunkId::new(0, 0)));
-        
+
         // Valid position in chunk
         let height = manager.get_height_at_world_pos(Vec3::new(128.0, 0.0, 128.0));
         assert!(height.is_some());
-        
+
         // Position outside loaded chunks
         let height = manager.get_height_at_world_pos(Vec3::new(1000.0, 0.0, 1000.0));
         assert!(height.is_none());
@@ -613,11 +613,11 @@ mod tests {
     fn test_chunk_manager_get_biome_at_world_pos() {
         let mut manager = ChunkManager::new(256.0, 64);
         manager.add_chunk(create_test_chunk(ChunkId::new(0, 0)));
-        
+
         // Valid position in chunk
         let biome = manager.get_biome_at_world_pos(Vec3::new(128.0, 0.0, 128.0));
         assert!(biome.is_some());
-        
+
         // Position outside loaded chunks
         let biome = manager.get_biome_at_world_pos(Vec3::new(1000.0, 0.0, 1000.0));
         assert!(biome.is_none());
@@ -627,12 +627,12 @@ mod tests {
     fn test_chunk_manager_set_max_loaded_chunks() {
         let mut manager = ChunkManager::new(256.0, 64);
         manager.set_max_loaded_chunks(10);
-        
+
         // Add 15 chunks
         for i in 0..15 {
             manager.add_chunk(create_test_chunk(ChunkId::new(i, 0)));
         }
-        
+
         // Should be capped at 10 chunks
         assert!(manager.chunk_count() <= 10);
     }
@@ -640,10 +640,10 @@ mod tests {
     #[test]
     fn test_chunk_manager_get_chunks_in_radius() {
         let manager = ChunkManager::new(256.0, 64);
-        
+
         let center = Vec3::new(128.0, 0.0, 128.0);
         let chunks = manager.get_chunks_in_radius(center, 1);
-        
+
         assert_eq!(chunks.len(), 9); // 3x3 grid
     }
 
@@ -651,7 +651,7 @@ mod tests {
     fn test_terrain_chunk_clone() {
         let chunk = create_test_chunk(ChunkId::new(1, 2));
         let cloned = chunk.clone();
-        
+
         assert_eq!(chunk.id(), cloned.id());
     }
 
@@ -660,7 +660,7 @@ mod tests {
         let id = ChunkId::new(42, -17);
         let serialized = serde_json::to_string(&id).unwrap();
         let deserialized: ChunkId = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(id, deserialized);
     }
 }

@@ -232,8 +232,6 @@ impl AnchorInspectionModal {
             }
         }
     }
-
-
 }
 
 impl Default for AnchorInspectionModal {

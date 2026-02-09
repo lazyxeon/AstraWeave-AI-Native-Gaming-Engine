@@ -218,7 +218,12 @@ struct DamageNumber {
 }
 
 impl DamageNumber {
-    fn new(value: i32, spawn_time: f32, world_pos: (f32, f32, f32), damage_type: DamageType) -> Self {
+    fn new(
+        value: i32,
+        spawn_time: f32,
+        world_pos: (f32, f32, f32),
+        damage_type: DamageType,
+    ) -> Self {
         let hash = ((spawn_time * 1000.0) as u32).wrapping_mul(2654435761);
         let random_val = (hash as f32 / u32::MAX as f32) - 0.5;
         let velocity_x = random_val * 60.0;
@@ -323,8 +328,7 @@ fn bench_menu_state_transitions(c: &mut Criterion) {
             for state in &states {
                 // Check valid transitions from each state
                 let can_pause = matches!(state, MenuState::None);
-                let can_settings =
-                    matches!(state, MenuState::MainMenu | MenuState::PauseMenu);
+                let can_settings = matches!(state, MenuState::MainMenu | MenuState::PauseMenu);
                 let can_resume = matches!(state, MenuState::PauseMenu);
 
                 if can_pause || can_settings || can_resume {
@@ -514,9 +518,7 @@ fn bench_damage_numbers(c: &mut Criterion) {
     // Test 3: Arc motion calculation
     group.bench_function("arc_motion_100", |bencher| {
         let numbers: Vec<DamageNumber> = (0..100)
-            .map(|i| {
-                DamageNumber::new(100, i as f32 * 0.1, (0.0, 0.0, 0.0), DamageType::Normal)
-            })
+            .map(|i| DamageNumber::new(100, i as f32 * 0.1, (0.0, 0.0, 0.0), DamageType::Normal))
             .collect();
 
         bencher.iter(|| {
@@ -529,9 +531,7 @@ fn bench_damage_numbers(c: &mut Criterion) {
     // Test 4: Shake calculation
     group.bench_function("shake_calculation_100", |bencher| {
         let numbers: Vec<DamageNumber> = (0..100)
-            .map(|i| {
-                DamageNumber::new(100, i as f32 * 0.1, (0.0, 0.0, 0.0), DamageType::Critical)
-            })
+            .map(|i| DamageNumber::new(100, i as f32 * 0.1, (0.0, 0.0, 0.0), DamageType::Critical))
             .collect();
 
         bencher.iter(|| {
@@ -720,10 +720,7 @@ fn bench_quest_tracker(c: &mut Criterion) {
             .collect();
 
         bencher.iter(|| {
-            let active: Vec<_> = quests
-                .iter()
-                .filter(|q| q.completion() < 1.0)
-                .collect();
+            let active: Vec<_> = quests.iter().filter(|q| q.completion() < 1.0).collect();
             std_black_box(active.len())
         });
     });

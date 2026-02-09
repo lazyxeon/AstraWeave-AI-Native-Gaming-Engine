@@ -3,6 +3,7 @@ use std::collections::HashSet;
 
 /// Represents a conflict detected in a plan
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Conflict {
     /// Two actions try to set the same state variable to different values
     StateConflict {
@@ -25,6 +26,8 @@ pub enum Conflict {
 
 /// Error types for plan stitching
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+#[must_use]
 pub enum StitchError {
     /// Plans have unresolvable conflicts
     ConflictDetected(Vec<Conflict>),

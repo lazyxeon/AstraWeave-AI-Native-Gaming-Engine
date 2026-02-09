@@ -16,6 +16,7 @@ pub struct Poi {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Tool {
     MoveTo,
     Throw,     // item: smoke|grenade

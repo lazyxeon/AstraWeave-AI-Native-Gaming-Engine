@@ -208,11 +208,11 @@ impl MemoryUtils {
         }
 
         if memories.len() == 1 {
-            return memories.into_iter().next().unwrap();
+            return memories.into_iter().next().expect("memories must not be empty");
         }
 
         // Sort by importance (highest first)
-        memories.sort_by(|a, b| b.importance.partial_cmp(&a.importance).unwrap());
+        memories.sort_by(|a, b| b.importance.partial_cmp(&a.importance).unwrap_or(std::cmp::Ordering::Equal));
 
         let primary = &memories[0];
         let mut merged_text = primary.text.clone();
@@ -262,6 +262,7 @@ impl MemoryUtils {
 
 /// Combat outcome for memory creation
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum CombatOutcome {
     Victory,
     Defeat,
@@ -406,7 +407,7 @@ fn text_similarity(a: &str, b: &str) -> f32 {
 pub fn current_timestamp() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .expect("system clock before UNIX epoch")
         .as_secs()
 }
 

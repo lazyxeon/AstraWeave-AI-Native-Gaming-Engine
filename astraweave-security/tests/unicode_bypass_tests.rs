@@ -35,8 +35,10 @@ fn create_validator() -> LLMValidator {
 
 /// Check if a string contains any zero-width characters
 fn contains_zero_width_chars(s: &str) -> bool {
-    s.chars().any(|c| matches!(c,
-        '\u{200B}' | // Zero Width Space
+    s.chars().any(|c| {
+        matches!(
+            c,
+            '\u{200B}' | // Zero Width Space
         '\u{200C}' | // Zero Width Non-Joiner
         '\u{200D}' | // Zero Width Joiner
         '\u{FEFF}' | // Zero Width No-Break Space (BOM)
@@ -45,14 +47,17 @@ fn contains_zero_width_chars(s: &str) -> bool {
         '\u{2061}' | // Function Application
         '\u{2062}' | // Invisible Times
         '\u{2063}' | // Invisible Separator
-        '\u{2064}'   // Invisible Plus
-    ))
+        '\u{2064}' // Invisible Plus
+        )
+    })
 }
 
 /// Check if string contains RTL override characters
 fn contains_rtl_override(s: &str) -> bool {
-    s.chars().any(|c| matches!(c,
-        '\u{202A}' | // Left-to-Right Embedding
+    s.chars().any(|c| {
+        matches!(
+            c,
+            '\u{202A}' | // Left-to-Right Embedding
         '\u{202B}' | // Right-to-Left Embedding
         '\u{202C}' | // Pop Directional Formatting
         '\u{202D}' | // Left-to-Right Override
@@ -60,26 +65,50 @@ fn contains_rtl_override(s: &str) -> bool {
         '\u{2066}' | // Left-to-Right Isolate
         '\u{2067}' | // Right-to-Left Isolate
         '\u{2068}' | // First Strong Isolate
-        '\u{2069}'   // Pop Directional Isolate
-    ))
+        '\u{2069}' // Pop Directional Isolate
+        )
+    })
 }
 
 /// Strip zero-width characters from string
 fn strip_zero_width_chars(s: &str) -> String {
-    s.chars().filter(|c| !matches!(c,
-        '\u{200B}' | '\u{200C}' | '\u{200D}' | '\u{FEFF}' |
-        '\u{180E}' | '\u{2060}' | '\u{2061}' | '\u{2062}' |
-        '\u{2063}' | '\u{2064}'
-    )).collect()
+    s.chars()
+        .filter(|c| {
+            !matches!(
+                c,
+                '\u{200B}'
+                    | '\u{200C}'
+                    | '\u{200D}'
+                    | '\u{FEFF}'
+                    | '\u{180E}'
+                    | '\u{2060}'
+                    | '\u{2061}'
+                    | '\u{2062}'
+                    | '\u{2063}'
+                    | '\u{2064}'
+            )
+        })
+        .collect()
 }
 
 /// Strip RTL override characters from string
 fn strip_rtl_override(s: &str) -> String {
-    s.chars().filter(|c| !matches!(c,
-        '\u{202A}' | '\u{202B}' | '\u{202C}' | '\u{202D}' |
-        '\u{202E}' | '\u{2066}' | '\u{2067}' | '\u{2068}' |
-        '\u{2069}'
-    )).collect()
+    s.chars()
+        .filter(|c| {
+            !matches!(
+                c,
+                '\u{202A}'
+                    | '\u{202B}'
+                    | '\u{202C}'
+                    | '\u{202D}'
+                    | '\u{202E}'
+                    | '\u{2066}'
+                    | '\u{2067}'
+                    | '\u{2068}'
+                    | '\u{2069}'
+            )
+        })
+        .collect()
 }
 
 /// Check if a character might be a homoglyph of a Latin letter
@@ -88,7 +117,7 @@ fn is_potential_homoglyph(c: char, expected_ascii: char) -> bool {
     if c == expected_ascii {
         return false;
     }
-    
+
     // Not the same char and not plain ASCII
     !c.is_ascii() && c.to_lowercase().to_string() != expected_ascii.to_lowercase().to_string()
 }
@@ -143,10 +172,10 @@ fn test_strip_zero_width_chars() {
 #[test]
 fn test_zero_width_in_banned_pattern() {
     let validator = create_validator();
-    
+
     // "exec(" with zero-width space
     let sneaky = "exec\u{200B}(command)";
-    
+
     // The sanitizer should either reject this or strip it first
     let result = sanitize_llm_prompt(sneaky, &validator);
     // If stripped, "exec(" should be detected; if not stripped, it might pass
@@ -158,7 +187,7 @@ fn test_zero_width_in_banned_pattern() {
 fn test_multiple_zero_width_chars() {
     let input = "e\u{200B}x\u{200C}e\u{200D}c\u{FEFF}(\u{2060})";
     assert!(contains_zero_width_chars(input));
-    
+
     let stripped = strip_zero_width_chars(input);
     assert_eq!(stripped, "exec()");
 }
@@ -179,7 +208,7 @@ fn test_zero_width_at_end() {
 fn test_only_zero_width_chars() {
     let input = "\u{200B}\u{200C}\u{200D}\u{FEFF}";
     assert!(contains_zero_width_chars(input));
-    
+
     let stripped = strip_zero_width_chars(input);
     assert!(stripped.is_empty());
 }
@@ -342,11 +371,11 @@ fn test_latin_same_char_not_homoglyph() {
 fn test_mixed_script_exec_attempt() {
     // "exec" with Cyrillic 'е' instead of Latin 'e'
     let sneaky_exec = "еxеc"; // First and third 'e' are Cyrillic
-    
+
     // This should be caught or fail pattern matching
     let validator = create_validator();
     let result = sanitize_llm_prompt(sneaky_exec, &validator);
-    
+
     // Note: The validator may not detect this because pattern is "exec("
     // The test documents current behavior
     let _ = result;
@@ -356,7 +385,7 @@ fn test_mixed_script_exec_attempt() {
 fn test_homoglyph_in_function_name() {
     // "еval" with Cyrillic 'е' (U+0435) instead of Latin 'e'
     let sneaky_eval = "еval(code)";
-    
+
     let validator = create_validator();
     // Current validator checks for literal "eval("
     // Homoglyph bypass might succeed depending on implementation
@@ -403,7 +432,7 @@ fn test_combining_characters() {
     // - Combined: U+0065 + U+0301 (e + combining acute accent)
     let precomposed = "café"; // Uses U+00E9
     let decomposed = "cafe\u{0301}"; // Uses combining character
-    
+
     // Both should render the same but may compare differently
     assert_eq!(precomposed.chars().count(), 4);
     assert_eq!(decomposed.chars().count(), 5); // Extra combining char
@@ -414,7 +443,7 @@ fn test_compatibility_decomposition() {
     // '①' (circled digit one) is compatibility equivalent to '1'
     let circled_one = '①';
     assert!(!circled_one.is_ascii_digit());
-    
+
     // But it should not be confused for '1' in security contexts
     let input = format!("select {} from table", circled_one);
     // This input looks different than "select 1 from table"
@@ -426,7 +455,7 @@ fn test_ligatures() {
     // 'ﬁ' ligature (U+FB01) is compatibility equivalent to "fi"
     let ligature = "ﬁle.txt";
     let expanded = "file.txt";
-    
+
     assert_ne!(ligature, expanded);
     assert!(ligature.contains('ﬁ'));
 }
@@ -444,7 +473,7 @@ fn test_nfkc_normalization_needed() {
     // Fullwidth 'ｈｔｔｐ' should normalize to 'http'
     let fullwidth = "ｈｔｔｐ://evil.com";
     let normal = "http://evil.com";
-    
+
     assert_ne!(fullwidth, normal);
     assert!(!fullwidth.is_ascii());
 }
@@ -555,7 +584,7 @@ fn test_path_normalization_attack() {
     // Using directory separators that might normalize differently
     let path = Path::new("assets/textures/grass.png");
     assert!(path.is_relative());
-    
+
     // Verify the path doesn't contain hidden characters
     let path_str = path.to_string_lossy();
     assert!(!contains_zero_width_chars(&path_str));
@@ -568,7 +597,7 @@ fn test_unicode_in_extension() {
     // .ехe with Cyrillic 'е' and 'х'
     let path = Path::new("file.ехе"); // Cyrillic characters!
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    
+
     // Extension is not "exe" (ASCII), it's "ехе" (Cyrillic)
     assert_ne!(ext, "exe");
 }
@@ -581,8 +610,10 @@ fn test_unicode_in_extension() {
 fn test_bidi_source_code_attack() {
     // The "Trojan Source" attack using RLO
     // Using escaped form to avoid compiler warning
-    let code = format!("if (isAdmin{}{}// check admin{}{}) {{", 
-        '\u{202E}', '\u{2066}', '\u{2069}', '\u{2066}');
+    let code = format!(
+        "if (isAdmin{}{}// check admin{}{}) {{",
+        '\u{202E}', '\u{2066}', '\u{2069}', '\u{2066}'
+    );
     assert!(contains_rtl_override(&code));
 }
 
@@ -658,7 +689,7 @@ fn test_mixed_bidi_and_zero_width() {
 fn test_llm_prompt_with_emoji() {
     let validator = create_validator();
     let prompt = "Hello 👋 How can I help you today? 🤖";
-    
+
     let result = sanitize_llm_prompt(prompt, &validator);
     assert!(result.is_ok());
 }
@@ -667,7 +698,7 @@ fn test_llm_prompt_with_emoji() {
 fn test_llm_prompt_with_cjk() {
     let validator = create_validator();
     let prompt = "翻译这段话: Hello World = 你好世界";
-    
+
     let result = sanitize_llm_prompt(prompt, &validator);
     assert!(result.is_ok());
 }
@@ -676,7 +707,7 @@ fn test_llm_prompt_with_cjk() {
 fn test_llm_prompt_with_arabic() {
     let validator = create_validator();
     let prompt = "مرحبا بالعالم";
-    
+
     let result = sanitize_llm_prompt(prompt, &validator);
     assert!(result.is_ok());
 }
@@ -685,7 +716,7 @@ fn test_llm_prompt_with_arabic() {
 fn test_llm_prompt_with_cyrillic() {
     let validator = create_validator();
     let prompt = "Привет мир! Как дела?";
-    
+
     let result = sanitize_llm_prompt(prompt, &validator);
     assert!(result.is_ok());
 }
@@ -693,11 +724,11 @@ fn test_llm_prompt_with_cyrillic() {
 #[test]
 fn test_llm_prompt_length_unicode() {
     let validator = create_validator();
-    
+
     // Unicode characters can be multi-byte
     // 100 emoji characters might be 400 bytes
     let long_emoji = "🔒".repeat(100);
-    
+
     let result = sanitize_llm_prompt(&long_emoji, &validator);
     // Should pass length check (100 chars < 1000 limit)
     assert!(result.is_ok());
@@ -706,10 +737,10 @@ fn test_llm_prompt_length_unicode() {
 #[test]
 fn test_llm_prompt_banned_with_zwc() {
     let validator = create_validator();
-    
+
     // Try to bypass "exec(" check with zero-width chars
     let sneaky = "exec\u{200B}(command)";
-    
+
     // Current implementation may or may not catch this
     let result = sanitize_llm_prompt(sneaky, &validator);
     // Document behavior - ideally this should be caught
@@ -719,10 +750,10 @@ fn test_llm_prompt_banned_with_zwc() {
 #[test]
 fn test_llm_prompt_banned_with_homoglyph() {
     let validator = create_validator();
-    
+
     // "exec" with Cyrillic 'е' (U+0435)
     let sneaky = "еxec(command)"; // First 'e' is Cyrillic
-    
+
     // Pattern match for "exec(" won't match because first char is different
     let result = sanitize_llm_prompt(sneaky, &validator);
     // This might pass because the literal "exec(" isn't present
@@ -732,10 +763,10 @@ fn test_llm_prompt_banned_with_homoglyph() {
 #[test]
 fn test_llm_prompt_with_rtl_override() {
     let validator = create_validator();
-    
+
     // Prompt with hidden RTL override
     let sneaky = "Please help me\u{202E}tseuqer siht htiw";
-    
+
     let result = sanitize_llm_prompt(sneaky, &validator);
     // RTL override might not be caught by current validator
     let _ = result;
@@ -744,10 +775,10 @@ fn test_llm_prompt_with_rtl_override() {
 #[test]
 fn test_llm_prompt_mixed_scripts() {
     let validator = create_validator();
-    
+
     // Mixed script prompt (legitimate use case)
     let prompt = "Translate 'Hello' to: 日本語, Русский, العربية, 한국어";
-    
+
     let result = sanitize_llm_prompt(prompt, &validator);
     assert!(result.is_ok());
 }
@@ -755,10 +786,10 @@ fn test_llm_prompt_mixed_scripts() {
 #[test]
 fn test_llm_prompt_mathematical_notation() {
     let validator = create_validator();
-    
+
     // Mathematical Unicode symbols (legitimate)
     let prompt = "Solve: ∫₀^∞ e^(-x²) dx = √π/2";
-    
+
     let result = sanitize_llm_prompt(prompt, &validator);
     assert!(result.is_ok());
 }

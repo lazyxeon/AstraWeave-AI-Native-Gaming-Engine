@@ -53,6 +53,7 @@ impl Default for ConversionProgress {
 
 /// Stages of the conversion process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum ConversionStage {
     /// Initial setup.
     #[default]

@@ -305,7 +305,7 @@ pub fn validate_and_execute(
                 target_id,
                 duration,
             } => {
-                let my = w.pos_of(actor).unwrap();
+                let my = w.pos_of(actor).expect("actor must have position");
                 let tgt = w
                     .pos_of(*target_id)
                     .ok_or_else(|| EngineError::InvalidAction("target gone".into()))?;
@@ -323,7 +323,7 @@ pub fn validate_and_execute(
                     let dmg = ((*duration) * 5.0) as i32;
                     h.hp -= dmg.max(1);
                 }
-                let ammo = w.ammo_mut(actor).unwrap();
+                let ammo = w.ammo_mut(actor).expect("actor must have ammo");
                 ammo.rounds = (ammo.rounds - 3).max(0);
                 log(format!(
                     "  [{}] COVER_FIRE on #{} for {:.1}s",

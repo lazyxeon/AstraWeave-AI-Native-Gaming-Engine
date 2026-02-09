@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 /// Telemetry event types
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum TelemetryEvent {
     /// A plan was generated
     PlanGenerated {

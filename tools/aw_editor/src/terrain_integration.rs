@@ -96,6 +96,7 @@ impl TerrainState {
             BiomeType::Swamp => BiomeConfig::swamp(),
             BiomeType::Beach => BiomeConfig::beach(),
             BiomeType::River => BiomeConfig::river(),
+            _ => BiomeConfig::grassland(), // Fallback for future biome types
         }
     }
 
@@ -242,6 +243,7 @@ impl TerrainState {
             BiomeType::Swamp => 5,
             BiomeType::Beach => 6,
             BiomeType::River => 7,
+            _ => 0, // Fallback for future biome types
         }
     }
 

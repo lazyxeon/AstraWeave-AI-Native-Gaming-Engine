@@ -290,6 +290,7 @@ impl BiomeShowcase {
                     WeatherType::Snow => WeatherType::Fog,
                     WeatherType::Fog => WeatherType::Sandstorm,
                     WeatherType::Sandstorm => WeatherType::Clear,
+                    _ => WeatherType::Clear,
                 };
                 self.weather_system.set_weather(next, 3.0);
                 println!("Weather changing to: {:?}", next);

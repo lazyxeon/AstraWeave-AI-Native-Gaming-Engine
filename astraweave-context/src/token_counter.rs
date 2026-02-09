@@ -432,13 +432,13 @@ mod tests {
     #[test]
     fn test_token_cache_size_limit() {
         let counter = TokenCounter::new("cl100k_base");
-        
+
         // Add many different strings to test cache size limit
         for i in 0..100 {
             let text = format!("Unique test string number {}", i);
             counter.count_tokens(&text).unwrap();
         }
-        
+
         let stats = counter.get_stats();
         assert_eq!(stats.total_requests, 100);
     }
@@ -446,16 +446,16 @@ mod tests {
     #[test]
     fn test_token_cache_clear() {
         let counter = TokenCounter::new("cl100k_base");
-        
+
         let text = "test text for cache";
         counter.count_tokens(text).unwrap();
         counter.count_tokens(text).unwrap();
-        
+
         let stats_before = counter.get_stats();
         assert!(stats_before.cache_hits > 0);
-        
+
         counter.clear_cache();
-        
+
         let stats_after = counter.get_stats();
         assert_eq!(stats_after.cache_hits, 0);
         assert_eq!(stats_after.cache_misses, 0);
@@ -528,10 +528,11 @@ mod tests {
     fn test_text_chunking_multiple_chunks() {
         let counter = TokenCounter::new("cl100k_base");
         // Create text that will definitely need multiple chunks
-        let long_text = "This is a sentence that contains multiple words and will need chunking. ".repeat(50);
+        let long_text =
+            "This is a sentence that contains multiple words and will need chunking. ".repeat(50);
         let chunks = counter.chunk_by_tokens(&long_text, 10).unwrap();
         assert!(chunks.len() >= 5);
-        
+
         // Verify all chunks together approximate the original
         let combined: String = chunks.join("");
         assert!(combined.len() >= long_text.len() * 9 / 10); // At least 90% of original
@@ -555,7 +556,7 @@ mod tests {
     #[test]
     fn test_token_estimation_empty() {
         let text = "";
-        
+
         assert_eq!(TokenEstimator::estimate_english(text), 0);
         assert_eq!(TokenEstimator::estimate_code(text), 0);
         assert_eq!(TokenEstimator::estimate_conservative(text), 0);
@@ -565,7 +566,7 @@ mod tests {
     #[test]
     fn test_token_estimation_single_char() {
         let text = "a";
-        
+
         // Ceil of 1/4 = 1, 1/3.5 = 1, 1/3 = 1
         assert!(TokenEstimator::estimate_english(text) >= 1);
         assert!(TokenEstimator::estimate_code(text) >= 1);
@@ -587,7 +588,8 @@ mod tests {
         // Test different word counts
         assert_eq!(TokenEstimator::estimate_by_words("one"), 2); // 1 * 1.3 = 1.3 -> 2
         assert_eq!(TokenEstimator::estimate_by_words("one two"), 3); // 2 * 1.3 = 2.6 -> 3
-        assert!(TokenEstimator::estimate_by_words("one two three four five") >= 6); // 5 * 1.3 = 6.5 -> 7
+        assert!(TokenEstimator::estimate_by_words("one two three four five") >= 6);
+        // 5 * 1.3 = 6.5 -> 7
     }
 
     #[test]
@@ -617,15 +619,15 @@ mod tests {
     #[test]
     fn test_token_budget_utilization() {
         let mut budget = TokenBudget::new(1000);
-        
+
         assert_eq!(budget.utilization(), 0.0);
-        
+
         budget.use_tokens(250).unwrap();
         assert!((budget.utilization() - 0.25).abs() < 0.001);
-        
+
         budget.use_tokens(250).unwrap();
         assert!((budget.utilization() - 0.5).abs() < 0.001);
-        
+
         budget.use_tokens(500).unwrap();
         assert!((budget.utilization() - 1.0).abs() < 0.001);
     }
@@ -634,7 +636,7 @@ mod tests {
     fn test_token_budget_reserve_exceeds_available() {
         let mut budget = TokenBudget::new(100);
         budget.use_tokens(50).unwrap();
-        
+
         let result = budget.reserve("big", 200);
         assert!(result.is_err());
     }
@@ -642,13 +644,13 @@ mod tests {
     #[test]
     fn test_token_budget_multiple_reservations() {
         let mut budget = TokenBudget::new(1000);
-        
+
         budget.reserve("context", 100).unwrap();
         budget.reserve("system", 100).unwrap();
         budget.reserve("response", 100).unwrap();
-        
+
         assert_eq!(budget.available_tokens(), 700);
-        
+
         // Can override a reservation
         budget.reserve("context", 200).unwrap();
         assert_eq!(budget.available_tokens(), 600); // 1000 - (200 + 100 + 100)
@@ -659,7 +661,7 @@ mod tests {
         let mut budget = TokenBudget::new(100);
         budget.use_tokens(50).unwrap();
         budget.reserve("reserved", 30).unwrap();
-        
+
         let result = budget.use_tokens(50);
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
@@ -696,7 +698,7 @@ mod tests {
         // Text with clear word boundaries
         let text = "The quick brown fox jumps over the lazy dog repeatedly and continuously.";
         let split_point = counter.find_split_point(text, 3).unwrap();
-        
+
         // The split should ideally be at a whitespace boundary
         if split_point > 0 && split_point < text.len() {
             // Check that we're either at start, end, or near a whitespace
@@ -796,15 +798,15 @@ mod tests {
     #[test]
     fn test_token_counter_stats() {
         let counter = TokenCounter::new("cl100k_base");
-        
+
         let initial_stats = counter.get_stats();
         assert_eq!(initial_stats.total_requests, 0);
         assert_eq!(initial_stats.total_tokens_counted, 0);
         assert_eq!(initial_stats.avg_tokens_per_request, 0.0);
-        
+
         counter.count_tokens("Hello").unwrap();
         counter.count_tokens("World").unwrap();
-        
+
         let stats = counter.get_stats();
         assert_eq!(stats.total_requests, 2);
         assert!(stats.total_tokens_counted > 0);
@@ -814,13 +816,13 @@ mod tests {
     #[test]
     fn test_token_counter_stats_cache_hit_rate() {
         let counter = TokenCounter::new("cl100k_base");
-        
+
         let text = "repeated text";
         counter.count_tokens(text).unwrap(); // miss
         counter.count_tokens(text).unwrap(); // hit
         counter.count_tokens(text).unwrap(); // hit
         counter.count_tokens(text).unwrap(); // hit
-        
+
         let stats = counter.get_stats();
         assert_eq!(stats.cache_misses, 1);
         assert_eq!(stats.cache_hits, 3);
@@ -830,7 +832,7 @@ mod tests {
     #[test]
     fn test_estimate_tokens_direct() {
         let counter = TokenCounter::new("cl100k_base");
-        
+
         // Test the estimate_tokens method directly
         let estimate = counter.estimate_tokens("This is a test");
         assert!(estimate > 0);

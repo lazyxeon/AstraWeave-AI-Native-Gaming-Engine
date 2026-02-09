@@ -38,6 +38,7 @@ use crate::LlmClient;
 
 /// Priority level for LLM requests
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum RequestPriority {
     Low = 0,
     Normal = 1,
@@ -46,6 +47,7 @@ pub enum RequestPriority {
 
 /// Status of an LLM request
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RequestStatus {
     Queued,
     Processing,

@@ -11,6 +11,7 @@ pub struct ValidationError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Severity {
     Error,
     Warning,
@@ -370,8 +371,7 @@ impl GoalValidator {
         }
 
         // Check for decomposition without sub-goals
-        if goal.decomposition.is_some()
-            && (goal.sub_goals.is_none() || goal.sub_goals.as_ref().unwrap().is_empty())
+        if goal.decomposition.is_some() && goal.sub_goals.as_ref().map_or(true, |sg| sg.is_empty())
         {
             result.add(
                 ValidationError::warning(

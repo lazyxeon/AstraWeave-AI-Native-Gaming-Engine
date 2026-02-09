@@ -671,7 +671,7 @@ impl SkyRenderer {
         // 3. Procedural (Fallback)
         if !drawn {
             render_pass.set_pipeline(pipeline);
-            let bind_group = self.bind_group.as_ref().unwrap();
+            let bind_group = self.bind_group.as_ref().expect("bind_group must be initialized");
             render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.set_vertex_buffer(0, vertices.slice(..));
             render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);
@@ -1020,6 +1020,7 @@ mod tests {
 
 /// Types of weather that can occur
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum WeatherType {
     Clear,
     Cloudy,
@@ -1219,6 +1220,8 @@ impl WeatherSystem {
             }
             BiomeType::Beach => vec![WeatherType::Clear, WeatherType::Storm, WeatherType::Fog],
             BiomeType::River => vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Fog],
+            // Fallback for future biome types
+            _ => vec![WeatherType::Clear, WeatherType::Rain],
         }
     }
 

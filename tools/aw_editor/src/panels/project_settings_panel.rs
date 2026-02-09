@@ -14,6 +14,7 @@ use crate::panels::Panel;
 
 /// Target platform
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TargetPlatform {
     Windows,
     Linux,
@@ -103,6 +104,7 @@ pub struct QualityLevel {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TextureQuality {
     Low,
     Medium,
@@ -138,6 +140,7 @@ impl TextureQuality {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AntialiasingMode {
     None,
     Fxaa,
@@ -215,6 +218,7 @@ pub struct PhysicsSettings {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BroadphaseType {
     #[default]
     Sap,
@@ -275,6 +279,7 @@ pub struct AudioSettings {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AudioBackend {
     #[default]
     Auto,
@@ -342,6 +347,7 @@ pub struct RenderingSettings {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RendererBackend {
     #[default]
     Auto,
@@ -383,6 +389,7 @@ impl RendererBackend {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TonemappingMode {
     None,
     Reinhard,
@@ -421,6 +428,7 @@ impl TonemappingMode {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AoMode {
     None,
     Ssao,
@@ -456,6 +464,7 @@ impl AoMode {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GiMode {
     #[default]
     None,
@@ -495,6 +504,7 @@ impl GiMode {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ReflectionMode {
     None,
     #[default]
@@ -530,6 +540,7 @@ impl ReflectionMode {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ShadowMode {
     None,
     HardShadows,
@@ -632,6 +643,7 @@ pub struct BuildConfig {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CompressionMode {
     None,
     #[default]
@@ -680,6 +692,7 @@ impl Default for BuildConfig {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SettingsTab {
     #[default]
     Project,
@@ -694,6 +707,7 @@ pub enum SettingsTab {
 
 /// Actions that can be performed by the project settings panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ProjectSettingsAction {
     // Project settings
     SetProjectName(String),

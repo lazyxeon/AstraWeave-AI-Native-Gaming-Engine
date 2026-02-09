@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 /// Available editor themes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, Hash)]
+#[non_exhaustive]
 pub enum EditorTheme {
     #[default]
     Dark,
@@ -160,6 +161,7 @@ impl CustomColors {
 
 /// Layout preset for different workflows
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, Hash)]
+#[non_exhaustive]
 pub enum LayoutPreset {
     #[default]
     Default,

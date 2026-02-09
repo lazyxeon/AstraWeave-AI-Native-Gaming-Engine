@@ -1,0 +1,3 @@
+   Compiling aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 35s
+  Executable tests\mutation_resistant_audio.rs (target\debug\deps\mutation_resistant_audio-3a797fcf0a724850.exe)

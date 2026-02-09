@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub type ItemId = u32;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ItemKind {
     Weapon { base_damage: i32, dtype: DamageType },
     Armor { defense: i32 },
@@ -58,6 +59,7 @@ pub fn infuse(item: &mut Item, echo: EchoMod) {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -369,7 +371,10 @@ power_mult = 1.3
         let json = serde_json::to_string(&echo).expect("serialize");
         let deserialized: EchoMod = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(deserialized.name, "Test Echo");
-        assert!(matches!(deserialized.dtype_override, Some(DamageType::Shock)));
+        assert!(matches!(
+            deserialized.dtype_override,
+            Some(DamageType::Shock)
+        ));
     }
 
     #[test]

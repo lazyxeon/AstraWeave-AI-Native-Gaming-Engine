@@ -33,6 +33,8 @@ pub fn mul_simd(a: Mat4, b: Mat4) -> Mat4 {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check above confirms SSE2 support. mul_simd_sse2
+            // operates on valid Mat4 values using SSE2 load/mul/add intrinsics.
             unsafe { mul_simd_sse2(a, b) }
         } else {
             a * b // Fallback to glam
@@ -119,6 +121,8 @@ pub fn transpose_simd(m: Mat4) -> Mat4 {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check confirms SSE2 support. transpose_simd_sse2
+            // uses only SSE2 unpacklo/unpackhi intrinsics on valid Mat4 data.
             unsafe { transpose_simd_sse2(m) }
         } else {
             m.transpose()
@@ -228,6 +232,8 @@ pub fn transform_point_simd(m: Mat4, p: Vec3) -> Vec3 {
     #[cfg(target_arch = "x86_64")]
     {
         if is_x86_feature_detected!("sse2") {
+            // SAFETY: Runtime check confirms SSE2 support. transform_point_simd_sse2
+            // uses SSE2 load/mul/add intrinsics on valid Mat4 and Vec3 data.
             unsafe { transform_point_simd_sse2(m, p) }
         } else {
             m.transform_point3(p)

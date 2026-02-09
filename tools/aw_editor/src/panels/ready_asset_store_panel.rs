@@ -24,6 +24,7 @@ use crate::panels::Panel;
 
 /// Actions emitted by the ready asset store panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum AssetStoreAction {
     /// Spawn the asset in the current scene
     SpawnAsset {
@@ -54,6 +55,7 @@ pub enum AssetStoreAction {
 
 /// Readiness level for prefab assets
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum ReadinessLevel {
     #[default]
     NotReady,
@@ -159,6 +161,7 @@ impl ReadinessLevel {
 
 /// Individual checklist items for asset readiness
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ChecklistItem {
     HasMesh,
     HasMaterial,
@@ -353,6 +356,7 @@ impl AssetChecklist {
 
 /// Asset category for the curated store
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AssetStoreCategory {
     #[default]
     All,
@@ -541,6 +545,7 @@ pub struct ReadyAssetStorePanel {
 
 /// Sort options for asset list
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SortBy {
     #[default]
     Name,

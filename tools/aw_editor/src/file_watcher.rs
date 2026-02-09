@@ -50,6 +50,7 @@ use std::time::{Duration, Instant};
 
 /// Types of reload events
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ReloadEvent {
     /// A material TOML file changed
     Material(PathBuf),

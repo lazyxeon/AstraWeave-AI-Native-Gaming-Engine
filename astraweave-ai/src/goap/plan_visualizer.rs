@@ -3,6 +3,7 @@ use std::fmt::Write;
 
 /// Visualization format for plans and goals
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum VisualizationFormat {
     /// ASCII tree with Unicode box drawing characters
     AsciiTree,
@@ -94,14 +95,13 @@ impl PlanVisualizer {
         // Calculate total metrics
         let (total_cost, total_risk) = self.calculate_plan_metrics(plan, actions, history);
 
-        writeln!(
+        let _ = writeln!(
             &mut output,
             "Plan ({} actions, cost: {:.1}, risk: {:.2})",
             plan.len(),
             total_cost,
             total_risk
-        )
-        .unwrap();
+        );
 
         for (i, action_name) in plan.iter().enumerate() {
             let is_last = i == plan.len() - 1;
@@ -112,31 +112,28 @@ impl PlanVisualizer {
                 let risk = 1.0 - action.success_probability(&WorldState::new(), history);
 
                 if self.show_costs && self.show_risks {
-                    writeln!(
+                    let _ = writeln!(
                         &mut output,
                         "{} {} (cost: {:.1}, risk: {:.2})",
                         prefix, action_name, cost, risk
-                    )
-                    .unwrap();
+                    );
                 } else if self.show_costs {
-                    writeln!(
+                    let _ = writeln!(
                         &mut output,
                         "{} {} (cost: {:.1})",
                         prefix, action_name, cost
-                    )
-                    .unwrap();
+                    );
                 } else if self.show_risks {
-                    writeln!(
+                    let _ = writeln!(
                         &mut output,
                         "{} {} (risk: {:.2})",
                         prefix, action_name, risk
-                    )
-                    .unwrap();
+                    );
                 } else {
-                    writeln!(&mut output, "{} {}", prefix, action_name).unwrap();
+                    let _ = writeln!(&mut output, "{} {}", prefix, action_name);
                 }
             } else {
-                writeln!(&mut output, "{} {} (unknown)", prefix, action_name).unwrap();
+                let _ = writeln!(&mut output, "{} {} (unknown)", prefix, action_name);
             }
         }
 
@@ -156,13 +153,12 @@ impl PlanVisualizer {
         let mut current_state = start_state.clone();
 
         // Header
-        writeln!(
+        let _ = writeln!(
             &mut output,
             "{:<6} | {:<20} | {:<30} | {}",
             "Time", "Action", "State Changes", "Success"
-        )
-        .unwrap();
-        writeln!(&mut output, "{}", "-".repeat(80)).unwrap();
+        );
+        let _ = writeln!(&mut output, "{}", "-".repeat(80));
 
         for action_name in plan {
             if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
@@ -186,12 +182,11 @@ impl PlanVisualizer {
                     "✗"
                 };
 
-                writeln!(
+                let _ = writeln!(
                     &mut output,
                     "{:<6.1} | {:<20} | {:<30} | {}",
                     current_time, action_name, state_changes, success_icon
-                )
-                .unwrap();
+                );
 
                 current_state.apply_effects(action.effects());
                 current_time += duration;
@@ -210,11 +205,11 @@ impl PlanVisualizer {
     ) -> String {
         let mut output = String::new();
 
-        writeln!(&mut output, "digraph Plan {{").unwrap();
-        writeln!(&mut output, "  rankdir=LR;").unwrap();
-        writeln!(&mut output, "  node [shape=box];").unwrap();
+        let _ = writeln!(&mut output, "digraph Plan {{");
+        let _ = writeln!(&mut output, "  rankdir=LR;");
+        let _ = writeln!(&mut output, "  node [shape=box];");
 
-        writeln!(&mut output, "  start [label=\"Start\", shape=circle];").unwrap();
+        let _ = writeln!(&mut output, "  start [label=\"Start\", shape=circle];");
 
         for (i, action_name) in plan.iter().enumerate() {
             let node_id = format!("action_{}", i);
@@ -229,24 +224,24 @@ impl PlanVisualizer {
                     action_name.clone()
                 };
 
-                writeln!(&mut output, "  {} [label=\"{}\"];", node_id, label).unwrap();
+                let _ = writeln!(&mut output, "  {} [label=\"{}\"];", node_id, label);
             } else {
-                writeln!(&mut output, "  {} [label=\"{}\"];", node_id, action_name).unwrap();
+                let _ = writeln!(&mut output, "  {} [label=\"{}\"];", node_id, action_name);
             }
 
             if i == 0 {
-                writeln!(&mut output, "  start -> {};", node_id).unwrap();
+                let _ = writeln!(&mut output, "  start -> {};", node_id);
             } else {
-                writeln!(&mut output, "  action_{} -> {};", i - 1, node_id).unwrap();
+                let _ = writeln!(&mut output, "  action_{} -> {};", i - 1, node_id);
             }
         }
 
         if !plan.is_empty() {
-            writeln!(&mut output, "  action_{} -> end;", plan.len() - 1).unwrap();
+            let _ = writeln!(&mut output, "  action_{} -> end;", plan.len() - 1);
         }
 
-        writeln!(&mut output, "  end [label=\"End\", shape=doublecircle];").unwrap();
-        writeln!(&mut output, "}}").unwrap();
+        let _ = writeln!(&mut output, "  end [label=\"End\", shape=doublecircle];");
+        let _ = writeln!(&mut output, "}}");
 
         output
     }
@@ -261,28 +256,28 @@ impl PlanVisualizer {
         let mut output = String::new();
 
         for (i, action_name) in plan.iter().enumerate() {
-            write!(&mut output, "{}. {}", i + 1, action_name).unwrap();
+            let _ = write!(&mut output, "{}. {}", i + 1, action_name);
 
             if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
                 if self.show_costs || self.show_risks {
                     let cost = action.calculate_cost(&WorldState::new(), history);
                     let risk = 1.0 - action.success_probability(&WorldState::new(), history);
 
-                    write!(&mut output, " (").unwrap();
+                    let _ = write!(&mut output, " (");
                     if self.show_costs {
-                        write!(&mut output, "cost: {:.1}", cost).unwrap();
+                        let _ = write!(&mut output, "cost: {:.1}", cost);
                     }
                     if self.show_costs && self.show_risks {
-                        write!(&mut output, ", ").unwrap();
+                        let _ = write!(&mut output, ", ");
                     }
                     if self.show_risks {
-                        write!(&mut output, "risk: {:.2}", risk).unwrap();
+                        let _ = write!(&mut output, "risk: {:.2}", risk);
                     }
-                    write!(&mut output, ")").unwrap();
+                    let _ = write!(&mut output, ")");
                 }
             }
 
-            writeln!(&mut output).unwrap();
+            let _ = writeln!(&mut output);
         }
 
         output
@@ -297,8 +292,8 @@ impl PlanVisualizer {
     ) -> String {
         let mut output = String::new();
 
-        writeln!(&mut output, "{{").unwrap();
-        writeln!(&mut output, "  \"actions\": [").unwrap();
+        let _ = writeln!(&mut output, "{{");
+        let _ = writeln!(&mut output, "  \"actions\": [");
 
         for (i, action_name) in plan.iter().enumerate() {
             let comma = if i < plan.len() - 1 { "," } else { "" };
@@ -307,20 +302,20 @@ impl PlanVisualizer {
                 let cost = action.calculate_cost(&WorldState::new(), history);
                 let risk = 1.0 - action.success_probability(&WorldState::new(), history);
 
-                writeln!(&mut output, "    {{").unwrap();
-                writeln!(&mut output, "      \"name\": \"{}\",", action_name).unwrap();
-                writeln!(&mut output, "      \"cost\": {:.2},", cost).unwrap();
-                writeln!(&mut output, "      \"risk\": {:.2}", risk).unwrap();
-                writeln!(&mut output, "    }}{}", comma).unwrap();
+                let _ = writeln!(&mut output, "    {{");
+                let _ = writeln!(&mut output, "      \"name\": \"{}\",", action_name);
+                let _ = writeln!(&mut output, "      \"cost\": {:.2},", cost);
+                let _ = writeln!(&mut output, "      \"risk\": {:.2}", risk);
+                let _ = writeln!(&mut output, "    }}{}", comma);
             } else {
-                writeln!(&mut output, "    {{").unwrap();
-                writeln!(&mut output, "      \"name\": \"{}\"", action_name).unwrap();
-                writeln!(&mut output, "    }}{}", comma).unwrap();
+                let _ = writeln!(&mut output, "    {{");
+                let _ = writeln!(&mut output, "      \"name\": \"{}\"", action_name);
+                let _ = writeln!(&mut output, "    }}{}", comma);
             }
         }
 
-        writeln!(&mut output, "  ]").unwrap();
-        writeln!(&mut output, "}}").unwrap();
+        let _ = writeln!(&mut output, "  ]");
+        let _ = writeln!(&mut output, "}}");
 
         output
     }
@@ -349,12 +344,11 @@ impl PlanVisualizer {
             String::new()
         };
 
-        writeln!(
+        let _ = writeln!(
             &mut output,
             "{}{} {} ({}{})",
             indent, strategy_str, goal.name, priority_str, deadline_str
-        )
-        .unwrap();
+        );
 
         for (i, sub_goal) in goal.sub_goals.iter().enumerate() {
             let is_last_sub = i == goal.sub_goals.len() - 1;
@@ -369,13 +363,13 @@ impl PlanVisualizer {
         let mut output = String::new();
         let mut node_counter = 0;
 
-        writeln!(&mut output, "digraph GoalHierarchy {{").unwrap();
-        writeln!(&mut output, "  rankdir=TB;").unwrap();
-        writeln!(&mut output, "  node [shape=box];").unwrap();
+        let _ = writeln!(&mut output, "digraph GoalHierarchy {{");
+        let _ = writeln!(&mut output, "  rankdir=TB;");
+        let _ = writeln!(&mut output, "  node [shape=box];");
 
         self.render_goal_dot_recursive(goal, &mut output, &mut node_counter, None);
 
-        writeln!(&mut output, "}}").unwrap();
+        let _ = writeln!(&mut output, "}}");
 
         output
     }
@@ -397,15 +391,14 @@ impl PlanVisualizer {
             super::DecompositionStrategy::AllOf => "ALL",
         };
 
-        writeln!(
+        let _ = writeln!(
             output,
             "  node_{} [label=\"[{}] {}\\npriority: {:.1}\"];",
             current_id, strategy_str, goal.name, goal.priority
-        )
-        .unwrap();
+        );
 
         if let Some(parent) = parent_id {
-            writeln!(output, "  node_{} -> node_{};", parent, current_id).unwrap();
+            let _ = writeln!(output, "  node_{} -> node_{};", parent, current_id);
         }
 
         for sub_goal in &goal.sub_goals {
@@ -418,12 +411,11 @@ impl PlanVisualizer {
         let mut output = String::new();
 
         let indent = "  ".repeat(depth);
-        writeln!(
+        let _ = writeln!(
             &mut output,
             "{}{} (priority: {:.1})",
             indent, goal.name, goal.priority
-        )
-        .unwrap();
+        );
 
         for sub_goal in &goal.sub_goals {
             output.push_str(&self.render_goal_text(sub_goal, depth + 1));

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use astraweave_core::{DirectorBudget, DirectorOp, DirectorPlan, IVec2, Rect, WorldSnapshot};
 
 /// Minimal heuristic boss director:

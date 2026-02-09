@@ -37,6 +37,7 @@ pub type RagdollId = u64;
 
 /// Shape of a bone's physics collider
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum BoneShape {
     /// Capsule shape (most common for limbs)
     Capsule { radius: f32, half_height: f32 },
@@ -67,6 +68,7 @@ impl BoneShape {
 
 /// Joint constraint type for bones
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum BoneJointType {
     /// Ball-and-socket joint (shoulder, hip)
     Spherical {
@@ -163,6 +165,7 @@ impl Default for RagdollConfig {
 
 /// Ragdoll state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RagdollState {
     /// Ragdoll is fully physics-driven
     Active,

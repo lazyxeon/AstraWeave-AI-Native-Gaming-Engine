@@ -133,6 +133,8 @@ impl Default for RetryConfig {
 
 /// Errors that can be retried
 #[derive(Debug, Clone)]
+#[non_exhaustive]
+#[must_use]
 pub enum RetryableError {
     /// Request timed out (transient)
     Timeout,

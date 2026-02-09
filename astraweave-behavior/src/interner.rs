@@ -41,14 +41,17 @@ pub static GLOBAL_INTERNER: LazyLock<Mutex<StringInterner>> =
 
 /// Intern a string, returning a unique u32 ID
 pub fn intern(s: &str) -> u32 {
-    GLOBAL_INTERNER.lock().unwrap().intern(s)
+    GLOBAL_INTERNER
+        .lock()
+        .expect("interner lock poisoned")
+        .intern(s)
 }
 
 /// Resolve an ID back to a string
 pub fn resolve(id: u32) -> String {
     GLOBAL_INTERNER
         .lock()
-        .unwrap()
+        .expect("interner lock poisoned")
         .resolve(id)
         .unwrap_or("<unknown>")
         .to_string()

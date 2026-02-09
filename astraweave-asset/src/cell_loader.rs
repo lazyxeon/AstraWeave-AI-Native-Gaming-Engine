@@ -10,6 +10,7 @@ use tokio::fs;
 
 /// Asset reference types for cell content
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AssetKind {
     Mesh,
     Texture,

@@ -2,7 +2,7 @@
 //! High-value tests for TemplateEngine, PromptTemplate, TemplateContext
 
 use astraweave_prompts::{
-    PromptContext, PromptTemplate, TemplateEngine, TemplateProcessor, ProcessorConfig,
+    ProcessorConfig, PromptContext, PromptTemplate, TemplateEngine, TemplateProcessor,
 };
 use std::collections::HashMap;
 
@@ -30,7 +30,7 @@ fn test_template_render() {
     let template = PromptTemplate::new("test", "Hello {{name}}!");
     let mut ctx = PromptContext::new();
     ctx.set("name".to_string(), "World".into());
-    
+
     let result = template.render(&ctx).unwrap();
     assert_eq!(result, "Hello World!");
 }
@@ -45,11 +45,13 @@ fn test_engine_register() {
 #[test]
 fn test_engine_render() {
     let mut engine = TemplateEngine::new();
-    engine.register_template("test", PromptTemplate::new("1", "Hello {{x}}!")).unwrap();
-    
+    engine
+        .register_template("test", PromptTemplate::new("1", "Hello {{x}}!"))
+        .unwrap();
+
     let mut ctx = PromptContext::new();
     ctx.set("x".to_string(), "There".into());
-    
+
     let result = engine.render("test", &ctx).unwrap();
     assert_eq!(result, "Hello There!");
 }

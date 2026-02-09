@@ -45,6 +45,7 @@ impl Default for CircuitBreakerConfig {
 
 /// Circuit breaker states
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum CircuitState {
     /// Circuit is closed, requests flow normally
     Closed,

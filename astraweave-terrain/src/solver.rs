@@ -49,6 +49,7 @@ impl ResolvedLocation {
 
 /// Validation status for a resolved terrain location
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ValidationStatus {
     /// Location is valid and can be used for terrain modification
     Valid,
@@ -64,6 +65,8 @@ pub enum ValidationStatus {
 
 /// Error types that can occur during terrain solving
 #[derive(Debug, Clone, thiserror::Error)]
+#[non_exhaustive]
+#[must_use]
 pub enum SolverError {
     #[error("No chunk loaded at position {0:?}")]
     ChunkNotLoaded(Vec3),
@@ -134,6 +137,8 @@ impl<'a> TerrainSolver<'a> {
                 self.calculate_direction_offset(*cardinal, *distance)
             }
             RelativeLocation::Coordinates { x, y, z } => Vec3::new(*x, *y, *z),
+            // Fallback for future location types
+            _ => Vec3::ZERO,
         };
 
         // Derive seed for deterministic operations

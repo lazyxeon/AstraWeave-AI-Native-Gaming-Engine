@@ -24,6 +24,7 @@ use astraweave_core::metrics;
 
 /// Fallback tier levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum FallbackTier {
     FullLlm = 1,
     SimplifiedLlm = 2,

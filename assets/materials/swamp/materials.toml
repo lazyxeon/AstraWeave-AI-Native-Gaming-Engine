@@ -1,0 +1,45 @@
+# Swamp biome — waterlogged terrain with mud, moss, dark water, and dense vegetation
+# Used for marshlands, bogs, and mangrove areas
+
+[biome]
+name = "swamp"
+
+[[layer]]
+key = "mud"
+albedo = "../mud.png"
+normal = "../mud_n.png"
+mra    = "../mud_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 22.0
+
+[[layer]]
+key = "moss"
+albedo = "../moss.png"
+normal = "../moss_n.png"
+mra    = "../moss_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 24.0
+
+[[layer]]
+key = "dirt"
+albedo = "../dirt.png"
+normal = "../dirt_n.png"
+mra    = "../dirt_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "tree_bark"
+albedo = "../tree_bark.png"
+normal = "../tree_bark_n.png"
+mra    = "../tree_bark_mra.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 10.0
+
+[[layer]]
+key = "rock_lichen"
+albedo = "../rock_lichen.png"
+normal = "../rock_lichen_n.png"
+mra    = "../rock_lichen_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 18.0

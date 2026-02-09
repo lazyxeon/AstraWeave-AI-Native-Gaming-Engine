@@ -49,6 +49,7 @@ use std::collections::VecDeque;
 
 /// Pre-configured water body types for quick setup
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum WaterBodyPreset {
     /// Clear swimming pool water
     Pool,
@@ -117,6 +118,7 @@ impl WaterBodyPreset {
 
 /// Quality/performance balance presets
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum QualityPreset {
     /// Minimal effects for low-end hardware
     Low,
@@ -354,6 +356,7 @@ impl FluidAABB {
     }
     
     /// Expand AABB to include point
+    #[allow(clippy::needless_range_loop)]
     pub fn expand(&mut self, point: [f32; 3]) {
         for i in 0..3 {
             self.min[i] = self.min[i].min(point[i]);
@@ -481,6 +484,7 @@ impl FluidPerformanceMetrics {
 
 /// Colorblind-safe color palettes for fluid visualization
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum ColorblindPalette {
     /// Standard colors (default)
     #[default]
@@ -747,6 +751,7 @@ impl BatchOperation {
 
 /// Validation severity level
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ValidationSeverity {
     /// Informational message
     Info,
@@ -1035,6 +1040,7 @@ impl ConfigValidator {
 
 /// Easing function type for animations
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum EasingFunction {
     /// Linear interpolation (no easing)
     #[default]
@@ -1585,6 +1591,7 @@ impl ConfigClipboard {
 
 /// Widget type hint for UI generation
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum WidgetType {
     /// Slider with min, max, and step
     Slider { min: f32, max: f32, step: f32 },
@@ -2220,6 +2227,7 @@ impl Default for WaterfallEditorConfig {
 
 /// Emitter shape type for the editor
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
+#[non_exhaustive]
 pub enum EmitterShapeType {
     /// Single point emitter
     #[default]
@@ -3326,7 +3334,7 @@ impl FluidEditorConfig {
         let mut cost = 0u32;
 
         // Base particle cost
-        cost += (self.max_particles / 10_000) as u32 * 5;
+        cost += (self.max_particles / 10_000) * 5;
 
         // Physics cost
         cost += self.physics.iterations * 2;
@@ -3335,8 +3343,8 @@ impl FluidEditorConfig {
 
         // Visual effects cost
         if self.caustics.enabled { cost += 8; }
-        if self.god_rays.enabled { cost += (self.god_rays.samples / 8) as u32; }
-        if self.foam.enabled { cost += (self.foam.max_particles / 5000) as u32 * 2; }
+        if self.god_rays.enabled { cost += self.god_rays.samples / 8; }
+        if self.foam.enabled { cost += (self.foam.max_particles / 5000) * 2; }
         if self.reflections.enabled {
             cost += if self.reflections.use_planar { 15 } else { 5 };
         }
@@ -3424,7 +3432,7 @@ impl FluidEditorConfig {
         
         FluidEditorConfig {
             name: if t < 0.5 { self.name.clone() } else { other.name.clone() },
-            preset: if t < 0.5 { self.preset.clone() } else { other.preset.clone() },
+            preset: if t < 0.5 { self.preset } else { other.preset },
             quality: if t < 0.5 { self.quality } else { other.quality },
             max_particles: lerp_u32(self.max_particles, other.max_particles),
             physics: PhysicsConfig {

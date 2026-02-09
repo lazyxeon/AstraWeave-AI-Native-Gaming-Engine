@@ -37,9 +37,11 @@ struct Velocity {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Health(i32);
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Marker;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 struct Name(String);
 

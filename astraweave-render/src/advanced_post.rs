@@ -2,7 +2,6 @@
 // TAA, Motion Blur, Depth of Field, Color Grading
 
 use anyhow::Result;
-use glam::Mat4;
 use wgpu;
 
 /// Temporal Anti-Aliasing (TAA) configuration
@@ -148,9 +147,6 @@ pub struct AdvancedPostFx {
     #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
 
-    // Previous frame data (reserved for future full implementation)
-    #[allow(dead_code)]
-    prev_view_proj: Mat4,
     frame_count: u32,
 }
 
@@ -407,7 +403,6 @@ impl AdvancedPostFx {
             color_grading_config: ColorGradingConfig::default(),
             sampler,
             bind_group_layout,
-            prev_view_proj: Mat4::IDENTITY,
             frame_count: 0,
         })
     }

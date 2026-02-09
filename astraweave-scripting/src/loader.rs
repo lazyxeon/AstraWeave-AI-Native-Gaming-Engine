@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tokio::fs;
-use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone)]
 pub struct ScriptAsset {
@@ -18,7 +18,7 @@ impl ScriptLoader {
         let source = fs::read_to_string(path)
             .await
             .context(format!("Failed to read script file: {}", path.display()))?;
-        
+
         // Compute hash for change detection
         let hash = compute_hash(&source);
 

@@ -41,6 +41,7 @@ impl CellEntities {
 
 /// Events emitted by partitioned scene
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum SceneEvent {
     CellLoaded(GridCoord),
     CellUnloaded(GridCoord),

@@ -39,6 +39,7 @@ impl Default for AnimationClip {
 
 /// Loop mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LoopMode {
     Once,
     #[default]
@@ -124,6 +125,7 @@ pub struct Keyframe {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TangentMode {
     #[default]
     Auto,
@@ -240,6 +242,7 @@ pub struct TransitionCondition {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ConditionType {
     #[default]
     Greater,
@@ -309,6 +312,7 @@ pub struct AnimationParameter {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ParameterType {
     #[default]
     Float,
@@ -361,6 +365,7 @@ impl ParameterType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ParameterValue {
     Float(f32),
     Int(i32),
@@ -448,6 +453,7 @@ impl Default for ParameterValue {
 
 /// Blend tree node type
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BlendTreeType {
     #[default]
     Simple1D,
@@ -564,6 +570,7 @@ impl Default for AnimationLayer {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BlendingMode {
     #[default]
     Override,
@@ -683,6 +690,7 @@ impl Default for AnimationController {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AnimationTab {
     #[default]
     Clips,
@@ -753,6 +761,7 @@ impl AnimationTab {
 /// External action events emitted by the animation panel.
 /// These represent high-level user actions that external systems can respond to.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum AnimationAction {
     /// Play animation clip
     PlayClip { clip_id: u32 },

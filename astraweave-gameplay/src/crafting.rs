@@ -54,16 +54,21 @@ impl RecipeBook {
     }
 
     /// Deterministic craft using seeded RNG.
-    /// 
+    ///
     /// # Determinism
-    /// 
+    ///
     /// This method guarantees identical item IDs given:
     /// - Same recipe name
     /// - Same inventory state
     /// - Same RNG state
-    /// 
+    ///
     /// Use this for gameplay systems requiring determinism (multiplayer, replay).
-    pub fn craft_seeded<R: rand::Rng>(&self, name: &str, inv: &mut Inventory, rng: &mut R) -> Option<Item> {
+    pub fn craft_seeded<R: rand::Rng>(
+        &self,
+        name: &str,
+        inv: &mut Inventory,
+        rng: &mut R,
+    ) -> Option<Item> {
         let r = self.recipes.iter().find(|r| r.name == name)?;
         // check costs
         for c in &r.costs {
@@ -154,12 +159,10 @@ mod tests {
                 base_damage: 20,
                 dtype: DamageType::Physical,
             },
-            costs: vec![
-                CraftCost {
-                    kind: ResourceKind::Ore,
-                    count: 3,
-                },
-            ],
+            costs: vec![CraftCost {
+                kind: ResourceKind::Ore,
+                count: 3,
+            }],
         };
         assert_eq!(recipe.name, "Iron Sword");
         assert_eq!(recipe.costs.len(), 1);
@@ -171,12 +174,10 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Basic Armor".to_string(),
                 output_item: ItemKind::Armor { defense: 10 },
-                costs: vec![
-                    CraftCost {
-                        kind: ResourceKind::Ore,
-                        count: 5,
-                    },
-                ],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Ore,
+                    count: 5,
+                }],
             }],
         };
         let mut inv = Inventory::default();
@@ -197,12 +198,10 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Expensive Item".to_string(),
                 output_item: ItemKind::Consumable { heal: 100 },
-                costs: vec![
-                    CraftCost {
-                        kind: ResourceKind::Crystal,
-                        count: 10,
-                    },
-                ],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Crystal,
+                    count: 10,
+                }],
             }],
         };
         let mut inv = Inventory::default();

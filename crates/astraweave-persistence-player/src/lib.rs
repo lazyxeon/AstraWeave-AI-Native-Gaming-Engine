@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Player profile and progression persistence
 //!
 //! This crate provides a `PlayerProfile` system for saving/loading player settings,
@@ -92,6 +93,7 @@ pub struct GraphicsSettings {
 
 /// Quality preset
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum QualityPreset {
     Low,
     Medium,

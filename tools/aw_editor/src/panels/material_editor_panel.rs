@@ -13,6 +13,7 @@ use crate::panels::Panel;
 
 /// Material type/shader
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MaterialType {
     #[default]
     StandardPBR,
@@ -82,6 +83,7 @@ impl MaterialType {
 
 /// Blend mode for material
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum BlendMode {
     #[default]
     Opaque,
@@ -135,6 +137,7 @@ impl BlendMode {
 
 /// Texture channel
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TextureChannel {
     Albedo,
     Normal,
@@ -388,6 +391,7 @@ impl MaterialPreset {
 
 /// Preview lighting mode
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PreviewLighting {
     #[default]
     Studio,
@@ -437,6 +441,7 @@ impl PreviewLighting {
 
 /// Panel tabs
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MaterialTab {
     #[default]
     Properties,
@@ -494,6 +499,7 @@ impl MaterialTab {
 
 /// Actions that can be triggered from the material editor panel
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum MaterialEditorAction {
     // Tab navigation
     SetActiveTab(MaterialTab),
