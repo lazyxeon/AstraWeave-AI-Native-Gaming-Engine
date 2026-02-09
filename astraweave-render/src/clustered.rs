@@ -557,7 +557,8 @@ mod tests {
 
         // Test mid-range values
         let idx_mid = cluster_index(8, 4, 12, dims);
-        let expected_mid = 8usize + 4usize * dims.x as usize + 12usize * (dims.x as usize * dims.y as usize);
+        let expected_mid =
+            8usize + 4usize * dims.x as usize + 12usize * (dims.x as usize * dims.y as usize);
         assert_eq!(idx_mid, expected_mid);
 
         // Verify all valid indices are in range

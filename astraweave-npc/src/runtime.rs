@@ -127,8 +127,7 @@ impl NpcManager {
                             if pd < 2.0 {
                                 // step aside a bit
                                 if let Some(player_pos) = view.player_pos {
-                                    let dir =
-                                        (view.self_pos - player_pos).normalize_or_zero();
+                                    let dir = (view.self_pos - player_pos).normalize_or_zero();
                                     glue.move_character(npc.body, dir, 0.6);
                                 }
                             }
@@ -335,9 +334,15 @@ mod tests {
     #[test]
     fn test_execute_action_say() {
         let mut sink = MockCommandSink::new();
-        NpcManager::execute_action(&mut sink, 1, 0, "Bob", &NpcAction::Say {
-            text: "Hello!".into(),
-        });
+        NpcManager::execute_action(
+            &mut sink,
+            1,
+            0,
+            "Bob",
+            &NpcAction::Say {
+                text: "Hello!".into(),
+            },
+        );
         assert_eq!(sink.says.len(), 1);
         assert_eq!(sink.says[0], ("Bob".to_string(), "Hello!".to_string()));
     }
@@ -345,10 +350,16 @@ mod tests {
     #[test]
     fn test_execute_action_move_to() {
         let mut sink = MockCommandSink::new();
-        NpcManager::execute_action(&mut sink, 1, 5, "Guard", &NpcAction::MoveTo {
-            pos: Vec3::new(10.0, 0.0, 10.0),
-            speed: 2.5,
-        });
+        NpcManager::execute_action(
+            &mut sink,
+            1,
+            5,
+            "Guard",
+            &NpcAction::MoveTo {
+                pos: Vec3::new(10.0, 0.0, 10.0),
+                speed: 2.5,
+            },
+        );
         assert_eq!(sink.moves.len(), 1);
         assert_eq!(sink.moves[0].0, 5);
         assert_eq!(sink.moves[0].2, 2.5);
@@ -358,9 +369,15 @@ mod tests {
     fn test_execute_action_emote() {
         let mut sink = MockCommandSink::new();
         // Emote just prints, no sink effect
-        NpcManager::execute_action(&mut sink, 1, 0, "Actor", &NpcAction::Emote {
-            kind: crate::EmoteKind::Wave,
-        });
+        NpcManager::execute_action(
+            &mut sink,
+            1,
+            0,
+            "Actor",
+            &NpcAction::Emote {
+                kind: crate::EmoteKind::Wave,
+            },
+        );
         // No assertions needed - just ensure no panic
     }
 
@@ -374,18 +391,30 @@ mod tests {
     #[test]
     fn test_execute_action_give_quest() {
         let mut sink = MockCommandSink::new();
-        NpcManager::execute_action(&mut sink, 7, 0, "Elder", &NpcAction::GiveQuest {
-            id: "main_quest_01".into(),
-        });
+        NpcManager::execute_action(
+            &mut sink,
+            7,
+            0,
+            "Elder",
+            &NpcAction::GiveQuest {
+                id: "main_quest_01".into(),
+            },
+        );
         assert_eq!(sink.quests_given, vec![(7, "main_quest_01".to_string())]);
     }
 
     #[test]
     fn test_execute_action_call_guards() {
         let mut sink = MockCommandSink::new();
-        NpcManager::execute_action(&mut sink, 1, 0, "Victim", &NpcAction::CallGuards {
-            reason: "Thief spotted".into(),
-        });
+        NpcManager::execute_action(
+            &mut sink,
+            1,
+            0,
+            "Victim",
+            &NpcAction::CallGuards {
+                reason: "Thief spotted".into(),
+            },
+        );
         assert_eq!(sink.guards_called.len(), 1);
         assert_eq!(sink.guards_called[0].1, "Thief spotted");
     }
@@ -416,8 +445,12 @@ mod tests {
             body: 0,
             mode: NpcMode::Idle,
             pending: vec![
-                NpcAction::Say { text: "First".into() },
-                NpcAction::Say { text: "Second".into() },
+                NpcAction::Say {
+                    text: "First".into(),
+                },
+                NpcAction::Say {
+                    text: "Second".into(),
+                },
             ],
             cooldown_talk: 0.0,
         };
@@ -449,23 +482,28 @@ mod tests {
     fn test_manager_update_executes_pending_actions() {
         let planner = Box::new(MockLlm::new(vec![]));
         let mut manager = NpcManager::new(planner);
-        
+
         // Manually insert an NPC with pending action
-        manager.npcs.insert(1, Npc {
-            id: 1,
-            profile: make_test_profile(),
-            body: 0,
-            mode: NpcMode::Idle,
-            pending: vec![NpcAction::Say { text: "Hello world".into() }],
-            cooldown_talk: 0.0,
-        });
+        manager.npcs.insert(
+            1,
+            Npc {
+                id: 1,
+                profile: make_test_profile(),
+                body: 0,
+                mode: NpcMode::Idle,
+                pending: vec![NpcAction::Say {
+                    text: "Hello world".into(),
+                }],
+                cooldown_talk: 0.0,
+            },
+        );
         manager.next_id = 2;
 
         let mut sink = MockCommandSink::new();
         let views = HashMap::new();
-        
+
         manager.update(1.0 / 60.0, &mut sink, &views);
-        
+
         assert_eq!(sink.says.len(), 1);
         assert_eq!(sink.says[0].1, "Hello world");
         assert!(manager.npcs.get(&1).unwrap().pending.is_empty());
@@ -475,23 +513,26 @@ mod tests {
     fn test_manager_update_cooldown_decrement() {
         let planner = Box::new(MockLlm::new(vec![]));
         let mut manager = NpcManager::new(planner);
-        
-        manager.npcs.insert(1, Npc {
-            id: 1,
-            profile: make_test_profile(),
-            body: 0,
-            mode: NpcMode::Idle,
-            pending: vec![],
-            cooldown_talk: 1.0,
-        });
+
+        manager.npcs.insert(
+            1,
+            Npc {
+                id: 1,
+                profile: make_test_profile(),
+                body: 0,
+                mode: NpcMode::Idle,
+                pending: vec![],
+                cooldown_talk: 1.0,
+            },
+        );
         manager.next_id = 2;
 
         let mut sink = MockCommandSink::new();
         let views = HashMap::new();
-        
+
         // Update with dt = 0.5
         manager.update(0.5, &mut sink, &views);
-        
+
         let npc = manager.npcs.get(&1).unwrap();
         assert!((npc.cooldown_talk - 0.5).abs() < 0.001);
     }
@@ -500,48 +541,61 @@ mod tests {
     fn test_manager_update_multiple_npcs() {
         let planner = Box::new(MockLlm::new(vec![]));
         let mut manager = NpcManager::new(planner);
-        
+
         // Insert two NPCs with pending actions
-        manager.npcs.insert(1, Npc {
-            id: 1,
-            profile: make_test_profile(),
-            body: 0,
-            mode: NpcMode::Idle,
-            pending: vec![NpcAction::Say { text: "NPC1".into() }],
-            cooldown_talk: 0.0,
-        });
-        manager.npcs.insert(2, Npc {
-            id: 2,
-            profile: make_test_profile(),
-            body: 1,
-            mode: NpcMode::Idle,
-            pending: vec![NpcAction::OpenShop],
-            cooldown_talk: 0.0,
-        });
+        manager.npcs.insert(
+            1,
+            Npc {
+                id: 1,
+                profile: make_test_profile(),
+                body: 0,
+                mode: NpcMode::Idle,
+                pending: vec![NpcAction::Say {
+                    text: "NPC1".into(),
+                }],
+                cooldown_talk: 0.0,
+            },
+        );
+        manager.npcs.insert(
+            2,
+            Npc {
+                id: 2,
+                profile: make_test_profile(),
+                body: 1,
+                mode: NpcMode::Idle,
+                pending: vec![NpcAction::OpenShop],
+                cooldown_talk: 0.0,
+            },
+        );
         manager.next_id = 3;
 
         let mut sink = MockCommandSink::new();
         let views = HashMap::new();
-        
+
         manager.update(1.0 / 60.0, &mut sink, &views);
-        
+
         assert_eq!(sink.says.len(), 1);
         assert_eq!(sink.shops_opened.len(), 1);
     }
 
     #[test]
     fn test_handle_player_utterance_cooldown_blocks() {
-        let planner = Box::new(MockLlm::new(vec![NpcAction::Say { text: "response".into() }]));
+        let planner = Box::new(MockLlm::new(vec![NpcAction::Say {
+            text: "response".into(),
+        }]));
         let mut manager = NpcManager::new(planner);
-        
-        manager.npcs.insert(1, Npc {
-            id: 1,
-            profile: make_test_profile(),
-            body: 0,
-            mode: NpcMode::Idle,
-            pending: vec![],
-            cooldown_talk: 1.0, // On cooldown
-        });
+
+        manager.npcs.insert(
+            1,
+            Npc {
+                id: 1,
+                profile: make_test_profile(),
+                body: 0,
+                mode: NpcMode::Idle,
+                pending: vec![],
+                cooldown_talk: 1.0, // On cooldown
+            },
+        );
         manager.next_id = 2;
 
         let view = make_test_view();
@@ -555,26 +609,33 @@ mod tests {
     #[test]
     fn test_handle_player_utterance_success() {
         let planner = Box::new(MockLlm::new(vec![
-            NpcAction::Say { text: "Hello traveler".into() },
-            NpcAction::Emote { kind: crate::EmoteKind::Wave },
+            NpcAction::Say {
+                text: "Hello traveler".into(),
+            },
+            NpcAction::Emote {
+                kind: crate::EmoteKind::Wave,
+            },
         ]));
         let mut manager = NpcManager::new(planner);
-        
-        manager.npcs.insert(1, Npc {
-            id: 1,
-            profile: make_test_profile(),
-            body: 0,
-            mode: NpcMode::Idle,
-            pending: vec![],
-            cooldown_talk: 0.0,
-        });
+
+        manager.npcs.insert(
+            1,
+            Npc {
+                id: 1,
+                profile: make_test_profile(),
+                body: 0,
+                mode: NpcMode::Idle,
+                pending: vec![],
+                cooldown_talk: 0.0,
+            },
+        );
         manager.next_id = 2;
 
         let view = make_test_view();
 
         let result = manager.handle_player_utterance(1, &view, "Hello");
         assert!(result.is_ok());
-        
+
         let npc = manager.npcs.get(&1).unwrap();
         assert_eq!(npc.pending.len(), 2);
         assert!(matches!(npc.mode, NpcMode::Conversing));
@@ -585,7 +646,7 @@ mod tests {
     fn test_handle_player_utterance_nonexistent_npc() {
         let planner = Box::new(MockLlm::new(vec![]));
         let mut manager = NpcManager::new(planner);
-        
+
         let view = NpcWorldView::default();
 
         // NPC 99 doesn't exist

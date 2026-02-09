@@ -10,9 +10,7 @@
 
 #![allow(dead_code, unused_variables, clippy::type_complexity)]
 
-use criterion::{
-    criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::hint::black_box;
@@ -148,7 +146,8 @@ impl Default for EntityParams {
 
 /// Callback function types
 type UpdateCallback = extern "C" fn(handle: Handle, delta_time: f32) -> c_int;
-type EventCallback = extern "C" fn(event_type: c_int, data: *const c_void, data_len: usize) -> c_int;
+type EventCallback =
+    extern "C" fn(event_type: c_int, data: *const c_void, data_len: usize) -> c_int;
 
 /// SDK context (simulated)
 struct SdkContext {
@@ -307,18 +306,22 @@ impl BatchOperation {
     }
 
     fn add_set_transform(&mut self, handle: Handle, transform: Transform) {
-        self.operations.push(BatchOpType::SetTransform(handle, transform));
+        self.operations
+            .push(BatchOpType::SetTransform(handle, transform));
     }
 
     fn execute(&self, ctx: &mut SdkContext) -> Vec<SdkError> {
         self.operations
             .iter()
             .map(|op| match op {
-                BatchOpType::CreateEntity(params) => {
-                    ctx.create_entity(params).map(|_| SdkError::Success).unwrap_or_else(|e| e)
-                }
+                BatchOpType::CreateEntity(params) => ctx
+                    .create_entity(params)
+                    .map(|_| SdkError::Success)
+                    .unwrap_or_else(|e| e),
                 BatchOpType::DestroyEntity(handle) => ctx.destroy_entity(*handle),
-                BatchOpType::SetTransform(handle, transform) => ctx.set_transform(*handle, *transform),
+                BatchOpType::SetTransform(handle, transform) => {
+                    ctx.set_transform(*handle, *transform)
+                }
                 BatchOpType::SetName(handle, name) => ctx.set_name(*handle, name),
             })
             .collect()
@@ -438,8 +441,9 @@ fn bench_data_marshalling(c: &mut Criterion) {
     // Transform marshalling
     group.bench_function("transform_round_trip_1000", |b| {
         b.iter(|| {
-            let transforms: Vec<Transform> =
-                (0..1000).map(|i| Transform::new(i as f32, 0.0, i as f32 * 0.5)).collect();
+            let transforms: Vec<Transform> = (0..1000)
+                .map(|i| Transform::new(i as f32, 0.0, i as f32 * 0.5))
+                .collect();
 
             // Simulate FFI boundary (48 bytes per Transform)
             let bytes: Vec<[u8; 48]> = transforms
@@ -504,8 +508,10 @@ fn bench_string_marshalling(c: &mut Criterion) {
 
     group.bench_function("long_string_marshal_100", |b| {
         b.iter(|| {
-            let cstrings: Vec<CString> =
-                long_strings.iter().map(|s| marshal_string_to_c(s)).collect();
+            let cstrings: Vec<CString> = long_strings
+                .iter()
+                .map(|s| marshal_string_to_c(s))
+                .collect();
             black_box(cstrings)
         })
     });
@@ -586,8 +592,10 @@ fn bench_entity_lifecycle(c: &mut Criterion) {
                     }
 
                     // Read all transforms
-                    let transforms: Vec<Transform> =
-                        handles.iter().filter_map(|h| ctx.get_transform(*h).ok()).collect();
+                    let transforms: Vec<Transform> = handles
+                        .iter()
+                        .filter_map(|h| ctx.get_transform(*h).ok())
+                        .collect();
 
                     black_box(transforms)
                 })
@@ -651,7 +659,10 @@ fn bench_batch_operations(c: &mut Criterion) {
                     // Mix of operations
                     for (i, handle) in handles.iter().enumerate() {
                         if i % 3 == 0 {
-                            batch.add_set_transform(*handle, Transform::new(i as f32 + 1.0, 0.0, 0.0));
+                            batch.add_set_transform(
+                                *handle,
+                                Transform::new(i as f32 + 1.0, 0.0, 0.0),
+                            );
                         } else if i % 3 == 1 {
                             batch.add_create(EntityParams::default());
                         }
@@ -774,8 +785,10 @@ fn bench_error_handling(c: &mut Criterion) {
             .collect();
 
         b.iter(|| {
-            let results: Vec<Result<Transform, SdkError>> =
-                mixed_handles.iter().map(|h| ctx.get_transform(*h)).collect();
+            let results: Vec<Result<Transform, SdkError>> = mixed_handles
+                .iter()
+                .map(|h| ctx.get_transform(*h))
+                .collect();
             black_box(results)
         })
     });

@@ -685,12 +685,7 @@ mod tests {
         splits[0] = near;
         splits[CASCADE_COUNT] = far;
 
-        for (i, split) in splits
-            .iter_mut()
-            .enumerate()
-            .take(CASCADE_COUNT)
-            .skip(1)
-        {
+        for (i, split) in splits.iter_mut().enumerate().take(CASCADE_COUNT).skip(1) {
             let i_f = i as f32;
             let n_f = CASCADE_COUNT as f32;
             let log_split = near * (far / near).powf(i_f / n_f);

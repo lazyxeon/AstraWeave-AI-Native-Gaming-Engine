@@ -4,11 +4,11 @@
 
 #![cfg(test)]
 
+use astraweave_core::IVec2;
 use astraweave_net::{
     apply_delta, diff_snapshots, filter_snapshot_for_viewer, Delta, EntityState, FullInterest, Msg,
     Snapshot,
 };
-use astraweave_core::IVec2;
 
 fn empty_snapshot(tick: u64) -> Snapshot {
     Snapshot {
@@ -83,7 +83,11 @@ fn test_msg_clienthello_empty_name_roundtrip() {
     let decoded: Msg = serde_json::from_str(&json).expect("deserialize");
 
     match decoded {
-        Msg::ClientHello { name, token, policy } => {
+        Msg::ClientHello {
+            name,
+            token,
+            policy,
+        } => {
             assert_eq!(name, "");
             assert!(token.is_none());
             assert!(policy.is_none());
@@ -105,7 +109,11 @@ fn test_msg_clienthello_very_long_name_roundtrip() {
     let decoded: Msg = serde_json::from_str(&json).expect("deserialize");
 
     match decoded {
-        Msg::ClientHello { name: n2, token, policy } => {
+        Msg::ClientHello {
+            name: n2,
+            token,
+            policy,
+        } => {
             assert_eq!(n2.len(), name.len());
             assert_eq!(token.unwrap().len(), 128);
             assert_eq!(policy.unwrap(), "radius");

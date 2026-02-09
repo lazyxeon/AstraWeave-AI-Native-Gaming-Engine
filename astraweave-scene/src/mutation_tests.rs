@@ -19,9 +19,9 @@ mod transform_mutation_tests {
         let translation = Vec3::new(1.23456, -7.89012, 3.45678);
         let rotation = Quat::from_xyzw(0.1, 0.2, 0.3, 0.9).normalize();
         let scale = Vec3::new(0.5, 2.0, 1.5);
-        
+
         let t = Transform::new(translation, rotation, scale);
-        
+
         // Exact value preservation - catches field swaps
         assert_eq!(t.translation.x, 1.23456);
         assert_eq!(t.translation.y, -7.89012);
@@ -34,12 +34,12 @@ mod transform_mutation_tests {
     #[test]
     fn test_identity_returns_correct_defaults() {
         let t = Transform::identity();
-        
+
         // Ensure identity actually returns identity values
         assert_eq!(t.translation, Vec3::ZERO);
         assert_eq!(t.rotation, Quat::IDENTITY);
         assert_eq!(t.scale, Vec3::ONE);
-        
+
         // Explicit checks for each component
         assert_eq!(t.translation.x, 0.0);
         assert_eq!(t.translation.y, 0.0);
@@ -52,10 +52,10 @@ mod transform_mutation_tests {
     #[test]
     fn test_from_translation_only_sets_translation() {
         let t = Transform::from_translation(Vec3::new(5.0, 10.0, 15.0));
-        
+
         // Translation should be set
         assert_eq!(t.translation, Vec3::new(5.0, 10.0, 15.0));
-        
+
         // Rotation and scale should be default
         assert_eq!(t.rotation, Quat::IDENTITY);
         assert_eq!(t.scale, Vec3::ONE);
@@ -65,10 +65,10 @@ mod transform_mutation_tests {
     fn test_from_rotation_only_sets_rotation() {
         let rotation = Quat::from_rotation_y(PI / 4.0);
         let t = Transform::from_rotation(rotation);
-        
+
         // Rotation should be set
         assert!((t.rotation.dot(rotation) - 1.0).abs() < 0.0001);
-        
+
         // Translation and scale should be default
         assert_eq!(t.translation, Vec3::ZERO);
         assert_eq!(t.scale, Vec3::ONE);
@@ -77,12 +77,12 @@ mod transform_mutation_tests {
     #[test]
     fn test_from_scale_creates_uniform_scale() {
         let t = Transform::from_scale(3.0);
-        
+
         // Scale should be uniform
         assert_eq!(t.scale.x, 3.0);
         assert_eq!(t.scale.y, 3.0);
         assert_eq!(t.scale.z, 3.0);
-        
+
         // Translation and rotation should be default
         assert_eq!(t.translation, Vec3::ZERO);
         assert_eq!(t.rotation, Quat::IDENTITY);
@@ -91,12 +91,12 @@ mod transform_mutation_tests {
     #[test]
     fn test_from_scale_vec_creates_non_uniform_scale() {
         let t = Transform::from_scale_vec(Vec3::new(1.0, 2.0, 3.0));
-        
+
         // Each axis should be different
         assert_eq!(t.scale.x, 1.0);
         assert_eq!(t.scale.y, 2.0);
         assert_eq!(t.scale.z, 3.0);
-        
+
         // Not uniform
         assert!(t.scale.x != t.scale.y);
         assert!(t.scale.y != t.scale.z);
@@ -106,12 +106,12 @@ mod transform_mutation_tests {
     fn test_is_identity_true_only_for_identity() {
         let identity = Transform::identity();
         assert!(identity.is_identity());
-        
+
         // Any deviation should return false
         let mut t = Transform::identity();
         t.translation.x = 0.001;
         assert!(!t.is_identity());
-        
+
         let mut t = Transform::identity();
         t.scale.y = 1.001;
         assert!(!t.is_identity());
@@ -122,11 +122,11 @@ mod transform_mutation_tests {
         // Exactly uniform
         let t = Transform::from_scale(2.0);
         assert!(t.is_uniform_scale());
-        
+
         // Non-uniform
         let t = Transform::from_scale_vec(Vec3::new(2.0, 2.1, 2.0));
         assert!(!t.is_uniform_scale());
-        
+
         // Very close but not equal (within epsilon)
         let t = Transform::from_scale_vec(Vec3::new(2.0, 2.0 + f32::EPSILON / 2.0, 2.0));
         assert!(t.is_uniform_scale());
@@ -136,7 +136,7 @@ mod transform_mutation_tests {
     fn test_uniform_scale_average_calculation() {
         let t = Transform::from_scale_vec(Vec3::new(1.0, 2.0, 3.0));
         let avg = t.uniform_scale();
-        
+
         // Average of 1, 2, 3 = 2
         assert!((avg - 2.0).abs() < 0.0001);
     }
@@ -147,7 +147,7 @@ mod transform_mutation_tests {
         let t = Transform::identity();
         let fwd = t.forward();
         assert!((fwd - Vec3::NEG_Z).length() < 0.0001);
-        
+
         // 90° rotation around Y: forward becomes -X
         let t = Transform::from_rotation(Quat::from_rotation_y(PI / 2.0));
         let fwd = t.forward();
@@ -177,14 +177,14 @@ mod transform_mutation_tests {
             Quat::from_rotation_z(PI / 6.0),
             Vec3::new(2.0, 2.0, 2.0),
         );
-        
+
         let inv = t.inverse();
-        
+
         // Applying transform then inverse should return to original point
         let point = Vec3::new(1.0, 1.0, 1.0);
         let transformed = t.transform_point(point);
         let back = inv.transform_point(transformed);
-        
+
         assert!((back - point).length() < 0.001);
     }
 
@@ -195,7 +195,7 @@ mod transform_mutation_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::new(2.0, 2.0, 2.0),
         };
-        
+
         // Point (1, 0, 0) scaled by 2 = (2, 0, 0), then translated by (10, 0, 0) = (12, 0, 0)
         let result = t.transform_point(Vec3::new(1.0, 0.0, 0.0));
         assert!((result - Vec3::new(12.0, 0.0, 0.0)).length() < 0.0001);
@@ -208,7 +208,7 @@ mod transform_mutation_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        
+
         // Direction should not be affected by translation
         let result = t.transform_direction(Vec3::X);
         assert!((result - Vec3::X).length() < 0.0001);
@@ -218,15 +218,15 @@ mod transform_mutation_tests {
     fn test_lerp_at_boundaries() {
         let a = Transform::from_translation(Vec3::ZERO);
         let b = Transform::from_translation(Vec3::new(10.0, 10.0, 10.0));
-        
+
         // t=0 should return a
         let result = a.lerp(&b, 0.0);
         assert!((result.translation - a.translation).length() < 0.0001);
-        
+
         // t=1 should return b
         let result = a.lerp(&b, 1.0);
         assert!((result.translation - b.translation).length() < 0.0001);
-        
+
         // t=0.5 should be midpoint
         let result = a.lerp(&b, 0.5);
         assert!((result.translation - Vec3::new(5.0, 5.0, 5.0)).length() < 0.0001);
@@ -253,7 +253,7 @@ mod node_mutation_tests {
     fn test_node_with_transform_sets_both() {
         let transform = Transform::from_translation(Vec3::new(5.0, 5.0, 5.0));
         let node = Node::with_transform("transformed", transform);
-        
+
         assert_eq!(node.name, "transformed");
         assert_eq!(node.transform.translation, Vec3::new(5.0, 5.0, 5.0));
     }
@@ -261,14 +261,14 @@ mod node_mutation_tests {
     #[test]
     fn test_has_children_boundary() {
         let mut node = Node::new("parent");
-        
+
         // No children
         assert!(!node.has_children());
-        
+
         // One child
         node.add_child(Node::new("child"));
         assert!(node.has_children());
-        
+
         // Multiple children
         node.add_child(Node::new("child2"));
         assert!(node.has_children());
@@ -277,15 +277,15 @@ mod node_mutation_tests {
     #[test]
     fn test_child_count_accuracy() {
         let mut node = Node::new("parent");
-        
+
         assert_eq!(node.child_count(), 0);
-        
+
         node.add_child(Node::new("c1"));
         assert_eq!(node.child_count(), 1);
-        
+
         node.add_child(Node::new("c2"));
         assert_eq!(node.child_count(), 2);
-        
+
         node.add_child(Node::new("c3"));
         assert_eq!(node.child_count(), 3);
     }
@@ -293,18 +293,18 @@ mod node_mutation_tests {
     #[test]
     fn test_descendant_count_recursive() {
         let mut root = Node::new("root");
-        
+
         // No descendants
         assert_eq!(root.descendant_count(), 0);
-        
+
         // Add one child
         root.add_child(Node::new("c1"));
         assert_eq!(root.descendant_count(), 1);
-        
+
         // Add grandchild
         root.children[0].add_child(Node::new("gc1"));
         assert_eq!(root.descendant_count(), 2);
-        
+
         // Add another child with grandchildren
         let mut c2 = Node::new("c2");
         c2.add_child(Node::new("gc2"));
@@ -316,10 +316,10 @@ mod node_mutation_tests {
     #[test]
     fn test_is_leaf_boundary() {
         let mut node = Node::new("node");
-        
+
         // Initially a leaf
         assert!(node.is_leaf());
-        
+
         // After adding child, not a leaf
         node.add_child(Node::new("child"));
         assert!(!node.is_leaf());
@@ -331,11 +331,11 @@ mod node_mutation_tests {
         parent.add_child(Node::new("alpha"));
         parent.add_child(Node::new("beta"));
         parent.add_child(Node::new("gamma"));
-        
+
         // Exact match
         assert!(parent.find_child("alpha").is_some());
         assert!(parent.find_child("beta").is_some());
-        
+
         // No match
         assert!(parent.find_child("delta").is_none());
         assert!(parent.find_child("Alpha").is_none()); // Case sensitive
@@ -346,11 +346,11 @@ mod node_mutation_tests {
     fn test_find_child_mut_allows_modification() {
         let mut parent = Node::new("parent");
         parent.add_child(Node::new("child"));
-        
+
         if let Some(child) = parent.find_child_mut("child") {
             child.transform.translation = Vec3::new(1.0, 2.0, 3.0);
         }
-        
+
         // Verify modification
         let child = parent.find_child("child").unwrap();
         assert_eq!(child.transform.translation, Vec3::new(1.0, 2.0, 3.0));
@@ -363,12 +363,12 @@ mod node_mutation_tests {
         c1.add_child(Node::new("gc1"));
         c1.children[0].add_child(Node::new("ggc1"));
         root.add_child(c1);
-        
+
         // Find at each level
         assert!(root.find_descendant("c1").is_some());
         assert!(root.find_descendant("gc1").is_some());
         assert!(root.find_descendant("ggc1").is_some());
-        
+
         // Not found
         assert!(root.find_descendant("nonexistent").is_none());
     }
@@ -376,18 +376,18 @@ mod node_mutation_tests {
     #[test]
     fn test_depth_calculation() {
         let mut root = Node::new("root");
-        
+
         // Leaf node has depth 0
         assert_eq!(root.depth(), 0);
-        
+
         // Add one level
         root.add_child(Node::new("c1"));
         assert_eq!(root.depth(), 1);
-        
+
         // Add second level
         root.children[0].add_child(Node::new("gc1"));
         assert_eq!(root.depth(), 2);
-        
+
         // Add third level
         root.children[0].children[0].add_child(Node::new("ggc1"));
         assert_eq!(root.depth(), 3);
@@ -397,7 +397,7 @@ mod node_mutation_tests {
     fn test_node_display_format() {
         let leaf = Node::new("leaf");
         assert!(format!("{}", leaf).contains("leaf"));
-        
+
         let mut parent = Node::new("parent");
         parent.add_child(Node::new("c1"));
         parent.add_child(Node::new("c2"));
@@ -426,14 +426,14 @@ mod scene_mutation_tests {
     fn test_scene_with_root_uses_custom_root() {
         let custom_root = Node::new("custom_root");
         let scene = Scene::with_root(custom_root);
-        
+
         assert_eq!(scene.root.name, "custom_root");
     }
 
     #[test]
     fn test_node_count_includes_root() {
         let scene = Scene::new();
-        
+
         // Just root
         assert_eq!(scene.node_count(), 1);
     }
@@ -444,7 +444,7 @@ mod scene_mutation_tests {
         scene.root.add_child(Node::new("c1"));
         scene.root.add_child(Node::new("c2"));
         scene.root.children[0].add_child(Node::new("gc1"));
-        
+
         // root + 2 children + 1 grandchild = 4
         assert_eq!(scene.node_count(), 4);
     }
@@ -453,7 +453,7 @@ mod scene_mutation_tests {
     fn test_is_empty_boundary() {
         let scene = Scene::new();
         assert!(scene.is_empty());
-        
+
         let mut scene = Scene::new();
         scene.root.add_child(Node::new("child"));
         assert!(!scene.is_empty());
@@ -463,10 +463,10 @@ mod scene_mutation_tests {
     fn test_scene_depth() {
         let mut scene = Scene::new();
         assert_eq!(scene.depth(), 0);
-        
+
         scene.root.add_child(Node::new("c1"));
         assert_eq!(scene.depth(), 1);
-        
+
         scene.root.children[0].add_child(Node::new("gc1"));
         assert_eq!(scene.depth(), 2);
     }
@@ -474,7 +474,7 @@ mod scene_mutation_tests {
     #[test]
     fn test_find_node_finds_root() {
         let scene = Scene::new();
-        
+
         let found = scene.find_node("root");
         assert!(found.is_some());
         assert_eq!(found.unwrap().name, "root");
@@ -485,7 +485,7 @@ mod scene_mutation_tests {
         let mut scene = Scene::new();
         scene.root.add_child(Node::new("child"));
         scene.root.children[0].add_child(Node::new("grandchild"));
-        
+
         assert!(scene.find_node("child").is_some());
         assert!(scene.find_node("grandchild").is_some());
         assert!(scene.find_node("nonexistent").is_none());
@@ -496,12 +496,12 @@ mod scene_mutation_tests {
         let mut scene = Scene::new();
         scene.root.add_child(Node::new("c1"));
         scene.root.add_child(Node::new("c2"));
-        
+
         let mut visited = Vec::new();
         scene.traverse(&mut |node, _| {
             visited.push(node.name.clone());
         });
-        
+
         assert_eq!(visited.len(), 3);
         assert!(visited.contains(&"root".to_string()));
         assert!(visited.contains(&"c1".to_string()));
@@ -511,20 +511,20 @@ mod scene_mutation_tests {
     #[test]
     fn test_traverse_computes_world_transforms() {
         let mut scene = Scene::new();
-        
+
         // Root at origin
         // Child translated by (10, 0, 0)
         let mut child = Node::new("child");
         child.transform.translation = Vec3::new(10.0, 0.0, 0.0);
         scene.root.add_child(child);
-        
+
         let mut child_world = Mat4::IDENTITY;
         scene.traverse(&mut |node, world| {
             if node.name == "child" {
                 child_world = world;
             }
         });
-        
+
         // Child's world position should be (10, 0, 0)
         let (_, _, translation) = child_world.to_scale_rotation_translation();
         assert!((translation - Vec3::new(10.0, 0.0, 0.0)).length() < 0.0001);
@@ -536,14 +536,14 @@ mod scene_mutation_tests {
         let mut c1 = Node::new("c1");
         c1.add_child(Node::new("gc1"));
         scene.root.add_child(c1);
-        
+
         let mut gc1_path = Vec::new();
         scene.traverse_with_path(&mut |node, _, path| {
             if node.name == "gc1" {
                 gc1_path = path.iter().map(|s| s.to_string()).collect();
             }
         });
-        
+
         assert_eq!(gc1_path, vec!["root", "c1", "gc1"]);
     }
 
@@ -552,7 +552,7 @@ mod scene_mutation_tests {
         let mut scene = Scene::new();
         scene.root.add_child(Node::new("c1"));
         scene.root.add_child(Node::new("c2"));
-        
+
         let display = format!("{}", scene);
         assert!(display.contains("Scene"));
         assert!(display.contains("3 nodes"));
@@ -627,7 +627,7 @@ mod ecs_mutation_tests {
     fn test_animator_play_sets_state() {
         let mut anim = CAnimator::default();
         assert_eq!(anim.state, PlaybackState::Stopped);
-        
+
         anim.play();
         assert_eq!(anim.state, PlaybackState::Playing);
     }
@@ -635,11 +635,11 @@ mod ecs_mutation_tests {
     #[test]
     fn test_animator_pause_only_when_playing() {
         let mut anim = CAnimator::default();
-        
+
         // Pause from stopped does nothing
         anim.pause();
         assert_eq!(anim.state, PlaybackState::Stopped);
-        
+
         // Pause from playing works
         anim.play();
         anim.pause();
@@ -651,7 +651,7 @@ mod ecs_mutation_tests {
         let mut anim = CAnimator::default();
         anim.play();
         anim.time = 5.0;
-        
+
         anim.stop();
         assert_eq!(anim.state, PlaybackState::Stopped);
         assert_eq!(anim.time, 0.0);
@@ -660,15 +660,15 @@ mod ecs_mutation_tests {
     #[test]
     fn test_animator_toggle_pause() {
         let mut anim = CAnimator::default();
-        
+
         // From stopped -> playing
         anim.toggle_pause();
         assert_eq!(anim.state, PlaybackState::Playing);
-        
+
         // From playing -> paused
         anim.toggle_pause();
         assert_eq!(anim.state, PlaybackState::Paused);
-        
+
         // From paused -> playing
         anim.toggle_pause();
         assert_eq!(anim.state, PlaybackState::Playing);
@@ -690,7 +690,7 @@ mod ecs_mutation_tests {
     fn test_animator_reset_clears_time() {
         let mut anim = CAnimator::default();
         anim.time = 10.0;
-        
+
         anim.reset();
         assert_eq!(anim.time, 0.0);
     }
@@ -711,9 +711,9 @@ mod matrix_mutation_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::new(2.0, 2.0, 2.0),
         };
-        
+
         let m = t.matrix();
-        
+
         // Transform point (1, 0, 0):
         // Scale: (2, 0, 0)
         // Rotate: (2, 0, 0) (identity)
@@ -729,10 +729,10 @@ mod matrix_mutation_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::new(-1.0, 1.0, 1.0),
         };
-        
+
         let m = t.matrix();
         let result = m.transform_point3(Vec3::new(1.0, 0.0, 0.0));
-        
+
         // Negative X scale should flip X
         assert!((result.x - (-1.0)).abs() < 0.0001);
     }
@@ -744,10 +744,10 @@ mod matrix_mutation_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::ZERO,
         };
-        
+
         let m = t.matrix();
         let result = m.transform_point3(Vec3::new(100.0, 100.0, 100.0));
-        
+
         // Zero scale collapses everything to origin
         assert!((result).length() < 0.0001);
     }
@@ -766,18 +766,21 @@ mod behavioral_correctness_tests {
         // Behavioral: identity transform should not change any point
         let t = Transform::identity();
         let m = t.matrix();
-        
+
         let test_points = [
             Vec3::ZERO,
             Vec3::ONE,
             Vec3::new(100.0, -50.0, 25.0),
             Vec3::new(-1.0, -1.0, -1.0),
         ];
-        
+
         for point in test_points {
             let result = m.transform_point3(point);
-            assert!((result - point).length() < 0.0001,
-                "Identity should preserve point {:?}", point);
+            assert!(
+                (result - point).length() < 0.0001,
+                "Identity should preserve point {:?}",
+                point
+            );
         }
     }
 
@@ -789,11 +792,15 @@ mod behavioral_correctness_tests {
             rotation: Quat::from_rotation_y(PI / 4.0),
             scale: Vec3::new(1.0, 2.0, 3.0),
         };
-        
+
         let m = t.matrix();
         let det = m.determinant();
-        
-        assert!(det > 0.0, "Determinant should be positive for positive scales: {}", det);
+
+        assert!(
+            det > 0.0,
+            "Determinant should be positive for positive scales: {}",
+            det
+        );
     }
 
     #[test]
@@ -804,13 +811,17 @@ mod behavioral_correctness_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::new(2.0, 3.0, 4.0),
         };
-        
+
         let m = t.matrix();
         let det = m.determinant();
         let expected = 2.0 * 3.0 * 4.0;
-        
-        assert!((det - expected).abs() < 0.001,
-            "Determinant should equal scale product: expected {}, got {}", expected, det);
+
+        assert!(
+            (det - expected).abs() < 0.001,
+            "Determinant should equal scale product: expected {}, got {}",
+            expected,
+            det
+        );
     }
 
     #[test]
@@ -821,16 +832,20 @@ mod behavioral_correctness_tests {
             rotation: Quat::from_rotation_y(PI / 3.0) * Quat::from_rotation_x(PI / 6.0),
             scale: Vec3::ONE,
         };
-        
+
         let m = t.matrix();
         let original = Vec3::new(1.0, 2.0, 3.0);
         let original_len = original.length();
-        
+
         let rotated = m.transform_vector3(original);
         let rotated_len = rotated.length();
-        
-        assert!((original_len - rotated_len).abs() < 0.0001,
-            "Rotation should preserve length: {} vs {}", original_len, rotated_len);
+
+        assert!(
+            (original_len - rotated_len).abs() < 0.0001,
+            "Rotation should preserve length: {} vs {}",
+            original_len,
+            rotated_len
+        );
     }
 
     #[test]
@@ -838,13 +853,15 @@ mod behavioral_correctness_tests {
         // Behavioral: translation should only affect point position, not direction
         let t = Transform::from_translation(Vec3::new(100.0, 200.0, 300.0));
         let m = t.matrix();
-        
+
         // Direction vector should be unchanged
         let dir = Vec3::new(1.0, 0.0, 0.0);
         let transformed_dir = m.transform_vector3(dir);
-        
-        assert!((transformed_dir - dir).length() < 0.0001,
-            "Translation should not affect directions");
+
+        assert!(
+            (transformed_dir - dir).length() < 0.0001,
+            "Translation should not affect directions"
+        );
     }
 
     #[test]
@@ -852,13 +869,19 @@ mod behavioral_correctness_tests {
         // Behavioral: uniform scale should preserve proportions
         let t = Transform::from_scale(3.0);
         let m = t.matrix();
-        
+
         let v = Vec3::new(1.0, 2.0, 3.0);
         let scaled = m.transform_vector3(v);
-        
+
         // Ratios should be preserved
-        assert!((scaled.x / scaled.y - v.x / v.y).abs() < 0.0001, "X/Y ratio should be preserved");
-        assert!((scaled.y / scaled.z - v.y / v.z).abs() < 0.0001, "Y/Z ratio should be preserved");
+        assert!(
+            (scaled.x / scaled.y - v.x / v.y).abs() < 0.0001,
+            "X/Y ratio should be preserved"
+        );
+        assert!(
+            (scaled.y / scaled.z - v.y / v.z).abs() < 0.0001,
+            "Y/Z ratio should be preserved"
+        );
     }
 
     #[test]
@@ -867,17 +890,23 @@ mod behavioral_correctness_tests {
         let a = Transform::from_translation(Vec3::X * 5.0).matrix();
         let b = Transform::from_rotation(Quat::from_rotation_y(PI / 4.0)).matrix();
         let c = Transform::from_scale(2.0).matrix();
-        
+
         let left = (a * b) * c;
         let right = a * (b * c);
-        
+
         // Compare all elements
         for i in 0..4 {
             for j in 0..4 {
                 let l = left.col(i)[j];
                 let r = right.col(i)[j];
-                assert!((l - r).abs() < 0.0001,
-                    "Matrix multiplication should be associative at ({},{}): {} vs {}", i, j, l, r);
+                assert!(
+                    (l - r).abs() < 0.0001,
+                    "Matrix multiplication should be associative at ({},{}): {} vs {}",
+                    i,
+                    j,
+                    l,
+                    r
+                );
             }
         }
     }
@@ -887,12 +916,14 @@ mod behavioral_correctness_tests {
         // Behavioral: scaling by 1 should be equivalent to identity
         let t = Transform::from_scale(1.0);
         let identity = Transform::identity();
-        
+
         let point = Vec3::new(7.0, 8.0, 9.0);
         let result_scaled = t.matrix().transform_point3(point);
         let result_identity = identity.matrix().transform_point3(point);
-        
-        assert!((result_scaled - result_identity).length() < 0.0001,
-            "Scale by 1 should equal identity transform");
+
+        assert!(
+            (result_scaled - result_identity).length() < 0.0001,
+            "Scale by 1 should equal identity transform"
+        );
     }
 }

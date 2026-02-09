@@ -578,6 +578,7 @@ impl AIArbiter {
     ///         println!("Executing LLM plan step {}", step_index)
     ///     }
     ///     AIControlMode::BehaviorTree => println!("Emergency fallback"),
+    ///     _ => println!("Other mode"),
     /// }
     /// # }
     /// ```

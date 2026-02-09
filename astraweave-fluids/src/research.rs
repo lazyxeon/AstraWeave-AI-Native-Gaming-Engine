@@ -125,13 +125,13 @@ pub enum ShearRateMethod {
 }
 
 /// SPH Kernel function selection
-/// 
+///
 /// Different kernels offer different trade-offs:
 /// - **Cubic Spline**: Classic SPH kernel, well-understood but prone to pairing instability
 /// - **Wendland C2**: Smoother, more stable, recommended for modern SPH (Dehnen & Aly 2012)
 /// - **Wendland C4**: Higher smoothness, better for viscous flows
 /// - **Wendland C6**: Highest smoothness, research applications
-/// 
+///
 /// # References
 /// - Wendland (1995) "Piecewise polynomial, positive definite and compactly supported radial functions"
 /// - Dehnen & Aly (2012) "Improving convergence in SPH simulations without pairing instability"
@@ -161,13 +161,13 @@ impl KernelType {
             Self::WendlandC6 => 6,
         }
     }
-    
+
     /// Returns whether this kernel is recommended for stability
     #[inline]
     pub const fn is_stable(self) -> bool {
         !matches!(self, Self::CubicSpline)
     }
-    
+
     /// Returns the relative computational cost (1.0 = baseline)
     #[inline]
     pub const fn relative_cost(self) -> f32 {
@@ -852,11 +852,12 @@ mod tests {
         let size = std::mem::size_of::<ResearchParticle>();
         // Print actual size for debugging
         println!("ResearchParticle size: {} bytes", size);
-        
+
         // Must be at least 176 bytes for all required fields
         assert!(
             size >= 176,
-            "ResearchParticle must be at least 176 bytes (got {} bytes)", size
+            "ResearchParticle must be at least 176 bytes (got {} bytes)",
+            size
         );
         // Must be 16-byte aligned
         assert_eq!(
@@ -990,7 +991,7 @@ mod tests {
     fn test_particle_is_gas_phase() {
         let mut p = ResearchParticle::default();
         assert!(!p.is_gas_phase());
-        
+
         p.is_gas = 1;
         assert!(p.is_gas_phase());
     }
@@ -999,7 +1000,7 @@ mod tests {
     fn test_particle_is_at_surface() {
         let mut p = ResearchParticle::default();
         assert!(!p.is_at_surface());
-        
+
         p.is_surface = 1;
         assert!(p.is_at_surface());
     }
@@ -1066,7 +1067,10 @@ mod tests {
     #[test]
     fn test_shifting_method_variants() {
         assert_eq!(ShiftingMethod::default(), ShiftingMethod::None);
-        assert_ne!(ShiftingMethod::StandardDelta, ShiftingMethod::InterfaceAware);
+        assert_ne!(
+            ShiftingMethod::StandardDelta,
+            ShiftingMethod::InterfaceAware
+        );
     }
 
     #[test]
@@ -1141,7 +1145,7 @@ mod tests {
     fn test_kernel_type_stability() {
         // Cubic spline is NOT stable (pairing instability)
         assert!(!KernelType::CubicSpline.is_stable());
-        
+
         // Wendland kernels ARE stable
         assert!(KernelType::WendlandC2.is_stable());
         assert!(KernelType::WendlandC4.is_stable());
@@ -1152,7 +1156,7 @@ mod tests {
     fn test_kernel_type_relative_cost() {
         // CubicSpline is baseline (1.0)
         assert!((KernelType::CubicSpline.relative_cost() - 1.0).abs() < 1e-6);
-        
+
         // Higher smoothness = higher cost
         assert!(KernelType::WendlandC2.relative_cost() > KernelType::CubicSpline.relative_cost());
         assert!(KernelType::WendlandC4.relative_cost() > KernelType::WendlandC2.relative_cost());
@@ -1171,7 +1175,7 @@ mod tests {
         let config = ResearchFluidConfig::default();
         let params = config.to_sim_params(1000);
         assert_eq!(params.kernel_type, 1); // WendlandC2
-        
+
         // Research tier should use WendlandC4 (value 2)
         let research = ResearchFluidConfig::from_tier(ResearchQualityTier::Research);
         let params = research.to_sim_params(1000);

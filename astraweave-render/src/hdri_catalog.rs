@@ -306,8 +306,8 @@ mod tests {
         }
 
         let hdri_root = Path::new("assets/hdri");
-        let catalog = HdriCatalog::load(catalog_path, hdri_root)
-            .expect("Failed to load HDRI catalog");
+        let catalog =
+            HdriCatalog::load(catalog_path, hdri_root).expect("Failed to load HDRI catalog");
 
         // Should have entries
         assert!(catalog.entries().count() > 0, "Catalog should have entries");
@@ -318,7 +318,14 @@ mod tests {
 
         // Should have a fallback for every biome+time
         for biome in &[
-            "grassland", "desert", "forest", "mountain", "tundra", "swamp", "beach", "river",
+            "grassland",
+            "desert",
+            "forest",
+            "mountain",
+            "tundra",
+            "swamp",
+            "beach",
+            "river",
         ] {
             for time in DayPeriod::all() {
                 let entry = catalog.resolve(biome, *time);

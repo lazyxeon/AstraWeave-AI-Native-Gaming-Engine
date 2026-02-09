@@ -23,6 +23,7 @@
 //! effect.start(Some(BiomeType::Forest), BiomeType::Desert);
 //!
 //! // Each frame, update and get blend params:
+//! let delta_time = 0.016_f32; // ~60 FPS
 //! effect.update(delta_time);
 //! if effect.is_active() {
 //!     let t = effect.blend_factor(); // 0.0 -> 1.0
@@ -257,8 +258,8 @@ impl BiomeVisuals {
                 water_deep: Vec3::new(0.01, 0.06, 0.2),
                 water_shallow: Vec3::new(0.05, 0.3, 0.5),
                 water_foam: Vec3::new(0.98, 1.0, 1.0),
-                cloud_coverage: 0.6, // Often cloudy at altitude
-                cloud_speed: 0.04, // Faster winds
+                cloud_coverage: 0.6,           // Often cloudy at altitude
+                cloud_speed: 0.04,             // Faster winds
                 weather_particle_density: 1.2, // Snow more visible
             },
             BiomeType::Tundra => Self {
@@ -297,8 +298,8 @@ impl BiomeVisuals {
                 water_deep: Vec3::new(0.04, 0.08, 0.04),
                 water_shallow: Vec3::new(0.12, 0.2, 0.1),
                 water_foam: Vec3::new(0.6, 0.65, 0.5),
-                cloud_coverage: 0.7, // Perpetually hazy/foggy
-                cloud_speed: 0.01, // Stagnant air
+                cloud_coverage: 0.7,           // Perpetually hazy/foggy
+                cloud_speed: 0.01,             // Stagnant air
                 weather_particle_density: 0.8, // Mist more than rain
             },
             BiomeType::Beach => Self {
@@ -366,7 +367,11 @@ impl BiomeVisuals {
             water_foam: self.water_foam.lerp(other.water_foam, t),
             cloud_coverage: lerp(self.cloud_coverage, other.cloud_coverage, t),
             cloud_speed: lerp(self.cloud_speed, other.cloud_speed, t),
-            weather_particle_density: lerp(self.weather_particle_density, other.weather_particle_density, t),
+            weather_particle_density: lerp(
+                self.weather_particle_density,
+                other.weather_particle_density,
+                t,
+            ),
         }
     }
 
@@ -864,14 +869,20 @@ mod tests {
         let tundra = BiomeVisuals::for_biome(BiomeType::Tundra);
 
         // Fog densities should differ meaningfully
-        assert!((grassland.fog_density - desert.fog_density).abs() > 0.0001
-            || (grassland.fog_color - desert.fog_color).length() > 0.1);
-        assert!((forest.fog_density - tundra.fog_density).abs() > 0.0001
-            || (forest.fog_color - tundra.fog_color).length() > 0.1);
+        assert!(
+            (grassland.fog_density - desert.fog_density).abs() > 0.0001
+                || (grassland.fog_color - desert.fog_color).length() > 0.1
+        );
+        assert!(
+            (forest.fog_density - tundra.fog_density).abs() > 0.0001
+                || (forest.fog_color - tundra.fog_color).length() > 0.1
+        );
 
         // Ambient should be distinct
-        assert!((grassland.ambient_intensity - forest.ambient_intensity).abs() > 0.01
-            || (grassland.ambient_color - forest.ambient_color).length() > 0.1);
+        assert!(
+            (grassland.ambient_intensity - forest.ambient_intensity).abs() > 0.01
+                || (grassland.ambient_color - forest.ambient_color).length() > 0.1
+        );
     }
 
     #[test]
@@ -972,7 +983,11 @@ mod tests {
         // Mid-point should be between the two endpoints for every field
         for (va, vm, vb) in [
             (a.sky_day_top, mid.sky_day_top, b.sky_day_top),
-            (a.sky_night_horizon, mid.sky_night_horizon, b.sky_night_horizon),
+            (
+                a.sky_night_horizon,
+                mid.sky_night_horizon,
+                b.sky_night_horizon,
+            ),
             (a.water_deep, mid.water_deep, b.water_deep),
             (a.water_shallow, mid.water_shallow, b.water_shallow),
             (a.water_foam, mid.water_foam, b.water_foam),

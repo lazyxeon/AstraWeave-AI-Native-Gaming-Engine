@@ -54,7 +54,11 @@ impl Default for Transform {
 impl Transform {
     /// Creates a new transform with the given translation, rotation, and scale.
     pub fn new(translation: Vec3, rotation: Quat, scale: Vec3) -> Self {
-        Self { translation, rotation, scale }
+        Self {
+            translation,
+            rotation,
+            scale,
+        }
     }
 
     /// Creates an identity transform.
@@ -65,22 +69,34 @@ impl Transform {
 
     /// Creates a transform with only translation.
     pub fn from_translation(translation: Vec3) -> Self {
-        Self { translation, ..Default::default() }
+        Self {
+            translation,
+            ..Default::default()
+        }
     }
 
     /// Creates a transform with only rotation.
     pub fn from_rotation(rotation: Quat) -> Self {
-        Self { rotation, ..Default::default() }
+        Self {
+            rotation,
+            ..Default::default()
+        }
     }
 
     /// Creates a transform with only uniform scale.
     pub fn from_scale(scale: f32) -> Self {
-        Self { scale: Vec3::splat(scale), ..Default::default() }
+        Self {
+            scale: Vec3::splat(scale),
+            ..Default::default()
+        }
     }
 
     /// Creates a transform with non-uniform scale.
     pub fn from_scale_vec(scale: Vec3) -> Self {
-        Self { scale, ..Default::default() }
+        Self {
+            scale,
+            ..Default::default()
+        }
     }
 
     /// Returns the 4x4 transformation matrix.
@@ -90,9 +106,7 @@ impl Transform {
 
     /// Returns true if this is an identity transform.
     pub fn is_identity(&self) -> bool {
-        self.translation == Vec3::ZERO
-            && self.rotation == Quat::IDENTITY
-            && self.scale == Vec3::ONE
+        self.translation == Vec3::ZERO && self.rotation == Quat::IDENTITY && self.scale == Vec3::ONE
     }
 
     /// Returns true if the scale is uniform.
@@ -155,8 +169,11 @@ impl Transform {
 
 impl std::fmt::Display for Transform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Transform(pos={}, rot={}, scale={})", 
-            self.translation, self.rotation, self.scale)
+        write!(
+            f,
+            "Transform(pos={}, rot={}, scale={})",
+            self.translation, self.rotation, self.scale
+        )
     }
 }
 
@@ -252,7 +269,12 @@ impl std::fmt::Display for Node {
         if self.children.is_empty() {
             write!(f, "Node(\"{}\")", self.name)
         } else {
-            write!(f, "Node(\"{}\", {} children)", self.name, self.children.len())
+            write!(
+                f,
+                "Node(\"{}\", {} children)",
+                self.name,
+                self.children.len()
+            )
         }
     }
 }
@@ -313,7 +335,12 @@ impl Scene {
 
     /// Traverses with path tracking (node names from root).
     pub fn traverse_with_path<'a>(&'a self, f: &mut impl FnMut(&'a Node, Mat4, &[&str])) {
-        fn walk<'a>(n: &'a Node, parent: Mat4, path: &mut Vec<&'a str>, f: &mut impl FnMut(&'a Node, Mat4, &[&str])) {
+        fn walk<'a>(
+            n: &'a Node,
+            parent: Mat4,
+            path: &mut Vec<&'a str>,
+            f: &mut impl FnMut(&'a Node, Mat4, &[&str]),
+        ) {
             let world = parent * n.transform.matrix();
             path.push(&n.name);
             f(n, world, path);
@@ -329,7 +356,12 @@ impl Scene {
 
 impl std::fmt::Display for Scene {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Scene({} nodes, depth={})", self.node_count(), self.depth())
+        write!(
+            f,
+            "Scene({} nodes, depth={})",
+            self.node_count(),
+            self.depth()
+        )
     }
 }
 
@@ -556,12 +588,15 @@ pub mod ecs {
 
     impl std::fmt::Display for CAnimator {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "CAnimator(clip={}, t={:.2}, speed={}, {}{})", 
-                self.clip_index, 
-                self.time, 
+            write!(
+                f,
+                "CAnimator(clip={}, t={:.2}, speed={}, {}{})",
+                self.clip_index,
+                self.time,
                 self.speed,
                 self.state,
-                if self.looping { ", looping" } else { "" })
+                if self.looping { ", looping" } else { "" }
+            )
         }
     }
 
@@ -959,7 +994,7 @@ mod tests {
     fn test_transform_matrix_identity() {
         let t = Transform::default();
         let m = t.matrix();
-        
+
         // Identity transform should produce identity matrix
         assert!((m - Mat4::IDENTITY).abs_diff_eq(Mat4::ZERO, 0.0001));
     }
@@ -972,7 +1007,7 @@ mod tests {
             scale: Vec3::ONE,
         };
         let m = t.matrix();
-        
+
         // Extract translation from matrix
         let (_, _, extracted_translation) = m.to_scale_rotation_translation();
         assert!((extracted_translation - t.translation).length() < 0.0001);
@@ -987,10 +1022,10 @@ mod tests {
             scale: Vec3::ONE,
         };
         let m = t.matrix();
-        
+
         // Extract rotation from matrix
         let (_, extracted_rotation, _) = m.to_scale_rotation_translation();
-        
+
         // Quaternions can have equivalent forms (q and -q represent same rotation)
         let dot = extracted_rotation.dot(rotation).abs();
         assert!(dot > 0.9999, "Rotations should be equivalent");
@@ -1004,7 +1039,7 @@ mod tests {
             scale: Vec3::new(2.0, 3.0, 4.0),
         };
         let m = t.matrix();
-        
+
         // Extract scale from matrix
         let (extracted_scale, _, _) = m.to_scale_rotation_translation();
         assert!((extracted_scale - t.scale).length() < 0.0001);
@@ -1018,11 +1053,11 @@ mod tests {
             scale: Vec3::new(2.0, 2.0, 2.0),
         };
         let m = t.matrix();
-        
+
         // Transform a point
         let point = Vec3::new(1.0, 0.0, 0.0);
         let transformed = m.transform_point3(point);
-        
+
         // Expected: scale (2.0), rotate 45° around Z, translate
         // Scaled: (2.0, 0.0, 0.0)
         // Rotated 45°: (sqrt(2), sqrt(2), 0)
@@ -1039,10 +1074,10 @@ mod tests {
             rotation: Quat::from_rotation_x(PI / 6.0),
             scale: Vec3::new(1.5, 2.5, 3.5),
         };
-        
+
         let json = serde_json::to_string(&t).unwrap();
         let deserialized: Transform = serde_json::from_str(&json).unwrap();
-        
+
         assert!((deserialized.translation - t.translation).length() < 0.0001);
         assert!((deserialized.scale - t.scale).length() < 0.0001);
     }
@@ -1074,7 +1109,7 @@ mod tests {
         let mut parent = Node::new("parent");
         parent.children.push(Node::new("child1"));
         parent.children.push(Node::new("child2"));
-        
+
         assert_eq!(parent.children.len(), 2);
         assert_eq!(parent.children[0].name, "child1");
         assert_eq!(parent.children[1].name, "child2");
@@ -1085,7 +1120,7 @@ mod tests {
         let mut node = Node::new("transformed");
         node.transform.translation = Vec3::new(10.0, 0.0, 0.0);
         node.transform.scale = Vec3::new(2.0, 2.0, 2.0);
-        
+
         assert_eq!(node.transform.translation, Vec3::new(10.0, 0.0, 0.0));
         assert_eq!(node.transform.scale, Vec3::new(2.0, 2.0, 2.0));
     }
@@ -1095,10 +1130,10 @@ mod tests {
         let mut node = Node::new("serialized");
         node.transform.translation = Vec3::new(1.0, 2.0, 3.0);
         node.children.push(Node::new("child"));
-        
+
         let json = serde_json::to_string(&node).unwrap();
         let deserialized: Node = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.name, "serialized");
         assert_eq!(deserialized.children.len(), 1);
         assert_eq!(deserialized.children[0].name, "child");
@@ -1123,12 +1158,12 @@ mod tests {
     fn test_scene_traverse_single_node() {
         let scene = Scene::new();
         let mut count = 0;
-        
+
         scene.traverse(&mut |node, _matrix| {
             count += 1;
             assert_eq!(node.name, "root");
         });
-        
+
         assert_eq!(count, 1);
     }
 
@@ -1137,13 +1172,15 @@ mod tests {
         let mut scene = Scene::new();
         scene.root.children.push(Node::new("child1"));
         scene.root.children.push(Node::new("child2"));
-        scene.root.children[0].children.push(Node::new("grandchild"));
-        
+        scene.root.children[0]
+            .children
+            .push(Node::new("grandchild"));
+
         let mut names = Vec::new();
         scene.traverse(&mut |node, _matrix| {
             names.push(node.name.clone());
         });
-        
+
         // Should visit all 4 nodes: root, child1, grandchild, child2
         assert_eq!(names.len(), 4);
         assert_eq!(names[0], "root");
@@ -1156,24 +1193,32 @@ mod tests {
     fn test_scene_traverse_world_matrix_propagation() {
         let mut scene = Scene::new();
         scene.root.transform.translation = Vec3::new(10.0, 0.0, 0.0);
-        
+
         let mut child = Node::new("child");
         child.transform.translation = Vec3::new(5.0, 0.0, 0.0);
         scene.root.children.push(child);
-        
+
         let mut world_translations = Vec::new();
         scene.traverse(&mut |node, matrix| {
             let (_, _, translation) = matrix.to_scale_rotation_translation();
             world_translations.push((node.name.clone(), translation));
         });
-        
+
         // Root should be at (10, 0, 0)
         // Child should be at (15, 0, 0) = parent + local
         assert_eq!(world_translations.len(), 2);
-        
-        let root_trans = world_translations.iter().find(|(n, _)| n == "root").unwrap().1;
-        let child_trans = world_translations.iter().find(|(n, _)| n == "child").unwrap().1;
-        
+
+        let root_trans = world_translations
+            .iter()
+            .find(|(n, _)| n == "root")
+            .unwrap()
+            .1;
+        let child_trans = world_translations
+            .iter()
+            .find(|(n, _)| n == "child")
+            .unwrap()
+            .1;
+
         assert!((root_trans - Vec3::new(10.0, 0.0, 0.0)).length() < 0.0001);
         assert!((child_trans - Vec3::new(15.0, 0.0, 0.0)).length() < 0.0001);
     }
@@ -1182,22 +1227,22 @@ mod tests {
     fn test_scene_traverse_scale_inheritance() {
         let mut scene = Scene::new();
         scene.root.transform.scale = Vec3::new(2.0, 2.0, 2.0);
-        
+
         let mut child = Node::new("child");
         child.transform.scale = Vec3::new(2.0, 2.0, 2.0);
         scene.root.children.push(child);
-        
+
         let mut world_scales = Vec::new();
         scene.traverse(&mut |node, matrix| {
             let (scale, _, _) = matrix.to_scale_rotation_translation();
             world_scales.push((node.name.clone(), scale));
         });
-        
+
         // Root scale: 2.0
         // Child world scale: 2.0 * 2.0 = 4.0
         let root_scale = world_scales.iter().find(|(n, _)| n == "root").unwrap().1;
         let child_scale = world_scales.iter().find(|(n, _)| n == "child").unwrap().1;
-        
+
         assert!((root_scale - Vec3::new(2.0, 2.0, 2.0)).length() < 0.0001);
         assert!((child_scale - Vec3::new(4.0, 4.0, 4.0)).length() < 0.0001);
     }
@@ -1207,29 +1252,29 @@ mod tests {
         let mut scene = Scene::new();
         scene.root.transform.translation = Vec3::new(1.0, 2.0, 3.0);
         scene.root.children.push(Node::new("child"));
-        
+
         let json = serde_json::to_string(&scene).unwrap();
         let deserialized: Scene = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.root.children.len(), 1);
     }
 
     #[test]
     fn test_scene_deep_hierarchy() {
         let mut scene = Scene::new();
-        
+
         // Create a deep hierarchy: root -> level1 -> level2 -> level3 -> level4
         let mut current = &mut scene.root;
         for i in 1..=4 {
             current.children.push(Node::new(format!("level{}", i)));
             current = &mut current.children[0];
         }
-        
+
         let mut depth = 0;
         scene.traverse(&mut |_node, _matrix| {
             depth += 1;
         });
-        
+
         assert_eq!(depth, 5); // root + 4 levels
     }
 
@@ -1237,11 +1282,11 @@ mod tests {
     fn test_scene_traverse_rotation_propagation() {
         let mut scene = Scene::new();
         scene.root.transform.rotation = Quat::from_rotation_y(PI / 2.0); // 90° around Y
-        
+
         let mut child = Node::new("child");
         child.transform.translation = Vec3::new(10.0, 0.0, 0.0); // 10 units in X
         scene.root.children.push(child);
-        
+
         let mut child_world_pos = Vec3::ZERO;
         scene.traverse(&mut |node, matrix| {
             if node.name == "child" {
@@ -1249,7 +1294,7 @@ mod tests {
                 child_world_pos = translation;
             }
         });
-        
+
         // After 90° rotation around Y, X becomes Z
         // Child at local (10, 0, 0) should be at world (0, 0, -10)
         assert!((child_world_pos - Vec3::new(0.0, 0.0, -10.0)).length() < 0.001);
@@ -1448,7 +1493,7 @@ mod tests {
     fn test_node_display() {
         let node = Node::new("test");
         assert!(format!("{}", node).contains("Node(\"test\")"));
-        
+
         let mut parent = Node::new("parent");
         parent.add_child(Node::new("child"));
         assert!(format!("{}", parent).contains("1 children"));
@@ -1504,7 +1549,7 @@ mod tests {
     fn test_scene_traverse_with_path() {
         let mut scene = Scene::new();
         scene.root.add_child(Node::new("child"));
-        
+
         let mut paths: Vec<String> = Vec::new();
         scene.traverse_with_path(&mut |_node, _mat, path| {
             paths.push(path.join("/"));
@@ -1521,4 +1566,3 @@ mod tests {
         assert!(s.contains("nodes"));
     }
 }
-

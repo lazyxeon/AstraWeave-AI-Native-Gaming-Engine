@@ -1226,11 +1226,11 @@ mod tests {
         let daily = BudgetAlertType::DailyBudget;
         let monthly = BudgetAlertType::MonthlyBudget;
         let hourly = BudgetAlertType::HourlyRate;
-        
+
         let json_daily = serde_json::to_string(&daily).unwrap();
         let json_monthly = serde_json::to_string(&monthly).unwrap();
         let json_hourly = serde_json::to_string(&hourly).unwrap();
-        
+
         assert!(json_daily.contains("DailyBudget"));
         assert!(json_monthly.contains("MonthlyBudget"));
         assert!(json_hourly.contains("HourlyRate"));
@@ -1371,7 +1371,7 @@ mod tests {
     #[tokio::test]
     async fn test_clear_data() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         // Add some data first
         let tracker = telemetry.start_request(
             "req-1".to_string(),
@@ -1394,13 +1394,13 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         let metrics = telemetry.get_metrics().await;
         assert_eq!(metrics.total_requests, 1);
-        
+
         // Clear data
         telemetry.clear_data().await.unwrap();
-        
+
         let metrics = telemetry.get_metrics().await;
         assert_eq!(metrics.total_requests, 0);
     }
@@ -1408,14 +1408,14 @@ mod tests {
     #[tokio::test]
     async fn test_failed_request_tracking() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         let tracker = telemetry.start_request(
             "failed-req".to_string(),
             "gpt-4".to_string(),
             "test".to_string(),
             50,
         );
-        
+
         tracker
             .complete(
                 "gpt-4".to_string(),
@@ -1431,7 +1431,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         let metrics = telemetry.get_metrics().await;
         assert_eq!(metrics.total_requests, 1);
         assert_eq!(metrics.failed_requests, 1);
@@ -1441,14 +1441,14 @@ mod tests {
     #[tokio::test]
     async fn test_export_traces_json() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         let tracker = telemetry.start_request(
             "export-req".to_string(),
             "gpt-4".to_string(),
             "test".to_string(),
             100,
         );
-        
+
         tracker
             .complete(
                 "gpt-4".to_string(),
@@ -1464,22 +1464,25 @@ mod tests {
             )
             .await
             .unwrap();
-        
-        let json = telemetry.export_traces(ExportFormat::Json, None).await.unwrap();
+
+        let json = telemetry
+            .export_traces(ExportFormat::Json, None)
+            .await
+            .unwrap();
         assert!(json.contains("export-req"));
     }
 
     #[tokio::test]
     async fn test_export_traces_csv() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         let tracker = telemetry.start_request(
             "csv-req".to_string(),
             "gpt-4".to_string(),
             "test".to_string(),
             100,
         );
-        
+
         tracker
             .complete(
                 "gpt-4".to_string(),
@@ -1495,8 +1498,11 @@ mod tests {
             )
             .await
             .unwrap();
-        
-        let csv = telemetry.export_traces(ExportFormat::Csv, None).await.unwrap();
+
+        let csv = telemetry
+            .export_traces(ExportFormat::Csv, None)
+            .await
+            .unwrap();
         assert!(csv.contains("request_id"));
         assert!(csv.contains("csv-req"));
     }
@@ -1540,7 +1546,7 @@ mod tests {
     #[tokio::test]
     async fn test_model_specific_metrics() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         // Add request for gpt-4
         let tracker1 = telemetry.start_request(
             "req-gpt4".to_string(),
@@ -1563,7 +1569,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         // Add request for gpt-3.5
         let tracker2 = telemetry.start_request(
             "req-gpt35".to_string(),
@@ -1586,7 +1592,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         let metrics = telemetry.get_metrics().await;
         assert_eq!(metrics.total_requests, 2);
         assert_eq!(metrics.model_usage.len(), 2);
@@ -1652,7 +1658,7 @@ mod tests {
     #[tokio::test]
     async fn test_export_with_filter() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         // Add successful request
         let tracker1 = telemetry.start_request(
             "success-req".to_string(),
@@ -1675,7 +1681,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         // Add failed request
         let tracker2 = telemetry.start_request(
             "failed-req".to_string(),
@@ -1698,7 +1704,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         // Filter for successful only
         let filter = TraceFilter {
             model: None,
@@ -1708,8 +1714,11 @@ mod tests {
             min_latency_ms: None,
             max_latency_ms: None,
         };
-        
-        let json = telemetry.export_traces(ExportFormat::Json, Some(filter)).await.unwrap();
+
+        let json = telemetry
+            .export_traces(ExportFormat::Json, Some(filter))
+            .await
+            .unwrap();
         assert!(json.contains("success-req"));
         // Failed request should be filtered out
     }
@@ -1733,7 +1742,10 @@ mod tests {
     #[tokio::test]
     async fn test_opentelemetry_export_placeholder() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        let result = telemetry.export_traces(ExportFormat::OpenTelemetry, None).await.unwrap();
+        let result = telemetry
+            .export_traces(ExportFormat::OpenTelemetry, None)
+            .await
+            .unwrap();
         assert!(result.contains("not yet implemented"));
     }
 
@@ -1741,7 +1753,7 @@ mod tests {
     async fn test_telemetry_clone() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
         let cloned = telemetry.clone();
-        
+
         // Add request to original
         let tracker = telemetry.start_request(
             "clone-test".to_string(),
@@ -1749,7 +1761,7 @@ mod tests {
             "source".to_string(),
             10,
         );
-        
+
         tracker
             .complete(
                 "model".to_string(),
@@ -1765,7 +1777,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         // Both should see the request (shared Arc)
         let orig_metrics = telemetry.get_metrics().await;
         let cloned_metrics = cloned.get_metrics().await;
@@ -1797,7 +1809,7 @@ mod tests {
     #[tokio::test]
     async fn test_multiple_sources_metrics() {
         let telemetry = LlmTelemetry::new(TelemetryConfig::default());
-        
+
         // Source 1
         let tracker1 = telemetry.start_request(
             "src1-req".to_string(),
@@ -1820,7 +1832,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         // Source 2
         let tracker2 = telemetry.start_request(
             "src2-req".to_string(),
@@ -1843,7 +1855,7 @@ mod tests {
             )
             .await
             .unwrap();
-        
+
         let metrics = telemetry.get_metrics().await;
         assert_eq!(metrics.source_metrics.len(), 2);
     }

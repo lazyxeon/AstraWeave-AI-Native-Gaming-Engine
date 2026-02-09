@@ -87,6 +87,9 @@ impl PhysicsProxy {
             return Dynamic::UNIT;
         }
 
+        // SAFETY: Null check above guarantees the pointer is non-null.
+        // The pointer was created from a valid `&PhysicsWorld` reference in
+        // `ScriptingPlugin::register` and the borrow is scoped to this call.
         let physics = unsafe { &*self.ptr };
         let ray = Ray::new(
             rapier3d::na::Point3::new(origin.x, origin.y, origin.z),
@@ -145,6 +148,9 @@ impl NavMeshProxy {
         if self.ptr.is_null() {
             return vec![];
         }
+        // SAFETY: Null check above guarantees the pointer is non-null.
+        // The pointer was created from a valid `&NavMesh` reference in
+        // `ScriptingPlugin::register` and the borrow is scoped to this call.
         let nav = unsafe { &*self.ptr };
         let path = nav.find_path(start, goal);
         path.into_iter().map(Dynamic::from).collect()

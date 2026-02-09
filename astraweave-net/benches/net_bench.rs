@@ -27,7 +27,10 @@ use astraweave_net::{
 /// Assert that a snapshot is valid
 #[allow(dead_code)]
 fn assert_snapshot_valid(snapshot: &Snapshot) {
-    assert!(snapshot.tick > 0 || snapshot.seq == 0, "Snapshot should have valid tick");
+    assert!(
+        snapshot.tick > 0 || snapshot.seq == 0,
+        "Snapshot should have valid tick"
+    );
     // Entities should be well-formed
     for entity in &snapshot.entities {
         // Access check - just verify entity data is accessible
@@ -227,7 +230,11 @@ fn bench_delta_compression(c: &mut Criterion) {
                         &interest,
                         black_box(viewer),
                     );
-                    assert!(!delta.changed.is_empty() || !delta.removed.is_empty() || delta.changed.is_empty());
+                    assert!(
+                        !delta.changed.is_empty()
+                            || !delta.removed.is_empty()
+                            || delta.changed.is_empty()
+                    );
                     black_box(delta)
                 })
             },
@@ -365,7 +372,10 @@ fn bench_interest_filtering(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(entity_count as u64));
         group.bench_with_input(
-            BenchmarkId::new("fov_interest", format!("{}e_{}deg", entity_count, half_angle as i32)),
+            BenchmarkId::new(
+                "fov_interest",
+                format!("{}e_{}deg", entity_count, half_angle as i32),
+            ),
             &(snapshot.clone(), viewer.clone()),
             |b, (snapshot, viewer)| {
                 b.iter(|| {
@@ -482,8 +492,8 @@ fn bench_serialization(c: &mut Criterion) {
             &json,
             |b, json| {
                 b.iter(|| {
-                    let parsed: Snapshot =
-                        serde_json::from_str(black_box(json)).expect("Deserialization should succeed");
+                    let parsed: Snapshot = serde_json::from_str(black_box(json))
+                        .expect("Deserialization should succeed");
                     assert_eq!(parsed.entities.len(), entity_count);
                     black_box(parsed)
                 })
@@ -566,7 +576,8 @@ fn bench_batch_operations(c: &mut Criterion) {
                 b.iter(|| {
                     let mut deltas = Vec::with_capacity(snapshots.len() - 1);
                     for i in 1..snapshots.len() {
-                        let delta = diff_snapshots(&snapshots[i - 1], &snapshots[i], &interest, &viewer);
+                        let delta =
+                            diff_snapshots(&snapshots[i - 1], &snapshots[i], &interest, &viewer);
                         deltas.push(delta);
                     }
                     assert_eq!(deltas.len(), snapshots.len() - 1);
@@ -598,7 +609,7 @@ fn bench_hash_computation(c: &mut Criterion) {
                 b.iter(|| {
                     use std::collections::hash_map::DefaultHasher;
                     use std::hash::{Hash, Hasher};
-                    
+
                     let mut hasher = DefaultHasher::new();
                     for e in entities.iter() {
                         e.id.hash(&mut hasher);

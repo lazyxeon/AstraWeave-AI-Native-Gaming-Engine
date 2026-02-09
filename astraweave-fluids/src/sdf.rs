@@ -421,7 +421,7 @@ mod tests {
             triangle_count: 100,
             padding: 0.0,
         };
-        
+
         assert_eq!(config.resolution, 64);
         assert_eq!(config.world_size, 20.0);
         assert_eq!(config.triangle_count, 100);
@@ -436,10 +436,10 @@ mod tests {
             triangle_count: 500,
             padding: 0.0,
         };
-        
+
         let bytes: &[u8] = bytemuck::bytes_of(&config);
         assert_eq!(bytes.len(), 16);
-        
+
         let recovered: &SdfConfig = bytemuck::from_bytes(bytes);
         assert_eq!(recovered.resolution, 128);
         assert_eq!(recovered.world_size, 30.0);
@@ -449,7 +449,7 @@ mod tests {
     #[test]
     fn test_sdf_config_zeroed() {
         let config = SdfConfig::zeroed();
-        
+
         assert_eq!(config.resolution, 0);
         assert_eq!(config.world_size, 0.0);
         assert_eq!(config.triangle_count, 0);
@@ -464,7 +464,7 @@ mod tests {
             triangle_count: 1000,
             padding: 0.0,
         };
-        
+
         let copied = config;
         assert_eq!(copied.resolution, config.resolution);
         assert_eq!(copied.world_size, config.world_size);
@@ -479,7 +479,7 @@ mod tests {
             triangle_count: 50,
             padding: 0.0,
         };
-        
+
         let cloned = config.clone();
         assert_eq!(cloned.resolution, 64);
     }
@@ -492,7 +492,7 @@ mod tests {
             triangle_count: 10,
             padding: 0.0,
         };
-        
+
         let debug_str = format!("{:?}", config);
         assert!(debug_str.contains("32"));
         assert!(debug_str.contains("5.0") || debug_str.contains("5"));
@@ -512,7 +512,7 @@ mod tests {
             step_size: 32,
             padding: [0, 0, 0],
         };
-        
+
         assert_eq!(params.step_size, 32);
         assert_eq!(params.padding, [0, 0, 0]);
     }
@@ -523,10 +523,10 @@ mod tests {
             step_size: 16,
             padding: [0; 3],
         };
-        
+
         let bytes: &[u8] = bytemuck::bytes_of(&params);
         assert_eq!(bytes.len(), 16);
-        
+
         let recovered: &JfaParams = bytemuck::from_bytes(bytes);
         assert_eq!(recovered.step_size, 16);
     }
@@ -544,7 +544,7 @@ mod tests {
             step_size: 64,
             padding: [0; 3],
         };
-        
+
         let copied = params;
         assert_eq!(copied.step_size, 64);
     }
@@ -555,7 +555,7 @@ mod tests {
             step_size: 8,
             padding: [0; 3],
         };
-        
+
         let debug_str = format!("{:?}", params);
         assert!(debug_str.contains("8"));
     }
@@ -583,11 +583,11 @@ mod tests {
         // Resolution 32: 16, 8, 4, 2, 1 = 5 steps
         let res32_steps = count_jfa_steps(32);
         assert_eq!(res32_steps, 5);
-        
+
         // Resolution 128: 64, 32, 16, 8, 4, 2, 1 = 7 steps
         let res128_steps = count_jfa_steps(128);
         assert_eq!(res128_steps, 7);
-        
+
         // Resolution 256: 128, 64, 32, 16, 8, 4, 2, 1 = 8 steps
         let res256_steps = count_jfa_steps(256);
         assert_eq!(res256_steps, 8);
@@ -617,7 +617,7 @@ mod tests {
         let resolution = 64u32;
         let mut step_size = resolution / 2;
         let mut prev = step_size;
-        
+
         while step_size > 1 {
             step_size /= 2;
             // Each step should be exactly half the previous
@@ -631,14 +631,14 @@ mod tests {
         // Simulates the ping-pong texture alternation logic
         let mut current_read_a = false; // After init, B has data
         let mut read_from_a = Vec::new();
-        
+
         let mut step_size = 32u32;
         while step_size >= 1 {
             read_from_a.push(current_read_a);
             current_read_a = !current_read_a;
             step_size /= 2;
         }
-        
+
         // Should alternate: false, true, false, true, false, true
         assert_eq!(read_from_a, vec![false, true, false, true, false, true]);
     }
@@ -648,65 +648,55 @@ mod tests {
     #[test]
     fn test_mesh_aabb_single_vertex() {
         let vertices = vec![[5.0, 10.0, 15.0]];
-        
+
         let (min, max) = compute_mesh_aabb(&vertices);
-        
+
         assert_eq!(min, [5.0, 10.0, 15.0]);
         assert_eq!(max, [5.0, 10.0, 15.0]);
     }
 
     #[test]
     fn test_mesh_aabb_multiple_vertices() {
-        let vertices = vec![
-            [0.0, 0.0, 0.0],
-            [10.0, 5.0, 3.0],
-            [-5.0, 8.0, -2.0],
-        ];
-        
+        let vertices = vec![[0.0, 0.0, 0.0], [10.0, 5.0, 3.0], [-5.0, 8.0, -2.0]];
+
         let (min, max) = compute_mesh_aabb(&vertices);
-        
+
         assert_eq!(min, [-5.0, 0.0, -2.0]);
         assert_eq!(max, [10.0, 8.0, 3.0]);
     }
 
     #[test]
     fn test_mesh_aabb_center() {
-        let vertices = vec![
-            [-10.0, -10.0, -10.0],
-            [10.0, 10.0, 10.0],
-        ];
-        
+        let vertices = vec![[-10.0, -10.0, -10.0], [10.0, 10.0, 10.0]];
+
         let (min, max) = compute_mesh_aabb(&vertices);
         let center = [
             (min[0] + max[0]) * 0.5,
             (min[1] + max[1]) * 0.5,
             (min[2] + max[2]) * 0.5,
         ];
-        
+
         assert_eq!(center, [0.0, 0.0, 0.0]);
     }
 
     #[test]
     fn test_mesh_aabb_half_extents() {
-        let vertices = vec![
-            [-6.0, -4.0, -2.0],
-            [6.0, 4.0, 2.0],
-        ];
-        
+        let vertices = vec![[-6.0, -4.0, -2.0], [6.0, 4.0, 2.0]];
+
         let (min, max) = compute_mesh_aabb(&vertices);
         let half_extents = [
             (max[0] - min[0]) * 0.5,
             (max[1] - min[1]) * 0.5,
             (max[2] - min[2]) * 0.5,
         ];
-        
+
         assert_eq!(half_extents, [6.0, 4.0, 2.0]);
     }
 
     fn compute_mesh_aabb(vertices: &[[f32; 3]]) -> ([f32; 3], [f32; 3]) {
         let mut min = [f32::MAX; 3];
         let mut max = [f32::MIN; 3];
-        
+
         for v in vertices {
             min[0] = min[0].min(v[0]);
             min[1] = min[1].min(v[1]);
@@ -715,7 +705,7 @@ mod tests {
             max[1] = max[1].max(v[1]);
             max[2] = max[2].max(v[2]);
         }
-        
+
         (min, max)
     }
 
@@ -727,7 +717,7 @@ mod tests {
         let res_64_voxels = 64u64 * 64 * 64;
         let res_128_voxels = 128u64 * 128 * 128;
         let res_256_voxels = 256u64 * 256 * 256;
-        
+
         assert_eq!(res_64_voxels, 262_144);
         assert_eq!(res_128_voxels, 2_097_152);
         assert_eq!(res_256_voxels, 16_777_216);
@@ -737,10 +727,10 @@ mod tests {
     fn test_sdf_texture_memory_rgba32float() {
         // RGBA32Float = 16 bytes per pixel
         let bytes_per_voxel = 16u64;
-        
+
         let res_64_bytes = 64u64 * 64 * 64 * bytes_per_voxel;
         let res_128_bytes = 128u64 * 128 * 128 * bytes_per_voxel;
-        
+
         // 64^3 = ~4MB, 128^3 = ~32MB
         assert_eq!(res_64_bytes, 4_194_304);
         assert_eq!(res_128_bytes, 33_554_432);
@@ -752,7 +742,7 @@ mod tests {
         let vertices_30 = 30usize;
         let triangles = vertices_30 / 3;
         assert_eq!(triangles, 10);
-        
+
         let vertices_99 = 99usize;
         let triangles_99 = vertices_99 / 3;
         assert_eq!(triangles_99, 33);

@@ -12,11 +12,11 @@
 //! - Boundary handling (SDF + Akinci)
 //! - Validation metrics export
 
-use crate::research::ResearchParticle;
-use crate::viscosity::NonNewtonianModel;
 use crate::boundary::BoundaryMethod;
-use crate::turbulence::{VorticityConfinementConfig, MicropolarConfig, TurbulenceSystem};
+use crate::research::ResearchParticle;
+use crate::turbulence::{MicropolarConfig, TurbulenceSystem, VorticityConfinementConfig};
 use crate::validation::MetricsHistory;
+use crate::viscosity::NonNewtonianModel;
 
 // =============================================================================
 // SOLVER CONFIGURATION
@@ -104,7 +104,7 @@ impl FluidPhaseConfig {
             color: [0.2, 0.5, 0.9, 0.8],
         }
     }
-    
+
     /// Oil preset
     pub fn oil() -> Self {
         Self {
@@ -115,7 +115,7 @@ impl FluidPhaseConfig {
             color: [0.8, 0.7, 0.2, 0.9],
         }
     }
-    
+
     /// Honey preset
     pub fn honey() -> Self {
         Self {
@@ -126,7 +126,7 @@ impl FluidPhaseConfig {
             color: [0.9, 0.7, 0.1, 1.0],
         }
     }
-    
+
     /// Lava preset
     pub fn lava() -> Self {
         Self {
@@ -155,7 +155,7 @@ pub struct UnifiedSolverConfig {
     pub dt: f32,
     /// Gravity
     pub gravity: [f32; 3],
-    
+
     // Solver parameters
     /// Maximum density error (0.001 = 0.1%)
     pub max_density_error: f32,
@@ -165,7 +165,7 @@ pub struct UnifiedSolverConfig {
     pub min_iterations: u32,
     /// Enable warm-starting
     pub enable_warm_start: bool,
-    
+
     // Viscosity
     /// Viscosity solver type
     pub viscosity_solver: ViscositySolverType,
@@ -175,13 +175,13 @@ pub struct UnifiedSolverConfig {
     pub enable_non_newtonian: bool,
     /// Non-Newtonian model (if enabled)
     pub non_newtonian_model: Option<NonNewtonianModel>,
-    
+
     // Stability
     /// Enable δ-SPH particle shifting
     pub enable_particle_shifting: bool,
     /// Shifting strength (0.01-0.05 typical)
     pub shifting_strength: f32,
-    
+
     // Turbulence
     /// Enable vorticity confinement
     pub enable_vorticity_confinement: bool,
@@ -191,17 +191,17 @@ pub struct UnifiedSolverConfig {
     pub enable_micropolar: bool,
     /// Micropolar configuration
     pub micropolar_config: MicropolarConfig,
-    
+
     // Multi-phase
     /// Fluid phases
     pub phases: Vec<FluidPhaseConfig>,
-    
+
     // Boundaries
     /// Boundary handling method
     pub boundary_method: BoundaryMethod,
     /// Friction coefficient
     pub friction: f32,
-    
+
     // Validation
     /// Enable metrics export
     pub enable_metrics: bool,
@@ -226,7 +226,7 @@ impl UnifiedSolverConfig {
             QualityPreset::Research => Self::research(),
         }
     }
-    
+
     /// Mobile preset
     pub fn mobile() -> Self {
         Self {
@@ -257,7 +257,7 @@ impl UnifiedSolverConfig {
             metric_interval: 60,
         }
     }
-    
+
     /// Console preset
     pub fn console() -> Self {
         Self {
@@ -282,13 +282,16 @@ impl UnifiedSolverConfig {
             enable_micropolar: false,
             micropolar_config: MicropolarConfig::default(),
             phases: vec![FluidPhaseConfig::water()],
-            boundary_method: BoundaryMethod::Hybrid { sdf_for_density: true, particles_for_friction: true },
+            boundary_method: BoundaryMethod::Hybrid {
+                sdf_for_density: true,
+                particles_for_friction: true,
+            },
             friction: 0.3,
             enable_metrics: false,
             metric_interval: 60,
         }
     }
-    
+
     /// PC High preset
     pub fn pc_high() -> Self {
         Self {
@@ -313,13 +316,16 @@ impl UnifiedSolverConfig {
             enable_micropolar: false,
             micropolar_config: MicropolarConfig::default(),
             phases: vec![FluidPhaseConfig::water()],
-            boundary_method: BoundaryMethod::Hybrid { sdf_for_density: true, particles_for_friction: true },
+            boundary_method: BoundaryMethod::Hybrid {
+                sdf_for_density: true,
+                particles_for_friction: true,
+            },
             friction: 0.3,
             enable_metrics: false,
             metric_interval: 60,
         }
     }
-    
+
     /// PC Ultra preset
     pub fn pc_ultra() -> Self {
         Self {
@@ -344,13 +350,16 @@ impl UnifiedSolverConfig {
             enable_micropolar: true,
             micropolar_config: MicropolarConfig::default(),
             phases: vec![FluidPhaseConfig::water()],
-            boundary_method: BoundaryMethod::Hybrid { sdf_for_density: true, particles_for_friction: true },
+            boundary_method: BoundaryMethod::Hybrid {
+                sdf_for_density: true,
+                particles_for_friction: true,
+            },
             friction: 0.3,
             enable_metrics: false,
             metric_interval: 60,
         }
     }
-    
+
     /// Research preset
     pub fn research() -> Self {
         Self {
@@ -375,17 +384,20 @@ impl UnifiedSolverConfig {
             enable_micropolar: true,
             micropolar_config: MicropolarConfig::default(),
             phases: vec![FluidPhaseConfig::water()],
-            boundary_method: BoundaryMethod::Hybrid { sdf_for_density: true, particles_for_friction: true },
+            boundary_method: BoundaryMethod::Hybrid {
+                sdf_for_density: true,
+                particles_for_friction: true,
+            },
             friction: 0.3,
             enable_metrics: true,
             metric_interval: 10,
         }
     }
-    
+
     /// Create for specific fluid type
     pub fn for_fluid(fluid: FluidType) -> Self {
         let mut config = Self::console();
-        
+
         match fluid {
             FluidType::Water => {
                 config.viscosity = 0.001;
@@ -408,7 +420,7 @@ impl UnifiedSolverConfig {
                 config.phases = vec![FluidPhaseConfig::lava()];
             }
         }
-        
+
         config
     }
 }
@@ -465,7 +477,7 @@ impl UnifiedSolver {
         } else {
             None
         };
-        
+
         Self {
             config,
             turbulence_system,
@@ -474,44 +486,44 @@ impl UnifiedSolver {
             last_stats: SolverStats::default(),
         }
     }
-    
+
     /// Create with preset
     pub fn with_preset(preset: QualityPreset) -> Self {
         Self::new(UnifiedSolverConfig::from_preset(preset))
     }
-    
+
     /// Create for specific fluid
     pub fn for_fluid(fluid: FluidType) -> Self {
         Self::new(UnifiedSolverConfig::for_fluid(fluid))
     }
-    
+
     /// Get configuration
     pub fn config(&self) -> &UnifiedSolverConfig {
         &self.config
     }
-    
+
     /// Get last step statistics
     pub fn stats(&self) -> &SolverStats {
         &self.last_stats
     }
-    
+
     /// Get metrics history (if enabled)
     pub fn metrics(&self) -> &MetricsHistory {
         &self.metrics_history
     }
-    
+
     /// Get frame count
     pub fn frame_count(&self) -> u32 {
         self.frame_count
     }
-    
+
     /// Reset solver state
     pub fn reset(&mut self) {
         self.metrics_history.clear();
         self.frame_count = 0;
         self.last_stats = SolverStats::default();
     }
-    
+
     /// Step the simulation (placeholder for full implementation)
     pub fn step(&mut self, _particles: &mut [ResearchParticle]) {
         // In a full implementation, this would:
@@ -525,7 +537,7 @@ impl UnifiedSolver {
         // 8. Apply boundary conditions
         // 9. Integrate positions
         // 10. Record metrics (if enabled)
-        
+
         self.frame_count += 1;
     }
 }
@@ -537,13 +549,13 @@ impl UnifiedSolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_quality_preset_default() {
         let config = UnifiedSolverConfig::default();
         assert_eq!(config.solver_type, SolverType::Pcisph);
     }
-    
+
     #[test]
     fn test_mobile_preset() {
         let config = UnifiedSolverConfig::mobile();
@@ -551,28 +563,28 @@ mod tests {
         assert_eq!(config.viscosity_solver, ViscositySolverType::Xsph);
         assert!(!config.enable_vorticity_confinement);
     }
-    
+
     #[test]
     fn test_console_preset() {
         let config = UnifiedSolverConfig::console();
         assert_eq!(config.solver_type, SolverType::Pcisph);
         assert!(config.enable_particle_shifting);
     }
-    
+
     #[test]
     fn test_pc_high_preset() {
         let config = UnifiedSolverConfig::pc_high();
         assert_eq!(config.solver_type, SolverType::Dfsph);
         assert!(config.enable_vorticity_confinement);
     }
-    
+
     #[test]
     fn test_pc_ultra_preset() {
         let config = UnifiedSolverConfig::pc_ultra();
         assert!(config.enable_micropolar);
         assert!(config.max_density_error < 0.001);
     }
-    
+
     #[test]
     fn test_research_preset() {
         let config = UnifiedSolverConfig::research();
@@ -580,13 +592,13 @@ mod tests {
         assert!(config.enable_non_newtonian);
         assert!(config.max_iterations >= 100);
     }
-    
+
     #[test]
     fn test_fluid_type_water() {
         let config = UnifiedSolverConfig::for_fluid(FluidType::Water);
         assert!((config.viscosity - 0.001).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_fluid_type_honey() {
         let config = UnifiedSolverConfig::for_fluid(FluidType::Honey);
@@ -594,26 +606,26 @@ mod tests {
         assert!(config.enable_non_newtonian);
         assert_eq!(config.viscosity_solver, ViscositySolverType::ImplicitJacobi);
     }
-    
+
     #[test]
     fn test_fluid_type_lava() {
         let config = UnifiedSolverConfig::for_fluid(FluidType::Lava);
         assert!(config.viscosity > 50.0);
         assert!((config.rest_density - 2500.0).abs() < 1.0);
     }
-    
+
     #[test]
     fn test_solver_creation() {
         let solver = UnifiedSolver::with_preset(QualityPreset::Console);
         assert_eq!(solver.frame_count(), 0);
     }
-    
+
     #[test]
     fn test_solver_for_fluid() {
         let solver = UnifiedSolver::for_fluid(FluidType::Water);
         assert!((solver.config().viscosity - 0.001).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_solver_reset() {
         let mut solver = UnifiedSolver::with_preset(QualityPreset::Mobile);
@@ -621,39 +633,39 @@ mod tests {
         solver.reset();
         assert_eq!(solver.frame_count(), 0);
     }
-    
+
     #[test]
     fn test_solver_stats_default() {
         let stats = SolverStats::default();
         assert_eq!(stats.pressure_iterations, 0);
         assert_eq!(stats.particle_count, 0);
     }
-    
+
     #[test]
     fn test_fluid_phase_water() {
         let phase = FluidPhaseConfig::water();
         assert!((phase.density - 1000.0).abs() < 1.0);
         assert!((phase.viscosity - 0.001).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_fluid_phase_honey() {
         let phase = FluidPhaseConfig::honey();
         assert!(phase.viscosity > 5.0);
         assert!(phase.density > 1300.0);
     }
-    
+
     #[test]
     fn test_fluid_phase_lava() {
         let phase = FluidPhaseConfig::lava();
         assert!(phase.viscosity > 50.0);
         assert!(phase.density > 2000.0);
     }
-    
+
     // =========================================================================
     // MUTATION-RESISTANT TESTS - Preset & Configuration Invariants
     // =========================================================================
-    
+
     #[test]
     fn test_all_presets_have_valid_particle_spacing() {
         let presets = [
@@ -663,14 +675,17 @@ mod tests {
             QualityPreset::PcUltra,
             QualityPreset::Research,
         ];
-        
+
         for preset in presets {
             let solver = UnifiedSolver::with_preset(preset);
-            assert!(solver.config().particle_spacing > 0.0, 
-                "{:?} should have positive particle_spacing", preset);
+            assert!(
+                solver.config().particle_spacing > 0.0,
+                "{:?} should have positive particle_spacing",
+                preset
+            );
         }
     }
-    
+
     #[test]
     fn test_all_presets_have_valid_smoothing_radius() {
         let presets = [
@@ -680,14 +695,17 @@ mod tests {
             QualityPreset::PcUltra,
             QualityPreset::Research,
         ];
-        
+
         for preset in presets {
             let solver = UnifiedSolver::with_preset(preset);
-            assert!(solver.config().smoothing_radius > solver.config().particle_spacing, 
-                "{:?} smoothing_radius should be > particle_spacing", preset);
+            assert!(
+                solver.config().smoothing_radius > solver.config().particle_spacing,
+                "{:?} smoothing_radius should be > particle_spacing",
+                preset
+            );
         }
     }
-    
+
     #[test]
     fn test_preset_quality_ordering() {
         // Higher quality presets should have more max_iterations
@@ -696,13 +714,13 @@ mod tests {
         let pc_high = UnifiedSolverConfig::from_preset(QualityPreset::PcHigh);
         let pc_ultra = UnifiedSolverConfig::from_preset(QualityPreset::PcUltra);
         let research = UnifiedSolverConfig::from_preset(QualityPreset::Research);
-        
+
         assert!(console.max_iterations >= mobile.max_iterations);
         assert!(pc_high.max_iterations >= console.max_iterations);
         assert!(pc_ultra.max_iterations >= pc_high.max_iterations);
         assert!(research.max_iterations >= pc_ultra.max_iterations);
     }
-    
+
     #[test]
     fn test_all_fluid_types_have_positive_properties() {
         let fluids = [
@@ -711,28 +729,40 @@ mod tests {
             FluidType::Honey,
             FluidType::Lava,
         ];
-        
+
         for fluid in fluids {
             let solver = UnifiedSolver::for_fluid(fluid);
             let config = solver.config();
-            
-            assert!(config.rest_density > 0.0, "{:?} should have positive rest_density", fluid);
-            assert!(config.viscosity >= 0.0, "{:?} should have non-negative viscosity", fluid);
-            assert!(config.particle_spacing > 0.0, "{:?} should have positive particle_spacing", fluid);
+
+            assert!(
+                config.rest_density > 0.0,
+                "{:?} should have positive rest_density",
+                fluid
+            );
+            assert!(
+                config.viscosity >= 0.0,
+                "{:?} should have non-negative viscosity",
+                fluid
+            );
+            assert!(
+                config.particle_spacing > 0.0,
+                "{:?} should have positive particle_spacing",
+                fluid
+            );
         }
     }
-    
+
     #[test]
     fn test_fluid_types_density_ordering() {
         // Physical ordering: Water < Honey < Lava
         let water = FluidPhaseConfig::water();
         let honey = FluidPhaseConfig::honey();
         let lava = FluidPhaseConfig::lava();
-        
+
         assert!(water.density < honey.density);
         assert!(honey.density < lava.density);
     }
-    
+
     #[test]
     fn test_fluid_types_viscosity_ordering() {
         // Physical ordering: Water < Oil < Honey < Lava
@@ -740,12 +770,12 @@ mod tests {
         let oil = FluidPhaseConfig::oil();
         let honey = FluidPhaseConfig::honey();
         let lava = FluidPhaseConfig::lava();
-        
+
         assert!(water.viscosity < oil.viscosity);
         assert!(oil.viscosity < honey.viscosity);
         assert!(honey.viscosity < lava.viscosity);
     }
-    
+
     #[test]
     fn test_solver_config_time_step_positive() {
         for preset in [
@@ -759,31 +789,34 @@ mod tests {
             assert!(config.dt > 0.0, "{:?} should have positive dt", preset);
         }
     }
-    
+
     #[test]
     fn test_solver_config_gravity_magnitude() {
         let config = UnifiedSolverConfig::from_preset(QualityPreset::Console);
-        let gravity_mag = (config.gravity[0].powi(2) 
-            + config.gravity[1].powi(2) 
-            + config.gravity[2].powi(2)).sqrt();
-        
+        let gravity_mag =
+            (config.gravity[0].powi(2) + config.gravity[1].powi(2) + config.gravity[2].powi(2))
+                .sqrt();
+
         // Gravity should be reasonable (Earth ~9.81)
-        assert!(gravity_mag >= 5.0 && gravity_mag <= 15.0, 
-            "Gravity magnitude {} should be Earth-like", gravity_mag);
+        assert!(
+            gravity_mag >= 5.0 && gravity_mag <= 15.0,
+            "Gravity magnitude {} should be Earth-like",
+            gravity_mag
+        );
     }
-    
+
     #[test]
     fn test_solver_frame_count_increments() {
         let mut solver = UnifiedSolver::with_preset(QualityPreset::Mobile);
         assert_eq!(solver.frame_count(), 0);
-        
+
         solver.frame_count = 1;
         assert_eq!(solver.frame_count(), 1);
-        
+
         solver.frame_count = 100;
         assert_eq!(solver.frame_count(), 100);
     }
-    
+
     #[test]
     fn test_solver_type_variants_all_distinct() {
         // Ensure all solver types are distinct
@@ -793,7 +826,7 @@ mod tests {
             SolverType::Dfsph,
             SolverType::Iisph,
         ];
-        
+
         for i in 0..types.len() {
             for j in (i + 1)..types.len() {
                 assert!(
@@ -803,7 +836,7 @@ mod tests {
             }
         }
     }
-    
+
     #[test]
     fn test_viscosity_solver_type_variants_all_distinct() {
         let types = [
@@ -811,7 +844,7 @@ mod tests {
             ViscositySolverType::Morris,
             ViscositySolverType::ImplicitJacobi,
         ];
-        
+
         for i in 0..types.len() {
             for j in (i + 1)..types.len() {
                 assert!(
@@ -821,24 +854,24 @@ mod tests {
             }
         }
     }
-    
+
     #[test]
     fn test_solver_stats_fields_independence() {
         let mut stats = SolverStats::default();
-        
+
         stats.pressure_iterations = 10;
         stats.neighbor_time_ms = 1.5;
         stats.pressure_solve_time_ms = 2.5;
         stats.total_time_ms = 4.0;
         stats.particle_count = 1000;
-        
+
         assert_eq!(stats.pressure_iterations, 10);
         assert!((stats.neighbor_time_ms - 1.5).abs() < 1e-6);
         assert!((stats.pressure_solve_time_ms - 2.5).abs() < 1e-6);
         assert!((stats.total_time_ms - 4.0).abs() < 1e-6);
         assert_eq!(stats.particle_count, 1000);
     }
-    
+
     #[test]
     fn test_config_from_preset_produces_valid_config() {
         for preset in [
@@ -849,7 +882,7 @@ mod tests {
             QualityPreset::Research,
         ] {
             let config = UnifiedSolverConfig::from_preset(preset);
-            
+
             // All configs should pass basic validity checks
             assert!(config.particle_spacing > 0.0);
             assert!(config.smoothing_radius > 0.0);
@@ -858,27 +891,27 @@ mod tests {
             assert!(config.max_iterations > 0);
         }
     }
-    
+
     #[test]
     fn test_fluid_phase_oil_properties() {
         let oil = FluidPhaseConfig::oil();
-        
+
         // Oil should be less dense than water
         assert!(oil.density < 1000.0);
         // Oil should be more viscous than water
         assert!(oil.viscosity > 0.001);
     }
-    
+
     #[test]
     fn test_solver_reset_clears_frame_count() {
         let mut solver = UnifiedSolver::with_preset(QualityPreset::Research);
         solver.frame_count = 12345;
-        
+
         solver.reset();
-        
+
         assert_eq!(solver.frame_count(), 0, "Reset should clear frame count");
     }
-    
+
     #[test]
     fn test_preset_enum_count() {
         // Ensure we test all presets - if new ones are added, this test should be updated
@@ -889,10 +922,10 @@ mod tests {
             QualityPreset::PcUltra,
             QualityPreset::Research,
         ];
-        
+
         assert_eq!(presets.len(), 5, "Should have exactly 5 quality presets");
     }
-    
+
     #[test]
     fn test_fluid_type_enum_count() {
         // Ensure we test all fluid types
@@ -902,10 +935,10 @@ mod tests {
             FluidType::Honey,
             FluidType::Lava,
         ];
-        
+
         assert_eq!(fluids.len(), 4, "Should have exactly 4 fluid types");
     }
-    
+
     #[test]
     fn test_smoothing_to_particle_spacing_ratio() {
         for preset in [
@@ -917,13 +950,17 @@ mod tests {
         ] {
             let config = UnifiedSolverConfig::from_preset(preset);
             let ratio = config.smoothing_radius / config.particle_spacing;
-            
+
             // Typical SPH uses ratio of 2-4
-            assert!(ratio >= 1.5 && ratio <= 5.0, 
-                "{:?} has unusual smoothing/particle ratio: {}", preset, ratio);
+            assert!(
+                ratio >= 1.5 && ratio <= 5.0,
+                "{:?} has unusual smoothing/particle ratio: {}",
+                preset,
+                ratio
+            );
         }
     }
-    
+
     #[test]
     fn test_max_density_error_reasonable() {
         for preset in [
@@ -935,9 +972,11 @@ mod tests {
         ] {
             let config = UnifiedSolverConfig::from_preset(preset);
             // Max density error should be between 0.0001 (0.01%) and 0.01 (1%)
-            assert!(config.max_density_error > 0.0 && config.max_density_error <= 0.1, 
-                "{:?} should have reasonable max_density_error", preset);
+            assert!(
+                config.max_density_error > 0.0 && config.max_density_error <= 0.1,
+                "{:?} should have reasonable max_density_error",
+                preset
+            );
         }
     }
 }
-

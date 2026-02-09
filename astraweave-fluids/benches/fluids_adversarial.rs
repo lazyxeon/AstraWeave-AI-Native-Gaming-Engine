@@ -354,7 +354,10 @@ fn bench_sph_kernels(c: &mut Criterion) {
         let h = 0.1f32;
 
         bencher.iter(|| {
-            let results: Vec<f32> = distances.iter().map(|&r| spiky_gradient_kernel(r, h)).collect();
+            let results: Vec<f32> = distances
+                .iter()
+                .map(|&r| spiky_gradient_kernel(r, h))
+                .collect();
             std_black_box(results.iter().sum::<f32>())
         });
     });
@@ -549,7 +552,8 @@ fn bench_density_pressure(c: &mut Criterion) {
                         particles[j].velocity[2] - particles[i].velocity[2],
                     ];
 
-                    let force_factor = params.viscosity * particles[j].mass * kernel / particles[j].density;
+                    let force_factor =
+                        params.viscosity * particles[j].mass * kernel / particles[j].density;
 
                     forces[i][0] += force_factor * vel_diff[0];
                     forces[i][1] += force_factor * vel_diff[1];
@@ -794,8 +798,14 @@ fn bench_gpu_data_prep(c: &mut Criterion) {
                 params.gravity[1],
                 params.gravity[2],
                 params.time_step,
-                0.0, 0.0, 0.0, 0.0, // Padding
-                0.0, 0.0, 0.0, 0.0, // More padding for alignment
+                0.0,
+                0.0,
+                0.0,
+                0.0, // Padding
+                0.0,
+                0.0,
+                0.0,
+                0.0, // More padding for alignment
             ];
 
             std_black_box(uniform_data)
@@ -875,7 +885,7 @@ impl MockOptimizationController {
             self.frame_times.remove(0);
         }
         self.frame_times.push(frame_time_ms);
-        
+
         if self.auto_tune {
             self.auto_adjust_quality();
         }
@@ -885,9 +895,9 @@ impl MockOptimizationController {
         if self.frame_times.len() < 10 {
             return;
         }
-        
+
         let avg = self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
-        
+
         if avg > self.target_frame_time_ms * 1.2 && self.quality_tier < 4 {
             self.quality_tier += 1;
             self.adaptive_current = (self.adaptive_current - 1).max(self.adaptive_min);
@@ -955,7 +965,7 @@ fn bench_optimization_controller(c: &mut Criterion) {
     // Test 2: Frame recording throughput
     group.bench_function("frame_recording_1000", |bencher| {
         let mut controller = MockOptimizationController::new();
-        
+
         bencher.iter(|| {
             for i in 0..1000 {
                 let frame_time = 14.0 + (i % 10) as f32 * 0.5;
@@ -968,12 +978,12 @@ fn bench_optimization_controller(c: &mut Criterion) {
     // Test 3: Auto-tune decision making
     group.bench_function("auto_tune_decision_10000", |bencher| {
         let mut controller = MockOptimizationController::new();
-        
+
         // Pre-populate with frame times
         for i in 0..30 {
             controller.record_frame(12.0 + (i % 5) as f32);
         }
-        
+
         bencher.iter(|| {
             for _ in 0..10000 {
                 controller.auto_adjust_quality();
@@ -988,7 +998,7 @@ fn bench_optimization_controller(c: &mut Criterion) {
         for i in 0..60 {
             controller.record_frame(10.0 + (i % 10) as f32);
         }
-        
+
         bencher.iter(|| {
             let mut within = 0;
             for _ in 0..10000 {
@@ -1006,7 +1016,7 @@ fn bench_optimization_controller(c: &mut Criterion) {
         for i in 0..60 {
             controller.record_frame(10.0 + (i % 10) as f32);
         }
-        
+
         bencher.iter(|| {
             let mut total_headroom = 0.0f32;
             for _ in 0..10000 {
@@ -1026,7 +1036,7 @@ fn bench_optimization_controller(c: &mut Criterion) {
             "Intel Arc A770",
             "Intel UHD Graphics 770",
         ];
-        
+
         bencher.iter(|| {
             let mut controller = MockOptimizationController::new();
             for _ in 0..1000 {
@@ -1041,7 +1051,7 @@ fn bench_optimization_controller(c: &mut Criterion) {
     // Test 7: Iteration recommendation
     group.bench_function("iteration_recommendation_10000", |bencher| {
         let mut controller = MockOptimizationController::new();
-        
+
         bencher.iter(|| {
             let mut total = 0u32;
             for tier in 0..=4 {
@@ -1058,7 +1068,7 @@ fn bench_optimization_controller(c: &mut Criterion) {
     group.throughput(Throughput::Elements(1000));
     group.bench_function("full_frame_cycle_1000", |bencher| {
         let mut controller = MockOptimizationController::new();
-        
+
         bencher.iter(|| {
             for i in 0..1000 {
                 // Simulate variable frame times
@@ -1105,9 +1115,9 @@ impl MockAdaptiveIterations {
         self.density_errors.push(density_error);
 
         if self.density_errors.len() >= 5 {
-            let avg_error = self.density_errors.iter().sum::<f32>() 
-                / self.density_errors.len() as f32;
-            
+            let avg_error =
+                self.density_errors.iter().sum::<f32>() / self.density_errors.len() as f32;
+
             if avg_error > self.target_error * 1.5 && self.current < self.max {
                 self.current += 1;
             } else if avg_error < self.target_error * 0.5 && self.current > self.min {
@@ -1123,7 +1133,7 @@ fn bench_adaptive_iterations(c: &mut Criterion) {
     // Test 1: Adaptive iteration update
     group.bench_function("iteration_update_10000", |bencher| {
         let mut adaptive = MockAdaptiveIterations::new(2, 8);
-        
+
         bencher.iter(|| {
             for i in 0..10000 {
                 let error = 0.005 + (i % 100) as f32 * 0.0002;
@@ -1136,7 +1146,7 @@ fn bench_adaptive_iterations(c: &mut Criterion) {
     // Test 2: Error tracking overhead
     group.bench_function("error_tracking_1000", |bencher| {
         let mut adaptive = MockAdaptiveIterations::new(1, 16);
-        
+
         bencher.iter(|| {
             for i in 0..1000 {
                 let error = 0.001 + (i % 50) as f32 * 0.001;
@@ -1152,12 +1162,12 @@ fn bench_adaptive_iterations(c: &mut Criterion) {
     // Test 3: Decision boundary stress test
     group.bench_function("decision_boundary_stress", |bencher| {
         let mut adaptive = MockAdaptiveIterations::new(2, 8);
-        
+
         // Fill with values near decision boundary
         for _ in 0..30 {
             adaptive.density_errors.push(0.015);
         }
-        
+
         bencher.iter(|| {
             for _ in 0..10000 {
                 // Oscillate around boundary
@@ -1199,16 +1209,14 @@ impl MockLodManager {
     fn update(&mut self, camera_pos: [f32; 3], fluid_center: [f32; 3]) -> bool {
         self.last_camera_pos = camera_pos;
         self.last_fluid_center = fluid_center;
-        
+
         let dx = camera_pos[0] - fluid_center[0];
         let dy = camera_pos[1] - fluid_center[1];
         let dz = camera_pos[2] - fluid_center[2];
         let dist = (dx * dx + dy * dy + dz * dz).sqrt();
-        
-        let new_lod = self.distances.iter()
-            .position(|&d| dist < d)
-            .unwrap_or(5) as u32;
-        
+
+        let new_lod = self.distances.iter().position(|&d| dist < d).unwrap_or(5) as u32;
+
         let changed = new_lod != self.current_lod;
         self.current_lod = new_lod;
         changed
@@ -1235,7 +1243,7 @@ fn bench_lod_system(c: &mut Criterion) {
     // Test 1: LOD update
     group.bench_function("lod_update_10000", |bencher| {
         let mut lod = MockLodManager::new();
-        
+
         bencher.iter(|| {
             for i in 0..10000 {
                 let dist = (i % 250) as f32;
@@ -1264,7 +1272,7 @@ fn bench_lod_system(c: &mut Criterion) {
     // Test 3: LOD transition frequency
     group.bench_function("lod_transition_tracking", |bencher| {
         let mut lod = MockLodManager::new();
-        
+
         bencher.iter(|| {
             let mut transitions = 0u32;
             for i in 0..10000 {
@@ -1282,7 +1290,7 @@ fn bench_lod_system(c: &mut Criterion) {
     // Test 4: Particle reduction factor lookup
     group.bench_function("reduction_factor_lookup_10000", |bencher| {
         let mut lod = MockLodManager::new();
-        
+
         bencher.iter(|| {
             let mut total_factor = 0.0f32;
             for i in 0..10000 {
@@ -1302,16 +1310,18 @@ fn bench_lod_system(c: &mut Criterion) {
 
 fn bench_simd_optimizations(c: &mut Criterion) {
     let mut group = c.benchmark_group("fluids_adversarial/simd_optimizations");
-    
+
     // Test 1: Density accumulation 4x vs 8x unroll
     group.bench_function("density_4x_unroll_10000", |bencher| {
-        let kernels: Vec<f32> = (0..10000).map(|i| (i as f32 * 0.0001).sin().abs() * 1000.0).collect();
+        let kernels: Vec<f32> = (0..10000)
+            .map(|i| (i as f32 * 0.0001).sin().abs() * 1000.0)
+            .collect();
         let masses: Vec<f32> = vec![0.02; 10000];
-        
+
         bencher.iter(|| {
             let len = kernels.len();
             let chunks = len / 4;
-            
+
             let (mut acc0, mut acc1, mut acc2, mut acc3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
             for chunk in 0..chunks {
                 let base = chunk * 4;
@@ -1327,15 +1337,17 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(density)
         });
     });
-    
+
     group.bench_function("density_8x_unroll_10000", |bencher| {
-        let kernels: Vec<f32> = (0..10000).map(|i| (i as f32 * 0.0001).sin().abs() * 1000.0).collect();
+        let kernels: Vec<f32> = (0..10000)
+            .map(|i| (i as f32 * 0.0001).sin().abs() * 1000.0)
+            .collect();
         let masses: Vec<f32> = vec![0.02; 10000];
-        
+
         bencher.iter(|| {
             let len = kernels.len();
             let chunks = len / 8;
-            
+
             let (mut acc0, mut acc1, mut acc2, mut acc3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
             for chunk in 0..chunks {
                 let base = chunk * 8;
@@ -1357,14 +1369,20 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(density)
         });
     });
-    
+
     // Test 2: Distance squared vs distance (sqrt avoidance)
     group.bench_function("distance_with_sqrt_100000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..100000)
-            .map(|i| [(i % 100) as f32 * 0.1, ((i / 100) % 100) as f32 * 0.1, (i / 10000) as f32 * 0.1])
+            .map(|i| {
+                [
+                    (i % 100) as f32 * 0.1,
+                    ((i / 100) % 100) as f32 * 0.1,
+                    (i / 10000) as f32 * 0.1,
+                ]
+            })
             .collect();
         let center = [5.0, 5.0, 0.5];
-        
+
         bencher.iter(|| {
             let mut total = 0.0f32;
             for p in &positions {
@@ -1377,13 +1395,19 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(total)
         });
     });
-    
+
     group.bench_function("distance_squared_only_100000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..100000)
-            .map(|i| [(i % 100) as f32 * 0.1, ((i / 100) % 100) as f32 * 0.1, (i / 10000) as f32 * 0.1])
+            .map(|i| {
+                [
+                    (i % 100) as f32 * 0.1,
+                    ((i / 100) % 100) as f32 * 0.1,
+                    (i / 10000) as f32 * 0.1,
+                ]
+            })
             .collect();
         let center = [5.0, 5.0, 0.5];
-        
+
         bencher.iter(|| {
             let mut total = 0.0f32;
             for p in &positions {
@@ -1397,13 +1421,19 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(total)
         });
     });
-    
+
     // Test 3: Morton code generation
     group.bench_function("morton_code_generation_100000", |bencher| {
         let positions: Vec<(u32, u32, u32)> = (0..100000)
-            .map(|i| ((i % 256) as u32, ((i / 256) % 256) as u32, (i / 65536) as u32))
+            .map(|i| {
+                (
+                    (i % 256) as u32,
+                    ((i / 256) % 256) as u32,
+                    (i / 65536) as u32,
+                )
+            })
             .collect();
-        
+
         bencher.iter(|| {
             let mut total = 0u64;
             for (x, y, z) in &positions {
@@ -1423,27 +1453,33 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(total)
         });
     });
-    
+
     // Test 4: Kernel early-out benefit
     group.bench_function("kernel_without_early_out_10000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..10000)
-            .map(|i| [(i % 100) as f32 * 0.02, ((i / 100) % 100) as f32 * 0.02, 0.0])
+            .map(|i| {
+                [
+                    (i % 100) as f32 * 0.02,
+                    ((i / 100) % 100) as f32 * 0.02,
+                    0.0,
+                ]
+            })
             .collect();
         let center = [1.0, 1.0, 0.0];
         let h = 0.1f32;
-        
+
         bencher.iter(|| {
             let mut total = 0.0f32;
             let h_inv = 1.0 / h;
             let norm = 8.0 / (std::f32::consts::PI * h * h * h);
-            
+
             for p in &positions {
                 let dx = p[0] - center[0];
                 let dy = p[1] - center[1];
                 let dz = p[2] - center[2];
                 let r = (dx * dx + dy * dy + dz * dz).sqrt();
                 let q = r * h_inv;
-                
+
                 let val = if q >= 1.0 {
                     0.0
                 } else if q >= 0.5 {
@@ -1457,34 +1493,40 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(total)
         });
     });
-    
+
     group.bench_function("kernel_with_early_out_10000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..10000)
-            .map(|i| [(i % 100) as f32 * 0.02, ((i / 100) % 100) as f32 * 0.02, 0.0])
+            .map(|i| {
+                [
+                    (i % 100) as f32 * 0.02,
+                    ((i / 100) % 100) as f32 * 0.02,
+                    0.0,
+                ]
+            })
             .collect();
         let center = [1.0, 1.0, 0.0];
         let h = 0.1f32;
-        
+
         bencher.iter(|| {
             let mut total = 0.0f32;
             let h_sq = h * h;
             let h_inv = 1.0 / h;
             let norm = 8.0 / (std::f32::consts::PI * h * h * h);
-            
+
             for p in &positions {
                 let dx = p[0] - center[0];
                 let dy = p[1] - center[1];
                 let dz = p[2] - center[2];
                 let dist_sq = dx * dx + dy * dy + dz * dz;
-                
+
                 // Early out - skip sqrt if outside support
                 if dist_sq >= h_sq {
                     continue;
                 }
-                
+
                 let r = dist_sq.sqrt();
                 let q = r * h_inv;
-                
+
                 let val = if q >= 0.5 {
                     let t = 1.0 - q;
                     norm * 2.0 * t * t * t
@@ -1496,13 +1538,13 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box(total)
         });
     });
-    
+
     // Test 5: AOS vs SOA memory access pattern
     group.bench_function("aos_access_pattern_10000", |bencher| {
         let particles: Vec<[f32; 3]> = (0..10000)
             .map(|i| [i as f32 * 0.1, i as f32 * 0.2, i as f32 * 0.3])
             .collect();
-        
+
         bencher.iter(|| {
             let mut sum_x = 0.0f32;
             let mut sum_y = 0.0f32;
@@ -1515,13 +1557,13 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box((sum_x, sum_y, sum_z))
         });
     });
-    
+
     group.bench_function("soa_access_pattern_10000", |bencher| {
         let n = 10000;
         let x: Vec<f32> = (0..n).map(|i| i as f32 * 0.1).collect();
         let y: Vec<f32> = (0..n).map(|i| i as f32 * 0.2).collect();
         let z: Vec<f32> = (0..n).map(|i| i as f32 * 0.3).collect();
-        
+
         bencher.iter(|| {
             let sum_x: f32 = x.iter().sum();
             let sum_y: f32 = y.iter().sum();
@@ -1529,44 +1571,56 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             std_black_box((sum_x, sum_y, sum_z))
         });
     });
-    
+
     // Test 6: Weighted centroid (XSPH common operation)
     group.bench_function("weighted_centroid_naive_1000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..1000)
-            .map(|i| [i as f32 * 0.01, (i as f32 * 0.01).sin(), (i as f32 * 0.01).cos()])
+            .map(|i| {
+                [
+                    i as f32 * 0.01,
+                    (i as f32 * 0.01).sin(),
+                    (i as f32 * 0.01).cos(),
+                ]
+            })
             .collect();
         let weights: Vec<f32> = (0..1000).map(|i| 1.0 / (i as f32 + 1.0)).collect();
-        
+
         bencher.iter(|| {
             let mut sum_x = 0.0f32;
             let mut sum_y = 0.0f32;
             let mut sum_z = 0.0f32;
             let mut sum_w = 0.0f32;
-            
+
             for (p, &w) in positions.iter().zip(weights.iter()) {
                 sum_x += w * p[0];
                 sum_y += w * p[1];
                 sum_z += w * p[2];
                 sum_w += w;
             }
-            
+
             let inv_w = 1.0 / sum_w;
             std_black_box([sum_x * inv_w, sum_y * inv_w, sum_z * inv_w])
         });
     });
-    
+
     group.bench_function("weighted_centroid_fma_1000", |bencher| {
         let positions: Vec<[f32; 3]> = (0..1000)
-            .map(|i| [i as f32 * 0.01, (i as f32 * 0.01).sin(), (i as f32 * 0.01).cos()])
+            .map(|i| {
+                [
+                    i as f32 * 0.01,
+                    (i as f32 * 0.01).sin(),
+                    (i as f32 * 0.01).cos(),
+                ]
+            })
             .collect();
         let weights: Vec<f32> = (0..1000).map(|i| 1.0 / (i as f32 + 1.0)).collect();
-        
+
         bencher.iter(|| {
             let mut sum_x = 0.0f32;
             let mut sum_y = 0.0f32;
             let mut sum_z = 0.0f32;
             let mut sum_w = 0.0f32;
-            
+
             // 4x unroll with FMA
             let chunks = positions.len() / 4;
             for chunk in 0..chunks {
@@ -1575,30 +1629,30 @@ fn bench_simd_optimizations(c: &mut Criterion) {
                 sum_y = weights[base].mul_add(positions[base][1], sum_y);
                 sum_z = weights[base].mul_add(positions[base][2], sum_z);
                 sum_w += weights[base];
-                
+
                 sum_x = weights[base + 1].mul_add(positions[base + 1][0], sum_x);
                 sum_y = weights[base + 1].mul_add(positions[base + 1][1], sum_y);
                 sum_z = weights[base + 1].mul_add(positions[base + 1][2], sum_z);
                 sum_w += weights[base + 1];
-                
+
                 sum_x = weights[base + 2].mul_add(positions[base + 2][0], sum_x);
                 sum_y = weights[base + 2].mul_add(positions[base + 2][1], sum_y);
                 sum_z = weights[base + 2].mul_add(positions[base + 2][2], sum_z);
                 sum_w += weights[base + 2];
-                
+
                 sum_x = weights[base + 3].mul_add(positions[base + 3][0], sum_x);
                 sum_y = weights[base + 3].mul_add(positions[base + 3][1], sum_y);
                 sum_z = weights[base + 3].mul_add(positions[base + 3][2], sum_z);
                 sum_w += weights[base + 3];
             }
-            
+
             for i in (chunks * 4)..positions.len() {
                 sum_x = weights[i].mul_add(positions[i][0], sum_x);
                 sum_y = weights[i].mul_add(positions[i][1], sum_y);
                 sum_z = weights[i].mul_add(positions[i][2], sum_z);
                 sum_w += weights[i];
             }
-            
+
             let inv_w = 1.0 / sum_w;
             std_black_box([sum_x * inv_w, sum_y * inv_w, sum_z * inv_w])
         });
@@ -1611,19 +1665,18 @@ fn bench_simd_optimizations(c: &mut Criterion) {
 fn bench_parallel_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("fluids_adversarial/parallel_operations");
     group.sample_size(50);
-    
+
     // Test case: 100,000 particles for parallel processing
     let count = 100_000;
-    
+
     group.bench_function("sequential_position_update_100k", |b| {
         let velocities: Vec<[f32; 3]> = vec![[1.0, 2.0, 3.0]; count];
         let dt = 0.016;
-        
+
         b.iter(|| {
-            let mut positions: Vec<[f32; 3]> = (0..count)
-                .map(|i| [(i as f32) * 0.01, 0.0, 0.0])
-                .collect();
-            
+            let mut positions: Vec<[f32; 3]> =
+                (0..count).map(|i| [(i as f32) * 0.01, 0.0, 0.0]).collect();
+
             for (pos, vel) in positions.iter_mut().zip(velocities.iter()) {
                 pos[0] += vel[0] * dt;
                 pos[1] += vel[1] * dt;
@@ -1632,19 +1685,18 @@ fn bench_parallel_operations(c: &mut Criterion) {
             std_black_box(positions[0])
         });
     });
-    
+
     #[cfg(feature = "parallel")]
     group.bench_function("parallel_position_update_100k", |b| {
         use rayon::prelude::*;
-        
+
         let velocities: Vec<[f32; 3]> = vec![[1.0, 2.0, 3.0]; count];
         let dt = 0.016;
-        
+
         b.iter(|| {
-            let mut positions: Vec<[f32; 3]> = (0..count)
-                .map(|i| [(i as f32) * 0.01, 0.0, 0.0])
-                .collect();
-            
+            let mut positions: Vec<[f32; 3]> =
+                (0..count).map(|i| [(i as f32) * 0.01, 0.0, 0.0]).collect();
+
             positions
                 .par_iter_mut()
                 .zip(velocities.par_iter())
@@ -1656,26 +1708,24 @@ fn bench_parallel_operations(c: &mut Criterion) {
             std_black_box(positions[0])
         });
     });
-    
+
     group.bench_function("sequential_kernel_eval_10k", |b| {
-        let positions: Vec<[f32; 3]> = (0..10_000)
-            .map(|i| [(i as f32) * 0.01, 0.0, 0.0])
-            .collect();
+        let positions: Vec<[f32; 3]> = (0..10_000).map(|i| [(i as f32) * 0.01, 0.0, 0.0]).collect();
         let center = [50.0, 0.0, 0.0];
         let h = 5.0;
-        
+
         b.iter(|| {
             let mut values = Vec::with_capacity(positions.len());
             let h_sq = h * h;
             let h_inv = 1.0 / h;
             let norm = 8.0 / (std::f32::consts::PI * h * h * h);
-            
+
             for pos in &positions {
                 let dx = pos[0] - center[0];
                 let dy = pos[1] - center[1];
                 let dz = pos[2] - center[2];
                 let dist_sq = dx * dx + dy * dy + dz * dz;
-                
+
                 let val = if dist_sq >= h_sq {
                     0.0
                 } else {
@@ -1693,23 +1743,21 @@ fn bench_parallel_operations(c: &mut Criterion) {
             std_black_box(values.len())
         });
     });
-    
+
     #[cfg(feature = "parallel")]
     group.bench_function("parallel_kernel_eval_10k", |b| {
         use astraweave_fluids::simd_ops::parallel::par_batch_kernel_cubic;
-        
-        let positions: Vec<[f32; 3]> = (0..10_000)
-            .map(|i| [(i as f32) * 0.01, 0.0, 0.0])
-            .collect();
+
+        let positions: Vec<[f32; 3]> = (0..10_000).map(|i| [(i as f32) * 0.01, 0.0, 0.0]).collect();
         let center = [50.0, 0.0, 0.0];
         let h = 5.0;
-        
+
         b.iter(|| {
             let (values, in_range) = par_batch_kernel_cubic(&positions, center, h);
             std_black_box((values.len(), in_range))
         });
     });
-    
+
     group.bench_function("sequential_morton_codes_100k", |b| {
         let positions: Vec<[f32; 3]> = (0..count)
             .map(|i| {
@@ -1721,7 +1769,7 @@ fn bench_parallel_operations(c: &mut Criterion) {
             .collect();
         let cell_size = 0.1;
         let offset = [0.0, 0.0, 0.0];
-        
+
         b.iter(|| {
             use astraweave_fluids::simd_ops::position_to_morton;
             let mut codes: Vec<(usize, u64)> = Vec::with_capacity(positions.len());
@@ -1731,11 +1779,11 @@ fn bench_parallel_operations(c: &mut Criterion) {
             std_black_box(codes.len())
         });
     });
-    
+
     #[cfg(feature = "parallel")]
     group.bench_function("parallel_morton_codes_100k", |b| {
         use astraweave_fluids::simd_ops::parallel::par_compute_morton_codes;
-        
+
         let positions: Vec<[f32; 3]> = (0..count)
             .map(|i| {
                 let x = ((i % 100) as f32) * 0.1;
@@ -1746,13 +1794,13 @@ fn bench_parallel_operations(c: &mut Criterion) {
             .collect();
         let cell_size = 0.1;
         let offset = [0.0, 0.0, 0.0];
-        
+
         b.iter(|| {
             let codes = par_compute_morton_codes(&positions, cell_size, offset);
             std_black_box(codes.len())
         });
     });
-    
+
     group.finish();
 }
 
@@ -1760,61 +1808,69 @@ fn bench_parallel_operations(c: &mut Criterion) {
 #[allow(deprecated)]
 fn bench_optimized_library_functions(c: &mut Criterion) {
     use astraweave_fluids::simd_ops::{
-        weighted_centroid_fast, accumulate_density_simple, accumulate_density,
+        accumulate_density, accumulate_density_simple, weighted_centroid_fast,
     };
-    
+
     let mut group = c.benchmark_group("fluids_adversarial/optimized_functions");
     group.sample_size(100);
-    
+
     // Test: weighted_centroid_fast vs naive iteration (baseline from simd_optimizations)
     let positions: Vec<[f32; 3]> = (0..1000)
-        .map(|i| [i as f32 * 0.01, (i as f32 * 0.01).sin(), (i as f32 * 0.01).cos()])
+        .map(|i| {
+            [
+                i as f32 * 0.01,
+                (i as f32 * 0.01).sin(),
+                (i as f32 * 0.01).cos(),
+            ]
+        })
         .collect();
     let weights: Vec<f32> = (0..1000).map(|i| 1.0 / (i as f32 + 1.0)).collect();
-    
+
     group.bench_function("weighted_centroid_fast_1000", |b| {
         b.iter(|| {
             let result = weighted_centroid_fast(&positions, &weights);
             std_black_box(result)
         });
     });
-    
+
     // Test: accumulate_density_simple (should match or beat naive)
     let kernels: Vec<f32> = (0..10000).map(|i| (i as f32 * 0.001).sin().abs()).collect();
     let masses: Vec<f32> = vec![1.0; 10000];
-    
+
     group.bench_function("accumulate_density_simple_10k", |b| {
         b.iter(|| {
             let result = accumulate_density_simple(&kernels, &masses);
             std_black_box(result)
         });
     });
-    
+
     group.bench_function("accumulate_density_4x_10k", |b| {
         b.iter(|| {
             let result = accumulate_density(&kernels, &masses);
             std_black_box(result)
         });
     });
-    
+
     // Large scale test: 100k elements
-    let kernels_100k: Vec<f32> = (0..100000).map(|i| (i as f32 * 0.0001).sin().abs()).collect();
+    let kernels_100k: Vec<f32> = (0..100000)
+        .map(|i| (i as f32 * 0.0001).sin().abs())
+        .collect();
     let masses_100k: Vec<f32> = vec![1.0; 100000];
-    
+
     group.bench_function("accumulate_density_simple_100k", |b| {
         b.iter(|| {
             let result = accumulate_density_simple(&kernels_100k, &masses_100k);
             std_black_box(result)
         });
     });
-    
+
     group.bench_function("accumulate_density_4x_100k", |b| {
         b.iter(|| {
             let result = accumulate_density(&kernels_100k, &masses_100k);
             std_black_box(result)
         });
     });
-    
+
     group.finish();
 }
 

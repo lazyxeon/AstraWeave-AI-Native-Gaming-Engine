@@ -49,7 +49,7 @@ pub struct IterationState {
 }
 
 /// Physical parameters for the simulation
-/// 
+///
 /// These are the actual numerical values for physics simulation,
 /// separate from the ResearchFluidConfig which controls solver behavior.
 #[derive(Clone, Debug)]
@@ -432,7 +432,7 @@ impl PcisphSystem {
                         has_dynamic_offset: false,
                         min_binding_size: Some(
                             std::num::NonZeroU64::new(
-                                std::mem::size_of::<ResearchSimParams>() as u64,
+                                std::mem::size_of::<ResearchSimParams>() as u64
                             )
                             .expect("non-zero struct size"),
                         ),
@@ -1214,10 +1214,10 @@ mod tests {
             avg_density_error: 0.005,
             converged: 1,
         };
-        
+
         let bytes: &[u8] = bytemuck::bytes_of(&state);
         assert_eq!(bytes.len(), 16);
-        
+
         let recovered: &IterationState = bytemuck::from_bytes(bytes);
         assert_eq!(recovered.iteration, 5);
         assert_eq!(recovered.converged, 1);
@@ -1240,7 +1240,7 @@ mod tests {
             converged: 1,
             ..Default::default()
         };
-        
+
         assert_eq!(not_converged.converged, 0);
         assert_eq!(converged.converged, 1);
     }
@@ -1280,7 +1280,7 @@ mod tests {
     #[test]
     fn test_physical_params_all_positive() {
         let params = PhysicalParams::default();
-        
+
         assert!(params.smoothing_radius > 0.0);
         assert!(params.target_density > 0.0);
         assert!(params.base_viscosity >= 0.0);
@@ -1298,7 +1298,7 @@ mod tests {
     fn test_physical_params_clone() {
         let params = PhysicalParams::honey();
         let cloned = params.clone();
-        
+
         assert_eq!(params.target_density, cloned.target_density);
         assert_eq!(params.base_viscosity, cloned.base_viscosity);
     }
@@ -1307,7 +1307,7 @@ mod tests {
     fn test_physical_params_debug() {
         let params = PhysicalParams::default();
         let debug_str = format!("{:?}", params);
-        
+
         assert!(debug_str.contains("smoothing_radius"));
         assert!(debug_str.contains("target_density"));
     }
@@ -1317,7 +1317,7 @@ mod tests {
         let water = PhysicalParams::water();
         let oil = PhysicalParams::oil();
         let honey = PhysicalParams::honey();
-        
+
         // Honey > Water > Oil (in density)
         assert!(honey.target_density > water.target_density);
         assert!(water.target_density > oil.target_density);
@@ -1328,7 +1328,7 @@ mod tests {
         let water = PhysicalParams::water();
         let oil = PhysicalParams::oil();
         let honey = PhysicalParams::honey();
-        
+
         // Honey > Oil > Water (in viscosity)
         assert!(honey.base_viscosity > oil.base_viscosity);
         assert!(oil.base_viscosity > water.base_viscosity);
@@ -1360,9 +1360,9 @@ mod tests {
     fn test_pcisph_delta_varies_with_density() {
         let water = PhysicalParams::water();
         let honey = PhysicalParams::honey();
-        
+
         let dt = 1.0 / 60.0;
-        
+
         let compute_delta = |p: &PhysicalParams| {
             let spacing = p.smoothing_radius * 0.5;
             let volume = spacing.powi(3);
@@ -1370,10 +1370,10 @@ mod tests {
             let beta = dt * dt * mass * mass * 2.0 / (p.target_density * p.target_density);
             -1.0 / (beta * -0.5 + 1e-6)
         };
-        
+
         let delta_water = compute_delta(&water);
         let delta_honey = compute_delta(&honey);
-        
+
         // Both should be positive
         assert!(delta_water > 0.0);
         assert!(delta_honey > 0.0);
@@ -1408,10 +1408,10 @@ mod tests {
             smoothing_radius: 2.0,
             ..Default::default()
         };
-        
+
         let grid_small = PcisphSystem::calculate_grid_size(&small_radius);
         let grid_large = PcisphSystem::calculate_grid_size(&large_radius);
-        
+
         // Smaller radius = more cells
         assert!(grid_small.0 > grid_large.0);
         assert!(grid_small.1 > grid_large.1);
@@ -1424,9 +1424,9 @@ mod tests {
             smoothing_radius: 100.0,
             ..Default::default()
         };
-        
+
         let grid = PcisphSystem::calculate_grid_size(&huge_radius);
-        
+
         assert!(grid.0 >= 1);
         assert!(grid.1 >= 1);
         assert!(grid.2 >= 1);
@@ -1470,7 +1470,7 @@ mod tests {
     #[test]
     fn test_pcisph_stats_default() {
         let stats = PcisphStats::default();
-        
+
         assert_eq!(stats.particle_count, 0);
         assert_eq!(stats.pressure_iterations, 0);
         assert_eq!(stats.max_density_error, 0.0);
@@ -1491,7 +1491,7 @@ mod tests {
             substep_time_ms: 2.5,
             substeps_per_frame: 2,
         };
-        
+
         let cloned = stats.clone();
         assert_eq!(cloned.particle_count, 10000);
         assert_eq!(cloned.pressure_iterations, 5);
@@ -1506,7 +1506,7 @@ mod tests {
             requested: 2_000_000,
             maximum: 1_000_000,
         };
-        
+
         let msg = format!("{}", error);
         assert!(msg.contains("2000000"));
         assert!(msg.contains("1000000"));
@@ -1526,7 +1526,7 @@ mod tests {
             value: -1.0,
             reason: "must be positive",
         };
-        
+
         let msg = format!("{}", error);
         assert!(msg.contains("smoothing_radius"));
         assert!(msg.contains("-1"));
@@ -1553,7 +1553,7 @@ mod tests {
     fn test_physical_params_modification_independence() {
         let mut params = PhysicalParams::water();
         params.base_viscosity = 100.0;
-        
+
         // Modifying one field shouldn't affect others
         assert_eq!(params.target_density, 1000.0);
         assert_eq!(params.gravity, -9.81);
@@ -1564,7 +1564,7 @@ mod tests {
         let mut state = IterationState::default();
         state.iteration = 10;
         state.converged = 1;
-        
+
         // Other fields should remain default
         assert_eq!(state.max_density_error, 0.0);
         assert_eq!(state.avg_density_error, 0.0);
@@ -1578,7 +1578,7 @@ mod tests {
             max_density_error: 0.001, // 0.1%
             ..Default::default()
         };
-        
+
         assert!(converged_stats.max_density_error <= DEFAULT_DENSITY_THRESHOLD);
     }
 
@@ -1586,9 +1586,9 @@ mod tests {
     fn test_grid_cell_count_reasonable() {
         let physical = PhysicalParams::default();
         let grid = PcisphSystem::calculate_grid_size(&physical);
-        
+
         let total_cells = grid.0 as u64 * grid.1 as u64 * grid.2 as u64;
-        
+
         // Should be manageable for GPU (< 100M cells)
         assert!(total_cells < 100_000_000);
         // But enough for reasonable simulation
@@ -1599,7 +1599,7 @@ mod tests {
     fn test_physical_params_surface_tension_range() {
         let water = PhysicalParams::water();
         let oil = PhysicalParams::oil();
-        
+
         // Surface tension should be positive and reasonable
         assert!(water.surface_tension >= 0.0);
         assert!(water.surface_tension <= 1.0);
@@ -1613,9 +1613,8 @@ mod tests {
             requested: 100,
             maximum: 50,
         };
-        
+
         let debug_str = format!("{:?}", error);
         assert!(debug_str.contains("TooManyParticles"));
     }
 }
-

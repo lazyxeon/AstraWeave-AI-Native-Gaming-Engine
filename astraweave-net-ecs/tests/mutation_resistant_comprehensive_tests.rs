@@ -138,14 +138,20 @@ fn network_snapshot_empty() {
 #[test]
 fn network_snapshot_with_entities() {
     let mut states = HashMap::new();
-    states.insert(1, EntityState {
-        position: glam::Vec3::new(1.0, 2.0, 3.0),
-        health: 100,
-    });
-    states.insert(2, EntityState {
-        position: glam::Vec3::new(4.0, 5.0, 6.0),
-        health: 50,
-    });
+    states.insert(
+        1,
+        EntityState {
+            position: glam::Vec3::new(1.0, 2.0, 3.0),
+            health: 100,
+        },
+    );
+    states.insert(
+        2,
+        EntityState {
+            position: glam::Vec3::new(4.0, 5.0, 6.0),
+            health: 50,
+        },
+    );
     let ns = NetworkSnapshot {
         server_tick: 42,
         entity_states: states,
@@ -159,10 +165,13 @@ fn network_snapshot_with_entities() {
 #[test]
 fn network_snapshot_clone() {
     let mut states = HashMap::new();
-    states.insert(1, EntityState {
-        position: glam::Vec3::ZERO,
-        health: 75,
-    });
+    states.insert(
+        1,
+        EntityState {
+            position: glam::Vec3::ZERO,
+            health: 75,
+        },
+    );
     let ns = NetworkSnapshot {
         server_tick: 10,
         entity_states: states,
@@ -175,10 +184,13 @@ fn network_snapshot_clone() {
 #[test]
 fn network_snapshot_json_roundtrip() {
     let mut states = HashMap::new();
-    states.insert(7, EntityState {
-        position: glam::Vec3::new(3.14, 2.72, 1.41),
-        health: 88,
-    });
+    states.insert(
+        7,
+        EntityState {
+            position: glam::Vec3::new(3.14, 2.72, 1.41),
+            health: 88,
+        },
+    );
     let ns = NetworkSnapshot {
         server_tick: 55,
         entity_states: states,

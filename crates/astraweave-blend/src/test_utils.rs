@@ -115,7 +115,11 @@ impl MockBlenderInstallation {
             executable_path: self.executable_path.clone(),
             version: self.version,
             discovery_method: crate::discovery::DiscoveryMethod::UserConfigured,
-            install_dir: self.executable_path.parent().unwrap_or(Path::new("/")).to_path_buf(),
+            install_dir: self
+                .executable_path
+                .parent()
+                .unwrap_or(Path::new("/"))
+                .to_path_buf(),
         }
     }
 }
@@ -143,8 +147,12 @@ pub struct TestFixture {
 impl TestFixture {
     /// Creates a new test fixture.
     pub fn new() -> BlendResult<Self> {
-        let temp_dir = TempDir::new()
-            .map_err(|e| BlendError::IoError(std::io::Error::other(format!("Failed to create temp dir: {}", e))))?;
+        let temp_dir = TempDir::new().map_err(|e| {
+            BlendError::IoError(std::io::Error::other(format!(
+                "Failed to create temp dir: {}",
+                e
+            )))
+        })?;
 
         let source_dir = temp_dir.path().join("source");
         let output_dir = temp_dir.path().join("output");
@@ -297,12 +305,12 @@ impl AdversarialInputs {
             "file\x1bname.blend".to_string(),
             "a".repeat(4096), // Very long name
             "file<>:\"|?*.blend".to_string(),
-            "file\u{FEFF}.blend".to_string(),      // BOM
+            "file\u{FEFF}.blend".to_string(),        // BOM
             "file\u{202E}dlb.exe.blend".to_string(), // Right-to-left override
-            "🔥🔥🔥.blend".to_string(),            // Emoji
-            "файл.blend".to_string(),              // Cyrillic
-            "文件.blend".to_string(),              // Chinese
-            "ファイル.blend".to_string(),           // Japanese
+            "🔥🔥🔥.blend".to_string(),              // Emoji
+            "файл.blend".to_string(),                // Cyrillic
+            "文件.blend".to_string(),                // Chinese
+            "ファイル.blend".to_string(),            // Japanese
         ]
     }
 
@@ -343,18 +351,18 @@ impl AdversarialInputs {
     /// Unicode edge cases.
     pub fn unicode_edge_cases() -> Vec<&'static str> {
         vec![
-            "\u{0000}",          // Null
-            "\u{FEFF}",          // BOM
-            "\u{FFFF}",          // Invalid character
-            "\u{202E}",          // Right-to-left override
-            "\u{202D}",          // Left-to-right override
-            "\u{200B}",          // Zero-width space
-            "\u{200C}",          // Zero-width non-joiner
-            "\u{200D}",          // Zero-width joiner
-            "\u{2028}",          // Line separator
-            "\u{2029}",          // Paragraph separator
+            "\u{0000}", // Null
+            "\u{FEFF}", // BOM
+            "\u{FFFF}", // Invalid character
+            "\u{202E}", // Right-to-left override
+            "\u{202D}", // Left-to-right override
+            "\u{200B}", // Zero-width space
+            "\u{200C}", // Zero-width non-joiner
+            "\u{200D}", // Zero-width joiner
+            "\u{2028}", // Line separator
+            "\u{2029}", // Paragraph separator
             // Note: Surrogate code points cannot be represented in Rust strings
-            "\u{10FFFF}",        // Maximum code point
+            "\u{10FFFF}", // Maximum code point
         ]
     }
 
@@ -364,8 +372,8 @@ impl AdversarialInputs {
             r#"{"__proto__":{"admin":true}}"#.to_string(),
             r#"{"constructor":{"prototype":{"admin":true}}}"#.to_string(),
             r#"{"a":{"b":{"c":{"d":{"e":{"f":{"g":{"h":{"i":{"j":{}}}}}}}}}}}"#.to_string(), // Deep nesting
-            "{".repeat(1000), // Unbalanced braces
-            "[".repeat(1000), // Unbalanced brackets
+            "{".repeat(1000),                     // Unbalanced braces
+            "[".repeat(1000),                     // Unbalanced brackets
             r#"{"key":"value"/**/}"#.to_string(), // Comments (invalid JSON)
             "null".to_string(),
             "undefined".to_string(),
@@ -387,9 +395,9 @@ pub mod generators {
     use crate::cache::CacheEntry;
     use crate::conversion::ConversionResult;
     use crate::options::{
-        AnimationOptions, CacheOptions, ConversionOptions, GltfExportOptions,
-        LinkedLibraryOptions, MaterialOptions, MeshOptions, MissingLibraryAction,
-        OutputFormat, ProcessOptions, TextureFormat, TextureOptions,
+        AnimationOptions, CacheOptions, ConversionOptions, GltfExportOptions, LinkedLibraryOptions,
+        MaterialOptions, MeshOptions, MissingLibraryAction, OutputFormat, ProcessOptions,
+        TextureFormat, TextureOptions,
     };
     use rand::distributions::{Alphanumeric, DistString};
     use rand::prelude::*;
@@ -722,7 +730,11 @@ macro_rules! assert_blend_error {
     ($result:expr, $pattern:pat) => {
         match $result {
             Err($pattern) => {}
-            Err(e) => panic!("Expected error pattern {}, got: {:?}", stringify!($pattern), e),
+            Err(e) => panic!(
+                "Expected error pattern {}, got: {:?}",
+                stringify!($pattern),
+                e
+            ),
             Ok(v) => panic!("Expected error, got Ok: {:?}", v),
         }
     };

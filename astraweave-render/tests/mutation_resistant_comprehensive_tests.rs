@@ -43,7 +43,11 @@ mod environment_mutations {
         let tod = TimeOfDay::new(6.0, 1.0);
         let pos = tod.get_sun_position();
         // At 6am, angle = 0 → sin(0) = 0 → sun_height ≈ 0
-        assert!(pos.y.abs() < 0.15, "Sun at 6am should be near horizon, got y={}", pos.y);
+        assert!(
+            pos.y.abs() < 0.15,
+            "Sun at 6am should be near horizon, got y={}",
+            pos.y
+        );
     }
 
     #[test]
@@ -59,7 +63,11 @@ mod environment_mutations {
         let tod = TimeOfDay::new(18.0, 1.0);
         let pos = tod.get_sun_position();
         // At 6pm, angle = PI → sin(PI) ≈ 0
-        assert!(pos.y.abs() < 0.15, "Sun at 6pm should be near horizon, got y={}", pos.y);
+        assert!(
+            pos.y.abs() < 0.15,
+            "Sun at 6pm should be near horizon, got y={}",
+            pos.y
+        );
     }
 
     #[test]
@@ -67,7 +75,11 @@ mod environment_mutations {
         let tod = TimeOfDay::new(0.0, 1.0);
         let pos = tod.get_sun_position();
         // At midnight, angle = -PI/2 → sin = -1.0
-        assert!(pos.y < -0.5, "Sun at midnight should be below horizon, got y={}", pos.y);
+        assert!(
+            pos.y < -0.5,
+            "Sun at midnight should be below horizon, got y={}",
+            pos.y
+        );
     }
 
     // --- Moon is opposite of sun ---
@@ -145,7 +157,10 @@ mod environment_mutations {
         let tod = TimeOfDay::new(12.0, 1.0);
         let ambient = tod.get_ambient_color();
         // Day ambient: vec3(0.4, 0.6, 1.0) * (0.3 + 0.4 * intensity)
-        assert!(ambient.z > ambient.x, "Day ambient should be blue-ish (z > x)");
+        assert!(
+            ambient.z > ambient.x,
+            "Day ambient should be blue-ish (z > x)"
+        );
         assert!(ambient.y > 0.1, "Day ambient should be bright");
     }
 
@@ -407,8 +422,8 @@ mod culling_mutations {
 
         let instances = vec![
             InstanceAABB::new(Vec3::new(0.0, 0.0, -10.0), Vec3::splat(1.0), 0), // visible
-            InstanceAABB::new(Vec3::new(0.0, 0.0, 200.0), Vec3::splat(1.0), 1),  // behind
-            InstanceAABB::new(Vec3::new(0.0, 0.0, -50.0), Vec3::splat(1.0), 2),  // visible
+            InstanceAABB::new(Vec3::new(0.0, 0.0, 200.0), Vec3::splat(1.0), 1), // behind
+            InstanceAABB::new(Vec3::new(0.0, 0.0, -50.0), Vec3::splat(1.0), 2), // visible
         ];
 
         let visible = cpu_frustum_cull(&instances, &frustum);
@@ -566,7 +581,9 @@ mod material_extended_mutations {
     fn to_gpu_clearcoat_flag_when_strength_positive() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -596,7 +613,9 @@ mod material_extended_mutations {
     fn to_gpu_no_clearcoat_flag_when_strength_zero() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -627,7 +646,9 @@ mod material_extended_mutations {
         // abs(0.001) is NOT > 0.001 → no flag
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -650,7 +671,10 @@ mod material_extended_mutations {
             attenuation_distance: 1.0,
         };
         let gpu = def.to_gpu(0, 0, 0, 0, 0);
-        assert!(!gpu.has_feature(MATERIAL_FLAG_ANISOTROPY), "0.001 is NOT > 0.001");
+        assert!(
+            !gpu.has_feature(MATERIAL_FLAG_ANISOTROPY),
+            "0.001 is NOT > 0.001"
+        );
 
         // 0.002 IS > 0.001 → flag set
         let def2 = MaterialDefinitionExtended {
@@ -665,7 +689,9 @@ mod material_extended_mutations {
     fn to_gpu_negative_anisotropy_triggers_flag() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -695,7 +721,9 @@ mod material_extended_mutations {
     fn to_gpu_subsurface_flag_when_scale_positive() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -725,7 +753,9 @@ mod material_extended_mutations {
     fn to_gpu_sheen_flag_when_color_nonzero() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -755,7 +785,9 @@ mod material_extended_mutations {
     fn to_gpu_no_sheen_flag_when_color_zero() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -785,7 +817,9 @@ mod material_extended_mutations {
     fn to_gpu_transmission_flag_when_factor_positive() {
         let def = MaterialDefinitionExtended {
             name: "test".into(),
-            albedo: None, normal: None, orm: None,
+            albedo: None,
+            normal: None,
+            orm: None,
             base_color_factor: [1.0; 4],
             metallic_factor: 0.0,
             roughness_factor: 0.5,
@@ -964,9 +998,16 @@ mod ssao_mutations {
         // then scale = 0.1 + (1/N)^2 * 0.9
         // For N=16: final_scale = 0.1 + (1/16)^2 * 0.9 = 0.1 + 0.003515625 ≈ 0.10352
         let kernel = SsaoKernel::generate(16);
-        let magnitude = (kernel.samples[0][0].powi(2) + kernel.samples[0][1].powi(2) + kernel.samples[0][2].powi(2)).sqrt();
+        let magnitude = (kernel.samples[0][0].powi(2)
+            + kernel.samples[0][1].powi(2)
+            + kernel.samples[0][2].powi(2))
+        .sqrt();
         // Should be small (near 0.1 scale)
-        assert!(magnitude < 0.2, "First sample should have small magnitude, got {}", magnitude);
+        assert!(
+            magnitude < 0.2,
+            "First sample should have small magnitude, got {}",
+            magnitude
+        );
         assert!(magnitude > 0.01, "First sample should be non-negligible");
     }
 
@@ -978,7 +1019,11 @@ mod ssao_mutations {
         let last = kernel.samples[15];
         let magnitude = (last[0].powi(2) + last[1].powi(2) + last[2].powi(2)).sqrt();
         // Should be large (near 1.0 scale)
-        assert!(magnitude > 0.5, "Last sample should have large magnitude, got {}", magnitude);
+        assert!(
+            magnitude > 0.5,
+            "Last sample should have large magnitude, got {}",
+            magnitude
+        );
     }
 
     #[test]
@@ -1135,7 +1180,11 @@ mod transparency_mutations {
 
         let sorted: Vec<u32> = mgr.sorted_instances().map(|i| i.instance_index).collect();
         // Must NOT be [0, 1] (front-to-back)
-        assert_ne!(sorted, vec![0, 1], "Must be back-to-front, not front-to-back");
+        assert_ne!(
+            sorted,
+            vec![0, 1],
+            "Must be back-to-front, not front-to-back"
+        );
     }
 
     #[test]
@@ -1203,7 +1252,10 @@ mod decal_mutations {
 
         // After 0.5s, should still be alive
         assert!(d.update(0.5));
-        assert!((d.albedo_tint[3] - 0.5).abs() < 0.01, "Alpha should be 0.5 at half fade");
+        assert!(
+            (d.albedo_tint[3] - 0.5).abs() < 0.01,
+            "Alpha should be 0.5 at half fade"
+        );
 
         // After another 0.5s, total >= 1.0, should be removed
         assert!(!d.update(0.5));
@@ -1313,67 +1365,100 @@ mod post_mutations {
 
     #[test]
     fn bloom_validate_threshold_lower_bound() {
-        let cfg = BloomConfig { threshold: 0.0, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            threshold: 0.0,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_ok());
     }
 
     #[test]
     fn bloom_validate_threshold_upper_bound() {
-        let cfg = BloomConfig { threshold: 10.0, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            threshold: 10.0,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_ok());
     }
 
     #[test]
     fn bloom_validate_threshold_above_upper_fails() {
-        let cfg = BloomConfig { threshold: 10.01, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            threshold: 10.01,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_err());
     }
 
     #[test]
     fn bloom_validate_threshold_below_lower_fails() {
-        let cfg = BloomConfig { threshold: -0.01, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            threshold: -0.01,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_err());
     }
 
     #[test]
     fn bloom_validate_intensity_lower_bound() {
-        let cfg = BloomConfig { intensity: 0.0, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            intensity: 0.0,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_ok());
     }
 
     #[test]
     fn bloom_validate_intensity_upper_bound() {
-        let cfg = BloomConfig { intensity: 1.0, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            intensity: 1.0,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_ok());
     }
 
     #[test]
     fn bloom_validate_intensity_above_upper_fails() {
-        let cfg = BloomConfig { intensity: 1.01, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            intensity: 1.01,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_err());
     }
 
     #[test]
     fn bloom_validate_mip_count_lower_bound() {
-        let cfg = BloomConfig { mip_count: 1, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            mip_count: 1,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_ok());
     }
 
     #[test]
     fn bloom_validate_mip_count_upper_bound() {
-        let cfg = BloomConfig { mip_count: 8, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            mip_count: 8,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_ok());
     }
 
     #[test]
     fn bloom_validate_mip_count_below_lower_fails() {
-        let cfg = BloomConfig { mip_count: 0, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            mip_count: 0,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_err());
     }
 
     #[test]
     fn bloom_validate_mip_count_above_upper_fails() {
-        let cfg = BloomConfig { mip_count: 9, ..BloomConfig::default() };
+        let cfg = BloomConfig {
+            mip_count: 9,
+            ..BloomConfig::default()
+        };
         assert!(cfg.validate().is_err());
     }
 }
@@ -1485,8 +1570,8 @@ mod gpu_memory_mutations {
     #[test]
     fn try_allocate_fails_beyond_hard_limit() {
         let mgr = GpuMemoryBudget::with_total_budget(1024 * 1024); // 1 MB total
-        // Per-category hard limit ≈ 1MB/8 = 128KB, textures gets 40% = ~400KB
-        // Try to allocate way more than any category limit
+                                                                   // Per-category hard limit ≈ 1MB/8 = 128KB, textures gets 40% = ~400KB
+                                                                   // Try to allocate way more than any category limit
         let huge = 2 * 1024 * 1024; // 2MB
         assert!(!mgr.try_allocate(MemoryCategory::Geometry, huge));
     }
@@ -1494,9 +1579,9 @@ mod gpu_memory_mutations {
     #[test]
     fn with_total_budget_texture_gets_extra() {
         let mgr = GpuMemoryBudget::with_total_budget(8 * 1024 * 1024); // 8 MB total
-        // Textures hard limit = 40% of total = 3.2 MB
-        // Regular per_category = 8MB/8 = 1MB
-        // Texture should accept more than 1MB
+                                                                       // Textures hard limit = 40% of total = 3.2 MB
+                                                                       // Regular per_category = 8MB/8 = 1MB
+                                                                       // Texture should accept more than 1MB
         assert!(mgr.try_allocate(MemoryCategory::Textures, 2 * 1024 * 1024));
     }
 

@@ -14,9 +14,7 @@ use astraweave_render::{
     culling::{FrustumPlanes, InstanceAABB},
     environment::TimeOfDay,
     lod_generator::LODConfig,
-    vertex_compression::{
-        CompressedVertex, HalfFloatEncoder, OctahedralEncoder, VertexCompressor,
-    },
+    vertex_compression::{CompressedVertex, HalfFloatEncoder, OctahedralEncoder, VertexCompressor},
     Camera,
 };
 use glam::{Mat4, Vec2, Vec3, Vec4Swizzles};
@@ -119,9 +117,9 @@ fn test_octahedral_encoding_error_bounded() {
 #[test]
 fn test_octahedral_lower_hemisphere() {
     let normals = [
-        Vec3::new(0.0, 0.0, -1.0),              // -Z axis
+        Vec3::new(0.0, 0.0, -1.0),               // -Z axis
         Vec3::new(0.5, 0.5, -0.707).normalize(), // Lower diagonal
-        Vec3::new(-0.3, 0.2, -0.9).normalize(), // Lower arbitrary
+        Vec3::new(-0.3, 0.2, -0.9).normalize(),  // Lower arbitrary
     ];
 
     for normal in &normals {
@@ -138,11 +136,7 @@ fn test_octahedral_lower_hemisphere() {
 
         // Check direction preserved
         let dot = normal.dot(decoded);
-        assert!(
-            dot > 0.99,
-            "Lower hemisphere roundtrip failed: dot={}",
-            dot
-        );
+        assert!(dot > 0.99, "Lower hemisphere roundtrip failed: dot={}", dot);
     }
 }
 
@@ -153,14 +147,7 @@ fn test_octahedral_lower_hemisphere() {
 /// Test half-float encoding preserves UV values within precision
 #[test]
 fn test_half_float_uv_precision() {
-    let uvs = [
-        0.0_f32,
-        0.5_f32,
-        1.0_f32,
-        0.25_f32,
-        0.75_f32,
-        0.125_f32,
-    ];
+    let uvs = [0.0_f32, 0.5_f32, 1.0_f32, 0.25_f32, 0.75_f32, 0.125_f32];
 
     for uv in &uvs {
         let encoded = HalfFloatEncoder::encode(*uv);
@@ -191,14 +178,8 @@ fn test_half_float_vec2_roundtrip() {
         let encoded = HalfFloatEncoder::encode_vec2(*uv);
         let decoded = HalfFloatEncoder::decode_vec2(encoded);
 
-        assert!(
-            (decoded.x - uv.x).abs() < 0.001,
-            "Vec2 X roundtrip failed"
-        );
-        assert!(
-            (decoded.y - uv.y).abs() < 0.001,
-            "Vec2 Y roundtrip failed"
-        );
+        assert!((decoded.x - uv.x).abs() < 0.001, "Vec2 X roundtrip failed");
+        assert!((decoded.y - uv.y).abs() < 0.001, "Vec2 Y roundtrip failed");
     }
 }
 
@@ -279,16 +260,10 @@ fn test_vertex_compressor_roundtrip() {
     );
 
     // Normal should be close (16-bit quantization)
-    assert!(
-        normal.dot(norm_out) > 0.99,
-        "Normal should be preserved"
-    );
+    assert!(normal.dot(norm_out) > 0.99, "Normal should be preserved");
 
     // UV should be close (half-float precision)
-    assert!(
-        (uv_out - uv).length() < 0.002,
-        "UV should be preserved"
-    );
+    assert!((uv_out - uv).length() < 0.002, "UV should be preserved");
 }
 
 /// Test batch compression
@@ -345,7 +320,11 @@ fn test_camera_view_matrix_handedness() {
     // View matrix should have determinant of 1 (orthonormal, right-handed)
     // For a rotation matrix, det should be +1 (not -1)
     // Extract the 3x3 rotation part
-    let det = view.x_axis.xyz().cross(view.y_axis.xyz()).dot(view.z_axis.xyz());
+    let det = view
+        .x_axis
+        .xyz()
+        .cross(view.y_axis.xyz())
+        .dot(view.z_axis.xyz());
     assert!(
         det.abs() > 0.99,
         "View matrix 3x3 should have |det| ~1, got {}",
@@ -566,32 +545,14 @@ fn test_instance_aabb_from_transform() {
     let aabb = InstanceAABB::from_transform(&transform, local_min, local_max, 0);
 
     // Center should be at origin
-    assert!(
-        (aabb.center[0].abs()) < 0.01,
-        "Center X should be ~0"
-    );
-    assert!(
-        (aabb.center[1].abs()) < 0.01,
-        "Center Y should be ~0"
-    );
-    assert!(
-        (aabb.center[2].abs()) < 0.01,
-        "Center Z should be ~0"
-    );
+    assert!((aabb.center[0].abs()) < 0.01, "Center X should be ~0");
+    assert!((aabb.center[1].abs()) < 0.01, "Center Y should be ~0");
+    assert!((aabb.center[2].abs()) < 0.01, "Center Z should be ~0");
 
     // Extent should be (1, 1, 1)
-    assert!(
-        (aabb.extent[0] - 1.0).abs() < 0.01,
-        "Extent X should be ~1"
-    );
-    assert!(
-        (aabb.extent[1] - 1.0).abs() < 0.01,
-        "Extent Y should be ~1"
-    );
-    assert!(
-        (aabb.extent[2] - 1.0).abs() < 0.01,
-        "Extent Z should be ~1"
-    );
+    assert!((aabb.extent[0] - 1.0).abs() < 0.01, "Extent X should be ~1");
+    assert!((aabb.extent[1] - 1.0).abs() < 0.01, "Extent Y should be ~1");
+    assert!((aabb.extent[2] - 1.0).abs() < 0.01, "Extent Z should be ~1");
 }
 
 /// Test InstanceAABB from scaled transform
@@ -695,11 +656,7 @@ fn test_moon_opposite_sun() {
 
     // Moon should be opposite to sun
     let dot = sun.dot(moon);
-    assert!(
-        dot < -0.95,
-        "Moon should be opposite to sun, dot={}",
-        dot
-    );
+    assert!(dot < -0.95, "Moon should be opposite to sun, dot={}", dot);
 }
 
 /// Test is_day at noon
@@ -790,7 +747,10 @@ fn test_lod_config_defaults() {
         (config.reduction_targets[2] - 0.25).abs() < 0.01,
         "LOD3 should target 25%"
     );
-    assert!(config.preserve_boundaries, "Default should preserve boundaries");
+    assert!(
+        config.preserve_boundaries,
+        "Default should preserve boundaries"
+    );
 }
 
 /// Test LODConfig reduction targets are decreasing
@@ -819,7 +779,11 @@ fn test_lod_config_custom() {
         preserve_boundaries: false,
     };
 
-    assert_eq!(config.reduction_targets.len(), 4, "Custom should have 4 levels");
+    assert_eq!(
+        config.reduction_targets.len(),
+        4,
+        "Custom should have 4 levels"
+    );
     assert!((config.max_error - 0.05).abs() < 0.001);
     assert!(!config.preserve_boundaries);
 }

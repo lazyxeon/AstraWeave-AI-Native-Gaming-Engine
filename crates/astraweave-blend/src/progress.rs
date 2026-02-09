@@ -308,7 +308,7 @@ impl ProgressTracker {
             p.elapsed = self.start_time.elapsed();
             p.cancelled = self.cancelled.load(Ordering::Relaxed);
             f(p);
-            
+
             // Calculate estimated remaining time
             if p.overall_progress > 0.0 && p.overall_progress < 1.0 {
                 let elapsed_secs = p.elapsed.as_secs_f64();
@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn test_progress_tracker_basic() {
         let tracker = ProgressTracker::new();
-        
+
         tracker.set_stage(ConversionStage::LoadingBlendFile);
         let progress = tracker.current();
         assert_eq!(progress.stage, ConversionStage::LoadingBlendFile);
@@ -399,10 +399,10 @@ mod tests {
     #[test]
     fn test_progress_tracker_stage_progress() {
         let tracker = ProgressTracker::new();
-        
+
         tracker.set_stage(ConversionStage::ExportingMeshes);
         tracker.set_stage_progress(0.5);
-        
+
         let progress = tracker.current();
         // ExportingMeshes base: 0.30, next: 0.50, weight: 0.20
         // overall = 0.30 + 0.20 * 0.5 = 0.40
@@ -413,12 +413,12 @@ mod tests {
     fn test_cancellation() {
         let tracker = ProgressTracker::new();
         let token = tracker.cancellation_token();
-        
+
         assert!(!tracker.is_cancelled());
         assert!(!token.is_cancelled());
-        
+
         token.cancel();
-        
+
         assert!(tracker.is_cancelled());
         assert!(token.is_cancelled());
     }
@@ -428,11 +428,11 @@ mod tests {
         let tracker = ProgressTracker::new();
         tracker.set_stage(ConversionStage::ExportingMeshes);
         tracker.set_total_items(10);
-        
+
         for _ in 0..5 {
             tracker.increment_items();
         }
-        
+
         let progress = tracker.current();
         assert_eq!(progress.items_processed, 5);
         assert_eq!(progress.stage_progress, 0.5);
@@ -442,7 +442,7 @@ mod tests {
     fn test_completion() {
         let tracker = ProgressTracker::new();
         tracker.complete();
-        
+
         let progress = tracker.current();
         assert_eq!(progress.stage, ConversionStage::Completed);
         assert_eq!(progress.overall_progress, 1.0);
@@ -450,7 +450,10 @@ mod tests {
 
     #[test]
     fn test_stage_descriptions() {
-        assert_eq!(ConversionStage::LoadingBlendFile.description(), "Loading .blend file");
+        assert_eq!(
+            ConversionStage::LoadingBlendFile.description(),
+            "Loading .blend file"
+        );
         assert!(ConversionStage::Completed.is_terminal());
         assert!(!ConversionStage::LoadingBlendFile.is_terminal());
     }

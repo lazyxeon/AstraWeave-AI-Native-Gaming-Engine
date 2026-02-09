@@ -158,7 +158,7 @@ impl PlanarReflection {
     /// Create a new planar reflection for a horizontal water surface
     pub fn new(surface_height: f32) -> Self {
         let plane_normal = Vec3::Y;
-        
+
         // Reflection matrix: reflect across Y = surface_height
         let reflection_matrix = Mat4::from_cols(
             Vec4::new(1.0, 0.0, 0.0, 0.0),
@@ -200,7 +200,7 @@ impl PlanarReflection {
     /// Update surface height
     pub fn set_surface_height(&mut self, height: f32) {
         self.surface_height = height;
-        
+
         self.reflection_matrix = Mat4::from_cols(
             Vec4::new(1.0, 0.0, 0.0, 0.0),
             Vec4::new(0.0, -1.0, 0.0, 0.0),
@@ -434,10 +434,10 @@ mod tests {
 
         // High quality should have more steps
         assert!(high.max_steps > low.max_steps);
-        
+
         // High quality should have better resolution
         assert!(high.resolution_scale > low.resolution_scale);
-        
+
         // Stylized should have higher fresnel
         assert!(stylized.fresnel_strength > high.fresnel_strength);
     }
@@ -485,9 +485,9 @@ mod tests {
     #[test]
     fn test_planar_update_height() {
         let mut planar = PlanarReflection::new(10.0);
-        
+
         planar.set_surface_height(20.0);
-        
+
         assert_eq!(planar.surface_height, 20.0);
         assert_eq!(planar.clip_plane.w, -20.0);
     }
@@ -503,9 +503,9 @@ mod tests {
     #[test]
     fn test_system_setup_planar() {
         let mut system = WaterReflectionSystem::new(WaterReflectionConfig::default());
-        
+
         system.setup_planar(15.0);
-        
+
         assert!(system.planar().is_some());
         assert_eq!(system.surface_height(), 15.0);
     }
@@ -514,9 +514,9 @@ mod tests {
     fn test_system_update_height() {
         let mut system = WaterReflectionSystem::new(WaterReflectionConfig::default());
         system.setup_planar(10.0);
-        
+
         system.set_surface_height(20.0);
-        
+
         assert_eq!(system.surface_height(), 20.0);
         assert_eq!(system.planar().unwrap().surface_height, 20.0);
     }
@@ -527,12 +527,10 @@ mod tests {
 
         // Looking straight down (perpendicular)
         let fresnel_perp = system.calculate_fresnel(Vec3::NEG_Y, Vec3::Y);
-        
+
         // Looking at glancing angle
-        let fresnel_glancing = system.calculate_fresnel(
-            Vec3::new(0.1, -0.01, 0.0).normalize(),
-            Vec3::Y,
-        );
+        let fresnel_glancing =
+            system.calculate_fresnel(Vec3::new(0.1, -0.01, 0.0).normalize(), Vec3::Y);
 
         // Glancing should have higher fresnel than perpendicular
         assert!(fresnel_glancing > fresnel_perp);

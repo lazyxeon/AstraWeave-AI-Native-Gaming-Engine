@@ -4,9 +4,9 @@
 //! including 3D texture upload and surface mesh generation using a
 //! heightfield-based approach.
 
-use crate::volume_grid::{WaterVolumeGrid, WaterCell};
+use crate::volume_grid::{WaterCell, WaterVolumeGrid};
 use bytemuck::{Pod, Zeroable};
-use glam::{IVec3, Vec2, Vec3, UVec3};
+use glam::{IVec3, UVec3, Vec2, Vec3};
 use wgpu::util::DeviceExt;
 
 /// Minimum water level to consider a cell as containing water
@@ -353,7 +353,10 @@ impl WaterVolumeGpu {
     ///
     /// This scans columns (x, z) and finds the water surface height for each,
     /// then generates a quad mesh representing the water surface.
-    pub fn generate_surface_mesh(&self, grid: &WaterVolumeGrid) -> (Vec<WaterSurfaceVertex>, Vec<u32>) {
+    pub fn generate_surface_mesh(
+        &self,
+        grid: &WaterVolumeGrid,
+    ) -> (Vec<WaterSurfaceVertex>, Vec<u32>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -383,10 +386,7 @@ impl WaterVolumeGpu {
                 }
 
                 // Use a default height for corners without water (slightly below neighbors)
-                let avg_height = [h00, h10, h01, h11]
-                    .iter()
-                    .filter_map(|h| *h)
-                    .sum::<f32>()
+                let avg_height = [h00, h10, h01, h11].iter().filter_map(|h| *h).sum::<f32>()
                     / [h00, h10, h01, h11]
                         .iter()
                         .filter(|h| h.is_some())
@@ -400,9 +400,16 @@ impl WaterVolumeGpu {
 
                 // Calculate world positions
                 let p00 = origin + Vec3::new(x as f32 * cell_size.x, y00, z as f32 * cell_size.z);
-                let p10 = origin + Vec3::new((x + 1) as f32 * cell_size.x, y10, z as f32 * cell_size.z);
-                let p01 = origin + Vec3::new(x as f32 * cell_size.x, y01, (z + 1) as f32 * cell_size.z);
-                let p11 = origin + Vec3::new((x + 1) as f32 * cell_size.x, y11, (z + 1) as f32 * cell_size.z);
+                let p10 =
+                    origin + Vec3::new((x + 1) as f32 * cell_size.x, y10, z as f32 * cell_size.z);
+                let p01 =
+                    origin + Vec3::new(x as f32 * cell_size.x, y01, (z + 1) as f32 * cell_size.z);
+                let p11 = origin
+                    + Vec3::new(
+                        (x + 1) as f32 * cell_size.x,
+                        y11,
+                        (z + 1) as f32 * cell_size.z,
+                    );
 
                 // Calculate normals using gradient
                 let n00 = self.calculate_surface_normal(grid, x, z);
@@ -411,10 +418,22 @@ impl WaterVolumeGpu {
                 let n11 = self.calculate_surface_normal(grid, x + 1, z + 1);
 
                 // UV coordinates (for flow effects)
-                let uv00 = Vec2::new(x as f32 / self.dimensions.x as f32, z as f32 / self.dimensions.z as f32);
-                let uv10 = Vec2::new((x + 1) as f32 / self.dimensions.x as f32, z as f32 / self.dimensions.z as f32);
-                let uv01 = Vec2::new(x as f32 / self.dimensions.x as f32, (z + 1) as f32 / self.dimensions.z as f32);
-                let uv11 = Vec2::new((x + 1) as f32 / self.dimensions.x as f32, (z + 1) as f32 / self.dimensions.z as f32);
+                let uv00 = Vec2::new(
+                    x as f32 / self.dimensions.x as f32,
+                    z as f32 / self.dimensions.z as f32,
+                );
+                let uv10 = Vec2::new(
+                    (x + 1) as f32 / self.dimensions.x as f32,
+                    z as f32 / self.dimensions.z as f32,
+                );
+                let uv01 = Vec2::new(
+                    x as f32 / self.dimensions.x as f32,
+                    (z + 1) as f32 / self.dimensions.z as f32,
+                );
+                let uv11 = Vec2::new(
+                    (x + 1) as f32 / self.dimensions.x as f32,
+                    (z + 1) as f32 / self.dimensions.z as f32,
+                );
 
                 // Add vertices
                 let base_index = vertices.len() as u32;
@@ -460,22 +479,26 @@ impl WaterVolumeGpu {
 
         // Sample neighboring heights
         let h_left = if x > 0 {
-            self.sample_column_height(grid, x - 1, z).unwrap_or(h_center)
+            self.sample_column_height(grid, x - 1, z)
+                .unwrap_or(h_center)
         } else {
             h_center
         };
         let h_right = if x < self.dimensions.x as i32 - 1 {
-            self.sample_column_height(grid, x + 1, z).unwrap_or(h_center)
+            self.sample_column_height(grid, x + 1, z)
+                .unwrap_or(h_center)
         } else {
             h_center
         };
         let h_back = if z > 0 {
-            self.sample_column_height(grid, x, z - 1).unwrap_or(h_center)
+            self.sample_column_height(grid, x, z - 1)
+                .unwrap_or(h_center)
         } else {
             h_center
         };
         let h_front = if z < self.dimensions.z as i32 - 1 {
-            self.sample_column_height(grid, x, z + 1).unwrap_or(h_center)
+            self.sample_column_height(grid, x, z + 1)
+                .unwrap_or(h_center)
         } else {
             h_center
         };
@@ -525,6 +548,10 @@ mod tests {
     fn test_uniforms_size() {
         // Ensure proper alignment for GPU
         let size = std::mem::size_of::<WaterVolumeUniforms>();
-        assert!(size % 16 == 0, "Uniforms must be 16-byte aligned, got {}", size);
+        assert!(
+            size % 16 == 0,
+            "Uniforms must be 16-byte aligned, got {}",
+            size
+        );
     }
 }

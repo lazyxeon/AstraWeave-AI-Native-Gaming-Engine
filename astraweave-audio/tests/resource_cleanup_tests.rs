@@ -15,7 +15,12 @@ use std::panic::catch_unwind;
 /// Helper to assert that a closure does not panic
 fn should_not_panic<F: FnOnce() + std::panic::UnwindSafe>(name: &str, f: F) {
     let result = catch_unwind(f);
-    assert!(result.is_ok(), "Operation '{}' panicked: {:?}", name, result.err());
+    assert!(
+        result.is_ok(),
+        "Operation '{}' panicked: {:?}",
+        name,
+        result.err()
+    );
 }
 
 // ============================================================================
@@ -49,7 +54,7 @@ fn test_engine_drop_during_playback_no_panic() {
             // Start multiple sounds
             engine.play_sfx_beep(440.0, 2.0, 0.5);
             engine.play_sfx_beep(880.0, 2.0, 0.5);
-            
+
             // Drop while still playing
             drop(engine);
         }
@@ -61,12 +66,12 @@ fn test_engine_drop_after_tick_no_panic() {
     should_not_panic("engine drop after tick cycles", || {
         if let Ok(mut engine) = AudioEngine::new() {
             engine.play_sfx_beep(440.0, 1.0, 0.5);
-            
+
             // Tick several times
             for _ in 0..60 {
                 engine.tick(0.016);
             }
-            
+
             drop(engine);
         }
     });
@@ -213,10 +218,10 @@ fn test_drop_after_extreme_volumes_no_panic() {
             engine.set_master_volume(f32::INFINITY);
             engine.set_master_volume(f32::NEG_INFINITY);
             engine.set_master_volume(f32::NAN);
-            
+
             // Reset to sane value
             engine.set_master_volume(0.5);
-            
+
             drop(engine);
         }
     });
@@ -276,7 +281,7 @@ fn test_drop_from_different_scope_no_panic() {
     should_not_panic("engine passed to inner scope and dropped", || {
         if let Ok(mut engine) = AudioEngine::new() {
             engine.play_sfx_beep(440.0, 0.5, 0.5);
-            
+
             {
                 // Move engine to inner scope
                 let mut inner_engine = engine;
@@ -301,10 +306,8 @@ fn test_option_drop_some_no_panic() {
 #[test]
 fn test_vec_engines_drop_no_panic() {
     should_not_panic("Vec of engines drop", || {
-        let engines: Vec<_> = (0..3)
-            .filter_map(|_| AudioEngine::new().ok())
-            .collect();
-        
+        let engines: Vec<_> = (0..3).filter_map(|_| AudioEngine::new().ok()).collect();
+
         // Drop all at once
         drop(engines);
     });
@@ -350,7 +353,7 @@ fn test_drop_does_not_double_free() {
             engine.play_sfx_beep(440.0, 0.5, 0.3);
             engine.play_sfx_beep(880.0, 0.5, 0.3);
             engine.play_voice_beep(50);
-            
+
             // Set various states
             engine.set_master_volume(0.7);
             let pose = ListenerPose {
@@ -359,7 +362,7 @@ fn test_drop_does_not_double_free() {
                 up: vec3(0.0, 1.0, 0.0),
             };
             engine.update_listener(pose);
-            
+
             // Drop should clean up without double-free
             drop(engine);
         }
@@ -391,7 +394,7 @@ fn test_multiple_drop_cycles_stable() {
                     let freq = 440.0 + (i as f32 * 20.0);
                     engine.play_sfx_beep(freq, 0.02, 0.1);
                 }
-                
+
                 // Tick a bit
                 for _ in 0..5 {
                     engine.tick(0.016);
@@ -422,7 +425,7 @@ fn test_full_lifecycle_drop_no_panic() {
             // Initialize
             engine.set_master_volume(0.8);
             engine.set_pan_mode(PanMode::StereoAngle);
-            
+
             // Update listener multiple times
             for i in 0..10 {
                 let pose = ListenerPose {
@@ -432,25 +435,25 @@ fn test_full_lifecycle_drop_no_panic() {
                 };
                 engine.update_listener(pose);
             }
-            
+
             // Play various sounds
             engine.play_sfx_beep(440.0, 0.2, 0.5);
             engine.play_voice_beep(25);
-            
+
             // Tick through
             for _ in 0..30 {
                 engine.tick(0.016);
             }
-            
+
             // Stop music
             engine.stop_music();
-            
+
             // Change volume
             engine.set_master_volume(0.5);
-            
+
             // Final tick
             engine.tick(0.016);
-            
+
             // Drop
             drop(engine);
         }
@@ -468,17 +471,13 @@ fn test_3d_audio_lifecycle_drop_no_panic() {
                 up: vec3(0.0, 1.0, 0.0),
             };
             engine.update_listener(pose);
-            
+
             // Play 3D sounds at various positions
             for i in 0..20 {
-                let pos = vec3(
-                    (i as f32 * 2.0) - 20.0,
-                    0.0,
-                    -(i as f32),
-                );
+                let pos = vec3((i as f32 * 2.0) - 20.0, 0.0, -(i as f32));
                 let _ = engine.play_sfx_3d_beep(i as u64, pos, 440.0 + (i as f32 * 10.0), 0.1, 0.3);
             }
-            
+
             // Move listener through space
             for i in 0..20 {
                 let pose = ListenerPose {
@@ -489,7 +488,7 @@ fn test_3d_audio_lifecycle_drop_no_panic() {
                 engine.update_listener(pose);
                 engine.tick(0.016);
             }
-            
+
             // Drop with all 3D sounds active
             drop(engine);
         }

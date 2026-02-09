@@ -514,7 +514,7 @@ mod tests {
     #[test]
     fn test_aw_version_string_small_buffer() {
         let mut buf = [0u8; 3]; // Very small buffer
-        // Safety: buf is a valid buffer of len bytes
+                                // Safety: buf is a valid buffer of len bytes
         let _n = unsafe { aw_version_string(buf.as_mut_ptr(), buf.len()) };
         // Should truncate but still be valid
         assert_eq!(buf[2], 0); // NUL terminated
@@ -544,14 +544,14 @@ mod tests {
         let mut buf = [0u8; 4096];
         let n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len());
         assert!(n > 0);
-        
+
         // Snapshot should be valid JSON
         let s = std::ffi::CStr::from_bytes_until_nul(&buf)
             .unwrap()
             .to_string_lossy();
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&s);
         assert!(parsed.is_ok());
-        
+
         aw_world_destroy(w);
     }
 
@@ -589,7 +589,7 @@ mod tests {
         assert_eq!(v.major, 1);
         assert_eq!(v.minor, 2);
         assert_eq!(v.patch, 3);
-        
+
         // Test serialization
         let json = serde_json::to_string(&v).unwrap();
         let parsed: Version = serde_json::from_str(&json).unwrap();
@@ -615,7 +615,7 @@ mod tests {
         assert!(AW_ERR_PARAM < 0);
         assert!(AW_ERR_PARSE < 0);
         assert!(AW_ERR_EXEC < 0);
-        
+
         // All error codes should be unique
         let codes = [AW_ERR_NULL, AW_ERR_PARAM, AW_ERR_PARSE, AW_ERR_EXEC];
         for i in 0..codes.len() {
@@ -629,7 +629,7 @@ mod tests {
     fn test_sdk_error_display() {
         let err_schema = SdkError::Schema("test schema error".to_string());
         assert!(format!("{}", err_schema).contains("schema"));
-        
+
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
         let err_io = SdkError::Io(io_err);
         assert!(format!("{}", err_io).contains("io"));
@@ -639,7 +639,7 @@ mod tests {
     fn test_aw_last_error_string_empty() {
         // Clear last error
         set_last_error("");
-        
+
         let mut buf = [0u8; 128];
         let n = aw_last_error_string(buf.as_mut_ptr(), buf.len());
         // Empty string should still work

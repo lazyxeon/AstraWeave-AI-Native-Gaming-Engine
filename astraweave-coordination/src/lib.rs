@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Multi-agent coordination system for LLM-powered game entities
 //!
 //! This crate provides systems for managing interactions between multiple AI agents,

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! # AstraWeave Render
 //!
 //! GPU rendering pipeline for AstraWeave, built on **wgpu 25**.
@@ -51,10 +52,16 @@ pub mod texture;
 pub mod types; // clustered-lighting WGSL placeholders & tests // gpu upload & caching
                // See MATERIALS.md for canonical materials arrays and WGSL bindings
 pub mod animation;
+pub mod asset_index;
+pub mod biome_audio;
+pub mod biome_detector;
+pub mod biome_material;
+pub mod biome_transition;
 pub mod culling; // GPU-driven frustum culling (Phase 2 Task 3)
 pub mod culling_node; // Culling node for render graph
 pub mod graph; // minimal render graph scaffolding (Phase 2)
 pub mod graph_adapter; // runs a graph on Renderer frames
+pub mod hdri_catalog;
 pub mod material; // shared authored materials API + GPU arrays
 pub mod material_extended; // Phase PBR-E: Advanced materials (clearcoat, anisotropy, SSS, sheen, transmission)
 #[cfg(feature = "textures")]
@@ -64,16 +71,10 @@ pub mod mesh_gltf; // glTF loader
 #[cfg(any(feature = "obj-assets", feature = "assets"))]
 pub mod mesh_obj;
 pub mod residency;
-pub mod terrain_material;
-pub mod hdri_catalog;
-pub mod biome_material;
-pub mod asset_index;
-pub mod biome_detector;
-pub mod biome_transition;
-pub mod biome_audio;
 pub mod scene_environment;
-pub mod weather_system;
-pub mod texture_streaming; // Texture streaming with LRU cache and priority-based loading // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
+pub mod terrain_material;
+pub mod texture_streaming;
+pub mod weather_system; // Texture streaming with LRU cache and priority-based loading // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
 
 #[cfg(feature = "skinning-gpu")]
 pub mod skinning_gpu; // Phase 2 Task 5 Phase D: GPU skinning pipeline
@@ -126,6 +127,10 @@ pub mod ssao; // Screen-space ambient occlusion
 pub use advanced_post::{
     AdvancedPostFx, ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
 };
+pub use asset_index::{AssetIndex, HdriRef as AssetHdriRef, MaterialSetEntry, TextureEntry};
+pub use biome_detector::{BiomeDetector, BiomeDetectorConfig, BiomeTransition};
+pub use biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
+pub use biome_transition::{BiomeVisuals, EasingFunction, TransitionConfig, TransitionEffect};
 pub use culling::{
     batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId,
     CullingPipeline, CullingResources, DrawBatch, DrawIndirectCommand, FrustumPlanes, InstanceAABB,
@@ -135,6 +140,7 @@ pub use decals::{Decal, DecalAtlas, DecalBlendMode, DecalSystem, GpuDecal, DECAL
 pub use deferred::{DeferredRenderer, GBuffer, GBufferFormats};
 pub use effects::{WeatherFx, WeatherKind};
 pub use gpu_particles::{EmitterParams, GpuParticle, GpuParticleSystem};
+pub use hdri_catalog::{DayPeriod, HdriCatalog, HdriEntry};
 pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
 pub use material::{
     ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
@@ -151,16 +157,11 @@ pub use msaa::{create_msaa_depth_texture, MsaaMode, MsaaRenderTarget};
 #[cfg(feature = "bloom")]
 pub use post::{BloomConfig, BloomPipeline};
 pub use residency::ResidencyManager;
-pub use terrain_material::{
-    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
-};
-pub use hdri_catalog::{DayPeriod, HdriCatalog, HdriEntry};
-pub use biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
-pub use asset_index::{AssetIndex, MaterialSetEntry, TextureEntry, HdriRef as AssetHdriRef};
-pub use biome_detector::{BiomeDetector, BiomeDetectorConfig, BiomeTransition};
-pub use biome_transition::{BiomeVisuals, EasingFunction, TransitionConfig, TransitionEffect};
 pub use scene_environment::{
     SceneEnvironment, SceneEnvironmentUBO, WGSL_FOG_FUNCTIONS, WGSL_SCENE_ENVIRONMENT,
+};
+pub use terrain_material::{
+    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
 };
 pub use texture_streaming::{TextureStreamingManager, TextureStreamingStats};
 pub use transparency::{create_blend_state, BlendMode, TransparencyManager, TransparentInstance};

@@ -696,8 +696,8 @@ mod tests {
     #[test]
     fn test_dispenser_direction() {
         let mut grid = create_test_grid();
-        let mut dispenser = WaterDispenser::new(IVec3::new(8, 8, 8))
-            .with_direction(FlowDirection::East);
+        let mut dispenser =
+            WaterDispenser::new(IVec3::new(8, 8, 8)).with_direction(FlowDirection::East);
 
         dispenser.tick(&mut grid, 1.0);
 

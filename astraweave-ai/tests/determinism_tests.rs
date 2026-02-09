@@ -67,6 +67,7 @@ fn hash_plan(plan: &astraweave_core::PlanIntent) -> u64 {
                     Some(astraweave_core::MovementSpeed::Walk) => 1u8.hash(&mut hasher),
                     Some(astraweave_core::MovementSpeed::Run) => 2u8.hash(&mut hasher),
                     Some(astraweave_core::MovementSpeed::Sprint) => 3u8.hash(&mut hasher),
+                    Some(_) => 255u8.hash(&mut hasher),
                     None => 0u8.hash(&mut hasher),
                 }
             }

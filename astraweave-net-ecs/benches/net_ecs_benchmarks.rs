@@ -3,8 +3,8 @@ use astraweave_net_ecs::{
     CClientPrediction, CNetworkAuthority, CNetworkClient, EntityState, NetworkSnapshot,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use std::collections::HashMap;
+use std::hint::black_box;
 use tokio::sync::mpsc;
 
 // ==================== GROUP 1: Serialization Benchmarks ====================

@@ -43,7 +43,7 @@ impl WaterBodyType {
             WaterBodyType::Aquifer => "Aquifer",
         }
     }
-    
+
     /// Get all variants for UI iteration
     pub fn all() -> &'static [WaterBodyType] {
         &[
@@ -293,7 +293,7 @@ impl TerrainFluidConfig {
             generate_moisture_map: false,
         }
     }
-    
+
     /// Create configuration optimized for quality
     pub fn quality() -> Self {
         Self {
@@ -367,39 +367,39 @@ pub fn analyze_terrain_for_water(
     let mut water_bodies = Vec::new();
     let mut flow_accumulation = None;
     let mut moisture_map = None;
-    
+
     if config.analyze_flow {
         // Compute flow accumulation using D8 algorithm
         let flow = compute_flow_accumulation(heightmap, width, height);
-        
+
         // Detect rivers based on flow accumulation
         let rivers = detect_rivers(&flow, width, height, config);
         water_bodies.extend(rivers);
-        
+
         flow_accumulation = Some(flow);
     }
-    
+
     // Detect lakes from terrain depressions
     let lakes = detect_lakes(heightmap, width, height, config);
     water_bodies.extend(lakes);
-    
+
     // Detect waterfalls from steep drops
     if !water_bodies.is_empty() {
         let waterfalls = detect_waterfalls(heightmap, width, height, config, &water_bodies);
         water_bodies.extend(waterfalls);
     }
-    
+
     // Generate moisture map if requested
     if config.generate_moisture_map {
         moisture_map = Some(generate_moisture_map(
-            heightmap, 
-            width, 
-            height, 
+            heightmap,
+            width,
+            height,
             config.water_table_height,
             &water_bodies,
         ));
     }
-    
+
     WaterAnalysis {
         water_bodies,
         flow_accumulation,
@@ -415,52 +415,56 @@ fn compute_flow_accumulation(
     height: usize,
 ) -> Vec<FlowAccumulation> {
     let mut flow = vec![FlowAccumulation::default(); width * height];
-    
+
     // D8 flow direction encoding
     let dx = [-1i32, 0, 1, -1, 1, -1, 0, 1];
     let dy = [-1i32, -1, -1, 0, 0, 1, 1, 1];
-    
+
     // First pass: compute flow directions
     for y in 1..height - 1 {
         for x in 1..width - 1 {
             let idx = y * width + x;
             let current_h = heightmap[idx];
-            
+
             let mut steepest_slope = 0.0f32;
             let mut steepest_dir = (0.0f32, 0.0f32);
-            
+
             for i in 0..8 {
                 let nx = (x as i32 + dx[i]) as usize;
                 let ny = (y as i32 + dy[i]) as usize;
                 let nidx = ny * width + nx;
-                
+
                 let neighbor_h = heightmap[nidx];
-                let dist = if i == 0 || i == 2 || i == 5 || i == 7 { 1.414 } else { 1.0 };
+                let dist = if i == 0 || i == 2 || i == 5 || i == 7 {
+                    1.414
+                } else {
+                    1.0
+                };
                 let slope = (current_h - neighbor_h) / dist;
-                
+
                 if slope > steepest_slope {
                     steepest_slope = slope;
                     steepest_dir = (dx[i] as f32 / dist, dy[i] as f32 / dist);
                 }
             }
-            
+
             flow[idx].direction = [steepest_dir.0, steepest_dir.1];
             flow[idx].slope = steepest_slope;
             flow[idx].upstream_area = 1.0; // Start with self
         }
     }
-    
+
     // Second pass: accumulate flow (simplified - production would use recursive drainage)
     for _ in 0..10 {
         for y in 1..height - 1 {
             for x in 1..width - 1 {
                 let idx = y * width + x;
                 let dir = flow[idx].direction;
-                
+
                 if dir[0].abs() > 0.01 || dir[1].abs() > 0.01 {
                     let nx = (x as f32 + dir[0]).round() as usize;
                     let ny = (y as f32 + dir[1]).round() as usize;
-                    
+
                     if nx < width && ny < height {
                         let nidx = ny * width + nx;
                         flow[nidx].upstream_area += flow[idx].upstream_area * 0.1;
@@ -469,12 +473,12 @@ fn compute_flow_accumulation(
             }
         }
     }
-    
+
     // Compute volumes
     for f in &mut flow {
         f.volume = f.upstream_area * 0.01;
     }
-    
+
     flow
 }
 
@@ -485,10 +489,10 @@ fn detect_rivers(
     config: &TerrainFluidConfig,
 ) -> Vec<DetectedWaterBody> {
     let mut rivers = Vec::new();
-    
+
     // Find high flow accumulation points
     let threshold = config.min_flow_accumulation;
-    
+
     for y in 0..height {
         for x in 0..width {
             let idx = y * width + x;
@@ -499,12 +503,13 @@ fn detect_rivers(
                     let dy = r.center[2] - y as f32;
                     (dx * dx + dy * dy).sqrt() < config.river.max_width * 2.0
                 });
-                
+
                 if is_new {
-                    let width_estimate = (flow[idx].upstream_area / threshold).sqrt() 
-                        * config.river.min_width;
-                    let clamped_width = width_estimate.clamp(config.river.min_width, config.river.max_width);
-                    
+                    let width_estimate =
+                        (flow[idx].upstream_area / threshold).sqrt() * config.river.min_width;
+                    let clamped_width =
+                        width_estimate.clamp(config.river.min_width, config.river.max_width);
+
                     rivers.push(DetectedWaterBody {
                         body_type: if width_estimate < config.river.min_width * 2.0 {
                             WaterBodyType::Stream
@@ -517,13 +522,14 @@ fn detect_rivers(
                         volume: flow[idx].volume,
                         flow_direction: Some([flow[idx].direction[0], 0.0, flow[idx].direction[1]]),
                         flow_speed: Some(config.river.flow_speed * flow[idx].slope.sqrt()),
-                        suggested_particle_count: (clamped_width * config.river.particles_per_meter) as u32,
+                        suggested_particle_count: (clamped_width * config.river.particles_per_meter)
+                            as u32,
                     });
                 }
             }
         }
     }
-    
+
     rivers
 }
 
@@ -535,7 +541,7 @@ fn detect_lakes(
 ) -> Vec<DetectedWaterBody> {
     let mut lakes = Vec::new();
     let mut visited = vec![false; width * height];
-    
+
     // Find local minima (potential lake centers)
     for y in 1..height - 1 {
         for x in 1..width - 1 {
@@ -543,32 +549,41 @@ fn detect_lakes(
             if visited[idx] {
                 continue;
             }
-            
+
             let h = heightmap[idx];
             let is_minimum = heightmap[(y - 1) * width + x] >= h
                 && heightmap[(y + 1) * width + x] >= h
                 && heightmap[y * width + x - 1] >= h
                 && heightmap[y * width + x + 1] >= h;
-            
+
             if is_minimum {
                 // Flood fill to find lake extent
                 let (lake_bounds, lake_volume) = flood_fill_lake(
-                    heightmap, width, height, x, y, 
+                    heightmap,
+                    width,
+                    height,
+                    x,
+                    y,
                     h + config.lake.min_depth,
                     &mut visited,
                 );
-                
+
                 if lake_volume > config.lake.min_depth * 10.0 {
                     let center = [
                         (lake_bounds.0 + lake_bounds.2) / 2.0,
                         h + config.lake.water_level_offset,
                         (lake_bounds.1 + lake_bounds.3) / 2.0,
                     ];
-                    
-                    let size = ((lake_bounds.2 - lake_bounds.0) * (lake_bounds.3 - lake_bounds.1)).sqrt();
-                    
+
+                    let size =
+                        ((lake_bounds.2 - lake_bounds.0) * (lake_bounds.3 - lake_bounds.1)).sqrt();
+
                     lakes.push(DetectedWaterBody {
-                        body_type: if size < 20.0 { WaterBodyType::Pond } else { WaterBodyType::Lake },
+                        body_type: if size < 20.0 {
+                            WaterBodyType::Pond
+                        } else {
+                            WaterBodyType::Lake
+                        },
                         bounds_min: [lake_bounds.0, h - config.lake.min_depth, lake_bounds.1],
                         bounds_max: [lake_bounds.2, h + 1.0, lake_bounds.3],
                         center,
@@ -581,7 +596,7 @@ fn detect_lakes(
             }
         }
     }
-    
+
     lakes
 }
 
@@ -600,36 +615,36 @@ fn flood_fill_lake(
     let mut max_x = start_x as f32;
     let mut max_y = start_y as f32;
     let mut volume = 0.0f32;
-    
+
     while let Some((x, y)) = stack.pop() {
         if x == 0 || x >= width - 1 || y == 0 || y >= height - 1 {
             continue;
         }
-        
+
         let idx = y * width + x;
         if visited[idx] {
             continue;
         }
-        
+
         let h = heightmap[idx];
         if h > water_level {
             continue;
         }
-        
+
         visited[idx] = true;
         volume += water_level - h;
-        
+
         min_x = min_x.min(x as f32);
         min_y = min_y.min(y as f32);
         max_x = max_x.max(x as f32);
         max_y = max_y.max(y as f32);
-        
+
         stack.push((x - 1, y));
         stack.push((x + 1, y));
         stack.push((x, y - 1));
         stack.push((x, y + 1));
     }
-    
+
     ((min_x, min_y, max_x, max_y), volume)
 }
 
@@ -641,55 +656,65 @@ fn detect_waterfalls(
     water_bodies: &[DetectedWaterBody],
 ) -> Vec<DetectedWaterBody> {
     let mut waterfalls = Vec::new();
-    
+
     for body in water_bodies {
         if !matches!(body.body_type, WaterBodyType::River | WaterBodyType::Stream) {
             continue;
         }
-        
+
         // Check along flow direction for steep drops
         if let (Some(dir), Some(_speed)) = (body.flow_direction, body.flow_speed) {
             let mut check_pos = body.center;
-            
+
             for _ in 0..20 {
                 check_pos[0] += dir[0] * 2.0;
                 check_pos[2] += dir[2] * 2.0;
-                
+
                 let x = check_pos[0] as usize;
                 let y = check_pos[2] as usize;
-                
+
                 if x >= width || y >= height {
                     break;
                 }
-                
+
                 let current_idx = y * width + x;
                 let next_x = (check_pos[0] + dir[0] * 3.0) as usize;
                 let next_y = (check_pos[2] + dir[2] * 3.0) as usize;
-                
+
                 if next_x >= width || next_y >= height {
                     break;
                 }
-                
+
                 let next_idx = next_y * width + next_x;
                 let height_drop = heightmap[current_idx] - heightmap[next_idx];
-                
+
                 if height_drop >= config.waterfall.min_height_drop {
                     waterfalls.push(DetectedWaterBody {
                         body_type: WaterBodyType::Waterfall,
                         bounds_min: [check_pos[0] - 2.0, heightmap[next_idx], check_pos[2] - 2.0],
-                        bounds_max: [check_pos[0] + 2.0, heightmap[current_idx], check_pos[2] + 2.0],
-                        center: [check_pos[0], (heightmap[current_idx] + heightmap[next_idx]) / 2.0, check_pos[2]],
+                        bounds_max: [
+                            check_pos[0] + 2.0,
+                            heightmap[current_idx],
+                            check_pos[2] + 2.0,
+                        ],
+                        center: [
+                            check_pos[0],
+                            (heightmap[current_idx] + heightmap[next_idx]) / 2.0,
+                            check_pos[2],
+                        ],
                         volume: height_drop * 4.0,
                         flow_direction: Some(dir),
                         flow_speed: Some(height_drop.sqrt() * 3.0),
-                        suggested_particle_count: (height_drop * config.waterfall.splash_intensity * 500.0) as u32,
+                        suggested_particle_count: (height_drop
+                            * config.waterfall.splash_intensity
+                            * 500.0) as u32,
                     });
                     break;
                 }
             }
         }
     }
-    
+
     waterfalls
 }
 
@@ -701,19 +726,19 @@ fn generate_moisture_map(
     water_bodies: &[DetectedWaterBody],
 ) -> Vec<f32> {
     let mut moisture = vec![0.0f32; width * height];
-    
+
     // Base moisture from water table proximity
     for y in 0..height {
         for x in 0..width {
             let idx = y * width + x;
             let h = heightmap[idx];
-            
+
             // Higher moisture near water table
             let depth_below_surface = h - water_table;
             moisture[idx] = (1.0 - (depth_below_surface / 20.0).clamp(0.0, 1.0)) * 0.3;
         }
     }
-    
+
     // Add moisture near water bodies
     for body in water_bodies {
         for y in 0..height {
@@ -721,30 +746,31 @@ fn generate_moisture_map(
                 let dx = x as f32 - body.center[0];
                 let dy = y as f32 - body.center[2];
                 let dist = (dx * dx + dy * dy).sqrt();
-                
-                let body_radius = ((body.bounds_max[0] - body.bounds_min[0]) 
-                    + (body.bounds_max[2] - body.bounds_min[2])) / 4.0;
-                
+
+                let body_radius = ((body.bounds_max[0] - body.bounds_min[0])
+                    + (body.bounds_max[2] - body.bounds_min[2]))
+                    / 4.0;
+
                 let influence = (1.0 - dist / (body_radius * 3.0)).max(0.0);
                 let idx = y * width + x;
                 moisture[idx] = (moisture[idx] + influence * 0.7).min(1.0);
             }
         }
     }
-    
+
     moisture
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_water_body_types() {
         assert_eq!(WaterBodyType::River.display_name(), "River");
         assert_eq!(WaterBodyType::all().len(), 7);
     }
-    
+
     #[test]
     fn test_river_config_defaults() {
         let config = RiverConfig::default();
@@ -752,60 +778,60 @@ mod tests {
         assert!(config.max_width > config.min_width);
         assert!(config.particles_per_meter > 0.0);
     }
-    
+
     #[test]
     fn test_terrain_fluid_config_presets() {
         let perf = TerrainFluidConfig::performance();
         let quality = TerrainFluidConfig::quality();
-        
+
         assert!(perf.max_total_particles < quality.max_total_particles);
         assert!(perf.river.particles_per_meter < quality.river.particles_per_meter);
     }
-    
+
     #[test]
     fn test_flow_accumulation_basic() {
         // Create a simple sloped heightmap
         let width = 10;
         let height = 10;
         let mut heightmap = vec![0.0f32; width * height];
-        
+
         // Slope from top-left to bottom-right
         for y in 0..height {
             for x in 0..width {
                 heightmap[y * width + x] = (x + y) as f32 * 0.1;
             }
         }
-        
+
         let flow = compute_flow_accumulation(&heightmap, width, height);
         assert_eq!(flow.len(), width * height);
-        
+
         // Corner should have flow direction
         let center = flow[5 * width + 5];
         assert!(center.direction[0].abs() > 0.0 || center.direction[1].abs() > 0.0);
     }
-    
+
     #[test]
     fn test_water_analysis() {
         let width = 20;
         let height = 20;
         let mut heightmap = vec![1.0f32; width * height];
-        
+
         // Create a depression for a lake
         for y in 8..12 {
             for x in 8..12 {
                 heightmap[y * width + x] = 0.0;
             }
         }
-        
+
         let config = TerrainFluidConfig::default();
         let analysis = analyze_terrain_for_water(&heightmap, width, height, &config);
-        
+
         assert_eq!(analysis.width, width);
         assert_eq!(analysis.height, height);
         // Should detect at least one water body (the lake)
         assert!(!analysis.water_bodies.is_empty() || analysis.flow_accumulation.is_some());
     }
-    
+
     #[test]
     fn test_ocean_config() {
         let ocean = OceanConfig::default();
@@ -813,7 +839,7 @@ mod tests {
         assert!(ocean.tide_period > 0.0);
         assert_eq!(ocean.deep_color.len(), 4);
     }
-    
+
     #[test]
     fn test_detected_water_body() {
         let body = DetectedWaterBody {
@@ -826,7 +852,7 @@ mod tests {
             flow_speed: Some(5.0),
             suggested_particle_count: 10000,
         };
-        
+
         assert_eq!(body.body_type, WaterBodyType::River);
         assert!(body.flow_direction.is_some());
         assert_eq!(body.suggested_particle_count, 10000);

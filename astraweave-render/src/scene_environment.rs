@@ -96,12 +96,7 @@ impl SceneEnvironmentUBO {
     pub fn from_transition(effect: &TransitionEffect) -> Self {
         let visuals = effect.current_visuals();
         let tint = effect.tint_color().to_array();
-        Self::from_visuals(
-            &visuals,
-            effect.blend_factor(),
-            tint,
-            effect.tint_alpha(),
-        )
+        Self::from_visuals(&visuals, effect.blend_factor(), tint, effect.tint_alpha())
     }
 
     /// Build steady-state params for a non-transitioning biome.
@@ -807,9 +802,15 @@ mod tests {
         // Both should be reflected in UBO
         let ubo = env.to_ubo();
         // Fog should be amplified by rain multiplier
-        assert!(ubo.fog_density > 0.0, "Combined fog density should be positive");
+        assert!(
+            ubo.fog_density > 0.0,
+            "Combined fog density should be positive"
+        );
         // Ambient should be modified by both ToD and rain
-        assert!(ubo.ambient_intensity > 0.0, "Combined ambient should be positive");
+        assert!(
+            ubo.ambient_intensity > 0.0,
+            "Combined ambient should be positive"
+        );
     }
 
     // ── Sky / Water integration tests ─────────────────────────────────
@@ -905,7 +906,8 @@ mod tests {
                 assert!(
                     sky_diff > 0.01 || water_diff > 0.01,
                     "{:?} and {:?} have identical sky/water colours",
-                    a, b
+                    a,
+                    b
                 );
             }
         }

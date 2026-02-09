@@ -66,23 +66,23 @@ impl ValidationMetrics {
         if n == 0 {
             return Self::default();
         }
-        
+
         // Density error
         let mut density_error_max = 0.0f32;
         let mut density_error_sum = 0.0f32;
-        
+
         for &rho in densities {
             let error = ((rho - rest_density) / rest_density).abs();
             density_error_max = density_error_max.max(error);
             density_error_sum += error;
         }
         let density_error_avg = density_error_sum / n as f32;
-        
+
         // Divergence (approximated from velocity differences)
         // Full divergence would need neighbor computation
         let divergence_error_max = 0.0; // Placeholder
         let divergence_error_avg = 0.0;
-        
+
         // Energy conservation
         let mut kinetic_energy = 0.0f32;
         for (i, vel) in velocities.iter().enumerate() {
@@ -94,7 +94,7 @@ impl ValidationMetrics {
         } else {
             1.0
         };
-        
+
         // Momentum conservation
         let mut momentum = [0.0f32; 3];
         for (i, vel) in velocities.iter().enumerate() {
@@ -102,15 +102,17 @@ impl ValidationMetrics {
             momentum[1] += masses[i] * vel[1];
             momentum[2] += masses[i] * vel[2];
         }
-        let initial_mom_mag = (initial_momentum[0].powi(2) 
-            + initial_momentum[1].powi(2) 
-            + initial_momentum[2].powi(2)).sqrt().max(1e-6);
+        let initial_mom_mag = (initial_momentum[0].powi(2)
+            + initial_momentum[1].powi(2)
+            + initial_momentum[2].powi(2))
+        .sqrt()
+        .max(1e-6);
         let momentum_conservation = [
             momentum[0] / initial_mom_mag.max(momentum[0].abs().max(1e-6)),
             momentum[1] / initial_mom_mag.max(momentum[1].abs().max(1e-6)),
             momentum[2] / initial_mom_mag.max(momentum[2].abs().max(1e-6)),
         ];
-        
+
         // Mass conservation
         let total_mass: f32 = masses.iter().sum();
         let mass_conservation = if initial_mass > 0.0 {
@@ -118,7 +120,7 @@ impl ValidationMetrics {
         } else {
             1.0
         };
-        
+
         // Pressure error
         let mut pressure_error_max = 0.0f32;
         let mut pressure_error_sum = 0.0f32;
@@ -128,7 +130,7 @@ impl ValidationMetrics {
             pressure_error_sum += error;
         }
         let pressure_error_avg = pressure_error_sum / n as f32;
-        
+
         Self {
             density_error_max,
             density_error_avg,
@@ -143,14 +145,14 @@ impl ValidationMetrics {
             time,
         }
     }
-    
+
     /// Check if simulation meets research-grade thresholds
     pub fn is_research_grade(&self) -> bool {
         self.density_error_max < 0.01 && // <1% density error
         self.mass_conservation > 0.999 && // >99.9% mass conservation
-        self.energy_conservation > 0.95   // >95% energy conservation (allow dissipation)
+        self.energy_conservation > 0.95 // >95% energy conservation (allow dissipation)
     }
-    
+
     /// Get a summary grade
     pub fn grade(&self) -> ValidationGrade {
         if self.density_error_max < 0.001 && self.mass_conservation > 0.9999 {
@@ -244,7 +246,7 @@ impl BenchmarkConfig {
             gravity: [0.0, -9.81, 0.0],
         }
     }
-    
+
     /// Hydrostatic pressure test
     pub fn hydrostatic() -> Self {
         Self {
@@ -258,7 +260,7 @@ impl BenchmarkConfig {
             gravity: [0.0, -9.81, 0.0],
         }
     }
-    
+
     /// Couette flow (viscosity validation)
     pub fn couette_flow() -> Self {
         Self {
@@ -272,7 +274,7 @@ impl BenchmarkConfig {
             gravity: [0.0, 0.0, 0.0], // No gravity for Couette
         }
     }
-    
+
     /// Poiseuille flow (pipe flow)
     pub fn poiseuille_flow() -> Self {
         Self {
@@ -286,7 +288,7 @@ impl BenchmarkConfig {
             gravity: [0.1, 0.0, 0.0], // Pressure gradient as body force
         }
     }
-    
+
     /// Rayleigh-Taylor instability
     pub fn rayleigh_taylor() -> Self {
         Self {
@@ -300,7 +302,7 @@ impl BenchmarkConfig {
             gravity: [0.0, -9.81, 0.0],
         }
     }
-    
+
     /// Drop splash (surface tension)
     pub fn drop_splash() -> Self {
         Self {
@@ -350,7 +352,7 @@ impl ReferenceData {
             points: Vec::new(),
         }
     }
-    
+
     /// Add a reference point
     pub fn add_point(&mut self, t: f32, position: [f32; 3]) {
         self.points.push(ReferencePoint {
@@ -360,7 +362,7 @@ impl ReferenceData {
             density: None,
         });
     }
-    
+
     /// Load from CSV file
     pub fn load_csv(_path: &Path) -> Result<Self, std::io::Error> {
         // Placeholder - would parse CSV
@@ -385,28 +387,25 @@ pub struct ComparisonResult {
 
 impl ComparisonResult {
     /// Compute comparison between simulation and reference
-    pub fn compute(
-        sim_positions: &[[f32; 3]],
-        ref_positions: &[[f32; 3]],
-    ) -> Self {
+    pub fn compute(sim_positions: &[[f32; 3]], ref_positions: &[[f32; 3]]) -> Self {
         let n = sim_positions.len().min(ref_positions.len());
         if n == 0 {
             return Self::default();
         }
-        
+
         let mut sum_sq = 0.0f32;
         let mut peak = 0.0f32;
-        
+
         for i in 0..n {
             let dx = sim_positions[i][0] - ref_positions[i][0];
             let dy = sim_positions[i][1] - ref_positions[i][1];
             let dz = sim_positions[i][2] - ref_positions[i][2];
             let dist = (dx * dx + dy * dy + dz * dz).sqrt();
-            
+
             sum_sq += dist * dist;
             peak = peak.max(dist);
         }
-        
+
         Self {
             rmse_position: (sum_sq / n as f32).sqrt(),
             peak_error_position: peak,
@@ -445,33 +444,35 @@ pub struct MetricsHistory {
 impl MetricsHistory {
     /// Create new empty history
     pub fn new() -> Self {
-        Self { records: Vec::new() }
+        Self {
+            records: Vec::new(),
+        }
     }
-    
+
     /// Add a metrics record
     pub fn record(&mut self, metrics: ValidationMetrics) {
         self.records.push(metrics);
     }
-    
+
     /// Clear history
     pub fn clear(&mut self) {
         self.records.clear();
     }
-    
+
     /// Get number of records
     pub fn len(&self) -> usize {
         self.records.len()
     }
-    
+
     /// Check if empty
     pub fn is_empty(&self) -> bool {
         self.records.is_empty()
     }
-    
+
     /// Export to CSV string
     pub fn to_csv(&self) -> String {
         let mut csv = String::from("time,particle_count,density_error_max,density_error_avg,energy_conservation,mass_conservation,pressure_error_max\n");
-        
+
         for m in &self.records {
             csv.push_str(&format!(
                 "{},{},{},{},{},{},{}\n",
@@ -484,14 +485,14 @@ impl MetricsHistory {
                 m.pressure_error_max,
             ));
         }
-        
+
         csv
     }
-    
+
     /// Export to JSON string
     pub fn to_json(&self) -> String {
         let mut json = String::from("[\n");
-        
+
         for (i, m) in self.records.iter().enumerate() {
             if i > 0 {
                 json.push_str(",\n");
@@ -506,35 +507,39 @@ impl MetricsHistory {
                 m.mass_conservation,
             ));
         }
-        
+
         json.push_str("\n]");
         json
     }
-    
+
     /// Get summary statistics
     pub fn summary(&self) -> MetricsSummary {
         if self.records.is_empty() {
             return MetricsSummary::default();
         }
-        
+
         let mut max_density_error = 0.0f32;
         let mut avg_density_error = 0.0f32;
         let mut min_energy = 1.0f32;
         let mut min_mass = 1.0f32;
-        
+
         for m in &self.records {
             max_density_error = max_density_error.max(m.density_error_max);
             avg_density_error += m.density_error_avg;
             min_energy = min_energy.min(m.energy_conservation);
             min_mass = min_mass.min(m.mass_conservation);
         }
-        
+
         MetricsSummary {
             max_density_error,
             avg_density_error: avg_density_error / self.records.len() as f32,
             min_energy_conservation: min_energy,
             min_mass_conservation: min_mass,
-            final_grade: self.records.last().map(|m| m.grade()).unwrap_or(ValidationGrade::Poor),
+            final_grade: self
+                .records
+                .last()
+                .map(|m| m.grade())
+                .unwrap_or(ValidationGrade::Poor),
         }
     }
 }
@@ -580,7 +585,7 @@ impl VtkExporter {
             frame: 0,
         }
     }
-    
+
     /// Export particle positions to VTK
     pub fn export_particles(
         &mut self,
@@ -589,45 +594,45 @@ impl VtkExporter {
         densities: &[f32],
     ) -> String {
         let n = positions.len();
-        
+
         let mut vtk = String::new();
         vtk.push_str("# vtk DataFile Version 3.0\n");
         vtk.push_str("SPH Particles\n");
         vtk.push_str("ASCII\n");
         vtk.push_str("DATASET POLYDATA\n");
-        
+
         // Points
         vtk.push_str(&format!("POINTS {} float\n", n));
         for pos in positions {
             vtk.push_str(&format!("{} {} {}\n", pos[0], pos[1], pos[2]));
         }
-        
+
         // Vertices
         vtk.push_str(&format!("VERTICES {} {}\n", n, n * 2));
         for i in 0..n {
             vtk.push_str(&format!("1 {}\n", i));
         }
-        
+
         // Point data
         vtk.push_str(&format!("POINT_DATA {}\n", n));
-        
+
         // Velocity vectors
         vtk.push_str("VECTORS velocity float\n");
         for vel in velocities {
             vtk.push_str(&format!("{} {} {}\n", vel[0], vel[1], vel[2]));
         }
-        
+
         // Density scalars
         vtk.push_str("SCALARS density float 1\n");
         vtk.push_str("LOOKUP_TABLE default\n");
         for &rho in densities {
             vtk.push_str(&format!("{}\n", rho));
         }
-        
+
         self.frame += 1;
         vtk
     }
-    
+
     /// Get filename for current frame
     pub fn filename(&self) -> String {
         format!("{}/particles_{:05}.vtk", self.output_dir, self.frame)
@@ -658,16 +663,16 @@ impl ParameterStudy {
             baseline,
         }
     }
-    
+
     /// Get number of test cases
     pub fn num_cases(&self) -> usize {
         self.values.len()
     }
-    
+
     /// Get configuration for a specific value
     pub fn config_for_value(&self, value: f32) -> BenchmarkConfig {
         let mut config = self.baseline.clone();
-        
+
         // Apply parameter value based on name
         match self.parameter_name.as_str() {
             "particle_spacing" => config.particle_spacing = value,
@@ -676,7 +681,7 @@ impl ParameterStudy {
             "rest_density" => config.rest_density = value,
             _ => {} // Unknown parameter
         }
-        
+
         config
     }
 }
@@ -699,38 +704,38 @@ pub struct StudyResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_validation_metrics_default() {
         let metrics = ValidationMetrics::default();
         assert_eq!(metrics.density_error_max, 0.0);
         assert_eq!(metrics.particle_count, 0);
     }
-    
+
     #[test]
     fn test_validation_metrics_compute() {
         let densities = vec![1000.0, 1005.0, 995.0];
         let velocities = vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
         let pressures = vec![100.0, 200.0, 50.0];
         let masses = vec![1.0, 1.0, 1.0];
-        
+
         let metrics = ValidationMetrics::compute(
             &densities,
             &velocities,
             &pressures,
             &masses,
             1000.0,
-            1.5, // initial energy
+            1.5,             // initial energy
             [1.0, 1.0, 1.0], // initial momentum
-            3.0, // initial mass
+            3.0,             // initial mass
             0.5,
         );
-        
+
         assert_eq!(metrics.particle_count, 3);
         assert!(metrics.density_error_max > 0.0);
         assert!((metrics.mass_conservation - 1.0).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_validation_grade_excellent() {
         let metrics = ValidationMetrics {
@@ -738,10 +743,10 @@ mod tests {
             mass_conservation: 0.99999,
             ..Default::default()
         };
-        
+
         assert_eq!(metrics.grade(), ValidationGrade::Excellent);
     }
-    
+
     #[test]
     fn test_validation_grade_good() {
         let metrics = ValidationMetrics {
@@ -749,10 +754,10 @@ mod tests {
             mass_conservation: 0.9995,
             ..Default::default()
         };
-        
+
         assert_eq!(metrics.grade(), ValidationGrade::Good);
     }
-    
+
     #[test]
     fn test_validation_grade_acceptable() {
         let metrics = ValidationMetrics {
@@ -760,10 +765,10 @@ mod tests {
             mass_conservation: 0.995,
             ..Default::default()
         };
-        
+
         assert_eq!(metrics.grade(), ValidationGrade::Acceptable);
     }
-    
+
     #[test]
     fn test_validation_grade_poor() {
         let metrics = ValidationMetrics {
@@ -771,10 +776,10 @@ mod tests {
             mass_conservation: 0.9,
             ..Default::default()
         };
-        
+
         assert_eq!(metrics.grade(), ValidationGrade::Poor);
     }
-    
+
     #[test]
     fn test_is_research_grade() {
         let good = ValidationMetrics {
@@ -784,7 +789,7 @@ mod tests {
             ..Default::default()
         };
         assert!(good.is_research_grade());
-        
+
         let bad = ValidationMetrics {
             density_error_max: 0.05,
             mass_conservation: 0.99,
@@ -793,20 +798,20 @@ mod tests {
         };
         assert!(!bad.is_research_grade());
     }
-    
+
     #[test]
     fn test_benchmark_config_dam_break() {
         let config = BenchmarkConfig::dam_break();
         assert!(config.name.contains("Dam Break"));
         assert!(config.gravity[1] < 0.0);
     }
-    
+
     #[test]
     fn test_benchmark_config_hydrostatic() {
         let config = BenchmarkConfig::hydrostatic();
         assert!(config.name.contains("Hydrostatic"));
     }
-    
+
     #[test]
     fn test_benchmark_config_couette() {
         let config = BenchmarkConfig::couette_flow();
@@ -814,7 +819,7 @@ mod tests {
         // Couette has no gravity
         assert_eq!(config.gravity, [0.0, 0.0, 0.0]);
     }
-    
+
     #[test]
     fn test_benchmark_config_poiseuille() {
         let config = BenchmarkConfig::poiseuille_flow();
@@ -822,40 +827,46 @@ mod tests {
         // Poiseuille has pressure gradient as body force
         assert!(config.gravity[0] > 0.0);
     }
-    
+
     #[test]
     fn test_reference_data_creation() {
         let mut data = ReferenceData::new("Test Source");
         data.add_point(0.0, [0.0, 0.0, 0.0]);
         data.add_point(0.1, [0.1, 0.0, 0.0]);
-        
+
         assert_eq!(data.source, "Test Source");
         assert_eq!(data.points.len(), 2);
     }
-    
+
     #[test]
     fn test_comparison_result_compute() {
         let sim_pos = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
         let ref_pos = vec![[0.0, 0.0, 0.0], [1.1, 0.0, 0.0]];
-        
+
         let result = ComparisonResult::compute(&sim_pos, &ref_pos);
-        
+
         assert_eq!(result.num_points, 2);
         assert!(result.rmse_position > 0.0);
         assert!((result.peak_error_position - 0.1).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_metrics_history_record() {
         let mut history = MetricsHistory::new();
-        
-        history.record(ValidationMetrics { time: 0.0, ..Default::default() });
-        history.record(ValidationMetrics { time: 0.1, ..Default::default() });
-        
+
+        history.record(ValidationMetrics {
+            time: 0.0,
+            ..Default::default()
+        });
+        history.record(ValidationMetrics {
+            time: 0.1,
+            ..Default::default()
+        });
+
         assert_eq!(history.len(), 2);
         assert!(!history.is_empty());
     }
-    
+
     #[test]
     fn test_metrics_history_to_csv() {
         let mut history = MetricsHistory::new();
@@ -865,12 +876,12 @@ mod tests {
             density_error_max: 0.01,
             ..Default::default()
         });
-        
+
         let csv = history.to_csv();
         assert!(csv.contains("time,particle_count"));
         assert!(csv.contains("0,100,0.01"));
     }
-    
+
     #[test]
     fn test_metrics_history_to_json() {
         let mut history = MetricsHistory::new();
@@ -879,12 +890,12 @@ mod tests {
             particle_count: 200,
             ..Default::default()
         });
-        
+
         let json = history.to_json();
         assert!(json.contains("\"time\": 0.5"));
         assert!(json.contains("\"particle_count\": 200"));
     }
-    
+
     #[test]
     fn test_metrics_history_summary() {
         let mut history = MetricsHistory::new();
@@ -900,55 +911,55 @@ mod tests {
             mass_conservation: 0.998,
             ..Default::default()
         });
-        
+
         let summary = history.summary();
-        
+
         assert!((summary.max_density_error - 0.02).abs() < 1e-6);
         assert!((summary.min_energy_conservation - 0.95).abs() < 1e-6);
         assert!((summary.min_mass_conservation - 0.998).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_metrics_history_clear() {
         let mut history = MetricsHistory::new();
         history.record(ValidationMetrics::default());
         history.clear();
-        
+
         assert!(history.is_empty());
     }
-    
+
     #[test]
     fn test_vtk_exporter_creation() {
         let exporter = VtkExporter::new("output");
         assert_eq!(exporter.output_dir, "output");
         assert_eq!(exporter.frame, 0);
     }
-    
+
     #[test]
     fn test_vtk_exporter_export() {
         let mut exporter = VtkExporter::new("output");
         let positions = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
         let velocities = vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
         let densities = vec![1000.0, 1005.0];
-        
+
         let vtk = exporter.export_particles(&positions, &velocities, &densities);
-        
+
         assert!(vtk.contains("vtk DataFile"));
         assert!(vtk.contains("POINTS 2"));
         assert!(vtk.contains("VECTORS velocity"));
         assert!(vtk.contains("SCALARS density"));
         assert_eq!(exporter.frame, 1);
     }
-    
+
     #[test]
     fn test_vtk_exporter_filename() {
         let mut exporter = VtkExporter::new("results");
         assert_eq!(exporter.filename(), "results/particles_00000.vtk");
-        
+
         exporter.frame = 42;
         assert_eq!(exporter.filename(), "results/particles_00042.vtk");
     }
-    
+
     #[test]
     fn test_parameter_study_creation() {
         let study = ParameterStudy::new(
@@ -956,23 +967,19 @@ mod tests {
             vec![0.01, 0.02, 0.04],
             BenchmarkConfig::default(),
         );
-        
+
         assert_eq!(study.parameter_name, "particle_spacing");
         assert_eq!(study.num_cases(), 3);
     }
-    
+
     #[test]
     fn test_parameter_study_config_for_value() {
-        let study = ParameterStudy::new(
-            "dt",
-            vec![0.001, 0.0001],
-            BenchmarkConfig::default(),
-        );
-        
+        let study = ParameterStudy::new("dt", vec![0.001, 0.0001], BenchmarkConfig::default());
+
         let config = study.config_for_value(0.0001);
         assert!((config.dt - 0.0001).abs() < 1e-8);
     }
-    
+
     #[test]
     fn test_validation_grade_display() {
         assert_eq!(format!("{}", ValidationGrade::Excellent), "Excellent (A+)");
@@ -980,7 +987,7 @@ mod tests {
         assert_eq!(format!("{}", ValidationGrade::Acceptable), "Acceptable (B)");
         assert_eq!(format!("{}", ValidationGrade::Poor), "Poor (C)");
     }
-    
+
     #[test]
     fn test_export_format_values() {
         assert_ne!(ExportFormat::Csv, ExportFormat::Json);

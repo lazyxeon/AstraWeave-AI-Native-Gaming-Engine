@@ -534,7 +534,10 @@ impl GameServer {
         self.run_ws_on_listener(listener).await
     }
 
-    pub async fn run_ws_on_listener(self: &std::sync::Arc<Self>, listener: tokio::net::TcpListener) -> Result<()> {
+    pub async fn run_ws_on_listener(
+        self: &std::sync::Arc<Self>,
+        listener: tokio::net::TcpListener,
+    ) -> Result<()> {
         let addr = listener.local_addr()?;
         println!("Server on {addr}");
         // Fixed-tick loop at ~60 Hz; broadcast snapshots at ~20 Hz and full once per second
@@ -649,15 +652,14 @@ impl GameServer {
                                     }
                                 }
                             };
-                            let filtered = filter_snapshot_for_viewer(&snap, &*interest_obj, &viewer);
+                            let filtered =
+                                filter_snapshot_for_viewer(&snap, &*interest_obj, &viewer);
                             let msg = Msg::ServerSnapshot {
                                 snap: filtered.clone(),
                             };
                             println!("Forcing full snapshot to viewer {}", vid);
                             let _ = tx
-                                .send(Message::Text(
-                                    serde_json::to_string(&msg).unwrap().into(),
-                                ))
+                                .send(Message::Text(serde_json::to_string(&msg).unwrap().into()))
                                 .await;
                             last_sent = Some(filtered);
                         }

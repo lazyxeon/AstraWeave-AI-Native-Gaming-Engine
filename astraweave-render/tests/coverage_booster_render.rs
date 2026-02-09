@@ -10,7 +10,7 @@
     clippy::let_unit_value,
     clippy::manual_range_contains,
     clippy::overly_complex_bool_expr,
-    clippy::useless_vec,
+    clippy::useless_vec
 )]
 
 use astraweave_materials::{Graph, MaterialPackage, Node};

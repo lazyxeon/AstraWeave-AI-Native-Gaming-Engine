@@ -195,7 +195,11 @@ mod time_tests {
     #[test]
     fn display_boundary_exactly_one() {
         let s = format!("{}", Time(1.0));
-        assert!(s.contains("s"), "should use seconds format at exactly 1.0: {}", s);
+        assert!(
+            s.contains("s"),
+            "should use seconds format at exactly 1.0: {}",
+            s
+        );
         assert!(!s.contains("ms") || s.contains("1.00s"), "got: {}", s);
     }
 
@@ -244,7 +248,10 @@ mod track_tests {
 
     #[test]
     fn type_name_animation() {
-        assert_eq!(Track::animation(1, "c", Time::zero()).type_name(), "Animation");
+        assert_eq!(
+            Track::animation(1, "c", Time::zero()).type_name(),
+            "Animation"
+        );
     }
 
     #[test]
@@ -388,26 +395,35 @@ mod track_tests {
 
     #[test]
     fn keyframe_count_animation_none() {
-        assert!(Track::animation(1, "c", Time::zero()).keyframe_count().is_none());
+        assert!(Track::animation(1, "c", Time::zero())
+            .keyframe_count()
+            .is_none());
     }
 
     #[test]
     fn keyframe_count_audio_none() {
-        assert!(Track::audio("c", Time::zero(), 1.0).keyframe_count().is_none());
+        assert!(Track::audio("c", Time::zero(), 1.0)
+            .keyframe_count()
+            .is_none());
     }
 
     #[test]
     fn keyframe_count_fx_none() {
-        assert!(Track::fx("f", Time::zero(), serde_json::json!({})).keyframe_count().is_none());
+        assert!(Track::fx("f", Time::zero(), serde_json::json!({}))
+            .keyframe_count()
+            .is_none());
     }
 
     // --- Factory methods: verify all fields stored correctly ---
 
     #[test]
     fn factory_camera_stores_keyframes() {
-        let keys = vec![
-            CameraKey::new(Time(1.0), (1.0, 2.0, 3.0), (0.0, 0.0, 0.0), 60.0),
-        ];
+        let keys = vec![CameraKey::new(
+            Time(1.0),
+            (1.0, 2.0, 3.0),
+            (0.0, 0.0, 0.0),
+            60.0,
+        )];
         let t = Track::camera(keys.clone());
         assert!(t.is_camera());
         assert_eq!(t.keyframe_count(), Some(1));
@@ -981,7 +997,7 @@ mod sequencer_tests {
         let mut seq = Sequencer::new();
         seq.step(1.0, &tl).unwrap();
         seq.step(0.0005, &tl).unwrap(); // within tolerance
-        // Now at ~1.0005, step 0.01 → ~1.0105, > 1.001
+                                        // Now at ~1.0005, step 0.01 → ~1.0105, > 1.001
         assert!(seq.step(0.01, &tl).is_err());
     }
 
@@ -1514,7 +1530,11 @@ mod integration_tests {
         ]);
         tl.add_audio_track("boss_theme", Time(0.1), 0.9);
         tl.add_track(Track::animation(1, "boss_enter", Time(1.0)));
-        tl.add_track(Track::fx("lightning", Time(3.0), serde_json::json!({"bolts": 3})));
+        tl.add_track(Track::fx(
+            "lightning",
+            Time(3.0),
+            serde_json::json!({"bolts": 3}),
+        ));
 
         assert_eq!(tl.track_count(), 4);
         assert_eq!(tl.camera_track_count(), 1);
@@ -1625,7 +1645,12 @@ mod edge_case_tests {
 
     #[test]
     fn camera_key_distance_very_large() {
-        let k = CameraKey::new(Time::zero(), (1000.0, 1000.0, 1000.0), (0.0, 0.0, 0.0), 60.0);
+        let k = CameraKey::new(
+            Time::zero(),
+            (1000.0, 1000.0, 1000.0),
+            (0.0, 0.0, 0.0),
+            60.0,
+        );
         let expected = (3_000_000.0_f32).sqrt();
         assert!((k.distance_to_target() - expected).abs() < 1.0);
     }

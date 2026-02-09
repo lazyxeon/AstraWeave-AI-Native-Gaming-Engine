@@ -158,10 +158,16 @@ impl BlenderDiscovery {
         // 1. Try user-configured path first
         if let Some(ref user_path) = self.config.user_path {
             debug!("Checking user-configured path: {:?}", user_path);
-            match self.validate_executable(user_path, DiscoveryMethod::UserConfigured).await {
+            match self
+                .validate_executable(user_path, DiscoveryMethod::UserConfigured)
+                .await
+            {
                 Ok(installation) => {
-                    info!("Found Blender at user-configured path: {} (v{})", 
-                          installation.executable_path.display(), installation.version);
+                    info!(
+                        "Found Blender at user-configured path: {} (v{})",
+                        installation.executable_path.display(),
+                        installation.version
+                    );
                     self.cached_installation = Some(installation);
                     return Ok(self.cached_installation.as_ref().unwrap());
                 }
@@ -176,9 +182,15 @@ impl BlenderDiscovery {
         for custom_path in &self.config.custom_search_paths.clone() {
             debug!("Checking custom search path: {:?}", custom_path);
             if let Some(exe) = self.find_executable_in_dir(custom_path) {
-                if let Ok(installation) = self.validate_executable(&exe, DiscoveryMethod::CustomSearchPath).await {
-                    info!("Found Blender in custom search path: {} (v{})", 
-                          installation.executable_path.display(), installation.version);
+                if let Ok(installation) = self
+                    .validate_executable(&exe, DiscoveryMethod::CustomSearchPath)
+                    .await
+                {
+                    info!(
+                        "Found Blender in custom search path: {} (v{})",
+                        installation.executable_path.display(),
+                        installation.version
+                    );
                     self.cached_installation = Some(installation);
                     return Ok(self.cached_installation.as_ref().unwrap());
                 }
@@ -189,8 +201,11 @@ impl BlenderDiscovery {
         if self.config.search_path {
             debug!("Searching system PATH...");
             if let Some(installation) = self.discover_from_path().await {
-                info!("Found Blender in system PATH: {} (v{})", 
-                      installation.executable_path.display(), installation.version);
+                info!(
+                    "Found Blender in system PATH: {} (v{})",
+                    installation.executable_path.display(),
+                    installation.version
+                );
                 self.cached_installation = Some(installation);
                 return Ok(self.cached_installation.as_ref().unwrap());
             }
@@ -200,8 +215,11 @@ impl BlenderDiscovery {
         if self.config.use_platform_discovery {
             debug!("Trying platform-specific discovery...");
             if let Some(installation) = self.discover_platform_specific().await {
-                info!("Found Blender via platform discovery: {} (v{})", 
-                      installation.executable_path.display(), installation.version);
+                info!(
+                    "Found Blender via platform discovery: {} (v{})",
+                    installation.executable_path.display(),
+                    installation.version
+                );
                 self.cached_installation = Some(installation);
                 return Ok(self.cached_installation.as_ref().unwrap());
             }
@@ -211,8 +229,11 @@ impl BlenderDiscovery {
         if self.config.search_common_dirs {
             debug!("Searching common installation directories...");
             if let Some(installation) = self.discover_common_dirs().await {
-                info!("Found Blender in common directory: {} (v{})", 
-                      installation.executable_path.display(), installation.version);
+                info!(
+                    "Found Blender in common directory: {} (v{})",
+                    installation.executable_path.display(),
+                    installation.version
+                );
                 self.cached_installation = Some(installation);
                 return Ok(self.cached_installation.as_ref().unwrap());
             }
@@ -235,16 +256,11 @@ impl BlenderDiscovery {
         match tokio::runtime::Handle::try_current() {
             Ok(handle) => {
                 // We have a current runtime, use block_in_place to run the async code
-                tokio::task::block_in_place(|| {
-                    handle.block_on(async {
-                        self.discover().await
-                    })
-                })?;
+                tokio::task::block_in_place(|| handle.block_on(async { self.discover().await }))?;
             }
             Err(_) => {
                 // No runtime, create one
-                let rt = tokio::runtime::Runtime::new()
-                    .map_err(BlendError::IoError)?;
+                let rt = tokio::runtime::Runtime::new().map_err(BlendError::IoError)?;
                 rt.block_on(self.discover())?;
             }
         };
@@ -264,7 +280,11 @@ impl BlenderDiscovery {
     }
 
     /// Validates an executable path and returns installation info.
-    async fn validate_executable(&self, path: &Path, method: DiscoveryMethod) -> BlendResult<BlenderInstallation> {
+    async fn validate_executable(
+        &self,
+        path: &Path,
+        method: DiscoveryMethod,
+    ) -> BlendResult<BlenderInstallation> {
         // Check file exists
         if !path.exists() {
             return Err(BlendError::BlenderExecutableNotFound {
@@ -316,8 +336,12 @@ impl BlenderDiscovery {
 
     /// Discovers Blender from system PATH.
     async fn discover_from_path(&self) -> Option<BlenderInstallation> {
-        let exe_name = if cfg!(windows) { "blender.exe" } else { "blender" };
-        
+        let exe_name = if cfg!(windows) {
+            "blender.exe"
+        } else {
+            "blender"
+        };
+
         let output = Command::new(if cfg!(windows) { "where" } else { "which" })
             .arg(exe_name)
             .output()
@@ -326,7 +350,9 @@ impl BlenderDiscovery {
         if output.status.success() {
             let path_str = String::from_utf8_lossy(&output.stdout);
             let path = PathBuf::from(path_str.lines().next()?.trim());
-            self.validate_executable(&path, DiscoveryMethod::SystemPath).await.ok()
+            self.validate_executable(&path, DiscoveryMethod::SystemPath)
+                .await
+                .ok()
         } else {
             None
         }
@@ -359,7 +385,7 @@ impl BlenderDiscovery {
         use winreg::RegKey;
 
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        
+
         // Try different registry locations
         let registry_paths = [
             r"SOFTWARE\BlenderFoundation\Blender",
@@ -371,7 +397,10 @@ impl BlenderDiscovery {
                 // Try to get the install location
                 if let Ok(install_path) = blender_key.get_value::<String, _>("") {
                     let exe_path = PathBuf::from(&install_path).join("blender.exe");
-                    if let Ok(installation) = self.validate_executable(&exe_path, DiscoveryMethod::WindowsRegistry).await {
+                    if let Ok(installation) = self
+                        .validate_executable(&exe_path, DiscoveryMethod::WindowsRegistry)
+                        .await
+                    {
                         return Some(installation);
                     }
                 }
@@ -381,7 +410,10 @@ impl BlenderDiscovery {
                     if let Ok(version_key) = blender_key.open_subkey(&subkey_name) {
                         if let Ok(install_path) = version_key.get_value::<String, _>("") {
                             let exe_path = PathBuf::from(&install_path).join("blender.exe");
-                            if let Ok(installation) = self.validate_executable(&exe_path, DiscoveryMethod::WindowsRegistry).await {
+                            if let Ok(installation) = self
+                                .validate_executable(&exe_path, DiscoveryMethod::WindowsRegistry)
+                                .await
+                            {
                                 return Some(installation);
                             }
                         }
@@ -397,7 +429,11 @@ impl BlenderDiscovery {
     #[cfg(target_os = "macos")]
     async fn discover_macos_spotlight(&self) -> Option<BlenderInstallation> {
         let output = AsyncCommand::new("mdfind")
-            .args(["kMDItemCFBundleIdentifier", "=", "org.blenderfoundation.blender"])
+            .args([
+                "kMDItemCFBundleIdentifier",
+                "=",
+                "org.blenderfoundation.blender",
+            ])
             .output()
             .await
             .ok()?;
@@ -409,7 +445,10 @@ impl BlenderDiscovery {
                     .join("Contents")
                     .join("MacOS")
                     .join("Blender");
-                if let Ok(installation) = self.validate_executable(&exe_path, DiscoveryMethod::MacOsSpotlight).await {
+                if let Ok(installation) = self
+                    .validate_executable(&exe_path, DiscoveryMethod::MacOsSpotlight)
+                    .await
+                {
                     return Some(installation);
                 }
             }
@@ -424,7 +463,10 @@ impl BlenderDiscovery {
 
         for dir in common_paths {
             if let Some(exe) = self.find_executable_in_dir(&dir) {
-                if let Ok(installation) = self.validate_executable(&exe, DiscoveryMethod::CommonDirectory).await {
+                if let Ok(installation) = self
+                    .validate_executable(&exe, DiscoveryMethod::CommonDirectory)
+                    .await
+                {
                     return Some(installation);
                 }
             }
@@ -440,7 +482,9 @@ impl BlenderDiscovery {
         #[cfg(target_os = "windows")]
         {
             // Steam installation
-            paths.push(PathBuf::from(r"C:\Program Files\Steam\steamapps\common\Blender"));
+            paths.push(PathBuf::from(
+                r"C:\Program Files\Steam\steamapps\common\Blender",
+            ));
             // Blender Foundation installation
             paths.push(PathBuf::from(r"C:\Program Files\Blender Foundation"));
             paths.push(PathBuf::from(r"C:\Program Files (x86)\Blender Foundation"));
@@ -454,7 +498,9 @@ impl BlenderDiscovery {
         #[cfg(target_os = "macos")]
         {
             paths.push(PathBuf::from("/Applications/Blender.app/Contents/MacOS"));
-            paths.push(PathBuf::from("/Applications/Blender/Blender.app/Contents/MacOS"));
+            paths.push(PathBuf::from(
+                "/Applications/Blender/Blender.app/Contents/MacOS",
+            ));
             if let Ok(home) = std::env::var("HOME") {
                 paths.push(PathBuf::from(&home).join("Applications/Blender.app/Contents/MacOS"));
             }
@@ -482,7 +528,11 @@ impl BlenderDiscovery {
 
     /// Finds Blender executable in a directory (handles versioned subdirs).
     fn find_executable_in_dir(&self, dir: &Path) -> Option<PathBuf> {
-        let exe_name = if cfg!(windows) { "blender.exe" } else { "blender" };
+        let exe_name = if cfg!(windows) {
+            "blender.exe"
+        } else {
+            "blender"
+        };
 
         // Direct executable
         let direct = dir.join(exe_name);
@@ -525,7 +575,7 @@ impl BlenderDiscovery {
         }
 
         paths.extend(self.config.custom_search_paths.clone());
-        
+
         if self.config.search_path {
             paths.push(PathBuf::from("$PATH"));
         }
@@ -559,9 +609,15 @@ mod tests {
 
     #[test]
     fn test_discovery_method_display() {
-        assert_eq!(DiscoveryMethod::UserConfigured.to_string(), "user configured");
+        assert_eq!(
+            DiscoveryMethod::UserConfigured.to_string(),
+            "user configured"
+        );
         assert_eq!(DiscoveryMethod::SystemPath.to_string(), "system PATH");
-        assert_eq!(DiscoveryMethod::WindowsRegistry.to_string(), "Windows Registry");
+        assert_eq!(
+            DiscoveryMethod::WindowsRegistry.to_string(),
+            "Windows Registry"
+        );
     }
 
     #[test]

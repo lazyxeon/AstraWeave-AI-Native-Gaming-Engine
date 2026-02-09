@@ -23,7 +23,7 @@
 //! - Weiler et al. (2018) "A Physically Consistent Implicit Viscosity Solver for SPH Fluids"
 //! - Peer et al. (2015) "An Implicit SPH Formulation for Incompressible Linearly Elastic Solids"
 
-use crate::research::{ResearchParticle, ViscositySolver, ShearRateMethod};
+use crate::research::{ResearchParticle, ShearRateMethod, ViscositySolver};
 
 // ============================================================================
 // KERNEL FUNCTIONS
@@ -69,10 +69,10 @@ pub fn kernel_gradient_mag(r: f32, h: f32) -> f32 {
     if q <= 0.5 {
         // dW/dr = sigma * q * (3q - 2) / h
         // At q=0.25: 0.25 * (0.75-2) = -0.3125 (negative)
-        sigma * q * (2.0 - 3.0 * q)  // Flip sign to get positive magnitude
+        sigma * q * (2.0 - 3.0 * q) // Flip sign to get positive magnitude
     } else {
         let one_minus_q = 1.0 - q;
-        sigma * one_minus_q * one_minus_q  // Already positive for q > 0.5
+        sigma * one_minus_q * one_minus_q // Already positive for q > 0.5
     }
 }
 
@@ -342,7 +342,8 @@ impl NonNewtonianModel {
             NonNewtonianType::Carreau => {
                 // μ = μ∞ + (μ₀ - μ∞)(1 + (λγ̇)²)^((n-1)/2)
                 let lambda_gamma = self.relaxation_time * gamma_dot;
-                let factor = (1.0 + lambda_gamma * lambda_gamma).powf((self.power_index - 1.0) / 2.0);
+                let factor =
+                    (1.0 + lambda_gamma * lambda_gamma).powf((self.power_index - 1.0) / 2.0);
                 self.viscosity_inf + (self.viscosity_0 - self.viscosity_inf) * factor
             }
 
@@ -405,7 +406,7 @@ impl Default for TemperatureModel {
         Self {
             model_type: TemperatureType::Constant,
             reference_viscosity: 0.001,
-            reference_temp: 293.0, // 20°C
+            reference_temp: 293.0,      // 20°C
             activation_energy: 16000.0, // Typical for water
             temp_coefficient: 600.0,
             vogel_temp: 140.0,
@@ -469,8 +470,8 @@ impl TemperatureModel {
 
             TemperatureType::Arrhenius => {
                 // μ(T) = μ_ref exp(E_a/R (1/T - 1/T_ref))
-                let exponent = (self.activation_energy / R) *
-                    (1.0 / temperature - 1.0 / self.reference_temp);
+                let exponent =
+                    (self.activation_energy / R) * (1.0 / temperature - 1.0 / self.reference_temp);
                 self.reference_viscosity * exponent.exp()
             }
 
@@ -541,14 +542,20 @@ impl ViscositySolverCpu {
 
         // Apply temperature dependence
         if self.config.enable_temperature {
-            mu = self.config.temperature_model.compute_viscosity(particle.temperature);
+            mu = self
+                .config
+                .temperature_model
+                .compute_viscosity(particle.temperature);
         }
 
         // Apply non-Newtonian model
         if self.config.enable_non_newtonian {
             let shear_rate = particle.shear_rate.max(1e-6);
             // Scale the non-Newtonian model using base viscosity ratio
-            let nn_mu = self.config.non_newtonian_model.compute_viscosity(shear_rate);
+            let nn_mu = self
+                .config
+                .non_newtonian_model
+                .compute_viscosity(shear_rate);
             mu *= nn_mu / self.config.non_newtonian_model.viscosity_0;
         }
 
@@ -568,20 +575,23 @@ impl ViscositySolverCpu {
         let dt = self.config.dt;
         let h_sq = h * h;
         let epsilon = 0.01 * h_sq;
-        
+
         // Dimension factor for 3D Laplacian approximation: 2*(d+2)/2 = d+2 = 5
         // (divided by 2 because we use (μ_i + μ_j) instead of 2μ)
         let dim_factor = 5.0_f32;
 
         // Collect positions and velocities to avoid borrow issues
-        let positions: Vec<[f32; 3]> = particles.iter()
+        let positions: Vec<[f32; 3]> = particles
+            .iter()
             .map(|p| [p.position[0], p.position[1], p.position[2]])
             .collect();
-        let velocities: Vec<[f32; 3]> = particles.iter()
+        let velocities: Vec<[f32; 3]> = particles
+            .iter()
             .map(|p| [p.velocity[0], p.velocity[1], p.velocity[2]])
             .collect();
         let densities: Vec<f32> = particles.iter().map(|p| p.density).collect();
-        let viscosities: Vec<f32> = particles.iter()
+        let viscosities: Vec<f32> = particles
+            .iter()
             .map(|p| self.get_effective_viscosity(p))
             .collect();
 
@@ -626,7 +636,7 @@ impl ViscositySolverCpu {
                 // than neighbors are slowed down, particles with lower velocity are sped up.
                 let mu_avg = (mu_i + mu_j) / (rho_i * rho_j);
                 let grad_w_mag = kernel_gradient_mag(r, h);
-                
+
                 // Include dimension factor for proper Laplacian approximation
                 let factor = dim_factor * m_j * mu_avg * grad_w_mag * r / (r_sq + epsilon);
 
@@ -660,11 +670,13 @@ impl ViscositySolverCpu {
         self.residuals.clear();
 
         // Collect particle data
-        let positions: Vec<[f32; 3]> = particles.iter()
+        let positions: Vec<[f32; 3]> = particles
+            .iter()
             .map(|p| [p.position[0], p.position[1], p.position[2]])
             .collect();
         let densities: Vec<f32> = particles.iter().map(|p| p.density).collect();
-        let viscosities: Vec<f32> = particles.iter()
+        let viscosities: Vec<f32> = particles
+            .iter()
             .map(|p| self.get_effective_viscosity(p))
             .collect();
 
@@ -741,11 +753,10 @@ impl ViscositySolverCpu {
                 ];
 
                 // Track residual
-                let residual = (
-                    (new_v[0] - v_old[i][0]).powi(2) +
-                    (new_v[1] - v_old[i][1]).powi(2) +
-                    (new_v[2] - v_old[i][2]).powi(2)
-                ).sqrt();
+                let residual = ((new_v[0] - v_old[i][0]).powi(2)
+                    + (new_v[1] - v_old[i][1]).powi(2)
+                    + (new_v[2] - v_old[i][2]).powi(2))
+                .sqrt();
                 max_residual = max_residual.max(residual);
             }
 
@@ -771,10 +782,12 @@ impl ViscositySolverCpu {
         let xsph_factor = 0.01; // Fixed XSPH coefficient
 
         // Collect data
-        let positions: Vec<[f32; 3]> = particles.iter()
+        let positions: Vec<[f32; 3]> = particles
+            .iter()
             .map(|p| [p.position[0], p.position[1], p.position[2]])
             .collect();
-        let velocities: Vec<[f32; 3]> = particles.iter()
+        let velocities: Vec<[f32; 3]> = particles
+            .iter()
             .map(|p| [p.velocity[0], p.velocity[1], p.velocity[2]])
             .collect();
 
@@ -899,7 +912,11 @@ fn compute_shear_rate_strain(particle_idx: usize, particles: &[ResearchParticle]
         let grad_w = kernel_gradient_mag(r, h);
         let grad_dir = [-diff[0] / r, -diff[1] / r, -diff[2] / r];
 
-        let vel_diff = [vel_j[0] - vel_i[0], vel_j[1] - vel_i[1], vel_j[2] - vel_i[2]];
+        let vel_diff = [
+            vel_j[0] - vel_i[0],
+            vel_j[1] - vel_i[1],
+            vel_j[2] - vel_i[2],
+        ];
 
         // Outer product of velocity difference and kernel gradient
         for a in 0..3 {
@@ -1005,7 +1022,11 @@ mod tests {
         }
 
         // Should be close to 1 (within numerical tolerance)
-        assert!((integral - 1.0).abs() < 0.1, "Kernel integral: {}", integral);
+        assert!(
+            (integral - 1.0).abs() < 0.1,
+            "Kernel integral: {}",
+            integral
+        );
     }
 
     #[test]
@@ -1044,7 +1065,10 @@ mod tests {
         let mu_low = model.compute_viscosity(0.01);
         let mu_high = model.compute_viscosity(100.0);
 
-        assert!(mu_low > mu_high, "Shear-thinning: low shear should have higher viscosity");
+        assert!(
+            mu_low > mu_high,
+            "Shear-thinning: low shear should have higher viscosity"
+        );
     }
 
     #[test]
@@ -1055,7 +1079,10 @@ mod tests {
         let mu_low = model.compute_viscosity(0.1);
         let mu_high = model.compute_viscosity(10.0);
 
-        assert!(mu_high > mu_low, "Shear-thickening: high shear should have higher viscosity");
+        assert!(
+            mu_high > mu_low,
+            "Shear-thickening: high shear should have higher viscosity"
+        );
     }
 
     #[test]
@@ -1066,7 +1093,10 @@ mod tests {
         let mu_low = model.compute_viscosity(0.01);
         let mu_high = model.compute_viscosity(100.0);
 
-        assert!(mu_low > mu_high * 10.0, "Bingham: low shear should have much higher viscosity");
+        assert!(
+            mu_low > mu_high * 10.0,
+            "Bingham: low shear should have much higher viscosity"
+        );
     }
 
     #[test]
@@ -1075,9 +1105,12 @@ mod tests {
 
         // Viscosity should decrease with temperature
         let mu_cold = model.compute_viscosity(273.0); // 0°C
-        let mu_hot = model.compute_viscosity(373.0);  // 100°C
+        let mu_hot = model.compute_viscosity(373.0); // 100°C
 
-        assert!(mu_cold > mu_hot, "Viscosity should decrease with temperature");
+        assert!(
+            mu_cold > mu_hot,
+            "Viscosity should decrease with temperature"
+        );
     }
 
     #[test]
@@ -1087,7 +1120,10 @@ mod tests {
         let mu_cold = model.compute_viscosity(250.0);
         let mu_hot = model.compute_viscosity(350.0);
 
-        assert!(mu_cold > mu_hot, "VTF: viscosity should decrease with temperature");
+        assert!(
+            mu_cold > mu_hot,
+            "VTF: viscosity should decrease with temperature"
+        );
     }
 
     #[test]
@@ -1142,8 +1178,14 @@ mod tests {
         solver.apply_xsph_viscosity(&mut particles);
 
         // Velocities should move towards each other
-        assert!(particles[0].velocity[0] < 1.0, "First particle should slow down");
-        assert!(particles[1].velocity[0] > -1.0, "Second particle should slow down");
+        assert!(
+            particles[0].velocity[0] < 1.0,
+            "First particle should slow down"
+        );
+        assert!(
+            particles[1].velocity[0] > -1.0,
+            "Second particle should slow down"
+        );
     }
 
     #[test]
@@ -1152,9 +1194,9 @@ mod tests {
         // (real simulations would run thousands of steps)
         let config = ViscosityConfig {
             solver: ViscositySolver::Morris,
-            base_viscosity: 1000.0,  // Very high viscosity (like thick honey * 100)
+            base_viscosity: 1000.0, // Very high viscosity (like thick honey * 100)
             smoothing_radius: 2.0,
-            dt: 0.1,  // Larger timestep
+            dt: 0.1, // Larger timestep
             particle_mass: 1.0,
             ..Default::default()
         };
@@ -1177,7 +1219,7 @@ mod tests {
 
         let v0_before = particles[0].velocity[0];
         let v1_before = particles[1].velocity[0];
-        
+
         solver.apply_morris_viscosity(&mut particles);
 
         // First particle should slow down due to viscous drag
@@ -1185,12 +1227,14 @@ mod tests {
         assert!(
             particles[0].velocity[0] < v0_before,
             "Particle 0 should experience viscous drag: {} -> {}",
-            v0_before, particles[0].velocity[0]
+            v0_before,
+            particles[0].velocity[0]
         );
         assert!(
             particles[1].velocity[0] > v1_before,
             "Particle 1 should speed up: {} -> {}",
-            v1_before, particles[1].velocity[0]
+            v1_before,
+            particles[1].velocity[0]
         );
     }
 
@@ -1240,12 +1284,10 @@ mod tests {
 
     #[test]
     fn test_shear_rate_vorticity() {
-        let particles = vec![
-            ResearchParticle {
-                vorticity: [1.0, 2.0, 2.0], // magnitude = 3
-                ..Default::default()
-            },
-        ];
+        let particles = vec![ResearchParticle {
+            vorticity: [1.0, 2.0, 2.0], // magnitude = 3
+            ..Default::default()
+        }];
 
         let shear = compute_shear_rate(0, &particles, ShearRateMethod::VorticityBased, 1.0);
         assert!((shear - 3.0).abs() < 1e-6);

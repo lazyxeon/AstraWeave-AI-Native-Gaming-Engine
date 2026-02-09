@@ -125,14 +125,14 @@ pub struct WaterSimConfig {
 impl Default for WaterSimConfig {
     fn default() -> Self {
         Self {
-            flow_rate: 1.0,          // 36 blocks/sec base (like Enshrouded)
-            viscosity: 0.1,          // Low viscosity = fast spreading
-            gravity: 9.81,           // Standard gravity
-            min_level: 0.001,        // 0.1% minimum
-            max_pressure: 100.0,     // 100 blocks of water column max
-            evaporation_rate: 0.0,   // No evaporation by default
-            freeze_temp: 273.15,     // 0°C
-            boil_temp: 373.15,       // 100°C
+            flow_rate: 1.0,        // 36 blocks/sec base (like Enshrouded)
+            viscosity: 0.1,        // Low viscosity = fast spreading
+            gravity: 9.81,         // Standard gravity
+            min_level: 0.001,      // 0.1% minimum
+            max_pressure: 100.0,   // 100 blocks of water column max
+            evaporation_rate: 0.0, // No evaporation by default
+            freeze_temp: 273.15,   // 0°C
+            boil_temp: 373.15,     // 100°C
             enable_pressure_flow: true,
             enable_absorption: true,
         }
@@ -601,9 +601,8 @@ impl WaterVolumeGrid {
 
     /// Remove empty cells from active list
     fn cleanup_active_cells(&mut self) {
-        self.active_cells.retain(|&idx| {
-            idx < self.cells.len() && self.cells[idx].level > self.config.min_level
-        });
+        self.active_cells
+            .retain(|&idx| idx < self.cells.len() && self.cells[idx].level > self.config.min_level);
 
         // Recalculate total volume
         self.total_volume = self
@@ -802,14 +801,14 @@ mod tests {
     #[test]
     fn test_horizontal_spreading() {
         let mut grid = WaterVolumeGrid::new(UVec3::new(16, 4, 16), 1.0, Vec3::ZERO);
-        
+
         // Create a water source on a flat surface (solid floor at y=0, water above)
         for x in 0..16 {
             for z in 0..16 {
                 grid.set_material(IVec3::new(x, 0, z), MaterialType::Stone);
             }
         }
-        
+
         // Add water column above the floor
         grid.set_level(IVec3::new(8, 1, 8), 1.0);
         grid.set_level(IVec3::new(8, 2, 8), 1.0);
@@ -825,7 +824,7 @@ mod tests {
             + grid.get_level(IVec3::new(9, 1, 8))
             + grid.get_level(IVec3::new(8, 1, 7))
             + grid.get_level(IVec3::new(8, 1, 9));
-        
+
         // Water should have redistributed horizontally
         assert!(total_neighbors > 0.0, "Water did not spread horizontally");
     }

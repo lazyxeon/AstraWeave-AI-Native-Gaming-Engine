@@ -211,7 +211,7 @@ impl ConversionCache {
     /// Creates a new cache in the specified directory.
     pub fn new(cache_dir: impl Into<PathBuf>) -> BlendResult<Self> {
         let cache_dir = cache_dir.into();
-        
+
         // Ensure directory exists
         if !cache_dir.exists() {
             fs::create_dir_all(&cache_dir).map_err(|e| BlendError::CacheDirectoryError {
@@ -280,7 +280,7 @@ impl ConversionCache {
         }
 
         let key = Self::normalize_path(source_path);
-        
+
         // Check if entry exists
         let entry = match self.manifest.entries.get(&key) {
             Some(e) => e.clone(),
@@ -339,10 +339,7 @@ impl ConversionCache {
         // Save updated manifest (async save in production would be better)
         let _ = self.save_manifest();
 
-        Ok(CacheLookup::Hit {
-            output_path,
-            entry,
-        })
+        Ok(CacheLookup::Hit { output_path, entry })
     }
 
     /// Stores a conversion result in the cache.
@@ -375,10 +372,12 @@ impl ConversionCache {
 
         // Copy output to cache directory
         if output_path != cached_output_path {
-            fs::copy(output_path, &cached_output_path).map_err(|e| BlendError::CacheWriteError {
-                path: cached_output_path.clone(),
-                message: "Failed to copy to cache".to_string(),
-                source: e,
+            fs::copy(output_path, &cached_output_path).map_err(|e| {
+                BlendError::CacheWriteError {
+                    path: cached_output_path.clone(),
+                    message: "Failed to copy to cache".to_string(),
+                    source: e,
+                }
             })?;
         }
 
@@ -386,7 +385,8 @@ impl ConversionCache {
         let mut cached_textures = Vec::new();
         for texture in &texture_files {
             if texture.exists() {
-                let texture_filename = texture.file_name()
+                let texture_filename = texture
+                    .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| "texture".to_string());
                 let cached_texture = self.cache_dir.join(&texture_filename);
@@ -447,12 +447,12 @@ impl ConversionCache {
     /// Invalidates a specific cache entry.
     pub fn invalidate(&mut self, source_path: &Path) -> BlendResult<bool> {
         let key = Self::normalize_path(source_path);
-        
+
         if let Some(entry) = self.manifest.entries.remove(&key) {
             // Delete cached files
             let output_path = self.cache_dir.join(&entry.output_path);
             let _ = fs::remove_file(&output_path);
-            
+
             for texture in &entry.texture_files {
                 let texture_path = self.cache_dir.join(texture);
                 let _ = fs::remove_file(&texture_path);
@@ -460,7 +460,7 @@ impl ConversionCache {
 
             self.manifest.recalculate_size();
             self.save_manifest()?;
-            
+
             debug!("Invalidated cache entry: {}", source_path.display());
             return Ok(true);
         }
@@ -474,7 +474,7 @@ impl ConversionCache {
         for entry in self.manifest.entries.values() {
             let output_path = self.cache_dir.join(&entry.output_path);
             let _ = fs::remove_file(&output_path);
-            
+
             for texture in &entry.texture_files {
                 let texture_path = self.cache_dir.join(texture);
                 let _ = fs::remove_file(&texture_path);
@@ -514,7 +514,7 @@ impl ConversionCache {
                 if let Some(entry) = self.manifest.entries.remove(&key) {
                     let output_path = self.cache_dir.join(&entry.output_path);
                     let _ = fs::remove_file(&output_path);
-                    
+
                     for texture in &entry.texture_files {
                         let texture_path = self.cache_dir.join(texture);
                         let _ = fs::remove_file(&texture_path);
@@ -562,8 +562,9 @@ impl ConversionCache {
     fn save_manifest(&self) -> BlendResult<()> {
         let manifest_path = self.cache_dir.join(MANIFEST_FILENAME);
         let config = PrettyConfig::new().depth_limit(4);
-        let content = ron::ser::to_string_pretty(&self.manifest, config)
-            .map_err(|e| BlendError::Serialization(format!("Failed to serialize manifest: {}", e)))?;
+        let content = ron::ser::to_string_pretty(&self.manifest, config).map_err(|e| {
+            BlendError::Serialization(format!("Failed to serialize manifest: {}", e))
+        })?;
 
         fs::write(&manifest_path, &content).map_err(|e| BlendError::CacheWriteError {
             path: manifest_path,
@@ -595,11 +596,13 @@ impl ConversionCache {
         let mut buffer = [0u8; 8192];
 
         loop {
-            let bytes_read = reader.read(&mut buffer).map_err(|e| BlendError::FileReadError {
-                path: path.to_path_buf(),
-                message: "Failed to read for hashing".to_string(),
-                source: e,
-            })?;
+            let bytes_read = reader
+                .read(&mut buffer)
+                .map_err(|e| BlendError::FileReadError {
+                    path: path.to_path_buf(),
+                    message: "Failed to read for hashing".to_string(),
+                    source: e,
+                })?;
 
             if bytes_read == 0 {
                 break;
@@ -612,10 +615,9 @@ impl ConversionCache {
 
     /// Computes hash of conversion options.
     fn hash_options(options: &ConversionOptions) -> BlendResult<String> {
-        let serialized =
-            ron::to_string(options).map_err(|e| BlendError::ConfigurationError {
-                message: format!("Failed to serialize options: {}", e),
-            })?;
+        let serialized = ron::to_string(options).map_err(|e| BlendError::ConfigurationError {
+            message: format!("Failed to serialize options: {}", e),
+        })?;
 
         let mut hasher = Sha256::new();
         hasher.update(serialized.as_bytes());
@@ -657,7 +659,10 @@ mod tests {
     #[test]
     fn test_cache_miss_reasons_display() {
         assert_eq!(CacheMissReason::NotCached.to_string(), "not cached");
-        assert_eq!(CacheMissReason::SourceModified.to_string(), "source file modified");
+        assert_eq!(
+            CacheMissReason::SourceModified.to_string(),
+            "source file modified"
+        );
     }
 
     #[test]
@@ -709,7 +714,7 @@ mod tests {
     fn test_cache_creation() {
         let temp_dir = TempDir::new().unwrap();
         let cache = ConversionCache::new(temp_dir.path()).unwrap();
-        
+
         assert!(cache.cache_dir().exists());
         assert!(cache.enabled);
         assert_eq!(cache.stats().entry_count, 0);
@@ -719,7 +724,7 @@ mod tests {
     fn test_normalize_path() {
         let path = PathBuf::from("/Test/Path/File.blend");
         let normalized = ConversionCache::normalize_path(&path);
-        
+
         // Should be lowercase on all platforms
         assert!(!normalized.contains('T') || normalized.contains('t'));
     }

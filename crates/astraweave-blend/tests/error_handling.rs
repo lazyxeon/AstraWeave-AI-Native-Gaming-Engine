@@ -16,10 +16,7 @@ use astraweave_blend::error::BlendError;
 #[test]
 fn error_blender_not_found() {
     let err = BlendError::BlenderNotFound {
-        searched_paths: vec![
-            PathBuf::from("/usr/bin"),
-            PathBuf::from("/usr/local/bin"),
-        ],
+        searched_paths: vec![PathBuf::from("/usr/bin"), PathBuf::from("/usr/local/bin")],
     };
     let msg = format!("{}", err);
     assert!(!msg.is_empty());
@@ -85,9 +82,9 @@ fn error_io_error_wrapper() {
     let err = BlendError::Io(io_err);
     let msg = format!("{}", err);
     assert!(
-        msg.to_lowercase().contains("file") 
-        || msg.to_lowercase().contains("not found") 
-        || msg.to_lowercase().contains("io")
+        msg.to_lowercase().contains("file")
+            || msg.to_lowercase().contains("not found")
+            || msg.to_lowercase().contains("io")
     );
 }
 
@@ -265,13 +262,13 @@ fn is_blender_missing() {
         searched_paths: vec![],
     };
     assert!(missing.is_blender_missing());
-    
+
     let exec_missing = BlendError::BlenderExecutableNotFound {
         path: PathBuf::from("/blender"),
         reason: "Not found".to_string(),
     };
     assert!(exec_missing.is_blender_missing());
-    
+
     let not_missing = BlendError::Cancelled;
     assert!(!not_missing.is_blender_missing());
 }
@@ -285,10 +282,10 @@ fn is_retryable() {
         timeout_secs: 30,
     };
     assert!(timeout.is_retryable());
-    
+
     let io_err = BlendError::IoError(io::Error::other("temp"));
     assert!(io_err.is_retryable());
-    
+
     let not_retryable = BlendError::Cancelled;
     assert!(!not_retryable.is_retryable());
 }
@@ -297,7 +294,7 @@ fn is_retryable() {
 fn is_cancelled() {
     let cancelled = BlendError::Cancelled;
     assert!(cancelled.is_cancelled());
-    
+
     let not_cancelled = BlendError::Internal {
         message: "some error".to_string(),
     };
@@ -311,13 +308,13 @@ fn is_cache_error() {
         message: "corrupt".to_string(),
     };
     assert!(cache_err.is_cache_error());
-    
+
     let load_err = BlendError::CacheLoadError {
         path: PathBuf::from("/cache"),
         reason: "load failed".to_string(),
     };
     assert!(load_err.is_cache_error());
-    
+
     let not_cache = BlendError::Cancelled;
     assert!(!not_cache.is_cache_error());
 }
@@ -333,7 +330,7 @@ fn error_messages_are_actionable() {
         searched_paths: vec![PathBuf::from("/usr/bin")],
     };
     let msg = format!("{}", err);
-    
+
     // Should mention how to fix (install Blender)
     assert!(
         msg.contains("install") || msg.contains("download") || msg.contains("blender.org"),
@@ -349,7 +346,7 @@ fn error_messages_include_context() {
         source_blend: PathBuf::from("/scene/main.blend"),
     };
     let msg = format!("{}", err);
-    
+
     // Should include both paths for debugging
     assert!(
         msg.contains("textures.blend") && msg.contains("main.blend"),
@@ -362,11 +359,13 @@ fn error_messages_include_context() {
 fn error_messages_not_empty() {
     let errors: Vec<BlendError> = vec![
         BlendError::Cancelled,
-        BlendError::Internal { message: "test".to_string() },
+        BlendError::Internal {
+            message: "test".to_string(),
+        },
         BlendError::Serialization("test".to_string()),
         BlendError::IoError(io::Error::other("test")),
     ];
-    
+
     for err in errors {
         let msg = format!("{}", err);
         assert!(!msg.is_empty(), "Error message should not be empty");
@@ -386,9 +385,9 @@ fn error_debug_format() {
         stderr: "Error details".to_string(),
         blender_output: Some("Full output".to_string()),
     };
-    
+
     let debug = format!("{:?}", err);
-    
+
     // Debug format should include struct fields
     assert!(debug.contains("ConversionFailed"));
     assert!(debug.contains("message"));
@@ -410,7 +409,7 @@ fn error_implements_std_error() {
 fn io_error_conversion() {
     let io_err = io::Error::new(io::ErrorKind::NotFound, "file not found");
     let blend_err: BlendError = io_err.into();
-    
+
     // Should convert to Io variant
     matches!(blend_err, BlendError::Io(_));
 }
@@ -434,7 +433,7 @@ fn outer_operation() -> Result<(), BlendError> {
 fn error_propagation_with_question_mark() {
     let result = outer_operation();
     assert!(result.is_err());
-    
+
     if let Err(e) = result {
         let msg = format!("{}", e);
         assert!(msg.contains("Simulated"));
@@ -459,12 +458,17 @@ fn error_in_option() {
 fn different_error_variants() {
     // Create different errors and verify they produce different messages
     let err1 = BlendError::Cancelled;
-    let err2 = BlendError::Internal { message: "test".to_string() };
-    
+    let err2 = BlendError::Internal {
+        message: "test".to_string(),
+    };
+
     let msg1 = format!("{}", err1);
     let msg2 = format!("{}", err2);
-    
-    assert_ne!(msg1, msg2, "Different errors should have different messages");
+
+    assert_ne!(
+        msg1, msg2,
+        "Different errors should have different messages"
+    );
 }
 
 // ============================================================================
@@ -479,7 +483,7 @@ fn error_with_empty_strings() {
         stderr: "".to_string(),
         blender_output: Some("".to_string()),
     };
-    
+
     // Should not panic
     let _msg = format!("{}", err);
     let _debug = format!("{:?}", err);
@@ -491,7 +495,7 @@ fn error_with_unicode() {
         name: "Объект_🎨_日本語".to_string(),
         blend_path: PathBuf::from("/путь/ファイル.blend"),
     };
-    
+
     let msg = format!("{}", err);
     assert!(msg.contains("Объект") || msg.contains("🎨") || msg.contains("日本語"));
 }
@@ -501,7 +505,7 @@ fn error_with_special_characters() {
     let err = BlendError::Internal {
         message: "Error: \"value\" contains <xml> & 'quotes'".to_string(),
     };
-    
+
     let msg = format!("{}", err);
     assert!(msg.contains("\"") || msg.contains("<") || msg.contains("&"));
 }
@@ -514,7 +518,7 @@ fn error_with_newlines() {
         stderr: "".to_string(),
         blender_output: None,
     };
-    
+
     let msg = format!("{}", err);
     // Message might preserve or flatten newlines
     assert!(msg.contains("Line 1"));
@@ -526,7 +530,7 @@ fn error_with_very_long_message() {
     let err = BlendError::Internal {
         message: long_message.clone(),
     };
-    
+
     let msg = format!("{}", err);
     // Should handle long messages without panic
     assert!(msg.len() >= long_message.len());
@@ -537,11 +541,11 @@ fn error_with_many_paths() {
     let paths: Vec<PathBuf> = (0..100)
         .map(|i| PathBuf::from(format!("/path/to/file_{}.blend", i)))
         .collect();
-    
+
     let err = BlendError::BlenderNotFound {
         searched_paths: paths,
     };
-    
+
     // Should handle many paths without panic
     let _msg = format!("{}", err);
     let _debug = format!("{:?}", err);
@@ -549,15 +553,10 @@ fn error_with_many_paths() {
 
 #[test]
 fn error_with_deep_path() {
-    let deep_path = PathBuf::from(
-        (0..50)
-            .map(|_| "folder")
-            .collect::<Vec<_>>()
-            .join("/"),
-    );
-    
+    let deep_path = PathBuf::from((0..50).map(|_| "folder").collect::<Vec<_>>().join("/"));
+
     let err = BlendError::BlendFileNotFound { path: deep_path };
-    
+
     // Should handle deep paths
     let _msg = format!("{}", err);
 }
@@ -573,9 +572,9 @@ fn error_to_string_roundtrip_information() {
         library_path: PathBuf::from("/lib/materials.blend"),
         source_blend: PathBuf::from("/scene/main.blend"),
     };
-    
+
     let msg = format!("{}", err);
-    
+
     // The string representation should preserve key information
     // (we can't deserialize back, but the info should be there)
     assert!(msg.contains("materials.blend") || msg.contains("main.blend"));
@@ -589,7 +588,7 @@ fn error_to_string_roundtrip_information() {
 fn errors_are_send_sync() {
     // BlendError should be Send + Sync for use across threads
     fn assert_send<T: Send>() {}
-    
+
     assert_send::<BlendError>();
     // Note: BlendError contains io::Error which is Send but not Sync
     // so we don't assert Sync here
@@ -598,11 +597,9 @@ fn errors_are_send_sync() {
 #[test]
 fn error_in_thread() {
     use std::thread;
-    
-    let handle = thread::spawn(|| {
-        BlendError::Cancelled
-    });
-    
+
+    let handle = thread::spawn(|| BlendError::Cancelled);
+
     let err = handle.join().unwrap();
     assert!(err.is_cancelled());
 }

@@ -168,18 +168,18 @@ mod tests {
     #[test]
     fn test_anisotropic_data_default() {
         let data = AnisotropicData::default();
-        
+
         // Default should be identity-like axes
         assert_eq!(data.axis1[0], 1.0);
         assert_eq!(data.axis1[1], 0.0);
         assert_eq!(data.axis1[2], 0.0);
         assert_eq!(data.axis1[3], 1.0); // scale
-        
+
         assert_eq!(data.axis2[0], 0.0);
         assert_eq!(data.axis2[1], 1.0);
         assert_eq!(data.axis2[2], 0.0);
         assert_eq!(data.axis2[3], 1.0);
-        
+
         assert_eq!(data.axis3[0], 0.0);
         assert_eq!(data.axis3[1], 0.0);
         assert_eq!(data.axis3[2], 1.0);
@@ -197,7 +197,7 @@ mod tests {
         let data = AnisotropicData::default();
         let copied = data;
         let cloned = data.clone();
-        
+
         assert_eq!(copied.axis1[0], data.axis1[0]);
         assert_eq!(cloned.axis1[0], data.axis1[0]);
     }
@@ -209,10 +209,10 @@ mod tests {
             axis2: [0.0, 1.0, 0.0, 1.5],
             axis3: [0.0, 0.0, 1.0, 0.5],
         };
-        
+
         let bytes: &[u8] = bytemuck::bytes_of(&data);
         assert_eq!(bytes.len(), 48);
-        
+
         let recovered: &AnisotropicData = bytemuck::from_bytes(bytes);
         assert_eq!(recovered.axis1[3], 2.0);
         assert_eq!(recovered.axis2[3], 1.5);
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn test_anisotropic_data_zeroed() {
         let data = AnisotropicData::zeroed();
-        
+
         assert_eq!(data.axis1[0], 0.0);
         assert_eq!(data.axis1[3], 0.0);
         assert_eq!(data.axis2[1], 0.0);
@@ -232,18 +232,18 @@ mod tests {
     #[test]
     fn test_anisotropic_data_orthogonality() {
         let data = AnisotropicData::default();
-        
+
         // Default axes should be orthogonal (dot products = 0)
-        let dot12 = data.axis1[0] * data.axis2[0] 
-                  + data.axis1[1] * data.axis2[1] 
-                  + data.axis1[2] * data.axis2[2];
-        let dot23 = data.axis2[0] * data.axis3[0] 
-                  + data.axis2[1] * data.axis3[1] 
-                  + data.axis2[2] * data.axis3[2];
-        let dot13 = data.axis1[0] * data.axis3[0] 
-                  + data.axis1[1] * data.axis3[1] 
-                  + data.axis1[2] * data.axis3[2];
-        
+        let dot12 = data.axis1[0] * data.axis2[0]
+            + data.axis1[1] * data.axis2[1]
+            + data.axis1[2] * data.axis2[2];
+        let dot23 = data.axis2[0] * data.axis3[0]
+            + data.axis2[1] * data.axis3[1]
+            + data.axis2[2] * data.axis3[2];
+        let dot13 = data.axis1[0] * data.axis3[0]
+            + data.axis1[1] * data.axis3[1]
+            + data.axis1[2] * data.axis3[2];
+
         assert!((dot12).abs() < 1e-6);
         assert!((dot23).abs() < 1e-6);
         assert!((dot13).abs() < 1e-6);
@@ -252,12 +252,12 @@ mod tests {
     #[test]
     fn test_anisotropic_data_unit_length() {
         let data = AnisotropicData::default();
-        
+
         // Default axes should be unit length (ignoring w component)
         let len1 = (data.axis1[0].powi(2) + data.axis1[1].powi(2) + data.axis1[2].powi(2)).sqrt();
         let len2 = (data.axis2[0].powi(2) + data.axis2[1].powi(2) + data.axis2[2].powi(2)).sqrt();
         let len3 = (data.axis3[0].powi(2) + data.axis3[1].powi(2) + data.axis3[2].powi(2)).sqrt();
-        
+
         assert!((len1 - 1.0).abs() < 1e-6);
         assert!((len2 - 1.0).abs() < 1e-6);
         assert!((len3 - 1.0).abs() < 1e-6);
@@ -268,7 +268,7 @@ mod tests {
     #[test]
     fn test_anisotropic_config_default() {
         let config = AnisotropicConfig::default();
-        
+
         assert_eq!(config.min_stretch, 1.0);
         assert_eq!(config.max_stretch, 4.0);
         assert_eq!(config.velocity_scale, 0.15);
@@ -283,7 +283,7 @@ mod tests {
             velocity_scale: 0.25,
             enabled: false,
         };
-        
+
         let cloned = config.clone();
         assert_eq!(cloned.min_stretch, 0.5);
         assert_eq!(cloned.max_stretch, 8.0);
@@ -295,7 +295,7 @@ mod tests {
     fn test_anisotropic_config_debug() {
         let config = AnisotropicConfig::default();
         let debug_str = format!("{:?}", config);
-        
+
         assert!(debug_str.contains("AnisotropicConfig"));
         assert!(debug_str.contains("min_stretch"));
         assert!(debug_str.contains("max_stretch"));
@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn test_anisotropic_config_stretch_range() {
         let config = AnisotropicConfig::default();
-        
+
         // min_stretch <= max_stretch
         assert!(config.min_stretch <= config.max_stretch);
         // velocity_scale should be positive
@@ -319,7 +319,7 @@ mod tests {
             velocity_scale: 1.0,
             enabled: true,
         };
-        
+
         assert_eq!(config.min_stretch, 0.1);
         assert_eq!(config.max_stretch, 10.0);
         assert_eq!(config.velocity_scale, 1.0);
@@ -332,7 +332,7 @@ mod tests {
         // Changing one axis shouldn't affect others
         let mut data = AnisotropicData::default();
         data.axis1 = [2.0, 3.0, 4.0, 5.0];
-        
+
         // axis2 and axis3 should still be default
         assert_eq!(data.axis2, [0.0, 1.0, 0.0, 1.0]);
         assert_eq!(data.axis3, [0.0, 0.0, 1.0, 1.0]);
@@ -341,16 +341,16 @@ mod tests {
     #[test]
     fn test_anisotropic_data_scales_independent() {
         let data = AnisotropicData {
-            axis1: [1.0, 0.0, 0.0, 2.0],  // scale = 2
-            axis2: [0.0, 1.0, 0.0, 0.5],  // scale = 0.5
-            axis3: [0.0, 0.0, 1.0, 1.0],  // scale = 1
+            axis1: [1.0, 0.0, 0.0, 2.0], // scale = 2
+            axis2: [0.0, 1.0, 0.0, 0.5], // scale = 0.5
+            axis3: [0.0, 0.0, 1.0, 1.0], // scale = 1
         };
-        
+
         // Each axis has independent scale in w component
         assert_eq!(data.axis1[3], 2.0);
         assert_eq!(data.axis2[3], 0.5);
         assert_eq!(data.axis3[3], 1.0);
-        
+
         // Scales should not affect xyz components
         assert_eq!(data.axis1[0], 1.0);
         assert_eq!(data.axis2[1], 1.0);
@@ -363,7 +363,7 @@ mod tests {
             enabled: false,
             ..Default::default()
         };
-        
+
         assert!(!config.enabled);
         // Other values should still be valid defaults
         assert_eq!(config.min_stretch, 1.0);
@@ -380,13 +380,13 @@ mod tests {
                 axis3: [0.0, 0.0, 1.0, 1.0],
             },
         ];
-        
+
         let bytes: &[u8] = bytemuck::cast_slice(&data_array);
         assert_eq!(bytes.len(), 96); // 2 * 48 bytes
-        
+
         let recovered: &[AnisotropicData] = bytemuck::cast_slice(bytes);
         assert_eq!(recovered.len(), 2);
-        
+
         // First element should have axis1 pointing X
         assert_eq!(recovered[0].axis1[0], 1.0);
         // Second element should have axis1 pointing Y
@@ -396,7 +396,7 @@ mod tests {
     #[test]
     fn test_anisotropic_config_stretch_ratio() {
         let config = AnisotropicConfig::default();
-        
+
         // Stretch ratio should be positive
         let ratio = config.max_stretch / config.min_stretch;
         assert!(ratio >= 1.0);
@@ -407,7 +407,7 @@ mod tests {
     fn test_anisotropic_data_debug_format() {
         let data = AnisotropicData::default();
         let debug_str = format!("{:?}", data);
-        
+
         assert!(debug_str.contains("axis1"));
         assert!(debug_str.contains("axis2"));
         assert!(debug_str.contains("axis3"));

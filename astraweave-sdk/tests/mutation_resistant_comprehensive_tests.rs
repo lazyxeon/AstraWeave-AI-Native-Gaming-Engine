@@ -94,7 +94,12 @@ fn aw_version_patch_is_zero() {
 fn aw_version_fields_not_swapped() {
     let v = aw_version();
     // major < minor for 0.4.0
-    assert!(v.major < v.minor, "major={} should be < minor={}", v.major, v.minor);
+    assert!(
+        v.major < v.minor,
+        "major={} should be < minor={}",
+        v.major,
+        v.minor
+    );
 }
 
 // ========================================================================
@@ -115,7 +120,7 @@ fn awversion_align_is_two() {
 fn awversion_is_copy() {
     let v = aw_version();
     let v2 = v; // Copy
-    let _ = v;  // Still usable after copy
+    let _ = v; // Still usable after copy
     assert_eq!(v2.major, 0);
 }
 
@@ -162,7 +167,11 @@ fn aw_version_string_full_copy() {
     // Verify NUL termination
     let cstr = unsafe { CStr::from_ptr(buf.as_ptr() as *const i8) };
     let s = cstr.to_str().unwrap();
-    assert!(s.starts_with("0.4"), "version string should start with 0.4, got: {}", s);
+    assert!(
+        s.starts_with("0.4"),
+        "version string should start with 0.4, got: {}",
+        s
+    );
 }
 
 #[test]
@@ -186,16 +195,16 @@ fn aw_world_create_returns_non_null() {
     // AWWorld wraps a raw pointer; not null means valid
     // We can verify by getting a snapshot
     let mut buf = [0u8; 4096];
-    let n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len()) ;
+    let n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len());
     assert!(n > 0, "snapshot should return non-zero for valid world");
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
 fn aw_world_destroy_null_safe() {
     // Should not crash on null
     let null_world = null_world();
-    aw_world_destroy(null_world) ;
+    aw_world_destroy(null_world);
 }
 
 // ========================================================================
@@ -204,7 +213,7 @@ fn aw_world_destroy_null_safe() {
 
 fn get_snapshot_string(w: AWWorld) -> String {
     let mut buf = [0u8; 8192];
-    let _n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len()) ;
+    let _n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len());
     let cstr = unsafe { CStr::from_ptr(buf.as_ptr() as *const i8) };
     cstr.to_str().unwrap().to_string()
 }
@@ -213,9 +222,9 @@ fn get_snapshot_string(w: AWWorld) -> String {
 fn snapshot_is_valid_json() {
     let w = aw_world_create();
     let s = get_snapshot_string(w);
-    let _val: serde_json::Value = serde_json::from_str(&s)
-        .unwrap_or_else(|e| panic!("invalid JSON: {e}\nraw: {s}"));
-    aw_world_destroy(w) ;
+    let _val: serde_json::Value =
+        serde_json::from_str(&s).unwrap_or_else(|e| panic!("invalid JSON: {e}\nraw: {s}"));
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -223,8 +232,11 @@ fn snapshot_has_entities_array() {
     let w = aw_world_create();
     let s = get_snapshot_string(w);
     let val: serde_json::Value = serde_json::from_str(&s).unwrap();
-    assert!(val["entities"].is_array(), "snapshot must have entities array");
-    aw_world_destroy(w) ;
+    assert!(
+        val["entities"].is_array(),
+        "snapshot must have entities array"
+    );
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -234,7 +246,7 @@ fn snapshot_has_three_entities() {
     let val: serde_json::Value = serde_json::from_str(&s).unwrap();
     let entities = val["entities"].as_array().unwrap();
     assert_eq!(entities.len(), 3, "should have P, C, E entities");
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -243,14 +255,14 @@ fn snapshot_has_t_field() {
     let s = get_snapshot_string(w);
     let val: serde_json::Value = serde_json::from_str(&s).unwrap();
     assert!(val.get("t").is_some(), "snapshot must have t field");
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
 fn snapshot_null_world_returns_zero() {
     let null_world = null_world();
     let mut buf = [0u8; 64];
-    let n = aw_world_snapshot_json(null_world, buf.as_mut_ptr(), buf.len()) ;
+    let n = aw_world_snapshot_json(null_world, buf.as_mut_ptr(), buf.len());
     assert_eq!(n, 0, "null world should return 0");
 }
 
@@ -259,7 +271,8 @@ fn snapshot_null_world_returns_zero() {
 // ========================================================================
 
 fn find_entity_by_team(entities: &[serde_json::Value], team: u8) -> &serde_json::Value {
-    entities.iter()
+    entities
+        .iter()
         .find(|e| e["team"].as_u64().unwrap() == team as u64)
         .unwrap_or_else(|| panic!("no entity with team {}", team))
 }
@@ -273,7 +286,7 @@ fn entity_p_position_2_2() {
     let p = find_entity_by_team(entities, 0);
     assert_eq!(p["x"].as_i64().unwrap(), 2, "P.x should be 2");
     assert_eq!(p["y"].as_i64().unwrap(), 2, "P.y should be 2");
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -285,7 +298,7 @@ fn entity_c_position_3_2() {
     let c = find_entity_by_team(entities, 1);
     assert_eq!(c["x"].as_i64().unwrap(), 3, "C.x should be 3");
     assert_eq!(c["y"].as_i64().unwrap(), 2, "C.y should be 2");
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -297,7 +310,7 @@ fn entity_e_position_7_2() {
     let e = find_entity_by_team(entities, 2);
     assert_eq!(e["x"].as_i64().unwrap(), 7, "E.x should be 7");
     assert_eq!(e["y"].as_i64().unwrap(), 2, "E.y should be 2");
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -308,7 +321,7 @@ fn entity_p_hp_100() {
     let entities = val["entities"].as_array().unwrap();
     let p = find_entity_by_team(entities, 0);
     assert_eq!(p["hp"].as_i64().unwrap(), 100);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -319,7 +332,7 @@ fn entity_c_hp_80() {
     let entities = val["entities"].as_array().unwrap();
     let c = find_entity_by_team(entities, 1);
     assert_eq!(c["hp"].as_i64().unwrap(), 80);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -330,7 +343,7 @@ fn entity_e_hp_60() {
     let entities = val["entities"].as_array().unwrap();
     let e = find_entity_by_team(entities, 2);
     assert_eq!(e["hp"].as_i64().unwrap(), 60);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -341,7 +354,7 @@ fn entity_c_ammo_10() {
     let entities = val["entities"].as_array().unwrap();
     let c = find_entity_by_team(entities, 1);
     assert_eq!(c["ammo"].as_i64().unwrap(), 10);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -352,7 +365,7 @@ fn entity_p_ammo_zero() {
     let entities = val["entities"].as_array().unwrap();
     let p = find_entity_by_team(entities, 0);
     assert_eq!(p["ammo"].as_i64().unwrap(), 0);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -363,7 +376,7 @@ fn entity_e_ammo_zero() {
     let entities = val["entities"].as_array().unwrap();
     let e = find_entity_by_team(entities, 2);
     assert_eq!(e["ammo"].as_i64().unwrap(), 0);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
@@ -372,12 +385,13 @@ fn entity_teams_are_0_1_2() {
     let s = get_snapshot_string(w);
     let val: serde_json::Value = serde_json::from_str(&s).unwrap();
     let entities = val["entities"].as_array().unwrap();
-    let mut teams: Vec<u64> = entities.iter()
+    let mut teams: Vec<u64> = entities
+        .iter()
         .map(|e| e["team"].as_u64().unwrap())
         .collect();
     teams.sort();
     assert_eq!(teams, vec![0, 1, 2]);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 // ========================================================================
@@ -388,40 +402,26 @@ fn entity_teams_are_0_1_2() {
 fn submit_intent_null_world() {
     let null_world = null_world();
     let json = b"{}\0";
-    let code = unsafe {
-        aw_world_submit_intent_json(
-            null_world,
-            0,
-            json.as_ptr() as *const i8,
-            None,
-        )
-    };
+    let code =
+        unsafe { aw_world_submit_intent_json(null_world, 0, json.as_ptr() as *const i8, None) };
     assert_eq!(code, AW_ERR_NULL);
 }
 
 #[test]
 fn submit_intent_null_json() {
     let w = aw_world_create();
-    let code = unsafe {
-        aw_world_submit_intent_json(w, 0, std::ptr::null(), None)
-    };
+    let code = unsafe { aw_world_submit_intent_json(w, 0, std::ptr::null(), None) };
     assert_eq!(code, AW_ERR_PARAM);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 #[test]
 fn submit_intent_bad_json() {
     let w = aw_world_create();
     let bad = b"not valid json\0";
-    let code = unsafe {
-        aw_world_submit_intent_json(
-            w, 0,
-            bad.as_ptr() as *const i8,
-            None,
-        )
-    };
+    let code = unsafe { aw_world_submit_intent_json(w, 0, bad.as_ptr() as *const i8, None) };
     assert_eq!(code, AW_ERR_PARSE);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 // ========================================================================
@@ -430,7 +430,7 @@ fn submit_intent_bad_json() {
 
 #[test]
 fn last_error_null_buf_returns_required() {
-    let n = aw_last_error_string(std::ptr::null_mut(), 0) ;
+    let n = aw_last_error_string(std::ptr::null_mut(), 0);
     assert!(n >= 1, "should need at least 1 byte for NUL");
 }
 
@@ -442,11 +442,15 @@ fn last_error_has_content_after_null_submit() {
         aw_world_submit_intent_json(null_world, 0, json.as_ptr() as *const i8, None);
     }
     let mut buf = [0u8; 256];
-    let n = aw_last_error_string(buf.as_mut_ptr(), buf.len()) ;
+    let n = aw_last_error_string(buf.as_mut_ptr(), buf.len());
     assert!(n > 1, "should have error content after null-world submit");
     let cstr = unsafe { CStr::from_ptr(buf.as_ptr() as *const i8) };
     let s = cstr.to_str().unwrap();
-    assert!(s.contains("null"), "error should mention 'null', got: {}", s);
+    assert!(
+        s.contains("null"),
+        "error should mention 'null', got: {}",
+        s
+    );
 }
 
 // ========================================================================
@@ -455,7 +459,11 @@ fn last_error_has_content_after_null_submit() {
 
 #[test]
 fn version_struct_serde_roundtrip() {
-    let v = Version { major: 1, minor: 2, patch: 3 };
+    let v = Version {
+        major: 1,
+        minor: 2,
+        patch: 3,
+    };
     let json = serde_json::to_string(&v).unwrap();
     let v2: Version = serde_json::from_str(&json).unwrap();
     assert_eq!(v2.major, 1);
@@ -465,7 +473,11 @@ fn version_struct_serde_roundtrip() {
 
 #[test]
 fn version_clone() {
-    let v = Version { major: 5, minor: 6, patch: 7 };
+    let v = Version {
+        major: 5,
+        minor: 6,
+        patch: 7,
+    };
     let v2 = v.clone();
     assert_eq!(v2.major, 5);
     assert_eq!(v2.minor, 6);
@@ -513,19 +525,19 @@ fn sdk_error_debug() {
 #[test]
 fn aw_world_tick_null_safe() {
     let null_world = null_world();
-    aw_world_tick(null_world, 1.0 / 60.0) ;
+    aw_world_tick(null_world, 1.0 / 60.0);
     // Should not crash
 }
 
 #[test]
 fn aw_world_tick_valid_world() {
     let w = aw_world_create();
-    aw_world_tick(w, 1.0 / 60.0) ;
+    aw_world_tick(w, 1.0 / 60.0);
     // Verify world still valid after tick
     let mut buf = [0u8; 4096];
-    let n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len()) ;
+    let n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len());
     assert!(n > 0);
-    aw_world_destroy(w) ;
+    aw_world_destroy(w);
 }
 
 // ========================================================================
@@ -535,13 +547,13 @@ fn aw_world_tick_valid_world() {
 #[test]
 fn set_snapshot_callback_null_world() {
     let null_world = null_world();
-    aw_world_set_snapshot_callback(null_world, None) ;
+    aw_world_set_snapshot_callback(null_world, None);
     // Should not crash
 }
 
 #[test]
 fn set_delta_callback_null_world() {
     let null_world = null_world();
-    aw_world_set_delta_callback(null_world, None) ;
+    aw_world_set_delta_callback(null_world, None);
     // Should not crash
 }

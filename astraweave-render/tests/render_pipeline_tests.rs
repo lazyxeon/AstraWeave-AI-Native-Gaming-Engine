@@ -972,12 +972,7 @@ mod draw_tests {
             ];
 
             // Instance offsets
-            let instances: [[f32; 2]; 4] = [
-                [-0.5, 0.5],
-                [0.5, 0.5],
-                [-0.5, -0.5],
-                [0.5, -0.5],
-            ];
+            let instances: [[f32; 2]; 4] = [[-0.5, 0.5], [0.5, 0.5], [-0.5, -0.5], [0.5, -0.5]];
 
             let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("vertices"),

@@ -34,15 +34,15 @@ impl Span {
             attributes: HashMap::new(),
         }
     }
-    
+
     fn end(&mut self) {
         self.end = Some(Instant::now());
     }
-    
+
     fn duration(&self) -> Option<Duration> {
         self.end.map(|e| e.duration_since(self.start))
     }
-    
+
     fn set_attribute(&mut self, key: &str, value: AttributeValue) {
         self.attributes.insert(key.to_string(), value);
     }
@@ -91,16 +91,19 @@ impl Histogram {
     fn new(name: &str, boundaries: &[f64]) -> Self {
         Self {
             name: name.to_string(),
-            buckets: boundaries.iter().map(|&le| HistogramBucket { le, count: 0 }).collect(),
+            buckets: boundaries
+                .iter()
+                .map(|&le| HistogramBucket { le, count: 0 })
+                .collect(),
             sum: 0.0,
             count: 0,
         }
     }
-    
+
     fn observe(&mut self, value: f64) {
         self.sum += value;
         self.count += 1;
-        
+
         for bucket in &mut self.buckets {
             if value <= bucket.le {
                 bucket.count += 1;
@@ -150,11 +153,11 @@ enum LogLevel {
 
 fn bench_span_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("observability_adversarial/span_operations");
-    
+
     // Test 1: Span creation
     group.bench_function("span_creation_10000", |bencher| {
         let mut span_id = 0u64;
-        
+
         bencher.iter(|| {
             let spans: Vec<Span> = (0..10000)
                 .map(|i| {
@@ -167,47 +170,44 @@ fn bench_span_operations(c: &mut Criterion) {
                     Span::new(&format!("span_{}", i), span_id, parent)
                 })
                 .collect();
-            
+
             std_black_box(spans.len())
         });
     });
-    
+
     // Test 2: Span lifecycle
     group.bench_function("span_lifecycle_5000", |bencher| {
         bencher.iter(|| {
             let mut spans: Vec<Span> = Vec::with_capacity(5000);
-            
+
             for i in 0..5000 {
                 let mut span = Span::new(&format!("op_{}", i % 100), i as u64, None);
                 span.set_attribute("iteration", AttributeValue::Int(i as i64));
                 span.set_attribute("type", AttributeValue::String("benchmark".to_string()));
-                
+
                 // Simulate some work
                 let _ = (0..10).sum::<u32>();
-                
+
                 span.end();
                 spans.push(span);
             }
-            
-            let total_duration: Duration = spans
-                .iter()
-                .filter_map(|s| s.duration())
-                .sum();
-            
+
+            let total_duration: Duration = spans.iter().filter_map(|s| s.duration()).sum();
+
             std_black_box(total_duration.as_nanos())
         });
     });
-    
+
     // Test 3: Nested span tree
     group.bench_function("nested_span_tree_depth_20", |bencher| {
         bencher.iter(|| {
             let mut spans: Vec<Span> = Vec::new();
             let mut current_id = 0u64;
-            
+
             // Create 100 trees with depth 20
             for tree in 0..100 {
                 let mut parent_id: Option<u64> = None;
-                
+
                 for depth in 0..20 {
                     current_id += 1;
                     let mut span = Span::new(
@@ -217,20 +217,20 @@ fn bench_span_operations(c: &mut Criterion) {
                     );
                     span.set_attribute("depth", AttributeValue::Int(depth as i64));
                     span.end();
-                    
+
                     parent_id = Some(current_id);
                     spans.push(span);
                 }
             }
-            
+
             std_black_box(spans.len())
         });
     });
-    
+
     // Test 4: Span attribute operations
     group.bench_function("span_attributes_20000", |bencher| {
         let mut span = Span::new("test_span", 1, None);
-        
+
         bencher.iter(|| {
             for i in 0..20000 {
                 let key = format!("attr_{}", i % 100);
@@ -242,11 +242,11 @@ fn bench_span_operations(c: &mut Criterion) {
                 };
                 span.set_attribute(&key, value);
             }
-            
+
             std_black_box(span.attributes.len())
         });
     });
-    
+
     group.finish();
 }
 
@@ -256,15 +256,15 @@ fn bench_span_operations(c: &mut Criterion) {
 
 fn bench_metrics_collection(c: &mut Criterion) {
     let mut group = c.benchmark_group("observability_adversarial/metrics_collection");
-    
+
     // Test 1: Counter increments
     group.bench_function("counter_increments_100000", |bencher| {
         let mut counters: HashMap<String, u64> = HashMap::new();
-        
+
         for i in 0..100 {
             counters.insert(format!("counter_{}", i), 0);
         }
-        
+
         bencher.iter(|| {
             for i in 0..100000 {
                 let key = format!("counter_{}", i % 100);
@@ -272,41 +272,43 @@ fn bench_metrics_collection(c: &mut Criterion) {
                     *count += 1;
                 }
             }
-            
+
             let total: u64 = counters.values().sum();
             std_black_box(total)
         });
     });
-    
+
     // Test 2: Gauge updates
     group.bench_function("gauge_updates_50000", |bencher| {
         let mut gauges: HashMap<String, f64> = HashMap::new();
-        
+
         for i in 0..50 {
             gauges.insert(format!("gauge_{}", i), 0.0);
         }
-        
+
         let updates: Vec<(String, f64)> = (0..50000)
             .map(|i| (format!("gauge_{}", i % 50), (i % 1000) as f64))
             .collect();
-        
+
         bencher.iter(|| {
             for (key, value) in &updates {
                 if let Some(gauge) = gauges.get_mut(key) {
                     *gauge = *value;
                 }
             }
-            
+
             let sum: f64 = gauges.values().sum();
             std_black_box(sum)
         });
     });
-    
+
     // Test 3: Histogram observations
     group.bench_function("histogram_observations_10000", |bencher| {
-        let boundaries = vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0];
+        let boundaries = vec![
+            0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+        ];
         let mut histogram = Histogram::new("request_duration", &boundaries);
-        
+
         let observations: Vec<f64> = (0..10000)
             .map(|i| {
                 // Simulate response times
@@ -314,16 +316,16 @@ fn bench_metrics_collection(c: &mut Criterion) {
                 base + (i % 10) as f64 * 0.001
             })
             .collect();
-        
+
         bencher.iter(|| {
             for &value in &observations {
                 histogram.observe(value);
             }
-            
+
             std_black_box((histogram.count, histogram.sum))
         });
     });
-    
+
     // Test 4: Metric tagging
     group.bench_function("metric_tagging_10000", |bencher| {
         bencher.iter(|| {
@@ -333,7 +335,7 @@ fn bench_metrics_collection(c: &mut Criterion) {
                     tags.insert("service".to_string(), format!("svc_{}", i % 10));
                     tags.insert("region".to_string(), format!("region_{}", i % 5));
                     tags.insert("instance".to_string(), format!("inst_{}", i % 100));
-                    
+
                     Metric {
                         name: format!("metric_{}", i % 50),
                         metric_type: match i % 4 {
@@ -348,18 +350,18 @@ fn bench_metrics_collection(c: &mut Criterion) {
                     }
                 })
                 .collect();
-            
+
             std_black_box(metrics.len())
         });
     });
-    
+
     // Test 5: Metric aggregation
     group.bench_function("metric_aggregation_5000", |bencher| {
         let metrics: Vec<Metric> = (0..5000)
             .map(|i| {
                 let mut tags = HashMap::new();
                 tags.insert("service".to_string(), format!("svc_{}", i % 10));
-                
+
                 Metric {
                     name: format!("metric_{}", i % 20),
                     metric_type: MetricType::Gauge,
@@ -369,29 +371,29 @@ fn bench_metrics_collection(c: &mut Criterion) {
                 }
             })
             .collect();
-        
+
         bencher.iter(|| {
             let mut aggregated: HashMap<(String, String), (f64, usize)> = HashMap::new();
-            
+
             for metric in &metrics {
                 let service = metric.tags.get("service").cloned().unwrap_or_default();
                 let key = (metric.name.clone(), service);
-                
+
                 let entry = aggregated.entry(key).or_insert((0.0, 0));
                 entry.0 += metric.value;
                 entry.1 += 1;
             }
-            
+
             // Calculate averages
             let averages: Vec<f64> = aggregated
                 .values()
                 .map(|(sum, count)| sum / *count as f64)
                 .collect();
-            
+
             std_black_box(averages.len())
         });
     });
-    
+
     group.finish();
 }
 
@@ -401,11 +403,11 @@ fn bench_metrics_collection(c: &mut Criterion) {
 
 fn bench_logging(c: &mut Criterion) {
     let mut group = c.benchmark_group("observability_adversarial/logging");
-    
+
     // Test 1: Log entry creation
     for count in [1000, 5000, 10000] {
         group.throughput(Throughput::Elements(count as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("log_entry_creation", count),
             &count,
@@ -416,7 +418,7 @@ fn bench_logging(c: &mut Criterion) {
                             let mut fields = HashMap::new();
                             fields.insert("request_id".to_string(), format!("req_{}", i));
                             fields.insert("user_id".to_string(), format!("user_{}", i % 100));
-                            
+
                             LogEntry {
                                 level: match i % 5 {
                                     0 => LogLevel::Trace,
@@ -425,20 +427,24 @@ fn bench_logging(c: &mut Criterion) {
                                     3 => LogLevel::Warn,
                                     _ => LogLevel::Error,
                                 },
-                                message: format!("Processing request {} for operation {}", i, i % 10),
+                                message: format!(
+                                    "Processing request {} for operation {}",
+                                    i,
+                                    i % 10
+                                ),
                                 target: format!("astraweave::module_{}", i % 20),
                                 timestamp: i as u64,
                                 fields,
                             }
                         })
                         .collect();
-                    
+
                     std_black_box(entries.len())
                 });
             },
         );
     }
-    
+
     // Test 2: Log level filtering
     group.bench_function("log_level_filtering_10000", |bencher| {
         let entries: Vec<LogEntry> = (0..10000)
@@ -456,19 +462,17 @@ fn bench_logging(c: &mut Criterion) {
                 fields: HashMap::new(),
             })
             .collect();
-        
+
         let min_level = LogLevel::Info;
-        
+
         bencher.iter(|| {
-            let filtered: Vec<&LogEntry> = entries
-                .iter()
-                .filter(|e| e.level >= min_level)
-                .collect();
-            
+            let filtered: Vec<&LogEntry> =
+                entries.iter().filter(|e| e.level >= min_level).collect();
+
             std_black_box(filtered.len())
         });
     });
-    
+
     // Test 3: Log formatting
     group.bench_function("log_formatting_5000", |bencher| {
         let entries: Vec<LogEntry> = (0..5000)
@@ -476,7 +480,7 @@ fn bench_logging(c: &mut Criterion) {
                 let mut fields = HashMap::new();
                 fields.insert("request_id".to_string(), format!("req_{}", i));
                 fields.insert("duration_ms".to_string(), format!("{}", i % 1000));
-                
+
                 LogEntry {
                     level: LogLevel::Info,
                     message: "Request completed successfully".to_string(),
@@ -486,7 +490,7 @@ fn bench_logging(c: &mut Criterion) {
                 }
             })
             .collect();
-        
+
         bencher.iter(|| {
             let formatted: Vec<String> = entries
                 .iter()
@@ -497,7 +501,7 @@ fn bench_logging(c: &mut Criterion) {
                     output.push_str(&e.target);
                     output.push_str(": ");
                     output.push_str(&e.message);
-                    
+
                     if !e.fields.is_empty() {
                         output.push_str(" {");
                         for (k, v) in &e.fields {
@@ -505,16 +509,16 @@ fn bench_logging(c: &mut Criterion) {
                         }
                         output.push_str(" }");
                     }
-                    
+
                     output
                 })
                 .collect();
-            
+
             let total_len: usize = formatted.iter().map(|s| s.len()).sum();
             std_black_box(total_len)
         });
     });
-    
+
     // Test 4: Target matching
     group.bench_function("target_matching_10000", |bencher| {
         let entries: Vec<LogEntry> = (0..10000)
@@ -530,19 +534,23 @@ fn bench_logging(c: &mut Criterion) {
                 fields: HashMap::new(),
             })
             .collect();
-        
-        let patterns = ["astraweave::ai", "astraweave::render", "astraweave::physics"];
-        
+
+        let patterns = [
+            "astraweave::ai",
+            "astraweave::render",
+            "astraweave::physics",
+        ];
+
         bencher.iter(|| {
             let matched: Vec<&LogEntry> = entries
                 .iter()
                 .filter(|e| patterns.iter().any(|p| e.target.starts_with(p)))
                 .collect();
-            
+
             std_black_box(matched.len())
         });
     });
-    
+
     group.finish();
 }
 
@@ -552,7 +560,7 @@ fn bench_logging(c: &mut Criterion) {
 
 fn bench_crash_reporting(c: &mut Criterion) {
     let mut group = c.benchmark_group("observability_adversarial/crash_reporting");
-    
+
     // Test 1: Backtrace generation
     group.bench_function("backtrace_generation_100", |bencher| {
         bencher.iter(|| {
@@ -568,12 +576,12 @@ fn bench_crash_reporting(c: &mut Criterion) {
                         .collect()
                 })
                 .collect();
-            
+
             let total_frames: usize = backtraces.iter().map(|b| b.len()).sum();
             std_black_box(total_frames)
         });
     });
-    
+
     // Test 2: Crash report creation
     group.bench_function("crash_report_creation_500", |bencher| {
         bencher.iter(|| {
@@ -584,9 +592,12 @@ fn bench_crash_reporting(c: &mut Criterion) {
                     context.insert("platform".to_string(), "windows".to_string());
                     context.insert("gpu".to_string(), format!("GPU_{}", i % 10));
                     context.insert("ram_mb".to_string(), format!("{}", 8192 + i * 100));
-                    
+
                     CrashReport {
-                        error_type: format!("{}Error", ["Panic", "OutOfMemory", "Gpu", "Io", "Assert"][i % 5]),
+                        error_type: format!(
+                            "{}Error",
+                            ["Panic", "OutOfMemory", "Gpu", "Io", "Assert"][i % 5]
+                        ),
                         message: format!("Error occurred during operation {}", i),
                         backtrace: (0..30)
                             .map(|j| StackFrame {
@@ -601,15 +612,15 @@ fn bench_crash_reporting(c: &mut Criterion) {
                     }
                 })
                 .collect();
-            
+
             std_black_box(reports.len())
         });
     });
-    
+
     // Test 3: Symbolication (simulated)
     group.bench_function("symbolication_1000", |bencher| {
         let addresses: Vec<u64> = (0..1000).map(|i| 0x1000_0000 + i * 0x100).collect();
-        
+
         // Symbol table
         let symbols: HashMap<u64, String> = (0..100)
             .map(|i| {
@@ -618,7 +629,7 @@ fn bench_crash_reporting(c: &mut Criterion) {
                 (addr, name)
             })
             .collect();
-        
+
         bencher.iter(|| {
             let resolved: Vec<Option<&String>> = addresses
                 .iter()
@@ -631,19 +642,19 @@ fn bench_crash_reporting(c: &mut Criterion) {
                         .next()
                 })
                 .collect();
-            
+
             let found = resolved.iter().filter(|r| r.is_some()).count();
             std_black_box(found)
         });
     });
-    
+
     // Test 4: Report serialization
     group.bench_function("report_serialization_200", |bencher| {
         let reports: Vec<CrashReport> = (0..200)
             .map(|i| {
                 let mut context = HashMap::new();
                 context.insert("version".to_string(), "1.0.0".to_string());
-                
+
                 CrashReport {
                     error_type: "PanicError".to_string(),
                     message: format!("Panic at {}", i),
@@ -660,7 +671,7 @@ fn bench_crash_reporting(c: &mut Criterion) {
                 }
             })
             .collect();
-        
+
         bencher.iter(|| {
             let serialized: Vec<String> = reports
                 .iter()
@@ -673,7 +684,7 @@ fn bench_crash_reporting(c: &mut Criterion) {
                     json.push_str("\",\"timestamp\":");
                     json.push_str(&r.timestamp.to_string());
                     json.push_str(",\"backtrace\":[");
-                    
+
                     for (i, frame) in r.backtrace.iter().enumerate() {
                         if i > 0 {
                             json.push(',');
@@ -682,17 +693,17 @@ fn bench_crash_reporting(c: &mut Criterion) {
                         json.push_str(&frame.function);
                         json.push_str("\"}");
                     }
-                    
+
                     json.push_str("]}");
                     json
                 })
                 .collect();
-            
+
             let total_len: usize = serialized.iter().map(|s| s.len()).sum();
             std_black_box(total_len)
         });
     });
-    
+
     group.finish();
 }
 
@@ -702,7 +713,7 @@ fn bench_crash_reporting(c: &mut Criterion) {
 
 fn bench_trace_context(c: &mut Criterion) {
     let mut group = c.benchmark_group("observability_adversarial/trace_context");
-    
+
     // Test 1: Context creation
     group.bench_function("context_creation_10000", |bencher| {
         bencher.iter(|| {
@@ -714,30 +725,28 @@ fn bench_trace_context(c: &mut Criterion) {
                     (trace_id, span_id, flags)
                 })
                 .collect();
-            
+
             std_black_box(contexts.len())
         });
     });
-    
+
     // Test 2: Header encoding
     group.bench_function("header_encoding_5000", |bencher| {
         let contexts: Vec<(u128, u64)> = (0..5000)
             .map(|i| ((i as u128) << 64 | (i as u128 + 1), i as u64))
             .collect();
-        
+
         bencher.iter(|| {
             let headers: Vec<String> = contexts
                 .iter()
-                .map(|(trace_id, span_id)| {
-                    format!("00-{:032x}-{:016x}-01", trace_id, span_id)
-                })
+                .map(|(trace_id, span_id)| format!("00-{:032x}-{:016x}-01", trace_id, span_id))
                 .collect();
-            
+
             let total_len: usize = headers.iter().map(|h| h.len()).sum();
             std_black_box(total_len)
         });
     });
-    
+
     // Test 3: Header parsing
     group.bench_function("header_parsing_5000", |bencher| {
         let headers: Vec<String> = (0..5000)
@@ -747,7 +756,7 @@ fn bench_trace_context(c: &mut Criterion) {
                 format!("00-{:032x}-{:016x}-01", trace_id, span_id)
             })
             .collect();
-        
+
         bencher.iter(|| {
             let parsed: Vec<Option<(u128, u64, u8)>> = headers
                 .iter()
@@ -756,20 +765,20 @@ fn bench_trace_context(c: &mut Criterion) {
                     if parts.len() != 4 {
                         return None;
                     }
-                    
+
                     let trace_id = u128::from_str_radix(parts[1], 16).ok()?;
                     let span_id = u64::from_str_radix(parts[2], 16).ok()?;
                     let flags = u8::from_str_radix(parts[3], 16).ok()?;
-                    
+
                     Some((trace_id, span_id, flags))
                 })
                 .collect();
-            
+
             let valid = parsed.iter().filter(|p| p.is_some()).count();
             std_black_box(valid)
         });
     });
-    
+
     // Test 4: Baggage propagation
     group.bench_function("baggage_propagation_2000", |bencher| {
         let baggage: Vec<HashMap<String, String>> = (0..2000)
@@ -782,7 +791,7 @@ fn bench_trace_context(c: &mut Criterion) {
                 b
             })
             .collect();
-        
+
         bencher.iter(|| {
             let encoded: Vec<String> = baggage
                 .iter()
@@ -793,12 +802,12 @@ fn bench_trace_context(c: &mut Criterion) {
                         .join(",")
                 })
                 .collect();
-            
+
             let total_len: usize = encoded.iter().map(|s| s.len()).sum();
             std_black_box(total_len)
         });
     });
-    
+
     group.finish();
 }
 
@@ -808,7 +817,7 @@ fn bench_trace_context(c: &mut Criterion) {
 
 fn bench_performance_monitoring(c: &mut Criterion) {
     let mut group = c.benchmark_group("observability_adversarial/performance_monitoring");
-    
+
     // Test 1: FPS calculation
     group.bench_function("fps_calculation_600", |bencher| {
         let frame_times: Vec<f64> = (0..600)
@@ -817,7 +826,7 @@ fn bench_performance_monitoring(c: &mut Criterion) {
                 16.67 + (i % 10) as f64 * 0.5 - 2.5
             })
             .collect();
-        
+
         bencher.iter(|| {
             // Calculate rolling average FPS
             let window_size = 60;
@@ -828,12 +837,12 @@ fn bench_performance_monitoring(c: &mut Criterion) {
                     1000.0 / avg_frame_time
                 })
                 .collect();
-            
+
             let avg_fps: f64 = fps_values.iter().sum::<f64>() / fps_values.len() as f64;
             std_black_box(avg_fps)
         });
     });
-    
+
     // Test 2: Memory tracking
     group.bench_function("memory_tracking_1000", |bencher| {
         let allocations: Vec<(u64, usize, &str)> = (0..1000)
@@ -844,21 +853,21 @@ fn bench_performance_monitoring(c: &mut Criterion) {
                 (ptr, size, category)
             })
             .collect();
-        
+
         bencher.iter(|| {
             let mut by_category: HashMap<&str, (usize, usize)> = HashMap::new();
-            
+
             for (_, size, category) in &allocations {
                 let entry = by_category.entry(category).or_insert((0, 0));
                 entry.0 += 1;
                 entry.1 += size;
             }
-            
+
             let total_size: usize = by_category.values().map(|(_, s)| s).sum();
             std_black_box(total_size)
         });
     });
-    
+
     // Test 3: CPU profiling simulation
     group.bench_function("cpu_profile_aggregation_5000", |bencher| {
         let samples: Vec<(String, u64)> = (0..5000)
@@ -872,24 +881,24 @@ fn bench_performance_monitoring(c: &mut Criterion) {
                 (function, cycles)
             })
             .collect();
-        
+
         bencher.iter(|| {
             let mut profile: HashMap<String, (u64, usize)> = HashMap::new();
-            
+
             for (func, cycles) in &samples {
                 let entry = profile.entry(func.clone()).or_insert((0, 0));
                 entry.0 += cycles;
                 entry.1 += 1;
             }
-            
+
             // Sort by total cycles
             let mut sorted: Vec<_> = profile.into_iter().collect();
             sorted.sort_by(|a, b| b.1 .0.cmp(&a.1 .0));
-            
+
             std_black_box(sorted.len())
         });
     });
-    
+
     // Test 4: GPU timing
     group.bench_function("gpu_timing_aggregation_1000", |bencher| {
         let timings: Vec<(&str, f64, f64)> = (0..1000)
@@ -900,14 +909,14 @@ fn bench_performance_monitoring(c: &mut Criterion) {
                 (pass, start, duration)
             })
             .collect();
-        
+
         bencher.iter(|| {
             let mut by_pass: HashMap<&str, Vec<f64>> = HashMap::new();
-            
+
             for (pass, _, duration) in &timings {
                 by_pass.entry(pass).or_default().push(*duration);
             }
-            
+
             let stats: HashMap<&str, (f64, f64, f64)> = by_pass
                 .iter()
                 .map(|(pass, durations)| {
@@ -918,11 +927,11 @@ fn bench_performance_monitoring(c: &mut Criterion) {
                     (*pass, (avg, max, sum))
                 })
                 .collect();
-            
+
             std_black_box(stats.len())
         });
     });
-    
+
     group.finish();
 }
 

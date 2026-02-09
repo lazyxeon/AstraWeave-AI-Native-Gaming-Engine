@@ -174,17 +174,29 @@ impl Track {
 
     /// Creates an animation track.
     pub fn animation(target: u32, clip: impl Into<String>, start: Time) -> Self {
-        Self::Animation { target, clip: clip.into(), start }
+        Self::Animation {
+            target,
+            clip: clip.into(),
+            start,
+        }
     }
 
     /// Creates an audio track.
     pub fn audio(clip: impl Into<String>, start: Time, volume: f32) -> Self {
-        Self::Audio { clip: clip.into(), start, volume }
+        Self::Audio {
+            clip: clip.into(),
+            start,
+            volume,
+        }
     }
 
     /// Creates an FX track.
     pub fn fx(name: impl Into<String>, start: Time, params: serde_json::Value) -> Self {
-        Self::Fx { name: name.into(), start, params }
+        Self::Fx {
+            name: name.into(),
+            start,
+            params,
+        }
     }
 }
 
@@ -192,11 +204,27 @@ impl std::fmt::Display for Track {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Camera { keyframes } => write!(f, "Track::Camera({} keyframes)", keyframes.len()),
-            Self::Animation { target, clip, start } => {
-                write!(f, "Track::Animation(target={}, clip=\"{}\", start={})", target, clip, start)
+            Self::Animation {
+                target,
+                clip,
+                start,
+            } => {
+                write!(
+                    f,
+                    "Track::Animation(target={}, clip=\"{}\", start={})",
+                    target, clip, start
+                )
             }
-            Self::Audio { clip, start, volume } => {
-                write!(f, "Track::Audio(clip=\"{}\", start={}, volume={:.2})", clip, start, volume)
+            Self::Audio {
+                clip,
+                start,
+                volume,
+            } => {
+                write!(
+                    f,
+                    "Track::Audio(clip=\"{}\", start={}, volume={:.2})",
+                    clip, start, volume
+                )
             }
             Self::Fx { name, start, .. } => {
                 write!(f, "Track::Fx(name=\"{}\", start={})", name, start)
@@ -216,7 +244,12 @@ pub struct CameraKey {
 impl CameraKey {
     /// Creates a new camera keyframe.
     pub fn new(t: Time, pos: (f32, f32, f32), look_at: (f32, f32, f32), fov_deg: f32) -> Self {
-        Self { t, pos, look_at, fov_deg }
+        Self {
+            t,
+            pos,
+            look_at,
+            fov_deg,
+        }
     }
 
     /// Creates a camera key at time 0.
@@ -275,8 +308,11 @@ impl CameraKey {
 
 impl std::fmt::Display for CameraKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "CameraKey(t={}, pos=({:.1},{:.1},{:.1}), fov={}°)",
-            self.t, self.pos.0, self.pos.1, self.pos.2, self.fov_deg)
+        write!(
+            f,
+            "CameraKey(t={}, pos=({:.1},{:.1},{:.1}), fov={}°)",
+            self.t, self.pos.0, self.pos.1, self.pos.2, self.fov_deg
+        )
     }
 }
 
@@ -346,7 +382,11 @@ impl Timeline {
 
     /// Adds an audio track.
     pub fn add_audio_track(&mut self, clip: impl Into<String>, start: Time, volume: f32) {
-        self.tracks.push(Track::Audio { clip: clip.into(), start, volume });
+        self.tracks.push(Track::Audio {
+            clip: clip.into(),
+            start,
+            volume,
+        });
     }
 
     /// Returns the total number of camera keyframes across all camera tracks.
@@ -363,8 +403,13 @@ impl Timeline {
 
 impl std::fmt::Display for Timeline {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Timeline(\"{}\", duration={}, {} tracks)", 
-            self.name, self.duration, self.tracks.len())
+        write!(
+            f,
+            "Timeline(\"{}\", duration={}, {} tracks)",
+            self.name,
+            self.duration,
+            self.tracks.len()
+        )
     }
 }
 
@@ -642,10 +687,10 @@ mod tests {
     fn sequencer_seek() {
         let mut seq = Sequencer::new();
         assert_eq!(seq.t.0, 0.0);
-        
+
         seq.seek(Time(5.5));
         assert_eq!(seq.t.0, 5.5);
-        
+
         seq.seek(Time(0.0));
         assert_eq!(seq.t.0, 0.0);
     }
@@ -654,11 +699,11 @@ mod tests {
     fn sequencer_out_of_range_error() {
         let tl = Timeline::new("short", 1.0);
         let mut seq = Sequencer::new();
-        
+
         // Step past the end
         let result = seq.step(2.0, &tl);
         assert!(result.is_err());
-        
+
         // Check error message
         let err = result.unwrap_err();
         let msg = format!("{}", err);
@@ -673,13 +718,13 @@ mod tests {
             clip: "walk_cycle".into(),
             start: Time(1.0),
         });
-        
+
         let mut seq = Sequencer::new();
-        
+
         // Before animation start
         let evs0 = seq.step(0.5, &tl).unwrap();
         assert!(evs0.is_empty());
-        
+
         // At animation start
         let evs1 = seq.step(0.6, &tl).unwrap();
         assert_eq!(evs1.len(), 1);
@@ -700,13 +745,13 @@ mod tests {
             start: Time(1.5),
             params: serde_json::json!({"scale": 2.0, "color": "red"}),
         });
-        
+
         let mut seq = Sequencer::new();
-        
+
         // Before FX trigger
         let evs0 = seq.step(1.0, &tl).unwrap();
         assert!(evs0.is_empty());
-        
+
         // At FX trigger
         let evs1 = seq.step(0.6, &tl).unwrap();
         assert_eq!(evs1.len(), 1);
@@ -742,10 +787,10 @@ mod tests {
             clip: "run".into(),
             start: Time(1.0),
         });
-        
+
         let mut seq = Sequencer::new();
         let evs = seq.step(1.5, &tl).unwrap();
-        
+
         // Should have all 3 events
         assert_eq!(evs.len(), 3);
     }
@@ -754,10 +799,10 @@ mod tests {
     fn timeline_empty_tracks() {
         let tl = Timeline::new("empty", 5.0);
         let mut seq = Sequencer::new();
-        
+
         let evs = seq.step(1.0, &tl).unwrap();
         assert!(evs.is_empty());
-        
+
         let evs = seq.step(2.0, &tl).unwrap();
         assert!(evs.is_empty());
     }
@@ -787,17 +832,17 @@ mod tests {
                 },
             ],
         });
-        
+
         let mut seq = Sequencer::new();
-        
+
         // Hit first keyframe
         let evs1 = seq.step(1.5, &tl).unwrap();
         assert_eq!(evs1.len(), 1);
-        
+
         // Hit second keyframe
         let evs2 = seq.step(1.0, &tl).unwrap();
         assert_eq!(evs2.len(), 1);
-        
+
         // Hit third keyframe
         let evs3 = seq.step(1.0, &tl).unwrap();
         assert_eq!(evs3.len(), 1);
@@ -809,7 +854,7 @@ mod tests {
         let t1 = Time(1.5);
         let t2 = Time(1.5);
         let t3 = Time(2.0);
-        
+
         assert_eq!(t1, t2);
         assert_ne!(t1, t3);
         assert_eq!(t1.0, 1.5);
@@ -835,7 +880,7 @@ mod tests {
             }],
         };
         assert_eq!(camera1, camera2);
-        
+
         let anim = Track::Animation {
             target: 1,
             clip: "test".into(),
@@ -858,7 +903,7 @@ mod tests {
             clip: "other".into(),
             volume: 0.5,
         };
-        
+
         assert_eq!(ev1, ev2);
         assert_ne!(ev1, ev3);
     }
@@ -867,15 +912,15 @@ mod tests {
     fn sequencer_boundary_conditions() {
         let tl = Timeline::new("boundary", 1.0);
         let mut seq = Sequencer::new();
-        
+
         // Step exactly to the end (should work due to 0.001 tolerance)
         let result = seq.step(1.0, &tl);
         assert!(result.is_ok());
-        
+
         // Step tiny bit more
         let result2 = seq.step(0.0005, &tl);
         assert!(result2.is_ok()); // Within tolerance
-        
+
         // Step definitely past
         let result3 = seq.step(0.01, &tl);
         assert!(result3.is_err());
@@ -909,7 +954,7 @@ mod tests {
             look_at: (0.0, 0.0, 0.0),
             fov_deg: 60.0,
         };
-        
+
         assert_eq!(key1, key2);
         assert_ne!(key1, key3);
     }
@@ -919,8 +964,18 @@ mod tests {
         let mut tl = Timeline::new("full", 10.0);
         tl.tracks.push(Track::Camera {
             keyframes: vec![
-                CameraKey { t: Time(0.0), pos: (0.0, 0.0, 0.0), look_at: (1.0, 0.0, 0.0), fov_deg: 60.0 },
-                CameraKey { t: Time(5.0), pos: (5.0, 0.0, 0.0), look_at: (6.0, 0.0, 0.0), fov_deg: 90.0 },
+                CameraKey {
+                    t: Time(0.0),
+                    pos: (0.0, 0.0, 0.0),
+                    look_at: (1.0, 0.0, 0.0),
+                    fov_deg: 60.0,
+                },
+                CameraKey {
+                    t: Time(5.0),
+                    pos: (5.0, 0.0, 0.0),
+                    look_at: (6.0, 0.0, 0.0),
+                    fov_deg: 90.0,
+                },
             ],
         });
         tl.tracks.push(Track::Animation {
@@ -938,7 +993,7 @@ mod tests {
             start: Time(3.0),
             params: serde_json::json!({"count": 1000}),
         });
-        
+
         let json = serde_json::to_string(&tl).unwrap();
         let restored: Timeline = serde_json::from_str(&json).unwrap();
         assert_eq!(tl, restored);
@@ -1100,7 +1155,7 @@ mod tests {
     fn test_track_is_camera() {
         let cam = Track::Camera { keyframes: vec![] };
         assert!(cam.is_camera());
-        
+
         let audio = Track::Audio {
             clip: "music".into(),
             start: Time(0.0),
@@ -1159,14 +1214,12 @@ mod tests {
     #[test]
     fn test_track_start_time() {
         let cam = Track::Camera {
-            keyframes: vec![
-                CameraKey {
-                    t: Time(1.0),
-                    pos: (0.0, 0.0, 0.0),
-                    look_at: (1.0, 0.0, 0.0),
-                    fov_deg: 60.0,
-                },
-            ],
+            keyframes: vec![CameraKey {
+                t: Time(1.0),
+                pos: (0.0, 0.0, 0.0),
+                look_at: (1.0, 0.0, 0.0),
+                fov_deg: 60.0,
+            }],
         };
         // Camera tracks return None for start_time
         assert!(cam.start_time().is_none());
@@ -1197,8 +1250,18 @@ mod tests {
     fn test_track_keyframe_count() {
         let cam = Track::Camera {
             keyframes: vec![
-                CameraKey { t: Time(0.0), pos: (0.0, 0.0, 0.0), look_at: (1.0, 0.0, 0.0), fov_deg: 60.0 },
-                CameraKey { t: Time(1.0), pos: (1.0, 0.0, 0.0), look_at: (2.0, 0.0, 0.0), fov_deg: 60.0 },
+                CameraKey {
+                    t: Time(0.0),
+                    pos: (0.0, 0.0, 0.0),
+                    look_at: (1.0, 0.0, 0.0),
+                    fov_deg: 60.0,
+                },
+                CameraKey {
+                    t: Time(1.0),
+                    pos: (1.0, 0.0, 0.0),
+                    look_at: (2.0, 0.0, 0.0),
+                    fov_deg: 60.0,
+                },
             ],
         };
         assert_eq!(cam.keyframe_count(), Some(2));
@@ -1214,9 +1277,12 @@ mod tests {
 
     #[test]
     fn test_track_factory_camera() {
-        let keyframes = vec![
-            CameraKey { t: Time(0.0), pos: (0.0, 0.0, 0.0), look_at: (1.0, 0.0, 0.0), fov_deg: 60.0 },
-        ];
+        let keyframes = vec![CameraKey {
+            t: Time(0.0),
+            pos: (0.0, 0.0, 0.0),
+            look_at: (1.0, 0.0, 0.0),
+            fov_deg: 60.0,
+        }];
         let track = Track::camera(keyframes.clone());
         assert!(track.is_camera());
         assert_eq!(track.keyframe_count(), Some(1));
@@ -1316,7 +1382,7 @@ mod tests {
     fn test_camera_key_lerp() {
         let key1 = CameraKey::new(Time(0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 60.0);
         let key2 = CameraKey::new(Time(2.0), (10.0, 10.0, 10.0), (10.0, 10.0, 10.0), 90.0);
-        
+
         let mid = key1.lerp(&key2, 0.5);
         assert!((mid.t.0 - 1.0).abs() < 0.0001);
         assert!((mid.pos.0 - 5.0).abs() < 0.0001);
@@ -1356,7 +1422,7 @@ mod tests {
     fn test_timeline_track_count() {
         let mut tl = Timeline::new("test", 10.0);
         assert_eq!(tl.track_count(), 0);
-        
+
         tl.tracks.push(Track::Camera { keyframes: vec![] });
         tl.tracks.push(Track::animation(1, "run", Time(0.0)));
         assert_eq!(tl.track_count(), 2);
@@ -1368,7 +1434,7 @@ mod tests {
         tl.tracks.push(Track::Camera { keyframes: vec![] });
         tl.tracks.push(Track::Camera { keyframes: vec![] });
         tl.tracks.push(Track::animation(1, "run", Time(0.0)));
-        
+
         assert_eq!(tl.camera_track_count(), 2);
     }
 
@@ -1378,7 +1444,7 @@ mod tests {
         tl.tracks.push(Track::audio("music", Time(0.0), 1.0));
         tl.tracks.push(Track::audio("sfx", Time(1.0), 0.5));
         tl.tracks.push(Track::Camera { keyframes: vec![] });
-        
+
         assert_eq!(tl.audio_track_count(), 2);
     }
 
@@ -1388,17 +1454,19 @@ mod tests {
         tl.tracks.push(Track::animation(1, "run", Time(0.0)));
         tl.tracks.push(Track::animation(2, "walk", Time(1.0)));
         tl.tracks.push(Track::audio("music", Time(0.0), 1.0));
-        
+
         assert_eq!(tl.animation_track_count(), 2);
     }
 
     #[test]
     fn test_timeline_fx_track_count() {
         let mut tl = Timeline::new("test", 10.0);
-        tl.tracks.push(Track::fx("explosion", Time(0.0), serde_json::json!({})));
-        tl.tracks.push(Track::fx("particles", Time(1.0), serde_json::json!({})));
+        tl.tracks
+            .push(Track::fx("explosion", Time(0.0), serde_json::json!({})));
+        tl.tracks
+            .push(Track::fx("particles", Time(1.0), serde_json::json!({})));
         tl.tracks.push(Track::Camera { keyframes: vec![] });
-        
+
         assert_eq!(tl.fx_track_count(), 2);
     }
 
@@ -1412,9 +1480,7 @@ mod tests {
     #[test]
     fn test_timeline_add_camera_track() {
         let mut tl = Timeline::new("test", 10.0);
-        let keyframes = vec![
-            CameraKey::at_origin(60.0),
-        ];
+        let keyframes = vec![CameraKey::at_origin(60.0)];
         tl.add_camera_track(keyframes);
         assert_eq!(tl.camera_track_count(), 1);
     }
@@ -1430,14 +1496,11 @@ mod tests {
     fn test_timeline_total_keyframes() {
         let mut tl = Timeline::new("test", 10.0);
         tl.tracks.push(Track::Camera {
-            keyframes: vec![
-                CameraKey::at_origin(60.0),
-                CameraKey::at_origin(60.0),
-            ],
+            keyframes: vec![CameraKey::at_origin(60.0), CameraKey::at_origin(60.0)],
         });
         tl.tracks.push(Track::animation(1, "run", Time(0.0)));
         tl.tracks.push(Track::audio("music", Time(0.0), 1.0));
-        
+
         // Only camera keyframes are counted by total_keyframes()
         assert_eq!(tl.total_keyframes(), 2);
     }
@@ -1474,13 +1537,22 @@ mod tests {
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
         assert_eq!(cam.type_name(), "CameraKey");
 
-        let anim = SequencerEvent::AnimStart { target: 1, clip: "run".into() };
+        let anim = SequencerEvent::AnimStart {
+            target: 1,
+            clip: "run".into(),
+        };
         assert_eq!(anim.type_name(), "AnimStart");
 
-        let audio = SequencerEvent::AudioPlay { clip: "music".into(), volume: 1.0 };
+        let audio = SequencerEvent::AudioPlay {
+            clip: "music".into(),
+            volume: 1.0,
+        };
         assert_eq!(audio.type_name(), "AudioPlay");
 
-        let fx = SequencerEvent::FxTrigger { name: "explosion".into(), params: serde_json::json!({}) };
+        let fx = SequencerEvent::FxTrigger {
+            name: "explosion".into(),
+            params: serde_json::json!({}),
+        };
         assert_eq!(fx.type_name(), "FxTrigger");
     }
 
@@ -1489,13 +1561,19 @@ mod tests {
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
         assert!(cam.is_camera_key());
 
-        let anim = SequencerEvent::AnimStart { target: 1, clip: "run".into() };
+        let anim = SequencerEvent::AnimStart {
+            target: 1,
+            clip: "run".into(),
+        };
         assert!(!anim.is_camera_key());
     }
 
     #[test]
     fn test_sequencer_event_is_anim_start() {
-        let anim = SequencerEvent::AnimStart { target: 1, clip: "run".into() };
+        let anim = SequencerEvent::AnimStart {
+            target: 1,
+            clip: "run".into(),
+        };
         assert!(anim.is_anim_start());
 
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
@@ -1504,7 +1582,10 @@ mod tests {
 
     #[test]
     fn test_sequencer_event_is_audio_play() {
-        let audio = SequencerEvent::AudioPlay { clip: "music".into(), volume: 1.0 };
+        let audio = SequencerEvent::AudioPlay {
+            clip: "music".into(),
+            volume: 1.0,
+        };
         assert!(audio.is_audio_play());
 
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
@@ -1513,7 +1594,10 @@ mod tests {
 
     #[test]
     fn test_sequencer_event_is_fx_trigger() {
-        let fx = SequencerEvent::FxTrigger { name: "explosion".into(), params: serde_json::json!({}) };
+        let fx = SequencerEvent::FxTrigger {
+            name: "explosion".into(),
+            params: serde_json::json!({}),
+        };
         assert!(fx.is_fx_trigger());
 
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
@@ -1524,18 +1608,24 @@ mod tests {
     fn test_sequencer_event_as_camera_key() {
         let key = CameraKey::at_origin(60.0);
         let ev = SequencerEvent::CameraKey(key.clone());
-        
+
         let retrieved = ev.as_camera_key();
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().t, key.t);
 
-        let audio = SequencerEvent::AudioPlay { clip: "music".into(), volume: 1.0 };
+        let audio = SequencerEvent::AudioPlay {
+            clip: "music".into(),
+            volume: 1.0,
+        };
         assert!(audio.as_camera_key().is_none());
     }
 
     #[test]
     fn test_sequencer_event_animation_clip() {
-        let anim = SequencerEvent::AnimStart { target: 1, clip: "run".into() };
+        let anim = SequencerEvent::AnimStart {
+            target: 1,
+            clip: "run".into(),
+        };
         assert_eq!(anim.animation_clip(), Some("run"));
 
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
@@ -1544,7 +1634,10 @@ mod tests {
 
     #[test]
     fn test_sequencer_event_audio_clip() {
-        let audio = SequencerEvent::AudioPlay { clip: "music.ogg".into(), volume: 1.0 };
+        let audio = SequencerEvent::AudioPlay {
+            clip: "music.ogg".into(),
+            volume: 1.0,
+        };
         assert_eq!(audio.audio_clip(), Some("music.ogg"));
 
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));
@@ -1553,7 +1646,10 @@ mod tests {
 
     #[test]
     fn test_sequencer_event_fx_name() {
-        let fx = SequencerEvent::FxTrigger { name: "explosion".into(), params: serde_json::json!({}) };
+        let fx = SequencerEvent::FxTrigger {
+            name: "explosion".into(),
+            params: serde_json::json!({}),
+        };
         assert_eq!(fx.fx_name(), Some("explosion"));
 
         let cam = SequencerEvent::CameraKey(CameraKey::at_origin(60.0));

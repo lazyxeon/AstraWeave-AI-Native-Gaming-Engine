@@ -10,9 +10,7 @@
 
 #![allow(dead_code, unused_imports)]
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{HashMap, HashSet};
 use std::hint::black_box as std_black_box;
 
@@ -95,9 +93,8 @@ impl NetworkTransform {
     }
 
     fn delta(&self, other: &Self) -> Option<TransformDelta> {
-        let pos_diff = (self.x - other.x).abs()
-            + (self.y - other.y).abs()
-            + (self.z - other.z).abs();
+        let pos_diff =
+            (self.x - other.x).abs() + (self.y - other.y).abs() + (self.z - other.z).abs();
         let rot_diff = (self.rot_x - other.rot_x).abs()
             + (self.rot_y - other.rot_y).abs()
             + (self.rot_z - other.rot_z).abs()
@@ -538,8 +535,7 @@ fn bench_entity_serialization(c: &mut Criterion) {
             &entities,
             |b, entities| {
                 b.iter(|| {
-                    let bytes: Vec<Vec<u8>> =
-                        entities.iter().map(|e| e.serialize_full()).collect();
+                    let bytes: Vec<Vec<u8>> = entities.iter().map(|e| e.serialize_full()).collect();
                     std_black_box(bytes)
                 })
             },
@@ -659,9 +655,7 @@ fn bench_interest_management(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("get_relevant", entity_count),
             &manager,
-            |b, manager| {
-                b.iter(|| std_black_box(manager.get_relevant_entities(0)))
-            },
+            |b, manager| b.iter(|| std_black_box(manager.get_relevant_entities(0))),
         );
     }
 

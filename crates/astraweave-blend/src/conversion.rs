@@ -130,13 +130,11 @@ impl ConversionJob {
         // Check cache first
         if let Some(ref mut c) = cache {
             if self.options.cache.enabled {
-                match c
-                    .lookup(&self.source_path, &self.options, &self.installation.version)
-                {
+                match c.lookup(&self.source_path, &self.options, &self.installation.version) {
                     Ok(CacheLookup::Hit { output_path, entry }) => {
                         info!("Cache hit for: {}", self.source_path.display());
                         self.progress.set_stage(ConversionStage::Completed);
-                        
+
                         return Ok(ConversionResult {
                             output_path,
                             output_size: entry.output_size,
@@ -218,9 +216,11 @@ impl ConversionJob {
         let export_result = self.parse_blender_result(&result_path).await?;
 
         if !export_result.success {
-            let error_msg = export_result.error.unwrap_or_else(|| "Unknown error".to_string());
+            let error_msg = export_result
+                .error
+                .unwrap_or_else(|| "Unknown error".to_string());
             let traceback = export_result.traceback.unwrap_or_default();
-            
+
             return Err(BlendError::ConversionFailed {
                 message: error_msg,
                 exit_code: None,
@@ -239,13 +239,18 @@ impl ConversionJob {
             })?;
 
         // Collect texture files
-        let texture_files = self.collect_texture_files(self.output_path.parent().unwrap_or(Path::new(".")), &source_hash).await;
+        let texture_files = self
+            .collect_texture_files(
+                self.output_path.parent().unwrap_or(Path::new(".")),
+                &source_hash,
+            )
+            .await;
 
         let conversion_duration = start_time.elapsed();
 
         let stdout = self.stdout_buffer.lock().await.clone();
         let stderr = self.stderr_buffer.lock().await.clone();
-        
+
         // Extract linked libraries from Blender output
         let linked_libraries = self.extract_linked_libraries(&stdout, &stderr);
 
@@ -274,8 +279,16 @@ impl ConversionJob {
             blender_version: self.installation.version.to_string(),
             texture_files,
             linked_libraries,
-            stdout: if stdout.is_empty() { None } else { Some(stdout) },
-            stderr: if stderr.is_empty() { None } else { Some(stderr) },
+            stdout: if stdout.is_empty() {
+                None
+            } else {
+                Some(stdout)
+            },
+            stderr: if stderr.is_empty() {
+                None
+            } else {
+                Some(stderr)
+            },
         })
     }
 
@@ -304,7 +317,8 @@ impl ConversionJob {
 
         // Set thread count
         if self.options.process.threads > 0 {
-            cmd.arg("--threads").arg(self.options.process.threads.to_string());
+            cmd.arg("--threads")
+                .arg(self.options.process.threads.to_string());
         }
 
         // Set working directory
@@ -318,10 +332,12 @@ impl ConversionJob {
         );
 
         // Spawn process
-        let mut child = cmd.spawn().map_err(|e| BlendError::BlenderExecutionFailed {
-            path: self.installation.executable_path.clone(),
-            reason: format!("Failed to spawn Blender: {}", e),
-        })?;
+        let mut child = cmd
+            .spawn()
+            .map_err(|e| BlendError::BlenderExecutionFailed {
+                path: self.installation.executable_path.clone(),
+                reason: format!("Failed to spawn Blender: {}", e),
+            })?;
 
         // Capture output streams
         let stdout = child.stdout.take();
@@ -341,7 +357,8 @@ impl ConversionJob {
                         progress.set_stage(ConversionStage::LoadingBlendFile);
                     } else if line.contains("Processing linked") {
                         progress.set_stage(ConversionStage::ProcessingLinkedLibraries);
-                    } else if line.contains("Exporting meshes") || line.contains("ExportingMeshes") {
+                    } else if line.contains("Exporting meshes") || line.contains("ExportingMeshes")
+                    {
                         progress.set_stage(ConversionStage::ExportingMeshes);
                     } else if line.contains("Export complete") {
                         progress.set_stage(ConversionStage::WritingOutput);
@@ -367,7 +384,9 @@ impl ConversionJob {
 
         // Wait with timeout
         let process_timeout = self.options.process.timeout;
-        let wait_result = self.wait_with_cancellation(&mut child, process_timeout).await;
+        let wait_result = self
+            .wait_with_cancellation(&mut child, process_timeout)
+            .await;
 
         // Ensure output tasks complete
         let _ = tokio::join!(stdout_task, stderr_task);
@@ -382,7 +401,11 @@ impl ConversionJob {
                         message: format!("Blender exited with status: {}", status),
                         exit_code: status.code(),
                         stderr: stderr.clone(),
-                        blender_output: if stderr.is_empty() { None } else { Some(stderr) },
+                        blender_output: if stderr.is_empty() {
+                            None
+                        } else {
+                            Some(stderr)
+                        },
                     })
                 }
             }
@@ -446,13 +469,13 @@ impl ConversionJob {
             });
         }
 
-        let content = tokio::fs::read_to_string(result_path)
-            .await
-            .map_err(|e| BlendError::FileReadError {
+        let content = tokio::fs::read_to_string(result_path).await.map_err(|e| {
+            BlendError::FileReadError {
                 path: result_path.to_path_buf(),
                 message: format!("Failed to read result: {}", e),
                 source: e,
-            })?;
+            }
+        })?;
 
         let result: BlenderExportResult =
             serde_json::from_str(&content).map_err(|e| BlendError::ConversionFailed {
@@ -468,7 +491,7 @@ impl ConversionJob {
     /// Collects generated texture files.
     async fn collect_texture_files(&self, output_dir: &Path, source_hash: &str) -> Vec<PathBuf> {
         let mut textures = Vec::new();
-        
+
         if let Ok(mut entries) = tokio::fs::read_dir(output_dir).await {
             while let Ok(Some(entry)) = entries.next_entry().await {
                 let path = entry.path();
@@ -488,21 +511,21 @@ impl ConversionJob {
     }
 
     /// Extracts linked library paths from Blender output.
-    /// 
+    ///
     /// Parses stdout/stderr for library loading messages like:
     /// - "Read library: '/path/to/library.blend'"
     /// - "lib_link_main: library loaded: '/path/to/library.blend'"
     fn extract_linked_libraries(&self, stdout: &str, stderr: &str) -> Vec<PathBuf> {
         use std::collections::HashSet;
-        
+
         let mut libraries = HashSet::new();
-        
+
         // Patterns that indicate linked library loading in Blender output
         // Blender logs library loading with messages like:
         // "Read library:  '/path/to/lib.blend'"
         // "lib_link_main: 'path/to/lib.blend'"
         let combined_output = format!("{}\n{}", stdout, stderr);
-        
+
         for line in combined_output.lines() {
             // Pattern 1: "Read library: '/path/to/file.blend'"
             if line.contains("Read library:") || line.contains("lib_link_main:") {
@@ -527,7 +550,7 @@ impl ConversionJob {
                 }
             }
         }
-        
+
         libraries.into_iter().collect()
     }
 }
@@ -577,9 +600,11 @@ impl ConversionJobBuilder {
 
     /// Builds the conversion job.
     pub fn build(self) -> BlendResult<ConversionJob> {
-        let source_path = self.source_path.ok_or_else(|| BlendError::ConfigurationError {
-            message: "Source path not specified".to_string(),
-        })?;
+        let source_path = self
+            .source_path
+            .ok_or_else(|| BlendError::ConfigurationError {
+                message: "Source path not specified".to_string(),
+            })?;
 
         let output_path = self.output_path.unwrap_or_else(|| {
             let stem = source_path
@@ -589,9 +614,11 @@ impl ConversionJobBuilder {
             source_path.with_file_name(format!("{}.{}", stem, self.options.format.extension()))
         });
 
-        let installation = self.installation.ok_or_else(|| BlendError::BlenderNotFound {
-            searched_paths: Vec::new(),
-        })?;
+        let installation = self
+            .installation
+            .ok_or_else(|| BlendError::BlenderNotFound {
+                searched_paths: Vec::new(),
+            })?;
 
         Ok(ConversionJob::new(
             source_path,
@@ -611,8 +638,8 @@ impl Default for ConversionJobBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::version::BlenderVersion;
     use crate::discovery::DiscoveryMethod;
+    use crate::version::BlenderVersion;
 
     fn mock_installation() -> BlenderInstallation {
         BlenderInstallation {
@@ -693,12 +720,14 @@ mod tests {
             ConversionOptions::default(),
             mock_installation(),
         );
-        
+
         let stdout = "Info: Read library:  '/path/to/library.blend', './meshes.blend'";
         let stderr = "";
-        
+
         let libs = job.extract_linked_libraries(stdout, stderr);
-        assert!(libs.iter().any(|p| p.to_string_lossy().contains("library.blend")));
+        assert!(libs
+            .iter()
+            .any(|p| p.to_string_lossy().contains("library.blend")));
     }
 
     #[test]
@@ -709,12 +738,14 @@ mod tests {
             ConversionOptions::default(),
             mock_installation(),
         );
-        
+
         let stdout = "";
         let stderr = r#"lib_link_main: "/assets/materials.blend" loaded successfully"#;
-        
+
         let libs = job.extract_linked_libraries(stdout, stderr);
-        assert!(libs.iter().any(|p| p.to_string_lossy().contains("materials.blend")));
+        assert!(libs
+            .iter()
+            .any(|p| p.to_string_lossy().contains("materials.blend")));
     }
 
     #[test]
@@ -725,10 +756,10 @@ mod tests {
             ConversionOptions::default(),
             mock_installation(),
         );
-        
+
         let stdout = "Info: Exporting scene\nInfo: Export complete";
         let stderr = "";
-        
+
         let libs = job.extract_linked_libraries(stdout, stderr);
         assert!(libs.is_empty());
     }

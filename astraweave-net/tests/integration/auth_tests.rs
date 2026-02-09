@@ -36,7 +36,11 @@ fn test_client_hello_without_token() {
     let parsed: Msg = serde_json::from_str(&json).unwrap();
 
     match parsed {
-        Msg::ClientHello { name, token, policy } => {
+        Msg::ClientHello {
+            name,
+            token,
+            policy,
+        } => {
             assert_eq!(name, "test_player");
             assert!(token.is_none());
             assert!(policy.is_none());
@@ -257,7 +261,10 @@ fn test_client_propose_plan_serialization() {
     let parsed: Msg = serde_json::from_str(&json).unwrap();
 
     match parsed {
-        Msg::ClientProposePlan { actor_id, intent: parsed_intent } => {
+        Msg::ClientProposePlan {
+            actor_id,
+            intent: parsed_intent,
+        } => {
             assert_eq!(actor_id, 123);
             assert_eq!(parsed_intent.plan_id, "test-plan");
         }

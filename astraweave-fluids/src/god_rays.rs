@@ -191,7 +191,7 @@ impl LightShaft {
         // Project point onto ray
         let to_point = point - self.start;
         let t = to_point.dot(self.direction);
-        
+
         // Check if within ray length
         if t < 0.0 || t > (self.end - self.start).length() {
             return false;
@@ -200,7 +200,7 @@ impl LightShaft {
         // Check distance from ray axis
         let closest = self.start + self.direction * t;
         let dist = (point - closest).length();
-        
+
         dist <= self.width
     }
 
@@ -212,7 +212,7 @@ impl LightShaft {
 
         let to_point = point - self.start;
         let t = to_point.dot(self.direction) / (self.end - self.start).length();
-        
+
         // Distance falloff from ray axis
         let closest = self.start + self.direction * t * (self.end - self.start).length();
         let dist = (point - closest).length();
@@ -480,10 +480,10 @@ mod tests {
 
         // Tropical should be brighter than murky
         assert!(tropical.intensity > murky.intensity);
-        
+
         // Cinematic should have more samples
         assert!(cinematic.num_samples > low.num_samples);
-        
+
         // Low quality should have fewer samples
         assert!(low.num_samples < tropical.num_samples);
     }
@@ -491,13 +491,7 @@ mod tests {
     #[test]
     fn test_uniforms_creation() {
         let config = GodRaysConfig::default();
-        let uniforms = GodRaysUniforms::from_config(
-            &config,
-            Vec3::NEG_Y,
-            10.0,
-            true,
-            1.0,
-        );
+        let uniforms = GodRaysUniforms::from_config(&config, Vec3::NEG_Y, 10.0, true, 1.0);
 
         assert_eq!(uniforms.light_dir_intensity[3], config.intensity);
         assert_eq!(uniforms.surface_params[0], 10.0);
@@ -511,13 +505,7 @@ mod tests {
 
     #[test]
     fn test_light_shaft_creation() {
-        let shaft = LightShaft::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::NEG_Y,
-            50.0,
-            1.0,
-            2.0,
-        );
+        let shaft = LightShaft::new(Vec3::new(0.0, 10.0, 0.0), Vec3::NEG_Y, 50.0, 1.0, 2.0);
 
         assert_eq!(shaft.start.y, 10.0);
         assert_eq!(shaft.end.y, -40.0);
@@ -526,33 +514,21 @@ mod tests {
 
     #[test]
     fn test_light_shaft_contains_point() {
-        let shaft = LightShaft::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::NEG_Y,
-            50.0,
-            1.0,
-            2.0,
-        );
+        let shaft = LightShaft::new(Vec3::new(0.0, 10.0, 0.0), Vec3::NEG_Y, 50.0, 1.0, 2.0);
 
         // Point on axis should be contained
         assert!(shaft.contains_point(Vec3::new(0.0, 5.0, 0.0)));
-        
+
         // Point far from axis should not be contained
         assert!(!shaft.contains_point(Vec3::new(10.0, 5.0, 0.0)));
-        
+
         // Point above start should not be contained
         assert!(!shaft.contains_point(Vec3::new(0.0, 20.0, 0.0)));
     }
 
     #[test]
     fn test_light_shaft_intensity() {
-        let shaft = LightShaft::new(
-            Vec3::new(0.0, 10.0, 0.0),
-            Vec3::NEG_Y,
-            50.0,
-            1.0,
-            2.0,
-        );
+        let shaft = LightShaft::new(Vec3::new(0.0, 10.0, 0.0), Vec3::NEG_Y, 50.0, 1.0, 2.0);
 
         let intensity_top = shaft.intensity_at(Vec3::new(0.0, 9.0, 0.0), 0.96);
         let intensity_bottom = shaft.intensity_at(Vec3::new(0.0, -30.0, 0.0), 0.96);
@@ -564,7 +540,7 @@ mod tests {
     #[test]
     fn test_system_creation() {
         let system = GodRaysSystem::new(GodRaysConfig::default());
-        
+
         assert_eq!(system.shaft_count(), 0);
         assert_eq!(system.surface_height(), 0.0);
     }
@@ -572,9 +548,9 @@ mod tests {
     #[test]
     fn test_system_light_direction() {
         let mut system = GodRaysSystem::new(GodRaysConfig::default());
-        
+
         system.set_light_direction(Vec3::new(1.0, -1.0, 0.0));
-        
+
         let dir = system.light_direction();
         assert!((dir.length() - 1.0).abs() < 0.001); // Normalized
     }
@@ -604,7 +580,7 @@ mod tests {
         let mut system = GodRaysSystem::new(GodRaysConfig::default());
         system.set_surface_height(10.0);
         system.generate_shafts(Vec3::new(0.0, 5.0, 0.0), 20.0);
-        
+
         system.clear_shafts();
         assert_eq!(system.shaft_count(), 0);
     }
@@ -613,16 +589,16 @@ mod tests {
     fn test_system_update() {
         let mut system = GodRaysSystem::new(GodRaysConfig::default());
         let initial_time = system.time;
-        
+
         system.update(0.5);
-        
+
         assert!(system.time > initial_time);
     }
 
     #[test]
     fn test_system_sample_above_water() {
         let system = GodRaysSystem::new(GodRaysConfig::default());
-        
+
         // Sample above water should return 0
         let sample = system.sample(Vec3::new(0.0, 10.0, 0.0));
         assert_eq!(sample, 0.0);

@@ -37,38 +37,38 @@ pub struct ViscosityParamsGpu {
     pub dt: f32,
     pub smoothing_radius: f32,
     pub particle_mass: f32,
-    
+
     // Base viscosity
     pub base_viscosity: f32,
     pub cell_size: f32,
     pub grid_width: u32,
     pub grid_height: u32,
-    
+
     // Grid and feature flags
     pub grid_depth: u32,
     pub enable_non_newtonian: u32,
     pub enable_temperature: u32,
     pub iteration: u32,
-    
+
     // Non-Newtonian parameters (Carreau/Cross/Power-Law)
-    pub non_newtonian_type: u32,  // 0=Newtonian, 1=PowerLaw, 2=Carreau, 3=Cross, 4=Bingham
-    pub viscosity_0: f32,         // Zero-shear viscosity
-    pub viscosity_inf: f32,       // Infinite-shear viscosity
-    pub power_index: f32,         // n
-    
-    pub lambda: f32,              // Relaxation time (Carreau)
-    pub yield_stress: f32,        // τ_y (Bingham)
-    pub cross_exponent: f32,      // m (Cross model)
+    pub non_newtonian_type: u32, // 0=Newtonian, 1=PowerLaw, 2=Carreau, 3=Cross, 4=Bingham
+    pub viscosity_0: f32,        // Zero-shear viscosity
+    pub viscosity_inf: f32,      // Infinite-shear viscosity
+    pub power_index: f32,        // n
+
+    pub lambda: f32,         // Relaxation time (Carreau)
+    pub yield_stress: f32,   // τ_y (Bingham)
+    pub cross_exponent: f32, // m (Cross model)
     _pad0: f32,
-    
+
     // Temperature parameters
-    pub temp_model_type: u32,     // 0=Constant, 1=Arrhenius, 2=VTF
-    pub reference_temp: f32,      // T_ref (Kelvin)
-    pub activation_energy: f32,   // E_a (J/mol)
+    pub temp_model_type: u32,   // 0=Constant, 1=Arrhenius, 2=VTF
+    pub reference_temp: f32,    // T_ref (Kelvin)
+    pub activation_energy: f32, // E_a (J/mol)
     _pad1: f32,
-    
-    pub temp_coefficient: f32,    // B (VTF)
-    pub vogel_temp: f32,          // T₀ (VTF)
+
+    pub temp_coefficient: f32, // B (VTF)
+    pub vogel_temp: f32,       // T₀ (VTF)
     _pad2: f32,
     _pad3: f32,
 }
@@ -194,7 +194,7 @@ impl ViscosityGpuConfig {
             ..Default::default()
         }
     }
-    
+
     /// Create config for oil
     pub fn oil() -> Self {
         Self {
@@ -202,7 +202,7 @@ impl ViscosityGpuConfig {
             ..Default::default()
         }
     }
-    
+
     /// Create config for honey
     pub fn honey() -> Self {
         Self {
@@ -212,7 +212,7 @@ impl ViscosityGpuConfig {
             ..Default::default()
         }
     }
-    
+
     /// Create config for shear-thinning fluid (ketchup, paint)
     pub fn shear_thinning() -> Self {
         Self {
@@ -225,7 +225,7 @@ impl ViscosityGpuConfig {
             ..Default::default()
         }
     }
-    
+
     /// Create config for shear-thickening fluid (cornstarch)
     pub fn shear_thickening() -> Self {
         Self {
@@ -236,9 +236,14 @@ impl ViscosityGpuConfig {
             ..Default::default()
         }
     }
-    
+
     /// Convert to GPU uniform buffer
-    pub fn to_gpu_params(&self, particle_count: u32, grid_dims: [u32; 3], cell_size: f32) -> ViscosityParamsGpu {
+    pub fn to_gpu_params(
+        &self,
+        particle_count: u32,
+        grid_dims: [u32; 3],
+        cell_size: f32,
+    ) -> ViscosityParamsGpu {
         ViscosityParamsGpu {
             particle_count,
             dt: self.dt,
@@ -292,7 +297,7 @@ pub struct ViscositySolveResult {
 }
 
 /// Handle for the GPU viscosity pipeline
-/// 
+///
 /// This struct manages all GPU resources for viscosity computation.
 /// It supports three methods:
 /// - XSPH: Simple velocity smoothing (for games)
@@ -326,43 +331,44 @@ impl ViscosityGpuSystem {
             initialized: false,
         }
     }
-    
+
     /// Get current configuration
     pub fn config(&self) -> &ViscosityGpuConfig {
         &self.config
     }
-    
+
     /// Update configuration
     pub fn set_config(&mut self, config: ViscosityGpuConfig) {
         self.config = config;
     }
-    
+
     /// Get last solve result
     pub fn last_result(&self) -> &ViscositySolveResult {
         &self.last_result
     }
-    
+
     /// Set particle count for workgroup dispatch calculation
     pub fn set_particle_count(&mut self, count: u32) {
         self.particle_count = count;
     }
-    
+
     /// Set grid dimensions
     pub fn set_grid_dims(&mut self, dims: [u32; 3], cell_size: f32) {
         self.grid_dims = dims;
         self.cell_size = cell_size;
     }
-    
+
     /// Compute workgroup dispatch count
     pub fn workgroup_count(&self) -> u32 {
         self.particle_count.div_ceil(VISCOSITY_WORKGROUP_SIZE)
     }
-    
+
     /// Generate GPU params for shader
     pub fn gpu_params(&self) -> ViscosityParamsGpu {
-        self.config.to_gpu_params(self.particle_count, self.grid_dims, self.cell_size)
+        self.config
+            .to_gpu_params(self.particle_count, self.grid_dims, self.cell_size)
     }
-    
+
     /// Get the shader entry point name for current solver
     pub fn shader_entry_point(&self) -> &'static str {
         match self.config.solver {
@@ -371,12 +377,12 @@ impl ViscosityGpuSystem {
             ViscositySolver::ImplicitJacobi => "iterate_implicit_viscosity",
         }
     }
-    
+
     /// Check if implicit solver is being used
     pub fn is_implicit(&self) -> bool {
         matches!(self.config.solver, ViscositySolver::ImplicitJacobi)
     }
-    
+
     /// Get number of passes needed for implicit solver
     pub fn implicit_passes(&self) -> u32 {
         if self.is_implicit() {
@@ -394,14 +400,14 @@ impl ViscosityGpuSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_viscosity_params_gpu_size() {
         // Ensure struct size matches shader expectations (must be 16-byte aligned)
         let size = std::mem::size_of::<ViscosityParamsGpu>();
         assert_eq!(size % 16, 0, "ViscosityParamsGpu must be 16-byte aligned");
     }
-    
+
     #[test]
     fn test_viscosity_params_gpu_default() {
         let params = ViscosityParamsGpu::default();
@@ -409,21 +415,21 @@ mod tests {
         assert!((params.dt - 0.001).abs() < 1e-6);
         assert!((params.base_viscosity - 0.001).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_config_water() {
         let config = ViscosityGpuConfig::water();
         assert!((config.base_viscosity - 0.001).abs() < 1e-6);
         assert!(!config.enable_non_newtonian);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_config_honey() {
         let config = ViscosityGpuConfig::honey();
         assert!(config.base_viscosity > 1.0);
         assert!(matches!(config.solver, ViscositySolver::ImplicitJacobi));
     }
-    
+
     #[test]
     fn test_viscosity_gpu_config_shear_thinning() {
         let config = ViscosityGpuConfig::shear_thinning();
@@ -431,14 +437,14 @@ mod tests {
         assert_eq!(config.non_newtonian_type, 2); // Carreau
         assert!(config.power_index < 1.0);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_config_shear_thickening() {
         let config = ViscosityGpuConfig::shear_thickening();
         assert!(config.enable_non_newtonian);
         assert!(config.power_index > 1.0);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_config_to_params() {
         let config = ViscosityGpuConfig::water();
@@ -447,7 +453,7 @@ mod tests {
         assert_eq!(params.grid_width, 32);
         assert!((params.cell_size - 1.2).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_system_creation() {
         let config = ViscosityGpuConfig::default();
@@ -455,79 +461,79 @@ mod tests {
         assert_eq!(system.particle_count, 0);
         assert!(!system.initialized);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_system_workgroup_count() {
         let config = ViscosityGpuConfig::default();
         let mut system = ViscosityGpuSystem::new(config);
-        
+
         system.set_particle_count(1000);
         let count = system.workgroup_count();
         assert_eq!(count, (1000 + 63) / 64);
-        
+
         system.set_particle_count(64);
         assert_eq!(system.workgroup_count(), 1);
-        
+
         system.set_particle_count(65);
         assert_eq!(system.workgroup_count(), 2);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_system_shader_entry_points() {
         let mut config = ViscosityGpuConfig::default();
-        
+
         config.solver = ViscositySolver::XSPH;
         let system = ViscosityGpuSystem::new(config.clone());
         assert_eq!(system.shader_entry_point(), "compute_xsph_viscosity");
-        
+
         config.solver = ViscositySolver::Morris;
         let system = ViscosityGpuSystem::new(config.clone());
         assert_eq!(system.shader_entry_point(), "compute_morris_viscosity");
-        
+
         config.solver = ViscositySolver::ImplicitJacobi;
         let system = ViscosityGpuSystem::new(config);
         assert_eq!(system.shader_entry_point(), "iterate_implicit_viscosity");
     }
-    
+
     #[test]
     fn test_viscosity_gpu_system_implicit_passes() {
         let mut config = ViscosityGpuConfig::default();
         config.max_iterations = 15;
-        
+
         config.solver = ViscositySolver::Morris;
         let system = ViscosityGpuSystem::new(config.clone());
         assert_eq!(system.implicit_passes(), 1);
         assert!(!system.is_implicit());
-        
+
         config.solver = ViscositySolver::ImplicitJacobi;
         let system = ViscosityGpuSystem::new(config);
         assert_eq!(system.implicit_passes(), 15);
         assert!(system.is_implicit());
     }
-    
+
     #[test]
     fn test_viscosity_solve_result_default() {
         let result = ViscositySolveResult::default();
         assert_eq!(result.iterations, 0);
         assert_eq!(result.residual, 0.0);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_system_config_access() {
         let config = ViscosityGpuConfig::oil();
         let mut system = ViscosityGpuSystem::new(config);
-        
+
         assert!((system.config().base_viscosity - 0.05).abs() < 1e-6);
-        
+
         system.set_config(ViscosityGpuConfig::honey());
         assert!(system.config().base_viscosity > 1.0);
     }
-    
+
     #[test]
     fn test_viscosity_gpu_system_grid_dims() {
         let config = ViscosityGpuConfig::default();
         let mut system = ViscosityGpuSystem::new(config);
-        
+
         system.set_grid_dims([64, 64, 64], 0.5);
         let params = system.gpu_params();
         assert_eq!(params.grid_width, 64);

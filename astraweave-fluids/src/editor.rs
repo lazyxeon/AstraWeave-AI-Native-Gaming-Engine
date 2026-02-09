@@ -151,12 +151,12 @@ impl QualityPreset {
             Self::Ultra => 100_000,
         }
     }
-    
+
     /// Get all quality presets for UI dropdown
     pub fn all_presets() -> &'static [QualityPreset] {
         &[Self::Low, Self::Medium, Self::High, Self::Ultra]
     }
-    
+
     /// Get recommended god ray samples
     pub fn recommended_god_ray_samples(&self) -> u32 {
         match self {
@@ -166,7 +166,7 @@ impl QualityPreset {
             Self::Ultra => 48,
         }
     }
-    
+
     /// Get recommended reflection resolution
     pub fn recommended_reflection_resolution(&self) -> u32 {
         match self {
@@ -205,7 +205,7 @@ impl ConfigHistory {
             current: initial,
         }
     }
-    
+
     /// Create history with custom max size
     pub fn with_max_size(initial: FluidEditorConfig, max_size: usize) -> Self {
         Self {
@@ -215,19 +215,19 @@ impl ConfigHistory {
             current: initial,
         }
     }
-    
+
     /// Push new state (clears redo history)
     pub fn push(&mut self, state: FluidEditorConfig) {
         self.past.push_back(self.current.clone());
         self.current = state;
         self.future.clear();
-        
+
         // Trim old history
         while self.past.len() > self.max_size {
             self.past.pop_front();
         }
     }
-    
+
     /// Undo to previous state
     pub fn undo(&mut self) -> Option<FluidEditorConfig> {
         if let Some(previous) = self.past.pop_back() {
@@ -238,7 +238,7 @@ impl ConfigHistory {
             None
         }
     }
-    
+
     /// Redo to next state
     pub fn redo(&mut self) -> Option<FluidEditorConfig> {
         if let Some(next) = self.future.pop_front() {
@@ -249,32 +249,32 @@ impl ConfigHistory {
             None
         }
     }
-    
+
     /// Check if undo is available
     pub fn can_undo(&self) -> bool {
         !self.past.is_empty()
     }
-    
+
     /// Check if redo is available
     pub fn can_redo(&self) -> bool {
         !self.future.is_empty()
     }
-    
+
     /// Get current state
     pub fn current(&self) -> &FluidEditorConfig {
         &self.current
     }
-    
+
     /// Get number of undo steps available
     pub fn undo_count(&self) -> usize {
         self.past.len()
     }
-    
+
     /// Get number of redo steps available
     pub fn redo_count(&self) -> usize {
         self.future.len()
     }
-    
+
     /// Clear all history
     pub fn clear(&mut self) {
         self.past.clear();
@@ -300,7 +300,7 @@ impl FluidAABB {
     pub fn new(min: [f32; 3], max: [f32; 3]) -> Self {
         Self { min, max }
     }
-    
+
     /// Create AABB from center and half-extents
     pub fn from_center_extents(center: [f32; 3], half_extents: [f32; 3]) -> Self {
         Self {
@@ -316,7 +316,7 @@ impl FluidAABB {
             ],
         }
     }
-    
+
     /// Get center of AABB
     pub fn center(&self) -> [f32; 3] {
         [
@@ -325,7 +325,7 @@ impl FluidAABB {
             (self.min[2] + self.max[2]) * 0.5,
         ]
     }
-    
+
     /// Get size (dimensions)
     pub fn size(&self) -> [f32; 3] {
         [
@@ -334,27 +334,33 @@ impl FluidAABB {
             self.max[2] - self.min[2],
         ]
     }
-    
+
     /// Get volume
     pub fn volume(&self) -> f32 {
         let s = self.size();
         s[0] * s[1] * s[2]
     }
-    
+
     /// Check if point is inside AABB
     pub fn contains_point(&self, point: [f32; 3]) -> bool {
-        point[0] >= self.min[0] && point[0] <= self.max[0] &&
-        point[1] >= self.min[1] && point[1] <= self.max[1] &&
-        point[2] >= self.min[2] && point[2] <= self.max[2]
+        point[0] >= self.min[0]
+            && point[0] <= self.max[0]
+            && point[1] >= self.min[1]
+            && point[1] <= self.max[1]
+            && point[2] >= self.min[2]
+            && point[2] <= self.max[2]
     }
-    
+
     /// Check if two AABBs overlap
     pub fn overlaps(&self, other: &FluidAABB) -> bool {
-        self.min[0] <= other.max[0] && self.max[0] >= other.min[0] &&
-        self.min[1] <= other.max[1] && self.max[1] >= other.min[1] &&
-        self.min[2] <= other.max[2] && self.max[2] >= other.min[2]
+        self.min[0] <= other.max[0]
+            && self.max[0] >= other.min[0]
+            && self.min[1] <= other.max[1]
+            && self.max[1] >= other.min[1]
+            && self.min[2] <= other.max[2]
+            && self.max[2] >= other.min[2]
     }
-    
+
     /// Expand AABB to include point
     #[allow(clippy::needless_range_loop)]
     pub fn expand(&mut self, point: [f32; 3]) {
@@ -363,7 +369,7 @@ impl FluidAABB {
             self.max[i] = self.max[i].max(point[i]);
         }
     }
-    
+
     /// Merge two AABBs
     pub fn merge(&self, other: &FluidAABB) -> FluidAABB {
         FluidAABB {
@@ -449,7 +455,7 @@ impl FluidPerformanceMetrics {
     pub fn total_time_ms(&self) -> f32 {
         self.physics_time_ms + self.render_time_ms + self.spawn_time_ms
     }
-    
+
     /// Format as human-readable string
     pub fn summary(&self) -> String {
         format!(
@@ -460,12 +466,12 @@ impl FluidPerformanceMetrics {
             self.gpu_memory_bytes / (1024 * 1024)
         )
     }
-    
+
     /// Check if performance is within budget (16.67ms = 60 FPS)
     pub fn is_within_budget(&self, budget_ms: f32) -> bool {
         self.total_time_ms() <= budget_ms
     }
-    
+
     /// Get performance grade (A-F)
     pub fn grade(&self) -> char {
         match self.total_time_ms() {
@@ -510,7 +516,7 @@ impl ColorblindPalette {
             Self::HighContrast => [0.0, 0.0, 1.0, 1.0],
         }
     }
-    
+
     /// Get foam color for this palette
     pub fn foam_color(&self) -> [f32; 3] {
         match self {
@@ -521,7 +527,7 @@ impl ColorblindPalette {
             Self::HighContrast => [1.0, 1.0, 1.0],
         }
     }
-    
+
     /// Get description for UI
     pub fn description(&self) -> &'static str {
         match self {
@@ -532,7 +538,7 @@ impl ColorblindPalette {
             Self::HighContrast => "High Contrast - Enhanced visibility",
         }
     }
-    
+
     /// Get all palettes for UI dropdown
     pub fn all_palettes() -> &'static [ColorblindPalette] {
         &[
@@ -608,7 +614,7 @@ impl PreviewHint {
             suggested_range: Some("0.1 - 2.0 for realistic water".to_string()),
         }
     }
-    
+
     /// Generate hint for particle count change
     pub fn particle_count(value: u32) -> Self {
         let impact = if value < 10_000 {
@@ -618,7 +624,7 @@ impl PreviewHint {
         } else {
             "High"
         };
-        
+
         Self {
             parameter: "Particle Count".to_string(),
             current_value: format!("{}", value),
@@ -638,7 +644,7 @@ impl PreviewHint {
             suggested_range: Some("10,000 - 50,000 for most games".to_string()),
         }
     }
-    
+
     /// Generate hint for viscosity change
     pub fn viscosity(value: f32) -> Self {
         Self {
@@ -680,7 +686,7 @@ impl BatchOperation {
             indices,
         }
     }
-    
+
     /// Apply scalar multiply to physics viscosity
     pub fn multiply_viscosity(configs: &mut [FluidEditorConfig], indices: &[usize], factor: f32) {
         for &i in indices {
@@ -690,7 +696,7 @@ impl BatchOperation {
             }
         }
     }
-    
+
     /// Enable/disable caustics for multiple configs
     pub fn set_caustics(configs: &mut [FluidEditorConfig], indices: &[usize], enabled: bool) {
         for &i in indices {
@@ -699,9 +705,13 @@ impl BatchOperation {
             }
         }
     }
-    
+
     /// Set quality preset for multiple configs
-    pub fn set_quality(configs: &mut [FluidEditorConfig], indices: &[usize], quality: QualityPreset) {
+    pub fn set_quality(
+        configs: &mut [FluidEditorConfig],
+        indices: &[usize],
+        quality: QualityPreset,
+    ) {
         for &i in indices {
             if let Some(config) = configs.get_mut(i) {
                 config.quality = quality;
@@ -709,9 +719,13 @@ impl BatchOperation {
             }
         }
     }
-    
+
     /// Apply color palette for accessibility
-    pub fn apply_palette(configs: &mut [FluidEditorConfig], indices: &[usize], palette: ColorblindPalette) {
+    pub fn apply_palette(
+        configs: &mut [FluidEditorConfig],
+        indices: &[usize],
+        palette: ColorblindPalette,
+    ) {
         for &i in indices {
             if let Some(config) = configs.get_mut(i) {
                 config.rendering.fluid_color = palette.water_color();
@@ -719,7 +733,7 @@ impl BatchOperation {
             }
         }
     }
-    
+
     /// Reset physics settings to preset defaults
     pub fn reset_physics(configs: &mut [FluidEditorConfig], indices: &[usize]) {
         for &i in indices {
@@ -729,7 +743,7 @@ impl BatchOperation {
             }
         }
     }
-    
+
     /// Reset visual effects to preset defaults
     pub fn reset_visuals(configs: &mut [FluidEditorConfig], indices: &[usize]) {
         for &i in indices {
@@ -796,7 +810,7 @@ impl ConfigValidator {
             strict_mode: false,
         }
     }
-    
+
     /// Create strict validator for production
     pub fn strict() -> Self {
         Self {
@@ -805,26 +819,26 @@ impl ConfigValidator {
             strict_mode: true,
         }
     }
-    
+
     /// Validate a configuration, returns list of issues
     pub fn validate(&self, config: &FluidEditorConfig) -> Vec<ValidationIssue> {
         let mut issues = Vec::new();
-        
+
         // Physics validation
         self.validate_physics(config, &mut issues);
-        
+
         // Performance validation
         self.validate_performance(config, &mut issues);
-        
+
         // Visual effects validation
         self.validate_visuals(config, &mut issues);
-        
+
         // Compatibility validation
         self.validate_compatibility(config, &mut issues);
-        
+
         issues
     }
-    
+
     fn validate_physics(&self, config: &FluidEditorConfig, issues: &mut Vec<ValidationIssue>) {
         // Check smoothing radius vs particle spacing
         let particle_spacing = 0.1; // Approximate
@@ -840,7 +854,7 @@ impl ConfigValidator {
                 )),
             });
         }
-        
+
         // Check viscosity bounds
         if config.physics.viscosity > 50.0 && self.strict_mode {
             issues.push(ValidationIssue {
@@ -851,11 +865,12 @@ impl ConfigValidator {
                 suggestion: Some("For water, use values between 1-10".to_string()),
             });
         }
-        
+
         // Check gravity magnitude
-        let gravity_mag = (config.physics.gravity[0].powi(2) 
-            + config.physics.gravity[1].powi(2) 
-            + config.physics.gravity[2].powi(2)).sqrt();
+        let gravity_mag = (config.physics.gravity[0].powi(2)
+            + config.physics.gravity[1].powi(2)
+            + config.physics.gravity[2].powi(2))
+        .sqrt();
         if gravity_mag > 30.0 {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
@@ -865,7 +880,7 @@ impl ConfigValidator {
                 suggestion: Some("Earth gravity is approximately 9.81 m/s²".to_string()),
             });
         }
-        
+
         // Check iterations
         if config.physics.iterations < 2 {
             issues.push(ValidationIssue {
@@ -877,13 +892,13 @@ impl ConfigValidator {
             });
         }
     }
-    
+
     fn validate_performance(&self, config: &FluidEditorConfig, issues: &mut Vec<ValidationIssue>) {
         let frame_budget_ms = 1000.0 / self.target_fps;
-        
+
         // Estimate GPU time based on settings
         let estimated_time = self.estimate_frame_time(config);
-        
+
         if estimated_time > frame_budget_ms * 0.5 {
             issues.push(ValidationIssue {
                 severity: if estimated_time > frame_budget_ms * 0.8 {
@@ -899,10 +914,12 @@ impl ConfigValidator {
                     (estimated_time / frame_budget_ms) * 100.0,
                     self.target_fps
                 ),
-                suggestion: Some("Consider reducing particle count or disabling effects".to_string()),
+                suggestion: Some(
+                    "Consider reducing particle count or disabling effects".to_string(),
+                ),
             });
         }
-        
+
         // Check particle count
         if config.max_particles > 100_000 {
             issues.push(ValidationIssue {
@@ -913,7 +930,7 @@ impl ConfigValidator {
                 suggestion: Some("Use 20,000-50,000 for most games".to_string()),
             });
         }
-        
+
         // Check for expensive effect combinations
         let expensive_effects = [
             config.caustics.enabled,
@@ -921,18 +938,20 @@ impl ConfigValidator {
             config.reflections.enabled && config.reflections.resolution > 512,
         ];
         let enabled_count = expensive_effects.iter().filter(|&&e| e).count();
-        
+
         if enabled_count >= 3 && self.strict_mode {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
                 category: "Performance",
                 field: None,
                 message: "Multiple expensive effects enabled simultaneously".to_string(),
-                suggestion: Some("Consider disabling some effects for better performance".to_string()),
+                suggestion: Some(
+                    "Consider disabling some effects for better performance".to_string(),
+                ),
             });
         }
     }
-    
+
     fn validate_visuals(&self, config: &FluidEditorConfig, issues: &mut Vec<ValidationIssue>) {
         // Check for zero-alpha water color
         if config.rendering.fluid_color[3] < 0.01 {
@@ -944,7 +963,7 @@ impl ConfigValidator {
                 suggestion: Some("Increase alpha to at least 0.3 for visible water".to_string()),
             });
         }
-        
+
         // Check foam without waves
         if config.foam.enabled && config.waves.amplitude < 0.05 {
             issues.push(ValidationIssue {
@@ -955,7 +974,7 @@ impl ConfigValidator {
                 suggestion: Some("Foam works best with visible wave motion".to_string()),
             });
         }
-        
+
         // Check god rays without caustics (usually paired)
         if config.god_rays.enabled && !config.caustics.enabled && self.strict_mode {
             issues.push(ValidationIssue {
@@ -967,8 +986,12 @@ impl ConfigValidator {
             });
         }
     }
-    
-    fn validate_compatibility(&self, config: &FluidEditorConfig, issues: &mut Vec<ValidationIssue>) {
+
+    fn validate_compatibility(
+        &self,
+        config: &FluidEditorConfig,
+        issues: &mut Vec<ValidationIssue>,
+    ) {
         // Check for settings that might not work on lower-end hardware
         if config.quality == QualityPreset::Ultra {
             issues.push(ValidationIssue {
@@ -979,7 +1002,7 @@ impl ConfigValidator {
                 suggestion: Some("Consider using High for wider compatibility".to_string()),
             });
         }
-        
+
         // Check reflection resolution
         if config.reflections.resolution > 1024 {
             issues.push(ValidationIssue {
@@ -991,14 +1014,14 @@ impl ConfigValidator {
             });
         }
     }
-    
+
     /// Estimate frame time in milliseconds
     fn estimate_frame_time(&self, config: &FluidEditorConfig) -> f32 {
         let mut time = 0.0;
-        
+
         // Base physics cost (~0.0001ms per particle, optimized GPU)
         time += config.max_particles as f32 * 0.0001;
-        
+
         // Effects cost
         if config.caustics.enabled {
             time += 0.5;
@@ -1012,25 +1035,25 @@ impl ConfigValidator {
         if config.reflections.enabled {
             time += (config.reflections.resolution as f32 / 512.0) * 0.5;
         }
-        
+
         // Iteration cost
         time += config.physics.iterations as f32 * 0.1;
-        
+
         time
     }
-    
+
     /// Check if config has any errors
     pub fn has_errors(&self, config: &FluidEditorConfig) -> bool {
         self.validate(config)
             .iter()
             .any(|i| i.severity == ValidationSeverity::Error)
     }
-    
+
     /// Check if config has any warnings or errors
     pub fn has_warnings(&self, config: &FluidEditorConfig) -> bool {
-        self.validate(config)
-            .iter()
-            .any(|i| i.severity == ValidationSeverity::Warning || i.severity == ValidationSeverity::Error)
+        self.validate(config).iter().any(|i| {
+            i.severity == ValidationSeverity::Warning || i.severity == ValidationSeverity::Error
+        })
     }
 }
 
@@ -1093,7 +1116,7 @@ impl EasingFunction {
             Self::EaseInQuad => t * t,
         }
     }
-    
+
     /// Get all easing functions for UI dropdown
     pub fn all_functions() -> &'static [EasingFunction] {
         &[
@@ -1107,7 +1130,7 @@ impl EasingFunction {
             Self::EaseInQuad,
         ]
     }
-    
+
     /// Get description for UI
     pub fn description(&self) -> &'static str {
         match self {
@@ -1152,34 +1175,34 @@ impl ConfigTransition {
             complete: false,
         }
     }
-    
+
     /// Create transition with custom easing
     pub fn with_easing(mut self, easing: EasingFunction) -> Self {
         self.easing = easing;
         self
     }
-    
+
     /// Update transition, returns current interpolated config
     pub fn update(&mut self, delta_time: f32) -> FluidEditorConfig {
         self.elapsed += delta_time;
-        
+
         if self.elapsed >= self.duration {
             self.elapsed = self.duration;
             self.complete = true;
             return self.to.clone();
         }
-        
+
         let t = self.elapsed / self.duration;
         let eased_t = self.easing.apply(t);
-        
+
         self.from.interpolate(&self.to, eased_t)
     }
-    
+
     /// Get progress (0.0 to 1.0)
     pub fn progress(&self) -> f32 {
         (self.elapsed / self.duration).clamp(0.0, 1.0)
     }
-    
+
     /// Skip to end
     pub fn skip(&mut self) {
         self.elapsed = self.duration;
@@ -1257,7 +1280,7 @@ impl DebugVisualization {
             grid_opacity: 0.3,
         }
     }
-    
+
     /// Show all physics-related visualizations
     pub fn physics() -> Self {
         Self {
@@ -1275,7 +1298,7 @@ impl DebugVisualization {
             grid_opacity: 0.4,
         }
     }
-    
+
     /// Show rendering-related visualizations
     pub fn rendering() -> Self {
         Self {
@@ -1293,12 +1316,18 @@ impl DebugVisualization {
             grid_opacity: 0.3,
         }
     }
-    
+
     /// Check if any visualization is enabled
     pub fn any_enabled(&self) -> bool {
-        self.show_particles || self.show_velocities || self.show_normals ||
-        self.show_pressure || self.show_density || self.show_grid ||
-        self.show_bounds || self.show_emitters || self.show_performance
+        self.show_particles
+            || self.show_velocities
+            || self.show_normals
+            || self.show_pressure
+            || self.show_density
+            || self.show_grid
+            || self.show_bounds
+            || self.show_emitters
+            || self.show_performance
     }
 }
 
@@ -1327,9 +1356,15 @@ impl KeyboardShortcut {
     /// Format as display string (e.g., "Ctrl+Z")
     pub fn display(&self) -> String {
         let mut parts = Vec::new();
-        if self.ctrl { parts.push("Ctrl"); }
-        if self.shift { parts.push("Shift"); }
-        if self.alt { parts.push("Alt"); }
+        if self.ctrl {
+            parts.push("Ctrl");
+        }
+        if self.shift {
+            parts.push("Shift");
+        }
+        if self.alt {
+            parts.push("Alt");
+        }
         parts.push(self.key);
         parts.join("+")
     }
@@ -1340,96 +1375,176 @@ pub fn editor_shortcuts() -> Vec<KeyboardShortcut> {
     vec![
         // Edit operations
         KeyboardShortcut {
-            key: "Z", ctrl: true, shift: false, alt: false,
-            action: "Undo", category: "Edit",
+            key: "Z",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Undo",
+            category: "Edit",
         },
         KeyboardShortcut {
-            key: "Y", ctrl: true, shift: false, alt: false,
-            action: "Redo", category: "Edit",
+            key: "Y",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Redo",
+            category: "Edit",
         },
         KeyboardShortcut {
-            key: "Z", ctrl: true, shift: true, alt: false,
-            action: "Redo (alternate)", category: "Edit",
+            key: "Z",
+            ctrl: true,
+            shift: true,
+            alt: false,
+            action: "Redo (alternate)",
+            category: "Edit",
         },
         KeyboardShortcut {
-            key: "C", ctrl: true, shift: false, alt: false,
-            action: "Copy configuration", category: "Edit",
+            key: "C",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Copy configuration",
+            category: "Edit",
         },
         KeyboardShortcut {
-            key: "V", ctrl: true, shift: false, alt: false,
-            action: "Paste configuration", category: "Edit",
+            key: "V",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Paste configuration",
+            category: "Edit",
         },
         KeyboardShortcut {
-            key: "D", ctrl: true, shift: false, alt: false,
-            action: "Duplicate selected", category: "Edit",
+            key: "D",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Duplicate selected",
+            category: "Edit",
         },
         KeyboardShortcut {
-            key: "Delete", ctrl: false, shift: false, alt: false,
-            action: "Delete selected", category: "Edit",
+            key: "Delete",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Delete selected",
+            category: "Edit",
         },
-        
         // View operations
         KeyboardShortcut {
-            key: "F", ctrl: false, shift: false, alt: false,
-            action: "Frame selection", category: "View",
+            key: "F",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Frame selection",
+            category: "View",
         },
         KeyboardShortcut {
-            key: "G", ctrl: false, shift: false, alt: false,
-            action: "Toggle grid", category: "View",
+            key: "G",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Toggle grid",
+            category: "View",
         },
         KeyboardShortcut {
-            key: "P", ctrl: false, shift: false, alt: false,
-            action: "Toggle particles view", category: "View",
+            key: "P",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Toggle particles view",
+            category: "View",
         },
         KeyboardShortcut {
-            key: "B", ctrl: false, shift: false, alt: false,
-            action: "Toggle bounds", category: "View",
+            key: "B",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Toggle bounds",
+            category: "View",
         },
-        
         // Simulation
         KeyboardShortcut {
-            key: "Space", ctrl: false, shift: false, alt: false,
-            action: "Play/Pause simulation", category: "Simulation",
+            key: "Space",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Play/Pause simulation",
+            category: "Simulation",
         },
         KeyboardShortcut {
-            key: ".", ctrl: false, shift: false, alt: false,
-            action: "Step forward one frame", category: "Simulation",
+            key: ".",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Step forward one frame",
+            category: "Simulation",
         },
         KeyboardShortcut {
-            key: "R", ctrl: false, shift: false, alt: false,
-            action: "Reset simulation", category: "Simulation",
+            key: "R",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Reset simulation",
+            category: "Simulation",
         },
-        
         // Presets
         KeyboardShortcut {
-            key: "1", ctrl: false, shift: false, alt: false,
-            action: "Apply Low quality preset", category: "Presets",
+            key: "1",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Apply Low quality preset",
+            category: "Presets",
         },
         KeyboardShortcut {
-            key: "2", ctrl: false, shift: false, alt: false,
-            action: "Apply Medium quality preset", category: "Presets",
+            key: "2",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Apply Medium quality preset",
+            category: "Presets",
         },
         KeyboardShortcut {
-            key: "3", ctrl: false, shift: false, alt: false,
-            action: "Apply High quality preset", category: "Presets",
+            key: "3",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Apply High quality preset",
+            category: "Presets",
         },
         KeyboardShortcut {
-            key: "4", ctrl: false, shift: false, alt: false,
-            action: "Apply Ultra quality preset", category: "Presets",
+            key: "4",
+            ctrl: false,
+            shift: false,
+            alt: false,
+            action: "Apply Ultra quality preset",
+            category: "Presets",
         },
-        
         // File
         KeyboardShortcut {
-            key: "S", ctrl: true, shift: false, alt: false,
-            action: "Save configuration", category: "File",
+            key: "S",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Save configuration",
+            category: "File",
         },
         KeyboardShortcut {
-            key: "O", ctrl: true, shift: false, alt: false,
-            action: "Open configuration", category: "File",
+            key: "O",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Open configuration",
+            category: "File",
         },
         KeyboardShortcut {
-            key: "E", ctrl: true, shift: false, alt: false,
-            action: "Export preset", category: "File",
+            key: "E",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            action: "Export preset",
+            category: "File",
         },
     ]
 }
@@ -1462,16 +1577,16 @@ pub struct ExportedPreset {
 impl ExportedPreset {
     /// Current export format version
     pub const CURRENT_VERSION: u32 = 1;
-    
+
     /// Create export from config
     pub fn from_config(name: &str, config: FluidEditorConfig) -> Self {
         use std::time::{SystemTime, UNIX_EPOCH};
-        
+
         let created_at = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        
+
         Self {
             version: Self::CURRENT_VERSION,
             name: name.to_string(),
@@ -1483,47 +1598,43 @@ impl ExportedPreset {
             thumbnail: None,
         }
     }
-    
+
     /// Set author
     pub fn with_author(mut self, author: &str) -> Self {
         self.author = Some(author.to_string());
         self
     }
-    
+
     /// Set description
     pub fn with_description(mut self, desc: &str) -> Self {
         self.description = Some(desc.to_string());
         self
     }
-    
+
     /// Add tags
     pub fn with_tags(mut self, tags: Vec<String>) -> Self {
         self.tags = tags;
         self
     }
-    
+
     /// Export to JSON string
     pub fn to_json(&self) -> Result<String, String> {
-        serde_json::to_string_pretty(self)
-            .map_err(|e| format!("Failed to serialize preset: {}", e))
+        serde_json::to_string_pretty(self).map_err(|e| format!("Failed to serialize preset: {}", e))
     }
-    
+
     /// Import from JSON string
     pub fn from_json(json: &str) -> Result<Self, String> {
-        serde_json::from_str(json)
-            .map_err(|e| format!("Failed to parse preset: {}", e))
+        serde_json::from_str(json).map_err(|e| format!("Failed to parse preset: {}", e))
     }
-    
+
     /// Export to TOML string
     pub fn to_toml(&self) -> Result<String, String> {
-        toml::to_string_pretty(self)
-            .map_err(|e| format!("Failed to serialize preset: {}", e))
+        toml::to_string_pretty(self).map_err(|e| format!("Failed to serialize preset: {}", e))
     }
-    
+
     /// Import from TOML string  
     pub fn from_toml(toml_str: &str) -> Result<Self, String> {
-        toml::from_str(toml_str)
-            .map_err(|e| format!("Failed to parse preset: {}", e))
+        toml::from_str(toml_str).map_err(|e| format!("Failed to parse preset: {}", e))
     }
 }
 
@@ -1545,43 +1656,44 @@ impl ConfigClipboard {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Copy configuration to clipboard
     pub fn copy(&mut self, config: &FluidEditorConfig) {
         use std::time::{SystemTime, UNIX_EPOCH};
-        
+
         self.config = Some(config.clone());
         self.copied_at = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .ok();
     }
-    
+
     /// Paste configuration from clipboard
     pub fn paste(&self) -> Option<FluidEditorConfig> {
         self.config.clone()
     }
-    
+
     /// Check if clipboard has content
     pub fn has_content(&self) -> bool {
         self.config.is_some()
     }
-    
+
     /// Clear clipboard
     pub fn clear(&mut self) {
         self.config = None;
         self.copied_at = None;
     }
-    
+
     /// Copy to system clipboard as JSON (returns JSON string)
     pub fn to_system_clipboard(&self) -> Option<String> {
-        self.config.as_ref().and_then(|c| serde_json::to_string(c).ok())
+        self.config
+            .as_ref()
+            .and_then(|c| serde_json::to_string(c).ok())
     }
-    
+
     /// Paste from system clipboard JSON
     pub fn from_system_clipboard(json: &str) -> Result<FluidEditorConfig, String> {
-        serde_json::from_str(json)
-            .map_err(|e| format!("Invalid configuration: {}", e))
+        serde_json::from_str(json).map_err(|e| format!("Invalid configuration: {}", e))
     }
 }
 
@@ -1633,7 +1745,7 @@ pub struct EditorMetadata;
 
 impl EditorMetadata {
     // === Physics Fields ===
-    
+
     /// Get metadata for smoothing radius
     pub fn smoothing_radius() -> FieldMetadata {
         FieldMetadata {
@@ -1641,11 +1753,15 @@ impl EditorMetadata {
             tooltip: "Controls the radius of influence for each particle. \
                      Larger values create smoother but less detailed fluid.",
             category: "Physics",
-            widget: WidgetType::Slider { min: 0.5, max: 5.0, step: 0.1 },
+            widget: WidgetType::Slider {
+                min: 0.5,
+                max: 5.0,
+                step: 0.1,
+            },
             advanced: false,
         }
     }
-    
+
     /// Get metadata for target density
     pub fn target_density() -> FieldMetadata {
         FieldMetadata {
@@ -1653,11 +1769,15 @@ impl EditorMetadata {
             tooltip: "The rest density the fluid tries to maintain. \
                      Higher values create heavier, denser fluid.",
             category: "Physics",
-            widget: WidgetType::Slider { min: 1.0, max: 50.0, step: 0.5 },
+            widget: WidgetType::Slider {
+                min: 1.0,
+                max: 50.0,
+                step: 0.5,
+            },
             advanced: true,
         }
     }
-    
+
     /// Get metadata for pressure multiplier
     pub fn pressure_multiplier() -> FieldMetadata {
         FieldMetadata {
@@ -1665,22 +1785,30 @@ impl EditorMetadata {
             tooltip: "Controls how strongly particles repel each other. \
                      Higher values make the fluid more incompressible.",
             category: "Physics",
-            widget: WidgetType::Slider { min: 10.0, max: 1000.0, step: 10.0 },
+            widget: WidgetType::Slider {
+                min: 10.0,
+                max: 1000.0,
+                step: 10.0,
+            },
             advanced: true,
         }
     }
-    
+
     /// Get metadata for viscosity
     pub fn viscosity() -> FieldMetadata {
         FieldMetadata {
             name: "Viscosity",
             tooltip: "How thick/syrupy the fluid is. Low = water, High = honey/mud.",
             category: "Physics",
-            widget: WidgetType::Slider { min: 0.0, max: 100.0, step: 1.0 },
+            widget: WidgetType::Slider {
+                min: 0.0,
+                max: 100.0,
+                step: 1.0,
+            },
             advanced: false,
         }
     }
-    
+
     /// Get metadata for surface tension
     pub fn surface_tension() -> FieldMetadata {
         FieldMetadata {
@@ -1688,11 +1816,15 @@ impl EditorMetadata {
             tooltip: "How strongly the fluid surface holds together. \
                      Higher values create more cohesive droplets.",
             category: "Physics",
-            widget: WidgetType::Slider { min: 0.0, max: 1.0, step: 0.01 },
+            widget: WidgetType::Slider {
+                min: 0.0,
+                max: 1.0,
+                step: 0.01,
+            },
             advanced: true,
         }
     }
-    
+
     /// Get metadata for gravity
     pub fn gravity() -> FieldMetadata {
         FieldMetadata {
@@ -1704,7 +1836,7 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     /// Get metadata for iterations
     pub fn iterations() -> FieldMetadata {
         FieldMetadata {
@@ -1716,9 +1848,9 @@ impl EditorMetadata {
             advanced: true,
         }
     }
-    
+
     // === Visual Effects Fields ===
-    
+
     /// Get metadata for caustics enabled
     pub fn caustics_enabled() -> FieldMetadata {
         FieldMetadata {
@@ -1729,18 +1861,22 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     /// Get metadata for caustic intensity
     pub fn caustic_intensity() -> FieldMetadata {
         FieldMetadata {
             name: "Caustic Intensity",
             tooltip: "Brightness of caustic light patterns.",
             category: "Visual Effects",
-            widget: WidgetType::Slider { min: 0.0, max: 5.0, step: 0.1 },
+            widget: WidgetType::Slider {
+                min: 0.0,
+                max: 5.0,
+                step: 0.1,
+            },
             advanced: false,
         }
     }
-    
+
     /// Get metadata for god rays enabled
     pub fn god_rays_enabled() -> FieldMetadata {
         FieldMetadata {
@@ -1751,7 +1887,7 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     /// Get metadata for foam enabled
     pub fn foam_enabled() -> FieldMetadata {
         FieldMetadata {
@@ -1762,7 +1898,7 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     /// Get metadata for reflections enabled
     pub fn reflections_enabled() -> FieldMetadata {
         FieldMetadata {
@@ -1773,9 +1909,9 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     // === Rendering Fields ===
-    
+
     /// Get metadata for fluid color
     pub fn fluid_color() -> FieldMetadata {
         FieldMetadata {
@@ -1786,7 +1922,7 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     /// Get metadata for absorption
     pub fn absorption() -> FieldMetadata {
         FieldMetadata {
@@ -1798,7 +1934,7 @@ impl EditorMetadata {
             advanced: true,
         }
     }
-    
+
     /// Get metadata for roughness
     pub fn roughness() -> FieldMetadata {
         FieldMetadata {
@@ -1806,48 +1942,64 @@ impl EditorMetadata {
             tooltip: "Surface roughness affecting reflections. \
                      0 = mirror, 1 = diffuse.",
             category: "Rendering",
-            widget: WidgetType::Slider { min: 0.0, max: 1.0, step: 0.01 },
+            widget: WidgetType::Slider {
+                min: 0.0,
+                max: 1.0,
+                step: 0.01,
+            },
             advanced: true,
         }
     }
-    
+
     // === Wave Fields ===
-    
+
     /// Get metadata for wave amplitude
     pub fn wave_amplitude() -> FieldMetadata {
         FieldMetadata {
             name: "Wave Height",
             tooltip: "Maximum wave height in world units.",
             category: "Waves",
-            widget: WidgetType::Slider { min: 0.0, max: 10.0, step: 0.1 },
+            widget: WidgetType::Slider {
+                min: 0.0,
+                max: 10.0,
+                step: 0.1,
+            },
             advanced: false,
         }
     }
-    
+
     /// Get metadata for wave frequency
     pub fn wave_frequency() -> FieldMetadata {
         FieldMetadata {
             name: "Wave Frequency",
             tooltip: "Number of waves per unit distance.",
             category: "Waves",
-            widget: WidgetType::Slider { min: 0.1, max: 5.0, step: 0.1 },
+            widget: WidgetType::Slider {
+                min: 0.1,
+                max: 5.0,
+                step: 0.1,
+            },
             advanced: true,
         }
     }
-    
+
     /// Get metadata for wind strength
     pub fn wind_strength() -> FieldMetadata {
         FieldMetadata {
             name: "Wind Strength",
             tooltip: "Wind speed affecting wave generation.",
             category: "Waves",
-            widget: WidgetType::Slider { min: 0.0, max: 30.0, step: 0.5 },
+            widget: WidgetType::Slider {
+                min: 0.0,
+                max: 30.0,
+                step: 0.5,
+            },
             advanced: false,
         }
     }
-    
+
     // === Performance Fields ===
-    
+
     /// Get metadata for max particles
     pub fn max_particles() -> FieldMetadata {
         FieldMetadata {
@@ -1855,11 +2007,14 @@ impl EditorMetadata {
             tooltip: "Maximum number of fluid particles. \
                      More particles = better detail but slower.",
             category: "Performance",
-            widget: WidgetType::IntSlider { min: 1000, max: 500000 },
+            widget: WidgetType::IntSlider {
+                min: 1000,
+                max: 500000,
+            },
             advanced: false,
         }
     }
-    
+
     /// Get metadata for LOD enabled
     pub fn lod_enabled() -> FieldMetadata {
         FieldMetadata {
@@ -1870,7 +2025,7 @@ impl EditorMetadata {
             advanced: false,
         }
     }
-    
+
     /// Get all field metadata grouped by category
     pub fn all_fields() -> Vec<FieldMetadata> {
         vec![
@@ -1901,7 +2056,7 @@ impl EditorMetadata {
             Self::lod_enabled(),
         ]
     }
-    
+
     /// Get categories in display order
     pub fn categories() -> Vec<&'static str> {
         vec![
@@ -1912,7 +2067,7 @@ impl EditorMetadata {
             "Performance",
         ]
     }
-    
+
     /// Get fields for a specific category
     pub fn fields_for_category(category: &str) -> Vec<FieldMetadata> {
         Self::all_fields()
@@ -1920,7 +2075,7 @@ impl EditorMetadata {
             .filter(|f| f.category == category)
             .collect()
     }
-    
+
     /// Get only non-advanced fields (for simple mode)
     pub fn simple_fields() -> Vec<FieldMetadata> {
         Self::all_fields()
@@ -2543,7 +2698,7 @@ impl Default for FlowConfig {
 // =============================================================================
 
 /// Complete fluid system configuration for the visual editor
-/// 
+///
 /// This is the main configuration struct that encompasses all fluid features
 /// and can be serialized to/from JSON/TOML for the asset pipeline.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -2659,9 +2814,18 @@ impl FluidEditorConfig {
                 fog_density: 0.01,
                 ..Default::default()
             },
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
-            waves: WaveConfig { enabled: false, ..Default::default() },
-            flow: FlowConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
+            waves: WaveConfig {
+                enabled: false,
+                ..Default::default()
+            },
+            flow: FlowConfig {
+                enabled: false,
+                ..Default::default()
+            },
             lod: LodConfig::default(),
             emitters: Vec::new(),
             drains: Vec::new(),
@@ -2706,9 +2870,15 @@ impl FluidEditorConfig {
             },
             reflections: ReflectionEditorConfig::default(),
             underwater: UnderwaterEditorConfig::default(),
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             waves: WaveConfig::calm(),
-            flow: FlowConfig { enabled: false, ..Default::default() },
+            flow: FlowConfig {
+                enabled: false,
+                ..Default::default()
+            },
             lod: LodConfig::default(),
             emitters: Vec::new(),
             drains: Vec::new(),
@@ -2757,7 +2927,10 @@ impl FluidEditorConfig {
                 ..Default::default()
             },
             underwater: UnderwaterEditorConfig::default(),
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             waves: WaveConfig {
                 enabled: true,
                 amplitude: 0.1,
@@ -2828,7 +3001,10 @@ impl FluidEditorConfig {
                 fog_density: 0.03,
                 ..Default::default()
             },
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             waves: WaveConfig {
                 enabled: true,
                 amplitude: 1.0,
@@ -2838,7 +3014,10 @@ impl FluidEditorConfig {
                 foam_on_peaks: true,
                 ..Default::default()
             },
-            flow: FlowConfig { enabled: false, ..Default::default() },
+            flow: FlowConfig {
+                enabled: false,
+                ..Default::default()
+            },
             lod: LodConfig {
                 distances: [30.0, 80.0, 200.0, 500.0],
                 ..Default::default()
@@ -2906,7 +3085,10 @@ impl FluidEditorConfig {
                 particle_density: 50.0,
                 ..Default::default()
             },
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             waves: WaveConfig {
                 enabled: true,
                 amplitude: 0.6,
@@ -2916,7 +3098,10 @@ impl FluidEditorConfig {
                 foam_on_peaks: true,
                 ..Default::default()
             },
-            flow: FlowConfig { enabled: false, ..Default::default() },
+            flow: FlowConfig {
+                enabled: false,
+                ..Default::default()
+            },
             lod: LodConfig {
                 distances: [40.0, 100.0, 250.0, 600.0],
                 ..Default::default()
@@ -2946,8 +3131,14 @@ impl FluidEditorConfig {
                 roughness: 0.3,
                 ..Default::default()
             },
-            caustics: CausticsEditorConfig { enabled: false, ..Default::default() },
-            god_rays: GodRaysEditorConfig { enabled: false, ..Default::default() },
+            caustics: CausticsEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
+            god_rays: GodRaysEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             foam: FoamEditorConfig {
                 enabled: true,
                 color: [0.8, 0.85, 0.7],
@@ -2968,8 +3159,14 @@ impl FluidEditorConfig {
                 particle_density: 200.0,
                 ..Default::default()
             },
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
-            waves: WaveConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
+            waves: WaveConfig {
+                enabled: false,
+                ..Default::default()
+            },
             flow: FlowConfig {
                 enabled: true,
                 speed: 0.3,
@@ -3014,7 +3211,10 @@ impl FluidEditorConfig {
                 intensity: 0.8,
                 ..Default::default()
             },
-            god_rays: GodRaysEditorConfig { enabled: false, ..Default::default() },
+            god_rays: GodRaysEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             foam: FoamEditorConfig {
                 enabled: true,
                 lifetime: 2.0,
@@ -3026,14 +3226,20 @@ impl FluidEditorConfig {
                 ..Default::default()
             },
             underwater: UnderwaterEditorConfig::default(),
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             waves: WaveConfig {
                 enabled: true,
                 amplitude: 0.05,
                 frequency: 3.0,
                 ..Default::default()
             },
-            flow: FlowConfig { enabled: false, ..Default::default() },
+            flow: FlowConfig {
+                enabled: false,
+                ..Default::default()
+            },
             lod: LodConfig::default(),
             emitters: Vec::new(),
             drains: Vec::new(),
@@ -3099,7 +3305,10 @@ impl FluidEditorConfig {
                 spray_angle: 0.5,
                 splash_intensity: 2.0,
             },
-            waves: WaveConfig { enabled: false, ..Default::default() },
+            waves: WaveConfig {
+                enabled: false,
+                ..Default::default()
+            },
             flow: FlowConfig {
                 enabled: true,
                 direction: [0.0, -1.0, 0.0],
@@ -3143,8 +3352,14 @@ impl FluidEditorConfig {
                 max_depth: 5.0,
                 ..Default::default()
             },
-            god_rays: GodRaysEditorConfig { enabled: false, ..Default::default() },
-            foam: FoamEditorConfig { enabled: false, ..Default::default() },
+            god_rays: GodRaysEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
+            foam: FoamEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             reflections: ReflectionEditorConfig {
                 enabled: true,
                 intensity: 0.95,
@@ -3159,8 +3374,14 @@ impl FluidEditorConfig {
                 fog_density: 0.05,
                 ..Default::default()
             },
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
-            waves: WaveConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
+            waves: WaveConfig {
+                enabled: false,
+                ..Default::default()
+            },
             flow: FlowConfig {
                 enabled: true,
                 speed: 0.2,
@@ -3224,7 +3445,10 @@ impl FluidEditorConfig {
                 fog_density: 0.015,
                 ..Default::default()
             },
-            waterfall: WaterfallEditorConfig { enabled: false, ..Default::default() },
+            waterfall: WaterfallEditorConfig {
+                enabled: false,
+                ..Default::default()
+            },
             waves: WaveConfig {
                 enabled: true,
                 amplitude: 0.3,
@@ -3232,7 +3456,10 @@ impl FluidEditorConfig {
                 wind_strength: 6.0,
                 ..Default::default()
             },
-            flow: FlowConfig { enabled: false, ..Default::default() },
+            flow: FlowConfig {
+                enabled: false,
+                ..Default::default()
+            },
             lod: LodConfig::default(),
             emitters: Vec::new(),
             drains: Vec::new(),
@@ -3264,7 +3491,7 @@ impl FluidEditorConfig {
     }
 
     // === Legacy compatibility methods ===
-    
+
     /// Create config optimized for performance (legacy API)
     pub fn performance() -> Self {
         let mut config = Self::from_preset(WaterBodyPreset::Lake);
@@ -3338,20 +3565,34 @@ impl FluidEditorConfig {
 
         // Physics cost
         cost += self.physics.iterations * 2;
-        if self.physics.enable_vorticity { cost += 3; }
-        if self.thermal.enabled { cost += 5; }
+        if self.physics.enable_vorticity {
+            cost += 3;
+        }
+        if self.thermal.enabled {
+            cost += 5;
+        }
 
         // Visual effects cost
-        if self.caustics.enabled { cost += 8; }
-        if self.god_rays.enabled { cost += self.god_rays.samples / 8; }
-        if self.foam.enabled { cost += (self.foam.max_particles / 5000) * 2; }
+        if self.caustics.enabled {
+            cost += 8;
+        }
+        if self.god_rays.enabled {
+            cost += self.god_rays.samples / 8;
+        }
+        if self.foam.enabled {
+            cost += (self.foam.max_particles / 5000) * 2;
+        }
         if self.reflections.enabled {
             cost += if self.reflections.use_planar { 15 } else { 5 };
         }
-        if self.waterfall.enabled { cost += 10; }
+        if self.waterfall.enabled {
+            cost += 10;
+        }
 
         // Wave cost
-        if self.waves.enabled { cost += self.waves.octaves; }
+        if self.waves.enabled {
+            cost += self.waves.octaves;
+        }
 
         cost.min(100)
     }
@@ -3407,114 +3648,223 @@ impl FluidEditorConfig {
         config.clamp();
         Ok(config)
     }
-    
+
     // === Interpolation Methods ===
-    
+
     /// Linearly interpolate between two configs
-    /// 
+    ///
     /// Useful for smooth transitions when changing presets or tweaking parameters.
     /// `t` should be in range 0.0 - 1.0 (0.0 = self, 1.0 = other)
     pub fn interpolate(&self, other: &FluidEditorConfig, t: f32) -> FluidEditorConfig {
         let t = t.clamp(0.0, 1.0);
         let lerp_f32 = |a: f32, b: f32| a + (b - a) * t;
         let lerp_u32 = |a: u32, b: u32| ((a as f32) + ((b as f32) - (a as f32)) * t) as u32;
-        let lerp_arr3 = |a: [f32; 3], b: [f32; 3]| [
-            lerp_f32(a[0], b[0]),
-            lerp_f32(a[1], b[1]),
-            lerp_f32(a[2], b[2]),
-        ];
-        let lerp_arr4 = |a: [f32; 4], b: [f32; 4]| [
-            lerp_f32(a[0], b[0]),
-            lerp_f32(a[1], b[1]),
-            lerp_f32(a[2], b[2]),
-            lerp_f32(a[3], b[3]),
-        ];
-        
+        let lerp_arr3 = |a: [f32; 3], b: [f32; 3]| {
+            [
+                lerp_f32(a[0], b[0]),
+                lerp_f32(a[1], b[1]),
+                lerp_f32(a[2], b[2]),
+            ]
+        };
+        let lerp_arr4 = |a: [f32; 4], b: [f32; 4]| {
+            [
+                lerp_f32(a[0], b[0]),
+                lerp_f32(a[1], b[1]),
+                lerp_f32(a[2], b[2]),
+                lerp_f32(a[3], b[3]),
+            ]
+        };
+
         FluidEditorConfig {
-            name: if t < 0.5 { self.name.clone() } else { other.name.clone() },
+            name: if t < 0.5 {
+                self.name.clone()
+            } else {
+                other.name.clone()
+            },
             preset: if t < 0.5 { self.preset } else { other.preset },
             quality: if t < 0.5 { self.quality } else { other.quality },
             max_particles: lerp_u32(self.max_particles, other.max_particles),
             physics: PhysicsConfig {
-                smoothing_radius: lerp_f32(self.physics.smoothing_radius, other.physics.smoothing_radius),
+                smoothing_radius: lerp_f32(
+                    self.physics.smoothing_radius,
+                    other.physics.smoothing_radius,
+                ),
                 target_density: lerp_f32(self.physics.target_density, other.physics.target_density),
-                pressure_multiplier: lerp_f32(self.physics.pressure_multiplier, other.physics.pressure_multiplier),
+                pressure_multiplier: lerp_f32(
+                    self.physics.pressure_multiplier,
+                    other.physics.pressure_multiplier,
+                ),
                 viscosity: lerp_f32(self.physics.viscosity, other.physics.viscosity),
-                surface_tension: lerp_f32(self.physics.surface_tension, other.physics.surface_tension),
+                surface_tension: lerp_f32(
+                    self.physics.surface_tension,
+                    other.physics.surface_tension,
+                ),
                 gravity: lerp_arr3(self.physics.gravity, other.physics.gravity),
                 iterations: lerp_u32(self.physics.iterations, other.physics.iterations),
-                enable_vorticity: if t < 0.5 { self.physics.enable_vorticity } else { other.physics.enable_vorticity },
-                vorticity_strength: lerp_f32(self.physics.vorticity_strength, other.physics.vorticity_strength),
+                enable_vorticity: if t < 0.5 {
+                    self.physics.enable_vorticity
+                } else {
+                    other.physics.enable_vorticity
+                },
+                vorticity_strength: lerp_f32(
+                    self.physics.vorticity_strength,
+                    other.physics.vorticity_strength,
+                ),
             },
             thermal: ThermalConfig {
-                enabled: if t < 0.5 { self.thermal.enabled } else { other.thermal.enabled },
-                ambient_temperature: lerp_f32(self.thermal.ambient_temperature, other.thermal.ambient_temperature),
+                enabled: if t < 0.5 {
+                    self.thermal.enabled
+                } else {
+                    other.thermal.enabled
+                },
+                ambient_temperature: lerp_f32(
+                    self.thermal.ambient_temperature,
+                    other.thermal.ambient_temperature,
+                ),
                 diffusivity: lerp_f32(self.thermal.diffusivity, other.thermal.diffusivity),
-                buoyancy_coefficient: lerp_f32(self.thermal.buoyancy_coefficient, other.thermal.buoyancy_coefficient),
-                enable_evaporation: if t < 0.5 { self.thermal.enable_evaporation } else { other.thermal.enable_evaporation },
-                evaporation_temperature: lerp_f32(self.thermal.evaporation_temperature, other.thermal.evaporation_temperature),
+                buoyancy_coefficient: lerp_f32(
+                    self.thermal.buoyancy_coefficient,
+                    other.thermal.buoyancy_coefficient,
+                ),
+                enable_evaporation: if t < 0.5 {
+                    self.thermal.enable_evaporation
+                } else {
+                    other.thermal.enable_evaporation
+                },
+                evaporation_temperature: lerp_f32(
+                    self.thermal.evaporation_temperature,
+                    other.thermal.evaporation_temperature,
+                ),
             },
             rendering: RenderingConfig {
-                enable_ssfr: if t < 0.5 { self.rendering.enable_ssfr } else { other.rendering.enable_ssfr },
+                enable_ssfr: if t < 0.5 {
+                    self.rendering.enable_ssfr
+                } else {
+                    other.rendering.enable_ssfr
+                },
                 fluid_color: lerp_arr4(self.rendering.fluid_color, other.rendering.fluid_color),
                 absorption: lerp_arr3(self.rendering.absorption, other.rendering.absorption),
-                scatter_color: lerp_arr3(self.rendering.scatter_color, other.rendering.scatter_color),
+                scatter_color: lerp_arr3(
+                    self.rendering.scatter_color,
+                    other.rendering.scatter_color,
+                ),
                 roughness: lerp_f32(self.rendering.roughness, other.rendering.roughness),
                 metallic: lerp_f32(self.rendering.metallic, other.rendering.metallic),
                 ior: lerp_f32(self.rendering.ior, other.rendering.ior),
-                enable_temporal: if t < 0.5 { self.rendering.enable_temporal } else { other.rendering.enable_temporal },
-                temporal_blend: lerp_f32(self.rendering.temporal_blend, other.rendering.temporal_blend),
+                enable_temporal: if t < 0.5 {
+                    self.rendering.enable_temporal
+                } else {
+                    other.rendering.enable_temporal
+                },
+                temporal_blend: lerp_f32(
+                    self.rendering.temporal_blend,
+                    other.rendering.temporal_blend,
+                ),
             },
             caustics: CausticsEditorConfig {
-                enabled: if t < 0.5 { self.caustics.enabled } else { other.caustics.enabled },
+                enabled: if t < 0.5 {
+                    self.caustics.enabled
+                } else {
+                    other.caustics.enabled
+                },
                 intensity: lerp_f32(self.caustics.intensity, other.caustics.intensity),
                 scale: lerp_f32(self.caustics.scale, other.caustics.scale),
                 speed: lerp_f32(self.caustics.speed, other.caustics.speed),
                 max_depth: lerp_f32(self.caustics.max_depth, other.caustics.max_depth),
             },
             god_rays: GodRaysEditorConfig {
-                enabled: if t < 0.5 { self.god_rays.enabled } else { other.god_rays.enabled },
+                enabled: if t < 0.5 {
+                    self.god_rays.enabled
+                } else {
+                    other.god_rays.enabled
+                },
                 intensity: lerp_f32(self.god_rays.intensity, other.god_rays.intensity),
                 samples: lerp_u32(self.god_rays.samples, other.god_rays.samples),
                 decay: lerp_f32(self.god_rays.decay, other.god_rays.decay),
                 max_depth: lerp_f32(self.god_rays.max_depth, other.god_rays.max_depth),
             },
             foam: FoamEditorConfig {
-                enabled: if t < 0.5 { self.foam.enabled } else { other.foam.enabled },
+                enabled: if t < 0.5 {
+                    self.foam.enabled
+                } else {
+                    other.foam.enabled
+                },
                 max_particles: lerp_u32(self.foam.max_particles, other.foam.max_particles),
                 lifetime: lerp_f32(self.foam.lifetime, other.foam.lifetime),
-                whitecap_threshold: lerp_f32(self.foam.whitecap_threshold, other.foam.whitecap_threshold),
+                whitecap_threshold: lerp_f32(
+                    self.foam.whitecap_threshold,
+                    other.foam.whitecap_threshold,
+                ),
                 shore_intensity: lerp_f32(self.foam.shore_intensity, other.foam.shore_intensity),
                 wake_intensity: lerp_f32(self.foam.wake_intensity, other.foam.wake_intensity),
                 color: lerp_arr3(self.foam.color, other.foam.color),
             },
             reflections: ReflectionEditorConfig {
-                enabled: if t < 0.5 { self.reflections.enabled } else { other.reflections.enabled },
+                enabled: if t < 0.5 {
+                    self.reflections.enabled
+                } else {
+                    other.reflections.enabled
+                },
                 intensity: lerp_f32(self.reflections.intensity, other.reflections.intensity),
-                fresnel_power: lerp_f32(self.reflections.fresnel_power, other.reflections.fresnel_power),
+                fresnel_power: lerp_f32(
+                    self.reflections.fresnel_power,
+                    other.reflections.fresnel_power,
+                ),
                 distortion: lerp_f32(self.reflections.distortion, other.reflections.distortion),
-                use_planar: if t < 0.5 { self.reflections.use_planar } else { other.reflections.use_planar },
+                use_planar: if t < 0.5 {
+                    self.reflections.use_planar
+                } else {
+                    other.reflections.use_planar
+                },
                 resolution: lerp_u32(self.reflections.resolution, other.reflections.resolution),
             },
             underwater: UnderwaterEditorConfig {
-                enabled: if t < 0.5 { self.underwater.enabled } else { other.underwater.enabled },
+                enabled: if t < 0.5 {
+                    self.underwater.enabled
+                } else {
+                    other.underwater.enabled
+                },
                 fog_color: lerp_arr3(self.underwater.fog_color, other.underwater.fog_color),
                 fog_density: lerp_f32(self.underwater.fog_density, other.underwater.fog_density),
-                enable_particles: if t < 0.5 { self.underwater.enable_particles } else { other.underwater.enable_particles },
-                particle_density: lerp_f32(self.underwater.particle_density, other.underwater.particle_density),
+                enable_particles: if t < 0.5 {
+                    self.underwater.enable_particles
+                } else {
+                    other.underwater.enable_particles
+                },
+                particle_density: lerp_f32(
+                    self.underwater.particle_density,
+                    other.underwater.particle_density,
+                ),
                 distortion: lerp_f32(self.underwater.distortion, other.underwater.distortion),
             },
             waterfall: WaterfallEditorConfig {
-                enabled: if t < 0.5 { self.waterfall.enabled } else { other.waterfall.enabled },
-                max_particles: lerp_u32(self.waterfall.max_particles, other.waterfall.max_particles),
+                enabled: if t < 0.5 {
+                    self.waterfall.enabled
+                } else {
+                    other.waterfall.enabled
+                },
+                max_particles: lerp_u32(
+                    self.waterfall.max_particles,
+                    other.waterfall.max_particles,
+                ),
                 spawn_rate: lerp_f32(self.waterfall.spawn_rate, other.waterfall.spawn_rate),
                 mist_density: lerp_f32(self.waterfall.mist_density, other.waterfall.mist_density),
-                mist_rise_speed: lerp_f32(self.waterfall.mist_rise_speed, other.waterfall.mist_rise_speed),
+                mist_rise_speed: lerp_f32(
+                    self.waterfall.mist_rise_speed,
+                    other.waterfall.mist_rise_speed,
+                ),
                 spray_angle: lerp_f32(self.waterfall.spray_angle, other.waterfall.spray_angle),
-                splash_intensity: lerp_f32(self.waterfall.splash_intensity, other.waterfall.splash_intensity),
+                splash_intensity: lerp_f32(
+                    self.waterfall.splash_intensity,
+                    other.waterfall.splash_intensity,
+                ),
             },
             waves: WaveConfig {
-                enabled: if t < 0.5 { self.waves.enabled } else { other.waves.enabled },
+                enabled: if t < 0.5 {
+                    self.waves.enabled
+                } else {
+                    other.waves.enabled
+                },
                 amplitude: lerp_f32(self.waves.amplitude, other.waves.amplitude),
                 frequency: lerp_f32(self.waves.frequency, other.waves.frequency),
                 speed: lerp_f32(self.waves.speed, other.waves.speed),
@@ -3524,18 +3874,41 @@ impl FluidEditorConfig {
                 ],
                 wind_strength: lerp_f32(self.waves.wind_strength, other.waves.wind_strength),
                 octaves: lerp_u32(self.waves.octaves, other.waves.octaves),
-                foam_on_peaks: if t < 0.5 { self.waves.foam_on_peaks } else { other.waves.foam_on_peaks },
+                foam_on_peaks: if t < 0.5 {
+                    self.waves.foam_on_peaks
+                } else {
+                    other.waves.foam_on_peaks
+                },
             },
             flow: FlowConfig {
-                enabled: if t < 0.5 { self.flow.enabled } else { other.flow.enabled },
+                enabled: if t < 0.5 {
+                    self.flow.enabled
+                } else {
+                    other.flow.enabled
+                },
                 direction: lerp_arr3(self.flow.direction, other.flow.direction),
                 speed: lerp_f32(self.flow.speed, other.flow.speed),
-                turbulence: if t < 0.5 { self.flow.turbulence } else { other.flow.turbulence },
-                turbulence_strength: lerp_f32(self.flow.turbulence_strength, other.flow.turbulence_strength),
-                enable_eddies: if t < 0.5 { self.flow.enable_eddies } else { other.flow.enable_eddies },
+                turbulence: if t < 0.5 {
+                    self.flow.turbulence
+                } else {
+                    other.flow.turbulence
+                },
+                turbulence_strength: lerp_f32(
+                    self.flow.turbulence_strength,
+                    other.flow.turbulence_strength,
+                ),
+                enable_eddies: if t < 0.5 {
+                    self.flow.enable_eddies
+                } else {
+                    other.flow.enable_eddies
+                },
             },
             lod: LodConfig {
-                enabled: if t < 0.5 { self.lod.enabled } else { other.lod.enabled },
+                enabled: if t < 0.5 {
+                    self.lod.enabled
+                } else {
+                    other.lod.enabled
+                },
                 distances: [
                     lerp_f32(self.lod.distances[0], other.lod.distances[0]),
                     lerp_f32(self.lod.distances[1], other.lod.distances[1]),
@@ -3548,64 +3921,105 @@ impl FluidEditorConfig {
                     lerp_f32(self.lod.particle_factors[2], other.lod.particle_factors[2]),
                     lerp_f32(self.lod.particle_factors[3], other.lod.particle_factors[3]),
                 ],
-                adaptive: if t < 0.5 { self.lod.adaptive } else { other.lod.adaptive },
-                target_frame_time: lerp_f32(self.lod.target_frame_time, other.lod.target_frame_time),
+                adaptive: if t < 0.5 {
+                    self.lod.adaptive
+                } else {
+                    other.lod.adaptive
+                },
+                target_frame_time: lerp_f32(
+                    self.lod.target_frame_time,
+                    other.lod.target_frame_time,
+                ),
             },
             // Don't interpolate emitters/drains - use target's
-            emitters: if t < 0.5 { self.emitters.clone() } else { other.emitters.clone() },
-            drains: if t < 0.5 { self.drains.clone() } else { other.drains.clone() },
+            emitters: if t < 0.5 {
+                self.emitters.clone()
+            } else {
+                other.emitters.clone()
+            },
+            drains: if t < 0.5 {
+                self.drains.clone()
+            } else {
+                other.drains.clone()
+            },
         }
     }
-    
+
     /// Smoothly transition to a target config over time
-    /// 
+    ///
     /// Returns the blended config. Call this each frame with increasing t.
-    pub fn smooth_transition(&self, target: &FluidEditorConfig, t: f32, smoothing: f32) -> FluidEditorConfig {
+    pub fn smooth_transition(
+        &self,
+        target: &FluidEditorConfig,
+        t: f32,
+        smoothing: f32,
+    ) -> FluidEditorConfig {
         // Apply smoothstep for more natural easing
         let t = t.clamp(0.0, 1.0);
         let smooth_t = t * t * (3.0 - 2.0 * t) * smoothing + t * (1.0 - smoothing);
         self.interpolate(target, smooth_t)
     }
-    
+
     /// Create a diff summary between two configs
     pub fn diff(&self, other: &FluidEditorConfig) -> Vec<String> {
         let mut diffs = Vec::new();
-        
+
         if self.preset != other.preset {
             diffs.push(format!("Preset: {:?} → {:?}", self.preset, other.preset));
         }
         if self.max_particles != other.max_particles {
-            diffs.push(format!("Max Particles: {} → {}", self.max_particles, other.max_particles));
+            diffs.push(format!(
+                "Max Particles: {} → {}",
+                self.max_particles, other.max_particles
+            ));
         }
         if (self.physics.viscosity - other.physics.viscosity).abs() > 0.01 {
-            diffs.push(format!("Viscosity: {:.1} → {:.1}", self.physics.viscosity, other.physics.viscosity));
+            diffs.push(format!(
+                "Viscosity: {:.1} → {:.1}",
+                self.physics.viscosity, other.physics.viscosity
+            ));
         }
         if self.caustics.enabled != other.caustics.enabled {
-            diffs.push(format!("Caustics: {} → {}", self.caustics.enabled, other.caustics.enabled));
+            diffs.push(format!(
+                "Caustics: {} → {}",
+                self.caustics.enabled, other.caustics.enabled
+            ));
         }
         if self.god_rays.enabled != other.god_rays.enabled {
-            diffs.push(format!("God Rays: {} → {}", self.god_rays.enabled, other.god_rays.enabled));
+            diffs.push(format!(
+                "God Rays: {} → {}",
+                self.god_rays.enabled, other.god_rays.enabled
+            ));
         }
         if self.foam.enabled != other.foam.enabled {
-            diffs.push(format!("Foam: {} → {}", self.foam.enabled, other.foam.enabled));
+            diffs.push(format!(
+                "Foam: {} → {}",
+                self.foam.enabled, other.foam.enabled
+            ));
         }
         if self.waves.enabled != other.waves.enabled {
-            diffs.push(format!("Waves: {} → {}", self.waves.enabled, other.waves.enabled));
+            diffs.push(format!(
+                "Waves: {} → {}",
+                self.waves.enabled, other.waves.enabled
+            ));
         }
         if self.flow.enabled != other.flow.enabled {
-            diffs.push(format!("Flow: {} → {}", self.flow.enabled, other.flow.enabled));
+            diffs.push(format!(
+                "Flow: {} → {}",
+                self.flow.enabled, other.flow.enabled
+            ));
         }
-        
+
         diffs
     }
-    
+
     /// Apply quality preset settings
     pub fn apply_quality_preset(&mut self, quality: QualityPreset) {
         self.quality = quality;
         self.max_particles = quality.recommended_particles();
         self.god_rays.samples = quality.recommended_god_ray_samples();
         self.reflections.resolution = quality.recommended_reflection_resolution();
-        
+
         // Adjust LOD based on quality
         match quality {
             QualityPreset::Low => {
@@ -3627,27 +4041,55 @@ impl FluidEditorConfig {
             }
         }
     }
-    
+
     /// Get a summary string for the editor
     pub fn summary(&self) -> String {
         let effects: Vec<&str> = [
-            if self.caustics.enabled { Some("Caustics") } else { None },
-            if self.god_rays.enabled { Some("God Rays") } else { None },
-            if self.foam.enabled { Some("Foam") } else { None },
-            if self.reflections.enabled { Some("Reflections") } else { None },
-            if self.waves.enabled { Some("Waves") } else { None },
-            if self.flow.enabled { Some("Flow") } else { None },
+            if self.caustics.enabled {
+                Some("Caustics")
+            } else {
+                None
+            },
+            if self.god_rays.enabled {
+                Some("God Rays")
+            } else {
+                None
+            },
+            if self.foam.enabled {
+                Some("Foam")
+            } else {
+                None
+            },
+            if self.reflections.enabled {
+                Some("Reflections")
+            } else {
+                None
+            },
+            if self.waves.enabled {
+                Some("Waves")
+            } else {
+                None
+            },
+            if self.flow.enabled {
+                Some("Flow")
+            } else {
+                None
+            },
         ]
         .into_iter()
         .flatten()
         .collect();
-        
+
         format!(
             "{} ({:?}) - {}K particles, Effects: {}",
             self.name,
             self.quality,
             self.max_particles / 1000,
-            if effects.is_empty() { "None".to_string() } else { effects.join(", ") }
+            if effects.is_empty() {
+                "None".to_string()
+            } else {
+                effects.join(", ")
+            }
         )
     }
 
@@ -3770,10 +4212,14 @@ mod tests {
             WaterBodyPreset::ArcticWater,
             WaterBodyPreset::Custom,
         ];
-        
+
         for preset in presets {
             let desc = preset.description();
-            assert!(!desc.is_empty(), "Preset {:?} should have description", preset);
+            assert!(
+                !desc.is_empty(),
+                "Preset {:?} should have description",
+                preset
+            );
         }
     }
 
@@ -3798,7 +4244,7 @@ mod tests {
     #[test]
     fn test_config_default() {
         let config = FluidEditorConfig::default();
-        
+
         // Uses TropicalOcean as default
         assert_eq!(config.preset, WaterBodyPreset::TropicalOcean);
         assert_eq!(config.quality, QualityPreset::Ultra);
@@ -3807,11 +4253,14 @@ mod tests {
     #[test]
     fn test_config_default_physics() {
         let config = FluidEditorConfig::default();
-        
+
         // Legacy API compatibility
         assert_eq!(config.smoothing_radius(), config.physics.smoothing_radius);
         assert_eq!(config.target_density(), config.physics.target_density);
-        assert_eq!(config.pressure_multiplier(), config.physics.pressure_multiplier);
+        assert_eq!(
+            config.pressure_multiplier(),
+            config.physics.pressure_multiplier
+        );
         assert_eq!(config.viscosity(), config.physics.viscosity);
         assert_eq!(config.iterations(), config.physics.iterations);
     }
@@ -3819,16 +4268,19 @@ mod tests {
     #[test]
     fn test_config_default_thermal() {
         let config = FluidEditorConfig::default();
-        
+
         assert!(config.enable_temperature());
         assert_eq!(config.thermal_diffusivity(), config.thermal.diffusivity);
-        assert_eq!(config.buoyancy_coefficient(), config.thermal.buoyancy_coefficient);
+        assert_eq!(
+            config.buoyancy_coefficient(),
+            config.thermal.buoyancy_coefficient
+        );
     }
 
     #[test]
     fn test_config_default_rendering() {
         let config = FluidEditorConfig::default();
-        
+
         assert!(config.enable_ssfr());
         assert!(config.enable_caustics());
         assert!(config.enable_temporal());
@@ -3838,7 +4290,7 @@ mod tests {
     #[test]
     fn test_config_default_lod() {
         let config = FluidEditorConfig::default();
-        
+
         assert_eq!(config.lod_distances().len(), 4);
         assert!(config.lod_distances()[0] > 0.0);
     }
@@ -3860,7 +4312,7 @@ mod tests {
             WaterBodyPreset::ArcticWater,
             WaterBodyPreset::Custom,
         ];
-        
+
         for preset in presets {
             let config = FluidEditorConfig::from_preset(preset.clone());
             assert_eq!(config.preset, preset);
@@ -3872,7 +4324,7 @@ mod tests {
     #[test]
     fn test_pool_preset() {
         let config = FluidEditorConfig::pool();
-        
+
         assert_eq!(config.preset, WaterBodyPreset::Pool);
         assert!(config.caustics.enabled);
         assert!(config.reflections.use_planar);
@@ -3883,7 +4335,7 @@ mod tests {
     #[test]
     fn test_river_preset() {
         let config = FluidEditorConfig::river();
-        
+
         assert_eq!(config.preset, WaterBodyPreset::River);
         assert!(config.flow.enabled);
         assert!(config.physics.enable_vorticity);
@@ -3893,7 +4345,7 @@ mod tests {
     #[test]
     fn test_ocean_preset() {
         let config = FluidEditorConfig::ocean();
-        
+
         assert_eq!(config.preset, WaterBodyPreset::Ocean);
         assert!(config.waves.enabled);
         assert!(config.waves.foam_on_peaks);
@@ -3903,7 +4355,7 @@ mod tests {
     #[test]
     fn test_waterfall_preset() {
         let config = FluidEditorConfig::waterfall();
-        
+
         assert_eq!(config.preset, WaterBodyPreset::Waterfall);
         assert!(config.waterfall.enabled);
         assert!(config.flow.enabled);
@@ -3913,7 +4365,7 @@ mod tests {
     #[test]
     fn test_swamp_preset() {
         let config = FluidEditorConfig::swamp();
-        
+
         assert_eq!(config.preset, WaterBodyPreset::Swamp);
         assert!(config.physics.viscosity > 15.0); // Thick water
         assert!(!config.caustics.enabled);
@@ -3923,7 +4375,7 @@ mod tests {
     #[test]
     fn test_hot_spring_preset() {
         let config = FluidEditorConfig::hot_spring();
-        
+
         assert_eq!(config.preset, WaterBodyPreset::HotSpring);
         assert!(config.thermal.enabled);
         assert!(config.thermal.ambient_temperature > 30.0);
@@ -3935,7 +4387,7 @@ mod tests {
     #[test]
     fn test_config_performance_preset() {
         let config = FluidEditorConfig::performance();
-        
+
         // Performance should have fewer iterations and disabled features
         assert_eq!(config.quality, QualityPreset::Low);
         assert!(!config.enable_caustics());
@@ -3946,7 +4398,7 @@ mod tests {
     #[test]
     fn test_config_quality_preset() {
         let config = FluidEditorConfig::quality();
-        
+
         // Quality should be TropicalOcean with all features
         assert!(config.enable_caustics());
         assert!(config.enable_temperature());
@@ -3958,11 +4410,11 @@ mod tests {
     #[test]
     fn test_clamp_smoothing_radius() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.physics.smoothing_radius = 0.1;
         config.clamp();
         assert_eq!(config.physics.smoothing_radius, 0.5);
-        
+
         config.physics.smoothing_radius = 10.0;
         config.clamp();
         assert_eq!(config.physics.smoothing_radius, 5.0);
@@ -3971,11 +4423,11 @@ mod tests {
     #[test]
     fn test_clamp_target_density() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.physics.target_density = 0.1;
         config.clamp();
         assert_eq!(config.physics.target_density, 1.0);
-        
+
         config.physics.target_density = 100.0;
         config.clamp();
         assert_eq!(config.physics.target_density, 50.0);
@@ -3984,11 +4436,11 @@ mod tests {
     #[test]
     fn test_clamp_pressure_multiplier() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.physics.pressure_multiplier = 1.0;
         config.clamp();
         assert_eq!(config.physics.pressure_multiplier, 10.0);
-        
+
         config.physics.pressure_multiplier = 2000.0;
         config.clamp();
         assert_eq!(config.physics.pressure_multiplier, 1000.0);
@@ -3997,11 +4449,11 @@ mod tests {
     #[test]
     fn test_clamp_iterations() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.physics.iterations = 0;
         config.clamp();
         assert_eq!(config.physics.iterations, 1);
-        
+
         config.physics.iterations = 100;
         config.clamp();
         assert_eq!(config.physics.iterations, 20);
@@ -4010,11 +4462,11 @@ mod tests {
     #[test]
     fn test_clamp_gravity() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.physics.gravity[1] = -50.0;
         config.clamp();
         assert_eq!(config.physics.gravity[1], -30.0);
-        
+
         config.physics.gravity[1] = 50.0;
         config.clamp();
         assert_eq!(config.physics.gravity[1], 30.0);
@@ -4023,11 +4475,11 @@ mod tests {
     #[test]
     fn test_clamp_temporal_blend() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.rendering.temporal_blend = -0.5;
         config.clamp();
         assert_eq!(config.rendering.temporal_blend, 0.0);
-        
+
         config.rendering.temporal_blend = 1.5;
         config.clamp();
         assert_eq!(config.rendering.temporal_blend, 1.0);
@@ -4038,9 +4490,12 @@ mod tests {
         let config_before = FluidEditorConfig::default();
         let mut config = config_before.clone();
         config.clamp();
-        
+
         // Default values should be unchanged after clamp
-        assert_eq!(config.physics.smoothing_radius, config_before.physics.smoothing_radius);
+        assert_eq!(
+            config.physics.smoothing_radius,
+            config_before.physics.smoothing_radius
+        );
         assert_eq!(config.physics.iterations, config_before.physics.iterations);
     }
 
@@ -4051,7 +4506,7 @@ mod tests {
         let config = FluidEditorConfig::quality();
         let json = config.to_json().unwrap();
         let loaded = FluidEditorConfig::from_json(&json).unwrap();
-        
+
         assert_eq!(config.physics.iterations, loaded.physics.iterations);
         assert_eq!(config.preset, loaded.preset);
         assert_eq!(config.max_particles, loaded.max_particles);
@@ -4061,7 +4516,7 @@ mod tests {
     fn test_config_to_json() {
         let config = FluidEditorConfig::default();
         let json = config.to_json().unwrap();
-        
+
         assert!(json.contains("physics"));
         assert!(json.contains("thermal"));
         assert!(json.contains("rendering"));
@@ -4074,7 +4529,7 @@ mod tests {
         let config = FluidEditorConfig::ocean();
         let toml = config.to_toml().unwrap();
         let loaded = FluidEditorConfig::from_toml(&toml).unwrap();
-        
+
         assert_eq!(config.physics.iterations, loaded.physics.iterations);
         assert_eq!(config.preset, loaded.preset);
     }
@@ -4091,10 +4546,13 @@ mod tests {
         let config = FluidEditorConfig::default();
         let json = config.to_json().unwrap();
         let loaded = FluidEditorConfig::from_json(&json).unwrap();
-        
+
         assert_eq!(config.rendering.fluid_color, loaded.rendering.fluid_color);
         assert_eq!(config.rendering.absorption, loaded.rendering.absorption);
-        assert_eq!(config.rendering.scatter_color, loaded.rendering.scatter_color);
+        assert_eq!(
+            config.rendering.scatter_color,
+            loaded.rendering.scatter_color
+        );
     }
 
     // ==================== Clone/Debug Tests ====================
@@ -4103,9 +4561,12 @@ mod tests {
     fn test_config_clone() {
         let config = FluidEditorConfig::quality();
         let cloned = config.clone();
-        
+
         assert_eq!(config.physics.iterations, cloned.physics.iterations);
-        assert_eq!(config.physics.smoothing_radius, cloned.physics.smoothing_radius);
+        assert_eq!(
+            config.physics.smoothing_radius,
+            cloned.physics.smoothing_radius
+        );
         assert_eq!(config.rendering.fluid_color, cloned.rendering.fluid_color);
     }
 
@@ -4113,7 +4574,7 @@ mod tests {
     fn test_config_debug() {
         let config = FluidEditorConfig::default();
         let debug_str = format!("{:?}", config);
-        
+
         assert!(debug_str.contains("FluidEditorConfig"));
         assert!(debug_str.contains("physics"));
     }
@@ -4123,7 +4584,7 @@ mod tests {
     #[test]
     fn test_emitter_default() {
         let emitter = EmitterEditorConfig::default();
-        
+
         assert!(emitter.enabled);
         assert_eq!(emitter.shape, EmitterShapeType::Point);
         assert!(emitter.rate > 0.0);
@@ -4132,7 +4593,7 @@ mod tests {
     #[test]
     fn test_emitter_fountain() {
         let emitter = EmitterEditorConfig::fountain([0.0, 0.0, 0.0]);
-        
+
         assert_eq!(emitter.name, "Fountain");
         assert!(emitter.velocity[1] > 0.0); // Upward
     }
@@ -4140,7 +4601,7 @@ mod tests {
     #[test]
     fn test_emitter_waterfall_source() {
         let emitter = EmitterEditorConfig::waterfall_source([0.0, 10.0, 0.0], 5.0);
-        
+
         assert_eq!(emitter.name, "Waterfall Source");
         assert_eq!(emitter.shape, EmitterShapeType::Box);
         assert!(emitter.velocity[1] < 0.0); // Downward
@@ -4149,7 +4610,7 @@ mod tests {
     #[test]
     fn test_emitter_rain() {
         let emitter = EmitterEditorConfig::rain([100.0, 100.0], 50.0);
-        
+
         assert_eq!(emitter.name, "Rain");
         assert_eq!(emitter.position[1], 50.0);
         assert!(emitter.velocity[1] < 0.0); // Downward
@@ -4160,7 +4621,7 @@ mod tests {
     #[test]
     fn test_drain_default() {
         let drain = DrainEditorConfig::default();
-        
+
         assert!(drain.enabled);
         assert!(drain.radius > 0.0);
         assert!(drain.strength > 0.0);
@@ -4173,7 +4634,7 @@ mod tests {
     fn test_add_emitter() {
         let mut config = FluidEditorConfig::default();
         let initial_count = config.emitters.len();
-        
+
         config.add_emitter(EmitterEditorConfig::fountain([0.0, 0.0, 0.0]));
         assert_eq!(config.emitters.len(), initial_count + 1);
     }
@@ -4183,7 +4644,7 @@ mod tests {
         let mut config = FluidEditorConfig::default();
         config.add_emitter(EmitterEditorConfig::fountain([0.0, 0.0, 0.0]));
         config.add_emitter(EmitterEditorConfig::rain([10.0, 10.0], 20.0));
-        
+
         let removed = config.remove_emitter(0);
         assert!(removed.is_some());
         assert_eq!(removed.unwrap().name, "Fountain");
@@ -4200,7 +4661,7 @@ mod tests {
     fn test_add_drain() {
         let mut config = FluidEditorConfig::default();
         let initial_count = config.drains.len();
-        
+
         config.add_drain(DrainEditorConfig::default());
         assert_eq!(config.drains.len(), initial_count + 1);
     }
@@ -4212,7 +4673,7 @@ mod tests {
         let mut config = FluidEditorConfig::default();
         config.max_particles = 200_000;
         config.physics.iterations = 15;
-        
+
         let warnings = config.validate();
         assert!(!warnings.is_empty());
     }
@@ -4221,7 +4682,7 @@ mod tests {
     fn test_validate_performance_no_warnings() {
         let config = FluidEditorConfig::performance();
         let warnings = config.validate();
-        
+
         // Performance preset should have no warnings
         assert!(warnings.is_empty());
     }
@@ -4232,7 +4693,7 @@ mod tests {
     fn test_estimated_performance_cost_low() {
         let config = FluidEditorConfig::performance();
         let cost = config.estimated_performance_cost();
-        
+
         assert!(cost < 30, "Performance preset should have low cost");
     }
 
@@ -4240,7 +4701,7 @@ mod tests {
     fn test_estimated_performance_cost_high() {
         let config = FluidEditorConfig::quality();
         let cost = config.estimated_performance_cost();
-        
+
         assert!(cost > 30, "Quality preset should have higher cost");
     }
 
@@ -4249,7 +4710,7 @@ mod tests {
     #[test]
     fn test_wave_calm() {
         let wave = WaveConfig::calm();
-        
+
         assert!(wave.amplitude < 0.5);
         assert!(!wave.foam_on_peaks);
     }
@@ -4257,7 +4718,7 @@ mod tests {
     #[test]
     fn test_wave_stormy() {
         let wave = WaveConfig::stormy();
-        
+
         assert!(wave.amplitude > 1.0);
         assert!(wave.foam_on_peaks);
         assert!(wave.octaves > 4);
@@ -4268,7 +4729,7 @@ mod tests {
     #[test]
     fn test_config_lod_distances_monotonic() {
         let config = FluidEditorConfig::default();
-        
+
         // LOD distances should be increasing
         assert!(config.lod.distances[0] < config.lod.distances[1]);
         assert!(config.lod.distances[1] < config.lod.distances[2]);
@@ -4280,7 +4741,7 @@ mod tests {
     #[test]
     fn test_config_color_valid_range() {
         let config = FluidEditorConfig::default();
-        
+
         for c in &config.rendering.fluid_color {
             assert!(*c >= 0.0 && *c <= 1.0);
         }
@@ -4305,7 +4766,7 @@ mod tests {
             FluidEditorConfig::performance(),
             FluidEditorConfig::quality(),
         ];
-        
+
         for mut preset in presets {
             let original_iterations = preset.physics.iterations;
             preset.clamp();
@@ -4317,12 +4778,12 @@ mod tests {
     #[test]
     fn test_config_viscosity_range() {
         let mut config = FluidEditorConfig::default();
-        
+
         // Test lower bound
         config.physics.viscosity = -5.0;
         config.clamp();
         assert_eq!(config.physics.viscosity, 0.0);
-        
+
         // Test upper bound
         config.physics.viscosity = 200.0;
         config.clamp();
@@ -4332,11 +4793,11 @@ mod tests {
     #[test]
     fn test_config_surface_tension_range() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.physics.surface_tension = -0.5;
         config.clamp();
         assert_eq!(config.physics.surface_tension, 0.0);
-        
+
         config.physics.surface_tension = 5.0;
         config.clamp();
         assert_eq!(config.physics.surface_tension, 1.0);
@@ -4345,11 +4806,11 @@ mod tests {
     #[test]
     fn test_config_caustic_intensity_range() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.caustics.intensity = -1.0;
         config.clamp();
         assert_eq!(config.caustics.intensity, 0.0);
-        
+
         config.caustics.intensity = 10.0;
         config.clamp();
         assert_eq!(config.caustics.intensity, 5.0);
@@ -4360,7 +4821,7 @@ mod tests {
     #[test]
     fn test_physics_config_default() {
         let physics = PhysicsConfig::default();
-        
+
         assert_eq!(physics.smoothing_radius, 1.0);
         assert_eq!(physics.iterations, 4);
         assert!(physics.enable_vorticity);
@@ -4379,7 +4840,7 @@ mod tests {
     #[test]
     fn test_thermal_config_default() {
         let thermal = ThermalConfig::default();
-        
+
         assert!(thermal.enabled);
         assert_eq!(thermal.ambient_temperature, 20.0);
     }
@@ -4397,7 +4858,7 @@ mod tests {
     #[test]
     fn test_legacy_api_accessors() {
         let config = FluidEditorConfig::default();
-        
+
         // All legacy accessors should work
         let _ = config.smoothing_radius();
         let _ = config.target_density();
@@ -4443,7 +4904,7 @@ mod tests {
     fn test_editor_metadata_fields_for_category() {
         let physics_fields = EditorMetadata::fields_for_category("Physics");
         assert!(!physics_fields.is_empty());
-        
+
         for field in physics_fields {
             assert_eq!(field.category, "Physics");
         }
@@ -4453,10 +4914,10 @@ mod tests {
     fn test_editor_metadata_simple_fields() {
         let simple = EditorMetadata::simple_fields();
         let all = EditorMetadata::all_fields();
-        
+
         // Simple should have fewer fields than all
         assert!(simple.len() <= all.len());
-        
+
         // None of the simple fields should be marked advanced
         for field in simple {
             assert!(!field.advanced);
@@ -4466,16 +4927,20 @@ mod tests {
     #[test]
     fn test_field_metadata_has_tooltips() {
         let fields = EditorMetadata::all_fields();
-        
+
         for field in fields {
-            assert!(!field.tooltip.is_empty(), "Field {} should have tooltip", field.name);
+            assert!(
+                !field.tooltip.is_empty(),
+                "Field {} should have tooltip",
+                field.name
+            );
         }
     }
 
     #[test]
     fn test_widget_type_slider() {
         let field = EditorMetadata::smoothing_radius();
-        
+
         match field.widget {
             WidgetType::Slider { min, max, step } => {
                 assert!(min < max);
@@ -4488,14 +4953,14 @@ mod tests {
     #[test]
     fn test_widget_type_toggle() {
         let field = EditorMetadata::caustics_enabled();
-        
+
         assert!(matches!(field.widget, WidgetType::Toggle));
     }
 
     #[test]
     fn test_widget_type_color() {
         let field = EditorMetadata::fluid_color();
-        
+
         assert!(matches!(field.widget, WidgetType::ColorRgba));
     }
 
@@ -4505,7 +4970,7 @@ mod tests {
     fn test_config_history_new() {
         let config = FluidEditorConfig::default();
         let history = ConfigHistory::new(config.clone());
-        
+
         assert!(!history.can_undo());
         assert!(!history.can_redo());
         assert_eq!(history.undo_count(), 0);
@@ -4516,11 +4981,11 @@ mod tests {
     fn test_config_history_push() {
         let config = FluidEditorConfig::default();
         let mut history = ConfigHistory::new(config.clone());
-        
+
         let mut new_config = config.clone();
         new_config.max_particles = 50_000;
         history.push(new_config);
-        
+
         assert!(history.can_undo());
         assert!(!history.can_redo());
         assert_eq!(history.undo_count(), 1);
@@ -4530,17 +4995,17 @@ mod tests {
     fn test_config_history_undo_redo() {
         let config = FluidEditorConfig::default();
         let mut history = ConfigHistory::new(config.clone());
-        
+
         let mut config2 = config.clone();
         config2.max_particles = 50_000;
         history.push(config2);
-        
+
         // Undo
         let undone = history.undo();
         assert!(undone.is_some());
         assert!(history.can_redo());
         assert!(!history.can_undo());
-        
+
         // Redo
         let redone = history.redo();
         assert!(redone.is_some());
@@ -4551,14 +5016,14 @@ mod tests {
     fn test_config_history_max_size() {
         let config = FluidEditorConfig::default();
         let mut history = ConfigHistory::with_max_size(config.clone(), 5);
-        
+
         // Push more than max size
         for i in 0..10 {
             let mut c = config.clone();
             c.max_particles = i * 1000;
             history.push(c);
         }
-        
+
         // Should only keep max_size entries
         assert!(history.undo_count() <= 5);
     }
@@ -4567,12 +5032,12 @@ mod tests {
     fn test_config_history_clear() {
         let config = FluidEditorConfig::default();
         let mut history = ConfigHistory::new(config.clone());
-        
+
         history.push(FluidEditorConfig::pool());
         history.push(FluidEditorConfig::ocean());
-        
+
         history.clear();
-        
+
         assert!(!history.can_undo());
         assert!(!history.can_redo());
     }
@@ -4582,7 +5047,7 @@ mod tests {
     #[test]
     fn test_aabb_new() {
         let aabb = FluidAABB::new([0.0, 0.0, 0.0], [10.0, 5.0, 10.0]);
-        
+
         assert_eq!(aabb.min, [0.0, 0.0, 0.0]);
         assert_eq!(aabb.max, [10.0, 5.0, 10.0]);
     }
@@ -4590,7 +5055,7 @@ mod tests {
     #[test]
     fn test_aabb_from_center_extents() {
         let aabb = FluidAABB::from_center_extents([5.0, 2.5, 5.0], [5.0, 2.5, 5.0]);
-        
+
         assert_eq!(aabb.min, [0.0, 0.0, 0.0]);
         assert_eq!(aabb.max, [10.0, 5.0, 10.0]);
     }
@@ -4599,7 +5064,7 @@ mod tests {
     fn test_aabb_center() {
         let aabb = FluidAABB::new([0.0, 0.0, 0.0], [10.0, 10.0, 10.0]);
         let center = aabb.center();
-        
+
         assert_eq!(center, [5.0, 5.0, 5.0]);
     }
 
@@ -4607,21 +5072,21 @@ mod tests {
     fn test_aabb_size() {
         let aabb = FluidAABB::new([0.0, 0.0, 0.0], [10.0, 5.0, 20.0]);
         let size = aabb.size();
-        
+
         assert_eq!(size, [10.0, 5.0, 20.0]);
     }
 
     #[test]
     fn test_aabb_volume() {
         let aabb = FluidAABB::new([0.0, 0.0, 0.0], [2.0, 3.0, 4.0]);
-        
+
         assert_eq!(aabb.volume(), 24.0);
     }
 
     #[test]
     fn test_aabb_contains_point() {
         let aabb = FluidAABB::new([0.0, 0.0, 0.0], [10.0, 10.0, 10.0]);
-        
+
         assert!(aabb.contains_point([5.0, 5.0, 5.0]));
         assert!(aabb.contains_point([0.0, 0.0, 0.0]));
         assert!(aabb.contains_point([10.0, 10.0, 10.0]));
@@ -4634,7 +5099,7 @@ mod tests {
         let aabb1 = FluidAABB::new([0.0, 0.0, 0.0], [10.0, 10.0, 10.0]);
         let aabb2 = FluidAABB::new([5.0, 5.0, 5.0], [15.0, 15.0, 15.0]);
         let aabb3 = FluidAABB::new([20.0, 20.0, 20.0], [30.0, 30.0, 30.0]);
-        
+
         assert!(aabb1.overlaps(&aabb2));
         assert!(!aabb1.overlaps(&aabb3));
     }
@@ -4643,7 +5108,7 @@ mod tests {
     fn test_aabb_expand() {
         let mut aabb = FluidAABB::new([0.0, 0.0, 0.0], [10.0, 10.0, 10.0]);
         aabb.expand([15.0, 5.0, 5.0]);
-        
+
         assert_eq!(aabb.max[0], 15.0);
     }
 
@@ -4652,7 +5117,7 @@ mod tests {
         let aabb1 = FluidAABB::new([0.0, 0.0, 0.0], [5.0, 5.0, 5.0]);
         let aabb2 = FluidAABB::new([3.0, 3.0, 3.0], [10.0, 10.0, 10.0]);
         let merged = aabb1.merge(&aabb2);
-        
+
         assert_eq!(merged.min, [0.0, 0.0, 0.0]);
         assert_eq!(merged.max, [10.0, 10.0, 10.0]);
     }
@@ -4667,26 +5132,26 @@ mod tests {
             spawn_time_ms: 0.5,
             ..Default::default()
         };
-        
+
         assert_eq!(metrics.total_time_ms(), 5.5);
     }
 
     #[test]
     fn test_performance_metrics_grade() {
         let mut metrics = FluidPerformanceMetrics::default();
-        
+
         metrics.physics_time_ms = 1.0;
         assert_eq!(metrics.grade(), 'A');
-        
+
         metrics.physics_time_ms = 3.0;
         assert_eq!(metrics.grade(), 'B');
-        
+
         metrics.physics_time_ms = 6.0;
         assert_eq!(metrics.grade(), 'C');
-        
+
         metrics.physics_time_ms = 10.0;
         assert_eq!(metrics.grade(), 'D');
-        
+
         metrics.physics_time_ms = 15.0;
         assert_eq!(metrics.grade(), 'F');
     }
@@ -4699,7 +5164,7 @@ mod tests {
             spawn_time_ms: 1.0,
             ..Default::default()
         };
-        
+
         assert!(metrics.is_within_budget(16.67)); // 60 FPS
         assert!(!metrics.is_within_budget(10.0));
     }
@@ -4713,7 +5178,7 @@ mod tests {
             gpu_memory_bytes: 100 * 1024 * 1024, // 100 MB
             ..Default::default()
         };
-        
+
         let summary = metrics.summary();
         assert!(summary.contains("50000"));
         assert!(summary.contains("2.50"));
@@ -4724,7 +5189,7 @@ mod tests {
     #[test]
     fn test_colorblind_palette_water_colors() {
         let palettes = ColorblindPalette::all_palettes();
-        
+
         for palette in palettes {
             let color = palette.water_color();
             for c in color {
@@ -4736,7 +5201,7 @@ mod tests {
     #[test]
     fn test_colorblind_palette_descriptions() {
         let palettes = ColorblindPalette::all_palettes();
-        
+
         for palette in palettes {
             let desc = palette.description();
             assert!(!desc.is_empty());
@@ -4746,7 +5211,7 @@ mod tests {
     #[test]
     fn test_accessibility_settings_default() {
         let settings = AccessibilitySettings::default();
-        
+
         assert_eq!(settings.palette, ColorblindPalette::Standard);
         assert!(settings.show_slider_values);
         assert!(!settings.large_fonts);
@@ -4759,10 +5224,10 @@ mod tests {
     fn test_preview_hint_wave_amplitude() {
         let hint = PreviewHint::wave_amplitude(0.1);
         assert!(hint.effect_description.contains("Calm"));
-        
+
         let hint = PreviewHint::wave_amplitude(0.5);
         assert!(hint.effect_description.contains("Moderate"));
-        
+
         let hint = PreviewHint::wave_amplitude(2.0);
         assert!(hint.effect_description.contains("Large"));
     }
@@ -4771,10 +5236,10 @@ mod tests {
     fn test_preview_hint_particle_count() {
         let hint = PreviewHint::particle_count(5_000);
         assert!(hint.performance_impact == "Low");
-        
+
         let hint = PreviewHint::particle_count(30_000);
         assert!(hint.performance_impact == "Medium");
-        
+
         let hint = PreviewHint::particle_count(100_000);
         assert!(hint.performance_impact == "High");
     }
@@ -4783,10 +5248,10 @@ mod tests {
     fn test_preview_hint_viscosity() {
         let hint = PreviewHint::viscosity(2.0);
         assert!(hint.effect_description.contains("water"));
-        
+
         let hint = PreviewHint::viscosity(15.0);
         assert!(hint.effect_description.contains("oil"));
-        
+
         let hint = PreviewHint::viscosity(40.0);
         assert!(hint.effect_description.contains("honey"));
     }
@@ -4795,39 +5260,30 @@ mod tests {
 
     #[test]
     fn test_batch_multiply_viscosity() {
-        let mut configs = vec![
-            FluidEditorConfig::pool(),
-            FluidEditorConfig::ocean(),
-        ];
-        
+        let mut configs = vec![FluidEditorConfig::pool(), FluidEditorConfig::ocean()];
+
         let original = configs[0].physics.viscosity;
         BatchOperation::multiply_viscosity(&mut configs, &[0], 2.0);
-        
+
         assert_eq!(configs[0].physics.viscosity, original * 2.0);
     }
 
     #[test]
     fn test_batch_set_caustics() {
-        let mut configs = vec![
-            FluidEditorConfig::pool(),
-            FluidEditorConfig::ocean(),
-        ];
-        
+        let mut configs = vec![FluidEditorConfig::pool(), FluidEditorConfig::ocean()];
+
         BatchOperation::set_caustics(&mut configs, &[0, 1], false);
-        
+
         assert!(!configs[0].caustics.enabled);
         assert!(!configs[1].caustics.enabled);
     }
 
     #[test]
     fn test_batch_set_quality() {
-        let mut configs = vec![
-            FluidEditorConfig::pool(),
-            FluidEditorConfig::ocean(),
-        ];
-        
+        let mut configs = vec![FluidEditorConfig::pool(), FluidEditorConfig::ocean()];
+
         BatchOperation::set_quality(&mut configs, &[0, 1], QualityPreset::Low);
-        
+
         assert_eq!(configs[0].max_particles, 5_000);
         assert_eq!(configs[1].max_particles, 5_000);
     }
@@ -4835,10 +5291,13 @@ mod tests {
     #[test]
     fn test_batch_apply_palette() {
         let mut configs = vec![FluidEditorConfig::pool()];
-        
+
         BatchOperation::apply_palette(&mut configs, &[0], ColorblindPalette::Deuteranopia);
-        
-        assert_eq!(configs[0].rendering.fluid_color, ColorblindPalette::Deuteranopia.water_color());
+
+        assert_eq!(
+            configs[0].rendering.fluid_color,
+            ColorblindPalette::Deuteranopia.water_color()
+        );
     }
 
     // ==================== Interpolation Tests ====================
@@ -4847,9 +5306,9 @@ mod tests {
     fn test_config_interpolate_zero() {
         let config1 = FluidEditorConfig::pool();
         let config2 = FluidEditorConfig::ocean();
-        
+
         let result = config1.interpolate(&config2, 0.0);
-        
+
         assert_eq!(result.max_particles, config1.max_particles);
     }
 
@@ -4857,9 +5316,9 @@ mod tests {
     fn test_config_interpolate_one() {
         let config1 = FluidEditorConfig::pool();
         let config2 = FluidEditorConfig::ocean();
-        
+
         let result = config1.interpolate(&config2, 1.0);
-        
+
         assert_eq!(result.max_particles, config2.max_particles);
     }
 
@@ -4869,9 +5328,9 @@ mod tests {
         let mut config2 = FluidEditorConfig::custom();
         config1.physics.viscosity;
         config2.physics.viscosity = 20.0;
-        
+
         let result = config1.interpolate(&config2, 0.5);
-        
+
         // Should be halfway between
         let expected = (config1.physics.viscosity + config2.physics.viscosity) / 2.0;
         assert!((result.physics.viscosity - expected).abs() < 0.01);
@@ -4881,9 +5340,9 @@ mod tests {
     fn test_config_smooth_transition() {
         let config1 = FluidEditorConfig::pool();
         let config2 = FluidEditorConfig::ocean();
-        
+
         let result = config1.smooth_transition(&config2, 0.5, 1.0);
-        
+
         // Should be smoothstepped
         assert!(result.max_particles > config1.max_particles);
         assert!(result.max_particles < config2.max_particles);
@@ -4893,9 +5352,9 @@ mod tests {
     fn test_config_diff() {
         let config1 = FluidEditorConfig::pool();
         let config2 = FluidEditorConfig::ocean();
-        
+
         let diffs = config1.diff(&config2);
-        
+
         assert!(!diffs.is_empty());
         // Should detect preset difference
         assert!(diffs.iter().any(|d| d.contains("Preset")));
@@ -4904,9 +5363,9 @@ mod tests {
     #[test]
     fn test_config_apply_quality_preset() {
         let mut config = FluidEditorConfig::default();
-        
+
         config.apply_quality_preset(QualityPreset::Low);
-        
+
         assert_eq!(config.max_particles, 5_000);
         assert!(!config.caustics.enabled);
         assert!(!config.god_rays.enabled);
@@ -4916,7 +5375,7 @@ mod tests {
     fn test_config_summary() {
         let config = FluidEditorConfig::ocean();
         let summary = config.summary();
-        
+
         assert!(summary.contains("Ocean"));
         assert!(summary.contains("50K")); // 50,000 particles
     }
@@ -4940,9 +5399,18 @@ mod tests {
     #[test]
     fn test_quality_preset_reflection_resolution() {
         assert_eq!(QualityPreset::Low.recommended_reflection_resolution(), 256);
-        assert_eq!(QualityPreset::Medium.recommended_reflection_resolution(), 512);
-        assert_eq!(QualityPreset::High.recommended_reflection_resolution(), 1024);
-        assert_eq!(QualityPreset::Ultra.recommended_reflection_resolution(), 2048);
+        assert_eq!(
+            QualityPreset::Medium.recommended_reflection_resolution(),
+            512
+        );
+        assert_eq!(
+            QualityPreset::High.recommended_reflection_resolution(),
+            1024
+        );
+        assert_eq!(
+            QualityPreset::Ultra.recommended_reflection_resolution(),
+            2048
+        );
     }
 
     // ==================== Scene Placement Tests ====================
@@ -4950,7 +5418,7 @@ mod tests {
     #[test]
     fn test_scene_placement_default() {
         let placement = FluidScenePlacement::default();
-        
+
         assert!(!placement.id.is_empty());
         assert!(placement.active);
         assert!(placement.tags.contains(&"water".to_string()));
@@ -4961,7 +5429,7 @@ mod tests {
     #[test]
     fn test_validator_new() {
         let validator = ConfigValidator::new();
-        
+
         assert_eq!(validator.target_fps, 60.0);
         assert!(!validator.strict_mode);
     }
@@ -4969,7 +5437,7 @@ mod tests {
     #[test]
     fn test_validator_strict() {
         let validator = ConfigValidator::strict();
-        
+
         assert!(validator.strict_mode);
         assert!(validator.max_gpu_memory < 512 * 1024 * 1024);
     }
@@ -4980,11 +5448,14 @@ mod tests {
         // Use a low-particle config to avoid performance warnings
         let mut config = FluidEditorConfig::pool();
         config.max_particles = 10_000;
-        
+
         let issues = validator.validate(&config);
-        
+
         // Low particle count should have no errors
-        let errors = issues.iter().filter(|i| i.severity == ValidationSeverity::Error).count();
+        let errors = issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Error)
+            .count();
         assert_eq!(errors, 0);
     }
 
@@ -4994,11 +5465,13 @@ mod tests {
         let mut config = FluidEditorConfig::pool();
         config.max_particles = 5_000; // Low particles to focus on gravity
         config.physics.gravity = [0.0, -100.0, 0.0];
-        
+
         let issues = validator.validate(&config);
-        
+
         // Should warn about high gravity (case insensitive check)
-        assert!(issues.iter().any(|i| i.message.to_lowercase().contains("gravity")));
+        assert!(issues
+            .iter()
+            .any(|i| i.message.to_lowercase().contains("gravity")));
     }
 
     #[test]
@@ -5006,9 +5479,9 @@ mod tests {
         let validator = ConfigValidator::new();
         let mut config = FluidEditorConfig::pool();
         config.rendering.fluid_color = [0.2, 0.5, 0.8, 0.0]; // Zero alpha
-        
+
         let issues = validator.validate(&config);
-        
+
         // Should warn about invisible water
         assert!(issues.iter().any(|i| i.message.contains("invisible")));
     }
@@ -5019,7 +5492,7 @@ mod tests {
         // Use low particle count to ensure no performance errors
         let mut config = FluidEditorConfig::pool();
         config.max_particles = 10_000;
-        
+
         // Low particle pool config should not have errors
         assert!(!validator.has_errors(&config));
     }
@@ -5029,7 +5502,7 @@ mod tests {
     #[test]
     fn test_easing_linear() {
         let ease = EasingFunction::Linear;
-        
+
         assert_eq!(ease.apply(0.0), 0.0);
         assert_eq!(ease.apply(0.5), 0.5);
         assert_eq!(ease.apply(1.0), 1.0);
@@ -5038,7 +5511,7 @@ mod tests {
     #[test]
     fn test_easing_ease_in() {
         let ease = EasingFunction::EaseIn;
-        
+
         assert_eq!(ease.apply(0.0), 0.0);
         assert!(ease.apply(0.5) < 0.5); // Slow start
         assert_eq!(ease.apply(1.0), 1.0);
@@ -5047,7 +5520,7 @@ mod tests {
     #[test]
     fn test_easing_ease_out() {
         let ease = EasingFunction::EaseOut;
-        
+
         assert_eq!(ease.apply(0.0), 0.0);
         assert!(ease.apply(0.5) > 0.5); // Fast start
         assert_eq!(ease.apply(1.0), 1.0);
@@ -5056,7 +5529,7 @@ mod tests {
     #[test]
     fn test_easing_ease_in_out() {
         let ease = EasingFunction::EaseInOut;
-        
+
         assert_eq!(ease.apply(0.0), 0.0);
         assert!((ease.apply(0.5) - 0.5).abs() < 0.1); // Near middle
         assert_eq!(ease.apply(1.0), 1.0);
@@ -5065,7 +5538,7 @@ mod tests {
     #[test]
     fn test_easing_clamp() {
         let ease = EasingFunction::Linear;
-        
+
         // Should clamp out-of-range values
         assert_eq!(ease.apply(-0.5), 0.0);
         assert_eq!(ease.apply(1.5), 1.0);
@@ -5090,9 +5563,9 @@ mod tests {
     fn test_transition_new() {
         let from = FluidEditorConfig::pool();
         let to = FluidEditorConfig::ocean();
-        
+
         let transition = ConfigTransition::new(from.clone(), to.clone(), 1.0);
-        
+
         assert_eq!(transition.duration, 1.0);
         assert_eq!(transition.elapsed, 0.0);
         assert!(!transition.complete);
@@ -5102,12 +5575,12 @@ mod tests {
     fn test_transition_update() {
         let from = FluidEditorConfig::pool();
         let to = FluidEditorConfig::ocean();
-        
+
         let mut transition = ConfigTransition::new(from.clone(), to.clone(), 1.0);
-        
+
         // Update halfway
         let result = transition.update(0.5);
-        
+
         assert!(!transition.complete);
         assert!(result.max_particles > from.max_particles);
         assert!(result.max_particles < to.max_particles);
@@ -5117,12 +5590,12 @@ mod tests {
     fn test_transition_complete() {
         let from = FluidEditorConfig::pool();
         let to = FluidEditorConfig::ocean();
-        
+
         let mut transition = ConfigTransition::new(from.clone(), to.clone(), 1.0);
-        
+
         // Update past end
         let result = transition.update(2.0);
-        
+
         assert!(transition.complete);
         assert_eq!(result.max_particles, to.max_particles);
     }
@@ -5131,10 +5604,10 @@ mod tests {
     fn test_transition_skip() {
         let from = FluidEditorConfig::pool();
         let to = FluidEditorConfig::ocean();
-        
+
         let mut transition = ConfigTransition::new(from.clone(), to.clone(), 1.0);
         transition.skip();
-        
+
         assert!(transition.complete);
         assert_eq!(transition.progress(), 1.0);
     }
@@ -5143,10 +5616,10 @@ mod tests {
     fn test_transition_with_easing() {
         let from = FluidEditorConfig::pool();
         let to = FluidEditorConfig::ocean();
-        
-        let transition = ConfigTransition::new(from, to, 1.0)
-            .with_easing(EasingFunction::EaseOutElastic);
-        
+
+        let transition =
+            ConfigTransition::new(from, to, 1.0).with_easing(EasingFunction::EaseOutElastic);
+
         assert_eq!(transition.easing, EasingFunction::EaseOutElastic);
     }
 
@@ -5155,7 +5628,7 @@ mod tests {
     #[test]
     fn test_debug_viz_default() {
         let viz = DebugVisualization::default();
-        
+
         // Default should have some but not all enabled
         assert!(viz.show_bounds);
         assert!(viz.show_emitters);
@@ -5165,14 +5638,14 @@ mod tests {
     #[test]
     fn test_debug_viz_none() {
         let viz = DebugVisualization::none();
-        
+
         assert!(!viz.any_enabled());
     }
 
     #[test]
     fn test_debug_viz_physics() {
         let viz = DebugVisualization::physics();
-        
+
         assert!(viz.show_particles);
         assert!(viz.show_velocities);
         assert!(viz.show_pressure);
@@ -5182,7 +5655,7 @@ mod tests {
     #[test]
     fn test_debug_viz_rendering() {
         let viz = DebugVisualization::rendering();
-        
+
         assert!(viz.show_normals);
         assert!(viz.show_performance);
     }
@@ -5192,7 +5665,7 @@ mod tests {
     #[test]
     fn test_keyboard_shortcuts_exist() {
         let shortcuts = editor_shortcuts();
-        
+
         assert!(!shortcuts.is_empty());
         assert!(shortcuts.len() >= 10);
     }
@@ -5200,19 +5673,19 @@ mod tests {
     #[test]
     fn test_keyboard_shortcut_display() {
         let shortcuts = editor_shortcuts();
-        
+
         // Find undo shortcut
         let undo = shortcuts.iter().find(|s| s.action == "Undo").unwrap();
-        
+
         assert_eq!(undo.display(), "Ctrl+Z");
     }
 
     #[test]
     fn test_keyboard_shortcuts_categories() {
         let shortcuts = editor_shortcuts();
-        
+
         let categories: Vec<_> = shortcuts.iter().map(|s| s.category).collect();
-        
+
         assert!(categories.contains(&"Edit"));
         assert!(categories.contains(&"View"));
         assert!(categories.contains(&"Simulation"));
@@ -5225,7 +5698,7 @@ mod tests {
     fn test_exported_preset_from_config() {
         let config = FluidEditorConfig::ocean();
         let preset = ExportedPreset::from_config("My Ocean", config);
-        
+
         assert_eq!(preset.name, "My Ocean");
         assert_eq!(preset.version, ExportedPreset::CURRENT_VERSION);
         assert!(preset.created_at > 0);
@@ -5238,7 +5711,7 @@ mod tests {
             .with_author("Test Author")
             .with_description("A nice ocean")
             .with_tags(vec!["ocean".to_string(), "waves".to_string()]);
-        
+
         assert_eq!(preset.author, Some("Test Author".to_string()));
         assert_eq!(preset.description, Some("A nice ocean".to_string()));
         assert_eq!(preset.tags.len(), 2);
@@ -5248,10 +5721,10 @@ mod tests {
     fn test_exported_preset_json_roundtrip() {
         let config = FluidEditorConfig::pool();
         let preset = ExportedPreset::from_config("Pool", config);
-        
+
         let json = preset.to_json().unwrap();
         let restored = ExportedPreset::from_json(&json).unwrap();
-        
+
         assert_eq!(restored.name, "Pool");
         assert_eq!(restored.config.preset, WaterBodyPreset::Pool);
     }
@@ -5260,10 +5733,10 @@ mod tests {
     fn test_exported_preset_toml_roundtrip() {
         let config = FluidEditorConfig::lake();
         let preset = ExportedPreset::from_config("Lake", config);
-        
+
         let toml = preset.to_toml().unwrap();
         let restored = ExportedPreset::from_toml(&toml).unwrap();
-        
+
         assert_eq!(restored.name, "Lake");
         assert_eq!(restored.config.preset, WaterBodyPreset::Lake);
     }
@@ -5273,7 +5746,7 @@ mod tests {
     #[test]
     fn test_clipboard_new() {
         let clipboard = ConfigClipboard::new();
-        
+
         assert!(!clipboard.has_content());
         assert!(clipboard.paste().is_none());
     }
@@ -5282,11 +5755,11 @@ mod tests {
     fn test_clipboard_copy_paste() {
         let mut clipboard = ConfigClipboard::new();
         let config = FluidEditorConfig::ocean();
-        
+
         clipboard.copy(&config);
-        
+
         assert!(clipboard.has_content());
-        
+
         let pasted = clipboard.paste().unwrap();
         assert_eq!(pasted.preset, WaterBodyPreset::Ocean);
     }
@@ -5295,9 +5768,9 @@ mod tests {
     fn test_clipboard_clear() {
         let mut clipboard = ConfigClipboard::new();
         clipboard.copy(&FluidEditorConfig::pool());
-        
+
         clipboard.clear();
-        
+
         assert!(!clipboard.has_content());
     }
 
@@ -5305,9 +5778,9 @@ mod tests {
     fn test_clipboard_to_system() {
         let mut clipboard = ConfigClipboard::new();
         clipboard.copy(&FluidEditorConfig::river());
-        
+
         let json = clipboard.to_system_clipboard().unwrap();
-        
+
         assert!(json.contains("River"));
     }
 
@@ -5315,9 +5788,9 @@ mod tests {
     fn test_clipboard_from_system() {
         let config = FluidEditorConfig::lake();
         let json = serde_json::to_string(&config).unwrap();
-        
+
         let restored = ConfigClipboard::from_system_clipboard(&json).unwrap();
-        
+
         assert_eq!(restored.preset, WaterBodyPreset::Lake);
     }
 
@@ -5327,9 +5800,9 @@ mod tests {
     fn test_batch_reset_physics() {
         let mut configs = vec![FluidEditorConfig::pool()];
         configs[0].physics.viscosity = 999.0;
-        
+
         BatchOperation::reset_physics(&mut configs, &[0]);
-        
+
         // Should reset to pool defaults
         let expected = FluidEditorConfig::pool();
         assert!((configs[0].physics.viscosity - expected.physics.viscosity).abs() < 0.01);
@@ -5340,9 +5813,9 @@ mod tests {
         let mut configs = vec![FluidEditorConfig::ocean()];
         configs[0].caustics.enabled = false;
         configs[0].foam.enabled = false;
-        
+
         BatchOperation::reset_visuals(&mut configs, &[0]);
-        
+
         // Should reset to ocean defaults
         let expected = FluidEditorConfig::ocean();
         assert_eq!(configs[0].caustics.enabled, expected.caustics.enabled);

@@ -261,41 +261,41 @@ fn get_injection_patterns() -> &'static Vec<Regex> {
             Regex::new(r"(?i)ignore\s+((all|previous|above|prior)\s+)*(instructions|prompts|directions|commands)").expect("valid regex"),
             Regex::new(r"(?i)disregard\s+((all|previous|above|prior)\s+)*(instructions|prompts|directions|commands)").expect("valid regex"),
             Regex::new(r"(?i)forget\s+((all|previous|above|prior)\s+)*(instructions|prompts|directions|commands)").expect("valid regex"),
-            
+
             // Role manipulation
             Regex::new(r"(?i)you\s+are\s+now\s+(a|an)\s+").expect("valid regex"),
             Regex::new(r"(?i)act\s+as\s+(a|an)\s+").expect("valid regex"),
             Regex::new(r"(?i)pretend\s+(to\s+be|you\s+are)\s+").expect("valid regex"),
             Regex::new(r"(?i)simulate\s+(being|a|an)\s+").expect("valid regex"),
-            
+
             // System prompt leakage attempts
             Regex::new(r"(?i)show\s+(me\s+)?(your|the)\s+(system\s+)?(prompt|instructions)").expect("valid regex"),
             Regex::new(r"(?i)reveal\s+(your|the)\s+(system\s+)?(prompt|instructions)").expect("valid regex"),
             Regex::new(r"(?i)what\s+(are|is)\s+your\s+(system\s+)?(prompt|instructions)").expect("valid regex"),
-            
+
             // Jailbreak attempts
             Regex::new(r"(?i)developer\s+mode").expect("valid regex"),
             Regex::new(r"(?i)jailbreak").expect("valid regex"),
             Regex::new(r"(?i)sudo\s+mode").expect("valid regex"),
             Regex::new(r"(?i)admin\s+mode").expect("valid regex"),
-            
+
             // Output manipulation
             Regex::new(r"(?i)output\s+in\s+the\s+following\s+format").expect("valid regex"),
             Regex::new(r"(?i)respond\s+only\s+with").expect("valid regex"),
             Regex::new(r"(?i)only\s+output").expect("valid regex"),
-            
+
             // Code injection attempts (XSS)
             Regex::new(r"(?i)<script[^>]*>").expect("valid regex"),
             Regex::new(r"(?i)javascript:").expect("valid regex"),
             Regex::new(r"(?i)on(load|error|click|mouse)=").expect("valid regex"),
-            
+
             // SQL-style injection
             Regex::new(r"(?i)(union|select|insert|update|delete|drop|create)\s+.{0,30}?\s*from").expect("valid regex"),
-            
+
             // Path traversal
             Regex::new(r"\.\./").expect("valid regex"),
             Regex::new(r"\.\\.").expect("valid regex"),
-            
+
             // Excessive repetition (potential DoS) - check for same char repeated 100+ times
             Regex::new(r"a{100,}|b{100,}|c{100,}|d{100,}|e{100,}|f{100,}|g{100,}|h{100,}|i{100,}|j{100,}|k{100,}|l{100,}|m{100,}|n{100,}|o{100,}|p{100,}|q{100,}|r{100,}|s{100,}|t{100,}|u{100,}|v{100,}|w{100,}|x{100,}|y{100,}|z{100,}|A{100,}|B{100,}|C{100,}|D{100,}|E{100,}|F{100,}|G{100,}|H{100,}|I{100,}|J{100,}|K{100,}|L{100,}|M{100,}|N{100,}|O{100,}|P{100,}|Q{100,}|R{100,}|S{100,}|T{100,}|U{100,}|V{100,}|W{100,}|X{100,}|Y{100,}|Z{100,}| {100,}|0{100,}|1{100,}|2{100,}|3{100,}|4{100,}|5{100,}|6{100,}|7{100,}|8{100,}|9{100,}").expect("valid regex"),
         ]

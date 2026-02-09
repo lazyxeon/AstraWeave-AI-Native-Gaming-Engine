@@ -461,6 +461,8 @@ pub fn script_system(world: &mut World) {
                 }
             }
             ScriptCommand::Despawn { entity } => {
+                // SAFETY: `entity` is a u32 script-side ID. We immediately
+                // validate via `is_alive()` before using the constructed Entity.
                 let e = unsafe { Entity::from_raw(entity as u64) };
                 // Validate entity is alive before attempting despawn
                 if !world.is_alive(e) {
@@ -480,6 +482,8 @@ pub fn script_system(world: &mut World) {
                 }
             }
             ScriptCommand::SetPosition { entity, position } => {
+                // SAFETY: `entity` is a u32 script-side ID. We immediately
+                // validate via `is_alive()` before using the constructed Entity.
                 let e = unsafe { Entity::from_raw(entity as u64) };
                 // Validate entity is alive before attempting operations
                 if !world.is_alive(e) {
@@ -505,6 +509,8 @@ pub fn script_system(world: &mut World) {
                 }
             }
             ScriptCommand::ApplyDamage { entity, amount } => {
+                // SAFETY: `entity` is a u32 script-side ID. We immediately
+                // validate via `is_alive()` before using the constructed Entity.
                 let e = unsafe { Entity::from_raw(entity as u64) };
                 // Validate entity is alive before attempting operations
                 if !world.is_alive(e) {

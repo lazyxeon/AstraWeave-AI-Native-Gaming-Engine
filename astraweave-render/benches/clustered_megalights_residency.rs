@@ -793,7 +793,11 @@ fn bench_megalights_scaling(c: &mut Criterion) {
     group.sample_size(20);
 
     // GPU dispatch simulation (workgroup calculation only)
-    for cluster_dims in [(16u32, 9u32, 24u32), (32u32, 18u32, 48u32), (64u32, 36u32, 96u32)] {
+    for cluster_dims in [
+        (16u32, 9u32, 24u32),
+        (32u32, 18u32, 48u32),
+        (64u32, 36u32, 96u32),
+    ] {
         let total = cluster_dims.0 * cluster_dims.1 * cluster_dims.2;
 
         group.bench_with_input(
