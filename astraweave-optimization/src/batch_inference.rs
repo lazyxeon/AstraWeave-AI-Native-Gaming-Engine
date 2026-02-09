@@ -56,7 +56,7 @@ impl Default for BatchInferenceConfig {
 }
 
 /// Individual request in the batch system
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BatchRequest {
     pub id: String,
     pub prompt: String,
@@ -64,6 +64,7 @@ pub struct BatchRequest {
     pub priority: RequestPriority,
     pub created_at: DateTime<Utc>,
     pub timeout_at: DateTime<Utc>,
+    #[serde(skip)]
     pub response_sender: Option<oneshot::Sender<Result<String>>>,
 }
 
@@ -102,7 +103,7 @@ pub enum RequestPriority {
 }
 
 /// Active batch being processed
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ActiveBatch {
     pub id: String,
     pub requests: Vec<BatchRequest>,
@@ -130,7 +131,7 @@ pub struct BatchMetrics {
 #[derive(Debug, Clone)]
 pub struct BatchResult {
     pub batch_id: String,
-    pub results: Vec<(String, Result<String>)>, // (request_id, result)
+    pub results: Vec<(String, Result<String, String>)>, // (request_id, result)
     pub processing_time_ms: u64,
     pub batch_size: usize,
     pub success_count: usize,
@@ -236,7 +237,7 @@ impl BatchInferenceEngine {
         {
             let mut metrics = self.metrics.write().await;
             metrics.total_requests += 1;
-            metrics.queue_depth = queue.len();
+            metrics.queue_depth = self.request_queue.read().await.len();
             metrics.last_updated = Utc::now();
         }
 
@@ -380,14 +381,14 @@ impl BatchInferenceEngine {
         // Find a scheduled batch for this worker
         let mut batches = active_batches.write().await;
         
-        for (batch_id, batch) in batches.iter_mut() {
-            if batch.client_id == worker_id && !batch.processing {
+        let batch_id = batches.iter_mut()
+            .find(|(_, batch)| batch.client_id == worker_id && !batch.processing)
+            .map(|(id, batch)| {
                 batch.processing = true;
-                return Some(batch.clone());
-            }
-        }
+                id.clone()
+            });
 
-        None
+        batch_id.and_then(|id| batches.remove(&id))
     }
 
     /// Process a batch of requests
@@ -427,10 +428,18 @@ impl BatchInferenceEngine {
         results = join_all(processing_tasks).await;
 
         // Send results back to requesters
-        for (i, (request_id, result)) in results.iter().enumerate() {
+        let results_stringified: Vec<(String, Result<String, String>)> = results
+            .into_iter()
+            .map(|(id, r)| (id, r.map_err(|e| format!("{}", e))))
+            .collect();
+        for (i, (request_id, result)) in results_stringified.iter().enumerate() {
             if let Some(request) = batch.requests.get_mut(i) {
                 if let Some(sender) = request.response_sender.take() {
-                    let _ = sender.send(result.clone());
+                    let sendable = match result {
+                        Ok(s) => Ok(s.clone()),
+                        Err(e) => Err(anyhow!("{}", e)),
+                    };
+                    let _ = sender.send(sendable);
                 }
             }
 
@@ -439,6 +448,7 @@ impl BatchInferenceEngine {
                 Err(_) => failure_count += 1,
             }
         }
+        let results = results_stringified;
 
         let processing_time = start_time.elapsed().as_millis() as u64;
 
@@ -503,7 +513,8 @@ impl BatchInferenceEngine {
         };
 
         // Take requests for the batch
-        let batch_requests = queue.drain(..batch_size.min(queue.len())).collect();
+        let drain_end = batch_size.min(queue.len());
+        let batch_requests = queue.drain(..drain_end).collect();
 
         let batch = ActiveBatch {
             id: Uuid::new_v4().to_string(),

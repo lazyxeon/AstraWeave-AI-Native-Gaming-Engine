@@ -485,4 +485,248 @@ mod tests {
         assert_eq!(mgr.metrics.active_cells, 0);
         assert_eq!(mgr.metrics.cached_cells, 0);
     }
+
+    // ── Additional streaming tests ──
+
+    #[test]
+    fn test_streaming_config_custom_values() {
+        let cfg = StreamingConfig {
+            max_active_cells: 100,
+            lru_cache_size: 20,
+            streaming_radius: 1000.0,
+            max_concurrent_loads: 8,
+        };
+        assert_eq!(cfg.max_active_cells, 100);
+        assert_eq!(cfg.lru_cache_size, 20);
+        assert_eq!(cfg.streaming_radius, 1000.0);
+        assert_eq!(cfg.max_concurrent_loads, 8);
+    }
+
+    #[test]
+    fn test_streaming_config_clone() {
+        let cfg = StreamingConfig::default();
+        let cloned = cfg.clone();
+        assert_eq!(cfg.max_active_cells, cloned.max_active_cells);
+        assert_eq!(cfg.streaming_radius, cloned.streaming_radius);
+    }
+
+    #[test]
+    fn test_streaming_config_debug() {
+        let cfg = StreamingConfig::default();
+        let debug = format!("{:?}", cfg);
+        assert!(debug.contains("StreamingConfig"));
+    }
+
+    #[test]
+    fn test_streaming_metrics_default_all_zero() {
+        let metrics = StreamingMetrics::default();
+        assert_eq!(metrics.active_cells, 0);
+        assert_eq!(metrics.loading_cells, 0);
+        assert_eq!(metrics.loaded_cells, 0);
+        assert_eq!(metrics.cached_cells, 0);
+        assert_eq!(metrics.memory_usage_bytes, 0);
+        assert_eq!(metrics.total_loads, 0);
+        assert_eq!(metrics.total_unloads, 0);
+        assert_eq!(metrics.failed_loads, 0);
+    }
+
+    #[test]
+    fn test_streaming_metrics_clone_and_debug() {
+        let metrics = StreamingMetrics {
+            active_cells: 5,
+            loading_cells: 2,
+            loaded_cells: 10,
+            cached_cells: 3,
+            memory_usage_bytes: 1024,
+            total_loads: 100,
+            total_unloads: 50,
+            failed_loads: 5,
+        };
+        let cloned = metrics.clone();
+        assert_eq!(cloned.active_cells, 5);
+        assert_eq!(cloned.total_loads, 100);
+        assert_eq!(cloned.failed_loads, 5);
+
+        let debug = format!("{:?}", metrics);
+        assert!(debug.contains("StreamingMetrics"));
+    }
+
+    #[test]
+    fn test_streaming_event_debug_and_clone() {
+        let events = vec![
+            StreamingEvent::CellLoadStarted(GridCoord::new(1, 2, 3)),
+            StreamingEvent::CellLoaded(GridCoord::new(4, 5, 6)),
+            StreamingEvent::CellLoadFailed(GridCoord::new(7, 8, 9), "disk error".into()),
+            StreamingEvent::CellUnloadStarted(GridCoord::new(10, 11, 12)),
+            StreamingEvent::CellUnloaded(GridCoord::new(13, 14, 15)),
+        ];
+        for event in &events {
+            let debug = format!("{:?}", event);
+            assert!(!debug.is_empty());
+            let cloned = event.clone();
+            assert_eq!(format!("{:?}", cloned), debug);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_new_manager_has_empty_state() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mgr = WorldPartitionManager::new(Arc::clone(&partition), StreamingConfig::default());
+
+        assert!(mgr.active_cells().is_empty());
+        assert!(!mgr.is_cell_active(GridCoord::new(0, 0, 0)));
+        assert!(!mgr.is_cell_loading(GridCoord::new(0, 0, 0)));
+        assert_eq!(mgr.metrics().active_cells, 0);
+        assert_eq!(mgr.metrics().total_loads, 0);
+    }
+
+    #[tokio::test]
+    async fn test_force_load_already_active_is_noop() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr = WorldPartitionManager::new(
+            Arc::clone(&partition),
+            StreamingConfig {
+                streaming_radius: 0.1,
+                ..Default::default()
+            },
+        );
+        let coord = GridCoord::new(0, 0, 0);
+
+        // Make active via LRU fast path
+        mgr.lru_cache.touch(coord);
+        mgr.force_load_cell(coord).await.unwrap();
+        assert!(mgr.is_cell_active(coord));
+        assert_eq!(mgr.metrics.total_loads, 1);
+
+        // Force load again: already active, should return Ok without incrementing
+        mgr.force_load_cell(coord).await.unwrap();
+        assert_eq!(mgr.metrics.total_loads, 1); // same as before
+    }
+
+    #[tokio::test]
+    async fn test_force_unload_inactive_cell_is_noop() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr =
+            WorldPartitionManager::new(Arc::clone(&partition), StreamingConfig::default());
+        let coord = GridCoord::new(5, 5, 5);
+
+        // Not active, unload should be a no-op
+        mgr.force_unload_cell(coord).await.unwrap();
+        assert_eq!(mgr.metrics.total_unloads, 0);
+    }
+
+    #[tokio::test]
+    async fn test_force_unload_moves_to_lru() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr = WorldPartitionManager::new(
+            Arc::clone(&partition),
+            StreamingConfig {
+                streaming_radius: 0.1,
+                ..Default::default()
+            },
+        );
+        let coord = GridCoord::new(0, 0, 0);
+
+        // Make active via LRU
+        mgr.lru_cache.touch(coord);
+        mgr.force_load_cell(coord).await.unwrap();
+        assert!(mgr.is_cell_active(coord));
+
+        // Force unload: should move to LRU
+        mgr.force_unload_cell(coord).await.unwrap();
+        assert!(!mgr.is_cell_active(coord));
+        assert_eq!(mgr.metrics.total_unloads, 1);
+    }
+
+    #[tokio::test]
+    async fn test_create_streaming_manager_helper() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mgr = create_streaming_manager(Arc::clone(&partition));
+        assert!(mgr.active_cells().is_empty());
+        // Should use default config
+        assert_eq!(mgr.metrics().total_loads, 0);
+    }
+
+    #[tokio::test]
+    async fn test_active_cells_returns_all_active() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr = WorldPartitionManager::new(
+            Arc::clone(&partition),
+            StreamingConfig {
+                streaming_radius: 0.1,
+                ..Default::default()
+            },
+        );
+        let c1 = GridCoord::new(0, 0, 0);
+        let c2 = GridCoord::new(1, 0, 0);
+
+        mgr.lru_cache.touch(c1);
+        mgr.lru_cache.touch(c2);
+        mgr.force_load_cell(c1).await.unwrap();
+        mgr.force_load_cell(c2).await.unwrap();
+
+        let active = mgr.active_cells();
+        assert_eq!(active.len(), 2);
+        assert!(active.contains(&c1));
+        assert!(active.contains(&c2));
+    }
+
+    #[tokio::test]
+    async fn test_event_listener_receives_load_events() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr = WorldPartitionManager::new(
+            Arc::clone(&partition),
+            StreamingConfig {
+                streaming_radius: 0.1,
+                ..Default::default()
+            },
+        );
+        let coord = GridCoord::new(0, 0, 0);
+
+        let events: Arc<Mutex<Vec<StreamingEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let events_clone = Arc::clone(&events);
+        mgr.add_event_listener(move |e| {
+            events_clone.lock().unwrap().push(e);
+        });
+
+        mgr.lru_cache.touch(coord);
+        mgr.force_load_cell(coord).await.unwrap();
+
+        let captured = events.lock().unwrap().clone();
+        // LRU fast-path emits CellLoaded (no CellLoadStarted)
+        assert!(captured
+            .iter()
+            .any(|e| matches!(e, StreamingEvent::CellLoaded(c) if *c == coord)));
+    }
+
+    #[tokio::test]
+    async fn test_multiple_event_listeners() {
+        let partition = Arc::new(RwLock::new(WorldPartition::new(GridConfig::default())));
+        let mut mgr = WorldPartitionManager::new(
+            Arc::clone(&partition),
+            StreamingConfig {
+                streaming_radius: 0.1,
+                ..Default::default()
+            },
+        );
+
+        let count1: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
+        let count2: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
+        let c1 = Arc::clone(&count1);
+        let c2 = Arc::clone(&count2);
+
+        mgr.add_event_listener(move |_| {
+            *c1.lock().unwrap() += 1;
+        });
+        mgr.add_event_listener(move |_| {
+            *c2.lock().unwrap() += 1;
+        });
+
+        let coord = GridCoord::new(0, 0, 0);
+        mgr.lru_cache.touch(coord);
+        mgr.force_load_cell(coord).await.unwrap();
+
+        assert!(*count1.lock().unwrap() > 0);
+        assert!(*count2.lock().unwrap() > 0);
+    }
 }

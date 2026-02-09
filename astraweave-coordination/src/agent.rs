@@ -1,12 +1,12 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::info;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Core trait for all LLM-powered agents in the coordination system
 #[async_trait]
@@ -123,10 +123,10 @@ pub struct AgentGoal {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum GoalType {
-    Maintain, // Keep a value within range
-    Achieve,  // Reach a target value
-    Avoid,    // Keep something from happening
-    Explore,  // Gather information
+    Maintain,    // Keep a value within range
+    Achieve,     // Reach a target value
+    Avoid,       // Keep something from happening
+    Explore,     // Gather information
     Collaborate, // Work with other agents
 }
 
@@ -294,7 +294,11 @@ impl BaseAgent {
         queue.push(task);
 
         // Sort by priority (highest first)
-        queue.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal));
+        queue.sort_by(|a, b| {
+            b.priority
+                .partial_cmp(&a.priority)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     }
 
     /// Get next task from queue
@@ -304,7 +308,11 @@ impl BaseAgent {
     }
 
     /// Create a response message
-    pub fn create_response(&self, original: &AgentMessage, content: serde_json::Value) -> AgentMessage {
+    pub fn create_response(
+        &self,
+        original: &AgentMessage,
+        content: serde_json::Value,
+    ) -> AgentMessage {
         AgentMessage {
             id: Uuid::new_v4().to_string(),
             from: self.id.clone(),
@@ -318,7 +326,12 @@ impl BaseAgent {
     }
 
     /// Create a notification message
-    pub fn create_notification(&self, to: String, content: serde_json::Value, priority: MessagePriority) -> AgentMessage {
+    pub fn create_notification(
+        &self,
+        to: String,
+        content: serde_json::Value,
+        priority: MessagePriority,
+    ) -> AgentMessage {
         AgentMessage {
             id: Uuid::new_v4().to_string(),
             from: self.id.clone(),
@@ -350,14 +363,20 @@ impl BaseAgent {
     }
 
     /// Join coordination context
-    pub async fn join_coordination(&mut self, context: Arc<RwLock<CoordinationContext>>) -> Result<()> {
+    pub async fn join_coordination(
+        &mut self,
+        context: Arc<RwLock<CoordinationContext>>,
+    ) -> Result<()> {
         let mut ctx = context.write().await;
         if !ctx.participants.contains(&self.id) {
             ctx.participants.push(self.id.clone());
             ctx.last_update = Utc::now();
         }
         self.coordination_context = Some(context.clone());
-        info!("Agent {} joined coordination session {}", self.id, ctx.session_id);
+        info!(
+            "Agent {} joined coordination session {}",
+            self.id, ctx.session_id
+        );
         Ok(())
     }
 
@@ -367,7 +386,10 @@ impl BaseAgent {
             let mut ctx = context.write().await;
             ctx.participants.retain(|id| id != &self.id);
             ctx.last_update = Utc::now();
-            info!("Agent {} left coordination session {}", self.id, ctx.session_id);
+            info!(
+                "Agent {} left coordination session {}",
+                self.id, ctx.session_id
+            );
         }
         self.coordination_context = None;
         Ok(())
@@ -469,13 +491,14 @@ impl Task {
 
     /// Add parameter to task
     pub fn with_parameter<T: Serialize>(mut self, key: String, value: T) -> Self {
-        self.parameters.insert(key, serde_json::to_value(value).unwrap_or_default());
+        self.parameters
+            .insert(key, serde_json::to_value(value).unwrap_or_default());
         self
     }
 
     /// Set priority
     pub fn with_priority(mut self, priority: f32) -> Self {
-        self.priority = priority.max(0.0).min(1.0);
+        self.priority = priority.clamp(0.0, 1.0);
         self
     }
 
@@ -501,11 +524,7 @@ mod tests {
 
     #[test]
     fn test_agent_goal_satisfaction() {
-        let mut goal = AgentGoal::new(
-            "Reach level 10".to_string(),
-            GoalType::Achieve,
-            0.8,
-        );
+        let mut goal = AgentGoal::new("Reach level 10".to_string(), GoalType::Achieve, 0.8);
         goal.target_value = Some(10.0);
         goal.current_value = 5.0;
 
@@ -518,10 +537,13 @@ mod tests {
 
     #[test]
     fn test_task_creation() {
-        let task = Task::new("generate_dialogue".to_string(), "Generate NPC dialogue".to_string())
-            .with_parameter("npc_id".to_string(), "npc_001")
-            .with_priority(0.8)
-            .with_capability("llm_completion".to_string());
+        let task = Task::new(
+            "generate_dialogue".to_string(),
+            "Generate NPC dialogue".to_string(),
+        )
+        .with_parameter("npc_id".to_string(), "npc_001")
+        .with_priority(0.8)
+        .with_capability("llm_completion".to_string());
 
         assert_eq!(task.task_type, "generate_dialogue");
         assert_eq!(task.priority, 0.8);
@@ -556,10 +578,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_coordination_context() {
-        let mut agent = BaseAgent::new(
-            "test_agent".to_string(),
-            vec!["coordination".to_string()],
-        );
+        let mut agent = BaseAgent::new("test_agent".to_string(), vec!["coordination".to_string()]);
 
         let context = Arc::new(RwLock::new(CoordinationContext {
             session_id: Uuid::new_v4().to_string(),
@@ -578,7 +597,10 @@ mod tests {
 
         drop(ctx);
 
-        agent.update_shared_state("test_key".to_string(), serde_json::json!("test_value")).await.unwrap();
+        agent
+            .update_shared_state("test_key".to_string(), serde_json::json!("test_value"))
+            .await
+            .unwrap();
 
         let value = agent.get_shared_state("test_key").await;
         assert!(value.is_some());

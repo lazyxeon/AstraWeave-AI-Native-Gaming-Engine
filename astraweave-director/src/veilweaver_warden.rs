@@ -42,6 +42,12 @@ pub struct OathboundWardenDirector {
     last_anchor_left: bool,
 }
 
+impl Default for OathboundWardenDirector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OathboundWardenDirector {
     pub fn new() -> Self {
         Self {

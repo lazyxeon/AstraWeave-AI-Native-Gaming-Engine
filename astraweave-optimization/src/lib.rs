@@ -14,17 +14,18 @@ pub use batch_inference::*;
 pub mod prompt_cache;
 pub use prompt_cache::*;
 
-pub mod compression;
-pub use compression::*;
+// TODO: Pending implementation — source files not yet created
+// pub mod compression;
+// pub use compression::*;
 
-pub mod load_balancer;
-pub use load_balancer::*;
+// pub mod load_balancer;
+// pub use load_balancer::*;
 
-pub mod token_optimizer;
-pub use token_optimizer::*;
+// pub mod token_optimizer;
+// pub use token_optimizer::*;
 
-pub mod adaptive_sampling;
-pub use adaptive_sampling::*;
+// pub mod adaptive_sampling;
+// pub use adaptive_sampling::*;
 
-pub mod components;
-pub use components::*;
+// pub mod components;
+// pub use components::*;

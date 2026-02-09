@@ -630,6 +630,7 @@ dependencies = [
  "rhai",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -982,7 +983,7 @@ dependencies = [
  "criterion 0.7.0",
  "dashmap",
  "futures",
- "lru",
+ "lru 0.16.2",
  "rusqlite",
  "serde",
  "serde_json",
@@ -1083,6 +1084,26 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "astraweave-optimization"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-llm",
+ "async-trait",
+ "chrono",
+ "criterion 0.5.1",
+ "dashmap",
+ "futures",
+ "lru 0.12.5",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tracing",
  "uuid",
 ]
 
@@ -6651,6 +6672,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fae87c125b03c1d2c0150c90365d7d6bcc53fb73a9acaef207d2d065860f062"
 dependencies = [
  "imgref",
+]
+
+[[package]]
+name = "lru"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "234cf4f4a04dc1f57e24b96cc0cd600cf2af460d4161ac5ecdd0af8e1f3b2a38"
+dependencies = [
+ "hashbrown 0.15.5",
 ]
 
 [[package]]

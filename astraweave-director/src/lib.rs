@@ -76,7 +76,7 @@ impl BossDirector {
 mod tests {
     use super::*;
     use astraweave_core::{
-        CompanionState, DirectorBudget, DirectorOp, EnemyState, IVec2, PlayerState, Poi,
+        CompanionState, DirectorBudget, DirectorOp, EnemyState, IVec2, PlayerState,
         WorldSnapshot,
     };
 
