@@ -1,21 +1,22 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
 
+use astraweave_context::{ContextConfig, ConversationHistory};
 use astraweave_llm::LlmClient;
-use astraweave_rag::RagPipeline;
-use astraweave_context::{ConversationHistory, ContextConfig};
-use astraweave_prompts::template::PromptTemplate;
 use astraweave_prompts::library::PromptLibrary;
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_rag::RagPipeline;
 
-use crate::agent::{WorldEvent, EventSeverity};
+use crate::agent::{EventSeverity, WorldEvent};
 
 /// LLM-powered world event generation system
+#[allow(dead_code)] // Fields reserved for RAG-enhanced event generation pipeline
 pub struct WorldEventGenerator {
     llm_client: Arc<dyn LlmClient>,
     rag_pipeline: Arc<RagPipeline>,
@@ -96,12 +97,12 @@ pub struct EventTrigger {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum TriggerType {
-    Time,           // Time-based triggers
-    PlayerAction,   // Based on player behavior
-    WorldState,     // Based on world conditions
-    Random,         // Random occurrence
-    Storyline,      // Part of ongoing storyline
-    Cascade,        // Triggered by other events
+    Time,         // Time-based triggers
+    PlayerAction, // Based on player behavior
+    WorldState,   // Based on world conditions
+    Random,       // Random occurrence
+    Storyline,    // Part of ongoing storyline
+    Cascade,      // Triggered by other events
 }
 
 /// Requirements for an event to occur
@@ -277,9 +278,7 @@ impl WorldEventGenerator {
             max_tokens: config.context_window_size,
             ..Default::default()
         };
-        let conversation_history = Arc::new(RwLock::new(
-            ConversationHistory::new(context_config)
-        ));
+        let conversation_history = Arc::new(RwLock::new(ConversationHistory::new(context_config)));
 
         let mut prompt_library = PromptLibrary::new();
 
@@ -479,14 +478,22 @@ Focus on narrative consistency, logical causation, and player engagement opportu
         // Generate event using LLM
         let event = match &trigger_type {
             TriggerType::Storyline => self.generate_storyline_event(&world_context).await?,
-            _ => self.generate_standalone_event(&world_context, trigger_type.clone()).await?,
+            _ => {
+                self.generate_standalone_event(&world_context, trigger_type.clone())
+                    .await?
+            }
         };
 
         // Validate event coherence
-        let coherence_score = self.validate_event_coherence(&event, &world_context).await?;
+        let coherence_score = self
+            .validate_event_coherence(&event, &world_context)
+            .await?;
 
         if coherence_score < 0.7 {
-            warn!("Generated event failed coherence check: {:.2}", coherence_score);
+            warn!(
+                "Generated event failed coherence check: {:.2}",
+                coherence_score
+            );
             return Err(anyhow!("Event coherence too low"));
         }
 
@@ -511,7 +518,10 @@ Focus on narrative consistency, logical causation, and player engagement opportu
         // Store event in history
         self.store_event(&generated_event).await;
 
-        info!("Generated world event: {} ({})", generated_event.event.description, generated_event.event.event_type);
+        info!(
+            "Generated world event: {} ({})",
+            generated_event.event.description, generated_event.event.event_type
+        );
         Ok(generated_event)
     }
 
@@ -523,17 +533,34 @@ Focus on narrative consistency, logical causation, and player engagement opportu
 
         // Build storyline prompt
         let storyline_context = HashMap::from([
-            ("world_state".to_string(), serde_json::to_string(&world_context)?),
-            ("player_data".to_string(), serde_json::to_string(&world_context.get("player_data").unwrap_or(&serde_json::Value::Null))?),
-            ("recent_events".to_string(), self.get_recent_events_summary().await),
-            ("available_npcs".to_string(), self.get_available_npcs().await.join(", ")),
+            (
+                "world_state".to_string(),
+                serde_json::to_string(&world_context)?,
+            ),
+            (
+                "player_data".to_string(),
+                serde_json::to_string(
+                    &world_context
+                        .get("player_data")
+                        .unwrap_or(&serde_json::Value::Null),
+                )?,
+            ),
+            (
+                "recent_events".to_string(),
+                self.get_recent_events_summary().await,
+            ),
+            (
+                "available_npcs".to_string(),
+                self.get_available_npcs().await.join(", "),
+            ),
         ]);
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("storyline_generation")?;
 
         // Convert storyline_context (String->String) into HashMap<String,String> for render_map
-        let mut serialized_story: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let mut serialized_story: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
         for (k, v) in &storyline_context {
             serialized_story.insert(k.clone(), v.clone());
         }
@@ -541,11 +568,15 @@ Focus on narrative consistency, logical causation, and player engagement opportu
         let prompt = template.render_map(&serialized_story)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Storyline generation failed: {}", e))?;
 
         // Parse storyline data
         #[derive(Deserialize)]
+        #[allow(dead_code)] // Fields consumed by serde deserialization; reserved for future storyline branching
         struct StorylineData {
             title: String,
             description: String,
@@ -568,7 +599,9 @@ Focus on narrative consistency, logical causation, and player engagement opportu
             total_phases: storyline_data.total_phases,
             participants: Vec::new(),
             start_time: Utc::now(),
-            estimated_end_time: Some(Utc::now() + Duration::hours(storyline_data.total_phases as i64)),
+            estimated_end_time: Some(
+                Utc::now() + Duration::hours(storyline_data.total_phases as i64),
+            ),
             status: StorylineStatus::Planning,
             branching_points: Vec::new(), // Would be parsed from storyline_data
         };
@@ -582,7 +615,10 @@ Focus on narrative consistency, logical causation, and player engagement opportu
     }
 
     /// Update world state for event generation
-    pub async fn update_world_state(&self, updates: HashMap<String, serde_json::Value>) -> Result<()> {
+    pub async fn update_world_state(
+        &self,
+        updates: HashMap<String, serde_json::Value>,
+    ) -> Result<()> {
         let mut world_state = self.world_state.write().await;
 
         for (key, value) in updates {
@@ -603,7 +639,9 @@ Focus on narrative consistency, logical causation, and player engagement opportu
                     }
                 }
                 _ => {
-                    world_state.world_flags.insert(key, value.as_bool().unwrap_or(false));
+                    world_state
+                        .world_flags
+                        .insert(key, value.as_bool().unwrap_or(false));
                 }
             }
         }
@@ -621,7 +659,8 @@ Focus on narrative consistency, logical causation, and player engagement opportu
             generated_event.outcome = Some(outcome.clone());
 
             // Apply world state changes
-            self.apply_world_state_changes(&outcome.world_state_changes).await?;
+            self.apply_world_state_changes(&outcome.world_state_changes)
+                .await?;
 
             // Trigger follow-up events
             for follow_up_event_id in &outcome.follow_up_events_triggered {
@@ -634,7 +673,11 @@ Focus on narrative consistency, logical causation, and player engagement opportu
                 self.update_storyline_progress(storyline_id).await?;
             }
 
-            info!("Executed event: {} with {} consequences", event_id, outcome.narrative_consequences.len());
+            info!(
+                "Executed event: {} with {} consequences",
+                event_id,
+                outcome.narrative_consequences.len()
+            );
         }
 
         Ok(())
@@ -688,15 +731,42 @@ Focus on narrative consistency, logical causation, and player engagement opportu
         let world_state = self.world_state.read().await;
         let mut context = HashMap::new();
 
-        context.insert("current_time".to_string(), serde_json::to_value(&world_state.current_time)?);
-        context.insert("player_level".to_string(), serde_json::to_value(world_state.player_data.level)?);
-        context.insert("player_location".to_string(), serde_json::to_value(&world_state.player_data.location)?);
-        context.insert("recent_actions".to_string(), serde_json::to_value(&world_state.player_data.recent_actions)?);
-        context.insert("active_locations".to_string(), serde_json::to_value(&world_state.active_locations)?);
-        context.insert("ongoing_events".to_string(), serde_json::to_value(&world_state.ongoing_events)?);
-        context.insert("weather".to_string(), serde_json::to_value(&world_state.weather)?);
-        context.insert("economic_state".to_string(), serde_json::to_value(&world_state.economic_state)?);
-        context.insert("faction_relations".to_string(), serde_json::to_value(&world_state.faction_relations)?);
+        context.insert(
+            "current_time".to_string(),
+            serde_json::to_value(&world_state.current_time)?,
+        );
+        context.insert(
+            "player_level".to_string(),
+            serde_json::to_value(world_state.player_data.level)?,
+        );
+        context.insert(
+            "player_location".to_string(),
+            serde_json::to_value(&world_state.player_data.location)?,
+        );
+        context.insert(
+            "recent_actions".to_string(),
+            serde_json::to_value(&world_state.player_data.recent_actions)?,
+        );
+        context.insert(
+            "active_locations".to_string(),
+            serde_json::to_value(&world_state.active_locations)?,
+        );
+        context.insert(
+            "ongoing_events".to_string(),
+            serde_json::to_value(&world_state.ongoing_events)?,
+        );
+        context.insert(
+            "weather".to_string(),
+            serde_json::to_value(&world_state.weather)?,
+        );
+        context.insert(
+            "economic_state".to_string(),
+            serde_json::to_value(&world_state.economic_state)?,
+        );
+        context.insert(
+            "faction_relations".to_string(),
+            serde_json::to_value(&world_state.faction_relations)?,
+        );
 
         // Add event history summary
         let event_history = self.event_history.read().await;
@@ -706,29 +776,44 @@ Focus on narrative consistency, logical causation, and player engagement opportu
             .take(5)
             .map(|e| format!("{}: {}", e.event.event_type, e.event.description))
             .collect();
-        context.insert("event_history".to_string(), serde_json::to_value(recent_events.join(" | "))?);
+        context.insert(
+            "event_history".to_string(),
+            serde_json::to_value(recent_events.join(" | "))?,
+        );
 
         Ok(context)
     }
 
     /// Generate a standalone event
-    async fn generate_standalone_event(&self, context: &HashMap<String, serde_json::Value>, _trigger_type: TriggerType) -> Result<WorldEvent> {
+    async fn generate_standalone_event(
+        &self,
+        context: &HashMap<String, serde_json::Value>,
+        _trigger_type: TriggerType,
+    ) -> Result<WorldEvent> {
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("event_generation")?;
 
         // Serialize context values to strings for rendering
-        let mut serialized_ctx: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let mut serialized_ctx: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
         for (k, v) in context {
-            serialized_ctx.insert(k.clone(), serde_json::to_string(&v).unwrap_or_else(|_| "null".to_string()));
+            serialized_ctx.insert(
+                k.clone(),
+                serde_json::to_string(&v).unwrap_or_else(|_| "null".to_string()),
+            );
         }
 
         let prompt = template.render_map(&serialized_ctx)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Event generation failed: {}", e))?;
 
         #[derive(Deserialize)]
+        #[allow(dead_code)] // Fields consumed by serde deserialization; reserved for future narrative context
         struct EventData {
             event_type: String,
             description: String,
@@ -739,8 +824,8 @@ Focus on narrative consistency, logical causation, and player engagement opportu
             narrative_context: Option<String>,
         }
 
-        let event_data: EventData = serde_json::from_str(&response)
-            .map_err(|e| anyhow!("Failed to parse event: {}", e))?;
+        let event_data: EventData =
+            serde_json::from_str(&response).map_err(|e| anyhow!("Failed to parse event: {}", e))?;
 
         let severity = match event_data.severity.as_str() {
             "Trivial" => EventSeverity::Trivial,
@@ -766,34 +851,65 @@ Focus on narrative consistency, logical causation, and player engagement opportu
     }
 
     /// Generate an event as part of a storyline
-    async fn generate_storyline_event(&self, context: &HashMap<String, serde_json::Value>) -> Result<WorldEvent> {
+    async fn generate_storyline_event(
+        &self,
+        context: &HashMap<String, serde_json::Value>,
+    ) -> Result<WorldEvent> {
         // For now, generate a standalone event
         // In practice, would select from active storylines and generate next phase
-        self.generate_standalone_event(context, TriggerType::Storyline).await
+        self.generate_standalone_event(context, TriggerType::Storyline)
+            .await
     }
 
     /// Validate event coherence
-    async fn validate_event_coherence(&self, event: &WorldEvent, context: &HashMap<String, serde_json::Value>) -> Result<f32> {
+    async fn validate_event_coherence(
+        &self,
+        event: &WorldEvent,
+        context: &HashMap<String, serde_json::Value>,
+    ) -> Result<f32> {
         let coherence_context = HashMap::from([
             ("proposed_event".to_string(), serde_json::to_value(event)?),
-            ("world_state".to_string(), context.get("current_time").unwrap_or(&serde_json::Value::Null).clone()),
-            ("recent_events".to_string(), context.get("event_history").unwrap_or(&serde_json::Value::Null).clone()),
-            ("active_storylines".to_string(), serde_json::to_value(&Vec::<String>::new())?),
+            (
+                "world_state".to_string(),
+                context
+                    .get("current_time")
+                    .unwrap_or(&serde_json::Value::Null)
+                    .clone(),
+            ),
+            (
+                "recent_events".to_string(),
+                context
+                    .get("event_history")
+                    .unwrap_or(&serde_json::Value::Null)
+                    .clone(),
+            ),
+            (
+                "active_storylines".to_string(),
+                serde_json::to_value(Vec::<String>::new())?,
+
+            ),
         ]);
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("event_coherence_check")?;
 
         // Serialize coherence_context for rendering
-        let mut serialized_coh: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let mut serialized_coh: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
         for (k, v) in &coherence_context {
-            serialized_coh.insert(k.clone(), serde_json::to_string(v).unwrap_or_else(|_| "null".to_string()));
+            serialized_coh.insert(
+                k.clone(),
+                serde_json::to_string(v).unwrap_or_else(|_| "null".to_string()),
+            );
         }
 
         let prompt = template.render_map(&serialized_coh)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Coherence check failed: {}", e))?;
 
         #[derive(Deserialize)]
@@ -823,23 +939,33 @@ Focus on narrative consistency, logical causation, and player engagement opportu
     }
 
     /// Apply world state changes from event outcome
-    async fn apply_world_state_changes(&self, changes: &HashMap<String, serde_json::Value>) -> Result<()> {
+    async fn apply_world_state_changes(
+        &self,
+        changes: &HashMap<String, serde_json::Value>,
+    ) -> Result<()> {
         let mut world_state = self.world_state.write().await;
 
         for (key, value) in changes {
             match key.as_str() {
                 "faction_relations" => {
-                    if let Ok(relations) = serde_json::from_value::<HashMap<String, HashMap<String, f32>>>(value.clone()) {
+                    if let Ok(relations) = serde_json::from_value::<
+                        HashMap<String, HashMap<String, f32>>,
+                    >(value.clone())
+                    {
                         world_state.faction_relations = relations;
                     }
                 }
                 "resource_levels" => {
-                    if let Ok(resources) = serde_json::from_value::<HashMap<String, f32>>(value.clone()) {
+                    if let Ok(resources) =
+                        serde_json::from_value::<HashMap<String, f32>>(value.clone())
+                    {
                         world_state.resource_levels = resources;
                     }
                 }
                 _ => {
-                    world_state.world_flags.insert(key.clone(), value.as_bool().unwrap_or(false));
+                    world_state
+                        .world_flags
+                        .insert(key.clone(), value.as_bool().unwrap_or(false));
                 }
             }
         }
@@ -858,7 +984,10 @@ Focus on narrative consistency, logical causation, and player engagement opportu
                 storyline.status = StorylineStatus::Completed;
                 info!("Completed storyline: {}", storyline.title);
             } else {
-                debug!("Advanced storyline {} to phase {}", storyline.title, storyline.current_phase);
+                debug!(
+                    "Advanced storyline {} to phase {}",
+                    storyline.title, storyline.current_phase
+                );
             }
         }
 
@@ -868,7 +997,8 @@ Focus on narrative consistency, logical causation, and player engagement opportu
     /// Get summary of recent events
     async fn get_recent_events_summary(&self) -> String {
         let history = self.event_history.read().await;
-        history.iter()
+        history
+            .iter()
             .rev()
             .take(3)
             .map(|e| format!("{}: {}", e.event.event_type, e.event.description))

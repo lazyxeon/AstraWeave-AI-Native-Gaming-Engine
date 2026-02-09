@@ -13,6 +13,9 @@ astraweave-core = { path = "../astraweave-core" }
 
 [dev-dependencies]
 criterion = "0.5"
+tempfile = "3"
+astraweave-core = { path = "../astraweave-core" }
+serde_json = { workspace = true }
 
 [[bench]]
 name = "author_adversarial"

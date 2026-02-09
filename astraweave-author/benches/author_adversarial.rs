@@ -84,7 +84,9 @@ fn parse_script_expression(expr: &str) -> Result<ScriptValue, String> {
     } else if let Ok(f) = trimmed.parse::<f64>() {
         Ok(ScriptValue::Float(f))
     } else if trimmed.starts_with('"') && trimmed.ends_with('"') {
-        Ok(ScriptValue::String(trimmed[1..trimmed.len() - 1].to_string()))
+        Ok(ScriptValue::String(
+            trimmed[1..trimmed.len() - 1].to_string(),
+        ))
     } else {
         Err(format!("Cannot parse: {}", expr))
     }
@@ -117,7 +119,10 @@ fn validate_script(script: &str) -> Vec<String> {
     errors
 }
 
-fn execute_script_simulation(script: &str, context: &mut ScriptContext) -> Result<ScriptValue, String> {
+fn execute_script_simulation(
+    script: &str,
+    context: &mut ScriptContext,
+) -> Result<ScriptValue, String> {
     // Simulate script execution with some basic operations
     let lines: Vec<&str> = script.lines().collect();
 
@@ -196,10 +201,10 @@ fn bench_script_parsing(c: &mut Criterion) {
         let scripts: Vec<String> = (0..50)
             .map(|i| {
                 match i % 5 {
-                    0 => "let x = 1; let y = 2;".to_string(), // Safe
-                    1 => "eval(user_input);".to_string(), // Dangerous
-                    2 => "import std::fs;".to_string(), // Dangerous
-                    3 => "while true { }".to_string(), // Dangerous
+                    0 => "let x = 1; let y = 2;".to_string(),    // Safe
+                    1 => "eval(user_input);".to_string(),        // Dangerous
+                    2 => "import std::fs;".to_string(),          // Dangerous
+                    3 => "while true { }".to_string(),           // Dangerous
                     _ => "fn safe() { return 42; }".to_string(), // Safe
                 }
             })
@@ -283,11 +288,7 @@ fn bench_map_generation(c: &mut Criterion) {
                     x: (i % 10) as f32 * 10.0,
                     y: (i / 10) as f32 * 10.0,
                     radius: 5.0 + (i % 5) as f32,
-                    enemy_types: vec![
-                        "goblin".to_string(),
-                        "orc".to_string(),
-                        "troll".to_string(),
-                    ],
+                    enemy_types: vec!["goblin".to_string(), "orc".to_string(), "troll".to_string()],
                     max_spawns: (i % 10 + 1) as u32,
                 })
                 .collect();
@@ -374,7 +375,10 @@ fn bench_script_execution(c: &mut Criterion) {
             ("add".to_string(), (|a, b| a + b) as fn(i64, i64) -> i64),
             ("sub".to_string(), (|a, b| a - b) as fn(i64, i64) -> i64),
             ("mul".to_string(), (|a, b| a * b) as fn(i64, i64) -> i64),
-            ("div".to_string(), (|a, b| if b != 0 { a / b } else { 0 }) as fn(i64, i64) -> i64),
+            (
+                "div".to_string(),
+                (|a, b| if b != 0 { a / b } else { 0 }) as fn(i64, i64) -> i64,
+            ),
         ]
         .into_iter()
         .collect();
@@ -412,10 +416,9 @@ fn bench_script_execution(c: &mut Criterion) {
 
             // Simulate a for loop
             for i in 0..10000 {
-                context.variables.insert(
-                    "i".to_string(),
-                    ScriptValue::Integer(i),
-                );
+                context
+                    .variables
+                    .insert("i".to_string(), ScriptValue::Integer(i));
                 sum += i;
             }
 
@@ -429,7 +432,10 @@ fn bench_script_execution(c: &mut Criterion) {
             .map(|i| {
                 let mut vars = HashMap::new();
                 vars.insert("id".to_string(), ScriptValue::Integer(i));
-                vars.insert("name".to_string(), ScriptValue::String(format!("context_{}", i)));
+                vars.insert(
+                    "name".to_string(),
+                    ScriptValue::String(format!("context_{}", i)),
+                );
                 ScriptContext {
                     variables: vars,
                     functions: vec!["update".to_string(), "render".to_string()],
@@ -672,7 +678,13 @@ fn bench_sandboxing(c: &mut Criterion) {
             })
             .collect();
 
-        let forbidden = ["file_read", "file_write", "network_connect", "process_spawn", "env_get"];
+        let forbidden = [
+            "file_read",
+            "file_write",
+            "network_connect",
+            "process_spawn",
+            "env_get",
+        ];
         let forbidden_set: std::collections::HashSet<&str> = forbidden.iter().copied().collect();
 
         bencher.iter(|| {
@@ -754,7 +766,11 @@ fn bench_integration(c: &mut Criterion) {
                     2 => "troll",
                     _ => "dragon",
                 };
-                (enemy_type.to_string(), i as f32 * 5.0, (i % 10) as f32 * 10.0)
+                (
+                    enemy_type.to_string(),
+                    i as f32 * 5.0,
+                    (i % 10) as f32 * 10.0,
+                )
             })
             .collect();
 
@@ -762,9 +778,7 @@ fn bench_integration(c: &mut Criterion) {
             let entities: Vec<(u64, String, (f32, f32))> = spawn_commands
                 .iter()
                 .enumerate()
-                .map(|(id, (enemy_type, x, y))| {
-                    (id as u64, enemy_type.clone(), (*x, *y))
-                })
+                .map(|(id, (enemy_type, x, y))| (id as u64, enemy_type.clone(), (*x, *y)))
                 .collect();
 
             std_black_box(entities.len())
@@ -777,7 +791,10 @@ fn bench_integration(c: &mut Criterion) {
             .map(|i| {
                 let mut data = HashMap::new();
                 data.insert("source".to_string(), ScriptValue::Integer(i as i64));
-                data.insert("timestamp".to_string(), ScriptValue::Float(i as f64 * 0.016));
+                data.insert(
+                    "timestamp".to_string(),
+                    ScriptValue::Float(i as f64 * 0.016),
+                );
 
                 let event_type = match i % 5 {
                     0 => "enemy_spawned",
@@ -791,15 +808,10 @@ fn bench_integration(c: &mut Criterion) {
             })
             .collect();
 
-        let mut handlers: HashMap<String, Vec<fn(&HashMap<String, ScriptValue>) -> bool>> = HashMap::new();
-        handlers.insert(
-            "enemy_spawned".to_string(),
-            vec![|_| true],
-        );
-        handlers.insert(
-            "player_damaged".to_string(),
-            vec![|_| true],
-        );
+        let mut handlers: HashMap<String, Vec<fn(&HashMap<String, ScriptValue>) -> bool>> =
+            HashMap::new();
+        handlers.insert("enemy_spawned".to_string(), vec![|_| true]);
+        handlers.insert("player_damaged".to_string(), vec![|_| true]);
 
         bencher.iter(|| {
             let mut handled = 0;

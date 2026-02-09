@@ -329,4 +329,331 @@ mod tests {
         assert_eq!(metrics.get_success_rate(), 1.0);
         assert_eq!(metrics.average_effectiveness, 0.8);
     }
+
+    // =================================================================
+    // CDirectorState — new, reset_learning, record_outcome, effectiveness
+    // =================================================================
+
+    #[test]
+    fn director_state_default_fields() {
+        let s = CDirectorState::default();
+        assert!(s.current_plan.is_none());
+        assert!(s.recent_outcomes.is_empty());
+        assert_eq!(s.difficulty_modifier, 1.0);
+        assert_eq!(s.last_adaptation_time, 0);
+    }
+
+    #[test]
+    fn director_state_new_with_custom_config() {
+        let config = LlmDirectorConfig {
+            adaptation_rate: 0.5,
+            min_difficulty: 0.1,
+            max_difficulty: 3.0,
+            learning_enabled: false,
+            creativity_factor: 0.2,
+            context_window_size: 512,
+        };
+        let s = CDirectorState::new(config.clone());
+        assert_eq!(s.config.adaptation_rate, 0.5);
+        assert!(!s.config.learning_enabled);
+        assert_eq!(s.config.context_window_size, 512);
+        // Non-config fields are default
+        assert_eq!(s.difficulty_modifier, 1.0);
+        assert!(s.current_plan.is_none());
+    }
+
+    #[test]
+    fn director_state_update_plan_sets_plan_and_time() {
+        let mut s = CDirectorState::default();
+        let plan = TacticPlan {
+            strategy: "test".into(),
+            reasoning: "r".into(),
+            operations: vec![],
+            difficulty_modifier: 1.0,
+            expected_duration: 10,
+            counter_strategies: vec![],
+            fallback_plan: None,
+        };
+        s.update_plan(plan, 5000);
+        assert!(s.current_plan.is_some());
+        assert_eq!(s.current_plan.unwrap().strategy, "test");
+        assert_eq!(s.last_adaptation_time, 5000);
+    }
+
+    #[test]
+    fn director_state_record_outcome_caps_at_10() {
+        let mut s = CDirectorState::default();
+        for i in 0..15 {
+            let o = TacticOutcome {
+                tactic_used: format!("t_{}", i),
+                effectiveness: 0.5,
+                player_response: "ok".into(),
+                counter_strategy: "cs".into(),
+                duration_actual: 10,
+                timestamp: i as u64,
+            };
+            s.record_outcome(o);
+        }
+        assert_eq!(s.recent_outcomes.len(), 10);
+        // First outcome was removed; last is t_14
+        assert_eq!(s.recent_outcomes.last().unwrap().tactic_used, "t_14");
+    }
+
+    #[test]
+    fn director_state_get_recent_effectiveness_empty_returns_neutral() {
+        let s = CDirectorState::default();
+        assert_eq!(s.get_recent_effectiveness(), 0.5);
+    }
+
+    #[test]
+    fn director_state_get_recent_effectiveness_with_outcomes() {
+        let mut s = CDirectorState::default();
+        for eff in [0.2, 0.4, 0.6, 0.8] {
+            s.record_outcome(TacticOutcome {
+                tactic_used: "t".into(),
+                effectiveness: eff,
+                player_response: "ok".into(),
+                counter_strategy: "cs".into(),
+                duration_actual: 10,
+                timestamp: 0,
+            });
+        }
+        // avg = (0.2+0.4+0.6+0.8)/4 = 0.5
+        assert!((s.get_recent_effectiveness() - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn director_state_reset_learning_clears_all() {
+        let mut s = CDirectorState::default();
+        s.difficulty_modifier = 2.5;
+        s.last_adaptation_time = 9999;
+        s.update_plan(
+            TacticPlan {
+                strategy: "x".into(),
+                reasoning: "r".into(),
+                operations: vec![],
+                difficulty_modifier: 1.0,
+                expected_duration: 0,
+                counter_strategies: vec![],
+                fallback_plan: None,
+            },
+            100,
+        );
+        s.record_outcome(TacticOutcome {
+            tactic_used: "t".into(),
+            effectiveness: 0.5,
+            player_response: "ok".into(),
+            counter_strategy: "cs".into(),
+            duration_actual: 10,
+            timestamp: 0,
+        });
+
+        s.reset_learning();
+
+        assert!(s.current_plan.is_none());
+        assert!(s.recent_outcomes.is_empty());
+        assert_eq!(s.difficulty_modifier, 1.0);
+        assert_eq!(s.last_adaptation_time, 0);
+        assert_eq!(s.player_model.aggression, 0.5); // reset to default
+    }
+
+    // =================================================================
+    // CTacticExecution — pause/resume, duration, metadata, advance
+    // =================================================================
+
+    fn make_test_plan(op_count: usize) -> TacticPlan {
+        use astraweave_core::DirectorOp;
+        TacticPlan {
+            strategy: "test".into(),
+            reasoning: "r".into(),
+            operations: (0..op_count)
+                .map(|i| DirectorOp::SpawnWave {
+                    archetype: format!("m{}", i),
+                    count: 1,
+                    origin: astraweave_core::IVec2 { x: 0, y: 0 },
+                })
+                .collect(),
+            difficulty_modifier: 1.0,
+            expected_duration: 30,
+            counter_strategies: vec![],
+            fallback_plan: None,
+        }
+    }
+
+    #[test]
+    fn tactic_execution_pause_blocks_get_current_op() {
+        let plan = make_test_plan(3);
+        let mut exec = CTacticExecution::new(plan, 1000);
+        assert!(exec.get_current_operation().is_some());
+        exec.pause();
+        assert!(exec.is_paused);
+        assert!(exec.get_current_operation().is_none()); // blocked by pause
+    }
+
+    #[test]
+    fn tactic_execution_resume_restores_get_current_op() {
+        let plan = make_test_plan(3);
+        let mut exec = CTacticExecution::new(plan, 1000);
+        exec.pause();
+        exec.resume();
+        assert!(!exec.is_paused);
+        assert!(exec.get_current_operation().is_some());
+    }
+
+    #[test]
+    fn tactic_execution_get_duration() {
+        let plan = make_test_plan(1);
+        let exec = CTacticExecution::new(plan, 1000);
+        assert_eq!(exec.get_duration(1500), 500);
+        assert_eq!(exec.get_duration(1000), 0);
+    }
+
+    #[test]
+    fn tactic_execution_add_metadata() {
+        let plan = make_test_plan(1);
+        let mut exec = CTacticExecution::new(plan, 0);
+        exec.add_metadata("key".into(), "value".into());
+        assert_eq!(exec.metadata.get("key").unwrap(), "value");
+    }
+
+    #[test]
+    fn tactic_execution_advance_past_end_returns_false() {
+        let plan = make_test_plan(1);
+        let mut exec = CTacticExecution::new(plan, 0);
+        assert!(exec.advance_operation()); // 0 → 1 (complete)
+        assert!(!exec.advance_operation()); // already complete
+        assert!(exec.is_complete());
+    }
+
+    #[test]
+    fn tactic_execution_empty_plan_is_immediately_complete() {
+        let plan = make_test_plan(0);
+        let exec = CTacticExecution::new(plan, 0);
+        assert!(exec.is_complete());
+        assert!(exec.get_current_operation().is_none());
+    }
+
+    // =================================================================
+    // CDirectorMetrics — llm calls, difficulty, skill, failure rate
+    // =================================================================
+
+    #[test]
+    fn metrics_record_llm_call_success() {
+        let mut m = CDirectorMetrics::default();
+        m.record_llm_call(100, true);
+        assert_eq!(m.llm_calls, 1);
+        assert_eq!(m.llm_failures, 0);
+        assert_eq!(m.average_response_time, 100.0);
+    }
+
+    #[test]
+    fn metrics_record_llm_call_failure() {
+        let mut m = CDirectorMetrics::default();
+        m.record_llm_call(200, false);
+        assert_eq!(m.llm_calls, 1);
+        assert_eq!(m.llm_failures, 1);
+        assert_eq!(m.get_llm_failure_rate(), 1.0);
+    }
+
+    #[test]
+    fn metrics_record_llm_call_mixed() {
+        let mut m = CDirectorMetrics::default();
+        m.record_llm_call(100, true);
+        m.record_llm_call(300, false);
+        assert_eq!(m.llm_calls, 2);
+        assert_eq!(m.llm_failures, 1);
+        assert_eq!(m.get_llm_failure_rate(), 0.5);
+        assert_eq!(m.average_response_time, 200.0); // (100+300)/2
+    }
+
+    #[test]
+    fn metrics_get_llm_failure_rate_zero_calls() {
+        let m = CDirectorMetrics::default();
+        assert_eq!(m.get_llm_failure_rate(), 0.0);
+    }
+
+    #[test]
+    fn metrics_record_difficulty_adjustment() {
+        let mut m = CDirectorMetrics::default();
+        m.record_difficulty_adjustment(50);
+        m.record_difficulty_adjustment(250);
+        assert_eq!(m.difficulty_adjustments, 2);
+        assert_eq!(m.total_adaptation_time, 300);
+        assert_eq!(m.get_average_adaptation_time(), 150.0);
+    }
+
+    #[test]
+    fn metrics_get_average_adaptation_time_zero() {
+        let m = CDirectorMetrics::default();
+        assert_eq!(m.get_average_adaptation_time(), 0.0);
+    }
+
+    #[test]
+    fn metrics_record_skill_progression_caps_at_100() {
+        let mut m = CDirectorMetrics::default();
+        for i in 0..110 {
+            m.record_skill_progression(i as u64, 0.5);
+        }
+        assert_eq!(m.skill_progression.len(), 100);
+    }
+
+    #[test]
+    fn metrics_get_success_rate_zero_tactics() {
+        let m = CDirectorMetrics::default();
+        assert_eq!(m.get_success_rate(), 0.0);
+    }
+
+    #[test]
+    fn metrics_get_success_rate_mixed() {
+        let mut m = CDirectorMetrics::default();
+        let good = TacticOutcome {
+            tactic_used: "t".into(),
+            effectiveness: 0.8, // > 0.6 → successful
+            player_response: "ok".into(),
+            counter_strategy: "cs".into(),
+            duration_actual: 10,
+            timestamp: 0,
+        };
+        let bad = TacticOutcome {
+            tactic_used: "t".into(),
+            effectiveness: 0.3, // <= 0.6 → not successful
+            player_response: "ok".into(),
+            counter_strategy: "cs".into(),
+            duration_actual: 10,
+            timestamp: 0,
+        };
+        m.record_tactic(&good, 10);
+        m.record_tactic(&bad, 10);
+        assert_eq!(m.get_success_rate(), 0.5);
+    }
+
+    #[test]
+    fn metrics_reset_clears_all() {
+        let mut m = CDirectorMetrics::default();
+        m.record_tactic(
+            &TacticOutcome {
+                tactic_used: "t".into(),
+                effectiveness: 0.8,
+                player_response: "ok".into(),
+                counter_strategy: "cs".into(),
+                duration_actual: 10,
+                timestamp: 0,
+            },
+            100,
+        );
+        m.record_llm_call(50, true);
+        m.record_difficulty_adjustment(100);
+        m.record_skill_progression(0, 0.5);
+
+        m.reset();
+
+        assert_eq!(m.tactics_executed, 0);
+        assert_eq!(m.successful_tactics, 0);
+        assert_eq!(m.average_effectiveness, 0.0);
+        assert_eq!(m.llm_calls, 0);
+        assert_eq!(m.llm_failures, 0);
+        assert_eq!(m.average_response_time, 0.0);
+        assert_eq!(m.difficulty_adjustments, 0);
+        assert!(m.skill_progression.is_empty());
+    }
 }

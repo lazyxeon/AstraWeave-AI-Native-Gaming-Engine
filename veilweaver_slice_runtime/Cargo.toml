@@ -16,3 +16,8 @@ astraweave-ai = { path = "../astraweave-ai", optional = true }
 astraweave-director = { path = "../astraweave-director", optional = true }
 astraweave-scene = { path = "../astraweave-scene" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+astraweave-scene = { path = "../astraweave-scene" }
+astraweave-ecs = { path = "../astraweave-ecs" }

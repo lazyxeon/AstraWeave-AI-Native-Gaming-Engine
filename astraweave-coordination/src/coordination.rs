@@ -1,16 +1,15 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{mpsc, RwLock};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 use crate::agent::{
-    Agent, AgentMessage, AgentGoal, Task,
-    CoordinationContext, CoordinationStatus, WorldEvent,
+    Agent, AgentGoal, AgentMessage, CoordinationContext, CoordinationStatus, Task, WorldEvent,
 };
 
 /// Central coordinator for managing multiple LLM agents
@@ -52,10 +51,10 @@ pub struct CoordinatorConfig {
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ResourceStrategy {
-    FirstCome,     // First agent to request gets resources
-    Priority,      // Based on agent priority and task priority
-    LoadBalance,   // Distribute load evenly
-    Adaptive,      // Learn optimal allocation over time
+    FirstCome,   // First agent to request gets resources
+    Priority,    // Based on agent priority and task priority
+    LoadBalance, // Distribute load evenly
+    Adaptive,    // Learn optimal allocation over time
 }
 
 impl Default for CoordinatorConfig {
@@ -75,6 +74,9 @@ impl Default for CoordinatorConfig {
 pub struct MessageRouter {
     /// Message delivery channels
     channels: Arc<RwLock<HashMap<String, mpsc::UnboundedSender<AgentMessage>>>>,
+    /// Receivers kept alive to prevent channel closure
+    #[allow(dead_code)] // Receivers must be held to keep channels open
+    receivers: Arc<RwLock<HashMap<String, mpsc::UnboundedReceiver<AgentMessage>>>>,
     /// Message history for debugging
     message_history: Arc<RwLock<Vec<AgentMessage>>>,
     /// Routing rules
@@ -85,11 +87,11 @@ pub struct MessageRouter {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoutingRule {
     pub id: String,
-    pub from_pattern: Option<String>,    // Regex pattern for sender
-    pub to_pattern: Option<String>,      // Regex pattern for recipient
-    pub message_type: Option<String>,    // Message type filter
+    pub from_pattern: Option<String>, // Regex pattern for sender
+    pub to_pattern: Option<String>,   // Regex pattern for recipient
+    pub message_type: Option<String>, // Message type filter
     pub action: RoutingAction,
-    pub priority: i32,                   // Higher priority rules apply first
+    pub priority: i32, // Higher priority rules apply first
 }
 
 /// Action to take when routing rule matches
@@ -98,12 +100,13 @@ pub struct RoutingRule {
 pub enum RoutingAction {
     Allow,
     Block,
-    Redirect(String),  // Redirect to different agent
+    Redirect(String),       // Redirect to different agent
     Broadcast(Vec<String>), // Send to multiple agents
-    Transform(String), // Transform message content (placeholder)
+    Transform(String),      // Transform message content (placeholder)
 }
 
 /// Resource management for coordinated agents
+#[allow(dead_code)] // Fields reserved for future allocation strategy implementation
 pub struct ResourceManager {
     /// Current resource allocations
     allocations: Arc<RwLock<HashMap<String, ResourceAllocation>>>,
@@ -144,6 +147,7 @@ impl Default for ResourceLimits {
 }
 
 /// Event dispatching system for world events
+#[allow(dead_code)] // Fields reserved for future event dispatch pipeline
 pub struct EventDispatcher {
     /// Event subscriptions by agent
     subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>, // agent_id -> event_types
@@ -172,10 +176,8 @@ pub struct CoordinationMetrics {
 impl AgentCoordinator {
     pub fn new(config: CoordinatorConfig) -> Self {
         let message_router = MessageRouter::new();
-        let resource_manager = ResourceManager::new(
-            ResourceLimits::default(),
-            config.resource_strategy.clone(),
-        );
+        let resource_manager =
+            ResourceManager::new(ResourceLimits::default(), config.resource_strategy.clone());
         let event_dispatcher = EventDispatcher::new();
 
         Self {
@@ -206,14 +208,18 @@ impl AgentCoordinator {
         self.message_router.setup_agent_channel(&agent_id).await;
 
         // Initialize resource allocation
-        self.resource_manager.initialize_allocation(&agent_id).await?;
+        self.resource_manager
+            .initialize_allocation(&agent_id)
+            .await?;
 
         // Subscribe to events
         {
             let agents = self.agents.read().await;
             if let Some(agent) = agents.get(&agent_id) {
                 let subscriptions = agent.get_event_subscriptions();
-                self.event_dispatcher.subscribe_agent(&agent_id, subscriptions).await;
+                self.event_dispatcher
+                    .subscribe_agent(&agent_id, subscriptions)
+                    .await;
             }
         }
 
@@ -287,19 +293,31 @@ impl AgentCoordinator {
         let suitable_agents = self.find_suitable_agents(&task).await?;
 
         if suitable_agents.is_empty() {
-            return Err(anyhow!("No suitable agents found for task: {}", task.task_type));
+            return Err(anyhow!(
+                "No suitable agents found for task: {}",
+                task.task_type
+            ));
         }
 
         // Select best agent based on strategy
         let selected_agent = self.select_best_agent(&suitable_agents, &task).await?;
 
         // Check resource availability
-        if !self.resource_manager.can_allocate(&selected_agent, &task.resource_requirements).await {
-            return Err(anyhow!("Insufficient resources for task assignment to {}", selected_agent));
+        if !self
+            .resource_manager
+            .can_allocate(&selected_agent, &task.resource_requirements)
+            .await
+        {
+            return Err(anyhow!(
+                "Insufficient resources for task assignment to {}",
+                selected_agent
+            ));
         }
 
         // Allocate resources
-        self.resource_manager.allocate_resources(&selected_agent, &task.resource_requirements).await?;
+        self.resource_manager
+            .allocate_resources(&selected_agent, &task.resource_requirements)
+            .await?;
 
         // Assign task to agent
         {
@@ -329,7 +347,10 @@ impl AgentCoordinator {
     ) -> Result<String> {
         let session_id = Uuid::new_v4().to_string();
 
-        info!("Starting coordination session {} with agents: {:?}", session_id, participant_ids);
+        info!(
+            "Starting coordination session {} with agents: {:?}",
+            session_id, participant_ids
+        );
 
         // Validate all participants exist
         {
@@ -411,7 +432,10 @@ impl AgentCoordinator {
 
     /// Dispatch a world event to interested agents
     pub async fn dispatch_event(&self, event: WorldEvent) -> Result<()> {
-        debug!("Dispatching event: {} ({})", event.description, event.event_type);
+        debug!(
+            "Dispatching event: {} ({})",
+            event.description, event.event_type
+        );
 
         let start_time = std::time::Instant::now();
 
@@ -425,7 +449,10 @@ impl AgentCoordinator {
             if let Some(agent) = agents.get_mut(&agent_id) {
                 match agent.handle_world_event(&event).await {
                     Ok(_) => debug!("Agent {} handled event {}", agent_id, event.id),
-                    Err(e) => warn!("Agent {} failed to handle event {}: {}", agent_id, event.id, e),
+                    Err(e) => warn!(
+                        "Agent {} failed to handle event {}: {}",
+                        agent_id, event.id, e
+                    ),
                 }
             }
         }
@@ -499,7 +526,7 @@ impl AgentCoordinator {
                 }
                 ResourceStrategy::LoadBalance => {
                     // Simple round-robin for now
-                    let index = (task.id.len() % candidates.len()) as usize;
+                    let index = task.id.len() % candidates.len();
                     Ok(candidates[index].clone())
                 }
                 ResourceStrategy::Adaptive => {
@@ -570,7 +597,8 @@ impl AgentCoordinator {
             let ctx = context.try_read();
             if let Ok(ctx) = ctx {
                 let duration = now - ctx.start_time;
-                let keep = duration.to_std().unwrap_or(Duration::ZERO) < self.config.max_coordination_duration;
+                let keep = duration.to_std().unwrap_or(Duration::ZERO)
+                    < self.config.max_coordination_duration;
                 if !keep {
                     debug!("Cleaning up expired coordination session {}", session_id);
                 }
@@ -590,11 +618,14 @@ impl AgentCoordinator {
         metrics.agent_availability.clear();
         for (agent_id, agent) in agents.iter() {
             let availability = if agent.is_available() { 1.0 } else { 0.0 };
-            metrics.agent_availability.insert(agent_id.clone(), availability);
+            metrics
+                .agent_availability
+                .insert(agent_id.clone(), availability);
         }
 
         // Calculate resource utilization
-        let total_usage: u32 = agents.values()
+        let total_usage: u32 = agents
+            .values()
             .map(|agent| agent.get_resource_usage().active_tasks)
             .sum();
         let total_capacity = agents.len() * self.config.max_tasks_per_agent;
@@ -608,24 +639,35 @@ impl AgentCoordinator {
 
 // Implementation for sub-systems
 
+impl Default for MessageRouter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MessageRouter {
     pub fn new() -> Self {
         Self {
             channels: Arc::new(RwLock::new(HashMap::new())),
+            receivers: Arc::new(RwLock::new(HashMap::new())),
             message_history: Arc::new(RwLock::new(Vec::new())),
             routing_rules: Arc::new(RwLock::new(Vec::new())),
         }
     }
 
     async fn setup_agent_channel(&self, agent_id: &str) {
-        let (sender, _receiver) = mpsc::unbounded_channel();
+        let (sender, receiver) = mpsc::unbounded_channel();
         let mut channels = self.channels.write().await;
         channels.insert(agent_id.to_string(), sender);
+        let mut receivers = self.receivers.write().await;
+        receivers.insert(agent_id.to_string(), receiver);
     }
 
     async fn remove_agent_channel(&self, agent_id: &str) {
         let mut channels = self.channels.write().await;
         channels.remove(agent_id);
+        let mut receivers = self.receivers.write().await;
+        receivers.remove(agent_id);
     }
 
     async fn should_deliver(&self, message: &AgentMessage) -> bool {
@@ -646,7 +688,9 @@ impl MessageRouter {
         let channels = self.channels.read().await;
 
         if let Some(channel) = channels.get(&message.to) {
-            channel.send(message.clone()).map_err(|_| anyhow!("Failed to send message to agent {}", message.to))?;
+            channel
+                .send(message.clone())
+                .map_err(|_| anyhow!("Failed to send message to agent {}", message.to))?;
         } else {
             return Err(anyhow!("Agent {} not found", message.to));
         }
@@ -719,18 +763,26 @@ impl ResourceManager {
         Ok(())
     }
 
-    async fn can_allocate(&self, agent_id: &str, requirements: &crate::agent::ResourceRequirements) -> bool {
+    async fn can_allocate(
+        &self,
+        agent_id: &str,
+        requirements: &crate::agent::ResourceRequirements,
+    ) -> bool {
         let allocations = self.allocations.read().await;
 
         if let Some(allocation) = allocations.get(agent_id) {
-            allocation.llm_calls_allocated >= allocation.llm_calls_used + requirements.llm_calls &&
-            allocation.memory_allocated >= allocation.memory_used + requirements.memory_mb
+            allocation.llm_calls_allocated >= allocation.llm_calls_used + requirements.llm_calls
+                && allocation.memory_allocated >= allocation.memory_used + requirements.memory_mb
         } else {
             false
         }
     }
 
-    async fn allocate_resources(&self, agent_id: &str, requirements: &crate::agent::ResourceRequirements) -> Result<()> {
+    async fn allocate_resources(
+        &self,
+        agent_id: &str,
+        requirements: &crate::agent::ResourceRequirements,
+    ) -> Result<()> {
         let mut allocations = self.allocations.write().await;
 
         if let Some(allocation) = allocations.get_mut(agent_id) {
@@ -759,6 +811,12 @@ impl ResourceManager {
                 allocation.allocated_at = now;
             }
         }
+    }
+}
+
+impl Default for EventDispatcher {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -813,7 +871,7 @@ impl EventDispatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agent::{BaseAgent, TaskResult, ResourceUsage};
+    use crate::agent::{BaseAgent, ResourceUsage, TaskResult};
     use async_trait::async_trait;
 
     struct TestAgent {
@@ -822,15 +880,36 @@ mod tests {
 
     #[async_trait]
     impl Agent for TestAgent {
-        fn agent_id(&self) -> &str { &self.base.id }
-        fn agent_type(&self) -> &str { &self.base.agent_type }
-        fn get_state(&self) -> &crate::agent::AgentState { &self.base.state }
-        fn set_state(&mut self, state: crate::agent::AgentState) { self.base.state = state; }
-        async fn handle_message(&mut self, _message: &AgentMessage) -> Result<Option<AgentMessage>> { Ok(None) }
-        fn get_goals(&self) -> Vec<AgentGoal> { self.base.goals.clone() }
-        fn set_goals(&mut self, goals: Vec<AgentGoal>) { self.base.goals = goals; }
-        fn get_capabilities(&self) -> Vec<String> { self.base.capabilities.clone() }
-        fn can_handle_task(&self, _task: &Task) -> bool { true }
+        fn agent_id(&self) -> &str {
+            &self.base.id
+        }
+        fn agent_type(&self) -> &str {
+            &self.base.agent_type
+        }
+        fn get_state(&self) -> &crate::agent::AgentState {
+            &self.base.state
+        }
+        fn set_state(&mut self, state: crate::agent::AgentState) {
+            self.base.state = state;
+        }
+        async fn handle_message(
+            &mut self,
+            _message: &AgentMessage,
+        ) -> Result<Option<AgentMessage>> {
+            Ok(None)
+        }
+        fn get_goals(&self) -> Vec<AgentGoal> {
+            self.base.goals.clone()
+        }
+        fn set_goals(&mut self, goals: Vec<AgentGoal>) {
+            self.base.goals = goals;
+        }
+        fn get_capabilities(&self) -> Vec<String> {
+            self.base.capabilities.clone()
+        }
+        fn can_handle_task(&self, _task: &Task) -> bool {
+            true
+        }
         async fn execute_task(&mut self, task: &Task) -> Result<TaskResult> {
             Ok(TaskResult {
                 task_id: task.id.clone(),
@@ -842,11 +921,21 @@ mod tests {
                 side_effects: Vec::new(),
             })
         }
-        fn get_resource_usage(&self) -> ResourceUsage { self.base.resource_usage.clone() }
-        fn get_event_subscriptions(&self) -> Vec<String> { self.base.event_subscriptions.clone() }
-        async fn handle_world_event(&mut self, _event: &WorldEvent) -> Result<()> { Ok(()) }
-        async fn add_task(&self, task: Task) { self.base.add_task(task).await }
-        fn is_available(&self) -> bool { self.base.is_available() }
+        fn get_resource_usage(&self) -> ResourceUsage {
+            self.base.resource_usage.clone()
+        }
+        fn get_event_subscriptions(&self) -> Vec<String> {
+            self.base.event_subscriptions.clone()
+        }
+        async fn handle_world_event(&mut self, _event: &WorldEvent) -> Result<()> {
+            Ok(())
+        }
+        async fn add_task(&self, task: Task) {
+            self.base.add_task(task).await
+        }
+        fn is_available(&self) -> bool {
+            self.base.is_available()
+        }
     }
 
     #[tokio::test]
@@ -878,5 +967,485 @@ mod tests {
         let assigned_agent = coordinator.assign_task(task).await.unwrap();
 
         assert!(!assigned_agent.is_empty());
+    }
+
+    // =====================================================================
+    // MessageRouter tests
+    // =====================================================================
+
+    #[tokio::test]
+    async fn message_router_setup_and_remove_channel() {
+        let router = MessageRouter::new();
+        router.setup_agent_channel("agent-1").await;
+        {
+            let channels = router.channels.read().await;
+            assert!(channels.contains_key("agent-1"));
+        }
+        router.remove_agent_channel("agent-1").await;
+        {
+            let channels = router.channels.read().await;
+            assert!(!channels.contains_key("agent-1"));
+        }
+    }
+
+    #[tokio::test]
+    async fn message_router_should_deliver_default_allows() {
+        let router = MessageRouter::new();
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "a".into(),
+            to: "b".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        assert!(router.should_deliver(&msg).await);
+    }
+
+    #[tokio::test]
+    async fn message_router_should_deliver_block_rule() {
+        let router = MessageRouter::new();
+        {
+            let mut rules = router.routing_rules.write().await;
+            rules.push(RoutingRule {
+                id: "r-1".into(),
+                from_pattern: Some("blocked".into()),
+                to_pattern: None,
+                message_type: None,
+                action: RoutingAction::Block,
+                priority: 1,
+            });
+        }
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "blocked-agent".into(),
+            to: "target".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        assert!(!router.should_deliver(&msg).await);
+    }
+
+    #[tokio::test]
+    async fn message_router_deliver_message_success() {
+        let router = MessageRouter::new();
+        router.setup_agent_channel("target").await;
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "sender".into(),
+            to: "target".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({"hello": true}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        router.deliver_message(msg).await.unwrap();
+        let history = router.message_history.read().await;
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].id, "m-1");
+    }
+
+    #[tokio::test]
+    async fn message_router_deliver_message_unknown_agent_errors() {
+        let router = MessageRouter::new();
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "sender".into(),
+            to: "nonexistent".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        let result = router.deliver_message(msg).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn message_router_rule_matches_from_pattern() {
+        let router = MessageRouter::new();
+        let rule = RoutingRule {
+            id: "r".into(),
+            from_pattern: Some("npc".into()),
+            to_pattern: None,
+            message_type: None,
+            action: RoutingAction::Allow,
+            priority: 0,
+        };
+        let msg_match = AgentMessage {
+            id: "m".into(),
+            from: "npc-guard".into(),
+            to: "player".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        let msg_no_match = AgentMessage {
+            id: "m".into(),
+            from: "player".into(),
+            to: "npc-guard".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        assert!(router.rule_matches(&rule, &msg_match));
+        assert!(!router.rule_matches(&rule, &msg_no_match));
+    }
+
+    #[tokio::test]
+    async fn message_router_history_caps_at_1000() {
+        let router = MessageRouter::new();
+        router.setup_agent_channel("t").await;
+        for i in 0..1005 {
+            let msg = AgentMessage {
+                id: format!("m-{}", i),
+                from: "s".into(),
+                to: "t".into(),
+                message_type: crate::agent::MessageType::Notification,
+                content: serde_json::json!({}),
+                timestamp: Utc::now(),
+                priority: crate::agent::MessagePriority::Low,
+                reply_to: None,
+            };
+            router.deliver_message(msg).await.unwrap();
+        }
+        let history = router.message_history.read().await;
+        assert_eq!(history.len(), 1000);
+    }
+
+    // =====================================================================
+    // ResourceManager tests
+    // =====================================================================
+
+    #[tokio::test]
+    async fn resource_manager_initialize_allocation() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        rm.initialize_allocation("agent-1").await.unwrap();
+        let allocs = rm.allocations.read().await;
+        let a = allocs.get("agent-1").unwrap();
+        assert_eq!(a.agent_id, "agent-1");
+        assert_eq!(a.llm_calls_used, 0);
+        assert_eq!(a.memory_used, 0);
+        // Gets 10% of total
+        assert_eq!(a.llm_calls_allocated, 100); // 1000 / 10
+        assert_eq!(a.memory_allocated, 819); // 8192 / 10
+    }
+
+    #[tokio::test]
+    async fn resource_manager_can_allocate_within_limits() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        rm.initialize_allocation("a").await.unwrap();
+        let req = crate::agent::ResourceRequirements {
+            llm_calls: 50,
+            memory_mb: 400,
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        assert!(rm.can_allocate("a", &req).await);
+    }
+
+    #[tokio::test]
+    async fn resource_manager_cannot_allocate_exceeding_limits() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        rm.initialize_allocation("a").await.unwrap();
+        let req = crate::agent::ResourceRequirements {
+            llm_calls: 200, // exceeds 100 allocated
+            memory_mb: 0,
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        assert!(!rm.can_allocate("a", &req).await);
+    }
+
+    #[tokio::test]
+    async fn resource_manager_cannot_allocate_unknown_agent() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        let req = crate::agent::ResourceRequirements::default();
+        assert!(!rm.can_allocate("unknown", &req).await);
+    }
+
+    #[tokio::test]
+    async fn resource_manager_allocate_updates_usage() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        rm.initialize_allocation("a").await.unwrap();
+        let req = crate::agent::ResourceRequirements {
+            llm_calls: 10,
+            memory_mb: 50,
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        rm.allocate_resources("a", &req).await.unwrap();
+        let allocs = rm.allocations.read().await;
+        let a = allocs.get("a").unwrap();
+        assert_eq!(a.llm_calls_used, 10);
+        assert_eq!(a.memory_used, 50);
+    }
+
+    #[tokio::test]
+    async fn resource_manager_allocate_unknown_agent_errors() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        let req = crate::agent::ResourceRequirements::default();
+        assert!(rm.allocate_resources("unknown", &req).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn resource_manager_release_allocation() {
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        rm.initialize_allocation("a").await.unwrap();
+        rm.release_allocation("a").await;
+        let allocs = rm.allocations.read().await;
+        assert!(!allocs.contains_key("a"));
+    }
+
+    // =====================================================================
+    // EventDispatcher tests
+    // =====================================================================
+
+    #[tokio::test]
+    async fn event_dispatcher_subscribe_and_get_interested() {
+        let ed = EventDispatcher::new();
+        ed.subscribe_agent("a1", vec!["combat".into(), "quest".into()])
+            .await;
+        ed.subscribe_agent("a2", vec!["quest".into()]).await;
+        ed.subscribe_agent("a3", vec!["trade".into()]).await;
+
+        let event = WorldEvent {
+            id: "e-1".into(),
+            event_type: "quest".into(),
+            description: "New quest".into(),
+            location: None,
+            participants: vec![],
+            event_data: serde_json::json!({}),
+            timestamp: Utc::now(),
+            severity: crate::agent::EventSeverity::Minor,
+        };
+        let interested = ed.get_interested_agents(&event).await;
+        assert!(interested.contains(&"a1".to_string()));
+        assert!(interested.contains(&"a2".to_string()));
+        assert!(!interested.contains(&"a3".to_string()));
+    }
+
+    #[tokio::test]
+    async fn event_dispatcher_wildcard_subscription() {
+        let ed = EventDispatcher::new();
+        ed.subscribe_agent("broadcast", vec!["*".into()]).await;
+
+        let event = WorldEvent {
+            id: "e-1".into(),
+            event_type: "anything".into(),
+            description: "Random event".into(),
+            location: None,
+            participants: vec![],
+            event_data: serde_json::json!({}),
+            timestamp: Utc::now(),
+            severity: crate::agent::EventSeverity::Trivial,
+        };
+        let interested = ed.get_interested_agents(&event).await;
+        assert!(interested.contains(&"broadcast".to_string()));
+    }
+
+    #[tokio::test]
+    async fn event_dispatcher_unsubscribe() {
+        let ed = EventDispatcher::new();
+        ed.subscribe_agent("a1", vec!["combat".into()]).await;
+        ed.unsubscribe_agent("a1").await;
+
+        let event = WorldEvent {
+            id: "e-1".into(),
+            event_type: "combat".into(),
+            description: "Battle".into(),
+            location: None,
+            participants: vec![],
+            event_data: serde_json::json!({}),
+            timestamp: Utc::now(),
+            severity: crate::agent::EventSeverity::Major,
+        };
+        let interested = ed.get_interested_agents(&event).await;
+        assert!(interested.is_empty());
+    }
+
+    #[tokio::test]
+    async fn event_dispatcher_store_event_history() {
+        let ed = EventDispatcher::new();
+        let event = WorldEvent {
+            id: "e-1".into(),
+            event_type: "test".into(),
+            description: "Test event".into(),
+            location: Some("town".into()),
+            participants: vec!["hero".into()],
+            event_data: serde_json::json!({"x": 1}),
+            timestamp: Utc::now(),
+            severity: crate::agent::EventSeverity::Moderate,
+        };
+        ed.store_event(event).await;
+        let history = ed.event_history.read().await;
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].id, "e-1");
+    }
+
+    // =====================================================================
+    // AgentCoordinator — coordination sessions
+    // =====================================================================
+
+    #[tokio::test]
+    async fn coordinator_start_coordination_session() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a2 = TestAgent {
+            base: BaseAgent::new("a2".into(), vec![]),
+        };
+        let a1_id = a1.base.id.clone();
+        let a2_id = a2.base.id.clone();
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+        coordinator.register_agent(Box::new(a2)).await.unwrap();
+
+        let session_id = coordinator
+            .start_coordination(vec![a1_id.clone(), a2_id.clone()], vec![])
+            .await
+            .unwrap();
+        assert_eq!(session_id.len(), 36); // UUID
+
+        let sessions = coordinator.coordination_sessions.read().await;
+        assert!(sessions.contains_key(&session_id));
+        let ctx = sessions[&session_id].read().await;
+        assert_eq!(ctx.participants.len(), 2);
+        assert_eq!(ctx.status, CoordinationStatus::Planning);
+    }
+
+    #[tokio::test]
+    async fn coordinator_start_coordination_unknown_agent_errors() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        let result = coordinator
+            .start_coordination(vec!["nonexistent".into()], vec![])
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn coordinator_end_coordination_session() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a1_id = a1.base.id.clone();
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+
+        let session_id = coordinator
+            .start_coordination(vec![a1_id], vec![])
+            .await
+            .unwrap();
+        coordinator.end_coordination(&session_id).await.unwrap();
+
+        let sessions = coordinator.coordination_sessions.read().await;
+        assert!(!sessions.contains_key(&session_id));
+    }
+
+    #[tokio::test]
+    async fn coordinator_unregister_agent() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let agent = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let agent_id = agent.base.id.clone();
+        coordinator.register_agent(Box::new(agent)).await.unwrap();
+        coordinator.unregister_agent(&agent_id).await.unwrap();
+
+        let agents = coordinator.agents.read().await;
+        assert!(!agents.contains_key(&agent_id));
+    }
+
+    #[tokio::test]
+    async fn coordinator_get_metrics_default() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(metrics.messages_sent, 0);
+        assert_eq!(metrics.tasks_assigned, 0);
+        assert_eq!(metrics.coordination_sessions, 0);
+    }
+
+    #[tokio::test]
+    async fn coordinator_get_metrics_disabled() {
+        let config = CoordinatorConfig {
+            enable_metrics: false,
+            ..Default::default()
+        };
+        let coordinator = AgentCoordinator::new(config);
+        let metrics = coordinator.get_metrics().await;
+        // Returns default when disabled
+        assert_eq!(metrics.messages_sent, 0);
+    }
+
+    #[tokio::test]
+    async fn coordinator_dispatch_event_to_subscribed_agents() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let mut base = BaseAgent::new("a1".into(), vec![]);
+        base.event_subscriptions = vec!["combat".into()];
+        let a1 = TestAgent { base };
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+
+        let event = WorldEvent {
+            id: "e-1".into(),
+            event_type: "combat".into(),
+            description: "Battle".into(),
+            location: None,
+            participants: vec![],
+            event_data: serde_json::json!({}),
+            timestamp: Utc::now(),
+            severity: crate::agent::EventSeverity::Major,
+        };
+        coordinator.dispatch_event(event).await.unwrap();
+
+        let metrics = coordinator.get_metrics().await;
+        assert!(metrics.event_processing_time >= 0.0);
+    }
+
+    #[tokio::test]
+    async fn coordinator_assign_task_no_agents_errors() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        let task = Task::new("combat".into(), "Fight".into());
+        let result = coordinator.assign_task(task).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn coordinator_update_runs_without_error() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        coordinator.update().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn coordinator_metrics_track_coordination_sessions() {
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a1_id = a1.base.id.clone();
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+
+        coordinator
+            .start_coordination(vec![a1_id], vec![])
+            .await
+            .unwrap();
+
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(metrics.coordination_sessions, 1);
     }
 }

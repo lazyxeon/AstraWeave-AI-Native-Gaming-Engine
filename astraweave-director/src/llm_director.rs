@@ -623,6 +623,344 @@ mod tests {
         assert!(model.preferred_tactics.contains(&"flanking".to_string()));
     }
 
+    // =================================================================
+    // PlayerBehaviorModel — defaults, clamping, learning edge cases
+    // =================================================================
+
+    #[test]
+    fn player_model_default_field_values() {
+        let m = PlayerBehaviorModel::default();
+        assert_eq!(m.aggression, 0.5);
+        assert_eq!(m.caution, 0.5);
+        assert_eq!(m.skill_level, 0.5);
+        assert_eq!(m.preferred_range, 0.5);
+        assert_eq!(m.adaptability, 0.5);
+        assert!(m.session_performance.is_empty());
+        assert!(m.preferred_tactics.is_empty());
+        assert!(m.weaknesses.is_empty());
+        assert_eq!(m.encounter_count, 0);
+    }
+
+    #[test]
+    fn player_model_analyze_no_enemies_defaults_distance() {
+        let mut m = PlayerBehaviorModel::default();
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: astraweave_core::PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: astraweave_core::CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 10, y: 10 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let s = m.analyze_snapshot(&snap);
+        assert!(s.contains("average distance 8.0"));
+        assert!(s.contains("0 enemies nearby"));
+    }
+
+    #[test]
+    fn player_model_analyze_far_enemies_increases_preferred_range() {
+        let mut m = PlayerBehaviorModel::default();
+        assert_eq!(m.preferred_range, 0.5);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: astraweave_core::PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: astraweave_core::CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 10, y: 10 },
+            },
+            enemies: vec![astraweave_core::EnemyState {
+                id: 1,
+                pos: IVec2 { x: 20, y: 0 }, // distance = 20, > 10
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        m.analyze_snapshot(&snap);
+        assert_eq!(m.preferred_range, 0.6); // 0.5 + 0.1
+    }
+
+    #[test]
+    fn player_model_analyze_close_enemies_decreases_preferred_range() {
+        let mut m = PlayerBehaviorModel::default();
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: astraweave_core::PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: astraweave_core::CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 10, y: 10 },
+            },
+            enemies: vec![astraweave_core::EnemyState {
+                id: 1,
+                pos: IVec2 { x: 2, y: 0 }, // distance = 2, < 4
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        m.analyze_snapshot(&snap);
+        assert_eq!(m.preferred_range, 0.4); // 0.5 - 0.1
+    }
+
+    #[test]
+    fn player_model_preferred_range_clamped_to_zero() {
+        let mut m = PlayerBehaviorModel {
+            preferred_range: 0.05,
+            ..Default::default()
+        };
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: astraweave_core::PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: astraweave_core::CompanionState {
+                ammo: 0,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![astraweave_core::EnemyState {
+                id: 1,
+                pos: IVec2 { x: 1, y: 0 }, // dist=1, <4
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        m.analyze_snapshot(&snap);
+        assert_eq!(m.preferred_range, 0.0); // clamped, not -0.05
+    }
+
+    #[test]
+    fn player_model_update_session_performance_capped_at_20() {
+        let mut m = PlayerBehaviorModel::default();
+        for i in 0..25 {
+            let o = TacticOutcome {
+                tactic_used: "t".into(),
+                effectiveness: i as f32 / 25.0,
+                player_response: "ok".into(),
+                counter_strategy: "cs".into(),
+                duration_actual: 10,
+                timestamp: i as u64,
+            };
+            m.update_from_outcome(&o);
+        }
+        assert_eq!(m.session_performance.len(), 20);
+        assert_eq!(m.encounter_count, 25);
+    }
+
+    #[test]
+    fn player_model_update_preferred_tactics_capped_at_5() {
+        let mut m = PlayerBehaviorModel::default();
+        for i in 0..8 {
+            let o = TacticOutcome {
+                tactic_used: format!("tactic_{}", i),
+                effectiveness: 0.9, // high → triggers preferred_tactics push
+                player_response: "ok".into(),
+                counter_strategy: "cs".into(),
+                duration_actual: 10,
+                timestamp: i as u64,
+            };
+            m.update_from_outcome(&o);
+        }
+        assert!(m.preferred_tactics.len() <= 5);
+    }
+
+    #[test]
+    fn player_model_update_weaknesses_capped_at_3() {
+        let mut m = PlayerBehaviorModel::default();
+        for i in 0..6 {
+            let o = TacticOutcome {
+                tactic_used: "bad".into(),
+                effectiveness: 0.1, // low → triggers weaknesses push
+                player_response: "ok".into(),
+                counter_strategy: format!("weakness_{}", i), // unique counter strategies
+                duration_actual: 10,
+                timestamp: i as u64,
+            };
+            m.update_from_outcome(&o);
+        }
+        assert!(m.weaknesses.len() <= 3);
+    }
+
+    #[test]
+    fn player_model_update_adaptability_from_tactic_variety() {
+        let mut m = PlayerBehaviorModel::default();
+        // Add 5 unique high-effectiveness tactics → adaptability = 5/5 = 1.0
+        for i in 0..5 {
+            let o = TacticOutcome {
+                tactic_used: format!("t_{}", i),
+                effectiveness: 0.9,
+                player_response: "ok".into(),
+                counter_strategy: "cs".into(),
+                duration_actual: 10,
+                timestamp: i as u64,
+            };
+            m.update_from_outcome(&o);
+        }
+        assert_eq!(m.adaptability, 1.0);
+    }
+
+    #[test]
+    fn player_model_skill_increases_on_good_performance() {
+        let mut m = PlayerBehaviorModel::default();
+        assert_eq!(m.skill_level, 0.5);
+        // Push a high-performance outcome → avg > 0.7 → skill_level += 0.02
+        let o = TacticOutcome {
+            tactic_used: "t".into(),
+            effectiveness: 0.9,
+            player_response: "ok".into(),
+            counter_strategy: "cs".into(),
+            duration_actual: 10,
+            timestamp: 0,
+        };
+        m.update_from_outcome(&o);
+        assert!((m.skill_level - 0.52).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn player_model_skill_decreases_on_poor_performance() {
+        let mut m = PlayerBehaviorModel::default();
+        let o = TacticOutcome {
+            tactic_used: "t".into(),
+            effectiveness: 0.1, // avg < 0.3 → skill -= 0.01
+            player_response: "ok".into(),
+            counter_strategy: "cs".into(),
+            duration_actual: 10,
+            timestamp: 0,
+        };
+        m.update_from_outcome(&o);
+        assert!((m.skill_level - 0.49).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn player_model_serde_roundtrip() {
+        let m = PlayerBehaviorModel {
+            aggression: 0.7,
+            caution: 0.3,
+            skill_level: 0.8,
+            preferred_range: 0.9,
+            adaptability: 0.6,
+            session_performance: vec![0.5, 0.8],
+            preferred_tactics: vec!["flank".into()],
+            weaknesses: vec!["aoe".into()],
+            encounter_count: 5,
+        };
+        let json = serde_json::to_string(&m).unwrap();
+        let back: PlayerBehaviorModel = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.aggression, 0.7);
+        assert_eq!(back.encounter_count, 5);
+        assert_eq!(back.preferred_tactics, vec!["flank"]);
+    }
+
+    // =================================================================
+    // LlmDirectorConfig — defaults and serde
+    // =================================================================
+
+    #[test]
+    fn llm_director_config_default_values() {
+        let c = LlmDirectorConfig::default();
+        assert_eq!(c.adaptation_rate, 0.1);
+        assert_eq!(c.min_difficulty, 0.3);
+        assert_eq!(c.max_difficulty, 1.5);
+        assert!(c.learning_enabled);
+        assert_eq!(c.creativity_factor, 0.7);
+        assert_eq!(c.context_window_size, 2048);
+    }
+
+    #[test]
+    fn llm_director_config_serde_roundtrip() {
+        let c = LlmDirectorConfig {
+            adaptation_rate: 0.2,
+            min_difficulty: 0.5,
+            max_difficulty: 2.0,
+            learning_enabled: false,
+            creativity_factor: 0.9,
+            context_window_size: 4096,
+        };
+        let json = serde_json::to_string(&c).unwrap();
+        let back: LlmDirectorConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.adaptation_rate, 0.2);
+        assert!(!back.learning_enabled);
+        assert_eq!(back.context_window_size, 4096);
+    }
+
+    // =================================================================
+    // TacticPlan / TacticOutcome — serde roundtrips
+    // =================================================================
+
+    #[test]
+    fn tactic_plan_serde_roundtrip() {
+        let p = TacticPlan {
+            strategy: "aggressive".into(),
+            reasoning: "player is defensive".into(),
+            operations: vec![],
+            difficulty_modifier: 1.2,
+            expected_duration: 45,
+            counter_strategies: vec!["retreat".into()],
+            fallback_plan: Some("spawn minions".into()),
+        };
+        let json = serde_json::to_string(&p).unwrap();
+        let back: TacticPlan = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.strategy, "aggressive");
+        assert_eq!(back.difficulty_modifier, 1.2);
+        assert_eq!(back.fallback_plan, Some("spawn minions".into()));
+    }
+
+    #[test]
+    fn tactic_outcome_serde_roundtrip() {
+        let o = TacticOutcome {
+            tactic_used: "flank".into(),
+            effectiveness: 0.75,
+            player_response: "adapted".into(),
+            counter_strategy: "pressure".into(),
+            duration_actual: 30,
+            timestamp: 99999,
+        };
+        let json = serde_json::to_string(&o).unwrap();
+        let back: TacticOutcome = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.effectiveness, 0.75);
+        assert_eq!(back.timestamp, 99999);
+    }
+
     // NOTE: LlmDirector creation tests require mock implementations that aren't available.
     // These tests would need MockLlmClient and MockRagPipeline implementations.
     // The above tests cover the PlayerBehaviorModel functionality which is the core logic.

@@ -373,4 +373,212 @@ mod tests {
         assert!(!budget.cells.contains_key(&far));
         assert!(budget.current_usage <= budget.max_memory_bytes);
     }
+
+    // ── GpuResourceBudget additional tests ──
+
+    #[test]
+    fn test_with_default_budget_is_500mb() {
+        let budget = GpuResourceBudget::with_default_budget();
+        assert_eq!(budget.max_memory_bytes, 500 * 1024 * 1024);
+        assert_eq!(budget.current_usage, 0);
+        assert!(budget.cells.is_empty());
+    }
+
+    #[test]
+    fn test_get_or_create_cell_creates_new() {
+        let mut budget = GpuResourceBudget::new(1024);
+        let coord = GridCoord::new(3, 1, -5);
+        let cell = budget.get_or_create_cell(coord);
+        assert_eq!(cell.coord, coord);
+        assert_eq!(cell.memory_usage, 0);
+        assert!(budget.cells.contains_key(&coord));
+    }
+
+    #[test]
+    fn test_get_or_create_cell_returns_existing() {
+        let mut budget = GpuResourceBudget::new(1024);
+        let coord = GridCoord::new(2, 0, 2);
+        budget.get_or_create_cell(coord).memory_usage = 42;
+        // Second call should return the same cell, not overwrite
+        let cell = budget.get_or_create_cell(coord);
+        assert_eq!(cell.memory_usage, 42);
+    }
+
+    #[test]
+    fn test_unload_cell_existing() {
+        let mut budget = GpuResourceBudget::new(1024);
+        let coord = GridCoord::new(1, 1, 1);
+        budget.get_or_create_cell(coord).memory_usage = 200;
+        budget.update_usage();
+        assert_eq!(budget.current_usage, 200);
+
+        budget.unload_cell(coord);
+        assert!(!budget.cells.contains_key(&coord));
+        assert_eq!(budget.current_usage, 0);
+    }
+
+    #[test]
+    fn test_unload_cell_nonexistent_is_noop() {
+        let mut budget = GpuResourceBudget::new(1024);
+        let coord = GridCoord::new(99, 99, 99);
+        budget.unload_cell(coord); // should not panic
+        assert!(!budget.cells.contains_key(&coord));
+    }
+
+    #[test]
+    fn test_find_furthest_cell_empty_returns_none() {
+        let budget = GpuResourceBudget::new(1024);
+        assert!(budget.find_furthest_cell(glam::Vec3::ZERO, 100.0).is_none());
+    }
+
+    #[test]
+    fn test_find_furthest_cell_single_cell() {
+        let mut budget = GpuResourceBudget::new(1024);
+        let coord = GridCoord::new(5, 0, 5);
+        budget.get_or_create_cell(coord);
+        let result = budget.find_furthest_cell(glam::Vec3::ZERO, 100.0);
+        assert_eq!(result, Some(coord));
+    }
+
+    #[test]
+    fn test_find_furthest_cell_multiple_cells() {
+        let mut budget = GpuResourceBudget::new(1024);
+        let near = GridCoord::new(0, 0, 0);
+        let mid = GridCoord::new(5, 0, 0);
+        let far = GridCoord::new(10, 0, 10);
+        budget.get_or_create_cell(near);
+        budget.get_or_create_cell(mid);
+        budget.get_or_create_cell(far);
+
+        let camera = near.to_world_center(100.0);
+        let result = budget.find_furthest_cell(camera, 100.0);
+        assert_eq!(result, Some(far));
+    }
+
+    #[test]
+    fn test_update_usage_syncs_with_cells() {
+        let mut budget = GpuResourceBudget::new(10000);
+        budget
+            .get_or_create_cell(GridCoord::new(0, 0, 0))
+            .memory_usage = 100;
+        budget
+            .get_or_create_cell(GridCoord::new(1, 0, 0))
+            .memory_usage = 250;
+        budget
+            .get_or_create_cell(GridCoord::new(2, 0, 0))
+            .memory_usage = 50;
+
+        // current_usage might be stale
+        assert_eq!(budget.current_usage, 0);
+
+        budget.update_usage();
+        assert_eq!(budget.current_usage, 400);
+    }
+
+    #[test]
+    fn test_stats_reflects_cell_count() {
+        let mut budget = GpuResourceBudget::new(1000);
+        budget
+            .get_or_create_cell(GridCoord::new(0, 0, 0))
+            .memory_usage = 100;
+        budget
+            .get_or_create_cell(GridCoord::new(1, 0, 0))
+            .memory_usage = 200;
+        budget.update_usage();
+
+        let stats = budget.stats();
+        assert_eq!(stats.active_cells, 2);
+        assert_eq!(stats.total_allocated, 300);
+        assert_eq!(stats.max_budget, 1000);
+        assert!((stats.utilization - 30.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_can_allocate_zero_budget() {
+        let budget = GpuResourceBudget::new(0);
+        assert!(budget.can_allocate(0));
+        assert!(!budget.can_allocate(1));
+    }
+
+    #[test]
+    fn test_enforce_budget_empty_cells_is_noop() {
+        let mut budget = GpuResourceBudget::new(100);
+        budget.current_usage = 200; // artificially over budget
+        budget.enforce_budget(glam::Vec3::ZERO, 100.0);
+        // No cells to unload, so current_usage stays
+        assert_eq!(budget.current_usage, 200);
+    }
+
+    #[test]
+    fn test_enforce_budget_under_budget_is_noop() {
+        let mut budget = GpuResourceBudget::new(1000);
+        budget
+            .get_or_create_cell(GridCoord::new(0, 0, 0))
+            .memory_usage = 100;
+        budget.update_usage();
+        budget.enforce_budget(glam::Vec3::ZERO, 100.0);
+        assert!(budget.cells.contains_key(&GridCoord::new(0, 0, 0)));
+    }
+
+    #[test]
+    fn test_enforce_budget_multiple_unloads_until_under() {
+        let mut budget = GpuResourceBudget::new(100);
+        // Create 4 cells each using 50 bytes → total = 200, budget 100
+        for i in 0..4 {
+            budget
+                .get_or_create_cell(GridCoord::new(i, 0, 0))
+                .memory_usage = 50;
+        }
+        budget.update_usage();
+        assert_eq!(budget.current_usage, 200);
+
+        let camera = GridCoord::new(0, 0, 0).to_world_center(100.0);
+        budget.enforce_budget(camera, 100.0);
+        assert!(budget.current_usage <= 100);
+    }
+
+    #[test]
+    fn test_gpu_memory_stats_debug() {
+        let stats = GpuMemoryStats {
+            total_allocated: 1024,
+            max_budget: 2048,
+            active_cells: 3,
+            utilization: 50.0,
+        };
+        let debug = format!("{:?}", stats);
+        assert!(debug.contains("GpuMemoryStats"));
+        assert!(debug.contains("1024"));
+    }
+
+    #[test]
+    fn test_gpu_memory_stats_copy() {
+        let stats = GpuMemoryStats {
+            total_allocated: 100,
+            max_budget: 200,
+            active_cells: 1,
+            utilization: 50.0,
+        };
+        let copied = stats;
+        assert_eq!(stats.total_allocated, copied.total_allocated);
+        assert_eq!(stats.max_budget, copied.max_budget);
+    }
+
+    #[test]
+    fn test_cell_resources_texture_sizes_tracking() {
+        let coord = GridCoord::new(0, 0, 0);
+        let mut cell = CellGpuResources::new(coord);
+
+        // Manually track texture sizes (simulating what upload_texture does)
+        cell.texture_sizes.insert(1, 1024);
+        cell.texture_sizes.insert(2, 2048);
+        cell.memory_usage = 3072;
+
+        assert_eq!(cell.texture_sizes.len(), 2);
+        assert_eq!(*cell.texture_sizes.get(&1).unwrap(), 1024);
+        assert_eq!(*cell.texture_sizes.get(&2).unwrap(), 2048);
+
+        cell.unload_all();
+        assert!(cell.texture_sizes.is_empty());
+        assert_eq!(cell.memory_usage, 0);
+    }
 }

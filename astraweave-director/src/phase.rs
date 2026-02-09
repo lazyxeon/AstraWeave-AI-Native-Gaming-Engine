@@ -103,7 +103,7 @@ impl PhaseDirector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{CompanionState, EnemyState, PlayerState, Poi};
+    use astraweave_core::{CompanionState, EnemyState, PlayerState};
 
     fn test_snapshot() -> WorldSnapshot {
         WorldSnapshot {

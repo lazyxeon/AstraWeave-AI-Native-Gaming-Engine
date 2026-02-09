@@ -1,19 +1,20 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
+use astraweave_context::{ContextConfig, ConversationHistory};
 use astraweave_llm::LlmClient;
-use astraweave_rag::RagPipeline;
-use astraweave_context::{ConversationHistory, ContextConfig};
-use astraweave_prompts::template::PromptTemplate;
 use astraweave_prompts::library::PromptLibrary;
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_rag::RagPipeline;
 
 /// Narrative coherence engine for maintaining story consistency across all game systems
+#[allow(dead_code)] // Fields reserved for RAG-enhanced coherence pipeline
 pub struct NarrativeCoherenceEngine {
     llm_client: Arc<dyn LlmClient>,
     rag_pipeline: Arc<RagPipeline>,
@@ -100,11 +101,11 @@ pub enum PlotType {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub enum PlotStatus {
-    Dormant,     // Not yet active
-    Active,      // Currently relevant
-    Developing,  // Building toward resolution
-    Resolved,    // Completed
-    Abandoned,   // No longer relevant
+    Dormant,    // Not yet active
+    Active,     // Currently relevant
+    Developing, // Building toward resolution
+    Resolved,   // Completed
+    Abandoned,  // No longer relevant
 }
 
 /// State of a character in the narrative
@@ -427,9 +428,7 @@ impl NarrativeCoherenceEngine {
             max_tokens: config.context_window_size,
             ..Default::default()
         };
-        let conversation_history = Arc::new(RwLock::new(
-            ConversationHistory::new(context_config)
-        ));
+        let conversation_history = Arc::new(RwLock::new(ConversationHistory::new(context_config)));
 
         let mut prompt_library = PromptLibrary::new();
 
@@ -621,7 +620,10 @@ Ensure character development feels natural and earned.
     }
 
     /// Validate narrative coherence of a proposed element
-    pub async fn validate_coherence(&self, proposed_element: &serde_json::Value) -> Result<CoherenceAnalysis> {
+    pub async fn validate_coherence(
+        &self,
+        proposed_element: &serde_json::Value,
+    ) -> Result<CoherenceAnalysis> {
         debug!("Validating narrative coherence");
 
         if !self.config.enable_real_time_validation {
@@ -638,15 +640,22 @@ Ensure character development feels natural and earned.
         let template = prompt_library.get_template("coherence_analysis")?;
 
         // Serialize context values into strings for template rendering
-        let mut serialized_context: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let mut serialized_context: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
         for (k, v) in &analysis_context {
-            serialized_context.insert(k.clone(), serde_json::to_string(v).unwrap_or_else(|_| "null".to_string()));
+            serialized_context.insert(
+                k.clone(),
+                serde_json::to_string(v).unwrap_or_else(|_| "null".to_string()),
+            );
         }
 
         let prompt = template.render_map(&serialized_context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Coherence analysis failed: {}", e))?;
 
         let analysis: CoherenceAnalysis = serde_json::from_str(&response)
@@ -656,12 +665,20 @@ Ensure character development feels natural and earned.
         let rule_violations = self.check_consistency_rules(proposed_element).await?;
 
         // Combine LLM analysis with rule-based checks
-        let final_analysis = self.combine_coherence_results(analysis, rule_violations).await;
+        let final_analysis = self
+            .combine_coherence_results(analysis, rule_violations)
+            .await;
 
         if final_analysis.coherence_score < self.config.coherence_threshold {
-            warn!("Narrative element failed coherence check: {:.2}", final_analysis.coherence_score);
+            warn!(
+                "Narrative element failed coherence check: {:.2}",
+                final_analysis.coherence_score
+            );
         } else {
-            debug!("Narrative element passed coherence check: {:.2}", final_analysis.coherence_score);
+            debug!(
+                "Narrative element passed coherence check: {:.2}",
+                final_analysis.coherence_score
+            );
         }
 
         Ok(final_analysis)
@@ -673,16 +690,20 @@ Ensure character development feels natural and earned.
 
         let context = self.build_thread_context().await?;
         // Convert Value context to String context for render_map
-        let string_context: HashMap<String, String> = context.iter()
+        let string_context: HashMap<String, String> = context
+            .iter()
             .map(|(k, v)| (k.clone(), v.to_string()))
             .collect();
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("story_thread_weaving")?;
-    let prompt = template.render_map(&string_context)?;
+        let prompt = template.render_map(&string_context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Story thread weaving failed: {}", e))?;
 
         let result: ThreadWeavingResult = serde_json::from_str(&response)
@@ -691,28 +712,41 @@ Ensure character development feels natural and earned.
         // Apply thread connections
         self.apply_thread_connections(&result).await?;
 
-        info!("Wove {} story threads with {} new connections",
-              result.thread_connections.len(), result.new_threads.len());
+        info!(
+            "Wove {} story threads with {} new connections",
+            result.thread_connections.len(),
+            result.new_threads.len()
+        );
 
         Ok(result)
     }
 
     /// Guide character development for narrative coherence
-    pub async fn guide_character_development(&self, character_id: &str) -> Result<CharacterGuidance> {
-        debug!("Providing character development guidance for {}", character_id);
+    pub async fn guide_character_development(
+        &self,
+        character_id: &str,
+    ) -> Result<CharacterGuidance> {
+        debug!(
+            "Providing character development guidance for {}",
+            character_id
+        );
 
         let context = self.build_character_context(character_id).await?;
         // Convert Value context to String context for render_map
-        let string_context: HashMap<String, String> = context.iter()
+        let string_context: HashMap<String, String> = context
+            .iter()
             .map(|(k, v)| (k.clone(), v.to_string()))
             .collect();
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("character_arc_guidance")?;
-    let prompt = template.render_map(&string_context)?;
+        let prompt = template.render_map(&string_context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Character development guidance failed: {}", e))?;
 
         let guidance: CharacterGuidance = serde_json::from_str(&response)
@@ -723,7 +757,10 @@ Ensure character development feels natural and earned.
             self.update_character_arc(character_id, &guidance).await?;
         }
 
-        info!("Provided character development guidance for {}", character_id);
+        info!(
+            "Provided character development guidance for {}",
+            character_id
+        );
         Ok(guidance)
     }
 
@@ -732,10 +769,15 @@ Ensure character development feels natural and earned.
         debug!("Adding plot point: {}", plot_point.description);
 
         // Validate coherence
-        let validation = self.validate_coherence(&serde_json::to_value(&plot_point)?).await?;
+        let validation = self
+            .validate_coherence(&serde_json::to_value(&plot_point)?)
+            .await?;
 
         if validation.coherence_score < self.config.coherence_threshold {
-            return Err(anyhow!("Plot point fails coherence requirements: {:.2}", validation.coherence_score));
+            return Err(anyhow!(
+                "Plot point fails coherence requirements: {:.2}",
+                validation.coherence_score
+            ));
         }
 
         // Add to narrative state
@@ -755,7 +797,11 @@ Ensure character development feels natural and earned.
     }
 
     /// Update character state
-    pub async fn update_character_state(&self, character_id: String, state: CharacterState) -> Result<()> {
+    pub async fn update_character_state(
+        &self,
+        character_id: String,
+        state: CharacterState,
+    ) -> Result<()> {
         debug!("Updating character state for {}", character_id);
 
         // Validate character consistency
@@ -767,19 +813,27 @@ Ensure character development feels natural and earned.
         if let Some(current) = current_state {
             let consistency_score = self.calculate_character_consistency(&current, &state).await;
             if consistency_score < 0.7 {
-                warn!("Character state change may be inconsistent: {:.2}", consistency_score);
+                warn!(
+                    "Character state change may be inconsistent: {:.2}",
+                    consistency_score
+                );
             }
         }
 
         // Update state
         let mut narrative_state = self.narrative_state.write().await;
-        narrative_state.character_states.insert(character_id.clone(), state.clone());
+        narrative_state
+            .character_states
+            .insert(character_id.clone(), state.clone());
 
         // Update character arc progress
         if let Some(arc) = self.character_arcs.read().await.get(&character_id) {
             let progress_change = state.character_arc_progress - arc.current_progress;
             if progress_change.abs() > 0.1 {
-                debug!("Significant character arc progress for {}: {:.2}", character_id, progress_change);
+                debug!(
+                    "Significant character arc progress for {}: {:.2}",
+                    character_id, progress_change
+                );
             }
         }
 
@@ -796,13 +850,16 @@ Ensure character development feels natural and earned.
         narrative_state.world_events.push(event.clone());
 
         // Update timeline
-        narrative_state.timeline.significant_dates.push(TimelineEvent {
-            date: event.timestamp,
-            title: event.event_type.clone(),
-            description: event.description.clone(),
-            importance: event.narrative_impact,
-            participants: event.participants.clone(),
-        });
+        narrative_state
+            .timeline
+            .significant_dates
+            .push(TimelineEvent {
+                date: event.timestamp,
+                title: event.event_type.clone(),
+                description: event.description.clone(),
+                importance: event.narrative_impact,
+                participants: event.participants.clone(),
+            });
 
         // Update pacing based on event impact
         self.update_pacing_state(event.narrative_impact).await;
@@ -839,16 +896,33 @@ Ensure character development feels natural and earned.
 
         let mut context = HashMap::new();
 
-        context.insert("main_storyline".to_string(),
-            serde_json::to_value(&narrative_state.main_storyline)?);
-        context.insert("active_plot_points".to_string(),
-            serde_json::to_value(&narrative_state.active_plot_points)?);
-        context.insert("character_states".to_string(),
-            serde_json::to_value(&narrative_state.character_states)?);
-        context.insert("recent_events".to_string(),
-            serde_json::to_value(&narrative_state.world_events.iter().rev().take(5).collect::<Vec<_>>())?);
-        context.insert("established_facts".to_string(),
-            serde_json::to_value(&world_continuity.established_facts)?);
+        context.insert(
+            "main_storyline".to_string(),
+            serde_json::to_value(&narrative_state.main_storyline)?,
+        );
+        context.insert(
+            "active_plot_points".to_string(),
+            serde_json::to_value(&narrative_state.active_plot_points)?,
+        );
+        context.insert(
+            "character_states".to_string(),
+            serde_json::to_value(&narrative_state.character_states)?,
+        );
+        context.insert(
+            "recent_events".to_string(),
+            serde_json::to_value(
+                narrative_state
+                    .world_events
+                    .iter()
+                    .rev()
+                    .take(5)
+                    .collect::<Vec<_>>(),
+            )?,
+        );
+        context.insert(
+            "established_facts".to_string(),
+            serde_json::to_value(&world_continuity.established_facts)?,
+        );
 
         Ok(context)
     }
@@ -861,24 +935,36 @@ Ensure character development feels natural and earned.
 
         let mut context = HashMap::new();
 
-        context.insert("plot_points".to_string(),
-            serde_json::to_value(&narrative_state.active_plot_points)?);
-        context.insert("character_arcs".to_string(),
-            serde_json::to_value(&*character_arcs)?);
-        context.insert("story_threads".to_string(),
-            serde_json::to_value(&*story_threads)?);
+        context.insert(
+            "plot_points".to_string(),
+            serde_json::to_value(&narrative_state.active_plot_points)?,
+        );
+        context.insert(
+            "character_arcs".to_string(),
+            serde_json::to_value(&*character_arcs)?,
+        );
+        context.insert(
+            "story_threads".to_string(),
+            serde_json::to_value(&*story_threads)?,
+        );
 
         Ok(context)
     }
 
     /// Build context for character development
-    async fn build_character_context(&self, character_id: &str) -> Result<HashMap<String, serde_json::Value>> {
+    async fn build_character_context(
+        &self,
+        character_id: &str,
+    ) -> Result<HashMap<String, serde_json::Value>> {
         let narrative_state = self.narrative_state.read().await;
         let character_arcs = self.character_arcs.read().await;
 
         let mut context = HashMap::new();
 
-        context.insert("character_id".to_string(), serde_json::to_value(character_id)?);
+        context.insert(
+            "character_id".to_string(),
+            serde_json::to_value(character_id)?,
+        );
 
         if let Some(state) = narrative_state.character_states.get(character_id) {
             context.insert("current_state".to_string(), serde_json::to_value(state)?);
@@ -889,24 +975,34 @@ Ensure character development feels natural and earned.
         }
 
         // Get recent interactions
-        let recent_interactions: Vec<_> = narrative_state.world_events
+        let recent_interactions: Vec<_> = narrative_state
+            .world_events
             .iter()
             .filter(|event| event.participants.contains(&character_id.to_string()))
             .rev()
             .take(5)
             .collect();
-        context.insert("recent_interactions".to_string(), serde_json::to_value(recent_interactions)?);
+        context.insert(
+            "recent_interactions".to_string(),
+            serde_json::to_value(recent_interactions)?,
+        );
 
         // Get relationship changes
         if let Some(state) = narrative_state.character_states.get(character_id) {
-            context.insert("relationship_changes".to_string(), serde_json::to_value(&state.relationships)?);
+            context.insert(
+                "relationship_changes".to_string(),
+                serde_json::to_value(&state.relationships)?,
+            );
         }
 
         Ok(context)
     }
 
     /// Check consistency rules against proposed element
-    async fn check_consistency_rules(&self, _element: &serde_json::Value) -> Result<Vec<RuleViolation>> {
+    async fn check_consistency_rules(
+        &self,
+        _element: &serde_json::Value,
+    ) -> Result<Vec<RuleViolation>> {
         let _rules = self.consistency_rules.read().await;
 
         // For now, return empty violations
@@ -915,7 +1011,11 @@ Ensure character development feels natural and earned.
     }
 
     /// Combine LLM analysis with rule-based checks
-    async fn combine_coherence_results(&self, llm_analysis: CoherenceAnalysis, rule_violations: Vec<RuleViolation>) -> CoherenceAnalysis {
+    async fn combine_coherence_results(
+        &self,
+        llm_analysis: CoherenceAnalysis,
+        rule_violations: Vec<RuleViolation>,
+    ) -> CoherenceAnalysis {
         let mut combined_analysis = llm_analysis;
 
         // Reduce coherence score for rule violations
@@ -953,12 +1053,19 @@ Ensure character development feels natural and earned.
             story_threads.insert(thread.id.clone(), thread);
         }
 
-        info!("Applied {} new story thread connections", result.new_threads.len());
+        info!(
+            "Applied {} new story thread connections",
+            result.new_threads.len()
+        );
         Ok(())
     }
 
     /// Update character arc based on guidance
-    async fn update_character_arc(&self, character_id: &str, guidance: &CharacterGuidance) -> Result<()> {
+    async fn update_character_arc(
+        &self,
+        character_id: &str,
+        guidance: &CharacterGuidance,
+    ) -> Result<()> {
         let mut character_arcs = self.character_arcs.write().await;
 
         if let Some(arc) = character_arcs.get_mut(character_id) {
@@ -966,7 +1073,12 @@ Ensure character development feels natural and earned.
 
             // Mark milestone as achieved if progress indicates it
             for milestone in &mut arc.milestones {
-                if !milestone.achieved && guidance.arc_progress_assessment.current_milestone.contains(&milestone.description) {
+                if !milestone.achieved
+                    && guidance
+                        .arc_progress_assessment
+                        .current_milestone
+                        .contains(&milestone.description)
+                {
                     milestone.achieved = true;
                     milestone.achievement_date = Some(Utc::now());
                 }
@@ -982,7 +1094,11 @@ Ensure character development feels natural and earned.
 
         // Find threads that should include this plot point
         for thread in story_threads.values_mut() {
-            if plot_point.related_characters.iter().any(|c| thread.characters_involved.contains(c)) {
+            if plot_point
+                .related_characters
+                .iter()
+                .any(|c| thread.characters_involved.contains(c))
+            {
                 thread.related_plot_points.push(plot_point.id.clone());
             }
         }
@@ -991,7 +1107,11 @@ Ensure character development feels natural and earned.
     }
 
     /// Calculate character consistency between states
-    async fn calculate_character_consistency(&self, _current: &CharacterState, _new: &CharacterState) -> f32 {
+    async fn calculate_character_consistency(
+        &self,
+        _current: &CharacterState,
+        _new: &CharacterState,
+    ) -> f32 {
         // Simplified consistency check
         // In practice, would compare motivations, emotional state changes, etc.
         0.8
@@ -1020,12 +1140,19 @@ Ensure character development feels natural and earned.
     async fn process_event_consequences(&self, event: &NarrativeEvent) -> Result<()> {
         // Update affected characters
         for participant in &event.participants {
-            if let Some(character_state) = self.narrative_state.read().await.character_states.get(participant) {
+            if let Some(character_state) = self
+                .narrative_state
+                .read()
+                .await
+                .character_states
+                .get(participant)
+            {
                 let mut new_state = character_state.clone();
                 new_state.last_significant_event = Some(event.id.clone());
 
                 // This would trigger more sophisticated consequence processing
-                self.update_character_state(participant.clone(), new_state).await?;
+                self.update_character_state(participant.clone(), new_state)
+                    .await?;
             }
         }
 

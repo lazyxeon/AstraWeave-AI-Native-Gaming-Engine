@@ -18,10 +18,10 @@ pub fn run_author_script(
     let engine = Engine::new();
     // Provide meta as a map
     let mut m = Map::new();
-    m.insert("width".into(), Dynamic::from(meta.width));
-    m.insert("height".into(), Dynamic::from(meta.height));
-    m.insert("enemy_count".into(), Dynamic::from(meta.enemy_count));
-    m.insert("difficulty".into(), Dynamic::from(meta.difficulty));
+    m.insert("width".into(), Dynamic::from(meta.width as i64));
+    m.insert("height".into(), Dynamic::from(meta.height as i64));
+    m.insert("enemy_count".into(), Dynamic::from(meta.enemy_count as i64));
+    m.insert("difficulty".into(), Dynamic::from(meta.difficulty as i64));
 
     let ast = engine
         .compile_file(path.into())
@@ -141,8 +141,14 @@ mod tests {
     fn test_rhai_to_json_bool() {
         let d_true = Dynamic::from(true);
         let d_false = Dynamic::from(false);
-        assert_eq!(rhai_to_json(&d_true).unwrap(), serde_json::Value::from(true));
-        assert_eq!(rhai_to_json(&d_false).unwrap(), serde_json::Value::from(false));
+        assert_eq!(
+            rhai_to_json(&d_true).unwrap(),
+            serde_json::Value::from(true)
+        );
+        assert_eq!(
+            rhai_to_json(&d_false).unwrap(),
+            serde_json::Value::from(false)
+        );
     }
 
     #[test]
@@ -167,7 +173,7 @@ mod tests {
             Dynamic::from(3_i64),
         ];
         let d = Dynamic::from(arr);
-        
+
         let json = rhai_to_json(&d).unwrap();
         let expected = serde_json::json!([1, 2, 3]);
         assert_eq!(json, expected);
@@ -179,7 +185,7 @@ mod tests {
         m.insert("name".into(), Dynamic::from("test".to_string()));
         m.insert("value".into(), Dynamic::from(42_i64));
         let d = Dynamic::from(m);
-        
+
         let json = rhai_to_json(&d).unwrap();
         let obj = json.as_object().unwrap();
         assert_eq!(obj.get("name").unwrap(), &serde_json::Value::from("test"));
@@ -191,17 +197,17 @@ mod tests {
         let mut inner = rhai::Map::new();
         inner.insert("x".into(), Dynamic::from(10_i64));
         inner.insert("y".into(), Dynamic::from(20_i64));
-        
+
         let mut outer = rhai::Map::new();
         outer.insert("position".into(), Dynamic::from(inner));
         outer.insert("active".into(), Dynamic::from(true));
         let d = Dynamic::from(outer);
-        
+
         let json = rhai_to_json(&d).unwrap();
         let obj = json.as_object().unwrap();
         assert!(obj.contains_key("position"));
         assert!(obj.contains_key("active"));
-        
+
         let pos = obj.get("position").unwrap().as_object().unwrap();
         assert_eq!(pos.get("x").unwrap(), &serde_json::Value::from(10));
     }

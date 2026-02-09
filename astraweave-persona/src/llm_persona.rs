@@ -1381,4 +1381,798 @@ mod tests {
         );
         assert_eq!(patterns.avg_session_length, deserialized.avg_session_length);
     }
+
+    // ── Boundary tests for calculate_emotional_state ──
+
+    #[test]
+    fn test_emotional_state_boundary_mood_exactly_positive_threshold() {
+        // mood = 0.3 → positive branch
+        let state = LlmPersonaManager::calculate_emotional_state(0.3, 0.5);
+        assert!(matches!(state, EmotionalState::Joyful));
+    }
+
+    #[test]
+    fn test_emotional_state_boundary_mood_just_below_positive() {
+        // mood = 0.29 → neutral branch
+        let state = LlmPersonaManager::calculate_emotional_state(0.29, 0.5);
+        assert!(matches!(state, EmotionalState::Neutral));
+    }
+
+    #[test]
+    fn test_emotional_state_boundary_mood_exactly_negative_threshold() {
+        // mood = -0.3 → negative branch
+        let state = LlmPersonaManager::calculate_emotional_state(-0.3, 0.5);
+        assert!(matches!(state, EmotionalState::Frustrated));
+    }
+
+    #[test]
+    fn test_emotional_state_boundary_mood_just_above_negative() {
+        // mood = -0.29 → neutral branch
+        let state = LlmPersonaManager::calculate_emotional_state(-0.29, 0.5);
+        assert!(matches!(state, EmotionalState::Neutral));
+    }
+
+    #[test]
+    fn test_emotional_state_positive_mood_energy_exactly_0_6() {
+        // mood >= 0.3, energy = 0.6 → Excited (>= 0.6)
+        let state = LlmPersonaManager::calculate_emotional_state(0.5, 0.6);
+        assert!(matches!(state, EmotionalState::Excited));
+    }
+
+    #[test]
+    fn test_emotional_state_positive_mood_energy_exactly_0_3() {
+        // mood >= 0.3, energy = 0.3 → Joyful (>= 0.3)
+        let state = LlmPersonaManager::calculate_emotional_state(0.5, 0.3);
+        assert!(matches!(state, EmotionalState::Joyful));
+    }
+
+    #[test]
+    fn test_emotional_state_positive_mood_energy_just_below_0_3() {
+        // mood >= 0.3, energy = 0.29 → Calm (< 0.3)
+        let state = LlmPersonaManager::calculate_emotional_state(0.5, 0.29);
+        assert!(matches!(state, EmotionalState::Calm));
+    }
+
+    #[test]
+    fn test_emotional_state_negative_mood_energy_exactly_0_6() {
+        // mood <= -0.3, energy = 0.6 → Angry (>= 0.6)
+        let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.6);
+        assert!(matches!(state, EmotionalState::Angry));
+    }
+
+    #[test]
+    fn test_emotional_state_negative_mood_energy_exactly_0_3() {
+        // mood <= -0.3, energy = 0.3 → Frustrated (>= 0.3)
+        let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.3);
+        assert!(matches!(state, EmotionalState::Frustrated));
+    }
+
+    #[test]
+    fn test_emotional_state_negative_mood_energy_just_below_0_3() {
+        // mood <= -0.3, energy = 0.29 → Sad (< 0.3)
+        let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.29);
+        assert!(matches!(state, EmotionalState::Sad));
+    }
+
+    #[test]
+    fn test_emotional_state_neutral_mood_energy_exactly_0_7() {
+        // neutral mood, energy = 0.7 → Curious (>= 0.7)
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.7);
+        assert!(matches!(state, EmotionalState::Curious));
+    }
+
+    #[test]
+    fn test_emotional_state_neutral_mood_energy_exactly_0_3() {
+        // neutral mood, energy = 0.3 → Neutral (not <= 0.3 for Thoughtful, not >= 0.7 for Curious)
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.3);
+        // energy = 0.3 is NOT <= 0.3 (it's not strictly less), check the actual logic
+        // The code says: `energy <= 0.3 → Thoughtful` so 0.3 IS Thoughtful
+        assert!(matches!(state, EmotionalState::Thoughtful));
+    }
+
+    #[test]
+    fn test_emotional_state_neutral_mood_energy_just_above_0_3() {
+        // neutral mood, energy = 0.31 → Neutral
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.31);
+        assert!(matches!(state, EmotionalState::Neutral));
+    }
+
+    #[test]
+    fn test_emotional_state_extreme_values() {
+        let state = LlmPersonaManager::calculate_emotional_state(1.0, 1.0);
+        assert!(matches!(state, EmotionalState::Excited));
+
+        let state = LlmPersonaManager::calculate_emotional_state(-1.0, 0.0);
+        assert!(matches!(state, EmotionalState::Sad));
+
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.0);
+        assert!(matches!(state, EmotionalState::Thoughtful));
+    }
+
+    // ── Clone independence tests ──
+
+    #[test]
+    fn test_persona_llm_config_clone_independence() {
+        let mut original = PersonaLlmConfig::default();
+        let cloned = original.clone();
+        original.temperature = 1.5;
+        original.max_tokens = 1024;
+        original
+            .personality_factors
+            .insert("creativity".to_string(), 0.1);
+
+        assert_eq!(cloned.temperature, 0.8);
+        assert_eq!(cloned.max_tokens, 512);
+        assert_eq!(*cloned.personality_factors.get("creativity").unwrap(), 0.7);
+    }
+
+    #[test]
+    fn test_personality_state_clone_independence() {
+        let mut original = PersonalityState::default();
+        let cloned = original.clone();
+        original.current_mood = 0.9;
+        original.trust_level = 0.0;
+        original.personality_drift.insert("test".to_string(), 1.0);
+        original.recent_influences.push(PersonalityInfluence {
+            event: "test".to_string(),
+            factor_changes: HashMap::new(),
+            timestamp: 0,
+            importance: 1.0,
+            decay_rate: 0.0,
+        });
+
+        assert_eq!(cloned.current_mood, 0.0);
+        assert_eq!(cloned.trust_level, 0.5);
+        assert!(cloned.personality_drift.is_empty());
+        assert!(cloned.recent_influences.is_empty());
+    }
+
+    #[test]
+    fn test_adaptation_data_clone_independence() {
+        let mut original = AdaptationData::default();
+        let cloned = original.clone();
+        original.interaction_count = 999;
+        original.preferred_topics.insert("combat".to_string(), 0.9);
+        original.topics_to_avoid.push("politics".to_string());
+
+        assert_eq!(cloned.interaction_count, 0);
+        assert!(cloned.preferred_topics.is_empty());
+        assert!(cloned.topics_to_avoid.is_empty());
+    }
+
+    #[test]
+    fn test_memory_profile_clone_independence() {
+        let mut original = MemoryProfile::default();
+        let cloned = original.clone();
+        original.core_memories.push("important".to_string());
+        original.episodic_memories.push("yesterday".to_string());
+        original.semantic_knowledge.push("fact".to_string());
+
+        assert!(cloned.core_memories.is_empty());
+        assert!(cloned.episodic_memories.is_empty());
+        assert!(cloned.semantic_knowledge.is_empty());
+    }
+
+    // ── Populated data serde roundtrips ──
+
+    #[test]
+    fn test_persona_llm_config_custom_roundtrip() {
+        let mut factors = HashMap::new();
+        factors.insert("aggression".to_string(), 0.95);
+        factors.insert("loyalty".to_string(), 0.1);
+        let config = PersonaLlmConfig {
+            temperature: 1.5,
+            top_p: 0.5,
+            max_tokens: 2048,
+            personality_factors: factors,
+            response_style: ResponseStyle::Mysterious,
+            context_window_size: 4096,
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: PersonaLlmConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.temperature, 1.5);
+        assert_eq!(deserialized.top_p, 0.5);
+        assert_eq!(deserialized.max_tokens, 2048);
+        assert_eq!(deserialized.context_window_size, 4096);
+        assert!(matches!(
+            deserialized.response_style,
+            ResponseStyle::Mysterious
+        ));
+        assert_eq!(deserialized.personality_factors.len(), 2);
+        assert_eq!(
+            *deserialized.personality_factors.get("aggression").unwrap(),
+            0.95
+        );
+    }
+
+    #[test]
+    fn test_personality_state_populated_roundtrip() {
+        let mut drift = HashMap::new();
+        drift.insert("creativity".to_string(), 0.15);
+        drift.insert("empathy".to_string(), -0.05);
+        let mut fc = HashMap::new();
+        fc.insert("humor".to_string(), 0.1);
+        let state = PersonalityState {
+            current_mood: -0.7,
+            energy_level: 0.9,
+            confidence: 0.3,
+            trust_level: 0.95,
+            emotional_state: EmotionalState::Anxious,
+            personality_drift: drift,
+            recent_influences: vec![PersonalityInfluence {
+                event: "battle won".to_string(),
+                factor_changes: fc,
+                timestamp: 42,
+                importance: 0.8,
+                decay_rate: 0.02,
+            }],
+        };
+        let json = serde_json::to_string(&state).unwrap();
+        let d: PersonalityState = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.current_mood, -0.7);
+        assert_eq!(d.energy_level, 0.9);
+        assert_eq!(d.confidence, 0.3);
+        assert_eq!(d.trust_level, 0.95);
+        assert!(matches!(d.emotional_state, EmotionalState::Anxious));
+        assert_eq!(d.personality_drift.len(), 2);
+        assert_eq!(d.recent_influences.len(), 1);
+        assert_eq!(d.recent_influences[0].event, "battle won");
+        assert_eq!(d.recent_influences[0].timestamp, 42);
+    }
+
+    #[test]
+    fn test_adaptation_data_populated_roundtrip() {
+        let mut topics = HashMap::new();
+        topics.insert("magic".to_string(), 0.8);
+        topics.insert("swords".to_string(), 0.6);
+        let mut changes = HashMap::new();
+        changes.insert("curiosity".to_string(), 0.05);
+        let data = AdaptationData {
+            interaction_count: 150,
+            successful_interactions: 120,
+            learning_rate: 0.05,
+            preferred_topics: topics,
+            topics_to_avoid: vec!["violence".to_string(), "death".to_string()],
+            player_patterns: PlayerPatterns {
+                communication_style: Some("casual".to_string()),
+                interests: vec!["rpg".to_string(), "exploration".to_string()],
+                avg_session_length: Some(45.5),
+                preferred_times: vec!["evening".to_string()],
+                emotional_patterns: {
+                    let mut m = HashMap::new();
+                    m.insert("joy".to_string(), 0.7);
+                    m
+                },
+            },
+            adaptation_history: vec![AdaptationEvent {
+                trigger: "positive feedback".to_string(),
+                changes,
+                timestamp: 100,
+                success_rating: Some(0.9),
+            }],
+        };
+        let json = serde_json::to_string(&data).unwrap();
+        let d: AdaptationData = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.interaction_count, 150);
+        assert_eq!(d.successful_interactions, 120);
+        assert_eq!(d.learning_rate, 0.05);
+        assert_eq!(d.preferred_topics.len(), 2);
+        assert_eq!(d.topics_to_avoid.len(), 2);
+        assert_eq!(
+            d.player_patterns.communication_style,
+            Some("casual".to_string())
+        );
+        assert_eq!(d.player_patterns.interests.len(), 2);
+        assert_eq!(d.player_patterns.avg_session_length, Some(45.5));
+        assert_eq!(d.adaptation_history.len(), 1);
+        assert_eq!(d.adaptation_history[0].success_rating, Some(0.9));
+    }
+
+    #[test]
+    fn test_prompt_settings_populated_roundtrip() {
+        let mut modifiers = HashMap::new();
+        modifiers.insert("tone".to_string(), "aggressive".to_string());
+        modifiers.insert("formality".to_string(), "low".to_string());
+        let settings = PromptSettings {
+            system_prompt_template: "Custom: {{persona.name}}".to_string(),
+            context_injection: ContextInjectionStrategy::Full,
+            memory_retrieval: MemoryRetrievalSettings {
+                max_memories: 10,
+                min_similarity: 0.5,
+                priority_categories: vec!["Combat".to_string()],
+                recency_bonus: 0.2,
+            },
+            few_shot_examples: vec![
+                FewShotExample {
+                    input: "Hello".to_string(),
+                    output: "Greetings, warrior!".to_string(),
+                    context: Some("first meeting".to_string()),
+                    tags: vec!["greeting".to_string()],
+                },
+                FewShotExample {
+                    input: "Bye".to_string(),
+                    output: "Until we meet again.".to_string(),
+                    context: None,
+                    tags: vec![],
+                },
+            ],
+            prompt_modifiers: modifiers,
+        };
+        let json = serde_json::to_string(&settings).unwrap();
+        let d: PromptSettings = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.system_prompt_template, "Custom: {{persona.name}}");
+        assert!(matches!(
+            d.context_injection,
+            ContextInjectionStrategy::Full
+        ));
+        assert_eq!(d.memory_retrieval.max_memories, 10);
+        assert_eq!(d.memory_retrieval.min_similarity, 0.5);
+        assert_eq!(d.few_shot_examples.len(), 2);
+        assert_eq!(
+            d.few_shot_examples[0].context,
+            Some("first meeting".to_string())
+        );
+        assert!(d.few_shot_examples[1].context.is_none());
+        assert_eq!(d.prompt_modifiers.len(), 2);
+    }
+
+    #[test]
+    fn test_memory_profile_populated_roundtrip() {
+        let profile = MemoryProfile {
+            core_memories: vec!["I am a merchant".to_string(), "Born in Astra".to_string()],
+            episodic_memories: vec!["Met the hero yesterday".to_string()],
+            semantic_knowledge: vec![
+                "Gold is valuable".to_string(),
+                "Dragons breathe fire".to_string(),
+            ],
+            consolidation_preferences: ConsolidationPreferences {
+                consolidation_frequency: 50,
+                importance_threshold: 0.5,
+                max_memories: 500,
+                forgetting_curve: ForgettingCurve {
+                    decay_rate: 0.2,
+                    importance_multiplier: 3.0,
+                    rehearsal_bonus: 0.8,
+                },
+            },
+        };
+        let json = serde_json::to_string(&profile).unwrap();
+        let d: MemoryProfile = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.core_memories.len(), 2);
+        assert_eq!(d.episodic_memories.len(), 1);
+        assert_eq!(d.semantic_knowledge.len(), 2);
+        assert_eq!(d.consolidation_preferences.consolidation_frequency, 50);
+        assert_eq!(d.consolidation_preferences.importance_threshold, 0.5);
+        assert_eq!(d.consolidation_preferences.max_memories, 500);
+        assert_eq!(d.consolidation_preferences.forgetting_curve.decay_rate, 0.2);
+        assert_eq!(
+            d.consolidation_preferences
+                .forgetting_curve
+                .importance_multiplier,
+            3.0
+        );
+        assert_eq!(
+            d.consolidation_preferences.forgetting_curve.rehearsal_bonus,
+            0.8
+        );
+    }
+
+    // ── Optional field roundtrips ──
+
+    #[test]
+    fn test_few_shot_example_without_context_roundtrip() {
+        let example = FewShotExample {
+            input: "Attack!".to_string(),
+            output: "Charging forward!".to_string(),
+            context: None,
+            tags: vec![],
+        };
+        let json = serde_json::to_string(&example).unwrap();
+        let d: FewShotExample = serde_json::from_str(&json).unwrap();
+        assert!(d.context.is_none());
+        assert!(d.tags.is_empty());
+        assert_eq!(d.input, "Attack!");
+    }
+
+    #[test]
+    fn test_adaptation_event_without_success_rating_roundtrip() {
+        let event = AdaptationEvent {
+            trigger: "new topic".to_string(),
+            changes: HashMap::new(),
+            timestamp: 0,
+            success_rating: None,
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let d: AdaptationEvent = serde_json::from_str(&json).unwrap();
+        assert!(d.success_rating.is_none());
+        assert!(d.changes.is_empty());
+        assert_eq!(d.timestamp, 0);
+    }
+
+    #[test]
+    fn test_player_patterns_all_none_roundtrip() {
+        let patterns = PlayerPatterns::default();
+        let json = serde_json::to_string(&patterns).unwrap();
+        let d: PlayerPatterns = serde_json::from_str(&json).unwrap();
+        assert!(d.communication_style.is_none());
+        assert!(d.interests.is_empty());
+        assert!(d.avg_session_length.is_none());
+        assert!(d.preferred_times.is_empty());
+        assert!(d.emotional_patterns.is_empty());
+    }
+
+    #[test]
+    fn test_personality_influence_empty_factor_changes_roundtrip() {
+        let influence = PersonalityInfluence {
+            event: "nothing happened".to_string(),
+            factor_changes: HashMap::new(),
+            timestamp: 999,
+            importance: 0.0,
+            decay_rate: 1.0,
+        };
+        let json = serde_json::to_string(&influence).unwrap();
+        let d: PersonalityInfluence = serde_json::from_str(&json).unwrap();
+        assert!(d.factor_changes.is_empty());
+        assert_eq!(d.importance, 0.0);
+        assert_eq!(d.decay_rate, 1.0);
+    }
+
+    // ── PersonaMetrics field manipulation ──
+
+    #[test]
+    fn test_persona_metrics_increment_fields() {
+        let mut metrics = PersonaMetrics::default();
+        metrics.total_interactions = 100;
+        metrics.successful_generations = 95;
+        metrics.failed_generations = 5;
+        metrics.avg_response_time_ms = 42.5;
+        metrics.personality_evolution_events = 10;
+        metrics.memory_consolidations = 3;
+        metrics.adaptation_learning_events = 7;
+
+        assert_eq!(metrics.total_interactions, 100);
+        assert_eq!(metrics.successful_generations, 95);
+        assert_eq!(metrics.failed_generations, 5);
+        assert_eq!(metrics.avg_response_time_ms, 42.5);
+        assert_eq!(metrics.personality_evolution_events, 10);
+        assert_eq!(metrics.memory_consolidations, 3);
+        assert_eq!(metrics.adaptation_learning_events, 7);
+    }
+
+    #[test]
+    fn test_persona_metrics_serde_roundtrip() {
+        let metrics = PersonaMetrics {
+            total_interactions: 500,
+            successful_generations: 480,
+            failed_generations: 20,
+            avg_response_time_ms: 123.456,
+            personality_evolution_events: 15,
+            memory_consolidations: 5,
+            adaptation_learning_events: 30,
+        };
+        let json = serde_json::to_string(&metrics).unwrap();
+        let d: PersonaMetrics = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.total_interactions, 500);
+        assert_eq!(d.successful_generations, 480);
+        assert_eq!(d.failed_generations, 20);
+        assert_eq!(d.avg_response_time_ms, 123.456);
+        assert_eq!(d.personality_evolution_events, 15);
+        assert_eq!(d.memory_consolidations, 5);
+        assert_eq!(d.adaptation_learning_events, 30);
+    }
+
+    #[test]
+    fn test_persona_metrics_clone_independence() {
+        let mut original = PersonaMetrics::default();
+        let cloned = original.clone();
+        original.total_interactions = 999;
+        original.failed_generations = 50;
+        assert_eq!(cloned.total_interactions, 0);
+        assert_eq!(cloned.failed_generations, 0);
+    }
+
+    // ── Response style serde roundtrips ──
+
+    #[test]
+    fn test_response_style_each_variant_roundtrip() {
+        let styles = [
+            ResponseStyle::Conversational,
+            ResponseStyle::Formal,
+            ResponseStyle::Creative,
+            ResponseStyle::Technical,
+            ResponseStyle::Playful,
+            ResponseStyle::Mysterious,
+        ];
+        for style in &styles {
+            let json = serde_json::to_string(style).unwrap();
+            let d: ResponseStyle = serde_json::from_str(&json).unwrap();
+            assert_eq!(format!("{:?}", style), format!("{:?}", d));
+        }
+    }
+
+    #[test]
+    fn test_emotional_state_each_variant_roundtrip() {
+        let states = [
+            EmotionalState::Joyful,
+            EmotionalState::Excited,
+            EmotionalState::Calm,
+            EmotionalState::Neutral,
+            EmotionalState::Thoughtful,
+            EmotionalState::Concerned,
+            EmotionalState::Frustrated,
+            EmotionalState::Sad,
+            EmotionalState::Angry,
+            EmotionalState::Surprised,
+            EmotionalState::Curious,
+            EmotionalState::Confident,
+            EmotionalState::Anxious,
+        ];
+        for state in &states {
+            let json = serde_json::to_string(state).unwrap();
+            let d: EmotionalState = serde_json::from_str(&json).unwrap();
+            assert_eq!(format!("{:?}", state), format!("{:?}", d));
+        }
+    }
+
+    #[test]
+    fn test_context_injection_strategy_each_variant_roundtrip() {
+        let strategies = [
+            ContextInjectionStrategy::Full,
+            ContextInjectionStrategy::Recent,
+            ContextInjectionStrategy::Contextual,
+            ContextInjectionStrategy::Minimal,
+        ];
+        for strategy in &strategies {
+            let json = serde_json::to_string(strategy).unwrap();
+            let d: ContextInjectionStrategy = serde_json::from_str(&json).unwrap();
+            assert_eq!(format!("{:?}", strategy), format!("{:?}", d));
+        }
+    }
+
+    // ── Populated LlmPersona roundtrip (full composite) ──
+
+    #[test]
+    fn test_llm_persona_full_populated_roundtrip() {
+        let mut factors = HashMap::new();
+        factors.insert("bravery".to_string(), 0.9);
+        let mut drift = HashMap::new();
+        drift.insert("bravery".to_string(), 0.05);
+        let persona = LlmPersona {
+            base: BasePersona::default(),
+            llm_config: PersonaLlmConfig {
+                temperature: 1.2,
+                top_p: 0.7,
+                max_tokens: 1024,
+                personality_factors: factors,
+                response_style: ResponseStyle::Creative,
+                context_window_size: 8192,
+            },
+            personality_state: PersonalityState {
+                current_mood: 0.6,
+                energy_level: 0.8,
+                confidence: 0.9,
+                trust_level: 0.7,
+                emotional_state: EmotionalState::Excited,
+                personality_drift: drift,
+                recent_influences: vec![],
+            },
+            adaptation: AdaptationData {
+                interaction_count: 42,
+                successful_interactions: 40,
+                learning_rate: 0.2,
+                preferred_topics: {
+                    let mut m = HashMap::new();
+                    m.insert("adventure".to_string(), 0.9);
+                    m
+                },
+                topics_to_avoid: vec!["boring".to_string()],
+                player_patterns: PlayerPatterns::default(),
+                adaptation_history: vec![],
+            },
+            prompt_settings: PromptSettings::default(),
+            memory_profile: MemoryProfile {
+                core_memories: vec!["I love adventure".to_string()],
+                episodic_memories: vec![],
+                semantic_knowledge: vec![],
+                consolidation_preferences: ConsolidationPreferences::default(),
+            },
+        };
+        let json = serde_json::to_string(&persona).unwrap();
+        let d: LlmPersona = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.llm_config.temperature, 1.2);
+        assert_eq!(d.llm_config.context_window_size, 8192);
+        assert!(matches!(
+            d.llm_config.response_style,
+            ResponseStyle::Creative
+        ));
+        assert_eq!(d.personality_state.current_mood, 0.6);
+        assert!(matches!(
+            d.personality_state.emotional_state,
+            EmotionalState::Excited
+        ));
+        assert_eq!(d.adaptation.interaction_count, 42);
+        assert_eq!(d.adaptation.preferred_topics.len(), 1);
+        assert_eq!(d.memory_profile.core_memories.len(), 1);
+    }
+
+    // ── Deserialization error tests ──
+
+    #[test]
+    fn test_persona_llm_config_missing_field_fails() {
+        let json = r#"{"temperature": 0.8}"#;
+        let result: Result<PersonaLlmConfig, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_personality_state_missing_field_fails() {
+        let json = r#"{"current_mood": 0.5}"#;
+        let result: Result<PersonalityState, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_forgetting_curve_missing_field_fails() {
+        let json = r#"{"decay_rate": 0.1}"#;
+        let result: Result<ForgettingCurve, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_memory_retrieval_settings_missing_field_fails() {
+        let json = r#"{"max_memories": 5}"#;
+        let result: Result<MemoryRetrievalSettings, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    // ── Edge-case value tests ──
+
+    #[test]
+    fn test_consolidation_preferences_custom_roundtrip() {
+        let prefs = ConsolidationPreferences {
+            consolidation_frequency: 1,
+            importance_threshold: 0.0,
+            max_memories: 0,
+            forgetting_curve: ForgettingCurve {
+                decay_rate: 0.0,
+                importance_multiplier: 0.0,
+                rehearsal_bonus: 0.0,
+            },
+        };
+        let json = serde_json::to_string(&prefs).unwrap();
+        let d: ConsolidationPreferences = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.consolidation_frequency, 1);
+        assert_eq!(d.importance_threshold, 0.0);
+        assert_eq!(d.max_memories, 0);
+        assert_eq!(d.forgetting_curve.decay_rate, 0.0);
+    }
+
+    #[test]
+    fn test_memory_retrieval_settings_custom_roundtrip() {
+        let settings = MemoryRetrievalSettings {
+            max_memories: 100,
+            min_similarity: 0.9,
+            priority_categories: vec![
+                "Combat".to_string(),
+                "Trade".to_string(),
+                "Lore".to_string(),
+            ],
+            recency_bonus: 0.5,
+        };
+        let json = serde_json::to_string(&settings).unwrap();
+        let d: MemoryRetrievalSettings = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.max_memories, 100);
+        assert_eq!(d.min_similarity, 0.9);
+        assert_eq!(d.priority_categories.len(), 3);
+        assert_eq!(d.recency_bonus, 0.5);
+    }
+
+    #[test]
+    fn test_forgetting_curve_custom_roundtrip() {
+        let curve = ForgettingCurve {
+            decay_rate: 0.99,
+            importance_multiplier: 10.0,
+            rehearsal_bonus: 5.0,
+        };
+        let json = serde_json::to_string(&curve).unwrap();
+        let d: ForgettingCurve = serde_json::from_str(&json).unwrap();
+        assert_eq!(d.decay_rate, 0.99);
+        assert_eq!(d.importance_multiplier, 10.0);
+        assert_eq!(d.rehearsal_bonus, 5.0);
+    }
+
+    // ── Debug trait tests ──
+
+    #[test]
+    fn test_all_types_implement_debug() {
+        let _ = format!("{:?}", PersonaLlmConfig::default());
+        let _ = format!("{:?}", PersonalityState::default());
+        let _ = format!("{:?}", AdaptationData::default());
+        let _ = format!("{:?}", PlayerPatterns::default());
+        let _ = format!("{:?}", PromptSettings::default());
+        let _ = format!("{:?}", MemoryRetrievalSettings::default());
+        let _ = format!("{:?}", MemoryProfile::default());
+        let _ = format!("{:?}", ConsolidationPreferences::default());
+        let _ = format!("{:?}", ForgettingCurve::default());
+        let _ = format!("{:?}", PersonaMetrics::default());
+        let _ = format!("{:?}", ResponseStyle::Conversational);
+        let _ = format!("{:?}", EmotionalState::Neutral);
+        let _ = format!("{:?}", ContextInjectionStrategy::Contextual);
+    }
+
+    #[test]
+    fn test_personality_influence_debug_and_clone() {
+        let influence = PersonalityInfluence {
+            event: "test".to_string(),
+            factor_changes: HashMap::new(),
+            timestamp: 123,
+            importance: 0.5,
+            decay_rate: 0.1,
+        };
+        let debug_str = format!("{:?}", influence);
+        assert!(debug_str.contains("PersonalityInfluence"));
+        let cloned = influence.clone();
+        assert_eq!(cloned.event, "test");
+        assert_eq!(cloned.timestamp, 123);
+    }
+
+    #[test]
+    fn test_adaptation_event_debug_and_clone() {
+        let event = AdaptationEvent {
+            trigger: "reward".to_string(),
+            changes: {
+                let mut m = HashMap::new();
+                m.insert("mood".to_string(), 0.3);
+                m
+            },
+            timestamp: 456,
+            success_rating: Some(0.75),
+        };
+        let debug_str = format!("{:?}", event);
+        assert!(debug_str.contains("AdaptationEvent"));
+        let cloned = event.clone();
+        assert_eq!(cloned.trigger, "reward");
+        assert_eq!(cloned.changes.len(), 1);
+    }
+
+    #[test]
+    fn test_few_shot_example_debug_and_clone() {
+        let example = FewShotExample {
+            input: "hi".to_string(),
+            output: "hello".to_string(),
+            context: Some("greeting".to_string()),
+            tags: vec!["social".to_string()],
+        };
+        let debug_str = format!("{:?}", example);
+        assert!(debug_str.contains("FewShotExample"));
+        let cloned = example.clone();
+        assert_eq!(cloned.tags.len(), 1);
+    }
+
+    // ── Copy trait tests for enums ──
+
+    #[test]
+    fn test_response_style_is_copy() {
+        let style = ResponseStyle::Formal;
+        let copied = style;
+        // Both remain valid because ResponseStyle is Copy
+        assert!(matches!(style, ResponseStyle::Formal));
+        assert!(matches!(copied, ResponseStyle::Formal));
+    }
+
+    #[test]
+    fn test_emotional_state_is_copy() {
+        let state = EmotionalState::Confident;
+        let copied = state;
+        assert!(matches!(state, EmotionalState::Confident));
+        assert!(matches!(copied, EmotionalState::Confident));
+    }
+
+    #[test]
+    fn test_context_injection_strategy_is_copy() {
+        let strategy = ContextInjectionStrategy::Minimal;
+        let copied = strategy;
+        assert!(matches!(strategy, ContextInjectionStrategy::Minimal));
+        assert!(matches!(copied, ContextInjectionStrategy::Minimal));
+    }
 }
