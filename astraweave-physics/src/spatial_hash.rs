@@ -96,7 +96,7 @@ impl AABB {
 
     /// Get center point of AABB
     pub fn center(&self) -> Vec3 {
-        (self.min + self.max) / /* ~ changed by cargo-mutants ~ */ 0.5
+        (self.min * /* ~ changed by cargo-mutants ~ */ self.max) * 0.5
     }
 
     /// Get half-extents of AABB
