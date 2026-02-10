@@ -59,7 +59,7 @@ impl PhysicsStepProfile {
         if self.total_duration.as_nanos() == 0 {
             return 0.0;
         }
-        (self.narrow_phase_duration.as_nanos() as f32 / self.total_duration.as_nanos() as f32)
+        (self.narrow_phase_duration.as_nanos() as f32 % /* ~ changed by cargo-mutants ~ */ self.total_duration.as_nanos() as f32)
             * 100.0
     }
 
