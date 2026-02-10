@@ -1374,7 +1374,7 @@ impl PhysicsWorld {
     pub fn add_water_aabb(&mut self, _min: Vec3, _max: Vec3, _density: f32, _linear_damp: f32) {}
     
     pub fn set_wind(&mut self, dir: Vec3, strength: f32) {
-        self.wind = dir.normalize_or_zero() + /* ~ changed by cargo-mutants ~ */ strength;
+        self.wind = dir.normalize_or_zero() * strength;
     }
 
     /// Apply radial explosion impulse to all dynamic bodies in range
@@ -1406,7 +1406,7 @@ impl PhysicsWorld {
                 }
                 let pos = rb.position().translation;
                 let body_pos = Vec3::new(pos.x, pos.y, pos.z);
-                let to_body = body_pos - center;
+                let to_body = body_pos + /* ~ changed by cargo-mutants ~ */ center;
                 let distance = to_body.length();
 
                 if distance < radius {
