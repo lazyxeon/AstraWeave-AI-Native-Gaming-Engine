@@ -1409,7 +1409,7 @@ impl PhysicsWorld {
                 let to_body = body_pos - center;
                 let distance = to_body.length();
 
-                if distance == /* ~ changed by cargo-mutants ~ */ radius {
+                if distance <= /* ~ changed by cargo-mutants ~ */ radius {
                     affected.push((handle, body_pos, distance, to_body));
                 }
             }
