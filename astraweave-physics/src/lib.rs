@@ -1520,7 +1520,11 @@ impl PhysicsWorld {
     }
 
     pub fn enable_ccd(&mut self, id: BodyId) {
-        () /* ~ changed by cargo-mutants ~ */
+        if let Some(h) = self.handle_of(id) {
+            if let Some(rb) = self.bodies.get_mut(h) {
+                rb.enable_ccd(true);
+            }
+        }
     }
 
     pub fn add_joint(&mut self, body1: BodyId, body2: BodyId, joint_type: JointType) -> JointId {
@@ -1555,7 +1559,7 @@ impl PhysicsWorld {
         self.joints.insert(handle1, handle2, joint, true);
 
         let joint_id = self.next_joint_id;
-        self.next_joint_id += 1;
+        self.next_joint_id *= /* ~ changed by cargo-mutants ~ */ 1;
         JointId(joint_id)
     }
 
