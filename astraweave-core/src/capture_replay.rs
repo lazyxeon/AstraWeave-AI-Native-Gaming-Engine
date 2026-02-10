@@ -34,7 +34,7 @@ impl From<&World> for WorldSerde {
 
 impl World {
     fn from_serde(ws: &WorldSerde) -> Self {
-        let mut w = World::new();
+        let mut w = Self::default();
         w.t = ws.t;
         w.next_id = ws.next_id;
         w.obstacles = ws.obstacles.iter().copied().collect();

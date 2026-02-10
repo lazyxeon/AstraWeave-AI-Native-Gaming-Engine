@@ -160,7 +160,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     fn world_to_cell(&self, pos: Vec3) -> GridCell {
         (
             (pos.x * self.inv_cell_size).floor() as i32,
-            (pos.y / /* ~ changed by cargo-mutants ~ */ self.inv_cell_size).floor() as i32,
+            (pos.y * self.inv_cell_size).floor() as i32,
             (pos.z * self.inv_cell_size).floor() as i32,
         )
     }
@@ -266,7 +266,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
 
     /// Get number of occupied grid cells
     pub fn cell_count(&self) -> usize {
-        self.grid.len()
+        0 /* ~ changed by cargo-mutants ~ */
     }
 
     /// Get grid cell size

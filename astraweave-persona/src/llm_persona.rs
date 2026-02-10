@@ -2288,9 +2288,7 @@ mod tests {
     fn test_memory_retrieval_settings_clone_independence() {
         let mut original = MemoryRetrievalSettings::default();
         original.max_memories = 42;
-        original
-            .priority_categories
-            .push("important".to_string());
+        original.priority_categories.push("important".to_string());
         let clone = original.clone();
         original.max_memories = 0;
         original.priority_categories.clear();
@@ -2304,9 +2302,7 @@ mod tests {
         let mut original = PlayerPatterns::default();
         original.communication_style = Some("casual".to_string());
         original.interests.push("combat".to_string());
-        original
-            .emotional_patterns
-            .insert("anger".to_string(), 0.7);
+        original.emotional_patterns.insert("anger".to_string(), 0.7);
         let clone = original.clone();
         original.communication_style = None;
         original.interests.clear();

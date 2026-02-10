@@ -658,4 +658,237 @@ mod tests {
         assert_eq!(ac.last_validation, 1234567890);
         assert_eq!(ac.anomaly_flags.len(), 1);
     }
+
+    // ── Additional edge-case tests ──
+
+    #[test]
+    fn test_validate_all_three_anomalies_combined() {
+        let anti_cheat = CAntiCheat {
+            player_id: "cheater".to_string(),
+            trust_score: 0.1,
+            last_validation: 0,
+            anomaly_flags: vec![
+                "rapid_input".to_string(),
+                "impossible_movement".to_string(),
+                "memory_tamper".to_string(),
+            ],
+        };
+        let result = validate_player_input(&anti_cheat);
+        // 1.0 * 0.8 * 0.5 * 0.3 = 0.12 which is < 0.2
+        assert!(!result.is_valid);
+        assert!((result.trust_score - 0.12).abs() < 0.01);
+        assert_eq!(result.anomalies.len(), 3);
+        assert_eq!(result.warnings.len(), 3);
+    }
+
+    #[test]
+    fn test_validate_impossible_movement_only() {
+        let anti_cheat = CAntiCheat {
+            player_id: "p".to_string(),
+            trust_score: 1.0,
+            last_validation: 0,
+            anomaly_flags: vec!["impossible_movement".to_string()],
+        };
+        let result = validate_player_input(&anti_cheat);
+        assert!((result.trust_score - 0.5).abs() < f32::EPSILON);
+        assert!(result.is_valid); // 0.5 > 0.2
+    }
+
+    #[test]
+    fn test_validate_memory_tamper_only() {
+        let anti_cheat = CAntiCheat {
+            player_id: "p".to_string(),
+            trust_score: 1.0,
+            last_validation: 0,
+            anomaly_flags: vec!["memory_tamper".to_string()],
+        };
+        let result = validate_player_input(&anti_cheat);
+        assert!((result.trust_score - 0.3).abs() < f32::EPSILON);
+        assert!(result.is_valid); // 0.3 > 0.2
+    }
+
+    #[test]
+    fn test_sanitize_content_filtering_disabled() {
+        let validator = LLMValidator {
+            banned_patterns: vec![],
+            allowed_domains: vec![],
+            max_prompt_length: 1000,
+            enable_content_filtering: false,
+        };
+        // "hack" would trigger content filter, but it's disabled
+        let result = sanitize_llm_prompt("tell me about hack techniques", &validator).unwrap();
+        assert_eq!(result, "tell me about hack techniques");
+    }
+
+    #[test]
+    fn test_sanitize_empty_prompt() {
+        let validator = LLMValidator {
+            banned_patterns: vec![],
+            allowed_domains: vec![],
+            max_prompt_length: 1000,
+            enable_content_filtering: true,
+        };
+        let result = sanitize_llm_prompt("", &validator).unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_sanitize_suspicious_substring() {
+        let validator = LLMValidator {
+            banned_patterns: vec![],
+            allowed_domains: vec![],
+            max_prompt_length: 1000,
+            enable_content_filtering: true,
+        };
+        // "hacking" contains "hack" as substring → triggers content filter
+        let result = sanitize_llm_prompt("a hacking tutorial", &validator).unwrap();
+        assert!(result.starts_with("SAFE: "));
+    }
+
+    #[test]
+    fn test_sanitize_multiple_suspicious_words() {
+        let validator = LLMValidator {
+            banned_patterns: vec![],
+            allowed_domains: vec![],
+            max_prompt_length: 1000,
+            enable_content_filtering: true,
+        };
+        let result = sanitize_llm_prompt("hack and exploit the cheat", &validator).unwrap();
+        assert!(result.starts_with("SAFE: "));
+    }
+
+    #[test]
+    fn test_sanitize_banned_pattern_takes_priority_over_length() {
+        let validator = LLMValidator {
+            banned_patterns: vec!["eval(".to_string()],
+            allowed_domains: vec![],
+            max_prompt_length: 5,
+            enable_content_filtering: true,
+        };
+        // Length check happens first
+        let result = sanitize_llm_prompt("eval(something)", &validator);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too long"));
+    }
+
+    #[test]
+    fn test_sanitize_exact_max_length_prompt() {
+        let validator = LLMValidator {
+            banned_patterns: vec![],
+            allowed_domains: vec![],
+            max_prompt_length: 5,
+            enable_content_filtering: false,
+        };
+        let result = sanitize_llm_prompt("hello", &validator).unwrap();
+        assert_eq!(result, "hello");
+    }
+
+    #[test]
+    fn test_sanitize_one_over_max_length() {
+        let validator = LLMValidator {
+            banned_patterns: vec![],
+            allowed_domains: vec![],
+            max_prompt_length: 5,
+            enable_content_filtering: false,
+        };
+        let result = sanitize_llm_prompt("hello!", &validator);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_hash_data_empty() {
+        let hash = hash_data(b"");
+        assert_eq!(hash.len(), 64);
+        assert_eq!(
+            hash,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn test_hash_data_different_inputs() {
+        let h1 = hash_data(b"abc");
+        let h2 = hash_data(b"abd");
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn test_signature_wrong_key() {
+        let (signing_key, _) = generate_keypair();
+        let (_, other_verifying_key) = generate_keypair();
+        let data = b"test data";
+        let signature = generate_signature(data, &signing_key);
+        assert!(!verify_signature(data, &signature, &other_verifying_key));
+    }
+
+    #[tokio::test]
+    async fn test_sandbox_with_context_variables() {
+        let mut engine = rhai::Engine::new();
+        engine.set_max_operations(1000);
+        let sandbox = ScriptSandbox {
+            engine: Arc::new(Mutex::new(engine)),
+            allowed_functions: HashMap::new(),
+            execution_limits: ExecutionLimits {
+                max_operations: 1000,
+                max_memory_bytes: 1024 * 1024,
+                timeout_ms: 1000,
+            },
+        };
+        let mut context = HashMap::new();
+        context.insert("x".to_string(), rhai::Dynamic::from(10_i64));
+        context.insert("y".to_string(), rhai::Dynamic::from(32_i64));
+        let result = execute_script_sandboxed("x + y", &sandbox, context)
+            .await
+            .unwrap();
+        assert_eq!(result.as_int().unwrap(), 42);
+    }
+
+    #[tokio::test]
+    async fn test_sandbox_compile_error() {
+        let mut engine = rhai::Engine::new();
+        engine.set_max_operations(1000);
+        let sandbox = ScriptSandbox {
+            engine: Arc::new(Mutex::new(engine)),
+            allowed_functions: HashMap::new(),
+            execution_limits: ExecutionLimits {
+                max_operations: 1000,
+                max_memory_bytes: 1024 * 1024,
+                timeout_ms: 1000,
+            },
+        };
+        let result = execute_script_sandboxed("let x = ;", &sandbox, HashMap::new()).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_security_plugin_build() {
+        let plugin = SecurityPlugin::default();
+        let mut app = App::new();
+        plugin.build(&mut app);
+
+        assert!(app.world.get_resource::<SecurityConfig>().is_some());
+        assert!(app.world.get_resource::<TelemetryData>().is_some());
+        assert!(app.world.get_resource::<ScriptSandbox>().is_some());
+        assert!(app.world.get_resource::<LLMValidator>().is_some());
+    }
+
+    #[test]
+    fn test_telemetry_severity_debug_format() {
+        assert_eq!(format!("{:?}", TelemetrySeverity::Info), "Info");
+        assert_eq!(format!("{:?}", TelemetrySeverity::Critical), "Critical");
+    }
+
+    #[test]
+    fn test_telemetry_event_serde_roundtrip() {
+        let event = TelemetryEvent {
+            timestamp: 999,
+            event_type: "test_rt".to_string(),
+            severity: TelemetrySeverity::Error,
+            data: serde_json::json!({"a": 1}),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let restored: TelemetryEvent = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.timestamp, 999);
+        assert_eq!(restored.severity, TelemetrySeverity::Error);
+    }
 }

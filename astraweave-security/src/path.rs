@@ -387,4 +387,89 @@ mod tests {
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
         assert!(err.to_string().contains("Base directory not found"));
     }
+
+    // ── Additional edge-case tests ──
+
+    #[test]
+    fn test_validate_extension_empty_allowed_list() {
+        let result = validate_extension(Path::new("file.png"), &[]);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn test_validate_extension_hidden_file() {
+        let path = Path::new(".gitignore");
+        if path.extension().is_some() {
+            let result = validate_extension(path, &["gitignore"]);
+            assert!(result.is_ok());
+        } else {
+            let result = validate_extension(path, &["gitignore"]);
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn test_validate_extension_trailing_dot() {
+        let path = Path::new("file.");
+        let result = validate_extension(path, &["png"]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_extension_dot_only_filename() {
+        let path = Path::new(".png");
+        let _ = validate_extension(path, &["png"]);
+    }
+
+    #[test]
+    fn test_validate_user_path_components_happy_path() {
+        let result = validate_user_path_components(Path::new("a/b/c/file.txt"));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_user_path_components_curdir() {
+        let result = validate_user_path_components(Path::new("./subdir/file.txt"));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_user_path_components_embedded_parent_dir() {
+        let result = validate_user_path_components(Path::new("a/b/../../c"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains(".."));
+    }
+
+    #[test]
+    fn test_safe_under_curdir_component() {
+        let temp = tempfile::tempdir().unwrap();
+        let base = temp.path();
+        let subdir = base.join("sub");
+        fs::create_dir(&subdir).unwrap();
+
+        let result = safe_under(base, Path::new("./sub"));
+        assert!(result.is_ok());
+        let resolved = result.unwrap();
+        let base_canonical = base.canonicalize().unwrap();
+        assert!(resolved.starts_with(&base_canonical));
+    }
+
+    #[test]
+    fn test_safe_under_empty_user_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let base = temp.path();
+        let result = safe_under(base, Path::new(""));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_safe_under_deeply_nested_nonexistent() {
+        let temp = tempfile::tempdir().unwrap();
+        let base = temp.path();
+        let result = safe_under(base, Path::new("a/b/c/d/e/f/g/h/i/j/file.txt"));
+        assert!(result.is_ok());
+        let resolved = result.unwrap();
+        assert!(resolved.ends_with("file.txt"));
+    }
 }
