@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace * with / in CameraController::update_camera
+@@ -253,17 +253,17 @@
+                 let right = dir.cross(-Vec3::Y).normalize();
+                 let up = -Vec3::Y;
+ 
+                 let mut vel = Vec3::ZERO;
+                 vel += dir * (self.fwd - self.back);
+                 vel += right * (self.right - self.left);
+                 vel += up * (self.down - self.up); // Swap: with -Y up, down key = positive Y
+                 if vel.length_squared() > 0.0 {
+-                    camera.position += vel.normalize() * eff_speed * dt;
++                    camera.position += vel.normalize() / /* ~ changed by cargo-mutants ~ */ eff_speed * dt;
+                 }
+             }
+             CameraMode::Orbit => {
+                 // In orbit mode, WASD moves the orbit target
+                 let dir = Camera::dir(camera.yaw, camera.pitch);
+                 // Use -Y to match flipped up vector in view matrix
+                 let right = dir.cross(-Vec3::Y).normalize();
+                 let forward = Vec3::new(dir.x, 0.0, dir.z).normalize(); // Horizontal movement only

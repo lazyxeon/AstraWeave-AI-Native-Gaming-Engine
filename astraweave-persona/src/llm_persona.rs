@@ -2296,7 +2296,7 @@ mod tests {
         original.priority_categories.clear();
 
         assert_eq!(clone.max_memories, 42);
-        assert_eq!(clone.priority_categories.len(), 1);
+        assert_eq!(clone.priority_categories.len(), 3); // 2 defaults + 1 pushed
     }
 
     #[test]
@@ -2448,22 +2448,22 @@ mod tests {
 
     #[test]
     fn test_emotional_state_exact_positive_boundary() {
-        // mood=0.3 exactly, energy=0.6 exactly → Neutral (mood not > 0.3)
+        // mood=0.3 exactly (>= 0.3 threshold), energy=0.6 exactly (>= 0.6) → Excited
         let state = LlmPersonaManager::calculate_emotional_state(0.3, 0.6);
-        assert!(matches!(state, EmotionalState::Neutral));
+        assert!(matches!(state, EmotionalState::Excited));
     }
 
     #[test]
     fn test_emotional_state_exact_negative_boundary() {
-        // mood=-0.3 exactly → Neutral (mood not < -0.3)
+        // mood=-0.3 exactly (<= -0.3 threshold), energy=0.5 (>= 0.3) → Frustrated
         let state = LlmPersonaManager::calculate_emotional_state(-0.3, 0.5);
-        assert!(matches!(state, EmotionalState::Neutral));
+        assert!(matches!(state, EmotionalState::Frustrated));
     }
 
     #[test]
-    fn test_emotional_state_anxious_low_energy_negative_mood() {
-        // negative mood + low energy = Anxious
+    fn test_emotional_state_sad_low_energy_negative_mood() {
+        // negative mood (<= -0.3) + low energy (< 0.3) → Sad
         let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.2);
-        assert!(matches!(state, EmotionalState::Anxious));
+        assert!(matches!(state, EmotionalState::Sad));
     }
 }

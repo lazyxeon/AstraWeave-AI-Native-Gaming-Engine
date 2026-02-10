@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace * with + in CameraController::toggle_mode
+@@ -198,17 +198,17 @@
+     }
+ 
+     pub fn toggle_mode(&mut self, camera: &mut Camera) {
+         match self.mode {
+             CameraMode::FreeFly => {
+                 self.mode = CameraMode::Orbit;
+                 // Set orbit target to current look direction
+                 let look_dir = Camera::dir(camera.yaw, camera.pitch);
+-                self.orbit_target = camera.position + look_dir * self.orbit_distance;
++                self.orbit_target = camera.position + look_dir + /* ~ changed by cargo-mutants ~ */ self.orbit_distance;
+             }
+             CameraMode::Orbit => {
+                 self.mode = CameraMode::FreeFly;
+                 // Keep current position when switching to free fly
+             }
+         }
+     }
+ 

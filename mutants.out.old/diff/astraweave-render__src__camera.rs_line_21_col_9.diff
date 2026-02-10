@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace Camera::proj_matrix -> Mat4 with Default::default()
+@@ -13,17 +13,17 @@
+ impl Camera {
+     pub fn view_matrix(&self) -> Mat4 {
+         let dir = Self::dir(self.yaw, self.pitch);
+         // Use -Y as up to flip the world (fixes upside-down rendering)
+         Mat4::look_to_rh(self.position, dir, -Vec3::Y)
+     }
+ 
+     pub fn proj_matrix(&self) -> Mat4 {
+-        Mat4::perspective_rh(self.fovy, self.aspect.max(0.01), self.znear, self.zfar)
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn vp(&self) -> Mat4 {
+         self.proj_matrix() * self.view_matrix()
+     }
+ 
+     pub fn dir(yaw: f32, pitch: f32) -> Vec3 {
+         let cy = yaw.cos();

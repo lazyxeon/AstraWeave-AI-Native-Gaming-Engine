@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace Camera::vp -> Mat4 with Default::default()
+@@ -17,17 +17,17 @@
+         Mat4::look_to_rh(self.position, dir, -Vec3::Y)
+     }
+ 
+     pub fn proj_matrix(&self) -> Mat4 {
+         Mat4::perspective_rh(self.fovy, self.aspect.max(0.01), self.znear, self.zfar)
+     }
+ 
+     pub fn vp(&self) -> Mat4 {
+-        self.proj_matrix() * self.view_matrix()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn dir(yaw: f32, pitch: f32) -> Vec3 {
+         let cy = yaw.cos();
+         let sy = yaw.sin();
+         let cp = pitch.cos();
+         let sp = pitch.sin();
+         // Standard direction: positive pitch = look up

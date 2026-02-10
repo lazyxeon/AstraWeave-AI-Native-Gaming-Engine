@@ -1,0 +1,156 @@
+astraweave-render/src/camera.rs:15:9: replace Camera::view_matrix -> Mat4 with Default::default()
+astraweave-render/src/camera.rs:21:9: replace Camera::proj_matrix -> Mat4 with Default::default()
+astraweave-render/src/camera.rs:25:9: replace Camera::vp -> Mat4 with Default::default()
+astraweave-render/src/camera.rs:25:28: replace * with + in Camera::vp
+astraweave-render/src/camera.rs:29:9: replace Camera::dir -> Vec3 with Default::default()
+astraweave-render/src/camera.rs:34:22: replace * with + in Camera::dir
+astraweave-render/src/camera.rs:34:22: replace * with / in Camera::dir
+astraweave-render/src/camera.rs:34:35: replace * with + in Camera::dir
+astraweave-render/src/camera.rs:107:9: replace CameraController::is_dragging -> bool with true
+astraweave-render/src/camera.rs:107:9: replace CameraController::is_dragging -> bool with false
+astraweave-render/src/camera.rs:111:9: replace CameraController::process_keyboard with ()
+astraweave-render/src/camera.rs:113:13: delete match arm winit::keyboard::KeyCode::KeyW in CameraController::process_keyboard
+astraweave-render/src/camera.rs:114:13: delete match arm winit::keyboard::KeyCode::KeyS in CameraController::process_keyboard
+astraweave-render/src/camera.rs:115:13: delete match arm winit::keyboard::KeyCode::KeyA in CameraController::process_keyboard
+astraweave-render/src/camera.rs:116:13: delete match arm winit::keyboard::KeyCode::KeyD in CameraController::process_keyboard
+astraweave-render/src/camera.rs:122:13: delete match arm winit::keyboard::KeyCode::ShiftLeft | winit::keyboard::KeyCode::ShiftRight in CameraController::process_keyboard
+astraweave-render/src/camera.rs:125:13: delete match arm winit::keyboard::KeyCode::ControlLeft | winit::keyboard::KeyCode::ControlRight in CameraController::process_keyboard
+astraweave-render/src/camera.rs:133:9: replace CameraController::process_mouse_button with ()
+astraweave-render/src/camera.rs:133:19: replace == with != in CameraController::process_mouse_button
+astraweave-render/src/camera.rs:163:9: replace CameraController::process_mouse_delta with ()
+astraweave-render/src/camera.rs:174:29: replace -= with += in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:174:29: replace -= with /= in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:175:52: replace - with + in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:175:52: replace - with / in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:175:76: delete - in CameraController::process_mouse_delta
+astraweave-render/src/camera.rs:186:9: replace CameraController::process_scroll with ()
+astraweave-render/src/camera.rs:190:44: replace - with + in CameraController::process_scroll
+astraweave-render/src/camera.rs:190:44: replace - with / in CameraController::process_scroll
+astraweave-render/src/camera.rs:194:60: replace - with + in CameraController::process_scroll
+astraweave-render/src/camera.rs:201:9: replace CameraController::toggle_mode with ()
+astraweave-render/src/camera.rs:206:53: replace + with * in CameraController::toggle_mode
+astraweave-render/src/camera.rs:216:9: replace CameraController::set_orbit_target with ()
+astraweave-render/src/camera.rs:223:9: replace CameraController::update_orbit_position with ()
+astraweave-render/src/camera.rs:229:9: replace CameraController::update_camera with ()
+astraweave-render/src/camera.rs:229:12: delete ! in CameraController::update_camera
+astraweave-render/src/camera.rs:236:24: delete - in CameraController::update_camera
+astraweave-render/src/camera.rs:237:33: replace + with - in CameraController::update_camera
+astraweave-render/src/camera.rs:237:33: replace + with * in CameraController::update_camera
+astraweave-render/src/camera.rs:237:66: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:237:52: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:238:38: replace + with - in CameraController::update_camera
+astraweave-render/src/camera.rs:238:38: replace + with * in CameraController::update_camera
+astraweave-render/src/camera.rs:238:75: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:238:59: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:238:86: delete - in CameraController::update_camera
+astraweave-render/src/camera.rs:243:23: replace *= with /= in CameraController::update_camera
+astraweave-render/src/camera.rs:246:23: replace *= with += in CameraController::update_camera
+astraweave-render/src/camera.rs:246:23: replace *= with /= in CameraController::update_camera
+astraweave-render/src/camera.rs:257:21: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:257:28: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:257:40: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:258:21: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:258:30: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:258:44: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:259:21: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:259:27: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:259:40: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:260:41: replace > with == in CameraController::update_camera
+astraweave-render/src/camera.rs:260:41: replace > with < in CameraController::update_camera
+astraweave-render/src/camera.rs:261:37: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:261:56: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:273:28: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:273:39: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:273:51: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:274:28: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:274:37: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:274:51: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:275:28: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:275:34: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:275:47: replace - with / in CameraController::update_camera
+astraweave-render/src/camera.rs:277:48: replace > with == in CameraController::update_camera
+astraweave-render/src/camera.rs:277:48: replace > with < in CameraController::update_camera
+astraweave-render/src/camera.rs:278:39: replace += with *= in CameraController::update_camera
+astraweave-render/src/clustered.rs:24:5: replace cluster_index -> usize with 0
+astraweave-render/src/clustered.rs:24:5: replace cluster_index -> usize with 1
+astraweave-render/src/clustered.rs:24:23: replace + with - in cluster_index
+astraweave-render/src/clustered.rs:24:23: replace + with * in cluster_index
+astraweave-render/src/clustered.rs:24:9: replace + with - in cluster_index
+astraweave-render/src/clustered.rs:24:9: replace + with * in cluster_index
+astraweave-render/src/clustered.rs:24:14: replace * with + in cluster_index
+astraweave-render/src/clustered.rs:24:14: replace * with / in cluster_index
+astraweave-render/src/clustered.rs:24:28: replace * with + in cluster_index
+astraweave-render/src/clustered.rs:24:28: replace * with / in cluster_index
+astraweave-render/src/clustered.rs:24:38: replace * with + in cluster_index
+astraweave-render/src/clustered.rs:24:38: replace * with / in cluster_index
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![0], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![0], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![0], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![1], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![1], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![1], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![0], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![0], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![0], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![1], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![1], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![0], vec![1], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![0], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![0], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![0], vec![1])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![1], vec![])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![1], vec![0])
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![1], vec![1], vec![1])
+astraweave-render/src/clustered.rs:49:37: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:49:37: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:49:28: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:49:28: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:55:25: replace > with < in bin_lights_cpu
+astraweave-render/src/clustered.rs:59:30: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:60:35: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:60:30: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:60:30: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:38: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:31: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:31: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:62:25: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:63:38: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:63:31: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:63:31: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:63:25: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:41: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:36: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:65:31: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:41: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:36: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:66:31: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:68:26: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:70:26: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:71:36: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:71:36: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:73:36: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:73:36: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:76:23: replace - with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:77:23: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:78:17: replace >= with < in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:51: replace * with + in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:35: replace / with % in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:35: replace / with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:81:27: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:51: replace * with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:84:42: replace - with / in bin_lights_cpu
+astraweave-render/src/clustered.rs:91:32: replace += with -= in bin_lights_cpu
+astraweave-render/src/clustered.rs:91:32: replace += with *= in bin_lights_cpu
+astraweave-render/src/clustered.rs:100:19: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:100:19: replace + with * in bin_lights_cpu
+astraweave-render/src/clustered.rs:100:37: replace + with - in bin_lights_cpu
+astraweave-render/src/clustered.rs:100:37: replace + with * in bin_lights_cpu

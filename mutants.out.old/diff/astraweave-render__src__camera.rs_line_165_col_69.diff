@@ -1,0 +1,21 @@
+--- astraweave-render/src/camera.rs
++++ replace < with == in CameraController::process_mouse_delta
+@@ -157,17 +157,17 @@
+             }
+             self.last_mouse = Some(pos);
+         }
+     }
+ 
+     pub fn process_mouse_delta(&mut self, camera: &mut Camera, delta: Vec2) {
+         if self.dragging {
+             // Apply deadzone to raw deltas to avoid drift
+-            if delta.x.abs() < self.mouse_deadzone && delta.y.abs() < self.mouse_deadzone {
++            if delta.x.abs() < self.mouse_deadzone && delta.y.abs() == /* ~ changed by cargo-mutants ~ */ self.mouse_deadzone {
+                 return;
+             }
+             let scaled_delta = delta * self.sensitivity;
+             if !self.targets_initialized {
+                 self.yaw_target = camera.yaw;
+                 self.pitch_target = camera.pitch;
+                 self.targets_initialized = true;
+             }

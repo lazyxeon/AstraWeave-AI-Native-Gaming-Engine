@@ -1,0 +1,32 @@
+--- astraweave-render/src/camera.rs
++++ replace CameraController::toggle_mode with ()
+@@ -193,28 +193,17 @@
+                 // Zoom by adjusting orbit distance
+                 self.orbit_distance = (self.orbit_distance - delta * 0.5).clamp(1.0, 50.0);
+                 self.update_orbit_position(camera);
+             }
+         }
+     }
+ 
+     pub fn toggle_mode(&mut self, camera: &mut Camera) {
+-        match self.mode {
+-            CameraMode::FreeFly => {
+-                self.mode = CameraMode::Orbit;
+-                // Set orbit target to current look direction
+-                let look_dir = Camera::dir(camera.yaw, camera.pitch);
+-                self.orbit_target = camera.position + look_dir * self.orbit_distance;
+-            }
+-            CameraMode::Orbit => {
+-                self.mode = CameraMode::FreeFly;
+-                // Keep current position when switching to free fly
+-            }
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn set_orbit_target(&mut self, target: Vec3, camera: &mut Camera) {
+         self.orbit_target = target;
+         if matches!(self.mode, CameraMode::Orbit) {
+             self.update_orbit_position(camera);
+         }
+     }

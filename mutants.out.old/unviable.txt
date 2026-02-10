@@ -1,0 +1,1 @@
+astraweave-render/src/camera.rs:25:28: replace * with / in Camera::vp

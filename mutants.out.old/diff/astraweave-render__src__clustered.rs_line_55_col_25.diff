@@ -1,0 +1,21 @@
+--- astraweave-render/src/clustered.rs
++++ replace > with == in bin_lights_cpu
+@@ -47,17 +47,17 @@
+     let tile_h = (height as f32 / dims.y as f32).max(1.0);
+ 
+     let clusters = (dims.x * dims.y * dims.z) as usize;
+     let mut counts = vec![0u32; clusters];
+ 
+     // First pass: counts
+     for l in lights.iter() {
+         let z = l.pos.z.max(near + 1e-4);
+-        if z - l.radius > far {
++        if z - l.radius == /* ~ changed by cargo-mutants ~ */ far {
+             continue;
+         }
+         // Project center to NDC
+         let ndc_x = (l.pos.x / z) * fx;
+         let ndc_y = (l.pos.y / z) * fy;
+         // Convert to pixel space
+         let px = (ndc_x * 0.5 + 0.5) * width as f32;
+         let py = (ndc_y * 0.5 + 0.5) * height as f32;
