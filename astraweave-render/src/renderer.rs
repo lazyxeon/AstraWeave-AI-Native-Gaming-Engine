@@ -741,19 +741,20 @@ impl Renderer {
         queue.write_buffer(&material_buf, 0, bytemuck::cast_slice(&default_material));
 
         // Scene environment bind group layout (created early so it can be used in pipeline layout)
-        let scene_env_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("scene env bgl"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let scene_env_bgl =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("scene env bgl"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
         let material_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("material bg"),
             layout: &material_bgl,
@@ -1369,13 +1370,7 @@ impl Renderer {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("pipeline layout"),
             // Group indices: 0: camera, 1: material, 2: shadow/light, 3: textures, 4: scene environment
-            bind_group_layouts: &[
-                &bind_layout,
-                &material_bgl,
-                &shadow_bgl,
-                &tex_bgl,
-                &scene_env_bgl,
-            ],
+            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &scene_env_bgl],
             push_constant_ranges: &[],
         });
 
@@ -2646,9 +2641,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.ibl.mode = sky_mode;
 
         // Rebake environment
-        let resources = self
-            .ibl
-            .bake_environment(&self.device, &self.queue, quality)?;
+        let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
         self.ibl_resources = Some(resources);
 
         // Track state
@@ -2686,9 +2679,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
         let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
         self.ibl.mode = sky_mode;
-        let resources = self
-            .ibl
-            .bake_environment(&self.device, &self.queue, quality)?;
+        let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
         self.ibl_resources = Some(resources);
 
         // 2. Terrain material textures
@@ -2717,7 +2708,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     ///
     /// Call this once per frame (or less frequently) to keep sky lighting in
     /// sync with the time-of-day system.
-    pub fn sync_biome_time_of_day(&mut self, quality: crate::ibl::IblQuality) -> Result<bool> {
+    pub fn sync_biome_time_of_day(
+        &mut self,
+        quality: crate::ibl::IblQuality,
+    ) -> Result<bool> {
         let hours = self.sky.time_of_day().current_time;
         let period = crate::hdri_catalog::DayPeriod::from_game_hours(hours);
 
@@ -2730,13 +2724,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
             let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
             self.ibl.mode = sky_mode;
-            let resources = self
-                .ibl
-                .bake_environment(&self.device, &self.queue, quality)?;
+            let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
             self.ibl_resources = Some(resources);
             self.biome_system.mark_loaded(biome, hdri_path);
 
-            log::info!("Day period changed → {:?} for biome {:?}", period, biome);
+            log::info!(
+                "Day period changed → {:?} for biome {:?}",
+                period,
+                biome
+            );
         }
 
         Ok(true)
@@ -2791,7 +2787,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         delta_time: f32,
     ) -> Option<astraweave_terrain::biome::BiomeType> {
         // 1. Check for biome transition
-        let new_biome = if let Some(transition) = self.biome_detector.update(climate, x, z, height)
+        let new_biome = if let Some(transition) =
+            self.biome_detector.update(climate, x, z, height)
         {
             self.transition_effect
                 .start(transition.old_biome, transition.new_biome);
@@ -2835,10 +2832,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     /// Configure the biome detector (distance threshold, hysteresis).
-    pub fn set_biome_detector_config(
-        &mut self,
-        config: crate::biome_detector::BiomeDetectorConfig,
-    ) {
+    pub fn set_biome_detector_config(&mut self, config: crate::biome_detector::BiomeDetectorConfig) {
         self.biome_detector = crate::biome_detector::BiomeDetector::new(config);
     }
 

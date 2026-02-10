@@ -47,31 +47,11 @@ impl WeatherMultipliers {
     /// Get the multiplier set for a given weather kind.
     fn for_kind(kind: WeatherKind) -> Self {
         match kind {
-            WeatherKind::None => Self {
-                fog: 1.0,
-                ambient: 1.0,
-                particle_density: 0.0,
-            },
-            WeatherKind::Rain => Self {
-                fog: 2.5,
-                ambient: 0.6,
-                particle_density: 1.0,
-            },
-            WeatherKind::Snow => Self {
-                fog: 1.8,
-                ambient: 0.75,
-                particle_density: 1.0,
-            },
-            WeatherKind::Sandstorm => Self {
-                fog: 4.0,
-                ambient: 0.4,
-                particle_density: 1.0,
-            },
-            WeatherKind::WindTrails => Self {
-                fog: 1.4,
-                ambient: 0.9,
-                particle_density: 0.6,
-            },
+            WeatherKind::None => Self { fog: 1.0, ambient: 1.0, particle_density: 0.0 },
+            WeatherKind::Rain => Self { fog: 2.5, ambient: 0.6, particle_density: 1.0 },
+            WeatherKind::Snow => Self { fog: 1.8, ambient: 0.75, particle_density: 1.0 },
+            WeatherKind::Sandstorm => Self { fog: 4.0, ambient: 0.4, particle_density: 1.0 },
+            WeatherKind::WindTrails => Self { fog: 1.4, ambient: 0.9, particle_density: 0.6 },
         }
     }
 
@@ -278,154 +258,57 @@ impl BiomeWeatherMap {
     pub fn weights(biome: BiomeType) -> &'static [WeatherWeight] {
         match biome {
             BiomeType::Forest => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.45,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.35,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.15,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.05,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.45 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.35 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.15 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.05 },
             ],
             BiomeType::Desert => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.60,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Sandstorm,
-                    weight: 0.25,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.12,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.03,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.60 },
+                WeatherWeight { kind: WeatherKind::Sandstorm,  weight: 0.25 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.12 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.03 },
             ],
             BiomeType::Grassland => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.50,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.25,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.20,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.05,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.50 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.25 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.20 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.05 },
             ],
             BiomeType::Mountain => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.30,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.30,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.25,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.15,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.30 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.30 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.25 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.15 },
             ],
             BiomeType::Tundra => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.25,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.50,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.20,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.05,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.25 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.50 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.20 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.05 },
             ],
             BiomeType::Swamp => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.20,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.55,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.15,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.10,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.20 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.55 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.15 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.10 },
             ],
             BiomeType::Beach => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.55,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.20,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.20,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.05,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.55 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.20 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.20 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.05 },
             ],
             BiomeType::River => &[
-                WeatherWeight {
-                    kind: WeatherKind::None,
-                    weight: 0.45,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Rain,
-                    weight: 0.30,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::WindTrails,
-                    weight: 0.20,
-                },
-                WeatherWeight {
-                    kind: WeatherKind::Snow,
-                    weight: 0.05,
-                },
+                WeatherWeight { kind: WeatherKind::None,       weight: 0.45 },
+                WeatherWeight { kind: WeatherKind::Rain,       weight: 0.30 },
+                WeatherWeight { kind: WeatherKind::WindTrails, weight: 0.20 },
+                WeatherWeight { kind: WeatherKind::Snow,       weight: 0.05 },
             ],
             // Fallback for future biome types
-            _ => &[WeatherWeight {
-                kind: WeatherKind::None,
-                weight: 1.0,
-            }],
+            _ => &[
+                WeatherWeight { kind: WeatherKind::None, weight: 1.0 },
+            ],
         }
     }
 
@@ -458,8 +341,7 @@ impl BiomeWeatherMap {
         if total <= 0.0 {
             return 0.0;
         }
-        table
-            .iter()
+        table.iter()
             .find(|w| w.kind == kind)
             .map_or(0.0, |w| w.weight / total)
     }
@@ -467,13 +349,8 @@ impl BiomeWeatherMap {
     /// Get the most likely weather for a biome.
     pub fn most_likely(biome: BiomeType) -> WeatherKind {
         let table = Self::weights(biome);
-        table
-            .iter()
-            .max_by(|a, b| {
-                a.weight
-                    .partial_cmp(&b.weight)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
+        table.iter()
+            .max_by(|a, b| a.weight.partial_cmp(&b.weight).unwrap_or(std::cmp::Ordering::Equal))
             .map_or(WeatherKind::None, |w| w.kind)
     }
 }
@@ -514,56 +391,56 @@ impl BiomeWindProfile {
     pub fn for_biome(biome: BiomeType) -> Self {
         match biome {
             BiomeType::Forest => Self {
-                base_strength: 0.4, // Canopy blocks wind
+                base_strength: 0.4,       // Canopy blocks wind
                 gusty: true,
-                gust_frequency: 0.15, // Occasional gusts through clearings
+                gust_frequency: 0.15,     // Occasional gusts through clearings
                 gust_variance: 0.6,
                 dominant_direction: Vec3::new(0.8, 0.0, 0.6),
             },
             BiomeType::Desert => Self {
-                base_strength: 1.8, // Open terrain, strong winds
+                base_strength: 1.8,       // Open terrain, strong winds
                 gusty: true,
-                gust_frequency: 0.3, // Frequent gusts
-                gust_variance: 1.5,  // Can spike during sandstorms
+                gust_frequency: 0.3,      // Frequent gusts
+                gust_variance: 1.5,       // Can spike during sandstorms
                 dominant_direction: Vec3::new(1.0, 0.0, 0.2),
             },
             BiomeType::Grassland => Self {
-                base_strength: 1.2, // Open terrain, moderate winds
+                base_strength: 1.2,       // Open terrain, moderate winds
                 gusty: true,
                 gust_frequency: 0.2,
                 gust_variance: 0.8,
                 dominant_direction: Vec3::new(0.9, 0.0, 0.4),
             },
             BiomeType::Mountain => Self {
-                base_strength: 2.5, // Strong altitude winds
+                base_strength: 2.5,       // Strong altitude winds
                 gusty: true,
-                gust_frequency: 0.4,                          // Very gusty
-                gust_variance: 2.0,                           // Extreme gusts possible
+                gust_frequency: 0.4,      // Very gusty
+                gust_variance: 2.0,       // Extreme gusts possible
                 dominant_direction: Vec3::new(0.6, 0.0, 0.8), // Cross-slope
             },
             BiomeType::Tundra => Self {
-                base_strength: 2.0, // Arctic winds
+                base_strength: 2.0,       // Arctic winds
                 gusty: true,
                 gust_frequency: 0.25,
                 gust_variance: 1.2,
                 dominant_direction: Vec3::new(0.0, 0.0, 1.0), // From the pole
             },
             BiomeType::Swamp => Self {
-                base_strength: 0.3, // Stagnant air
+                base_strength: 0.3,       // Stagnant air
                 gusty: false,
                 gust_frequency: 0.05,
                 gust_variance: 0.2,
                 dominant_direction: Vec3::new(0.5, 0.0, 0.5),
             },
             BiomeType::Beach => Self {
-                base_strength: 1.5, // Sea breeze
+                base_strength: 1.5,       // Sea breeze
                 gusty: true,
                 gust_frequency: 0.2,
                 gust_variance: 0.9,
                 dominant_direction: Vec3::new(-1.0, 0.0, 0.0), // Onshore
             },
             BiomeType::River => Self {
-                base_strength: 0.8, // Follows the valley
+                base_strength: 0.8,       // Follows the valley
                 gusty: false,
                 gust_frequency: 0.1,
                 gust_variance: 0.4,
@@ -593,24 +470,21 @@ impl BiomeWindProfile {
     pub fn effective_direction(&self, time: f32) -> Vec3 {
         if !self.gusty || self.gust_frequency <= 0.0 {
             let len = self.dominant_direction.length();
-            return if len > 0.001 {
-                self.dominant_direction / len
-            } else {
-                Vec3::X
-            };
+            return if len > 0.001 { self.dominant_direction / len } else { Vec3::X };
         }
-        let angle_offset = (time * self.gust_frequency * std::f32::consts::TAU * 0.7).sin() * 0.52; // ±30° in radians
+        let angle_offset = (time * self.gust_frequency * std::f32::consts::TAU * 0.7).sin()
+            * 0.52; // ±30° in radians
         let cos_a = angle_offset.cos();
         let sin_a = angle_offset.sin();
         let d = self.dominant_direction;
         // Rotate in XZ plane
-        let rotated = Vec3::new(d.x * cos_a - d.z * sin_a, 0.0, d.x * sin_a + d.z * cos_a);
+        let rotated = Vec3::new(
+            d.x * cos_a - d.z * sin_a,
+            0.0,
+            d.x * sin_a + d.z * cos_a,
+        );
         let len = rotated.length();
-        if len > 0.001 {
-            rotated / len
-        } else {
-            Vec3::X
-        }
+        if len > 0.001 { rotated / len } else { Vec3::X }
     }
 }
 
@@ -728,10 +602,7 @@ mod tests {
         let out = wt.outgoing_particle_fade();
         let incoming = wt.incoming_particle_fade();
         assert!(out > 0.3 && out < 0.7, "outgoing at 50% should be ~0.5");
-        assert!(
-            incoming > 0.3 && incoming < 0.7,
-            "incoming at 50% should be ~0.5"
-        );
+        assert!(incoming > 0.3 && incoming < 0.7, "incoming at 50% should be ~0.5");
         assert!((out + incoming - 1.0).abs() < 0.01, "should sum to ~1.0");
 
         // Complete
@@ -855,8 +726,7 @@ mod tests {
                 WeatherKind::Sandstorm,
                 WeatherKind::WindTrails,
             ];
-            let sum: f32 = kinds
-                .iter()
+            let sum: f32 = kinds.iter()
                 .map(|k| BiomeWeatherMap::probability(*biome, *k))
                 .sum();
             assert!(
@@ -869,26 +739,17 @@ mod tests {
 
     #[test]
     fn most_likely_desert_is_none() {
-        assert_eq!(
-            BiomeWeatherMap::most_likely(BiomeType::Desert),
-            WeatherKind::None
-        );
+        assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Desert), WeatherKind::None);
     }
 
     #[test]
     fn most_likely_tundra_is_snow() {
-        assert_eq!(
-            BiomeWeatherMap::most_likely(BiomeType::Tundra),
-            WeatherKind::Snow
-        );
+        assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Tundra), WeatherKind::Snow);
     }
 
     #[test]
     fn most_likely_swamp_is_rain() {
-        assert_eq!(
-            BiomeWeatherMap::most_likely(BiomeType::Swamp),
-            WeatherKind::Rain
-        );
+        assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Swamp), WeatherKind::Rain);
     }
 
     // ── BiomeWindProfile tests ─────────────────────────────────────────
@@ -989,8 +850,8 @@ mod tests {
         let mountain = BiomeWindProfile::for_biome(BiomeType::Mountain);
         let d0 = mountain.effective_direction(0.0);
         let d1 = mountain.effective_direction(2.5); // Different phase
-                                                    // Should be different unless by coincidence
-                                                    // Check that at least some shift occurs across the full cycle
+        // Should be different unless by coincidence
+        // Check that at least some shift occurs across the full cycle
         let mut found_diff = false;
         for i in 0..20 {
             let d = mountain.effective_direction(i as f32 * 0.5);
