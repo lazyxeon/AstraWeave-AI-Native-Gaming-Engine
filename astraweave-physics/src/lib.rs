@@ -1409,7 +1409,7 @@ impl PhysicsWorld {
                 let to_body = body_pos - center;
                 let distance = to_body.length();
 
-                if distance <= /* ~ changed by cargo-mutants ~ */ radius {
+                if distance < radius {
                     affected.push((handle, body_pos, distance, to_body));
                 }
             }
@@ -1419,7 +1419,7 @@ impl PhysicsWorld {
         let count = affected.len();
         for (handle, _body_pos, distance, to_body) in affected {
             let falloff_mult = falloff.calculate(distance, radius);
-            let force_mag = force * falloff_mult;
+            let force_mag = force / /* ~ changed by cargo-mutants ~ */ falloff_mult;
 
             let radial_dir = if distance > 0.001 {
                 to_body.normalize()
