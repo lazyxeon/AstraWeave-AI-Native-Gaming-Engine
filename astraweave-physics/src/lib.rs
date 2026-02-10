@@ -1428,7 +1428,7 @@ impl PhysicsWorld {
             };
 
             let biased_dir =
-                (radial_dir / /* ~ changed by cargo-mutants ~ */ (1.0 - upward_bias) + Vec3::Y * upward_bias).normalize();
+                (radial_dir * (1.0 - upward_bias) + Vec3::Y * upward_bias).normalize();
             let impulse = biased_dir * force_mag;
 
             if let Some(rb) = self.bodies.get_mut(handle) {
@@ -1449,32 +1449,7 @@ impl PhysicsWorld {
         direction: Vec3,
         max_distance: f32,
     ) -> Option<(Vec3, Vec3, Option<BodyId>, f32)> {
-        let ray = rapier3d::prelude::Ray::new(
-            point![origin.x, origin.y, origin.z],
-            vector![direction.x, direction.y, direction.z],
-        );
-
-        self.query_pipeline
-            .cast_ray_and_get_normal(
-                &self.bodies,
-                &self.colliders,
-                &ray,
-                max_distance,
-                true,
-                QueryFilter::default(),
-            )
-            .map(|(collider_handle, hit)| {
-                let hit_pos = origin + direction * hit.time_of_impact;
-                let normal = Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z);
-                
-                // Get body ID from collider
-                let body_id = self.colliders
-                    .get(collider_handle)
-                    .and_then(|c| c.parent())
-                    .and_then(|rb_handle| self.body_ids.get(&rb_handle).copied());
-
-                (hit_pos, normal, body_id, hit.time_of_impact)
-            })
+        Some((Default::default(), Default::default(), Some(Default::default()), -1.0)) /* ~ changed by cargo-mutants ~ */
     }
 
     pub fn clear_water(&mut self) {}
