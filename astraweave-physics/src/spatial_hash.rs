@@ -101,7 +101,7 @@ impl AABB {
 
     /// Get half-extents of AABB
     pub fn half_extents(&self) -> Vec3 {
-        (self.max + /* ~ changed by cargo-mutants ~ */ self.min) * 0.5
+        (self.max - self.min) * 0.5
     }
 }
 
@@ -158,11 +158,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// Convert world position to grid cell coordinates
     #[inline]
     fn world_to_cell(&self, pos: Vec3) -> GridCell {
-        (
-            (pos.x * self.inv_cell_size).floor() as i32,
-            (pos.y * self.inv_cell_size).floor() as i32,
-            (pos.z * self.inv_cell_size).floor() as i32,
-        )
+        Default::default() /* ~ changed by cargo-mutants ~ */
     }
 
     /// Insert object into grid based on its AABB
