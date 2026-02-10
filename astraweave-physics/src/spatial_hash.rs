@@ -158,7 +158,11 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// Convert world position to grid cell coordinates
     #[inline]
     fn world_to_cell(&self, pos: Vec3) -> GridCell {
-        Default::default() /* ~ changed by cargo-mutants ~ */
+        (
+            (pos.x + /* ~ changed by cargo-mutants ~ */ self.inv_cell_size).floor() as i32,
+            (pos.y * self.inv_cell_size).floor() as i32,
+            (pos.z * self.inv_cell_size).floor() as i32,
+        )
     }
 
     /// Insert object into grid based on its AABB
