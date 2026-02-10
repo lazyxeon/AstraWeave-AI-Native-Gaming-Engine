@@ -1,4 +1,7 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
+use dashmap::DashMap;
+use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -6,9 +9,6 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use lru::LruCache;
-use dashmap::DashMap;
 
 /// Advanced prompt caching system for LLM optimization
 pub struct PromptCache {
@@ -213,9 +213,12 @@ impl PromptCache {
 
         // Check semantic cache if enabled
         if self.config.enable_semantic_cache {
-            if let Some((similar_response, similarity)) = self.find_similar_cached_response(prompt).await? {
+            if let Some((similar_response, similarity)) =
+                self.find_similar_cached_response(prompt).await?
+            {
                 if similarity >= self.config.similarity_threshold {
-                    self.record_semantic_hit(&similar_response.id, similarity).await;
+                    self.record_semantic_hit(&similar_response.id, similarity)
+                        .await;
                     debug!("Semantic cache hit with similarity: {:.3}", similarity);
                     return Ok(CacheLookupResult::SemanticHit(similar_response, similarity));
                 }
@@ -244,7 +247,8 @@ impl PromptCache {
             created_at: now,
             last_accessed: now,
             access_count: 1,
-            ttl_expires_at: now + chrono::Duration::from_std(self.config.entry_ttl).unwrap_or_default(),
+            ttl_expires_at: now
+                + chrono::Duration::from_std(self.config.entry_ttl).unwrap_or_default(),
             response_quality: quality,
             compression_ratio: None, // Would be calculated if compression is enabled
             tags: Vec::new(),
@@ -299,18 +303,21 @@ impl PromptCache {
     /// Get cache performance statistics
     pub async fn get_stats(&self) -> CacheStats {
         let mut stats = self.stats.write().await;
-        
+
         // Update memory usage
         let cache_size = self.cache.read().await.len();
         let hash_cache_size = self.hash_cache.len();
         let semantic_cache_size = self.semantic_cache.read().await.len();
-        
+
         // Rough memory usage estimate
-        stats.memory_usage_mb = ((cache_size + hash_cache_size + semantic_cache_size) * 1024) as f32 / (1024.0 * 1024.0);
-        
+        stats.memory_usage_mb = ((cache_size + hash_cache_size + semantic_cache_size) * 1024)
+            as f32
+            / (1024.0 * 1024.0);
+
         // Update hit rate
         if stats.total_requests > 0 {
-            stats.hit_rate = (stats.cache_hits + stats.semantic_hits) as f32 / stats.total_requests as f32;
+            stats.hit_rate =
+                (stats.cache_hits + stats.semantic_hits) as f32 / stats.total_requests as f32;
         }
 
         stats.last_updated = Utc::now();
@@ -351,11 +358,11 @@ impl PromptCache {
     /// Get cached responses matching a template
     pub async fn get_template_responses(&self, template_id: &str) -> Result<Vec<CachedResponse>> {
         let templates = self.templates.read().await;
-        
+
         if let Some(template) = templates.get(template_id) {
             // Find cached responses that match this template pattern
             let mut matching_responses = Vec::new();
-            
+
             for cached_entry in self.hash_cache.iter() {
                 let cached = cached_entry.value();
                 if self.matches_template(&cached.original_prompt, template) {
@@ -423,12 +430,13 @@ impl PromptCache {
         let mut stats = self.stats.write().await;
         stats.total_requests += 1;
         stats.cache_misses += 1;
-        
+
         // Update average response time
         let total_hits = stats.cache_hits + stats.semantic_hits;
         if total_hits > 0 {
-            stats.average_response_time_ms = 
-                (stats.average_response_time_ms * total_hits as f32 + lookup_time_ms) / (total_hits + 1) as f32;
+            stats.average_response_time_ms = (stats.average_response_time_ms * total_hits as f32
+                + lookup_time_ms)
+                / (total_hits + 1) as f32;
         }
     }
 
@@ -439,10 +447,13 @@ impl PromptCache {
     }
 
     /// Find semantically similar cached response
-    async fn find_similar_cached_response(&self, prompt: &str) -> Result<Option<(CachedResponse, f32)>> {
+    async fn find_similar_cached_response(
+        &self,
+        prompt: &str,
+    ) -> Result<Option<(CachedResponse, f32)>> {
         // This is a simplified implementation
         // In practice, would use embeddings and vector similarity
-        
+
         let semantic_cache = self.semantic_cache.read().await;
         let mut best_match = None;
         let mut best_similarity = 0.0;
@@ -450,8 +461,9 @@ impl PromptCache {
         for entries in semantic_cache.values() {
             for entry in entries {
                 // Calculate similarity (simplified word overlap)
-                let similarity = self.calculate_text_similarity(prompt, &entry.cached_response.original_prompt);
-                
+                let similarity =
+                    self.calculate_text_similarity(prompt, &entry.cached_response.original_prompt);
+
                 if similarity > best_similarity && similarity >= self.config.similarity_threshold {
                     best_similarity = similarity;
                     best_match = Some(entry.cached_response.clone());
@@ -466,16 +478,16 @@ impl PromptCache {
     async fn store_semantic_entry(&self, cached_response: CachedResponse) -> Result<()> {
         // Simplified semantic storage - would use proper embeddings in practice
         let category = self.categorize_prompt(&cached_response.original_prompt);
-        
+
         let mut semantic_cache = self.semantic_cache.write().await;
         let entries = semantic_cache.entry(category).or_insert_with(Vec::new);
-        
+
         let semantic_entry = SemanticCacheEntry {
             cached_response,
             embedding: Vec::new(), // Would be actual embeddings
             similarity_scores: HashMap::new(),
         };
-        
+
         entries.push(semantic_entry);
 
         // Limit semantic cache size
@@ -491,9 +503,7 @@ impl PromptCache {
         let words1: Vec<&str> = text1.split_whitespace().collect();
         let words2: Vec<&str> = text2.split_whitespace().collect();
 
-        let common_words = words1.iter()
-            .filter(|word| words2.contains(word))
-            .count();
+        let common_words = words1.iter().filter(|word| words2.contains(word)).count();
 
         if words1.is_empty() || words2.is_empty() {
             return 0.0;
@@ -541,14 +551,14 @@ impl PromptCache {
         {
             let mut cache = self.cache.write().await;
             let mut to_remove = Vec::new();
-            
+
             // Note: LruCache doesn't have retain method, so we collect keys to remove
             for (key, cached) in cache.iter() {
                 if cached.ttl_expires_at <= now {
                     to_remove.push(key.clone());
                 }
             }
-            
+
             for key in to_remove {
                 cache.pop(&key);
                 invalidated += 1;
@@ -567,7 +577,7 @@ impl PromptCache {
                     !expired
                 });
             }
-            
+
             // Remove empty categories
             semantic_cache.retain(|_, entries| !entries.is_empty());
         }
@@ -632,7 +642,7 @@ mod tests {
     async fn test_prompt_cache_creation() {
         let config = PromptCacheConfig::default();
         let cache = PromptCache::new(config);
-        
+
         let stats = cache.get_stats().await;
         assert_eq!(stats.total_requests, 0);
     }
@@ -640,10 +650,13 @@ mod tests {
     #[tokio::test]
     async fn test_cache_store_and_lookup() {
         let cache = PromptCache::new(PromptCacheConfig::default());
-        
+
         // Store a response
-        cache.store("Test prompt", "Test response", 0.8).await.unwrap();
-        
+        cache
+            .store("Test prompt", "Test response", 0.8)
+            .await
+            .unwrap();
+
         // Look it up
         let result = cache.lookup("Test prompt").await.unwrap();
         match result {
@@ -658,7 +671,7 @@ mod tests {
     #[tokio::test]
     async fn test_cache_miss() {
         let cache = PromptCache::new(PromptCacheConfig::default());
-        
+
         let result = cache.lookup("Non-existent prompt").await.unwrap();
         matches!(result, CacheLookupResult::Miss);
     }
@@ -668,13 +681,16 @@ mod tests {
         let mut config = PromptCacheConfig::default();
         config.entry_ttl = Duration::from_millis(100);
         let cache = PromptCache::new(config);
-        
+
         // Store a response
-        cache.store("Test prompt", "Test response", 0.8).await.unwrap();
-        
+        cache
+            .store("Test prompt", "Test response", 0.8)
+            .await
+            .unwrap();
+
         // Wait for expiration
         tokio::time::sleep(Duration::from_millis(150)).await;
-        
+
         // Should be expired
         let result = cache.lookup("Test prompt").await.unwrap();
         matches!(result, CacheLookupResult::Miss);
@@ -683,11 +699,11 @@ mod tests {
     #[test]
     fn test_text_similarity() {
         let cache = PromptCache::new(PromptCacheConfig::default());
-        
+
         let similarity = cache.calculate_text_similarity("hello world", "hello universe");
         assert!(similarity > 0.0);
         assert!(similarity < 1.0);
-        
+
         let exact_similarity = cache.calculate_text_similarity("hello world", "hello world");
         assert_eq!(exact_similarity, 1.0);
     }

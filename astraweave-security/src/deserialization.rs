@@ -168,4 +168,139 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("too large"));
     }
+
+    // ── Non-existent file tests ──
+
+    #[test]
+    fn test_json_nonexistent_file() {
+        let result: Result<TestData> = parse_json_limited(Path::new("/no/such/file.json"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_toml_nonexistent_file() {
+        let result: Result<TestData> = parse_toml_limited(Path::new("/no/such/file.toml"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ron_nonexistent_file() {
+        let result: Result<TestData> = parse_ron_limited(Path::new("/no/such/file.ron"));
+        assert!(result.is_err());
+    }
+
+    // ── Invalid syntax tests ──
+
+    #[test]
+    fn test_json_invalid_syntax() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "{{broken json").unwrap();
+        let result: Result<TestData> = parse_json_limited(file.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("parse"));
+    }
+
+    #[test]
+    fn test_toml_invalid_syntax() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "= = = not valid toml").unwrap();
+        let result: Result<TestData> = parse_toml_limited(file.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("parse"));
+    }
+
+    #[test]
+    fn test_ron_invalid_syntax() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "(((invalid ron").unwrap();
+        let result: Result<TestData> = parse_ron_limited(file.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("parse"));
+    }
+
+    // ── Empty file tests ──
+
+    #[test]
+    fn test_json_empty_file() {
+        let file = NamedTempFile::new().unwrap();
+        let result: Result<TestData> = parse_json_limited(file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_toml_empty_file() {
+        let file = NamedTempFile::new().unwrap();
+        let result: Result<TestData> = parse_toml_limited(file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ron_empty_file() {
+        let file = NamedTempFile::new().unwrap();
+        let result: Result<TestData> = parse_ron_limited(file.path());
+        assert!(result.is_err());
+    }
+
+    // ── Type mismatch tests ──
+
+    #[test]
+    fn test_json_type_mismatch() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, r#"{{"wrong_field": 123}}"#).unwrap();
+        let result: Result<TestData> = parse_json_limited(file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_toml_type_mismatch() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "wrong_field = 123").unwrap();
+        let result: Result<TestData> = parse_toml_limited(file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ron_type_mismatch() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "(wrong_field: 123)").unwrap();
+        let result: Result<TestData> = parse_ron_limited(file.path());
+        assert!(result.is_err());
+    }
+
+    // ── ReadLimiter direct tests ──
+
+    #[test]
+    fn test_read_limiter_zero_limit() {
+        let data = b"hello";
+        let mut limiter = ReadLimiter::new(&data[..], 0);
+        let mut buf = [0u8; 5];
+        let err = limiter.read(&mut buf).unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn test_read_limiter_exact_boundary() {
+        let data = b"hello";
+        let mut limiter = ReadLimiter::new(&data[..], 5);
+        let mut buf = [0u8; 10];
+        let n = limiter.read(&mut buf).unwrap();
+        assert_eq!(n, 5);
+        assert_eq!(&buf[..n], b"hello");
+        // Next read: remaining=0 → error
+        let err = limiter.read(&mut buf).unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn test_read_limiter_partial_reads() {
+        let data = b"abcdef";
+        let mut limiter = ReadLimiter::new(&data[..], 3);
+        let mut buf = [0u8; 2];
+        let n = limiter.read(&mut buf).unwrap();
+        assert_eq!(n, 2);
+        assert_eq!(&buf[..n], b"ab");
+        let n = limiter.read(&mut buf).unwrap();
+        assert_eq!(n, 1);
+        assert_eq!(&buf[..n], b"c");
+    }
 }

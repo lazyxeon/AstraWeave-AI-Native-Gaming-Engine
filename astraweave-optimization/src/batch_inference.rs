@@ -1,14 +1,14 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
+use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{RwLock, mpsc, oneshot};
-use tokio::time::{timeout, sleep};
+use tokio::sync::{mpsc, oneshot, RwLock};
+use tokio::time::{sleep, timeout};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use futures::future::join_all;
 
 use astraweave_llm::LlmClient;
 
@@ -153,10 +153,7 @@ pub enum BatchingStrategy {
 }
 
 impl BatchInferenceEngine {
-    pub fn new(
-        llm_clients: Vec<Arc<dyn LlmClient>>,
-        config: BatchInferenceConfig,
-    ) -> Self {
+    pub fn new(llm_clients: Vec<Arc<dyn LlmClient>>, config: BatchInferenceConfig) -> Self {
         Self {
             llm_clients,
             config,
@@ -173,7 +170,10 @@ impl BatchInferenceEngine {
             return Err(anyhow!("No LLM clients configured"));
         }
 
-        info!("Starting batch inference engine with {} workers", self.config.worker_count);
+        info!(
+            "Starting batch inference engine with {} workers",
+            self.config.worker_count
+        );
 
         let (shutdown_tx, mut shutdown_rx) = mpsc::unbounded_channel();
         self.shutdown_tx = Some(shutdown_tx);
@@ -211,7 +211,12 @@ impl BatchInferenceEngine {
     }
 
     /// Submit a request for batch processing
-    pub async fn submit_request(&self, prompt: String, parameters: InferenceParameters, priority: RequestPriority) -> Result<oneshot::Receiver<Result<String>>> {
+    pub async fn submit_request(
+        &self,
+        prompt: String,
+        parameters: InferenceParameters,
+        priority: RequestPriority,
+    ) -> Result<oneshot::Receiver<Result<String>>> {
         let (response_tx, response_rx) = oneshot::channel();
 
         let request = BatchRequest {
@@ -220,7 +225,8 @@ impl BatchInferenceEngine {
             parameters,
             priority,
             created_at: Utc::now(),
-            timeout_at: Utc::now() + chrono::Duration::from_std(self.config.request_timeout).unwrap_or_default(),
+            timeout_at: Utc::now()
+                + chrono::Duration::from_std(self.config.request_timeout).unwrap_or_default(),
             response_sender: Some(response_tx),
         };
 
@@ -273,20 +279,12 @@ impl BatchInferenceEngine {
 
             loop {
                 // Get next batch to process
-                let batch = Self::get_next_batch(
-                    &request_queue,
-                    &active_batches,
-                    &config,
-                    worker_id,
-                ).await;
+                let batch =
+                    Self::get_next_batch(&request_queue, &active_batches, &config, worker_id).await;
 
                 if let Some(batch) = batch {
                     // Process the batch
-                    let result = Self::process_batch(
-                        batch,
-                        &llm_clients,
-                        worker_id,
-                    ).await;
+                    let result = Self::process_batch(batch, &llm_clients, worker_id).await;
 
                     // Update metrics and clean up
                     Self::handle_batch_result(result, &active_batches, &metrics).await;
@@ -315,18 +313,11 @@ impl BatchInferenceEngine {
                 // Check if we should create a new batch
                 let should_schedule = {
                     let queue = request_queue.read().await;
-                    
-                    // Schedule if queue is large enough
-                    if queue.len() >= config.min_batch_size {
-                        true
-                    }
-                    // Schedule if timeout reached and queue is not empty
-                    else if !queue.is_empty() && 
-                            (now - last_schedule).to_std().unwrap_or(Duration::ZERO) >= config.batch_timeout {
-                        true
-                    } else {
-                        false
-                    }
+
+                    queue.len() >= config.min_batch_size
+                        || (!queue.is_empty()
+                            && (now - last_schedule).to_std().unwrap_or(Duration::ZERO)
+                                >= config.batch_timeout)
                 };
 
                 if should_schedule {
@@ -358,8 +349,11 @@ impl BatchInferenceEngine {
 
                 // Calculate throughput
                 let completed_diff = m.completed_requests - last_completed;
-                let time_diff = (now - last_time).to_std().unwrap_or(Duration::from_secs(1)).as_secs_f32();
-                
+                let time_diff = (now - last_time)
+                    .to_std()
+                    .unwrap_or(Duration::from_secs(1))
+                    .as_secs_f32();
+
                 if time_diff > 0.0 {
                     m.throughput_requests_per_second = completed_diff as f32 / time_diff;
                 }
@@ -380,8 +374,9 @@ impl BatchInferenceEngine {
     ) -> Option<ActiveBatch> {
         // Find a scheduled batch for this worker
         let mut batches = active_batches.write().await;
-        
-        let batch_id = batches.iter_mut()
+
+        let batch_id = batches
+            .iter_mut()
             .find(|(_, batch)| batch.client_id == worker_id && !batch.processing)
             .map(|(id, batch)| {
                 batch.processing = true;
@@ -398,31 +393,39 @@ impl BatchInferenceEngine {
         worker_id: usize,
     ) -> BatchResult {
         let start_time = std::time::Instant::now();
-        debug!("Processing batch {} with {} requests", batch.id, batch.requests.len());
+        debug!(
+            "Processing batch {} with {} requests",
+            batch.id,
+            batch.requests.len()
+        );
 
         let client = &llm_clients[worker_id % llm_clients.len()];
         let mut success_count = 0;
         let mut failure_count = 0;
 
         // Process requests in parallel within the batch
-        let processing_tasks: Vec<_> = batch.requests.iter().map(|request| {
-            let client = client.clone();
-            let request_id = request.id.clone();
-            let prompt = request.prompt.clone();
-            
-            async move {
-                match client.complete(&prompt).await {
-                    Ok(response) => {
-                        debug!("Request {} completed successfully", request_id);
-                        (request_id, Ok(response))
-                    }
-                    Err(e) => {
-                        warn!("Request {} failed: {}", request_id, e);
-                        (request_id, Err(anyhow!("LLM request failed: {}", e)))
+        let processing_tasks: Vec<_> = batch
+            .requests
+            .iter()
+            .map(|request| {
+                let client = client.clone();
+                let request_id = request.id.clone();
+                let prompt = request.prompt.clone();
+
+                async move {
+                    match client.complete(&prompt).await {
+                        Ok(response) => {
+                            debug!("Request {} completed successfully", request_id);
+                            (request_id, Ok(response))
+                        }
+                        Err(e) => {
+                            warn!("Request {} failed: {}", request_id, e);
+                            (request_id, Err(anyhow!("LLM request failed: {}", e)))
+                        }
                     }
                 }
-            }
-        }).collect();
+            })
+            .collect();
 
         let results = join_all(processing_tasks).await;
 
@@ -480,16 +483,21 @@ impl BatchInferenceEngine {
             m.failed_requests += result.failure_count as u64;
 
             // Update moving averages
-            let total_batches = (m.completed_requests + m.failed_requests) / m.average_batch_size.max(1.0) as u64;
+            let total_batches =
+                (m.completed_requests + m.failed_requests) / m.average_batch_size.max(1.0) as u64;
             if total_batches > 0 {
                 let weight = 1.0 / total_batches as f32;
-                m.average_batch_size = m.average_batch_size * (1.0 - weight) + result.batch_size as f32 * weight;
-                m.average_processing_time_ms = m.average_processing_time_ms * (1.0 - weight) + result.processing_time_ms as f32 * weight;
+                m.average_batch_size =
+                    m.average_batch_size * (1.0 - weight) + result.batch_size as f32 * weight;
+                m.average_processing_time_ms = m.average_processing_time_ms * (1.0 - weight)
+                    + result.processing_time_ms as f32 * weight;
             }
         }
 
-        info!("Completed batch {} with {}/{} successful requests in {}ms",
-              result.batch_id, result.success_count, result.batch_size, result.processing_time_ms);
+        info!(
+            "Completed batch {} with {}/{} successful requests in {}ms",
+            result.batch_id, result.success_count, result.batch_size, result.processing_time_ms
+        );
     }
 
     /// Schedule a new batch from the request queue
@@ -499,7 +507,7 @@ impl BatchInferenceEngine {
         config: &BatchInferenceConfig,
     ) {
         let mut queue = request_queue.write().await;
-        
+
         if queue.is_empty() {
             return;
         }
@@ -533,11 +541,15 @@ impl BatchInferenceEngine {
     }
 
     /// Calculate optimal batch size dynamically
-    fn calculate_dynamic_batch_size(queue: &[BatchRequest], config: &BatchInferenceConfig) -> usize {
+    fn calculate_dynamic_batch_size(
+        queue: &[BatchRequest],
+        config: &BatchInferenceConfig,
+    ) -> usize {
         let queue_size = queue.len();
-        
+
         // Check urgency based on request timeouts
-        let urgent_count = queue.iter()
+        let urgent_count = queue
+            .iter()
             .filter(|req| (req.timeout_at - Utc::now()).num_seconds() < 5)
             .count();
 
@@ -589,15 +601,17 @@ pub async fn batch_inference(
     config: BatchInferenceConfig,
 ) -> Result<Vec<Result<String>>> {
     let mut engine = BatchInferenceEngine::new(vec![llm_client], config);
-    
+
     // Submit all requests
     let mut receivers = Vec::new();
     for prompt in prompts {
-        let receiver = engine.submit_request(
-            prompt,
-            InferenceParameters::default(),
-            RequestPriority::Normal,
-        ).await?;
+        let receiver = engine
+            .submit_request(
+                prompt,
+                InferenceParameters::default(),
+                RequestPriority::Normal,
+            )
+            .await?;
         receivers.push(receiver);
     }
 
@@ -629,7 +643,7 @@ mod tests {
         let llm_client = Arc::new(MockLlm);
         let config = BatchInferenceConfig::default();
         let engine = BatchInferenceEngine::new(vec![llm_client], config);
-        
+
         assert_eq!(engine.llm_clients.len(), 1);
     }
 
@@ -639,11 +653,14 @@ mod tests {
         let config = BatchInferenceConfig::default();
         let engine = BatchInferenceEngine::new(vec![llm_client], config);
 
-        let _receiver = engine.submit_request(
-            "Test prompt".to_string(),
-            InferenceParameters::default(),
-            RequestPriority::Normal,
-        ).await.unwrap();
+        let _receiver = engine
+            .submit_request(
+                "Test prompt".to_string(),
+                InferenceParameters::default(),
+                RequestPriority::Normal,
+            )
+            .await
+            .unwrap();
 
         // Check that request was queued
         let queue_len = engine.request_queue.read().await.len();
@@ -664,17 +681,15 @@ mod tests {
     #[test]
     fn test_dynamic_batch_sizing() {
         let config = BatchInferenceConfig::default();
-        let queue = vec![
-            BatchRequest {
-                id: "1".to_string(),
-                prompt: "Test".to_string(),
-                parameters: InferenceParameters::default(),
-                priority: RequestPriority::Normal,
-                created_at: Utc::now(),
-                timeout_at: Utc::now() + chrono::Duration::seconds(30),
-                response_sender: None,
-            }
-        ];
+        let queue = vec![BatchRequest {
+            id: "1".to_string(),
+            prompt: "Test".to_string(),
+            parameters: InferenceParameters::default(),
+            priority: RequestPriority::Normal,
+            created_at: Utc::now(),
+            timeout_at: Utc::now() + chrono::Duration::seconds(30),
+            response_sender: None,
+        }];
 
         let batch_size = BatchInferenceEngine::calculate_dynamic_batch_size(&queue, &config);
         assert!(batch_size > 0);
