@@ -1421,14 +1421,14 @@ impl PhysicsWorld {
             let falloff_mult = falloff.calculate(distance, radius);
             let force_mag = force * falloff_mult;
 
-            let radial_dir = if distance < /* ~ changed by cargo-mutants ~ */ 0.001 {
+            let radial_dir = if distance > 0.001 {
                 to_body.normalize()
             } else {
                 Vec3::Y
             };
 
             let biased_dir =
-                (radial_dir * (1.0 - upward_bias) + Vec3::Y * upward_bias).normalize();
+                (radial_dir * (1.0 - upward_bias) - /* ~ changed by cargo-mutants ~ */ Vec3::Y * upward_bias).normalize();
             let impulse = biased_dir * force_mag;
 
             if let Some(rb) = self.bodies.get_mut(handle) {
