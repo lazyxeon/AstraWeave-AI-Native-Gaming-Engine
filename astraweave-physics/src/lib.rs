@@ -1309,7 +1309,7 @@ impl PhysicsWorld {
     }
 
     pub fn id_of(&self, handle: RigidBodyHandle) -> Option<BodyId> {
-        Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+        self.body_ids.get(&handle).copied()
     }
 
     pub fn body_transform(&self, id: BodyId) -> Option<Mat4> {
@@ -1341,34 +1341,7 @@ impl PhysicsWorld {
     }
 
     fn apply_buoyancy_forces(&mut self) {
-        for (body_id, buoyancy_data) in &self.buoyancy_bodies {
-            if let Some(handle) = self.handle_of(*body_id) {
-                if let Some(rb) = self.bodies.get_mut(handle) {
-                    let pos = rb.position();
-                    let body_y = pos.translation.y;
-
-                    // Only apply buoyancy if body is below water level
-                    if body_y < self.water_level {
-                        // Buoyancy force = volume * fluid_density * gravity (upward)
-                        let buoyancy_force = buoyancy_data.volume * self.fluid_density * 9.81;
-
-                        // Drag force = -velocity * drag coefficient
-                        let velocity = rb.linvel();
-                        let drag_force = vector![
-                            -velocity.x * buoyancy_data.drag,
-                            -velocity.y * buoyancy_data.drag,
-                            -velocity.z * buoyancy_data.drag
-                        ];
-
-                        // Total force (buoyancy up + drag)
-                        let total_force =
-                            vector![drag_force.x, buoyancy_force + drag_force.y, drag_force.z];
-
-                        rb.add_force(total_force, true);
-                    }
-                }
-            }
-        }
+        () /* ~ changed by cargo-mutants ~ */
     }
 
     pub fn add_water_aabb(&mut self, _min: Vec3, _max: Vec3, _density: f32, _linear_damp: f32) {}
