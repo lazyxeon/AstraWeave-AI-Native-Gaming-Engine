@@ -245,4 +245,89 @@ mod tests {
         assert!(!room.contains(IVec2::new(-1, 5)));
         assert!(!room.contains(IVec2::new(11, 5)));
     }
+
+    // ── Additional layout edge-case tests ──
+
+    #[test]
+    fn test_room_overlaps_true() {
+        let a = Room {
+            bounds: (IVec2::new(0, 0), IVec2::new(10, 10)),
+            connections: vec![],
+        };
+        let b = Room {
+            bounds: (IVec2::new(5, 5), IVec2::new(15, 15)),
+            connections: vec![],
+        };
+        assert!(a.overlaps(&b));
+        assert!(b.overlaps(&a)); // symmetry
+    }
+
+    #[test]
+    fn test_room_overlaps_adjacent_touching() {
+        // Sharing an edge: (0,0)-(10,10) and (10,0)-(20,10)
+        let a = Room {
+            bounds: (IVec2::new(0, 0), IVec2::new(10, 10)),
+            connections: vec![],
+        };
+        let b = Room {
+            bounds: (IVec2::new(10, 0), IVec2::new(20, 10)),
+            connections: vec![],
+        };
+        // Touching at x=10 — overlaps returns true (not strictly separated)
+        assert!(a.overlaps(&b));
+    }
+
+    #[test]
+    fn test_room_overlaps_false_separated() {
+        let a = Room {
+            bounds: (IVec2::new(0, 0), IVec2::new(5, 5)),
+            connections: vec![],
+        };
+        let b = Room {
+            bounds: (IVec2::new(10, 10), IVec2::new(15, 15)),
+            connections: vec![],
+        };
+        assert!(!a.overlaps(&b));
+    }
+
+    #[test]
+    fn test_generate_rooms_zero_count() {
+        let gen = LayoutGenerator::new(IVec2::new(100, 100));
+        let mut rng = SeedRng::new(42, "test");
+        let rooms = gen.generate_rooms(&mut rng, 0);
+        assert!(rooms.is_empty());
+    }
+
+    #[test]
+    fn test_generate_rooms_tiny_grid() {
+        // Grid smaller than room_min_size → can't place any rooms
+        let gen = LayoutGenerator::new(IVec2::new(2, 2));
+        let mut rng = SeedRng::new(42, "test");
+        let rooms = gen.generate_rooms(&mut rng, 5);
+        assert!(rooms.is_empty());
+    }
+
+    #[test]
+    fn test_room_serde_roundtrip() {
+        let room = Room {
+            bounds: (IVec2::new(3, 4), IVec2::new(13, 14)),
+            connections: vec![1, 2, 3],
+        };
+        let json = serde_json::to_string(&room).unwrap();
+        let restored: Room = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.bounds, room.bounds);
+        assert_eq!(restored.connections, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_room_contains_boundary() {
+        let room = Room {
+            bounds: (IVec2::new(5, 5), IVec2::new(10, 10)),
+            connections: vec![],
+        };
+        assert!(room.contains(IVec2::new(5, 5))); // min corner
+        assert!(room.contains(IVec2::new(10, 10))); // max corner
+        assert!(!room.contains(IVec2::new(4, 5))); // just outside x
+        assert!(!room.contains(IVec2::new(5, 11))); // just outside y
+    }
 }

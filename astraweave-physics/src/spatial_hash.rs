@@ -266,7 +266,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
 
     /// Get number of occupied grid cells
     pub fn cell_count(&self) -> usize {
-        0 /* ~ changed by cargo-mutants ~ */
+        self.grid.len()
     }
 
     /// Get grid cell size

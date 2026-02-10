@@ -350,4 +350,95 @@ mod tests {
         let ps = Scene::load_partitioned(GridConfig::default(), StreamingConfig::default());
         assert!(ps.events.is_empty());
     }
+
+    // ── Additional partitioned_scene edge-case tests ──
+
+    #[test]
+    fn test_drain_events_clears_queue() {
+        let mut ps = PartitionedScene::new_default();
+        let coord = GridCoord::new(1, 0, 0);
+        let mut cell_data = CellData::new([1, 0, 0]);
+        cell_data.add_entity(EntityData::new([0.0, 0.0, 0.0]).with_name("a"));
+
+        ps.on_cell_loaded(coord, cell_data);
+        assert!(!ps.events.is_empty());
+
+        let drained = ps.drain_events();
+        assert!(!drained.is_empty());
+        assert!(ps.events.is_empty()); // queue is now empty
+    }
+
+    #[test]
+    fn test_drain_events_empty_returns_empty() {
+        let mut ps = PartitionedScene::new_default();
+        let drained = ps.drain_events();
+        assert!(drained.is_empty());
+    }
+
+    #[test]
+    fn test_query_entities_in_cells_multi() {
+        let mut ps = PartitionedScene::new_default();
+        let a = GridCoord::new(0, 0, 0);
+        let b = GridCoord::new(1, 0, 0);
+
+        let mut data_a = CellData::new([0, 0, 0]);
+        data_a.add_entity(EntityData::new([1.0, 0.0, 0.0]).with_name("e1"));
+        let mut data_b = CellData::new([1, 0, 0]);
+        data_b.add_entity(EntityData::new([2.0, 0.0, 0.0]).with_name("e2"));
+
+        ps.on_cell_loaded(a, data_a);
+        ps.on_cell_loaded(b, data_b);
+
+        let entities = ps.query_entities_in_cells(&[a, b]);
+        assert_eq!(entities.len(), 2);
+    }
+
+    #[test]
+    fn test_query_entities_in_cells_with_missing_coord() {
+        let ps = PartitionedScene::new_default();
+        let missing = GridCoord::new(999, 0, 0);
+        let entities = ps.query_entities_in_cells(&[missing]);
+        assert!(entities.is_empty());
+    }
+
+    #[test]
+    fn test_query_entities_in_cell_missing_returns_none() {
+        let ps = PartitionedScene::new_default();
+        assert!(ps
+            .query_entities_in_cell(GridCoord::new(99, 0, 0))
+            .is_none());
+    }
+
+    #[test]
+    fn test_on_cell_unloaded_non_loaded_cell_still_emits_event() {
+        let mut ps = PartitionedScene::new_default();
+        let coord = GridCoord::new(5, 0, 5);
+
+        // Unload a cell that was never loaded
+        ps.on_cell_unloaded(coord);
+        // Should still emit CellUnloaded
+        assert_eq!(ps.events.len(), 1);
+        assert!(matches!(ps.events[0], SceneEvent::CellUnloaded(_)));
+    }
+
+    #[test]
+    fn test_get_entity_cell_unknown_entity() {
+        let ps = PartitionedScene::new_default();
+        assert!(ps.get_entity_cell(999_999).is_none());
+    }
+
+    #[test]
+    fn test_cell_entities_new_standalone() {
+        let coord = GridCoord::new(7, 3, 1);
+        let ce = CellEntities::new(coord);
+        assert_eq!(ce.cell, coord);
+        assert!(ce.entities.is_empty());
+    }
+
+    #[test]
+    fn test_metrics_accessible() {
+        let ps = PartitionedScene::new_default();
+        let m = ps.metrics();
+        assert_eq!(m.loaded_cells, 0);
+    }
 }

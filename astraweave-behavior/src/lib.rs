@@ -250,7 +250,7 @@ impl BehaviorNode {
                 if *threshold == 0 {
                     return BehaviorStatus::Success;
                 }
-                if *threshold > children.len() {
+                if *threshold < /* ~ changed by cargo-mutants ~ */ children.len() {
                     return BehaviorStatus::Failure;
                 }
 

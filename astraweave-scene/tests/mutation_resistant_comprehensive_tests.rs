@@ -9,7 +9,7 @@
 use astraweave_scene::streaming::*;
 use astraweave_scene::world_partition::*;
 use astraweave_scene::*;
-use glam::{Mat4, Quat, Vec3, Vec4};
+use glam::{Mat4, Quat, Vec3};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TRANSFORM TESTS

@@ -227,4 +227,92 @@ mod tests {
             );
         }
     }
+
+    // ── Additional encounter edge-case tests ──
+
+    #[test]
+    fn test_encounter_constraints_default() {
+        let c = EncounterConstraints::default();
+        assert_eq!(c.bounds.0, IVec2::ZERO);
+        assert_eq!(c.bounds.1, IVec2::new(100, 100));
+        assert!((c.min_spacing - 10.0).abs() < f32::EPSILON);
+        assert!((c.difficulty_range.0 - 1.0).abs() < f32::EPSILON);
+        assert!((c.difficulty_range.1 - 5.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_generate_zero_encounters() {
+        let gen = EncounterGenerator::new(EncounterConstraints::default());
+        let mut rng = SeedRng::new(42, "test");
+        let encounters = gen.generate(&mut rng, 0);
+        assert!(encounters.is_empty());
+    }
+
+    #[test]
+    fn test_generate_tight_spacing_limits_count() {
+        // Very tight spacing in a tiny area → can't fit many encounters
+        let constraints = EncounterConstraints {
+            bounds: (IVec2::ZERO, IVec2::new(5, 5)),
+            min_spacing: 100.0, // much larger than bounds
+            difficulty_range: (1.0, 1.0),
+        };
+        let gen = EncounterGenerator::new(constraints);
+        let mut rng = SeedRng::new(42, "test");
+        let encounters = gen.generate(&mut rng, 50);
+        // Should get at most 1 (or very few), since spacing >> bounds
+        assert!(encounters.len() <= 2);
+    }
+
+    #[test]
+    fn test_encounter_metadata_empty() {
+        let gen = EncounterGenerator::new(EncounterConstraints::default());
+        let mut rng = SeedRng::new(42, "test");
+        let encounters = gen.generate(&mut rng, 5);
+        for enc in &encounters {
+            assert!(enc.metadata.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_encounter_kind_variants_exercised() {
+        // Generate enough to hit all 3 kinds (Combat, Loot, Ambient)
+        let constraints = EncounterConstraints {
+            bounds: (IVec2::ZERO, IVec2::new(1000, 1000)),
+            min_spacing: 1.0,
+            difficulty_range: (1.0, 5.0),
+        };
+        let gen = EncounterGenerator::new(constraints);
+        let mut rng = SeedRng::new(42, "test");
+        let encounters = gen.generate(&mut rng, 30);
+
+        let has_combat = encounters
+            .iter()
+            .any(|e| matches!(e.kind, EncounterKind::Combat { .. }));
+        let has_loot = encounters
+            .iter()
+            .any(|e| matches!(e.kind, EncounterKind::Loot { .. }));
+        let has_ambient = encounters
+            .iter()
+            .any(|e| matches!(e.kind, EncounterKind::Ambient { .. }));
+        assert!(has_combat, "No combat encounters generated");
+        assert!(has_loot, "No loot encounters generated");
+        assert!(has_ambient, "No ambient encounters generated");
+    }
+
+    #[test]
+    fn test_encounter_serde_roundtrip() {
+        let enc = Encounter {
+            kind: EncounterKind::Combat {
+                enemy_types: vec!["goblin".to_string()],
+                count: 3,
+            },
+            position: IVec2::new(10, 20),
+            difficulty: 2.5,
+            metadata: BTreeMap::new(),
+        };
+        let json = serde_json::to_string(&enc).unwrap();
+        let restored: Encounter = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.position, IVec2::new(10, 20));
+        assert!((restored.difficulty - 2.5).abs() < f32::EPSILON);
+    }
 }

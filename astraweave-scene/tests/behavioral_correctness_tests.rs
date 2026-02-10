@@ -796,7 +796,7 @@ fn test_streaming_metrics() {
         loading_cells: usize,
         total_loads: u64,
         total_unloads: u64,
-        failed_loads: u64,
+        _failed_loads: u64,
     }
 
     let mut metrics = StreamingMetrics::default();
