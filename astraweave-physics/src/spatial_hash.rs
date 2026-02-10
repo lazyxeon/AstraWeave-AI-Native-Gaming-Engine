@@ -101,7 +101,7 @@ impl AABB {
 
     /// Get half-extents of AABB
     pub fn half_extents(&self) -> Vec3 {
-        (self.max - self.min) + /* ~ changed by cargo-mutants ~ */ 0.5
+        (self.max + /* ~ changed by cargo-mutants ~ */ self.min) * 0.5
     }
 }
 
