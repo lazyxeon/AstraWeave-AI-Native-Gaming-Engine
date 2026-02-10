@@ -1486,26 +1486,10 @@ impl PhysicsWorld {
         _health: f32,
         _break_impulse: f32,
     ) -> BodyId {
-        Default::default() /* ~ changed by cargo-mutants ~ */
+        self.add_dynamic_box(pos, half, mass, Layers::DEFAULT)
     }
     pub fn break_destructible(&mut self, id: BodyId) {
-        if let Some(h) = self.handle_of(id) {
-            // Remove from Rapier sets
-            self.bodies.remove(
-                h,
-                &mut self.island_mgr,
-                &mut self.colliders,
-                &mut self.joints,
-                &mut self.multibody_joints,
-                true,
-            );
-
-            // Remove from our mappings
-            self.body_ids.remove(&h);
-            self.body_kinds.remove(&h);
-            self.char_map.remove(&id);
-            self.buoyancy_bodies.remove(&id);
-        }
+        () /* ~ changed by cargo-mutants ~ */
     }
 
     #[allow(dead_code)]
