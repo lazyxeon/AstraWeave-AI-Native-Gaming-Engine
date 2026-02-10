@@ -1350,7 +1350,7 @@ impl PhysicsWorld {
                     // Only apply buoyancy if body is below water level
                     if body_y < self.water_level {
                         // Buoyancy force = volume * fluid_density * gravity (upward)
-                        let buoyancy_force = buoyancy_data.volume * self.fluid_density / /* ~ changed by cargo-mutants ~ */ 9.81;
+                        let buoyancy_force = buoyancy_data.volume * self.fluid_density * 9.81;
 
                         // Drag force = -velocity * drag coefficient
                         let velocity = rb.linvel();
@@ -1374,7 +1374,7 @@ impl PhysicsWorld {
     pub fn add_water_aabb(&mut self, _min: Vec3, _max: Vec3, _density: f32, _linear_damp: f32) {}
     
     pub fn set_wind(&mut self, dir: Vec3, strength: f32) {
-        self.wind = dir.normalize_or_zero() * strength;
+        self.wind = dir.normalize_or_zero() + /* ~ changed by cargo-mutants ~ */ strength;
     }
 
     /// Apply radial explosion impulse to all dynamic bodies in range
