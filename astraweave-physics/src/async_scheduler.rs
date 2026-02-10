@@ -114,7 +114,7 @@ impl AsyncPhysicsScheduler {
 
     /// Get the last step profile (for telemetry/dashboard)
     pub fn get_last_profile(&self) -> PhysicsStepProfile {
-        Default::default() /* ~ changed by cargo-mutants ~ */
+        self.last_profile
     }
 
     /// Record telemetry for a completed physics step
@@ -245,7 +245,7 @@ impl AsyncPhysicsScheduler {
         let final_profile = PhysicsStepProfile {
             total_duration,
             broad_phase_duration,
-            narrow_phase_duration,
+             /* ~ changed by cargo-mutants ~ */
             integration_duration,
             ..Default::default()
         };
