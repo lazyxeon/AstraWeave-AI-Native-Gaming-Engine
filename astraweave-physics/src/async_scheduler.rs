@@ -245,7 +245,7 @@ impl AsyncPhysicsScheduler {
         let final_profile = PhysicsStepProfile {
             total_duration,
             broad_phase_duration,
-             /* ~ changed by cargo-mutants ~ */
+            narrow_phase_duration,
             integration_duration,
             ..Default::default()
         };
@@ -290,13 +290,7 @@ impl AsyncPhysicsScheduler {
     /// Export telemetry to JSON file (for benchmark dashboard)
     #[cfg(feature = "serde")]
     pub fn export_telemetry(&self, path: &std::path::Path) -> anyhow::Result<()> {
-        use std::fs;
-        use std::io::Write;
-
-        let json = serde_json::to_string_pretty(&self.last_profile)?;
-        let mut file = fs::File::create(path)?;
-        file.write_all(json.as_bytes())?;
-        Ok(())
+        Ok(()) /* ~ changed by cargo-mutants ~ */
     }
 }
 
