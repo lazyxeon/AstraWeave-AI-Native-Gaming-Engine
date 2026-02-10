@@ -1489,7 +1489,23 @@ impl PhysicsWorld {
         self.add_dynamic_box(pos, half, mass, Layers::DEFAULT)
     }
     pub fn break_destructible(&mut self, id: BodyId) {
-        () /* ~ changed by cargo-mutants ~ */
+        if let Some(h) = self.handle_of(id) {
+            // Remove from Rapier sets
+            self.bodies.remove(
+                h,
+                &mut self.island_mgr,
+                &mut self.colliders,
+                &mut self.joints,
+                &mut self.multibody_joints,
+                true,
+            );
+
+            // Remove from our mappings
+            self.body_ids.remove(&h);
+            self.body_kinds.remove(&h);
+            self.char_map.remove(&id);
+            self.buoyancy_bodies.remove(&id);
+        }
     }
 
     #[allow(dead_code)]
@@ -1504,11 +1520,7 @@ impl PhysicsWorld {
     }
 
     pub fn enable_ccd(&mut self, id: BodyId) {
-        if let Some(h) = self.handle_of(id) {
-            if let Some(rb) = self.bodies.get_mut(h) {
-                rb.enable_ccd(true);
-            }
-        }
+        () /* ~ changed by cargo-mutants ~ */
     }
 
     pub fn add_joint(&mut self, body1: BodyId, body2: BodyId, joint_type: JointType) -> JointId {
