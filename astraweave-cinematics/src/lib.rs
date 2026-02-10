@@ -1716,4 +1716,29 @@ mod tests {
         assert!(s.contains("FxTrigger"));
         assert!(s.contains("explosion"));
     }
+
+    #[test]
+    fn test_time_display_sub_second() {
+        // Test the ms branch (time < 1.0)
+        let t = Time(0.25);
+        let s = format!("{}", t);
+        assert!(s.contains("250ms"));
+    }
+
+    #[test]
+    fn test_track_display_audio() {
+        let audio = Track::audio("thunder.wav", Time(1.5), 0.9);
+        let s = format!("{}", audio);
+        assert!(s.contains("Audio"));
+        assert!(s.contains("thunder.wav"));
+        assert!(s.contains("0.90"));
+    }
+
+    #[test]
+    fn test_track_display_fx() {
+        let fx = Track::fx("smoke", Time(2.0), serde_json::json!({"density": 0.5}));
+        let s = format!("{}", fx);
+        assert!(s.contains("Fx"));
+        assert!(s.contains("smoke"));
+    }
 }

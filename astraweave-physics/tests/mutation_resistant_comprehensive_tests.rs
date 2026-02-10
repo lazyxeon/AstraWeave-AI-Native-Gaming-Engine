@@ -1746,11 +1746,31 @@ mod misc_types_mutations {
 
     #[test]
     fn actor_kind_predicates() {
+        // Positive assertions
         assert!(ActorKind::Static.is_static());
-        assert!(!ActorKind::Static.is_dynamic());
         assert!(ActorKind::Dynamic.is_dynamic());
         assert!(ActorKind::Character.is_character());
         assert!(ActorKind::Other.is_other());
+        
+        // Negative assertions for is_static (kills mutation "replace is_static with true")
+        assert!(!ActorKind::Dynamic.is_static());
+        assert!(!ActorKind::Character.is_static());
+        assert!(!ActorKind::Other.is_static());
+        
+        // Negative assertions for is_dynamic (kills mutation "replace is_dynamic with true")
+        assert!(!ActorKind::Static.is_dynamic());
+        assert!(!ActorKind::Character.is_dynamic());
+        assert!(!ActorKind::Other.is_dynamic());
+        
+        // Negative assertions for is_character (kills mutation "replace is_character with true")
+        assert!(!ActorKind::Static.is_character());
+        assert!(!ActorKind::Dynamic.is_character());
+        assert!(!ActorKind::Other.is_character());
+        
+        // Negative assertions for is_other (kills mutation "replace is_other with true")
+        assert!(!ActorKind::Static.is_other());
+        assert!(!ActorKind::Dynamic.is_other());
+        assert!(!ActorKind::Character.is_other());
     }
 
     #[test]
@@ -1777,10 +1797,88 @@ mod misc_types_mutations {
         assert!((line.length() - 5.0).abs() < 1e-4); // 3-4-5 triangle
     }
 
+    /// Test that catches mutation "replace - with + in dy calculation"
+    /// By using non-zero start Y coordinate, we can detect the sign error.
+    /// start=[1,2,3], end=[4,6,3] → dx=3, dy=4, dz=0 → length=5
+    /// With mutation: dy=6+2=8 → length=sqrt(9+64+0)=8.54 ≠ 5
+    #[test]
+    fn debug_line_length_nonzero_start_y() {
+        let line = DebugLine::new([1.0, 2.0, 3.0], [4.0, 6.0, 3.0], [1.0, 0.0, 0.0]);
+        // dx = 4-1 = 3, dy = 6-2 = 4, dz = 3-3 = 0 → length = 5.0
+        assert!((line.length() - 5.0).abs() < 1e-4, "length={}, expected 5.0", line.length());
+    }
+
+    /// Additional mutation killer: negative Y direction
+    /// start=[0,10,0], end=[0,2,0] → dy=-8, length=8
+    /// With mutation: dy=2+10=12 → length=12 ≠ 8
+    #[test]
+    fn debug_line_length_negative_y_direction() {
+        let line = DebugLine::new([0.0, 10.0, 0.0], [0.0, 2.0, 0.0], [1.0, 0.0, 0.0]);
+        // dy = 2 - 10 = -8, length = 8.0
+        assert!((line.length() - 8.0).abs() < 1e-4, "length={}, expected 8.0", line.length());
+    }
+
+    /// Test with all non-zero coordinates to catch any axis mutation
+    #[test]
+    fn debug_line_length_all_nonzero() {
+        let line = DebugLine::new([1.0, 2.0, 3.0], [2.0, 4.0, 5.0], [1.0, 0.0, 0.0]);
+        // dx = 1, dy = 2, dz = 2 → length = sqrt(1+4+4) = 3.0
+        assert!((line.length() - 3.0).abs() < 1e-4, "length={}, expected 3.0", line.length());
+    }
+
+    /// Mutation killer: catches `*` → `+` mutations in the squared distance formula.
+    /// Uses deltas that are NOT 0 or 2 (where x*x == x+x), ensuring all square terms
+    /// give different results when mutated.
+    /// dx=3, dy=4, dz=5: correct=sqrt(9+16+25)=sqrt(50)=7.07
+    /// With dx*dx→dx+dx: sqrt(6+16+25)=sqrt(47)=6.86 ≠ 7.07
+    /// With dy*dy→dy+dy: sqrt(9+8+25)=sqrt(42)=6.48 ≠ 7.07
+    /// With dz*dz→dz+dz: sqrt(9+16+10)=sqrt(35)=5.92 ≠ 7.07
+    #[test]
+    fn debug_line_length_multiply_mutation_killer() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 5.0], [1.0, 0.0, 0.0]);
+        // dx=3, dy=4, dz=5 → length = sqrt(9+16+25) = sqrt(50) = 7.0710678...
+        let expected = 50.0_f32.sqrt();
+        assert!(
+            (line.length() - expected).abs() < 1e-4,
+            "length={}, expected {}",
+            line.length(),
+            expected
+        );
+    }
+
     #[test]
     fn debug_line_length_squared() {
         let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 0.0], [1.0, 0.0, 0.0]);
         assert!((line.length_squared() - 25.0).abs() < 1e-4);
+    }
+
+    /// Mutation killer: catches `+` → `-` and `*` → `+` mutations in length_squared.
+    /// Uses deltas that are NOT 0 or 2, ensuring all squared terms differ when mutated.
+    /// dx=3, dy=4, dz=5: correct = 9+16+25 = 50
+    /// With first +→-: 9-16+25 = 18 ≠ 50
+    /// With dx*dx→dx+dx: 6+16+25 = 47 ≠ 50
+    #[test]
+    fn debug_line_length_squared_mutation_killer() {
+        let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 5.0], [1.0, 0.0, 0.0]);
+        // dx=3, dy=4, dz=5 → length_squared = 9+16+25 = 50
+        assert!(
+            (line.length_squared() - 50.0).abs() < 1e-4,
+            "length_squared={}, expected 50.0",
+            line.length_squared()
+        );
+    }
+
+    /// Additional tests for length_squared to catch all arithmetic mutations
+    #[test]
+    fn debug_line_length_squared_all_axis_mutations() {
+        // Use different values on all axes to catch any axis-specific mutation
+        let line = DebugLine::new([1.0, 2.0, 3.0], [4.0, 6.0, 8.0], [1.0, 0.0, 0.0]);
+        // dx=3, dy=4, dz=5 → length_squared = 9+16+25 = 50
+        assert!(
+            (line.length_squared() - 50.0).abs() < 1e-4,
+            "length_squared={}, expected 50.0",
+            line.length_squared()
+        );
     }
 
     #[test]
@@ -1808,6 +1906,44 @@ mod misc_types_mutations {
 
         let line2 = DebugLine::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert!(!line2.is_degenerate());
+    }
+
+    /// Mutation killer: catches `<` → `<=` mutation in is_degenerate threshold.
+    /// The threshold is 1e-10, so length_squared exactly at 1e-10 should NOT be degenerate.
+    /// With mutation: length_squared <= 1e-10 would make it degenerate → test fails.
+    /// sqrt(1e-10) ≈ 1e-5 = 0.00001, so we need length = 1e-5 to get length_squared = 1e-10.
+    #[test]
+    fn debug_line_degenerate_boundary() {
+        // length_squared = 1e-10 exactly (at boundary)
+        // dx = sqrt(1e-10) = 1e-5, dy = 0, dz = 0
+        let dx = 1e-5_f32; // sqrt(1e-10)
+        let line = DebugLine::new([0.0, 0.0, 0.0], [dx, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        let len_sq = line.length_squared();
+        // Verify we're at the boundary
+        assert!(
+            (len_sq - 1e-10).abs() < 1e-15,
+            "length_squared={}, expected 1e-10",
+            len_sq
+        );
+        // At exactly 1e-10, is_degenerate uses < (not <=), so it should return FALSE
+        assert!(
+            !line.is_degenerate(),
+            "Line with length_squared=1e-10 should NOT be degenerate (< vs <=)"
+        );
+
+        // Just under the threshold should be degenerate
+        let smaller = DebugLine::new([0.0, 0.0, 0.0], [dx * 0.9, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert!(
+            smaller.is_degenerate(),
+            "Line with length_squared < 1e-10 should be degenerate"
+        );
+
+        // Just over the threshold should NOT be degenerate
+        let larger = DebugLine::new([0.0, 0.0, 0.0], [dx * 1.1, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        assert!(
+            !larger.is_degenerate(),
+            "Line with length_squared > 1e-10 should NOT be degenerate"
+        );
     }
 
     #[test]

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use lru::LruCache;
@@ -185,11 +185,14 @@ impl PromptCache {
         // Check exact hash match first
         if let Some(cached) = self.hash_cache.get(&prompt_hash) {
             if !self.is_expired(&cached) {
-                self.record_hit(&cached.id).await;
+                let response_id = cached.id.clone();
+                let cloned = cached.clone();
+                drop(cached); // Release DashMap read lock before record_hit
+                self.record_hit(&response_id).await;
                 debug!("Cache hit for prompt hash: {}", prompt_hash);
-                return Ok(CacheLookupResult::ExactHit(cached.clone()));
+                return Ok(CacheLookupResult::ExactHit(cloned));
             } else {
-                // Remove expired entry
+                drop(cached); // Release read lock before remove
                 self.hash_cache.remove(&prompt_hash);
             }
         }
@@ -385,7 +388,7 @@ impl PromptCache {
     async fn record_hit(&self, response_id: &str) {
         // Update access information in hash cache
         for mut cached_entry in self.hash_cache.iter_mut() {
-            let mut cached = cached_entry.value_mut();
+            let cached = cached_entry.value_mut();
             if cached.id == response_id {
                 cached.last_accessed = Utc::now();
                 cached.access_count += 1;
@@ -400,7 +403,7 @@ impl PromptCache {
     }
 
     /// Record a semantic cache hit
-    async fn record_semantic_hit(&self, response_id: &str, similarity: f32) {
+    async fn record_semantic_hit(&self, response_id: &str, _similarity: f32) {
         self.record_hit(response_id).await;
 
         let mut stats = self.stats.write().await;

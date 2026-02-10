@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{RwLock, mpsc, oneshot};
 use tokio::time::{timeout, sleep};
-use tracing::{debug, info, warn, error};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use futures::future::join_all;
@@ -373,9 +373,9 @@ impl BatchInferenceEngine {
 
     /// Get the next batch for a worker to process
     async fn get_next_batch(
-        request_queue: &Arc<RwLock<Vec<BatchRequest>>>,
+        _request_queue: &Arc<RwLock<Vec<BatchRequest>>>,
         active_batches: &Arc<RwLock<HashMap<String, ActiveBatch>>>,
-        config: &BatchInferenceConfig,
+        _config: &BatchInferenceConfig,
         worker_id: usize,
     ) -> Option<ActiveBatch> {
         // Find a scheduled batch for this worker
@@ -401,7 +401,6 @@ impl BatchInferenceEngine {
         debug!("Processing batch {} with {} requests", batch.id, batch.requests.len());
 
         let client = &llm_clients[worker_id % llm_clients.len()];
-        let mut results = Vec::new();
         let mut success_count = 0;
         let mut failure_count = 0;
 
@@ -425,14 +424,14 @@ impl BatchInferenceEngine {
             }
         }).collect();
 
-        results = join_all(processing_tasks).await;
+        let results = join_all(processing_tasks).await;
 
         // Send results back to requesters
         let results_stringified: Vec<(String, Result<String, String>)> = results
             .into_iter()
             .map(|(id, r)| (id, r.map_err(|e| format!("{}", e))))
             .collect();
-        for (i, (request_id, result)) in results_stringified.iter().enumerate() {
+        for (i, (_request_id, result)) in results_stringified.iter().enumerate() {
             if let Some(request) = batch.requests.get_mut(i) {
                 if let Some(sender) = request.response_sender.take() {
                     let sendable = match result {
@@ -623,11 +622,11 @@ pub async fn batch_inference(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_llm::MockLlmClient;
+    use astraweave_llm::MockLlm;
 
     #[tokio::test]
     async fn test_batch_inference_engine_creation() {
-        let llm_client = Arc::new(MockLlmClient::new());
+        let llm_client = Arc::new(MockLlm);
         let config = BatchInferenceConfig::default();
         let engine = BatchInferenceEngine::new(vec![llm_client], config);
         
@@ -636,11 +635,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_request_submission() {
-        let llm_client = Arc::new(MockLlmClient::new());
+        let llm_client = Arc::new(MockLlm);
         let config = BatchInferenceConfig::default();
         let engine = BatchInferenceEngine::new(vec![llm_client], config);
 
-        let receiver = engine.submit_request(
+        let _receiver = engine.submit_request(
             "Test prompt".to_string(),
             InferenceParameters::default(),
             RequestPriority::Normal,
@@ -653,7 +652,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_batch_metrics() {
-        let llm_client = Arc::new(MockLlmClient::new());
+        let llm_client = Arc::new(MockLlm);
         let config = BatchInferenceConfig::default();
         let engine = BatchInferenceEngine::new(vec![llm_client], config);
 
