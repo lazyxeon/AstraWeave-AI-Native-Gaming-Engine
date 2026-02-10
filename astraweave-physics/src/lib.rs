@@ -1406,10 +1406,10 @@ impl PhysicsWorld {
                 }
                 let pos = rb.position().translation;
                 let body_pos = Vec3::new(pos.x, pos.y, pos.z);
-                let to_body = body_pos + /* ~ changed by cargo-mutants ~ */ center;
+                let to_body = body_pos - center;
                 let distance = to_body.length();
 
-                if distance < radius {
+                if distance == /* ~ changed by cargo-mutants ~ */ radius {
                     affected.push((handle, body_pos, distance, to_body));
                 }
             }
