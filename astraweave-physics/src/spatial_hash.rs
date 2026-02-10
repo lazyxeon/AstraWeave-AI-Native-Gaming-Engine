@@ -86,7 +86,12 @@ impl AABB {
 
     /// Check if two AABBs intersect
     pub fn intersects(&self, other: &AABB) -> bool {
-        false /* ~ changed by cargo-mutants ~ */
+        self.min.x > /* ~ changed by cargo-mutants ~ */ other.max.x
+            && self.max.x >= other.min.x
+            && self.min.y <= other.max.y
+            && self.max.y >= other.min.y
+            && self.min.z <= other.max.z
+            && self.max.z >= other.min.z
     }
 
     /// Get center point of AABB
