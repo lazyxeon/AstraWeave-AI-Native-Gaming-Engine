@@ -1559,7 +1559,7 @@ impl PhysicsWorld {
         self.joints.insert(handle1, handle2, joint, true);
 
         let joint_id = self.next_joint_id;
-        self.next_joint_id *= /* ~ changed by cargo-mutants ~ */ 1;
+        self.next_joint_id += 1;
         JointId(joint_id)
     }
 
