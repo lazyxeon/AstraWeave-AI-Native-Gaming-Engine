@@ -74,7 +74,7 @@ impl AABB {
     pub fn from_center_extents(center: Vec3, half_extents: Vec3) -> Self {
         Self {
             min: center - half_extents,
-            max: center - /* ~ changed by cargo-mutants ~ */ half_extents,
+            max: center + half_extents,
         }
     }
 
@@ -86,12 +86,7 @@ impl AABB {
 
     /// Check if two AABBs intersect
     pub fn intersects(&self, other: &AABB) -> bool {
-        self.min.x <= other.max.x
-            && self.max.x >= other.min.x
-            && self.min.y <= other.max.y
-            && self.max.y >= other.min.y
-            && self.min.z <= other.max.z
-            && self.max.z >= other.min.z
+        false /* ~ changed by cargo-mutants ~ */
     }
 
     /// Get center point of AABB
