@@ -31,56 +31,7 @@ fn sys_move(world: &mut ecs::World) {
     // Note: no collision here—Phase 1 minimal behavior
     // Read positions and desired goals, mutate positions
     // We purposely run after sim (cooldowns)
-    use std::collections::BTreeMap;
-    let goals: BTreeMap<ecs::Entity, CDesiredPos> = {
-        let mut m = BTreeMap::new();
-        let q = ecs::Query::<CDesiredPos>::new(&*world);
-        for (e, g) in q {
-            m.insert(e, *g);
-        }
-        m
-    };
-    let mut moved: Vec<(ecs::Entity, IVec2, IVec2)> = vec![];
-    world.each_mut::<CPos>(|e, p| {
-        if let Some(goal) = goals.get(&e) {
-            let dx = (goal.pos.x - p.pos.x).signum();
-            let mut dy = (goal.pos.y - p.pos.y).signum();
-            // Cardinal-only behavior: prefer moving along X this tick; if we move in X,
-            // do not also move in Y (prevents diagonal movement).
-            if dx != 0 {
-                dy = 0;
-            }
-            if dx != 0 || dy != 0 {
-                let from = IVec2 {
-                    x: p.pos.x,
-                    y: p.pos.y,
-                };
-                if dx != 0 {
-                    p.pos.x += dx;
-                } else if dy != 0 {
-                    p.pos.y += dy;
-                }
-                moved.push((
-                    e,
-                    from,
-                    IVec2 {
-                        x: p.pos.x,
-                        y: p.pos.y,
-                    },
-                ));
-            }
-        }
-    });
-    if let Some(ev) = world.get_resource_mut::<Events<MovedEvent>>() {
-        let mut w = ev.writer();
-        for (e, from, to) in moved {
-            w.send(MovedEvent {
-                entity: e,
-                from,
-                to,
-            });
-        }
-    }
+    () /* ~ changed by cargo-mutants ~ */
 }
 
 fn sys_refresh_los(world: &mut ecs::World) {
