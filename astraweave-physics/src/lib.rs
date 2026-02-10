@@ -1348,9 +1348,9 @@ impl PhysicsWorld {
                     let body_y = pos.translation.y;
 
                     // Only apply buoyancy if body is below water level
-                    if body_y > /* ~ changed by cargo-mutants ~ */ self.water_level {
+                    if body_y < self.water_level {
                         // Buoyancy force = volume * fluid_density * gravity (upward)
-                        let buoyancy_force = buoyancy_data.volume * self.fluid_density * 9.81;
+                        let buoyancy_force = buoyancy_data.volume * self.fluid_density / /* ~ changed by cargo-mutants ~ */ 9.81;
 
                         // Drag force = -velocity * drag coefficient
                         let velocity = rb.linvel();
