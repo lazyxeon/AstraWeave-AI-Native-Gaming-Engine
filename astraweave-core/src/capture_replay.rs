@@ -22,13 +22,7 @@ struct WorldSerde {
 
 impl From<&World> for WorldSerde {
     fn from(w: &World) -> Self {
-        let mut obstacles: Vec<(i32, i32)> = w.obstacles.iter().copied().collect();
-        obstacles.sort_unstable();
-        WorldSerde {
-            t: w.t,
-            next_id: w.next_id,
-            obstacles,
-        }
+        Default::default() /* ~ changed by cargo-mutants ~ */
     }
 }
 
