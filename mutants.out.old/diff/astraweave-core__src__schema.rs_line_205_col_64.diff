@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace <= with > in WorldSnapshot::enemies_within_range
+@@ -197,17 +197,17 @@
+             .iter()
+             .min_by_key(|e| self.me.pos.distance_squared(&e.pos))
+     }
+ 
+     /// Returns enemies within the given Manhattan distance from the companion.
+     pub fn enemies_within_range(&self, range: i32) -> Vec<&EnemyState> {
+         self.enemies
+             .iter()
+-            .filter(|e| self.me.pos.manhattan_distance(&e.pos) <= range)
++            .filter(|e| self.me.pos.manhattan_distance(&e.pos) > /* ~ changed by cargo-mutants ~ */ range)
+             .collect()
+     }
+ 
+     /// Returns `true` if the companion has ammo.
+     pub fn has_ammo(&self) -> bool {
+         self.me.ammo > 0
+     }
+ 

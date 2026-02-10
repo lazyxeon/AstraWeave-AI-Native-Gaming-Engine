@@ -253,6 +253,12 @@ mod tests {
         let buffer = CommandBuffer::with_capacity(10);
         assert_eq!(buffer.len(), 0);
         assert!(buffer.is_empty());
+        // Verify pre-allocation actually happened (kills → Default::default())
+        assert!(
+            buffer.commands.capacity() >= 10,
+            "with_capacity(10) must pre-allocate, got capacity {}",
+            buffer.commands.capacity()
+        );
     }
 
     #[test]

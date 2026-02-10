@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace PlanIntent::step_count -> usize with 0
+@@ -331,17 +331,17 @@
+ 
+     /// Returns `true` if the plan has no steps.
+     pub fn is_empty(&self) -> bool {
+         self.steps.is_empty()
+     }
+ 
+     /// Returns the number of steps in the plan.
+     pub fn step_count(&self) -> usize {
+-        self.steps.len()
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Adds a step to the plan and returns self.
+     pub fn with_step(mut self, step: ActionStep) -> Self {
+         self.steps.push(step);
+         self
+     }
+ 

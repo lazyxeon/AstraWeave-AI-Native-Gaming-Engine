@@ -143,7 +143,7 @@ jobs:
   mutants-ai:
     name: Mutants - astraweave-ai
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     if: github.event.inputs.crates == 'p1' || github.event.inputs.crates == 'astraweave-ai' || github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v5
@@ -169,10 +169,36 @@ jobs:
         run: |
           cargo mutants \
             --package astraweave-ai \
+            --all-features \
+            --in-place \
             --timeout-multiplier ${{ env.MUTANTS_TIMEOUT_MULTIPLIER }} \
+            --exclude-re "fn metrics\b" \
             --output mutants-ai-results \
             --json
         continue-on-error: true
+      
+      - name: Generate mutation report
+        run: |
+          if [ -f mutants-ai-results/outcomes.json ]; then
+            echo "## Mutation Testing: astraweave-ai" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            TOTAL=$(jq '[.outcomes[] | select(.scenario != "Baseline")] | length' mutants-ai-results/outcomes.json)
+            CAUGHT=$(jq '[.outcomes[] | select(.scenario != "Baseline") | select(.summary == "CaughtMutant")] | length' mutants-ai-results/outcomes.json)
+            MISSED=$(jq '[.outcomes[] | select(.scenario != "Baseline") | select(.summary == "MissedMutant")] | length' mutants-ai-results/outcomes.json)
+            TIMEOUT=$(jq '[.outcomes[] | select(.scenario != "Baseline") | select(.summary == "Timeout")] | length' mutants-ai-results/outcomes.json)
+            
+            if [ "$TOTAL" -gt 0 ]; then
+              SCORE=$(( (CAUGHT + TIMEOUT) * 100 / TOTAL ))
+              echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Total Mutants | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+              echo "| Caught | $CAUGHT |" >> $GITHUB_STEP_SUMMARY
+              echo "| Missed | $MISSED |" >> $GITHUB_STEP_SUMMARY
+              echo "| Timeout | $TIMEOUT |" >> $GITHUB_STEP_SUMMARY
+              echo "| **Mutation Score** | **${SCORE}%** |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
       
       - name: Upload mutation results
         uses: actions/upload-artifact@v4

@@ -163,7 +163,7 @@ flowchart TB
 -   **Test Coverage**: 94.57% (25/25 crates validated)
 -   **Mutation Testing**: 767 mutation-killing tests (3,040+ total)
 -   **Memory Safety**: Miri-validated (977 tests, 0 undefined behavior)
--   **Performance**: 60 FPS @ 12,700 agents
+-   **Performance**: 60 FPS @ 12,700 agents (benchmarked on HP Pavilion Gaming Laptop — see [full spec sheet](docs/masters/MASTER_BENCHMARK_REPORT.md#benchmark-hardware))
 -   **Security**: A- (92/100)
 
 ---

@@ -1,0 +1,7 @@
+astraweave-physics/src/lib.rs:164:9: replace ActorKind::name -> &'static str with ""
+astraweave-physics/src/lib.rs:164:9: replace ActorKind::name -> &'static str with "xyzzy"
+astraweave-physics/src/lib.rs:175:9: replace ActorKind::is_static -> bool with true
+astraweave-physics/src/lib.rs:175:9: replace ActorKind::is_static -> bool with false
+astraweave-physics/src/lib.rs:181:9: replace ActorKind::is_dynamic -> bool with true
+astraweave-physics/src/lib.rs:181:9: replace ActorKind::is_dynamic -> bool with false
+astraweave-physics/src/lib.rs:187:9: replace ActorKind::is_character -> bool with true

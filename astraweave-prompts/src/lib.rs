@@ -1614,4 +1614,111 @@ mod tests {
         let display = format!("{}", metrics);
         assert_eq!(display, "No renders");
     }
+
+    // ========================================================
+    // Mutation remediation: boundary tests for < vs <= mutations
+    // ========================================================
+
+    #[test]
+    fn formatted_render_time_boundary_at_exactly_1_0() {
+        // Mutant: `< 1.0` → `<= 1.0` would put 1.0 in sub-ms branch ("{:.2}ms" → "1.00ms")
+        let mut stats = UsageStats::new();
+        stats.avg_render_time_ms = 1.0;
+        assert_eq!(stats.formatted_render_time(), "1.0ms", "1.0 should use ms-1dp format");
+    }
+
+    #[test]
+    fn formatted_render_time_boundary_at_exactly_1000_0() {
+        // Mutant: `< 1000.0` → `<= 1000.0` would put 1000.0 in ms branch ("1000.0ms")
+        let mut stats = UsageStats::new();
+        stats.avg_render_time_ms = 1000.0;
+        assert_eq!(stats.formatted_render_time(), "1.00s", "1000.0 should use seconds format");
+    }
+
+    #[test]
+    fn formatted_total_time_boundary_at_exactly_1000() {
+        // Mutant: `< 1000` → `<= 1000` would put 1000 in ms branch ("1000ms")
+        let mut metrics = RenderMetrics::new();
+        metrics.total_render_time_ms = 1000;
+        assert_eq!(metrics.formatted_total_time(), "1.00s", "1000ms should use seconds format");
+    }
+
+    #[test]
+    fn formatted_total_time_boundary_at_exactly_60000() {
+        // Mutant: `< 60000` → `<= 60000` would put 60000 in seconds branch ("60.00s")
+        let mut metrics = RenderMetrics::new();
+        metrics.total_render_time_ms = 60000;
+        assert_eq!(metrics.formatted_total_time(), "1.00m", "60000ms should use minutes format");
+    }
+
+    #[test]
+    fn update_avg_time_single_render() {
+        // Mutant: `> 0.0` → `>= 0.0` changes behavior when new_count == 0
+        // After 1 success: prev_count=0, new_count=1, avg = (0*0 + 50) / 1 = 50
+        let mut metrics = RenderMetrics::new();
+        metrics.record_success(50.0);
+        assert!((metrics.avg_render_time_ms - 50.0).abs() < 0.01,
+            "First render avg should be 50.0, got {}", metrics.avg_render_time_ms);
+    }
+
+    #[test]
+    fn update_avg_time_two_renders() {
+        // After 2 successes of 50 and 100: avg = (50*1 + 100) / 2 = 75
+        let mut metrics = RenderMetrics::new();
+        metrics.record_success(50.0);
+        metrics.record_success(100.0);
+        assert!((metrics.avg_render_time_ms - 75.0).abs() < 0.01,
+            "Two renders avg should be 75.0, got {}", metrics.avg_render_time_ms);
+    }
+
+    // ===== Additional mutation-resistant tests =====
+
+    #[test]
+    fn is_recently_used_exactly_at_24h_boundary() {
+        // Mutant: `< 86400` → `<= 86400`
+        // Set last_used to exactly 86400 seconds ago → NOT recent
+        let now = current_timestamp();
+        let mut stats = UsageStats::new();
+        stats.last_used = Some(now.saturating_sub(86400));
+        assert!(!stats.is_recently_used(),
+            "Exactly 24h ago should NOT be 'recently used' (< vs <=)");
+    }
+
+    #[test]
+    fn is_recently_used_just_within_24h() {
+        // Set last_used to 86399 seconds ago → IS recent
+        let now = current_timestamp();
+        let mut stats = UsageStats::new();
+        stats.last_used = Some(now.saturating_sub(86399));
+        assert!(stats.is_recently_used(),
+            "86399s ago should be 'recently used'");
+    }
+
+    #[test]
+    fn is_recently_used_no_last_used() {
+        let stats = UsageStats::new();
+        assert!(!stats.is_recently_used(), "None last_used → not recent");
+    }
+
+    #[test]
+    fn update_avg_time_total_accumulates_additively() {
+        // Mutant: `+= → *=` in total_render_time_ms
+        // With += : 10 + 20 + 30 = 60
+        // With *= : 0 * 10 * 20 * 30 = 0 (always 0 since initial is 0)
+        let mut metrics = RenderMetrics::new();
+        metrics.record_success(10.0);
+        metrics.record_success(20.0);
+        metrics.record_success(30.0);
+        assert_eq!(metrics.total_render_time_ms, 60,
+            "total_render_time_ms should accumulate additively: 10+20+30=60, got {}",
+            metrics.total_render_time_ms);
+    }
+
+    #[test]
+    fn current_timestamp_returns_nonzero() {
+        // Mutant: `current_timestamp → 0` or `→ 1`
+        // Any time after 1970-01-02 guarantees value > 86400
+        let ts = current_timestamp();
+        assert!(ts > 86400, "current_timestamp must be well past Unix epoch, got {}", ts);
+    }
 }

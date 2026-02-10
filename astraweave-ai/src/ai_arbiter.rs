@@ -1552,10 +1552,11 @@ mod tests {
 
     #[test]
     fn test_ai_control_mode_is_instant() {
-        // GOAP provides instant responses
+        // GOAP and BehaviorTree provide instant responses (in-memory graph traversals)
         assert!(AIControlMode::GOAP.is_instant());
+        assert!(AIControlMode::BehaviorTree.is_instant());
+        // Only ExecutingLLM involves async I/O
         assert!(!AIControlMode::ExecutingLLM { step_index: 0 }.is_instant());
-        assert!(!AIControlMode::BehaviorTree.is_instant());
     }
 
     #[test]
@@ -1648,11 +1649,11 @@ mod tests {
         assert!(!llm.is_fallback());
         assert_eq!(llm.step_index(), Some(3));
 
-        // BehaviorTree: fallback mode, not instant
+        // BehaviorTree: fallback mode, instant (in-memory graph traversal)
         let bt = AIControlMode::BehaviorTree;
         assert!(bt.is_behavior_tree());
         assert!(bt.is_fallback());
-        assert!(!bt.is_instant());
+        assert!(bt.is_instant());
         assert!(bt.step_index().is_none());
     }
 

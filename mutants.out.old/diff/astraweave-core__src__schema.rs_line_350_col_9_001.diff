@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace PlanIntent::first_step -> Option<&ActionStep> with Some(Box::leak(Box::new(Default::default())))
+@@ -342,17 +342,17 @@
+     /// Adds a step to the plan and returns self.
+     pub fn with_step(mut self, step: ActionStep) -> Self {
+         self.steps.push(step);
+         self
+     }
+ 
+     /// Returns the first step, if any.
+     pub fn first_step(&self) -> Option<&ActionStep> {
+-        self.steps.first()
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns `true` if the plan contains any movement actions.
+     pub fn has_movement(&self) -> bool {
+         self.steps.iter().any(|s| s.is_movement())
+     }
+ 
+     /// Returns `true` if the plan contains any offensive actions.

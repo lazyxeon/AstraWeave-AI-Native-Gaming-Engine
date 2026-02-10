@@ -1,0 +1,13 @@
+astraweave-ecs/src/blob_vec.rs:415:26: replace > with < in <impl Drop for BlobVec>::drop
+astraweave-ecs/src/blob_vec.rs:417:41: replace * with + in <impl Drop for BlobVec>::drop
+astraweave-ecs/src/blob_vec.rs:417:41: replace * with / in <impl Drop for BlobVec>::drop
+astraweave-ecs/src/command_buffer.rs:73:9: replace CommandBuffer::with_capacity -> Self with Default::default()
+astraweave-ecs/src/entity_allocator.rs:102:26: replace | with ^ in Entity::to_raw
+astraweave-ecs/src/entity_allocator.rs:135:9: replace Entity::is_null -> bool with true
+astraweave-ecs/src/entity_allocator.rs:135:29: replace && with || in Entity::is_null
+astraweave-ecs/src/entity_allocator.rs:344:9: replace EntityAllocator::generation -> Option<u32> with None
+astraweave-ecs/src/entity_allocator.rs:344:9: replace EntityAllocator::generation -> Option<u32> with Some(0)
+astraweave-ecs/src/entity_allocator.rs:344:9: replace EntityAllocator::generation -> Option<u32> with Some(1)
+astraweave-ecs/src/entity_allocator.rs:362:9: replace EntityAllocator::spawned_count -> u64 with 0
+astraweave-ecs/src/entity_allocator.rs:362:9: replace EntityAllocator::spawned_count -> u64 with 1
+astraweave-ecs/src/entity_allocator.rs:368:9: replace EntityAllocator::despawned_count -> u64 with 0

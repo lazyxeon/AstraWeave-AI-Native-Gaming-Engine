@@ -2351,4 +2351,49 @@ mod tests {
         assert_eq!(plan1, plan2);
         assert_ne!(plan1, plan3);
     }
+
+    // ===== Mutation-resistant CardinalDirection tests =====
+    // Catches: `delete - in to_unit_vector` (West's -1.0 → 1.0, North's -1.0 → 1.0, etc.)
+
+    #[test]
+    fn test_cardinal_west_is_negative_x() {
+        let (x, z) = CardinalDirection::West.to_unit_vector();
+        assert!(x < 0.0, "West x must be negative, got {}", x);
+        assert!((x - (-1.0)).abs() < 0.001);
+        assert!((z - 0.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cardinal_south_is_positive_z() {
+        let (x, z) = CardinalDirection::South.to_unit_vector();
+        assert!((x - 0.0).abs() < 0.001);
+        assert!((z - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cardinal_northwest_both_components() {
+        let (x, z) = CardinalDirection::NorthWest.to_unit_vector();
+        assert!(x < 0.0, "NW x must be negative");
+        assert!(z < 0.0, "NW z must be negative");
+        assert!((x - (-0.707)).abs() < 0.001);
+        assert!((z - (-0.707)).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cardinal_southwest_sign_check() {
+        let (x, z) = CardinalDirection::SouthWest.to_unit_vector();
+        assert!(x < 0.0, "SW x must be negative");
+        assert!(z > 0.0, "SW z must be positive");
+        assert!((x - (-0.707)).abs() < 0.001);
+        assert!((z - 0.707).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cardinal_southeast_sign_check() {
+        let (x, z) = CardinalDirection::SouthEast.to_unit_vector();
+        assert!(x > 0.0, "SE x must be positive");
+        assert!(z > 0.0, "SE z must be positive");
+        assert!((x - 0.707).abs() < 0.001);
+        assert!((z - 0.707).abs() < 0.001);
+    }
 }

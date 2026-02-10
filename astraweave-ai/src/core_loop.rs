@@ -12,7 +12,7 @@ use anyhow::Result;
 use astraweave_core::{PlanIntent, WorldSnapshot};
 
 #[cfg(feature = "ai-goap")]
-use astraweave_behavior::goap::{Action, GoapPlanner, WorldState};
+use astraweave_behavior::goap::{GoapAction, GoapGoal, GoapPlanner, WorldState};
 
 #[cfg(feature = "ai-goap")]
 use astraweave_core::ActionStep;
@@ -289,35 +289,25 @@ fn dispatch_goap(controller: &CAiController, snapshot: &WorldSnapshot) -> Result
 
     // Define goal based on policy or default
     let goal = if let Some(policy_name) = &controller.policy {
-        // TODO: Load goal from policy configuration
-        // For now, use a simple goal based on policy name
         if policy_name.contains("gather") || policy_name.contains("craft") {
-            WorldState {
-                has_wood: 5,
-                has_food: 1,
-                ..WorldState::default()
-            }
+            GoapGoal::new(
+                "gather_and_craft",
+                WorldState::from_facts(&[("has_wood", true), ("has_food", true)]),
+            )
         } else {
-            WorldState {
-                has_food: 1,
-                ..WorldState::default()
-            }
+            GoapGoal::new("get_food", WorldState::from_facts(&[("has_food", true)]))
         }
     } else {
-        // Default goal: get some food
-        WorldState {
-            has_food: 1,
-            ..WorldState::default()
-        }
+        GoapGoal::new("get_food", WorldState::from_facts(&[("has_food", true)]))
     };
 
     // Define available actions
     let actions = create_goap_actions();
 
     // Run GOAP planner
-    let planner = GoapPlanner::new(actions, 100);
+    let planner = GoapPlanner::new().with_max_iterations(100);
     let plan = planner
-        .plan(&world_state, &goal)
+        .plan(&world_state, &goal, &actions)
         .ok_or_else(|| anyhow::anyhow!("GOAP planning failed - no plan found"))?;
 
     // Convert GOAP action sequence to ActionSteps
@@ -332,86 +322,68 @@ fn dispatch_goap(controller: &CAiController, snapshot: &WorldSnapshot) -> Result
 /// Convert WorldSnapshot to GOAP WorldState.
 #[cfg(feature = "ai-goap")]
 fn snapshot_to_goap_state(snapshot: &WorldSnapshot) -> Result<WorldState> {
-    // Build initial world state from snapshot
-    // For now, use simple mapping based on companion state
-    let state = WorldState {
-        has_wood: 0,                     // Would come from inventory in full system
-        has_food: 0,                     // Would come from inventory in full system
-        at_tree: false,                  // Would come from nearby resource check
-        at_campfire: false,              // Would come from nearby structure check
-        hungry: snapshot.player.hp < 50, // Use player HP as hunger proxy
-    };
-
+    let mut state = WorldState::new();
+    state.set("has_wood", false);
+    state.set("has_food", false);
+    state.set("at_tree", false);
+    state.set("at_campfire", false);
+    state.set("hungry", snapshot.player.hp < 50);
     Ok(state)
 }
 
 /// Create standard GOAP action set for gathering and crafting.
 #[cfg(feature = "ai-goap")]
-fn create_goap_actions() -> Vec<Action> {
+fn create_goap_actions() -> Vec<GoapAction> {
     vec![
-        Action {
-            name: "GoToTree".into(),
-            cost: 5,
-            preconditions: WorldState::default(),
-            effects: WorldState {
-                at_tree: true,
-                ..WorldState::default()
-            },
-        },
-        Action {
-            name: "ChopWood".into(),
-            cost: 10,
-            preconditions: WorldState {
-                at_tree: true,
-                ..WorldState::default()
-            },
-            effects: WorldState {
-                has_wood: 3,
-                at_tree: false,
-                ..WorldState::default()
-            },
-        },
-        Action {
-            name: "GoToCampfire".into(),
-            cost: 5,
-            preconditions: WorldState {
-                has_wood: 1,
-                ..WorldState::default()
-            },
-            effects: WorldState {
-                at_campfire: true,
-                ..WorldState::default()
-            },
-        },
-        Action {
-            name: "CookFood".into(),
-            cost: 8,
-            preconditions: WorldState {
-                has_wood: 1,
-                at_campfire: true,
-                ..WorldState::default()
-            },
-            effects: WorldState {
-                has_food: 1,
-                has_wood: 0, // Consume wood
-                at_campfire: false,
-                ..WorldState::default()
-            },
-        },
+        GoapAction::new("GoToTree")
+            .with_effect("at_tree", true)
+            .with_cost(5.0),
+        GoapAction::new("ChopWood")
+            .with_precondition("at_tree", true)
+            .with_effect("has_wood", true)
+            .with_effect("at_tree", false)
+            .with_cost(10.0),
+        GoapAction::new("GoToCampfire")
+            .with_precondition("has_wood", true)
+            .with_effect("at_campfire", true)
+            .with_cost(5.0),
+        GoapAction::new("CookFood")
+            .with_precondition("has_wood", true)
+            .with_precondition("at_campfire", true)
+            .with_effect("has_food", true)
+            .with_effect("has_wood", false)
+            .with_effect("at_campfire", false)
+            .with_cost(8.0),
     ]
 }
 
 /// Convert GOAP action sequence to ActionSteps.
 #[cfg(feature = "ai-goap")]
-fn goap_actions_to_steps(actions: &[Action]) -> Result<Vec<ActionStep>> {
+fn goap_actions_to_steps(actions: &[GoapAction]) -> Result<Vec<ActionStep>> {
     let mut steps = Vec::new();
 
     for action in actions {
         let step = match action.name.as_str() {
-            "GoToTree" => ActionStep::MoveTo { x: 10, y: 10 }, // TODO: Use actual tree positions
-            "ChopWood" => ActionStep::MoveTo { x: 10, y: 10 }, // Stay at tree for now
-            "GoToCampfire" => ActionStep::MoveTo { x: 5, y: 5 }, // TODO: Use actual campfire position
-            "CookFood" => ActionStep::MoveTo { x: 5, y: 5 },     // Stay at campfire for now
+            "GoToTree" => ActionStep::MoveTo {
+                x: 10,
+                y: 10,
+                speed: None,
+            },
+            "ChopWood" => ActionStep::MoveTo {
+                x: 10,
+                y: 10,
+                speed: None,
+            },
+            "GoToCampfire" => ActionStep::MoveTo {
+                x: 5,
+                y: 5,
+                speed: None,
+            },
+            "CookFood" => ActionStep::MoveTo {
+                x: 5,
+                y: 5,
+                speed: None,
+            },
             _ => {
                 anyhow::bail!("Unknown GOAP action: {}", action.name)
             }
@@ -518,9 +490,9 @@ mod tests {
     fn test_snapshot_to_goap_state() {
         let snapshot = make_test_snapshot();
         let state = snapshot_to_goap_state(&snapshot).unwrap();
-        assert_eq!(state.has_wood, 0);
-        assert_eq!(state.has_food, 0);
-        assert_eq!(state.hungry, false); // Player HP = 100
+        assert_eq!(state.get("has_wood"), Some(false));
+        assert_eq!(state.get("has_food"), Some(false));
+        assert_eq!(state.get("hungry"), Some(false)); // Player HP = 100
     }
 
     #[test]

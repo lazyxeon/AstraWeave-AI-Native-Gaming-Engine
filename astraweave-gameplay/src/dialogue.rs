@@ -429,4 +429,40 @@ mod tests {
 
         assert!(dialogue.nodes.last().unwrap().end);
     }
+
+    // ===== Mutation-resistant compile_banter tests =====
+    // Catches: `+ -> -/*` in text extraction (end + 1), `+= -> *=` in node ID counter
+
+    #[test]
+    fn test_compile_banter_exact_text_content() {
+        // Tests that `rest[end + 1..]` correctly skips the `]` character
+        // If mutated to `end - 1` or `end * 1`, text would include `]` or extra chars
+        let src = "[Guard] Hello there!";
+        let dialogue = compile_banter_to_nodes("txt_test", src);
+        let line = dialogue.nodes[0].line.as_ref().unwrap();
+        assert_eq!(line.text, "Hello there!",
+            "Text must not include ] bracket; got: {}", line.text);
+        assert!(!line.text.contains(']'), "Text must not contain ]");
+    }
+
+    #[test]
+    fn test_compile_banter_sequential_node_ids() {
+        // Tests that `i += 1` increments correctly (catches *= mutant where i stays 0)
+        let src = "[Guard] Line one\n[Player] Line two\n[NPC] Line three";
+        let dialogue = compile_banter_to_nodes("seq_test", src);
+        assert_eq!(dialogue.nodes.len(), 3);
+        assert_eq!(dialogue.nodes[0].id, "n0");
+        assert_eq!(dialogue.nodes[1].id, "n1", "Second node must be n1, not n0");
+        assert_eq!(dialogue.nodes[2].id, "n2", "Third node must be n2, not n0");
+    }
+
+    #[test]
+    fn test_compile_banter_text_with_spaces_after_bracket() {
+        // Ensures trimming works correctly after skipping `]`
+        let src = "[A]   spaced text  ";
+        let dialogue = compile_banter_to_nodes("space_test", src);
+        let line = dialogue.nodes[0].line.as_ref().unwrap();
+        assert_eq!(line.speaker, "A");
+        assert_eq!(line.text, "spaced text");
+    }
 }

@@ -1,0 +1,19 @@
+astraweave-behavior/src/lib.rs:98:9: replace BehaviorNode::is_decorator -> bool with false
+astraweave-behavior/src/lib.rs:119:9: replace BehaviorNode::child_count -> usize with 0
+astraweave-behavior/src/lib.rs:131:9: replace BehaviorNode::name -> Option<&str> with Some("xyzzy")
+astraweave-behavior/src/lib.rs:155:19: replace + with - in BehaviorNode::total_node_count
+astraweave-behavior/src/lib.rs:169:44: replace + with * in BehaviorNode::max_depth
+astraweave-behavior/src/goap.rs:161:21: replace + with - in PlanNode::f_cost
+astraweave-behavior/src/goap.rs:167:9: replace <impl PartialEq for PlanNode>::eq -> bool with true
+astraweave-behavior/src/goap.rs:167:9: replace <impl PartialEq for PlanNode>::eq -> bool with false
+astraweave-behavior/src/goap.rs:167:20: replace == with != in <impl PartialEq for PlanNode>::eq
+astraweave-behavior/src/goap.rs:250:27: replace > with == in GoapPlanner::plan
+astraweave-behavior/src/goap.rs:250:27: replace > with >= in GoapPlanner::plan
+astraweave-behavior/src/goap.rs:296:46: replace + with * in GoapPlanner::plan
+astraweave-behavior/src/goap_cache.rs:44:9: replace PlanCacheKey::hash_world_state -> u64 with 0
+astraweave-behavior/src/goap_cache.rs:44:9: replace PlanCacheKey::hash_world_state -> u64 with 1
+astraweave-behavior/src/goap_cache.rs:176:45: replace != with == in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:178:35: replace += with *= in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:184:30: replace += with *= in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:284:9: replace CachedGoapPlanner::with_planner -> Self with Default::default()
+astraweave-behavior/src/goap_cache.rs:326:9: replace CachedGoapPlanner::base_planner -> &crate::goap::GoapPlanner with Box::leak(Box::new(Default::default()))

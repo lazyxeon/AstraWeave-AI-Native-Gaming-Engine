@@ -1,0 +1,24 @@
+--- astraweave-core/src/schema.rs
++++ replace <impl std::ops::Add for IVec2>::add -> Self with Default::default()
+@@ -124,20 +124,17 @@
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         write!(f, "({}, {})", self.x, self.y)
+     }
+ }
+ 
+ impl std::ops::Add for IVec2 {
+     type Output = Self;
+     fn add(self, rhs: Self) -> Self {
+-        Self {
+-            x: self.x + rhs.x,
+-            y: self.y + rhs.y,
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::ops::Sub for IVec2 {
+     type Output = Self;
+     fn sub(self, rhs: Self) -> Self {
+         Self {
+             x: self.x - rhs.x,

@@ -1349,6 +1349,379 @@ mod tests {
     }
 
     // ========================================
+    // Mutation-Resistant LOS Tests
+    // Catch sign flips, operator swaps in Bresenham
+    // ========================================
+
+    #[test]
+    fn test_has_line_of_sight_reverse_horizontal() {
+        // Right-to-left: from (5,0) to (0,0) — tests sx = -1
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        assert!(
+            has_line_of_sight(IVec2 { x: 5, y: 0 }, IVec2 { x: 0, y: 0 }, &world),
+            "Clear reverse horizontal LoS should succeed"
+        );
+
+        // Now with obstacle at (3,0) blocking the path
+        let world_blocked = WorldSnapshot {
+            obstacles: vec![IVec2 { x: 3, y: 0 }],
+            ..world
+        };
+        assert!(
+            !has_line_of_sight(IVec2 { x: 5, y: 0 }, IVec2 { x: 0, y: 0 }, &world_blocked),
+            "Reverse horizontal LoS with obstacle at (3,0) should fail"
+        );
+    }
+
+    #[test]
+    fn test_has_line_of_sight_reverse_vertical() {
+        // Bottom-to-top: from (0,5) to (0,0) — tests sy = -1
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 5 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        assert!(
+            has_line_of_sight(IVec2 { x: 0, y: 5 }, IVec2 { x: 0, y: 0 }, &world),
+            "Clear reverse vertical LoS should succeed"
+        );
+
+        let world_blocked = WorldSnapshot {
+            obstacles: vec![IVec2 { x: 0, y: 2 }],
+            ..world
+        };
+        assert!(
+            !has_line_of_sight(IVec2 { x: 0, y: 5 }, IVec2 { x: 0, y: 0 }, &world_blocked),
+            "Reverse vertical LoS with obstacle should fail"
+        );
+    }
+
+    #[test]
+    fn test_has_line_of_sight_reverse_diagonal() {
+        // From (5,5) to (0,0) — tests sx=-1, sy=-1
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        assert!(
+            has_line_of_sight(IVec2 { x: 5, y: 5 }, IVec2 { x: 0, y: 0 }, &world),
+            "Clear reverse diagonal LoS should succeed"
+        );
+
+        let world_blocked = WorldSnapshot {
+            obstacles: vec![IVec2 { x: 3, y: 3 }],
+            ..world
+        };
+        assert!(
+            !has_line_of_sight(IVec2 { x: 5, y: 5 }, IVec2 { x: 0, y: 0 }, &world_blocked),
+            "Reverse diagonal with obstacle at (3,3) should fail"
+        );
+    }
+
+    #[test]
+    fn test_has_line_of_sight_steep_slope() {
+        // Non-axis-aligned, non-45°: from (0,0) to (1,4) — steep slope exercises y-stepping
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        assert!(
+            has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 1, y: 4 }, &world),
+            "Clear steep slope LoS should succeed"
+        );
+
+        // Obstacle at (0,2) should block the path
+        let world_blocked = WorldSnapshot {
+            obstacles: vec![IVec2 { x: 0, y: 2 }],
+            ..world
+        };
+        assert!(
+            !has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 1, y: 4 }, &world_blocked),
+            "Steep slope with obstacle at (0,2) should fail"
+        );
+    }
+
+    #[test]
+    fn test_has_line_of_sight_shallow_slope() {
+        // Shallow slope: from (0,0) to (4,1) — exercises x-stepping more than y
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        assert!(has_line_of_sight(
+            IVec2 { x: 0, y: 0 },
+            IVec2 { x: 4, y: 1 },
+            &world
+        ));
+
+        // Obstacle at (2,0) blocks the horizontal sweep
+        let world_blocked = WorldSnapshot {
+            obstacles: vec![IVec2 { x: 2, y: 0 }],
+            ..world
+        };
+        assert!(
+            !has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 4, y: 1 }, &world_blocked),
+            "Shallow slope with obstacle at (2,0) should fail"
+        );
+    }
+
+    #[test]
+    fn test_has_line_of_sight_obstacle_at_start_not_checked() {
+        // The start cell itself is not checked for obstacles (Bresenham starts walking from 'from')
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![IVec2 { x: 1, y: 0 }], // obstacle at first step
+        };
+        assert!(
+            !has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 3, y: 0 }, &world),
+            "Obstacle at first step (1,0) on path to (3,0) should block"
+        );
+    }
+
+    #[test]
+    fn test_has_line_of_sight_adjacent_cells() {
+        // Adjacent cells: from (0,0) to (1,0) — single step
+        let world_clear = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        assert!(has_line_of_sight(
+            IVec2 { x: 0, y: 0 },
+            IVec2 { x: 1, y: 0 },
+            &world_clear
+        ));
+        assert!(has_line_of_sight(
+            IVec2 { x: 0, y: 0 },
+            IVec2 { x: 0, y: 1 },
+            &world_clear
+        ));
+        assert!(has_line_of_sight(
+            IVec2 { x: 0, y: 0 },
+            IVec2 { x: 1, y: 1 },
+            &world_clear
+        ));
+    }
+
+    // ========================================
+    // Mutation-Resistant Revive Distance Tests
+    // ========================================
+
+    #[test]
+    fn test_revive_distance_exact_boundary() {
+        // Distance exactly 2.0 should pass, > 2.0 should fail
+        // sqrt(dx*dx + dy*dy) = 2.0 → dx=2, dy=0
+        let make_world = |_pos: IVec2| WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        let context = ValidationContext::new();
+
+        // Distance = sqrt(2*2 + 0*0) = 2.0 → should pass
+        let world = make_world(IVec2 { x: 0, y: 0 });
+        let result = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world,
+            &context,
+            Some(IVec2 { x: 2, y: 0 }),
+        );
+        assert!(result.is_ok(), "Revive at distance 2.0 should pass");
+
+        // Distance = sqrt(2*2 + 1*1) = sqrt(5) ≈ 2.236 → should fail
+        let result_far = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world,
+            &context,
+            Some(IVec2 { x: 2, y: 1 }),
+        );
+        assert!(result_far.is_err(), "Revive at distance 2.236 should fail");
+
+        // Distance = sqrt(1*1 + 1*1) = sqrt(2) ≈ 1.414 → should pass
+        let result_close = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world,
+            &context,
+            Some(IVec2 { x: 1, y: 1 }),
+        );
+        assert!(result_close.is_ok(), "Revive at distance 1.414 should pass");
+    }
+
+    #[test]
+    fn test_revive_distance_arithmetic_correctness() {
+        // Verify dx*dx + dy*dy is computed correctly (catches + vs -, * vs + mutations)
+        // Me at (3,4), target at (6,8) → dx=3, dy=4, dist=sqrt(9+16)=5.0 → >2.0 → fail
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 3, y: 4 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world,
+            &context,
+            Some(IVec2 { x: 6, y: 8 }),
+        );
+        assert!(result.is_err(), "Revive at distance 5.0 should fail (>2.0)");
+
+        // Negative direction: me at (5,5), target at (4,4) → dx=-1, dy=-1, dist=sqrt(2)≈1.41 → pass
+        let world2 = WorldSnapshot {
+            me: CompanionState {
+                pos: IVec2 { x: 5, y: 5 },
+                ..world.me.clone()
+            },
+            ..world.clone()
+        };
+        let result2 = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world2,
+            &context,
+            Some(IVec2 { x: 4, y: 4 }),
+        );
+        assert!(result2.is_ok(), "Revive at distance sqrt(2) should pass");
+    }
+
+    // ========================================
     // validate_line_of_sight with None
     // ========================================
 
@@ -1735,7 +2108,13 @@ mod tests {
         let context_empty = ValidationContext::new();
         assert!(!context_empty.has_nav());
 
-        // Note: We can't easily test with_nav since NavMesh isn't easy to construct in tests
+        // Test that with_nav sets has_nav to true
+        let nav = NavMesh::bake(&[], 0.4, 60.0);
+        let context_with_nav = ValidationContext::new().with_nav(&nav);
+        assert!(
+            context_with_nav.has_nav(),
+            "with_nav should make has_nav() return true"
+        );
     }
 
     #[test]
@@ -1770,6 +2149,25 @@ mod tests {
             &collider_set,
         );
         assert!(!context_physics_only.is_complete());
+
+        // Context with only nav is not complete
+        let nav = NavMesh::bake(&[], 0.4, 60.0);
+        let context_nav_only = ValidationContext::new().with_nav(&nav);
+        assert!(
+            !context_nav_only.is_complete(),
+            "Nav-only should not be complete"
+        );
+
+        // Context with both nav AND physics should be complete
+        let context_full = ValidationContext::new().with_nav(&nav).with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
+        assert!(
+            context_full.is_complete(),
+            "With both nav and physics, is_complete should be true"
+        );
     }
 
     #[test]

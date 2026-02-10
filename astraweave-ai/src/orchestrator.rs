@@ -1512,4 +1512,254 @@ mod tests {
             "GoapOrchestrator Display should contain 'Orchestrator'"
         );
     }
+
+    // ========================================================================
+    // Mutation-Resistant Tests: Exact Value Assertions
+    // These tests catch arithmetic operator mutations (+/-/*/÷ swaps)
+    // ========================================================================
+
+    #[test]
+    fn utility_score_a_exact_value_with_enemy_hp_100() {
+        // Score A = 1.0 + player_hp.min(100) * 0.0 + enemy_hp.max(0) * 0.01
+        // With enemy_hp=100: score_a = 1.0 + 0.0 + 1.0 = 2.0
+        let snap = snap_basic(0, 0, 10, 10, 0.0);
+        // enemy hp=100 in snap_basic
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // Candidate A (throw smoke) has score 2.0
+        // Candidate B: dist = |10-0| + |10-0| = 20, score = 0.8 + (3.0-20.0).max(0.0)*0.05 = 0.8
+        // A wins (2.0 > 0.8), so first step should be Throw
+        assert!(
+            matches!(plan.steps.first(), Some(ActionStep::Throw { item, .. }) if item == "smoke"),
+            "Score A=2.0 > Score B=0.8, should select Throw smoke"
+        );
+    }
+
+    #[test]
+    fn utility_score_b_dist_affects_cover_fire() {
+        // Candidate B with dist<=3: includes CoverFire
+        // Me at (0,0), enemy at (2,1) → dist = 2+1 = 3, score_b = 0.8 + (3.0-3.0)*0.05 = 0.8
+        let snap = snap_basic(0, 0, 2, 1, 0.0);
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // Both candidates exist; B should include CoverFire since dist<=3
+        let _has_cover = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::CoverFire { .. }));
+        // A: score = 1.0 + 0.0 + hp*0.01 = 2.0 (hp=100)
+        // B: score = 0.8 + 0.0 = 0.8
+        // A wins, so plan starts with Throw, then MoveTo. CoverFire NOT in plan.
+        // But if A's cooldown is active, B wins and includes CoverFire.
+        // Let's test with cooldown on Throw:
+        let mut snap_cd = snap_basic(0, 0, 2, 1, 0.0);
+        snap_cd.me.cooldowns.insert("throw:smoke".into(), 5.0);
+        let plan_cd = util.propose_plan(&snap_cd);
+        // With cooldown, only candidate B exists, and dist=3 → includes CoverFire
+        let has_cover_cd = plan_cd
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::CoverFire { .. }));
+        assert!(
+            has_cover_cd,
+            "Dist=3 with throw on cooldown should include CoverFire"
+        );
+    }
+
+    #[test]
+    fn utility_score_b_dist_4_no_cover_fire() {
+        // dist > 3 → no CoverFire in B
+        let mut snap = snap_basic(0, 0, 4, 0, 0.0);
+        snap.me.cooldowns.insert("throw:smoke".into(), 5.0); // force B only
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        let has_cover = plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::CoverFire { .. }));
+        assert!(!has_cover, "Dist=4 (>3) should NOT include CoverFire");
+    }
+
+    #[test]
+    fn utility_move_toward_direction_exact() {
+        // Verify signum direction: MoveTo uses me.pos + signum(enemy - me) * 2
+        // Me at (0,0), enemy at (10,10) → signum(10,10)=(1,1) → move to (2,2)
+        let snap = snap_basic(0, 0, 10, 10, 0.0);
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // A wins → steps[0] = Throw at midpoint (5,5), steps[1] = MoveTo (0+1*2, 0+1*2) = (2,2)
+        if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.get(1) {
+            assert_eq!(*x, 2, "Move X should be me.x + signum * 2 = 0 + 2");
+            assert_eq!(*y, 2, "Move Y should be me.y + signum * 2 = 0 + 2");
+        }
+    }
+
+    #[test]
+    fn utility_move_toward_negative_direction() {
+        // Me at (10,10), enemy at (5,3) → signum(-5,-7)=(-1,-1) → move to (10-2, 10-2)=(8,8)
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 10, y: 10 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 10, y: 10 },
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2 { x: 5, y: 3 },
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // Throw midpoint: ((10+5)/2, (10+3)/2) = (7, 6)
+        if let Some(ActionStep::Throw { x, y, .. }) = plan.steps.first() {
+            assert_eq!(*x, 7, "Throw X should be midpoint (10+5)/2=7");
+            assert_eq!(*y, 6, "Throw Y should be midpoint (10+3)/2=6");
+        }
+        if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.get(1) {
+            assert_eq!(*x, 8, "Move X should be 10 + (-1)*2 = 8");
+            assert_eq!(*y, 8, "Move Y should be 10 + (-1)*2 = 8");
+        }
+    }
+
+    #[test]
+    fn goap_next_action_exact_distance_2_cover_fire() {
+        // dist=2 → CoverFire, dist=3 → MoveTo
+        let snap_dist2 = snap_basic(0, 0, 2, 0, 0.0); // dist = |2|+|0| = 2
+        let goap = GoapOrchestrator;
+        match goap.next_action(&snap_dist2) {
+            ActionStep::CoverFire {
+                target_id,
+                duration,
+            } => {
+                assert_eq!(target_id, 2); // snap_basic creates enemy with id=2
+                assert!(
+                    (duration - 1.5).abs() < f32::EPSILON,
+                    "CoverFire duration should be 1.5"
+                );
+            }
+            other => panic!("Expected CoverFire at dist=2, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn goap_next_action_exact_distance_3_move_to() {
+        // dist=3 → MoveTo (not CoverFire)
+        let snap_dist3 = snap_basic(0, 0, 3, 0, 0.0); // dist = |3|+|0| = 3
+        let goap = GoapOrchestrator;
+        match goap.next_action(&snap_dist3) {
+            ActionStep::MoveTo { x, y, .. } => {
+                assert_eq!(x, 1, "Should move one step toward enemy: 0 + signum(3)=1");
+                assert_eq!(y, 0, "Should move one step toward enemy: 0 + signum(0)=0");
+            }
+            other => panic!("Expected MoveTo at dist=3, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn goap_next_action_distance_computation_sign() {
+        // Me at (5,5), enemy at (2,3) → dx=-3, dy=-2, dist=5
+        // Move: x=5+(-1)=4, y=5+(-1)=4
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2 { x: 2, y: 3 },
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let goap = GoapOrchestrator;
+        match goap.next_action(&snap) {
+            ActionStep::MoveTo { x, y, .. } => {
+                assert_eq!(x, 4, "Should move from 5 toward 2: 5+(-1)=4");
+                assert_eq!(y, 4, "Should move from 5 toward 3: 5+(-1)=4");
+            }
+            other => panic!("Expected MoveTo, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn goap_next_action_no_enemies_waits() {
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let goap = GoapOrchestrator;
+        match goap.next_action(&snap) {
+            ActionStep::Wait { duration } => {
+                assert!(
+                    (duration - 1.0).abs() < f32::EPSILON,
+                    "Wait duration should be exactly 1.0"
+                );
+            }
+            other => panic!("Expected Wait with no enemies, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn make_system_orchestrator_returns_orchestrator() {
+        let orch = make_system_orchestrator(None);
+        // Without llm_orchestrator feature, should return a non-LLM orchestrator
+        assert!(!orch.name().is_empty(), "Orchestrator should have a name");
+    }
+
+    #[test]
+    fn make_system_orchestrator_with_use_llm_false() {
+        let cfg = SystemOrchestratorConfig {
+            use_llm: false,
+            ollama_url: "http://127.0.0.1:11434".into(),
+            ollama_model: "phi3:medium".into(),
+        };
+        let orch = make_system_orchestrator(Some(cfg));
+        assert!(
+            orch.name().contains("Utility"),
+            "With use_llm=false, should return UtilityOrchestrator, got: {}",
+            orch.name()
+        );
+    }
 }

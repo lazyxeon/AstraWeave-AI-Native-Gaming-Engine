@@ -412,4 +412,68 @@ mod tests {
         assert_eq!(snap.pois.len(), 1);
         assert_eq!(snap.objective, Some("Defend position".to_string()));
     }
+
+    // ===== Mutation-resistant LOS boundary tests =====
+    // These catch: `> -> >=`, `- -> +` in the Manhattan distance check
+
+    #[test]
+    fn test_los_exact_boundary_equals_max() {
+        // Manhattan dist = |5-0| + |5-0| = 10 == los_max → should be "low" (not >)
+        let mut w = World::new();
+        w.t = 0.0;
+        let player = w.spawn("player", iv2(0, 0), Team { id: 1 }, 100, 0);
+        let companion = w.spawn("companion", iv2(1, 1), Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", iv2(5, 5), Team { id: 2 }, 50, 0);
+
+        let cfg = PerceptionConfig { los_max: 10 };
+        let snap = build_snapshot(&w, player, companion, &[enemy], None, &cfg);
+        // dist == los_max → NOT > los_max → cover = "low"
+        assert_eq!(snap.enemies[0].cover, "low", "dist == los_max should be low, not unknown");
+    }
+
+    #[test]
+    fn test_los_one_above_boundary() {
+        // Manhattan dist = 11 > 10 → "unknown"
+        let mut w = World::new();
+        w.t = 0.0;
+        let player = w.spawn("player", iv2(0, 0), Team { id: 1 }, 100, 0);
+        let companion = w.spawn("companion", iv2(1, 1), Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", iv2(6, 5), Team { id: 2 }, 50, 0);
+
+        let cfg = PerceptionConfig { los_max: 10 };
+        let snap = build_snapshot(&w, player, companion, &[enemy], None, &cfg);
+        assert_eq!(snap.enemies[0].cover, "unknown", "dist > los_max should be unknown");
+    }
+
+    #[test]
+    fn test_los_subtraction_with_nonzero_player_pos() {
+        // Player at (10,10), enemy at (12,13) → Manhattan dist = |12-10| + |13-10| = 2+3 = 5
+        // If mutated to +, dist = |12+10| + |13+10| = 22+23 = 45 → would be "unknown"
+        let mut w = World::new();
+        w.t = 0.0;
+        let player = w.spawn("player", iv2(10, 10), Team { id: 1 }, 100, 0);
+        let companion = w.spawn("companion", iv2(11, 11), Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", iv2(12, 13), Team { id: 2 }, 50, 0);
+
+        let cfg = PerceptionConfig { los_max: 10 };
+        let snap = build_snapshot(&w, player, companion, &[enemy], None, &cfg);
+        // Correct distance: 5, so enemy is within LOS
+        assert_eq!(snap.enemies[0].cover, "low",
+            "Enemy near player (non-origin) should have cover=low, not unknown");
+    }
+
+    #[test]
+    fn test_los_subtraction_negative_direction() {
+        // Player at (10,10), enemy at (5,3) → dist = |5-10| + |3-10| = 5+7 = 12
+        // If mutated to +, dist = |5+10| + |3+10| = 15+13 = 28 → would be "unknown"
+        let mut w = World::new();
+        w.t = 0.0;
+        let player = w.spawn("player", iv2(10, 10), Team { id: 1 }, 100, 0);
+        let companion = w.spawn("companion", iv2(9, 9), Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", iv2(5, 3), Team { id: 2 }, 50, 0);
+
+        let cfg = PerceptionConfig { los_max: 15 };
+        let snap = build_snapshot(&w, player, companion, &[enemy], None, &cfg);
+        assert_eq!(snap.enemies[0].cover, "low", "Negative dir subtraction must work");
+    }
 }

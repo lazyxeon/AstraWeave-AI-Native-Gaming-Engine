@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace PlanIntent::has_offensive -> bool with false
+@@ -352,17 +352,17 @@
+ 
+     /// Returns `true` if the plan contains any movement actions.
+     pub fn has_movement(&self) -> bool {
+         self.steps.iter().any(|s| s.is_movement())
+     }
+ 
+     /// Returns `true` if the plan contains any offensive actions.
+     pub fn has_offensive(&self) -> bool {
+-        self.steps.iter().any(|s| s.is_offensive())
++        false /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::fmt::Display for PlanIntent {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         if self.plan_id.is_empty() {
+             write!(f, "PlanIntent({} steps)", self.steps.len())
+         } else {

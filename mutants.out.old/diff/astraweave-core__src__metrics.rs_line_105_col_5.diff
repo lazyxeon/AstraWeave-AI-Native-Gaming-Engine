@@ -1,0 +1,21 @@
+--- astraweave-core/src/metrics.rs
++++ replace histogram with ()
+@@ -97,17 +97,17 @@
+ 
+ /// Helper: Set a global gauge.
+ pub fn gauge(key: &str, value: f64) {
+     global_metrics().gauge(key, value);
+ }
+ 
+ /// Helper: Record a global histogram value.
+ pub fn histogram(key: &str, value: f64) {
+-    global_metrics().histogram(key, value);
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_counters() {

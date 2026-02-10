@@ -1,6 +1,2 @@
-astraweave-render/src/camera.rs:165:69: replace < with > in CameraController::process_mouse_delta
-astraweave-render/src/clustered.rs:73:70: replace - with + in bin_lights_cpu
-astraweave-render/src/clustered.rs:81:42: replace - with + in bin_lights_cpu
-astraweave-render/src/clustered.rs:81:42: replace - with / in bin_lights_cpu
-astraweave-render/src/clustered.rs:83:39: replace - with + in bin_lights_cpu
-astraweave-render/src/clustered.rs:84:51: replace * with + in bin_lights_cpu
+astraweave-core/src/schema.rs:144:23: replace - with / in <impl std::ops::Sub for IVec2>::sub
+astraweave-core/src/schema.rs:226:9: replace WorldSnapshot::distance_to_player -> f32 with 0.0

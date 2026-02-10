@@ -1,0 +1,21 @@
+--- astraweave-core/src/metrics.rs
++++ replace global_metrics -> &'static MetricsRegistry with Box::leak(Box::new(Default::default()))
+@@ -82,17 +82,17 @@
+ 
+ // Global singleton instance
+ use std::sync::OnceLock;
+ 
+ static GLOBAL_REGISTRY: OnceLock<MetricsRegistry> = OnceLock::new();
+ 
+ /// Get the global metrics registry.
+ pub fn global_metrics() -> &'static MetricsRegistry {
+-    GLOBAL_REGISTRY.get_or_init(MetricsRegistry::new)
++    Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Helper: Increment a global counter.
+ pub fn increment(key: &str) {
+     global_metrics().increment(key);
+ }
+ 
+ /// Helper: Set a global gauge.

@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace WorldSnapshot::enemy_count -> usize with 1
+@@ -178,17 +178,17 @@
+     pub pois: Vec<Poi>,
+     pub obstacles: Vec<IVec2>,
+     pub objective: Option<String>,
+ }
+ 
+ impl WorldSnapshot {
+     /// Returns the number of enemies in the snapshot.
+     pub fn enemy_count(&self) -> usize {
+-        self.enemies.len()
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns `true` if there are no enemies.
+     pub fn has_no_enemies(&self) -> bool {
+         self.enemies.is_empty()
+     }
+ 
+     /// Returns the nearest enemy to the companion's position.

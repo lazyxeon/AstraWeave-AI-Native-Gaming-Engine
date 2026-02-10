@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace PlanIntent::has_movement -> bool with false
+@@ -347,17 +347,17 @@
+ 
+     /// Returns the first step, if any.
+     pub fn first_step(&self) -> Option<&ActionStep> {
+         self.steps.first()
+     }
+ 
+     /// Returns `true` if the plan contains any movement actions.
+     pub fn has_movement(&self) -> bool {
+-        self.steps.iter().any(|s| s.is_movement())
++        false /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns `true` if the plan contains any offensive actions.
+     pub fn has_offensive(&self) -> bool {
+         self.steps.iter().any(|s| s.is_offensive())
+     }
+ }
+ 

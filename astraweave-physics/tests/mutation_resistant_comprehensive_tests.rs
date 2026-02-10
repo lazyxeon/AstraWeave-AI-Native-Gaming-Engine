@@ -1908,41 +1908,53 @@ mod misc_types_mutations {
         assert!(!line2.is_degenerate());
     }
 
-    /// Mutation killer: catches `<` → `<=` mutation in is_degenerate threshold.
-    /// The threshold is 1e-10, so length_squared exactly at 1e-10 should NOT be degenerate.
-    /// With mutation: length_squared <= 1e-10 would make it degenerate → test fails.
-    /// sqrt(1e-10) ≈ 1e-5 = 0.00001, so we need length = 1e-5 to get length_squared = 1e-10.
+    /// Mutation killer: tests is_degenerate boundary at 1e-10 threshold.
+    /// NOTE: Due to f32 precision, (1e-5)^2 lands 1 ULP below 1e-10 (0x2edbe6fe vs 0x2edbe6ff),
+    /// and the next f32 up squares to 2 ULPs above. The threshold value 1e-10 falls in a gap
+    /// between consecutive f32 squares, making `<` vs `<=` observationally equivalent.
+    /// We test both sides of the gap to catch `<` → `>`, `<` → `==`, and threshold mutations.
     #[test]
     fn debug_line_degenerate_boundary() {
-        // length_squared = 1e-10 exactly (at boundary)
-        // dx = sqrt(1e-10) = 1e-5, dy = 0, dz = 0
-        let dx = 1e-5_f32; // sqrt(1e-10)
+        let dx = 1e-5_f32;
+        // f32 precision: (1e-5)^2 = 0x2edbe6fe < 1e-10 = 0x2edbe6ff
         let line = DebugLine::new([0.0, 0.0, 0.0], [dx, 0.0, 0.0], [1.0, 0.0, 0.0]);
         let len_sq = line.length_squared();
-        // Verify we're at the boundary
         assert!(
-            (len_sq - 1e-10).abs() < 1e-15,
-            "length_squared={}, expected 1e-10",
+            len_sq < 1e-10_f32,
+            "f32 precision: (1e-5)^2 = {} should be < 1e-10 (1 ULP gap)",
             len_sq
         );
-        // At exactly 1e-10, is_degenerate uses < (not <=), so it should return FALSE
         assert!(
-            !line.is_degenerate(),
-            "Line with length_squared=1e-10 should NOT be degenerate (< vs <=)"
+            line.is_degenerate(),
+            "length_squared < threshold → degenerate"
         );
 
-        // Just under the threshold should be degenerate
+        // Next f32 value up from dx: its square jumps above threshold
+        let dx_up = f32::from_bits(dx.to_bits() + 1);
+        let line_up = DebugLine::new([0.0, 0.0, 0.0], [dx_up, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        let len_sq_up = line_up.length_squared();
+        assert!(
+            len_sq_up > 1e-10_f32,
+            "1 ULP above sqrt(threshold): {} should be > 1e-10",
+            len_sq_up
+        );
+        assert!(
+            !line_up.is_degenerate(),
+            "length_squared > threshold → NOT degenerate"
+        );
+
+        // 0.9× factor: well below threshold → degenerate (0.81 * 1e-10 ≈ 8.1e-11)
         let smaller = DebugLine::new([0.0, 0.0, 0.0], [dx * 0.9, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert!(
             smaller.is_degenerate(),
-            "Line with length_squared < 1e-10 should be degenerate"
+            "0.9x should be degenerate"
         );
 
-        // Just over the threshold should NOT be degenerate
+        // 1.1× factor: well above threshold → NOT degenerate (1.21 * 1e-10 ≈ 1.21e-10)
         let larger = DebugLine::new([0.0, 0.0, 0.0], [dx * 1.1, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert!(
             !larger.is_degenerate(),
-            "Line with length_squared > 1e-10 should NOT be degenerate"
+            "1.1x should NOT be degenerate"
         );
     }
 

@@ -1,0 +1,24 @@
+--- astraweave-core/src/schema.rs
++++ replace IVec2::offset -> Self with Default::default()
+@@ -108,20 +108,17 @@
+ 
+     /// Returns the Euclidean distance to another point.
+     pub fn distance(&self, other: &Self) -> f32 {
+         (self.distance_squared(other) as f32).sqrt()
+     }
+ 
+     /// Returns a new vector offset by the given amounts.
+     pub fn offset(&self, dx: i32, dy: i32) -> Self {
+-        Self {
+-            x: self.x + dx,
+-            y: self.y + dy,
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::fmt::Display for IVec2 {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         write!(f, "({}, {})", self.x, self.y)
+     }
+ }

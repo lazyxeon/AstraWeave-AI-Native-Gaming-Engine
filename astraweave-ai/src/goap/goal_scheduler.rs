@@ -49,7 +49,7 @@ impl GoalScheduler {
     /// Remove a goal by name
     pub fn remove_goal(&mut self, goal_name: &str) -> Option<Goal> {
         if let Some(pos) = self.active_goals.iter().position(|g| g.name == goal_name) {
-            Some(self.active_goals.remove(pos))
+            self.active_goals.remove(pos)
         } else {
             None
         }

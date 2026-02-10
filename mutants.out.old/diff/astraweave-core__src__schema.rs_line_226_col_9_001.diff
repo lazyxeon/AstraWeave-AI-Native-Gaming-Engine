@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace WorldSnapshot::distance_to_player -> f32 with 1.0
+@@ -218,17 +218,17 @@
+ 
+     /// Returns `true` if there is an objective.
+     pub fn has_objective(&self) -> bool {
+         self.objective.is_some()
+     }
+ 
+     /// Returns the distance from the companion to the player.
+     pub fn distance_to_player(&self) -> f32 {
+-        self.me.pos.distance(&self.player.pos)
++        1.0 /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::fmt::Display for WorldSnapshot {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         write!(
+             f,
+             "WorldSnapshot(t={:.1}s, {} enemies, {} POIs)",

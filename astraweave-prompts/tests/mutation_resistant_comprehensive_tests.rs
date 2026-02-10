@@ -2906,3 +2906,120 @@ mod validate_charset_tests {
         assert!(validate_safe_charset("hello\x01world", false).is_err());
     }
 }
+
+// =============================================================================
+// Mutation remediation: ContextValue Display & insert_path gap tests
+// =============================================================================
+
+#[cfg(test)]
+mod context_mutation_remediation {
+    use astraweave_prompts::context::ContextValue;
+    use std::collections::HashMap;
+
+    #[test]
+    fn display_multi_element_array_has_separator() {
+        // Mutant: `i > 0` → `i < 0` would never emit ", " separator
+        let arr = ContextValue::Array(vec![
+            ContextValue::Number(1.0),
+            ContextValue::Number(2.0),
+            ContextValue::Number(3.0),
+        ]);
+        let s = format!("{}", arr);
+        assert!(s.contains(", "), "Multi-element array should have ', ' separators: got {}", s);
+        assert_eq!(s, "[1, 2, 3]");
+    }
+
+    #[test]
+    fn display_single_element_array_no_separator() {
+        // Mutant: `i > 0` → `i >= 0` would emit separator before first element
+        let arr = ContextValue::Array(vec![ContextValue::Number(42.0)]);
+        let s = format!("{}", arr);
+        assert!(!s.starts_with("[,"), "Single-element array should not start with comma: got {}", s);
+        assert_eq!(s, "[42]");
+    }
+
+    #[test]
+    fn display_multi_element_object_has_separator() {
+        // Mutant: `i > 0` → `i < 0` would never emit ", " separator in objects
+        let mut map = HashMap::new();
+        map.insert("a".to_string(), ContextValue::Number(1.0));
+        map.insert("b".to_string(), ContextValue::Number(2.0));
+        let obj = ContextValue::Object(map);
+        let s = format!("{}", obj);
+        assert!(s.contains(", "), "Multi-key object should have ', ' separators: got {}", s);
+    }
+
+    #[test]
+    fn insert_path_single_key_on_object() {
+        // Mutant: `path.len() == 1` → `path.len() != 1` would skip single-key insert
+        let mut val = ContextValue::Object(HashMap::new());
+        val.insert_path(&["key"], ContextValue::Number(42.0));
+        if let ContextValue::Object(map) = &val {
+            match map.get("key") {
+                Some(ContextValue::Number(n)) => assert!((*n - 42.0).abs() < 0.01,
+                    "Should be 42.0, got {}", n),
+                other => panic!("Expected Number(42.0) at 'key', got {:?}", other),
+            }
+        } else {
+            panic!("Should remain an Object");
+        }
+    }
+
+    #[test]
+    fn insert_path_nested_two_levels() {
+        // Mutant: delete match arm ContextValue::Object(map) — would fall through to overwrite
+        let mut val = ContextValue::Object(HashMap::new());
+        val.insert_path(&["a", "b"], ContextValue::Number(99.0));
+        if let ContextValue::Object(outer) = &val {
+            if let Some(ContextValue::Object(inner)) = outer.get("a") {
+                match inner.get("b") {
+                    Some(ContextValue::Number(n)) => assert!((*n - 99.0).abs() < 0.01),
+                    other => panic!("Expected Number(99.0) at 'a.b', got {:?}", other),
+                }
+            } else {
+                panic!("'a' should be an Object, got {:?}", outer.get("a"));
+            }
+        } else {
+            panic!("Root should be an Object");
+        }
+    }
+
+    #[test]
+    fn insert_path_preserves_existing_siblings() {
+        // Inserting at ["a", "c"] should not erase existing ["a", "b"]
+        let mut val = ContextValue::Object(HashMap::new());
+        val.insert_path(&["a", "b"], ContextValue::Number(1.0));
+        val.insert_path(&["a", "c"], ContextValue::Number(2.0));
+        if let ContextValue::Object(outer) = &val {
+            if let Some(ContextValue::Object(inner)) = outer.get("a") {
+                match inner.get("b") {
+                    Some(ContextValue::Number(n)) => assert!((*n - 1.0).abs() < 0.01,
+                        "Existing 'b' should be preserved, got {}", n),
+                    other => panic!("Expected Number(1.0) at 'b', got {:?}", other),
+                }
+                match inner.get("c") {
+                    Some(ContextValue::Number(n)) => assert!((*n - 2.0).abs() < 0.01,
+                        "'c' should be 2.0, got {}", n),
+                    other => panic!("Expected Number(2.0) at 'c', got {:?}", other),
+                }
+            } else {
+                panic!("Expected Object at 'a'");
+            }
+        }
+    }
+
+    #[test]
+    fn insert_path_overwrites_non_object() {
+        // Path into a non-object value should convert it to an object
+        let mut val = ContextValue::Number(0.0);
+        val.insert_path(&["x"], ContextValue::Boolean(true));
+        if let ContextValue::Object(map) = &val {
+            match map.get("x") {
+                Some(ContextValue::Boolean(true)) => {},
+                other => panic!("Expected Boolean(true) at 'x', got {:?}", other),
+            }
+        } else {
+            panic!("Non-object should be replaced with Object");
+        }
+    }
+}

@@ -274,6 +274,7 @@ mod tests {
     use anyhow::Result;
     use astraweave_core::{IVec2, World};
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn ai_plugin_sets_desired_position_for_companion() -> Result<()> {
         // Legacy world can be empty for this test
@@ -462,6 +463,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_ai_component_queries() -> Result<()> {
         // Verify system correctly queries ECS components
@@ -923,6 +925,7 @@ mod tests {
     // sys_ai_planning Legacy World Path Tests (4 tests)
     // =============================================================================
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_sys_ai_planning_no_legacy_world() -> Result<()> {
         // Verify ECS-only snapshot path when no legacy World resource
@@ -969,6 +972,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_sys_ai_planning_no_player_in_legacy() -> Result<()> {
         // Verify system handles missing player in legacy World
@@ -1016,6 +1020,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_sys_ai_planning_no_companion_in_legacy() -> Result<()> {
         // Verify system handles missing companion in legacy World
@@ -1255,6 +1260,7 @@ mod tests {
     // ECS-Only Snapshot Path Tests (3 tests)
     // =============================================================================
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_ecs_only_snapshot_multiple_allies() -> Result<()> {
         // Verify ECS-only path handles multiple companions
@@ -1349,6 +1355,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_ecs_only_snapshot_cooldowns_conversion() -> Result<()> {
         // Verify ECS-only path converts cooldowns to BTreeMap<String, f32>
@@ -1393,6 +1400,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_ecs_only_snapshot_enemy_filtering() -> Result<()> {
         // Verify ECS-only path correctly filters team 2 as enemies
@@ -1464,6 +1472,7 @@ mod tests {
     // Event Generation Tests (2 tests)
     // =============================================================================
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_ai_planned_event_contents() -> Result<()> {
         // Verify AiPlannedEvent has correct entity and target
@@ -1558,6 +1567,7 @@ mod tests {
     // Component Query Edge Cases (2 tests)
     // =============================================================================
 
+    #[cfg(not(feature = "veilweaver_slice"))]
     #[test]
     fn test_sys_ai_planning_missing_components() -> Result<()> {
         // Verify system handles entities missing CAmmo or CCooldowns
@@ -1610,5 +1620,180 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    // =========================================================================
+    // Mutation-Resistant: map_legacy_companion_to_ecs Manhattan distance
+    // =========================================================================
+
+    #[test]
+    fn test_map_legacy_companion_selects_closest_entity() {
+        // Setup: Two team-1 entities at different positions.
+        // Companion (me) is at (10, 10). Entity A at (11, 10) (dist 1), Entity B at (0, 0) (dist 20).
+        // Must return Entity A as closest.
+        let mut world = ecs::World::default();
+
+        let entity_a = world.spawn();
+        let entity_b = world.spawn();
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(entity_a, IVec2 { x: 11, y: 10 });
+        positions.insert(entity_b, IVec2 { x: 0, y: 0 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(entity_a, 1u8);
+        teams.insert(entity_b, 1u8);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 10, y: 10 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let result = map_legacy_companion_to_ecs(&positions, &teams, &snap, 0, &world);
+        assert_eq!(
+            result,
+            Some(entity_a),
+            "Should select entity at (11,10), distance 1, not (0,0) distance 20"
+        );
+    }
+
+    #[test]
+    fn test_map_legacy_companion_manhattan_distance_negative_coords() {
+        // Companion at (-5, -5). Entity A at (-4, -5) (dist 1), Entity B at (5, 5) (dist 20).
+        // Tests that (p.x - snap.me.pos.x).abs() works correctly with negative values.
+        let mut world = ecs::World::default();
+
+        let entity_a = world.spawn();
+        let entity_b = world.spawn();
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(entity_a, IVec2 { x: -4, y: -5 });
+        positions.insert(entity_b, IVec2 { x: 5, y: 5 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(entity_a, 1u8);
+        teams.insert(entity_b, 1u8);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: -5, y: -5 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let result = map_legacy_companion_to_ecs(&positions, &teams, &snap, 0, &world);
+        assert_eq!(
+            result,
+            Some(entity_a),
+            "Should handle negative coords correctly via .abs()"
+        );
+    }
+
+    #[test]
+    fn test_map_legacy_companion_filters_by_team() {
+        // Only team-1 entities should be considered, even if a team-2 entity is closer.
+        let mut world = ecs::World::default();
+
+        let enemy_close = world.spawn();
+        let ally_far = world.spawn();
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(enemy_close, IVec2 { x: 1, y: 0 }); // Very close but team 2
+        positions.insert(ally_far, IVec2 { x: 100, y: 100 }); // Far but team 1
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(enemy_close, 2u8);
+        teams.insert(ally_far, 1u8);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let result = map_legacy_companion_to_ecs(&positions, &teams, &snap, 0, &world);
+        assert_eq!(
+            result,
+            Some(ally_far),
+            "Should only consider team-1 entities"
+        );
+    }
+
+    #[test]
+    fn test_map_legacy_companion_no_team1_returns_none() {
+        let mut world = ecs::World::default();
+
+        let enemy = world.spawn();
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(enemy, IVec2 { x: 1, y: 0 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(enemy, 2u8);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let result = map_legacy_companion_to_ecs(&positions, &teams, &snap, 0, &world);
+        assert_eq!(result, None, "No team-1 entities should return None");
     }
 }

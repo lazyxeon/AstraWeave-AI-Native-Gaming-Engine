@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace WorldSnapshot::has_pois -> bool with false
+@@ -208,17 +208,17 @@
+ 
+     /// Returns `true` if the companion has ammo.
+     pub fn has_ammo(&self) -> bool {
+         self.me.ammo > 0
+     }
+ 
+     /// Returns `true` if there are any points of interest.
+     pub fn has_pois(&self) -> bool {
+-        !self.pois.is_empty()
++        false /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns `true` if there is an objective.
+     pub fn has_objective(&self) -> bool {
+         self.objective.is_some()
+     }
+ 
+     /// Returns the distance from the companion to the player.

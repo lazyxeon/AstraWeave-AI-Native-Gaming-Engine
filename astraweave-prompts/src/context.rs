@@ -620,4 +620,136 @@ mod tests {
 
         assert!(matches!(deserialized, ContextValue::Object(_)));
     }
+
+    // ===== Mutation-resistant tests for insert_path and Display =====
+
+    #[test]
+    fn insert_path_preserves_existing_keys_in_object() {
+        // Mutant: delete Object(map) match arm → falls to _ arm which creates new Object, losing "existing"
+        let mut map = HashMap::new();
+        map.insert("existing".to_string(), ContextValue::String("keep_me".to_string()));
+        let mut value = ContextValue::Object(map);
+
+        value.insert_path(&["new_key"], ContextValue::Number(42.0));
+
+        if let ContextValue::Object(m) = &value {
+            assert!(m.contains_key("existing"), "Existing key must be preserved");
+            assert!(matches!(m.get("existing"), Some(ContextValue::String(s)) if s == "keep_me"),
+                "Existing value must be unchanged");
+            assert!(m.contains_key("new_key"), "New key must be inserted");
+        } else {
+            panic!("Expected Object variant");
+        }
+    }
+
+    #[test]
+    fn insert_path_single_depth_inserts_directly() {
+        // Mutant: `path.len() == 1` → `!= 1` would recurse with empty path[1..] instead
+        let mut value = ContextValue::Object(HashMap::new());
+        value.insert_path(&["direct"], ContextValue::String("value".to_string()));
+
+        if let ContextValue::Object(m) = &value {
+            assert!(matches!(m.get("direct"), Some(ContextValue::String(s)) if s == "value"),
+                "Single-depth insert must place value directly");
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn insert_path_multi_depth_creates_nested_structure() {
+        // Mutant: `== 1` → `!= 1` would insert directly instead of recursing for multi-depth
+        let mut value = ContextValue::Object(HashMap::new());
+        value.insert_path(&["a", "b"], ContextValue::Boolean(true));
+
+        // "a" should be an Object containing "b" → true
+        if let ContextValue::Object(outer) = &value {
+            if let Some(ContextValue::Object(inner)) = outer.get("a") {
+                assert!(matches!(inner.get("b"), Some(ContextValue::Boolean(true))),
+                    "Nested path must create nested Object structure");
+            } else {
+                panic!("'a' must be Object, got {:?}", outer.get("a"));
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn insert_path_overwrite_non_object_single_depth() {
+        // Tests the _ arm with path.len() == 1
+        let mut value = ContextValue::Number(99.0);
+        value.insert_path(&["key"], ContextValue::String("val".to_string()));
+
+        if let ContextValue::Object(m) = &value {
+            assert!(matches!(m.get("key"), Some(ContextValue::String(s)) if s == "val"));
+        } else {
+            panic!("Non-object should be overwritten with Object");
+        }
+    }
+
+    #[test]
+    fn insert_path_overwrite_non_object_multi_depth() {
+        // Tests the _ arm with path.len() > 1,  `!= 1` mutant
+        let mut value = ContextValue::Boolean(false);
+        value.insert_path(&["x", "y"], ContextValue::Number(7.0));
+
+        if let ContextValue::Object(outer) = &value {
+            if let Some(ContextValue::Object(inner)) = outer.get("x") {
+                assert!(matches!(inner.get("y"), Some(ContextValue::Number(n)) if (*n - 7.0).abs() < 0.001));
+            } else {
+                panic!("'x' must be Object");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn display_array_separator_correctness() {
+        // Mutant: `i > 0` → `i == 0`, `i < 0`, `i >= 0` in Array Display
+        // With `> 0`: output = "[a, b, c]" (comma before 2nd and 3rd)
+        // With `== 0`: output = "[, ab, c]" (comma before 1st only — wrong)
+        // With `< 0`: output = "[abc]" (no commas — wrong)
+        // With `>= 0`: output = "[, a, b, c]" (comma before every element — wrong)
+        let arr = ContextValue::Array(vec![
+            ContextValue::String("a".to_string()),
+            ContextValue::String("b".to_string()),
+            ContextValue::String("c".to_string()),
+        ]);
+        let display = format!("{}", arr);
+        assert_eq!(display, "[a, b, c]",
+            "Array Display must have commas only between elements, got: {}", display);
+        assert!(!display.starts_with("[, "), "Must not start with comma-space");
+    }
+
+    #[test]
+    fn display_object_separator_correctness() {
+        // Mutant: `i > 0` → `i == 0`, `i < 0`, `i >= 0` in Object Display
+        // Use single-entry object to simplify (no ordering issues with HashMap)
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), ContextValue::Number(42.0));
+        let obj = ContextValue::Object(map);
+        let display = format!("{}", obj);
+        assert_eq!(display, "{key: 42}",
+            "Single-entry object must not have leading comma, got: {}", display);
+        assert!(!display.starts_with("{, "), "Must not start with comma-space after brace");
+    }
+
+    #[test]
+    fn display_array_two_elements() {
+        let arr = ContextValue::Array(vec![
+            ContextValue::Number(1.0),
+            ContextValue::Number(2.0),
+        ]);
+        let display = format!("{}", arr);
+        assert_eq!(display, "[1, 2]");
+    }
+
+    #[test]
+    fn display_empty_array() {
+        let arr = ContextValue::Array(vec![]);
+        let display = format!("{}", arr);
+        assert_eq!(display, "[]");
+    }
 }

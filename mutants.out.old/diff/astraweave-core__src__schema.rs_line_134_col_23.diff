@@ -1,0 +1,21 @@
+--- astraweave-core/src/schema.rs
++++ replace + with - in <impl std::ops::Add for IVec2>::add
+@@ -126,17 +126,17 @@
+     }
+ }
+ 
+ impl std::ops::Add for IVec2 {
+     type Output = Self;
+     fn add(self, rhs: Self) -> Self {
+         Self {
+             x: self.x + rhs.x,
+-            y: self.y + rhs.y,
++            y: self.y - /* ~ changed by cargo-mutants ~ */ rhs.y,
+         }
+     }
+ }
+ 
+ impl std::ops::Sub for IVec2 {
+     type Output = Self;
+     fn sub(self, rhs: Self) -> Self {
+         Self {

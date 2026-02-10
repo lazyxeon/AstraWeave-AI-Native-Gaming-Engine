@@ -1,0 +1,24 @@
+--- astraweave-core/src/schema.rs
++++ replace WorldSnapshot::enemies_within_range -> Vec<&EnemyState> with vec![]
+@@ -195,20 +195,17 @@
+     pub fn nearest_enemy(&self) -> Option<&EnemyState> {
+         self.enemies
+             .iter()
+             .min_by_key(|e| self.me.pos.distance_squared(&e.pos))
+     }
+ 
+     /// Returns enemies within the given Manhattan distance from the companion.
+     pub fn enemies_within_range(&self, range: i32) -> Vec<&EnemyState> {
+-        self.enemies
+-            .iter()
+-            .filter(|e| self.me.pos.manhattan_distance(&e.pos) <= range)
+-            .collect()
++        vec![] /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns `true` if the companion has ammo.
+     pub fn has_ammo(&self) -> bool {
+         self.me.ammo > 0
+     }
+ 
+     /// Returns `true` if there are any points of interest.

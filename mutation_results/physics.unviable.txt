@@ -1,0 +1,3 @@
+astraweave-physics/src/lib.rs:802:9: replace BuoyancyData::with_volume -> Self with Default::default()
+astraweave-physics/src/lib.rs:900:9: replace PhysicsWorld::from_config -> Self with Default::default()
+astraweave-physics/src/lib.rs:1564:9: replace PhysicsWorld::get_debug_lines -> Vec<DebugLine> with vec![Default::default()]

@@ -698,3 +698,127 @@ fn navmesh_non_overlapping_dirty_regions_separate() {
         "non-overlapping should stay separate"
     );
 }
+
+// =========================================================================
+// Mutation Remediation: Triangle::normal() sign correctness (non-zero a)
+// Kills: `(self.b - self.a)` → `(self.b + self.a)` and
+//        `(self.c - self.a)` → `(self.c + self.a)`
+// The key is using a NON-ZERO vertex `a` so that `b - a ≠ b + a`.
+// =========================================================================
+
+#[test]
+fn triangle_normal_sign_with_nonzero_a() {
+    // Triangle with a = (1,1,0), b = (2,1,0), c = (1,2,0)
+    // Edges: b-a = (1,0,0), c-a = (0,1,0)
+    // Normal = (1,0,0).cross(0,1,0) = (0,0,1) — points up
+    let a = Vec3::new(1.0, 1.0, 0.0);
+    let b = Vec3::new(2.0, 1.0, 0.0);
+    let c = Vec3::new(1.0, 2.0, 0.0);
+    let t = Triangle::new(a, b, c);
+    let n = t.normal();
+    // Exact: n = (0, 0, 1)
+    assert!((n.x).abs() < 1e-6, "normal.x should be 0, got {}", n.x);
+    assert!((n.y).abs() < 1e-6, "normal.y should be 0, got {}", n.y);
+    assert!(
+        (n.z - 1.0).abs() < 1e-6,
+        "normal.z should be 1.0, got {}",
+        n.z
+    );
+}
+
+#[test]
+fn triangle_normal_direction_changes_with_vertex_order() {
+    // Triangle in XZ plane with non-zero a
+    // a = (3,0,0), b = (3,0,5), c = (3,4,0)
+    // Edges: b-a = (0,0,5), c-a = (0,4,0)
+    // Normal = (0,0,5).cross(0,4,0) = (-20, 0, 0) — points in -X
+    let a = Vec3::new(3.0, 0.0, 0.0);
+    let b = Vec3::new(3.0, 0.0, 5.0);
+    let c = Vec3::new(3.0, 4.0, 0.0);
+    let t = Triangle::new(a, b, c);
+    let n = t.normal();
+    assert!(n.x < -1.0, "normal.x should be strongly negative, got {}", n.x);
+    assert!((n.y).abs() < 1e-6, "normal.y should be 0, got {}", n.y);
+    assert!((n.z).abs() < 1e-6, "normal.z should be 0, got {}", n.z);
+    // Exact magnitude: |(-20, 0, 0)| = 20
+    assert!(
+        (n.length() - 20.0).abs() < 1e-4,
+        "normal magnitude should be 20, got {}",
+        n.length()
+    );
+}
+
+#[test]
+fn triangle_normal_exact_cross_product_with_offset_vertices() {
+    // a = (10, 20, 30), b = (11, 20, 30), c = (10, 21, 30)
+    // b-a = (1, 0, 0), c-a = (0, 1, 0)
+    // cross = (0, 0, 1)
+    let a = Vec3::new(10.0, 20.0, 30.0);
+    let b = Vec3::new(11.0, 20.0, 30.0);
+    let c = Vec3::new(10.0, 21.0, 30.0);
+    let t = Triangle::new(a, b, c);
+    let n = t.normal();
+    assert!(
+        (n - Vec3::new(0.0, 0.0, 1.0)).length() < 1e-5,
+        "Expected (0,0,1), got {:?}",
+        n
+    );
+}
+
+#[test]
+fn triangle_area_exact_with_offset_vertices() {
+    // Same triangle as above: area = |cross|/2 = 1/2 = 0.5
+    let a = Vec3::new(10.0, 20.0, 30.0);
+    let b = Vec3::new(11.0, 20.0, 30.0);
+    let c = Vec3::new(10.0, 21.0, 30.0);
+    let t = Triangle::new(a, b, c);
+    assert!(
+        (t.area() - 0.5).abs() < 1e-5,
+        "area should be 0.5, got {}",
+        t.area()
+    );
+}
+
+// =========================================================================
+// Mutation Remediation: Triangle::is_degenerate() boundary
+// Kills: `< 1e-6` → `<= 1e-6`
+// Need a triangle whose area is very close to but NOT exactly 1e-6.
+// =========================================================================
+
+#[test]
+fn triangle_is_degenerate_boundary_just_above() {
+    // area = |cross|/2 = edge1_len * edge2_len * sin(angle) / 2
+    // For a right triangle with legs of length d: area = d*d/2
+    // We want area just above 1e-6, so d*d/2 > 1e-6, d > sqrt(2e-6) ≈ 0.001414
+    let d = 0.0015_f32; // area = 0.0015^2 / 2 = 1.125e-6 > 1e-6
+    let t = Triangle::new(Vec3::ZERO, Vec3::new(d, 0.0, 0.0), Vec3::new(0.0, d, 0.0));
+    let area = t.area();
+    assert!(
+        area > 1e-6,
+        "area {} should be > 1e-6 for this test to be valid",
+        area
+    );
+    assert!(
+        !t.is_degenerate(),
+        "Triangle with area={} should NOT be degenerate",
+        area
+    );
+}
+
+#[test]
+fn triangle_is_degenerate_boundary_just_below() {
+    // area just below 1e-6: d*d/2 < 1e-6, d < sqrt(2e-6) ≈ 0.001414
+    let d = 0.0013_f32; // area = 0.0013^2 / 2 ≈ 8.45e-7 < 1e-6
+    let t = Triangle::new(Vec3::ZERO, Vec3::new(d, 0.0, 0.0), Vec3::new(0.0, d, 0.0));
+    let area = t.area();
+    assert!(
+        area < 1e-6,
+        "area {} should be < 1e-6 for this test to be valid",
+        area
+    );
+    assert!(
+        t.is_degenerate(),
+        "Triangle with area={} should be degenerate",
+        area
+    );
+}

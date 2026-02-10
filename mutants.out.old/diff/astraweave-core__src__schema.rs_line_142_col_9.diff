@@ -1,0 +1,24 @@
+--- astraweave-core/src/schema.rs
++++ replace <impl std::ops::Sub for IVec2>::sub -> Self with Default::default()
+@@ -134,20 +134,17 @@
+             y: self.y + rhs.y,
+         }
+     }
+ }
+ 
+ impl std::ops::Sub for IVec2 {
+     type Output = Self;
+     fn sub(self, rhs: Self) -> Self {
+-        Self {
+-            x: self.x - rhs.x,
+-            y: self.y - rhs.y,
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[derive(Clone, Debug, Serialize, Deserialize)]
+ /// A snapshot of the game world at a point in time, used for AI perception.
+ ///
+ /// `WorldSnapshot` is the primary input to all AI orchestrators. It captures
+ /// the player, companion, enemies, and points of interest.
