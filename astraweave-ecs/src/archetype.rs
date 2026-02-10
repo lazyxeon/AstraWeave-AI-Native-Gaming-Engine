@@ -833,4 +833,200 @@ mod tests {
             .count();
         assert_eq!(with_nothing, 0);
     }
+
+    // ===========================================================================
+    // Mutation-Resistant Remediation Tests: Blob Iteration & Storage Boundaries
+    // ===========================================================================
+    // Targets 9 missed mutants in archetype.rs shard 1/6:
+    //   iter_components_blob → None / Some((empty,empty)) / delete !
+    //   iter_components_blob_mut → None / Some((empty,empty)) / delete !
+    //   get_or_create_archetype_with_blob: += → -=/*=
+    //   remove_entity: < → <=
+
+    #[test]
+    fn test_iter_components_blob_returns_correct_data() {
+        // Kills: iter_components_blob → None (would fail unwrap)
+        // Kills: iter_components_blob → Some(([], [])) (wrong length)
+        // Kills: delete `!` in `!self.uses_blob` (would skip blob archetypes)
+        use crate::component_meta::ComponentMeta;
+
+        let mut metas = HashMap::new();
+        metas.insert(TypeId::of::<Health>(), ComponentMeta::of::<Health>());
+
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let mut archetype = Archetype::new_with_blob(ArchetypeId(0), sig, metas);
+
+        // Add entities using typed blob path
+        let e1 = unsafe { Entity::from_raw(1) };
+        let e2 = unsafe { Entity::from_raw(2) };
+        let e3 = unsafe { Entity::from_raw(3) };
+
+        archetype.entity_index.insert(e1);
+        archetype.entities.push(e1);
+        archetype.push_component_typed(Health(100));
+
+        archetype.entity_index.insert(e2);
+        archetype.entities.push(e2);
+        archetype.push_component_typed(Health(200));
+
+        archetype.entity_index.insert(e3);
+        archetype.entities.push(e3);
+        archetype.push_component_typed(Health(300));
+
+        // Verify iter_components_blob returns correct entities and values
+        let (entities, healths) = archetype
+            .iter_components_blob::<Health>()
+            .expect("blob archetype must return Some for registered component");
+
+        assert_eq!(entities.len(), 3, "must return all 3 entities");
+        assert_eq!(healths.len(), 3, "must return all 3 component values");
+
+        assert_eq!(entities[0], e1);
+        assert_eq!(entities[1], e2);
+        assert_eq!(entities[2], e3);
+
+        assert_eq!(healths[0], Health(100));
+        assert_eq!(healths[1], Health(200));
+        assert_eq!(healths[2], Health(300));
+
+        // Non-blob archetype returns None
+        let box_sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let box_archetype = Archetype::new(ArchetypeId(1), box_sig);
+        assert!(
+            box_archetype.iter_components_blob::<Health>().is_none(),
+            "non-blob archetype must return None"
+        );
+
+        // Wrong component type returns None
+        assert!(
+            archetype.iter_components_blob::<Position>().is_none(),
+            "unregistered component type must return None"
+        );
+    }
+
+    #[test]
+    fn test_iter_components_blob_mut_returns_correct_data_and_allows_mutation() {
+        // Kills: iter_components_blob_mut → None / Some(([], []))  / delete !
+        use crate::component_meta::ComponentMeta;
+
+        let mut metas = HashMap::new();
+        metas.insert(TypeId::of::<Health>(), ComponentMeta::of::<Health>());
+
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let mut archetype = Archetype::new_with_blob(ArchetypeId(0), sig, metas);
+
+        let e1 = unsafe { Entity::from_raw(1) };
+        let e2 = unsafe { Entity::from_raw(2) };
+
+        archetype.entity_index.insert(e1);
+        archetype.entities.push(e1);
+        archetype.push_component_typed(Health(50));
+
+        archetype.entity_index.insert(e2);
+        archetype.entities.push(e2);
+        archetype.push_component_typed(Health(75));
+
+        // Mutate through blob_mut
+        {
+            let (entities, healths) = archetype
+                .iter_components_blob_mut::<Health>()
+                .expect("blob archetype must return Some");
+
+            assert_eq!(entities.len(), 2);
+            assert_eq!(healths.len(), 2);
+            assert_eq!(healths[0], Health(50));
+            assert_eq!(healths[1], Health(75));
+
+            // Mutate
+            healths[0] = Health(999);
+            healths[1] = Health(888);
+        }
+
+        // Verify mutations persisted via immutable path
+        let (_, healths_after) = archetype
+            .iter_components_blob::<Health>()
+            .unwrap();
+        assert_eq!(healths_after[0], Health(999));
+        assert_eq!(healths_after[1], Health(888));
+    }
+
+    #[test]
+    fn test_get_or_create_archetype_with_blob_increments_id() {
+        // Kills: next_id += 1 → next_id -= 1 / next_id *= 1
+        // Verifies that each new blob archetype gets a strictly increasing ID
+        use crate::component_meta::ComponentMeta;
+
+        let mut storage = ArchetypeStorage::new();
+
+        let sig1 = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let mut metas1 = HashMap::new();
+        metas1.insert(TypeId::of::<Health>(), ComponentMeta::of::<Health>());
+
+        let sig2 = ArchetypeSignature::new(vec![TypeId::of::<Position>()]);
+        let mut metas2 = HashMap::new();
+        metas2.insert(TypeId::of::<Position>(), ComponentMeta::of::<Position>());
+
+        let sig3 = ArchetypeSignature::new(vec![
+            TypeId::of::<Health>(),
+            TypeId::of::<Position>(),
+        ]);
+        let mut metas3 = HashMap::new();
+        metas3.insert(TypeId::of::<Health>(), ComponentMeta::of::<Health>());
+        metas3.insert(TypeId::of::<Position>(), ComponentMeta::of::<Position>());
+
+        let id1 = storage.get_or_create_archetype_with_blob(sig1.clone(), metas1);
+        let id2 = storage.get_or_create_archetype_with_blob(sig2.clone(), metas2);
+        let id3 = storage.get_or_create_archetype_with_blob(sig3.clone(), metas3);
+
+        // IDs must be strictly increasing
+        assert!(id2.0 > id1.0, "id2 ({}) must be > id1 ({})", id2.0, id1.0);
+        assert!(id3.0 > id2.0, "id3 ({}) must be > id2 ({})", id3.0, id2.0);
+        assert_eq!(id1.0 + 1, id2.0, "IDs should be consecutive");
+        assert_eq!(id2.0 + 1, id3.0, "IDs should be consecutive");
+
+        // Re-requesting same signature returns same ID (no increment)
+        let metas1_dup = {
+            let mut m = HashMap::new();
+            m.insert(TypeId::of::<Health>(), ComponentMeta::of::<Health>());
+            m
+        };
+        let id1_dup = storage.get_or_create_archetype_with_blob(sig1, metas1_dup);
+        assert_eq!(id1, id1_dup, "duplicate signature must return same ID");
+
+        // Archetype is actually usable for blob operations
+        let arch = storage.get_archetype(id1).unwrap();
+        assert!(arch.uses_blob(), "blob archetype must use blob mode");
+    }
+
+    #[test]
+    fn test_remove_entity_boundary_at_len() {
+        // Kills: remove_entity < → <= (entity at exactly vec.len()-1 must work)
+        // With `<=`, entity.id == vec.len() would enter the branch and OOB.
+        let mut storage = ArchetypeStorage::new();
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let arch_id = storage.get_or_create_archetype(sig);
+
+        // Entity with id=0 (so index = 0)
+        let e0 = unsafe { Entity::from_raw(0) };
+        storage.set_entity_archetype(e0, arch_id);
+
+        // Entity with id=1 (so index = 1, which is entity_to_archetype.len()-1 after resize)
+        let e1 = unsafe { Entity::from_raw(1) };
+        storage.set_entity_archetype(e1, arch_id);
+
+        // Entity with id exactly at len boundary — the vec length should be 2
+        // Removing entity 1 (id=1, len is 2, 1 < 2 is true → enters branch)
+        let result = storage.remove_entity(e1);
+        assert_eq!(result, Some(arch_id), "entity at len-1 must be removable");
+
+        // Entity just beyond the vec length — should return None cleanly
+        let e_beyond = unsafe { Entity::from_raw(2) };
+        let result_beyond = storage.remove_entity(e_beyond);
+        assert_eq!(result_beyond, None, "entity beyond vec length must be None");
+
+        // Verify e0 is still tracked
+        assert_eq!(storage.get_entity_archetype(e0), Some(arch_id));
+        // Verify e1 is gone
+        assert_eq!(storage.get_entity_archetype(e1), None);
+    }
 }

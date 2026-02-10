@@ -2026,3 +2026,217 @@ mod component_registry_tests {
         assert!(!world.is_component_registered_blob::<AnotherRegisteredComponent>());
     }
 }
+
+// ============================================================================
+// MUTATION REMEDIATION — BlobVec raw pointer, archetype blob
+// Targets specific missed mutants from cargo-mutants ECS shard run.
+// ============================================================================
+
+mod blob_vec_raw_pointer_remediation {
+    use super::*;
+
+    /// Verifies get_raw returns a pointer to the correct data (not just is_some).
+    /// Catches: `* → +` and `* → /` in `index * item_layout.size()` (line 198).
+    #[test]
+    fn get_raw_returns_correct_pointer_value() {
+        let mut blob = BlobVec::new::<u32>();
+        unsafe {
+            blob.push(111u32);
+            blob.push(222u32);
+            blob.push(333u32);
+        }
+        // Verify each slot returns the correct value via raw pointer
+        for (i, expected) in [111u32, 222, 333].iter().enumerate() {
+            let ptr = blob.get_raw(i).expect("should return Some");
+            let val = unsafe { *(ptr as *const u32) };
+            assert_eq!(val, *expected, "get_raw({i}) returned wrong value: {val} != {expected}");
+        }
+    }
+
+    /// Verifies get_raw_mut returns pointer to correct data and allows mutation.
+    /// Catches: `* → +` and `* → /` in `index * item_layout.size()` (line 214).
+    #[test]
+    fn get_raw_mut_returns_correct_pointer_value() {
+        let mut blob = BlobVec::new::<u64>();
+        unsafe {
+            blob.push(1000u64);
+            blob.push(2000u64);
+            blob.push(3000u64);
+        }
+        // Verify each slot and mutate through raw pointer
+        for (i, expected) in [1000u64, 2000, 3000].iter().enumerate() {
+            let ptr = blob.get_raw_mut(i).expect("should return Some");
+            let val = unsafe { *(ptr as *const u64) };
+            assert_eq!(val, *expected, "get_raw_mut({i}) wrong value: {val} != {expected}");
+        }
+        // Mutate index 1 and verify
+        let ptr = blob.get_raw_mut(1).unwrap();
+        unsafe { *(ptr as *mut u64) = 9999 };
+        let check = blob.get_raw(1).unwrap();
+        let val = unsafe { *(check as *const u64) };
+        assert_eq!(val, 9999, "mutation through get_raw_mut should persist");
+    }
+
+    /// Verifies get_raw boundary: `>= → <` mutation would give wrong results.
+    /// Catches: `>= → <` in `if index >= self.len` (lines 194, 209)
+    #[test]
+    fn get_raw_exact_boundary() {
+        let mut blob = BlobVec::new::<u32>();
+        unsafe { blob.push(42u32) };
+        // index 0 is valid (len = 1)
+        assert!(blob.get_raw(0).is_some(), "index 0 should be valid");
+        // index 1 == len, should be None where >= makes it None
+        assert!(blob.get_raw(1).is_none(), "index == len should be None");
+    }
+
+    /// Verifies swap_remove_raw actually swaps the last element into the hole.
+    /// Catches: `- → +/÷` in `last_index = self.len - 1` (line 228),
+    ///          `* → +/÷` in pointer offset calculations (lines 235, 245-246),
+    ///          `!= → ==` in swap condition (line 241).
+    #[test]
+    fn swap_remove_raw_verifies_swap_content() {
+        let mut blob = BlobVec::new::<u32>();
+        unsafe {
+            blob.push(10u32);
+            blob.push(20u32);
+            blob.push(30u32);
+            blob.push(40u32);
+        }
+        // Remove index 1 (value 20). Last element (40) should move to index 1.
+        blob.swap_remove_raw(1);
+        assert_eq!(blob.len(), 3);
+
+        // Verify remaining values are [10, 40, 30]
+        let val0 = unsafe { *(blob.get_raw(0).unwrap() as *const u32) };
+        let val1 = unsafe { *(blob.get_raw(1).unwrap() as *const u32) };
+        let val2 = unsafe { *(blob.get_raw(2).unwrap() as *const u32) };
+        assert_eq!(val0, 10, "index 0 should be untouched");
+        assert_eq!(val1, 40, "index 1 should have last element (40)");
+        assert_eq!(val2, 30, "index 2 should be untouched");
+    }
+
+    /// Verifies swap_remove_raw when removing the last element (no swap needed).
+    /// Catches: `!= → ==` in `if index != last_index` (line 241).
+    #[test]
+    fn swap_remove_raw_last_element_no_swap() {
+        let mut blob = BlobVec::new::<u32>();
+        unsafe {
+            blob.push(10u32);
+            blob.push(20u32);
+        }
+        // Remove last element (index 1)
+        blob.swap_remove_raw(1);
+        assert_eq!(blob.len(), 1);
+        let val = unsafe { *(blob.get_raw(0).unwrap() as *const u32) };
+        assert_eq!(val, 10, "first element should be untouched after removing last");
+    }
+
+    /// Verifies reserve multiplication is correct (not addition or division).
+    /// Catches: `* → +` and `* → /` in `self.item_layout.size() * new_capacity` (line 116)
+    ///          and `self.item_layout.size() * self.capacity` (line 131).
+    #[test]
+    fn reserve_allocates_correct_capacity_for_large_types() {
+        // Use a large type so size multiplication matters
+        #[repr(C)]
+        #[derive(Clone, Copy)]
+        struct Big([u8; 256]);
+
+        let mut blob = BlobVec::new::<Big>();
+        blob.reserve(10);
+        assert!(blob.capacity() >= 10, "capacity should be >= 10");
+
+        // Push should succeed up to capacity without panic
+        for i in 0..10 {
+            unsafe { blob.push(Big([i as u8; 256])) };
+        }
+        assert_eq!(blob.len(), 10);
+
+        // Verify stored values are correct (catches pointer math issues)
+        for i in 0..10 {
+            let ptr = blob.get_raw(i).expect("should have value");
+            let val = unsafe { *(ptr as *const Big) };
+            assert_eq!(val.0[0], i as u8, "value at {i} should be {i}");
+        }
+    }
+
+    /// Verifies with_capacity pre-allocation doesn't break for boundary case.
+    /// Catches: `> → >=` in `if capacity > 0` (line 62).
+    #[test]
+    fn with_capacity_zero_is_empty() {
+        let blob = BlobVec::with_capacity::<u32>(0);
+        assert_eq!(blob.len(), 0);
+        assert_eq!(blob.capacity(), 0, "capacity(0) should not allocate");
+    }
+
+    /// Verifies from_layout_with_capacity boundary.
+    /// Catches: `> → >=` in `if capacity > 0` (line 96).
+    #[test]
+    fn from_layout_with_capacity_zero() {
+        let layout = Layout::new::<u32>();
+        let blob = BlobVec::from_layout_with_capacity(layout, None, 0);
+        assert_eq!(blob.len(), 0);
+        assert_eq!(blob.capacity(), 0, "from_layout_with_capacity(0) should not allocate");
+    }
+}
+
+mod archetype_blob_remediation {
+    use super::*;
+    use astraweave_ecs::World;
+
+    /// Verify archetype storage with blob operations through World API.
+    /// Catches mutations in archetype blob iteration and entity removal.
+    #[test]
+    fn world_insert_and_query_blob_components() {
+        let mut world = World::new();
+        world.register_component::<u32>();
+        world.register_component::<f64>();
+
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        let e3 = world.spawn();
+
+        world.insert(e1, 100u32);
+        world.insert(e2, 200u32);
+        world.insert(e3, 300u32);
+        world.insert(e1, 1.5f64);
+        world.insert(e3, 3.5f64);
+
+        // Query u32 components
+        let u32_val = world.get::<u32>(e1);
+        assert_eq!(u32_val, Some(&100u32), "e1 should have u32=100");
+        let u32_val = world.get::<u32>(e2);
+        assert_eq!(u32_val, Some(&200u32), "e2 should have u32=200");
+        let u32_val = world.get::<u32>(e3);
+        assert_eq!(u32_val, Some(&300u32), "e3 should have u32=300");
+
+        // Query f64 components
+        assert_eq!(world.get::<f64>(e1), Some(&1.5f64));
+        assert_eq!(world.get::<f64>(e2), None, "e2 should NOT have f64");
+        assert_eq!(world.get::<f64>(e3), Some(&3.5f64));
+    }
+
+    /// Verify entity removal from archetype doesn't corrupt other entities.
+    /// Catches: `< → <=` in remove_entity (archetype.rs:559),
+    ///          `+= → -=/*=` in get_or_create_archetype_with_blob (archetype.rs:516).
+    #[test]
+    fn remove_entity_preserves_others() {
+        let mut world = World::new();
+        world.register_component::<u32>();
+
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        let e3 = world.spawn();
+
+        world.insert(e1, 10u32);
+        world.insert(e2, 20u32);
+        world.insert(e3, 30u32);
+
+        // Remove middle entity
+        world.despawn(e2);
+
+        // Verify remaining entities still have correct values
+        assert_eq!(world.get::<u32>(e1), Some(&10u32), "e1 should survive");
+        assert_eq!(world.get::<u32>(e2), None, "e2 should be gone");
+        assert_eq!(world.get::<u32>(e3), Some(&30u32), "e3 should survive");
+    }
+}

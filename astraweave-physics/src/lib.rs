@@ -238,10 +238,7 @@ impl DebugLine {
     /// Returns the length of the line.
     #[inline]
     pub fn length(&self) -> f32 {
-        let dx = self.end[0] - self.start[0];
-        let dy = self.end[1] - self.start[1];
-        let dz = self.end[2] - self.start[2];
-        (dx * dx + dy * dy + dz * dz).sqrt()
+        self.length_squared().sqrt()
     }
 
     /// Returns the squared length of the line.
@@ -1300,6 +1297,10 @@ impl PhysicsWorld {
             // across multiple frames - position gets reset by physics step
             rbmut.set_next_kinematic_position(p);
         }
+
+        // BUG FIX: Store updated controller state (vertical_velocity, timers, etc.)
+        // Previously only stored on the early-return path, discarding gravity/jump state
+        self.char_map.insert(id, ctrl);
     }
 
     pub fn handle_of(&self, id: BodyId) -> Option<RigidBodyHandle> {
@@ -2659,6 +2660,19 @@ mod tests {
     }
 
     #[test]
+    fn test_buoyancy_data_drag_force_nonunit_drag() {
+        // Use drag ≠ 1.0 so that `0.5 * drag` ≠ `0.5 / drag`
+        let bd = BuoyancyData::new(1.0, 3.0);
+        let force = bd.drag_force(4.0);
+        // F = 0.5 * 3.0 * 4.0 * 4.0 = 24.0
+        assert!(
+            (force - 24.0).abs() < 0.01,
+            "drag_force with drag=3.0 v=4.0: got {} expected 24.0",
+            force,
+        );
+    }
+
+    #[test]
     fn test_buoyancy_data_display() {
         let bd = BuoyancyData::new(1.5, 0.25);
         let display = format!("{}", bd);
@@ -2672,5 +2686,388 @@ mod tests {
         let bd = BuoyancyData::default();
         assert_eq!(bd.volume, 0.0);
         assert_eq!(bd.drag, 0.0);
+    }
+
+    // ===== Mutation-resistant tests =====
+    // These target the specific mutants that escape existing tests.
+
+    // --- BuoyancyData::drag_force: * → / at each position ---
+    #[test]
+    fn drag_force_all_multiplications_matter() {
+        // Use values where *, +, / all give distinct results
+        // F = 0.5 * drag * v * v
+        let bd = BuoyancyData::new(1.0, 2.0);
+        let force = bd.drag_force(3.0);
+        // Expected: 0.5 * 2.0 * 3.0 * 3.0 = 9.0
+        // If / at pos1: 0.5 / 2.0 * 3.0 * 3.0 = 2.25
+        // If / at pos2: 0.5 * 2.0 / 3.0 * 3.0 = 1.0
+        // If / at pos3: 0.5 * 2.0 * 3.0 / 3.0 = 1.0
+        // If + at pos1: (0.5 + 2.0) * 3.0 * 3.0 = 22.5
+        assert!((force - 9.0).abs() < 0.01,
+            "drag_force(2.0 drag, 3.0 vel) = 0.5*2*3*3 = 9.0, got {}", force);
+    }
+
+    // --- add_character height calculation: half.y * 2.0 ---
+    #[test]
+    fn add_character_height_is_double_half_y() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let half = Vec3::new(0.4, 0.9, 0.4);
+        let char_id = pw.add_character(Vec3::new(0.0, 5.0, 0.0), half);
+        
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        // height should be half.y * 2.0 = 0.9 * 2.0 = 1.8
+        assert!((ctrl.height - 1.8).abs() < 0.001,
+            "height should be half.y * 2.0 = 1.8, got {}", ctrl.height);
+        // If * → +: 0.9 + 2.0 = 2.9 (wrong)
+        // If * → /: 0.9 / 2.0 = 0.45 (wrong)
+    }
+
+    // --- jump: verify velocity = sqrt(2 * g * height) ---
+    #[test]
+    fn jump_velocity_formula_correctness() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        let height = 3.0;
+        pw.jump(char_id, height);
+        
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        let g = 9.81 * ctrl.gravity_scale; // gravity_scale = 1.0
+        let expected_vel = (2.0 * g * height).sqrt();
+        // expected_vel = sqrt(2 * 9.81 * 3.0) = sqrt(58.86) ≈ 7.672
+        assert!((ctrl.pending_jump_velocity - expected_vel).abs() < 0.01,
+            "jump velocity should be sqrt(2*g*h) = {:.3}, got {:.3}",
+            expected_vel, ctrl.pending_jump_velocity);
+        
+        // If * → +: (2.0 + g + height).sqrt() = sqrt(14.81) ≈ 3.849 (wrong)
+        // If * → /: (2.0 / g / height).sqrt() = sqrt(0.068) ≈ 0.261 (wrong)
+        assert!(ctrl.pending_jump_velocity > 5.0, "Jump vel must be > 5.0 for h=3.0");
+    }
+
+    #[test]
+    fn jump_sets_buffer_timer() {
+        // Mutant: replace jump with () — would skip all logic
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        pw.jump(char_id, 2.0);
+        
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        assert!(ctrl.jump_buffer_timer > 0.0, "jump must set buffer timer");
+        assert!(ctrl.pending_jump_velocity > 0.0, "jump must set pending velocity");
+    }
+
+    // --- control_character: gravity application ---
+    #[test]
+    fn control_character_applies_gravity_when_not_climbing() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.9);
+        // Place character high above ground so it doesn't snap
+        let char_id = pw.add_character(Vec3::new(0.0, 50.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+
+        // Initialize query pipeline with a step
+        pw.step();
+
+        // Now apply several frames of gravity
+        for _ in 0..10 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        // After 10 frames of freefall with no ground snap:
+        // vertical_velocity should be negative (gravity pulling down)
+        // If -= mutated to +=, velocity would be positive (going up)
+        assert!(ctrl.vertical_velocity < 0.0,
+            "Gravity should make vertical_velocity negative, got {}", ctrl.vertical_velocity);
+    }
+
+    #[test]
+    fn control_character_climb_ignores_gravity() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        // Move with climbing=true → vertical_velocity should be 0, no gravity
+        pw.control_character(char_id, Vec3::ZERO, 0.1, true);
+        
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        assert_eq!(ctrl.vertical_velocity, 0.0,
+            "Climbing should zero vertical velocity, not apply gravity");
+        // If !_climb → _climb mutant: gravity would apply during climb
+    }
+
+    #[test]
+    fn control_character_horizontal_movement_scales_with_dt() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(20.0, 0.5, 20.0), 0.9);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+
+        let x0 = pw.body_transform(char_id).unwrap().w_axis.x;
+        
+        // Move with small dt
+        pw.control_character(char_id, Vec3::new(10.0, 0.0, 0.0), 0.01, false);
+        pw.step();
+        let x1 = pw.body_transform(char_id).unwrap().w_axis.x;
+        
+        // Move with larger dt should move further
+        let char_id2 = pw.add_character(Vec3::new(0.0, 1.0, 5.0), Vec3::new(0.4, 0.9, 0.4));
+        let x2_0 = pw.body_transform(char_id2).unwrap().w_axis.x;
+        pw.control_character(char_id2, Vec3::new(10.0, 0.0, 0.0), 0.1, false);
+        pw.step();
+        let x2_1 = pw.body_transform(char_id2).unwrap().w_axis.x;
+        
+        let delta_small = x1 - x0;
+        let delta_large = x2_1 - x2_0;
+        assert!(delta_large > delta_small * 2.0,
+            "Larger dt should produce more movement: small_dt→{}, large_dt→{}",
+            delta_small, delta_large);
+    }
+
+    // --- apply_radial_impulse: direction and falloff ---
+    #[test]
+    fn radial_impulse_direction_away_from_center() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, 0.0, 0.0)); // zero gravity for clarity
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(3.0, 0.0, 0.0), // Body at (3,0,0)
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        // Explosion at origin, radius=10, force=100, no upward bias
+        let count = pw.apply_radial_impulse(
+            Vec3::ZERO, 10.0, 100.0, FalloffCurve::Linear, 0.0,
+        );
+        assert_eq!(count, 1);
+        
+        let vel = pw.get_velocity(box_id).unwrap();
+        // Body is at +X from center, so impulse should push in +X
+        assert!(vel.x > 0.0, "Radial impulse from origin should push +X, got vx={}", vel.x);
+        // Y and Z should be ~0 (no upward bias, body directly on X axis)
+        assert!(vel.y.abs() < 0.1, "No upward bias → vy should be ~0, got {}", vel.y);
+    }
+
+    #[test]
+    fn radial_impulse_with_upward_bias() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, 0.0, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(2.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        
+        // Full upward bias
+        pw.apply_radial_impulse(
+            Vec3::ZERO, 10.0, 100.0, FalloffCurve::Linear, 1.0,
+        );
+        
+        let vel = pw.get_velocity(box_id).unwrap();
+        // With upward_bias=1.0, direction should be mostly Y
+        assert!(vel.y > vel.x.abs(), "Full upward bias should have vy > |vx|, vy={}, vx={}", vel.y, vel.x);
+    }
+
+    #[test]
+    fn radial_impulse_excludes_bodies_outside_radius() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, 0.0, 0.0));
+        let _near = pw.add_dynamic_box(
+            Vec3::new(2.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT,
+        );
+        let far = pw.add_dynamic_box(
+            Vec3::new(20.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT,
+        );
+        
+        let count = pw.apply_radial_impulse(
+            Vec3::ZERO, 5.0, 100.0, FalloffCurve::Linear, 0.0,
+        );
+        
+        assert_eq!(count, 1, "Only near body should be affected");
+        let far_vel = pw.get_velocity(far).unwrap();
+        assert_eq!(far_vel.x, 0.0, "Far body should have no velocity");
+    }
+
+    // --- raycast: hit position calculation ---
+    #[test]
+    fn raycast_hit_position_is_origin_plus_dir_times_toi() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _box = pw.add_dynamic_box(
+            Vec3::new(5.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.step(); // Update query pipeline
+        
+        let origin = Vec3::ZERO;
+        let direction = Vec3::X;
+        let hit = pw.raycast(origin, direction, 20.0);
+        assert!(hit.is_some(), "Should hit the box");
+        
+        let (hit_pos, _normal, _id, toi) = hit.unwrap();
+        // hit_pos should be origin + direction * toi
+        let expected_pos = origin + direction * toi;
+        assert!((hit_pos.x - expected_pos.x).abs() < 0.01,
+            "hit_pos.x={}, expected={}", hit_pos.x, expected_pos.x);
+        assert!((hit_pos.y - expected_pos.y).abs() < 0.01);
+        assert!((hit_pos.z - expected_pos.z).abs() < 0.01);
+        
+        // If + → - or *: hit_pos would be wrong
+        assert!(hit_pos.x > 0.0, "Hit should be at positive X");
+        assert!(toi > 0.0, "TOI should be positive");
+    }
+
+    // --- add_destructible_box: verify body created ---
+    #[test]
+    fn add_destructible_box_creates_body() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let id = pw.add_destructible_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(1.0, 1.0, 1.0),
+            2.0, 100.0, 50.0,
+        );
+        // Mutant: replace with Default::default() → id would be 0 with no body
+        assert!(pw.handle_of(id).is_some(), "Body must exist after add_destructible_box");
+        assert!(pw.body_transform(id).is_some(), "Transform must be available");
+    }
+
+    // --- enable_ccd: verify it actually enables ---
+    #[test]
+    fn enable_ccd_activates_ccd_on_body() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT,
+        );
+        
+        // Mutant: replace enable_ccd with () → CCD not enabled
+        pw.enable_ccd(id);
+        
+        let h = pw.handle_of(id).unwrap();
+        let rb = pw.bodies.get(h).unwrap();
+        assert!(rb.is_ccd_active() || rb.is_ccd_enabled(),
+            "CCD should be enabled after enable_ccd()");
+    }
+
+    // --- add_joint: IDs increment sequentially ---
+    #[test]
+    fn add_joint_ids_increment() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let b1 = pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        let b2 = pw.add_dynamic_box(Vec3::new(2.0, 5.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+        
+        let j1 = pw.add_joint(b1, b2, JointType::Fixed);
+        let j2 = pw.add_joint(b1, b2, JointType::Spherical);
+        
+        // Mutant: += → *= on next_joint_id would keep it at 0
+        assert!(j2.0 > j1.0, "Joint IDs must increment: j1={}, j2={}", j1.0, j2.0);
+    }
+
+    // --- id_of: returns correct BodyId ---
+    #[test]
+    fn id_of_returns_correct_body() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT,
+        );
+        
+        let h = pw.handle_of(box_id).unwrap();
+        let retrieved_id = pw.id_of(h);
+        // Mutant: replace with None or Some(Default::default())
+        assert_eq!(retrieved_id, Some(box_id),
+            "id_of should return the original body ID");
+    }
+
+    // --- apply_buoyancy_forces: body below water gets upward force ---
+    #[test]
+    fn buoyancy_forces_apply_upward_when_underwater() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        pw.water_level = 10.0;
+        pw.fluid_density = 1000.0;
+        
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0), // Below water level
+            Vec3::new(0.5, 0.5, 0.5),
+            10.0, // Heavy so gravity is significant
+            Layers::DEFAULT,
+        );
+        pw.add_buoyancy(box_id, 2.0, 0.5); // Large volume for strong buoyancy
+        
+        // Without buoyancy, box would fall. With buoyancy, should float up.
+        for _ in 0..60 {
+            pw.step();
+        }
+        
+        let y = pw.body_transform(box_id).unwrap().w_axis.y;
+        // Buoyancy force = 2.0 * 1000.0 * 9.81 = 19620 N upward
+        // Gravity force = 10.0 * 9.8 = 98 N downward
+        // Net force is strongly upward, so box rises
+        assert!(y > 5.0, "Buoyancy should push object upward from y=5, got y={}", y);
+    }
+
+    #[test]
+    fn buoyancy_not_applied_above_water() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        pw.water_level = 0.0; // Water at y=0
+        
+        let box_id = pw.add_dynamic_box(
+            Vec3::new(0.0, 5.0, 0.0), // Above water level
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.add_buoyancy(box_id, 1.0, 0.5);
+        
+        // Box should fall normally (no buoyancy above water)
+        for _ in 0..60 {
+            pw.step();
+        }
+        
+        let y = pw.body_transform(box_id).unwrap().w_axis.y;
+        // Mutant: < → <= would include bodies AT water level
+        assert!(y < 5.0, "Box above water should fall, got y={}", y);
+    }
+
+    // --- PhysicsStepProfile percentage precision ---
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn profile_broad_phase_percent_exact_value() {
+        let profile = PhysicsStepProfile {
+            total_duration: std::time::Duration::from_millis(10),
+            broad_phase_duration: std::time::Duration::from_millis(4),
+            narrow_phase_duration: std::time::Duration::from_millis(3),
+            integration_duration: std::time::Duration::from_millis(3),
+            ..Default::default()
+        };
+        
+        let bp = profile.broad_phase_percent();
+        // Expected: 4/10 * 100 = 40.0
+        assert!((bp - 40.0).abs() < 0.1,
+            "broad_phase_percent should be ~40.0, got {}", bp);
+        
+        // Mutant → 0.0: Would fail (40 ≠ 0)
+        // Mutant → 1.0: Would fail (40 ≠ 1)
+        // Mutant → -1.0: Would fail (40 ≠ -1)
+        assert!(bp > 0.0);
+    }
+
+    #[test]
+    #[cfg(feature = "async-physics")]
+    fn profile_narrow_phase_percent_exact_value() {
+        let profile = PhysicsStepProfile {
+            total_duration: std::time::Duration::from_millis(10),
+            broad_phase_duration: std::time::Duration::from_millis(2),
+            narrow_phase_duration: std::time::Duration::from_millis(5),
+            integration_duration: std::time::Duration::from_millis(3),
+            ..Default::default()
+        };
+        
+        let np = profile.narrow_phase_percent();
+        // Expected: 5/10 * 100 = 50.0
+        assert!((np - 50.0).abs() < 0.1,
+            "narrow_phase_percent should be ~50.0, got {}", np);
+        assert!(np > 0.0);
     }
 }

@@ -336,4 +336,96 @@ mod tests {
         assert!(log.active_quests.is_empty());
         assert_eq!(log.completed_quests, vec!["test_quest".to_string()]);
     }
+
+    // ===== Mutation-resistant tests =====
+    // Catches: CTarget::resolve returning None, combat distance + -> -/*
+
+    #[test]
+    fn ctarget_resolve_returns_some() {
+        // CTarget::resolve must return Some(entity), not None
+        let world = astraweave_ecs::World::new();
+        let entity = unsafe { astraweave_ecs::Entity::from_raw(42) };
+        let target = CTarget::from_entity(entity);
+        let resolved = target.resolve(&world);
+        assert!(resolved.is_some(), "resolve() must return Some, not None");
+        assert_eq!(resolved.unwrap().to_raw(), 42);
+    }
+
+    #[test]
+    fn combat_distance_check_with_offset_positions() {
+        // Attacker at (0,5), target at (3,5): Manhattan dist = 3, reach = 5 → hit
+        // If + mutated to -, dist = |0-3| - |5-5| = 3-0 = 3 (same here)
+        // Use different x AND y: attacker at (0,0), target at (2,3): dist = 2+3 = 5
+        // If + → -, dist = |2| - |3| = -1 abs = 1 (wrong!)
+        // If + → *, dist = 2*3 = 6 (wrong!)
+        let mut app = App::new();
+        app.world.insert_resource(0.016f32);
+        let plugin = CombatPlugin;
+        plugin.build(&mut app);
+
+        let attacker = app.world.spawn();
+        let target = app.world.spawn();
+        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(target, CPos { pos: IVec2 { x: 2, y: 3 } });
+        app.world.insert(target, CHealth { hp: 100 });
+
+        let chain = crate::ComboChain {
+            name: "test".to_string(),
+            steps: vec![crate::ComboStep {
+                kind: crate::AttackKind::Light,
+                window: (0.0, 0.5),
+                damage: 25,
+                reach: 5.0, // Reach 5 = exact Manhattan distance
+                stagger: 0.5,
+            }],
+        };
+        app.world.insert(attacker, CAttackState::new(chain));
+        app.world.insert(attacker, CTarget::from_entity(target));
+        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
+            attack.active = true;
+        }
+
+        app = app.run_fixed(1);
+
+        let health = app.world.get::<CHealth>(target).unwrap();
+        assert_eq!(health.hp, 75, "Manhattan dist=5, reach=5 → hit, damage 25");
+    }
+
+    #[test]
+    fn combat_out_of_reach_no_damage() {
+        // attacker at (0,0), target at (3,4): Manhattan dist = 7, reach = 5 → miss
+        let mut app = App::new();
+        app.world.insert_resource(0.016f32);
+        let plugin = CombatPlugin;
+        plugin.build(&mut app);
+
+        let attacker = app.world.spawn();
+        let target = app.world.spawn();
+        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(target, CPos { pos: IVec2 { x: 3, y: 4 } });
+        app.world.insert(target, CHealth { hp: 100 });
+
+        let chain = crate::ComboChain {
+            name: "test".to_string(),
+            steps: vec![crate::ComboStep {
+                kind: crate::AttackKind::Light,
+                window: (0.0, 0.5),
+                damage: 25,
+                reach: 5.0,
+                stagger: 0.5,
+            }],
+        };
+        app.world.insert(attacker, CAttackState::new(chain));
+        app.world.insert(attacker, CTarget::from_entity(target));
+        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
+            attack.active = true;
+        }
+
+        app = app.run_fixed(1);
+
+        let health = app.world.get::<CHealth>(target).unwrap();
+        assert_eq!(health.hp, 100, "Manhattan dist=7, reach=5 → miss, no damage");
+    }
 }

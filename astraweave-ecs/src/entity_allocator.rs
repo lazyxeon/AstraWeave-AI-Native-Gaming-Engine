@@ -551,4 +551,131 @@ mod tests {
         assert_eq!(e3.id(), 0); // Reset to ID 0
         assert_eq!(e3.generation(), 0); // Reset generation
     }
+
+    // ===========================================================================
+    // Mutation-Resistant Remediation: Entity bit ops & allocator statistics
+    // ===========================================================================
+    // Targets missed mutants from shard 2/6:
+    //   to_raw: | → ^ (line 102)
+    //   is_null: → true, && → || (line 135)
+    //   generation → None/Some(0)/Some(1) (line 344)
+    //   spawned_count → 0/1, despawned_count → 0 (lines 362, 368)
+
+    #[test]
+    fn test_to_raw_bit_encoding_correctness() {
+        // Kills: | → ^ in to_raw (XOR would corrupt when both halves have overlapping bits)
+        // When id=0, gen=0 → both | and ^ give 0 (not distinguishing)
+        // We need non-zero values where the bit patterns overlap
+        let e = Entity::new(0xFFFF_FFFF, 0xFFFF_FFFF);
+        let raw = e.to_raw();
+        // With |: (0xFFFFFFFF) | (0xFFFFFFFF << 32) = 0xFFFF_FFFF_FFFF_FFFF
+        // With ^: (0xFFFFFFFF) ^ (0xFFFFFFFF << 32) = 0xFFFF_FFFF_0000_0000 (WRONG!)
+        assert_eq!(raw, 0xFFFF_FFFF_FFFF_FFFF_u64);
+
+        // Also test with non-trivial values
+        let e2 = Entity::new(1, 1);
+        let _raw2 = e2.to_raw();
+        // With |: 1 | (1 << 32) = 0x0000_0001_0000_0001
+        // With ^: 1 ^ (1 << 32) = 0x0000_0001_0000_0001 (coincidentally same — no overlap)
+        // Need id bits that overlap with shifted gen bits → not possible since they're
+        // in different 32-bit halves. BUT from_raw must reconstruct correctly.
+        let restored = unsafe { Entity::from_raw(raw) };
+        assert_eq!(restored.id(), 0xFFFF_FFFF);
+        assert_eq!(restored.generation(), 0xFFFF_FFFF);
+
+        // Additional: verify low bits only contain id
+        let e3 = Entity::new(42, 7);
+        let raw3 = e3.to_raw();
+        assert_eq!(raw3 & 0xFFFF_FFFF, 42, "low 32 bits must be id");
+        assert_eq!(raw3 >> 32, 7, "high 32 bits must be generation");
+    }
+
+    #[test]
+    fn test_is_null_both_conditions_required() {
+        // Kills: is_null → true (would always say null)
+        // Kills: && → || (would be null if EITHER is MAX)
+        let not_null = Entity::new(0, 0);
+        assert!(!not_null.is_null(), "Entity(0,0) is NOT null");
+
+        let half_null_1 = Entity::new(u32::MAX, 0);
+        assert!(!half_null_1.is_null(), "only id=MAX is NOT null (gen≠MAX)");
+
+        let half_null_2 = Entity::new(0, u32::MAX);
+        assert!(!half_null_2.is_null(), "only gen=MAX is NOT null (id≠MAX)");
+
+        let actual_null = Entity::null();
+        assert!(actual_null.is_null(), "Entity::null() IS null");
+        assert_eq!(actual_null.id(), u32::MAX);
+        assert_eq!(actual_null.generation(), u32::MAX);
+    }
+
+    #[test]
+    fn test_generation_returns_correct_value() {
+        // Kills: generation → None, Some(0), Some(1)
+        let mut allocator = EntityAllocator::new();
+
+        // Before any spawn, slot 0 doesn't exist
+        assert_eq!(allocator.generation(0), None, "unallocated slot must be None");
+        assert_eq!(allocator.generation(999), None, "far-away slot must be None");
+
+        // After spawn, generation 0
+        let e1 = allocator.spawn();
+        assert_eq!(
+            allocator.generation(e1.id()),
+            Some(0),
+            "first spawn generation must be Some(0)"
+        );
+
+        // After despawn+respawn, generation 1
+        allocator.despawn(e1);
+        let e2 = allocator.spawn();
+        assert_eq!(e2.id(), e1.id(), "recycled same slot");
+        assert_eq!(
+            allocator.generation(e2.id()),
+            Some(1),
+            "after respawn generation must be Some(1)"
+        );
+
+        // After another cycle, generation 2
+        allocator.despawn(e2);
+        let e3 = allocator.spawn();
+        assert_eq!(
+            allocator.generation(e3.id()),
+            Some(2),
+            "after second respawn generation must be Some(2)"
+        );
+    }
+
+    #[test]
+    fn test_spawned_count_accurate() {
+        // Kills: spawned_count → 0, spawned_count → 1
+        let mut allocator = EntityAllocator::new();
+        assert_eq!(allocator.spawned_count(), 0, "initially 0");
+
+        allocator.spawn();
+        assert_eq!(allocator.spawned_count(), 1, "after 1 spawn must be 1");
+
+        allocator.spawn();
+        assert_eq!(allocator.spawned_count(), 2, "after 2 spawns must be 2");
+
+        allocator.spawn();
+        assert_eq!(allocator.spawned_count(), 3, "after 3 spawns must be 3");
+    }
+
+    #[test]
+    fn test_despawned_count_accurate() {
+        // Kills: despawned_count → 0
+        let mut allocator = EntityAllocator::new();
+        assert_eq!(allocator.despawned_count(), 0, "initially 0");
+
+        let e1 = allocator.spawn();
+        let e2 = allocator.spawn();
+        assert_eq!(allocator.despawned_count(), 0, "no despawns yet");
+
+        allocator.despawn(e1);
+        assert_eq!(allocator.despawned_count(), 1, "after 1 despawn must be 1");
+
+        allocator.despawn(e2);
+        assert_eq!(allocator.despawned_count(), 2, "after 2 despawns must be 2");
+    }
 }

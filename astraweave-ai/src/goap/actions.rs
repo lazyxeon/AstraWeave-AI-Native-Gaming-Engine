@@ -600,4 +600,197 @@ mod tests {
         assert!(names.contains(&"heal".to_string()));
         assert!(names.contains(&"retreat".to_string()));
     }
+
+    // =========================================================================
+    // Mutation-Resistant: Exact name() and base_cost() for ALL actions
+    // =========================================================================
+
+    #[test]
+    fn test_move_to_action_properties() {
+        let action = MoveToAction::new();
+        assert_eq!(action.name(), "move_to");
+        assert_eq!(action.base_cost(), 2.0);
+        assert!(action.preconditions().is_empty());
+        assert!(action.effects().contains_key("moved"));
+        assert!(action.effects().contains_key("position_changed"));
+    }
+
+    #[test]
+    fn test_approach_enemy_action_properties() {
+        let action = ApproachEnemyAction::new();
+        assert_eq!(action.name(), "approach_enemy");
+        assert_eq!(action.base_cost(), 2.5);
+        assert!(action.preconditions().contains_key("enemy_present"));
+        assert!(action.preconditions().contains_key("enemy_distance"));
+        assert!(action.effects().contains_key("in_range"));
+    }
+
+    #[test]
+    fn test_attack_action_properties() {
+        let action = AttackAction::new();
+        assert_eq!(action.name(), "attack");
+        assert_eq!(action.base_cost(), 5.0);
+        assert!(action.effects().contains_key("enemy_damaged"));
+        assert!(action.effects().contains_key("ammo_spent"));
+    }
+
+    #[test]
+    fn test_cover_fire_action_properties() {
+        let action = CoverFireAction::new();
+        assert_eq!(action.name(), "cover_fire");
+        assert_eq!(action.base_cost(), 6.0);
+        assert!(action.effects().contains_key("enemy_suppressed"));
+        assert!(action.effects().contains_key("cover_provided"));
+    }
+
+    #[test]
+    fn test_reload_action_properties() {
+        let action = ReloadAction::new();
+        assert_eq!(action.name(), "reload");
+        assert_eq!(action.base_cost(), 3.0);
+        // Reload has very high success probability
+        let history = ActionHistory::new();
+        let world = WorldState::new();
+        assert_eq!(action.success_probability(&world, &history), 0.98);
+    }
+
+    #[test]
+    fn test_take_cover_action_properties() {
+        let action = TakeCoverAction::new();
+        assert_eq!(action.name(), "take_cover");
+        assert_eq!(action.base_cost(), 2.0);
+        assert!(action.preconditions().contains_key("enemy_present"));
+        assert!(action.preconditions().contains_key("in_cover"));
+    }
+
+    #[test]
+    fn test_heal_action_properties() {
+        let action = HealAction::new();
+        assert_eq!(action.name(), "heal");
+        assert_eq!(action.base_cost(), 4.0);
+        assert!(action.preconditions().contains_key("has_medkit"));
+        assert!(action.preconditions().contains_key("my_health"));
+    }
+
+    #[test]
+    fn test_throw_smoke_action_properties() {
+        let action = ThrowSmokeAction::new();
+        assert_eq!(action.name(), "throw_smoke");
+        assert_eq!(action.base_cost(), 4.0);
+        assert!(action.effects().contains_key("smoke_deployed"));
+        assert!(action.effects().contains_key("concealed"));
+    }
+
+    #[test]
+    fn test_retreat_action_properties() {
+        let action = RetreatAction::new();
+        assert_eq!(action.name(), "retreat");
+        assert_eq!(action.base_cost(), 2.5);
+        assert!(action.effects().contains_key("safe_distance"));
+    }
+
+    #[test]
+    fn test_revive_action_properties() {
+        let action = ReviveAction::new();
+        assert_eq!(action.name(), "revive");
+        assert_eq!(action.base_cost(), 5.0);
+        assert!(action.preconditions().contains_key("ally_downed"));
+        assert!(action.preconditions().contains_key("near_ally"));
+        assert!(action.effects().contains_key("ally_revived"));
+    }
+
+    #[test]
+    fn test_scan_action_properties() {
+        let action = ScanAction::new();
+        assert_eq!(action.name(), "scan");
+        assert_eq!(action.base_cost(), 1.0);
+        assert!(action.preconditions().is_empty());
+        assert!(action.effects().contains_key("scanned"));
+        assert!(action.effects().contains_key("aware"));
+    }
+
+    // =========================================================================
+    // Mutation-Resistant: success_probability and state_cost_modifier thresholds
+    // =========================================================================
+
+    #[test]
+    fn test_approach_enemy_success_probability_low_health() {
+        let action = ApproachEnemyAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(20)); // < 30
+        let history = ActionHistory::new();
+        let prob = action.success_probability(&world, &history);
+        // Default 0.85 * 0.7 = 0.595
+        assert!((prob - 0.595).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_approach_enemy_success_probability_healthy() {
+        let action = ApproachEnemyAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(100));
+        let history = ActionHistory::new();
+        let prob = action.success_probability(&world, &history);
+        assert_eq!(prob, 0.85);
+    }
+
+    #[test]
+    fn test_attack_success_probability_low_health_low_ammo() {
+        let action = AttackAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(30)); // < 40
+        world.set("my_ammo", StateValue::Int(3)); // < 5
+        let history = ActionHistory::new();
+        let prob = action.success_probability(&world, &history);
+        // 0.75 * 0.6 * 0.8 = 0.36
+        assert!((prob - 0.36).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_take_cover_state_cost_modifier_critical() {
+        let action = TakeCoverAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(20)); // < 30
+        assert_eq!(action.state_cost_modifier(&world), 0.5);
+    }
+
+    #[test]
+    fn test_take_cover_state_cost_modifier_moderate() {
+        let action = TakeCoverAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(50)); // < 60
+        assert_eq!(action.state_cost_modifier(&world), 0.8);
+    }
+
+    #[test]
+    fn test_heal_state_cost_modifier_critical_exact() {
+        let action = HealAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(15)); // < 20
+        assert_eq!(action.state_cost_modifier(&world), 0.3);
+    }
+
+    #[test]
+    fn test_heal_state_cost_modifier_moderate_exact() {
+        let action = HealAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(40)); // < 50
+        assert_eq!(action.state_cost_modifier(&world), 0.6);
+    }
+
+    #[test]
+    fn test_retreat_state_cost_modifier_critical_exact() {
+        let action = RetreatAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(20)); // < 25
+        assert_eq!(action.state_cost_modifier(&world), 0.4);
+    }
+
+    #[test]
+    fn test_retreat_state_cost_modifier_moderate_exact() {
+        let action = RetreatAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(40)); // < 50
+        assert_eq!(action.state_cost_modifier(&world), 0.7);
+    }
 }

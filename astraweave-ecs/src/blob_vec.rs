@@ -807,4 +807,301 @@ mod tests {
         blob.clear();
         assert!(blob.is_empty());
     }
+
+    // ===========================================================================
+    // Mutation-Resistant Remediation Tests: Raw Pointer Operations
+    // ===========================================================================
+    // These tests target the 25 missed mutants in blob_vec.rs shard 1/6:
+    //   get_raw, get_raw_mut, swap_remove_raw, reserve, with_capacity,
+    //   from_layout_with_capacity
+    // Existing tests only exercise the typed `get::<T>()` API,
+    // which does NOT cover the raw pointer arithmetic in get_raw / get_raw_mut.
+
+    #[test]
+    fn test_get_raw_returns_correct_pointer_and_value() {
+        // Kills mutants: get_raw → None, get_raw → Some(default), >= → <, * → +/÷
+        let mut blob = BlobVec::new::<u64>();
+        unsafe {
+            blob.push(0xDEAD_BEEF_u64);
+            blob.push(0xCAFE_BABE_u64);
+            blob.push(0x1234_5678_u64);
+        }
+
+        // Read back through raw pointer — verifies offset arithmetic
+        let ptr0 = blob.get_raw(0).expect("index 0 must be Some");
+        let val0 = unsafe { std::ptr::read(ptr0 as *const u64) };
+        assert_eq!(val0, 0xDEAD_BEEF_u64);
+
+        let ptr1 = blob.get_raw(1).expect("index 1 must be Some");
+        let val1 = unsafe { std::ptr::read(ptr1 as *const u64) };
+        assert_eq!(val1, 0xCAFE_BABE_u64);
+
+        let ptr2 = blob.get_raw(2).expect("index 2 must be Some");
+        let val2 = unsafe { std::ptr::read(ptr2 as *const u64) };
+        assert_eq!(val2, 0x1234_5678_u64);
+
+        // Out of bounds → None
+        assert!(blob.get_raw(3).is_none());
+        assert!(blob.get_raw(usize::MAX).is_none());
+    }
+
+    #[test]
+    fn test_get_raw_multi_element_offset_arithmetic() {
+        // Specifically tests that index * item_layout.size() is correct
+        // Kills: * → + (would be index + size instead of index * size)
+        // Kills: * → / (would be index / size)
+        #[derive(Clone, Copy, Debug, PartialEq)]
+        #[repr(C)]
+        struct Big([u8; 64]);
+
+        let mut blob = BlobVec::new::<Big>();
+        unsafe {
+            blob.push(Big([0xAA; 64]));
+            blob.push(Big([0xBB; 64]));
+            blob.push(Big([0xCC; 64]));
+        }
+
+        // Each element is 64 bytes apart. If arithmetic is wrong, we get garbage.
+        let p0 = blob.get_raw(0).unwrap();
+        let p1 = blob.get_raw(1).unwrap();
+        let p2 = blob.get_raw(2).unwrap();
+
+        // Verify the pointers are exactly 64 bytes apart
+        let offset_01 = unsafe { (p1 as *const u8).offset_from(p0 as *const u8) };
+        let offset_12 = unsafe { (p2 as *const u8).offset_from(p1 as *const u8) };
+        assert_eq!(offset_01, 64, "offset between [0] and [1] must be 64 bytes");
+        assert_eq!(offset_12, 64, "offset between [1] and [2] must be 64 bytes");
+
+        // Verify the actual values
+        let v0 = unsafe { std::ptr::read(p0 as *const Big) };
+        let v2 = unsafe { std::ptr::read(p2 as *const Big) };
+        assert_eq!(v0.0[0], 0xAA);
+        assert_eq!(v2.0[0], 0xCC);
+    }
+
+    #[test]
+    fn test_get_raw_mut_returns_correct_pointer_and_allows_mutation() {
+        // Kills mutants: get_raw_mut → None, get_raw_mut → Some(default),
+        //                >= → <, * → +/÷
+        let mut blob = BlobVec::new::<u32>();
+        unsafe {
+            blob.push(100_u32);
+            blob.push(200_u32);
+            blob.push(300_u32);
+        }
+
+        // Read through raw_mut pointer
+        let ptr1 = blob.get_raw_mut(1).expect("index 1 must be Some");
+        let val1 = unsafe { std::ptr::read(ptr1 as *const u32) };
+        assert_eq!(val1, 200);
+
+        // Mutate through raw_mut pointer
+        unsafe { std::ptr::write(ptr1 as *mut u32, 999) };
+
+        // Verify mutation stuck by re-reading
+        let ptr1_again = blob.get_raw(1).unwrap();
+        let val1_after = unsafe { std::ptr::read(ptr1_again as *const u32) };
+        assert_eq!(val1_after, 999);
+
+        // Other elements unaffected
+        let v0 = unsafe { std::ptr::read(blob.get_raw(0).unwrap() as *const u32) };
+        let v2 = unsafe { std::ptr::read(blob.get_raw(2).unwrap() as *const u32) };
+        assert_eq!(v0, 100);
+        assert_eq!(v2, 300);
+
+        // Out of bounds → None
+        assert!(blob.get_raw_mut(3).is_none());
+    }
+
+    #[test]
+    fn test_swap_remove_raw_data_integrity() {
+        // Kills mutants: swap_remove_raw → (), - → +/÷, * → +/÷, != → ==
+        // Verifies: element at index is removed, last element moves there,
+        //           len decrements, remaining data is correct
+        let mut blob = BlobVec::new::<i64>();
+        unsafe {
+            blob.push(10_i64);
+            blob.push(20_i64);
+            blob.push(30_i64);
+            blob.push(40_i64);
+        }
+        assert_eq!(blob.len(), 4);
+
+        // Remove index 1 (value 20): last element (40) should move to index 1
+        blob.swap_remove_raw(1);
+        assert_eq!(blob.len(), 3);
+
+        // Verify remaining data via raw pointers
+        let v0 = unsafe { std::ptr::read(blob.get_raw(0).unwrap() as *const i64) };
+        let v1 = unsafe { std::ptr::read(blob.get_raw(1).unwrap() as *const i64) };
+        let v2 = unsafe { std::ptr::read(blob.get_raw(2).unwrap() as *const i64) };
+        assert_eq!(v0, 10, "element 0 must be unchanged");
+        assert_eq!(v1, 40, "last element (40) must swap into removed index");
+        assert_eq!(v2, 30, "element 2 must be unchanged");
+
+        // Index 3 is now out of bounds
+        assert!(blob.get_raw(3).is_none());
+    }
+
+    #[test]
+    fn test_swap_remove_raw_last_element() {
+        // Tests the `if index != last_index` branch — removing the last element
+        // should NOT copy anything, just decrement len.
+        // Kills: != → == mutant (would incorrectly copy when removing last)
+        let mut blob = BlobVec::new::<u32>();
+        unsafe {
+            blob.push(111_u32);
+            blob.push(222_u32);
+        }
+
+        // Remove last element (index 1)
+        blob.swap_remove_raw(1);
+        assert_eq!(blob.len(), 1);
+
+        let v0 = unsafe { std::ptr::read(blob.get_raw(0).unwrap() as *const u32) };
+        assert_eq!(v0, 111, "first element must survive removal of last");
+        assert!(blob.get_raw(1).is_none());
+    }
+
+    #[test]
+    fn test_swap_remove_raw_single_element() {
+        // Edge case: removing the only element
+        let mut blob = BlobVec::new::<u64>();
+        unsafe { blob.push(42_u64) };
+        assert_eq!(blob.len(), 1);
+
+        blob.swap_remove_raw(0);
+        assert_eq!(blob.len(), 0);
+        assert!(blob.is_empty());
+        assert!(blob.get_raw(0).is_none());
+    }
+
+    #[test]
+    fn test_reserve_capacity_arithmetic() {
+        // Kills: reserve * → + (item_layout.size() + new_capacity instead of *)
+        // Kills: reserve * → / (capacity / 2 instead of capacity * 2)
+        // We use a large-ish struct so size arithmetic differences are detectable
+        #[derive(Clone, Copy)]
+        #[repr(C)]
+        struct Chunk([u8; 128]);
+
+        let mut blob = BlobVec::new::<Chunk>();
+        // Push enough to trigger first reserve
+        unsafe { blob.push(Chunk([0; 128])) };
+        let cap_after_first = blob.capacity();
+        assert!(cap_after_first >= 1, "must have capacity for at least 1 element");
+
+        // Reserve a large amount — exercises the capacity * 2 growth path
+        blob.reserve(100);
+        let cap_after_reserve = blob.capacity();
+        assert!(
+            cap_after_reserve >= 101,
+            "capacity must be >= len(1) + additional(100) = 101, got {}",
+            cap_after_reserve
+        );
+
+        // Now fill up to capacity and verify we can push without panic
+        let remaining = cap_after_reserve - blob.len();
+        for i in 0..remaining {
+            unsafe { blob.push(Chunk([i as u8; 128])) };
+        }
+        assert_eq!(blob.len(), cap_after_reserve);
+
+        // Verify data integrity after all the pushing
+        let first_val = unsafe { std::ptr::read(blob.get_raw(0).unwrap() as *const Chunk) };
+        assert_eq!(first_val.0[0], 0);
+        let last_val = unsafe {
+            std::ptr::read(blob.get_raw(blob.len() - 1).unwrap() as *const Chunk)
+        };
+        assert_eq!(last_val.0[0], (remaining - 1) as u8);
+    }
+
+    #[test]
+    fn test_with_capacity_boundary() {
+        // Kills: with_capacity > → >= (capacity 0 should NOT allocate)
+        let blob_zero = BlobVec::with_capacity::<u64>(0);
+        assert_eq!(blob_zero.len(), 0);
+        assert_eq!(blob_zero.capacity(), 0, "capacity=0 should not allocate");
+
+        let blob_one = BlobVec::with_capacity::<u64>(1);
+        assert_eq!(blob_one.len(), 0);
+        assert!(blob_one.capacity() >= 1, "capacity=1 must allocate");
+    }
+
+    #[test]
+    fn test_from_layout_with_capacity_boundary() {
+        // Kills: from_layout_with_capacity > → >=
+        let layout = Layout::new::<f64>();
+        let blob_zero = BlobVec::from_layout_with_capacity(layout, None, 0);
+        assert_eq!(blob_zero.capacity(), 0, "capacity=0 should not allocate");
+
+        let blob_one = BlobVec::from_layout_with_capacity(layout, None, 1);
+        assert!(blob_one.capacity() >= 1, "capacity=1 must allocate");
+    }
+
+    #[test]
+    fn test_get_raw_boundary_at_len() {
+        // Specifically tests index == len (out of bounds) vs index == len-1 (valid)
+        // Kills: >= → < in get_raw/get_raw_mut bounds check
+        let mut blob = BlobVec::new::<u32>();
+        unsafe {
+            blob.push(10_u32);
+            blob.push(20_u32);
+        }
+        // index == len-1 = 1: valid
+        assert!(blob.get_raw(1).is_some());
+        assert!(blob.get_raw_mut(1).is_some());
+
+        // index == len = 2: out of bounds
+        assert!(blob.get_raw(2).is_none());
+        assert!(blob.get_raw_mut(2).is_none());
+    }
+
+    #[test]
+    fn test_drop_impl_deallocates_correctly() {
+        // Kills: Drop > → < (would skip dealloc for capacity > 0)
+        // Kills: Drop * → + / * → / (would compute wrong layout size for dealloc)
+        // Allocator crash (UB) or mismatch when dealloc layout ≠ alloc layout.
+        // We test by creating a BlobVec with known capacity, pushing data,
+        // and dropping it in a scope. If the layout math is wrong, allocator
+        // panics or crashes (undefined behavior on Windows → likely access violation).
+        // Use large types so the size arithmetic difference is big.
+        #[derive(Clone, Copy)]
+        #[repr(C)]
+        struct BigChunk([u8; 256]);
+
+        for cap in [1, 2, 5, 16, 100] {
+            let mut blob = BlobVec::with_capacity::<BigChunk>(cap);
+            assert!(blob.capacity() >= cap);
+            for i in 0..cap {
+                unsafe { blob.push(BigChunk([i as u8; 256])) };
+            }
+            assert_eq!(blob.len(), cap);
+            // Verify data before drop
+            let last_ptr = blob.get_raw(cap - 1).unwrap();
+            let last_val = unsafe { std::ptr::read(last_ptr as *const BigChunk) };
+            assert_eq!(last_val.0[0], (cap - 1) as u8);
+            // blob drops here — if Drop layout is wrong, this would crash
+        }
+
+        // Also test drop with zero capacity (empty BlobVec, no dealloc needed)
+        {
+            let blob = BlobVec::new::<BigChunk>();
+            assert_eq!(blob.capacity(), 0);
+            // Drop should skip dealloc entirely when capacity == 0
+        }
+
+        // Test drop after clear (len=0 but capacity>0 → must still dealloc)
+        {
+            let mut blob = BlobVec::with_capacity::<BigChunk>(10);
+            unsafe {
+                blob.push(BigChunk([0xFF; 256]));
+                blob.push(BigChunk([0xAA; 256]));
+            }
+            blob.clear();
+            assert_eq!(blob.len(), 0);
+            assert!(blob.capacity() >= 10);
+            // Drop with capacity>0 but len=0 → must dealloc memory
+        }
+    }
 }

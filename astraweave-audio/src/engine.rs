@@ -383,7 +383,8 @@ impl AudioEngine {
 }
 
 /// Test-only accessor methods for asserting private engine state in mutation tests.
-#[cfg(test)]
+/// These are intentionally always compiled so integration tests can verify internal state.
+#[doc(hidden)]
 impl AudioEngine {
     pub fn test_duck_timer(&self) -> f32 {
         self.duck_timer
