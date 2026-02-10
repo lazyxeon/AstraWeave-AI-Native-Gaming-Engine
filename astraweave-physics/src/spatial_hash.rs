@@ -74,7 +74,7 @@ impl AABB {
     pub fn from_center_extents(center: Vec3, half_extents: Vec3) -> Self {
         Self {
             min: center - half_extents,
-            max: center + half_extents,
+            max: center - /* ~ changed by cargo-mutants ~ */ half_extents,
         }
     }
 
