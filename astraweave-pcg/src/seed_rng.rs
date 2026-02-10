@@ -179,4 +179,100 @@ mod tests {
         let child = parent_mut.fork("child");
         assert_eq!(child.layer(), "parent::child");
     }
+
+    // ── Additional SeedRng coverage tests ──
+
+    #[test]
+    fn test_gen_bool_deterministic() {
+        let mut rng1 = SeedRng::new(42, "test");
+        let mut rng2 = SeedRng::new(42, "test");
+        for _ in 0..50 {
+            assert_eq!(rng1.gen_bool(), rng2.gen_bool());
+        }
+    }
+
+    #[test]
+    fn test_gen_bool_with_prob_always_false() {
+        let mut rng = SeedRng::new(42, "test");
+        for _ in 0..100 {
+            assert!(!rng.gen_bool_with_prob(0.0));
+        }
+    }
+
+    #[test]
+    fn test_gen_bool_with_prob_always_true() {
+        let mut rng = SeedRng::new(42, "test");
+        for _ in 0..100 {
+            assert!(rng.gen_bool_with_prob(1.0));
+        }
+    }
+
+    #[test]
+    fn test_choose_mut_nonempty() {
+        let mut rng = SeedRng::new(42, "test");
+        let mut items = vec![10, 20, 30];
+        let chosen = rng.choose_mut(&mut items);
+        assert!(chosen.is_some());
+        let val = *chosen.unwrap();
+        assert!(val == 10 || val == 20 || val == 30);
+    }
+
+    #[test]
+    fn test_choose_mut_empty() {
+        let mut rng = SeedRng::new(42, "test");
+        let mut items: Vec<i32> = vec![];
+        assert!(rng.choose_mut(&mut items).is_none());
+    }
+
+    #[test]
+    fn test_choose_mut_mutates() {
+        let mut rng = SeedRng::new(42, "test");
+        let mut items = vec![1, 2, 3];
+        if let Some(val) = rng.choose_mut(&mut items) {
+            *val = 99;
+        }
+        assert!(items.contains(&99));
+    }
+
+    #[test]
+    fn test_gen_f32_range() {
+        let mut rng = SeedRng::new(42, "test");
+        for _ in 0..100 {
+            let v = rng.gen_f32();
+            assert!((0.0..1.0).contains(&v), "gen_f32 out of [0,1): {}", v);
+        }
+    }
+
+    #[test]
+    fn test_gen_f64_range() {
+        let mut rng = SeedRng::new(42, "test");
+        for _ in 0..100 {
+            let v = rng.gen_f64();
+            assert!((0.0..1.0).contains(&v), "gen_f64 out of [0,1): {}", v);
+        }
+    }
+
+    #[test]
+    fn test_shuffle_empty_slice() {
+        let mut rng = SeedRng::new(42, "test");
+        let mut items: Vec<i32> = vec![];
+        rng.shuffle(&mut items); // should not panic
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_shuffle_single_element() {
+        let mut rng = SeedRng::new(42, "test");
+        let mut items = vec![42];
+        rng.shuffle(&mut items);
+        assert_eq!(items, vec![42]);
+    }
+
+    #[test]
+    fn test_fork_layer_nesting() {
+        let mut parent = SeedRng::new(1, "root");
+        let mut child = parent.fork("level1");
+        let grandchild = child.fork("level2");
+        assert_eq!(grandchild.layer(), "root::level1::level2");
+    }
 }

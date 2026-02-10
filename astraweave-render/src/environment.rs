@@ -1263,7 +1263,7 @@ impl WeatherSystem {
         self.rain_intensity = current_rain + (target_rain - current_rain) * t;
         self.snow_intensity = current_snow + (target_snow - current_snow) * t;
         self.fog_density =
-            current_fog + (target_fog - current_fog) / /* ~ changed by cargo-mutants ~ */ t;
+            current_fog + (target_fog - current_fog) * t;
         self.wind_strength = current_wind + (target_wind - current_wind) * t;
     }
 }
