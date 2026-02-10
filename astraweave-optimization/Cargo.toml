@@ -25,3 +25,5 @@ tokio-util = "0.7"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+serde_json = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }

@@ -1927,3 +1927,102 @@ mod entity_bit_level {
         assert_eq!(recovered.generation(), 0x55555555);
     }
 }
+
+// ============================================================================
+// COMPONENT REGISTRY / BLOB REGISTRATION TESTS
+// Targets missed mutant: is_component_registered_blob -> bool with true/false
+// ============================================================================
+
+mod component_registry_tests {
+    use astraweave_ecs::World;
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct RegisteredComponent {
+        value: i32,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct UnregisteredComponent {
+        data: f32,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct AnotherRegisteredComponent {
+        x: i32,
+        y: i32,
+    }
+
+    /// Verifies that is_component_registered_blob returns FALSE for unregistered types.
+    /// This kills the mutation "replace ... with true".
+    #[test]
+    fn is_component_registered_blob_returns_false_for_unregistered() {
+        let world = World::new();
+        // UnregisteredComponent was never registered
+        let result = world.is_component_registered_blob::<UnregisteredComponent>();
+        assert!(!result, "Expected false for unregistered component, got true");
+    }
+
+    /// Verifies that is_component_registered_blob returns TRUE after registration.
+    /// This kills the mutation "replace ... with false".
+    #[test]
+    fn is_component_registered_blob_returns_true_after_register() {
+        let mut world = World::new();
+        // Register the component type
+        world.register_component::<RegisteredComponent>();
+        let result = world.is_component_registered_blob::<RegisteredComponent>();
+        assert!(result, "Expected true for registered component, got false");
+    }
+
+    /// Additional boundary test: register one type, check another is still unregistered.
+    #[test]
+    fn registration_is_type_specific() {
+        let mut world = World::new();
+        world.register_component::<RegisteredComponent>();
+        
+        // RegisteredComponent should be true
+        assert!(world.is_component_registered_blob::<RegisteredComponent>());
+        
+        // UnregisteredComponent should still be false
+        assert!(!world.is_component_registered_blob::<UnregisteredComponent>());
+    }
+
+    /// Multiple registrations: each type tracked independently.
+    #[test]
+    fn multiple_component_registrations() {
+        let mut world = World::new();
+        
+        // Initially neither is registered
+        assert!(!world.is_component_registered_blob::<RegisteredComponent>());
+        assert!(!world.is_component_registered_blob::<AnotherRegisteredComponent>());
+        
+        // Register first type
+        world.register_component::<RegisteredComponent>();
+        assert!(world.is_component_registered_blob::<RegisteredComponent>());
+        assert!(!world.is_component_registered_blob::<AnotherRegisteredComponent>());
+        
+        // Register second type
+        world.register_component::<AnotherRegisteredComponent>();
+        assert!(world.is_component_registered_blob::<RegisteredComponent>());
+        assert!(world.is_component_registered_blob::<AnotherRegisteredComponent>());
+    }
+
+    /// Idempotency: registering twice doesn't break the registration check.
+    #[test]
+    fn double_registration_remains_true() {
+        let mut world = World::new();
+        world.register_component::<RegisteredComponent>();
+        world.register_component::<RegisteredComponent>(); // Register again
+        
+        // Should still return true
+        assert!(world.is_component_registered_blob::<RegisteredComponent>());
+    }
+
+    /// Fresh world has no registered components (negative assertion).
+    #[test]
+    fn fresh_world_has_no_blob_registrations() {
+        let world = World::new();
+        assert!(!world.is_component_registered_blob::<RegisteredComponent>());
+        assert!(!world.is_component_registered_blob::<UnregisteredComponent>());
+        assert!(!world.is_component_registered_blob::<AnotherRegisteredComponent>());
+    }
+}

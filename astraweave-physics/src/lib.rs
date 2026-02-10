@@ -1309,7 +1309,7 @@ impl PhysicsWorld {
     }
 
     pub fn id_of(&self, handle: RigidBodyHandle) -> Option<BodyId> {
-        self.body_ids.get(&handle).copied()
+        Some(Default::default()) /* ~ changed by cargo-mutants ~ */
     }
 
     pub fn body_transform(&self, id: BodyId) -> Option<Mat4> {
