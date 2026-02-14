@@ -1055,4 +1055,130 @@ mod tests {
         let _ = WindZoneShape::default();
         let _ = WindType::default();
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6 — environment physics tests
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_buoyancy_force_archimedes() {
+        // F = density * volume * submerged_fraction * gravity
+        let water = WaterVolume::new(WaterVolumeId(100), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let force = water.buoyancy_force(Vec3::ZERO, 1.0, 1.0);
+
+        // density=1000, volume=1, fraction=1, gravity=9.81 → F = 9810
+        let expected = water.density * 1.0 * 1.0 * 9.81;
+        assert!(
+            (force.y - expected).abs() < 0.1,
+            "Buoyancy should be {} N, got {}",
+            expected, force.y
+        );
+        assert_eq!(force.x, 0.0, "Buoyancy should be vertical only");
+        assert_eq!(force.z, 0.0, "Buoyancy should be vertical only");
+    }
+
+    #[test]
+    fn mutation_buoyancy_force_partial_submersion() {
+        let water = WaterVolume::new(WaterVolumeId(101), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let full = water.buoyancy_force(Vec3::ZERO, 2.0, 1.0);
+        let half = water.buoyancy_force(Vec3::ZERO, 2.0, 0.5);
+
+        assert!(
+            (half.y - full.y * 0.5).abs() < 0.1,
+            "Half submerged should produce half force"
+        );
+        assert!(half.y > 0.0, "Upward buoyancy expected");
+    }
+
+    #[test]
+    fn mutation_buoyancy_zero_volume() {
+        let water = WaterVolume::new(WaterVolumeId(102), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let force = water.buoyancy_force(Vec3::ZERO, 0.0, 1.0);
+        assert_eq!(force.y, 0.0, "Zero volume should produce zero buoyancy");
+    }
+
+    #[test]
+    fn mutation_sphere_submerged_fully_above() {
+        let water = WaterVolume::new(WaterVolumeId(103), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        // Surface at y=10 (half_extents.y=10), sphere center way above
+        let frac = water.sphere_submerged_fraction(Vec3::new(0.0, 50.0, 0.0), 1.0);
+        assert_eq!(frac, 0.0, "Sphere fully above water should have 0 fraction");
+    }
+
+    #[test]
+    fn mutation_sphere_submerged_fully_below() {
+        let water = WaterVolume::new(WaterVolumeId(104), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        // Sphere deep below surface
+        let frac = water.sphere_submerged_fraction(Vec3::new(0.0, -50.0, 0.0), 1.0);
+        assert_eq!(frac, 1.0, "Sphere fully below water should have 1.0 fraction");
+    }
+
+    #[test]
+    fn mutation_sphere_submerged_partial() {
+        let water = WaterVolume::new(WaterVolumeId(105), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        // Put sphere center right at surface level
+        let surface = water.surface_height_at(0.0, 0.0);
+        let frac = water.sphere_submerged_fraction(Vec3::new(0.0, surface, 0.0), 2.0);
+
+        // depth = surface - center = 0, h = depth + radius = 2.0
+        // fraction = h / (2*radius) = 2.0/4.0 = 0.5
+        assert!(
+            (frac - 0.5).abs() < 0.01,
+            "Half-submerged sphere should be ~0.5, got {}",
+            frac
+        );
+    }
+
+    #[test]
+    fn mutation_wind_force_inactive_zone() {
+        let mut config = WindZoneConfig::default();
+        config.active = false;
+        let zone = WindZone::new(WindZoneId(200), config);
+        let force = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        assert_eq!(force, Vec3::ZERO, "Inactive wind zone should produce no force");
+    }
+
+    #[test]
+    fn mutation_wind_force_directional() {
+        let mut config = WindZoneConfig {
+            position: Vec3::ZERO,
+            shape: WindZoneShape::Global,
+            wind_type: WindType::Directional,
+            direction: Vec3::new(1.0, 0.0, 0.0),
+            strength: 10.0,
+            ..Default::default()
+        };
+        config.active = true;
+
+        let zone = WindZone::new(WindZoneId(201), config);
+        let force = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // Force should be in +X direction (wind direction)
+        assert!(force.x > 0.0, "Wind force should be in wind direction");
+        assert!(force.y.abs() < 0.01, "Wind force should be horizontal");
+    }
+
+    #[test]
+    fn mutation_gust_event_lifecycle() {
+        let mut gust = GustEvent::new(Vec3::X, 2.0, 1.0);
+        assert!(!gust.is_finished());
+
+        let str0 = gust.current_strength();
+        assert!(str0 >= 0.0, "Initial gust strength should be non-negative");
+
+        gust.update(0.5);
+        assert!(!gust.is_finished(), "Gust should still be active at 0.5s (dur=1.0)");
+
+        gust.update(0.6);
+        assert!(gust.is_finished(), "Gust should be finished after 1.1s");
+    }
+
+    #[test]
+    fn mutation_water_contains_inside() {
+        let water = WaterVolume::new(WaterVolumeId(20), Vec3::ZERO, Vec3::new(10.0, 5.0, 10.0));
+        assert!(water.contains(Vec3::ZERO), "Center should be contained");
+        assert!(
+            !water.contains(Vec3::new(20.0, 0.0, 0.0)),
+            "Outside point should not be contained"
+        );
+    }
 }

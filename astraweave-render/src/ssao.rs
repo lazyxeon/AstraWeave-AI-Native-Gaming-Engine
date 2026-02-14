@@ -98,7 +98,10 @@ impl SsaoKernel {
 
         let mut samples = [[0.0f32; 4]; 64];
 
-        for i in 0..sample_count.min(64) as usize {
+        for (i, sample) in samples[..sample_count.min(64) as usize]
+            .iter_mut()
+            .enumerate()
+        {
             // Cosine-weighted hemisphere sampling
             let xi1 = (i as f32 + 0.5) / sample_count as f32;
             let xi2 = Self::halton(i as u32, 2);
@@ -115,7 +118,7 @@ impl SsaoKernel {
             let scale = (i as f32 + 1.0) / sample_count as f32;
             let scale = 0.1 + scale * scale * 0.9;
 
-            samples[i] = [x * scale, y * scale, z * scale, 0.0];
+            *sample = [x * scale, y * scale, z * scale, 0.0];
         }
 
         Self { samples }

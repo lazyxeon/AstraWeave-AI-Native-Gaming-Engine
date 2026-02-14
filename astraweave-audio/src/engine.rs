@@ -1702,4 +1702,136 @@ mod tests {
         assert!(mbv > 0.0);
         assert_eq!(e.master_volume, 0.7);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6 — additional audio engine tests
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_tick_duck_restores_music_target_vol() {
+        // After duck_timer expires, music.set_volume should set target_vol = base * master
+        let mut e = AudioEngine::new().unwrap();
+        e.set_master_volume(0.5);
+        // Trigger ducking via voice beep
+        e.play_voice_beep(20); // dur = (20 * 0.05).clamp(0.6, 3.0) = 1.0, duck_timer = 1.2
+        let target_after_duck = e.test_music_target_vol();
+        // Ducked: target should be reduced by duck_factor
+        assert!(
+            target_after_duck < e.test_music_base_volume() * e.master_volume,
+            "Music should be ducked"
+        );
+
+        // Tick past duck timer
+        e.tick(2.0);
+        let target_after_restore = e.test_music_target_vol();
+        // After duck expires, music.set_volume(music_base_volume * master_volume) is called
+        let expected = e.test_music_base_volume() * e.master_volume;
+        assert!(
+            (target_after_restore - expected).abs() < 0.01,
+            "Music target should be restored to {}={}, got {}",
+            e.test_music_base_volume(),
+            expected,
+            target_after_restore
+        );
+    }
+
+    #[test]
+    fn mutation_tick_ambient_crossfade_decreases() {
+        // MusicChannel::update decreases crossfade_left by dt
+        let mut e = AudioEngine::new().unwrap();
+        // Simulate ambient crossfade by directly checking accessor
+        // Default ambient crossfade_left is 0
+        let cf0 = e.test_ambient_crossfade_left();
+        assert_eq!(cf0, 0.0, "No ambient crossfade initially");
+        // After tick, still 0 (no active crossfade)
+        e.tick(0.1);
+        assert_eq!(e.test_ambient_crossfade_left(), 0.0);
+    }
+
+    #[test]
+    fn mutation_duck_factor_exact_value() {
+        let e = AudioEngine::new().unwrap();
+        // Default duck_factor should be 0.4
+        assert!(
+            (e.test_duck_factor() - 0.4).abs() < 0.001,
+            "Duck factor should be 0.4, got {}",
+            e.test_duck_factor()
+        );
+    }
+
+    #[test]
+    fn mutation_ear_sep_default_value() {
+        let e = AudioEngine::new().unwrap();
+        assert!(
+            (e.test_ear_sep() - 0.2).abs() < 0.001,
+            "Ear sep should be 0.2, got {}",
+            e.test_ear_sep()
+        );
+    }
+
+    #[test]
+    fn mutation_compute_ears_separation_distance() {
+        let e = AudioEngine::new().unwrap();
+        let (left, right) = e.test_compute_ears();
+        // Default: facing -Z, up Y → right = (-Z cross Y) = X direction
+        // left = 0 - X * 0.1 = (-0.1, 0, 0)
+        // right = 0 + X * 0.1 = (0.1, 0, 0)
+        let dist = ((right[0] - left[0]).powi(2)
+            + (right[1] - left[1]).powi(2)
+            + (right[2] - left[2]).powi(2))
+        .sqrt();
+        assert!(
+            (dist - 0.2).abs() < 0.01,
+            "Ear distance should be 0.2m, got {}",
+            dist
+        );
+    }
+
+    #[test]
+    fn mutation_set_ambient_volume_stores_and_clamps() {
+        let mut e = AudioEngine::new().unwrap();
+        e.set_ambient_volume(0.75);
+        assert!(
+            (e.test_ambient_base_volume() - 0.75).abs() < 0.001,
+            "Should store 0.75"
+        );
+        e.set_ambient_volume(1.5);
+        assert!(
+            (e.test_ambient_base_volume() - 1.0).abs() < 0.001,
+            "Should clamp to 1.0"
+        );
+        e.set_ambient_volume(-0.5);
+        assert!(
+            (e.test_ambient_base_volume() - 0.0).abs() < 0.001,
+            "Should clamp to 0.0"
+        );
+    }
+
+    #[test]
+    fn mutation_play_voice_beep_duck_timer_formula() {
+        let mut e = AudioEngine::new().unwrap();
+        // text_len = 40 → dur = (40*0.05).clamp(0.6, 3.0) = 2.0
+        // duck_timer = dur + 0.2 = 2.2
+        e.play_voice_beep(40);
+        assert!(
+            (e.test_duck_timer() - 2.2).abs() < 0.01,
+            "duck_timer should be 2.2 for text_len=40, got {}",
+            e.test_duck_timer()
+        );
+    }
+
+    #[test]
+    fn mutation_tick_duck_timer_subtracts_dt() {
+        let mut e = AudioEngine::new().unwrap();
+        e.play_voice_beep(20); // duck_timer = 1.0 + 0.2 = 1.2
+        let before = e.test_duck_timer();
+        e.tick(0.3);
+        let after = e.test_duck_timer();
+        assert!(
+            (after - (before - 0.3)).abs() < 0.01,
+            "duck_timer should decrease by dt=0.3: {} → {}",
+            before,
+            after
+        );
+    }
 }

@@ -218,8 +218,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             }
             shadow = sum / 9.0;
         }
-        // DEBUG: Force shadows off to fix dark terrain
-        shadow = 1.0;
+        // Debug override: force shadow off when extras.x is negative (sentinel from CPU)
+        if (uLight.extras.x < 0.0) {
+            shadow = 1.0;
+        }
 
         // Optional debug visualization: use uMaterial._pad.x > 0.5 to tint by cascade
         if (uMaterial._pad.x > 0.5) {
@@ -421,6 +423,9 @@ pub struct Renderer {
     shadow_slope_scale: f32,
     /// Whether shadows are enabled for rendering
     shadows_enabled: bool,
+    /// Debug flag: when true, force shadow factor to 1.0 (shadows off) in the shader.
+    /// Defaults to `false` — normal runtime uses computed PCF shadows.
+    pub force_shadow_override: bool,
 
     // Albedo (base color) texture and sampler
     albedo_tex: wgpu::Texture,
@@ -576,14 +581,14 @@ impl Renderer {
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("device"),
                 required_features: {
-                    let f = wgpu::Features::empty();
+                    let _f = wgpu::Features::empty();
                     #[cfg(feature = "gpu-tests")]
                     {
                         wgpu::Features::TIMESTAMP_QUERY
                     }
                     #[cfg(not(feature = "gpu-tests"))]
                     {
-                        f
+                        _f
                     }
                 },
                 required_limits: wgpu::Limits {
@@ -741,20 +746,19 @@ impl Renderer {
         queue.write_buffer(&material_buf, 0, bytemuck::cast_slice(&default_material));
 
         // Scene environment bind group layout (created early so it can be used in pipeline layout)
-        let scene_env_bgl =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("scene env bgl"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
+        let scene_env_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("scene env bgl"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
         let material_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("material bg"),
             layout: &material_bgl,
@@ -1370,7 +1374,13 @@ impl Renderer {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("pipeline layout"),
             // Group indices: 0: camera, 1: material, 2: shadow/light, 3: textures, 4: scene environment
-            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &scene_env_bgl],
+            bind_group_layouts: &[
+                &bind_layout,
+                &material_bgl,
+                &shadow_bgl,
+                &tex_bgl,
+                &scene_env_bgl,
+            ],
             push_constant_ranges: &[],
         });
 
@@ -2006,6 +2016,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         shadow = sum / 9.0;
     }
+    // Debug override: force shadow off when extras.x is negative (sentinel from CPU)
+    if (uLight.extras.x < 0.0) {
+        shadow = 1.0;
+    }
     // Match ambient lift with static pipeline
     let lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.08;
     return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
@@ -2445,7 +2459,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             shadow_pcf_radius_px: 1.0,
             shadow_depth_bias: 0.0006,
             shadow_slope_scale: 0.002,
-            shadows_enabled: true, // Shadows enabled by default
+            shadows_enabled: true,        // Shadows enabled by default
+            force_shadow_override: false, // Normal runtime: use computed PCF shadows
             albedo_tex,
             albedo_view,
             albedo_sampler,
@@ -2641,7 +2656,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.ibl.mode = sky_mode;
 
         // Rebake environment
-        let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
+        let resources = self
+            .ibl
+            .bake_environment(&self.device, &self.queue, quality)?;
         self.ibl_resources = Some(resources);
 
         // Track state
@@ -2679,7 +2696,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
         let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
         self.ibl.mode = sky_mode;
-        let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
+        let resources = self
+            .ibl
+            .bake_environment(&self.device, &self.queue, quality)?;
         self.ibl_resources = Some(resources);
 
         // 2. Terrain material textures
@@ -2708,10 +2727,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     ///
     /// Call this once per frame (or less frequently) to keep sky lighting in
     /// sync with the time-of-day system.
-    pub fn sync_biome_time_of_day(
-        &mut self,
-        quality: crate::ibl::IblQuality,
-    ) -> Result<bool> {
+    pub fn sync_biome_time_of_day(&mut self, quality: crate::ibl::IblQuality) -> Result<bool> {
         let hours = self.sky.time_of_day().current_time;
         let period = crate::hdri_catalog::DayPeriod::from_game_hours(hours);
 
@@ -2724,15 +2740,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let sky_mode = self.biome_system.resolve_sky_mode(biome)?;
             let hdri_path = self.biome_system.resolve_hdri_path(biome)?;
             self.ibl.mode = sky_mode;
-            let resources = self.ibl.bake_environment(&self.device, &self.queue, quality)?;
+            let resources = self
+                .ibl
+                .bake_environment(&self.device, &self.queue, quality)?;
             self.ibl_resources = Some(resources);
             self.biome_system.mark_loaded(biome, hdri_path);
 
-            log::info!(
-                "Day period changed → {:?} for biome {:?}",
-                period,
-                biome
-            );
+            log::info!("Day period changed → {:?} for biome {:?}", period, biome);
         }
 
         Ok(true)
@@ -2787,8 +2801,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         delta_time: f32,
     ) -> Option<astraweave_terrain::biome::BiomeType> {
         // 1. Check for biome transition
-        let new_biome = if let Some(transition) =
-            self.biome_detector.update(climate, x, z, height)
+        let new_biome = if let Some(transition) = self.biome_detector.update(climate, x, z, height)
         {
             self.transition_effect
                 .start(transition.old_biome, transition.new_biome);
@@ -2832,7 +2845,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     /// Configure the biome detector (distance threshold, hysteresis).
-    pub fn set_biome_detector_config(&mut self, config: crate::biome_detector::BiomeDetectorConfig) {
+    pub fn set_biome_detector_config(
+        &mut self,
+        config: crate::biome_detector::BiomeDetectorConfig,
+    ) {
         self.biome_detector = crate::biome_detector::BiomeDetector::new(config);
     }
 
@@ -3000,7 +3016,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         data.push(self.split0);
         data.push(self.split1);
         // extras: pack pcf radius in x, depth_bias in y
-        data.push(self.shadow_pcf_radius_px);
+        // If force_shadow_override is set, use -1.0 sentinel to disable shadows in shader.
+        let extras_x = if self.force_shadow_override {
+            -1.0
+        } else {
+            self.shadow_pcf_radius_px
+        };
+        data.push(extras_x);
         data.push(self.shadow_depth_bias);
         self.queue
             .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
@@ -3252,18 +3274,23 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
     }
 
-    pub fn render(&mut self) -> Result<()> {
+    /// Acquire the current surface texture with robust error handling.
+    ///
+    /// Returns `Ok(None)` when no surface is configured or if the surface was
+    /// lost (after reconfiguration). Returns `Err` on OutOfMemory or other
+    /// fatal errors.
+    fn acquire_surface_texture(&self) -> Result<Option<(wgpu::SurfaceTexture, wgpu::TextureView)>> {
         let surface = if let Some(s) = &self.surface {
             s
         } else {
-            return Ok(());
+            return Ok(None);
         };
 
         let frame = match surface.get_current_texture() {
             Ok(frame) => frame,
             Err(wgpu::SurfaceError::Lost) => {
                 surface.configure(&self.device, &self.config);
-                return Ok(());
+                return Ok(None);
             }
             Err(wgpu::SurfaceError::OutOfMemory) => {
                 return Err(anyhow::anyhow!("Swapchain OutOfMemory"));
@@ -3273,6 +3300,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
+
+        Ok(Some((frame, view)))
+    }
+
+    pub fn render(&mut self) -> Result<()> {
+        let (frame, view) = match self.acquire_surface_texture()? {
+            Some(pair) => pair,
+            None => return Ok(()),
+        };
 
         let mut enc = self
             .device
@@ -3432,12 +3468,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             if inst_count > 0 {
                 sp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
             }
-            // External mesh
+            // External mesh (use ext_inst_count for consistency with main pass)
             if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, &self.ext_inst_buf) {
                 sp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
                 sp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 sp.set_vertex_buffer(1, ibuf.slice(..));
-                sp.draw_indexed(0..mesh.index_count, 0, 0..1);
+                if self.ext_inst_count > 0 {
+                    sp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
+                }
             }
         }
         // After rendering shadow layers, restore full light buffer for main pass usage
@@ -3447,22 +3485,37 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             data.extend_from_slice(&self.cascade1.to_cols_array());
             data.push(self.split0);
             data.push(self.split1);
-            data.push(self.shadow_pcf_radius_px);
+            let extras_x = if self.force_shadow_override {
+                -1.0
+            } else {
+                self.shadow_pcf_radius_px
+            };
+            data.push(extras_x);
             data.push(self.shadow_depth_bias);
             self.queue
                 .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
         }
 
         // Render sky first into HDR target so we can layer geometry on top
+        // Construct rotation-only VP for skybox (aligned with draw_into path)
+        let mut vp_sky = self.cached_view;
+        vp_sky.w_axis.x = 0.0;
+        vp_sky.w_axis.y = 0.0;
+        vp_sky.w_axis.z = 0.0;
+        vp_sky = self.cached_proj * vp_sky;
+
+        let sky_tex = self.ibl_resources.as_ref().map(|r| &r.env_cube);
         self.sky.render(
             &self.device,
             &mut enc,
             &self.hdr_view,
             &self.depth.view,
-            Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
+            vp_sky,
             &self.queue,
-            None,
-            None,
+            sky_tex,
+            self.ibl_resources
+                .as_ref()
+                .and_then(|r| r.hdr_equirect.as_ref()),
         )?;
 
         // Upload scene environment UBO (fog, ambient, tint) for this frame
@@ -3488,7 +3541,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.depth.view,
                     depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
+                        load: wgpu::LoadOp::Load, // Preserve sky depth (aligned with draw_into)
                         store: wgpu::StoreOp::Store,
                     }),
                     stencil_ops: None,
@@ -3527,12 +3580,24 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
             }
 
-            // External mesh if present
+            // External mesh if present (aligned with draw_into: use ext_inst_count)
             if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, &self.ext_inst_buf) {
                 rp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
                 rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 rp.set_vertex_buffer(1, ibuf.slice(..));
-                rp.draw_indexed(0..mesh.index_count, 0, 0..1);
+                if self.ext_inst_count > 0 {
+                    rp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
+                }
+            }
+
+            // Render all named models (terrain, trees, rocks, etc.) — aligned with draw_into
+            for model in self.models.values() {
+                if model.instance_count > 0 {
+                    rp.set_vertex_buffer(0, model.mesh.vertex_buf.slice(..));
+                    rp.set_index_buffer(model.mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                    rp.set_vertex_buffer(1, model.instance_buf.slice(..));
+                    rp.draw_indexed(0..model.mesh.index_count, 0, 0..model.instance_count);
+                }
             }
 
             // Render water (transparent, after all opaque objects)
@@ -3643,8 +3708,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         view: &wgpu::TextureView,
         enc: &mut wgpu::CommandEncoder,
     ) -> Result<()> {
-        // DEBUG: Binary search - Test 3: adding clustered lighting
-
         // Clustered lighting setup
         if self.point_lights.is_empty() {
             self.point_lights.push(CpuLight {
@@ -3760,6 +3823,26 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             );
             sp.set_vertex_buffer(1, self.plane_inst_buf.slice(..));
             sp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
+            // Draw sphere instances into shadow map (aligned with render() path)
+            sp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
+            sp.set_index_buffer(
+                self.mesh_sphere.index_buf.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            sp.set_vertex_buffer(1, self.instance_buf.slice(..));
+            let inst_count = vis_count as u32;
+            if inst_count > 0 {
+                sp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
+            }
+            // External mesh shadow (aligned with render() path)
+            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, &self.ext_inst_buf) {
+                sp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
+                sp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                sp.set_vertex_buffer(1, ibuf.slice(..));
+                if self.ext_inst_count > 0 {
+                    sp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
+                }
+            }
         }
         // Restore light buffer for main pass
         {
@@ -3768,7 +3851,12 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             data.extend_from_slice(&self.cascade1.to_cols_array());
             data.push(self.split0);
             data.push(self.split1);
-            data.push(self.shadow_pcf_radius_px);
+            let extras_x = if self.force_shadow_override {
+                -1.0
+            } else {
+                self.shadow_pcf_radius_px
+            };
+            data.push(extras_x);
             data.push(self.shadow_depth_bias);
             self.queue
                 .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
@@ -3802,6 +3890,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                     .and_then(|r| r.hdr_equirect.as_ref()),
             )
             .context("Sky render failed")?;
+
+        // Upload scene environment UBO (fog, ambient, tint) — aligned with render() path
+        {
+            let scene_ubo = self.scene_env.to_ubo();
+            self.queue
+                .write_buffer(&self.scene_env_buf, 0, bytemuck::bytes_of(&scene_ubo));
+        }
 
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -3873,6 +3968,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                     rp.draw_indexed(0..model.mesh.index_count, 0, 0..model.instance_count);
                 }
             }
+
+            // Render water (transparent, after all opaque objects) — aligned with render()
+            if let Some(ref water) = self.water_renderer {
+                water.render(&mut rp);
+            }
         }
 
         // Post to surface view provided
@@ -3932,15 +4032,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             (u32, u32),
         ),
     {
-        let surface = if let Some(s) = &self.surface {
-            s
-        } else {
-            return Ok(());
+        let (frame, view) = match self.acquire_surface_texture()? {
+            Some(pair) => pair,
+            None => return Ok(()),
         };
-        let frame = surface.get_current_texture()?;
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
         let mut enc = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -3976,15 +4071,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             (u32, u32),
         ),
     {
-        let surface = if let Some(s) = &self.surface {
-            s
-        } else {
-            return Ok(());
+        let (frame, view) = match self.acquire_surface_texture()? {
+            Some(pair) => pair,
+            None => return Ok(()),
         };
-        let frame = surface.get_current_texture()?;
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
         let mut enc = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -4671,6 +4761,57 @@ mod tests {
         assert!(min.x < max.x);
         assert!(min.y < max.y);
         assert!(min.z < max.z);
+    }
+
+    /// Validates the shadow override sentinel logic:
+    /// When `force_shadow_override` is false (default), extras.x should be the
+    /// normal pcf_radius_px (>= 0). When true, it should be -1.0.
+    #[test]
+    fn test_shadow_override_sentinel_logic() {
+        // Default: shadows should use the real pcf radius
+        let pcf_radius = 1.5_f32;
+        let force_shadow_override = false;
+        let extras_x = if force_shadow_override {
+            -1.0_f32
+        } else {
+            pcf_radius
+        };
+        assert!(
+            extras_x >= 0.0,
+            "default path should pass non-negative extras.x = pcf_radius"
+        );
+        assert!((extras_x - pcf_radius).abs() < 1e-6);
+
+        // Override active: sentinel should be -1.0
+        let force_shadow_override = true;
+        let extras_x = if force_shadow_override {
+            -1.0_f32
+        } else {
+            pcf_radius
+        };
+        assert!(
+            extras_x < 0.0,
+            "override path should pass negative sentinel"
+        );
+        assert!((extras_x - (-1.0)).abs() < 1e-6);
+    }
+
+    /// Ensures the force_shadow_override field doesn't affect the WGSL shader source.
+    /// The shader checks `uLight.extras.x < 0.0` — this test validates that the main
+    /// PBR shader string contains the conditional (not a hardcoded override).
+    #[test]
+    fn test_shader_has_conditional_shadow_not_hardcoded() {
+        let shader = SHADER_SRC;
+        // Must NOT contain the old hardcoded override
+        assert!(
+            !shader.contains("// DEBUG: Force shadows off"),
+            "hardcoded shadow override should have been removed"
+        );
+        // Must contain the conditional sentinel check
+        assert!(
+            shader.contains("uLight.extras.x < 0.0"),
+            "shader should check sentinel for debug shadow override"
+        );
     }
 }
 

@@ -149,14 +149,12 @@ impl LODSelector {
         let error_threshold = lod_error * self.lod_bias;
 
         // Select LOD based on projected size and error
-        let lod = if projected_size < error_threshold {
+        if projected_size < error_threshold {
             // Object is small on screen, use lower detail
             ((projected_size / error_threshold).log2().abs() as u32).min(max_lod)
         } else {
             0 // Use highest detail
-        };
-
-        lod
+        }
     }
 
     /// Compute projected size of an object in pixels

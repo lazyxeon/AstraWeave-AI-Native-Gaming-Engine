@@ -557,12 +557,23 @@ impl SkyRenderer {
                 view: target_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 1.0,
-                        g: 0.0,
-                        b: 1.0,
-                        a: 1.0,
-                    }), // Debug color to see if skybox fails
+                    // In debug builds use magenta so a missing skybox is
+                    // immediately visible; in release use dark grey.
+                    load: wgpu::LoadOp::Clear(if cfg!(debug_assertions) {
+                        wgpu::Color {
+                            r: 1.0,
+                            g: 0.0,
+                            b: 1.0,
+                            a: 1.0,
+                        }
+                    } else {
+                        wgpu::Color {
+                            r: 0.05,
+                            g: 0.05,
+                            b: 0.05,
+                            a: 1.0,
+                        }
+                    }),
                     store: wgpu::StoreOp::Store,
                 },
             })],
@@ -1262,8 +1273,7 @@ impl WeatherSystem {
         // Interpolate between current and target
         self.rain_intensity = current_rain + (target_rain - current_rain) * t;
         self.snow_intensity = current_snow + (target_snow - current_snow) * t;
-        self.fog_density =
-            current_fog + (target_fog - current_fog) * t;
+        self.fog_density = current_fog + (target_fog - current_fog) * t;
         self.wind_strength = current_wind + (target_wind - current_wind) * t;
     }
 }

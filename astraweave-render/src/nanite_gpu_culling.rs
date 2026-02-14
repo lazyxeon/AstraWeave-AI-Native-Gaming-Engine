@@ -908,8 +908,8 @@ impl NaniteCullingPipeline {
             // Compute workgroups for this mip level
             let mip_width = (self.hiz_texture.width() >> (i as u32 + 1)).max(1);
             let mip_height = (self.hiz_texture.height() >> (i as u32 + 1)).max(1);
-            let workgroup_x = (mip_width + 7) / 8;
-            let workgroup_y = (mip_height + 7) / 8;
+            let workgroup_x = mip_width.div_ceil(8);
+            let workgroup_y = mip_height.div_ceil(8);
 
             pass.dispatch_workgroups(workgroup_x, workgroup_y, 1);
         }
@@ -932,7 +932,7 @@ impl NaniteCullingPipeline {
         // pass.set_bind_group(0, &culling_bind_group, &[]);
         // pass.set_bind_group(1, &hiz_bind_group, &[]);
 
-        let workgroup_count = (self.meshlet_count + 63) / 64;
+        let workgroup_count = self.meshlet_count.div_ceil(64);
         pass.dispatch_workgroups(workgroup_count, 1, 1);
 
         Ok(())
@@ -950,8 +950,8 @@ impl NaniteCullingPipeline {
 
         let width = self.visibility_texture.width();
         let height = self.visibility_texture.height();
-        let workgroup_x = (width + 7) / 8;
-        let workgroup_y = (height + 7) / 8;
+        let workgroup_x = width.div_ceil(8);
+        let workgroup_y = height.div_ceil(8);
 
         pass.dispatch_workgroups(workgroup_x, workgroup_y, 1);
 
