@@ -2255,6 +2255,27 @@ mod tests {
             None
         );
         assert_eq!(ActionStep::Block.target_entity(), None);
+
+        // Remediation: kill delete match arm Self::Revive{ally_id}
+        assert_eq!(
+            ActionStep::Revive { ally_id: 77 }.target_entity(),
+            Some(77),
+            "Revive should return ally_id as target"
+        );
+        // Remediation: kill delete match arm Self::Heal{target_id}
+        assert_eq!(
+            ActionStep::Heal {
+                target_id: Some(88)
+            }
+            .target_entity(),
+            Some(88),
+            "Heal with target should return target_id"
+        );
+        assert_eq!(
+            ActionStep::Heal { target_id: None }.target_entity(),
+            None,
+            "Heal with no target should return None"
+        );
     }
 
     #[test]

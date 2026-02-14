@@ -9,38 +9,42 @@ use std::hint::black_box;
 
 fn destruction_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("destruction_creation");
-    
+
     for debris_count in [4, 8, 16, 32].iter() {
         group.throughput(Throughput::Elements(*debris_count as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(debris_count), debris_count, |b, &count| {
-            b.iter(|| {
-                let mut mgr = DestructionManager::new();
-                let config = DestructibleConfig {
-                    fracture_pattern: FracturePattern::uniform(count, Vec3::splat(0.5), 10.0),
-                    ..Default::default()
-                };
-                black_box(mgr.add_destructible(config, Vec3::ZERO))
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(debris_count),
+            debris_count,
+            |b, &count| {
+                b.iter(|| {
+                    let mut mgr = DestructionManager::new();
+                    let config = DestructibleConfig {
+                        fracture_pattern: FracturePattern::uniform(count, Vec3::splat(0.5), 10.0),
+                        ..Default::default()
+                    };
+                    black_box(mgr.add_destructible(config, Vec3::ZERO))
+                });
+            },
+        );
     }
-    
+
     group.finish();
 }
 
 fn destruction_apply_damage(c: &mut Criterion) {
     let mut group = c.benchmark_group("destruction_damage");
-    
+
     for count in [10, 50, 100].iter() {
         group.throughput(Throughput::Elements(*count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
             let mut mgr = DestructionManager::new();
             let mut ids = Vec::new();
             let config = DestructibleConfig::default();
-            
+
             for i in 0..count {
                 ids.push(mgr.add_destructible(config.clone(), Vec3::new(i as f32, 0.0, 0.0)));
             }
-            
+
             b.iter(|| {
                 for id in &ids {
                     mgr.apply_damage(*id, 1.0);
@@ -49,7 +53,7 @@ fn destruction_apply_damage(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
@@ -58,24 +62,24 @@ const GRAVITY: Vec3 = Vec3::new(0.0, -9.81, 0.0);
 fn destruction_update(c: &mut Criterion) {
     let mut group = c.benchmark_group("destruction_update");
     let dt = 1.0 / 60.0;
-    
+
     for count in [10, 50, 100].iter() {
         group.throughput(Throughput::Elements(*count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
             let mut mgr = DestructionManager::new();
             let config = DestructibleConfig::default();
-            
+
             for i in 0..count {
                 mgr.add_destructible(config.clone(), Vec3::new(i as f32, 0.0, 0.0));
             }
-            
+
             b.iter(|| {
                 mgr.update(dt, GRAVITY);
                 black_box(())
             });
         });
     }
-    
+
     group.finish();
 }
 
@@ -103,13 +107,22 @@ fn destruction_full_destroy(c: &mut Criterion) {
 
 fn destruction_fracture_patterns(c: &mut Criterion) {
     let mut group = c.benchmark_group("destruction_patterns");
-    
+
     let patterns = [
-        ("small_4", FracturePattern::uniform(4, Vec3::splat(0.5), 5.0)),
-        ("medium_16", FracturePattern::uniform(16, Vec3::splat(0.5), 10.0)),
-        ("large_64", FracturePattern::uniform(64, Vec3::splat(0.5), 20.0)),
+        (
+            "small_4",
+            FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+        ),
+        (
+            "medium_16",
+            FracturePattern::uniform(16, Vec3::splat(0.5), 10.0),
+        ),
+        (
+            "large_64",
+            FracturePattern::uniform(64, Vec3::splat(0.5), 20.0),
+        ),
     ];
-    
+
     for (name, pattern) in patterns.iter() {
         group.bench_with_input(BenchmarkId::from_parameter(name), pattern, |b, pattern| {
             b.iter(|| {
@@ -123,13 +136,13 @@ fn destruction_fracture_patterns(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn destruction_many_objects(c: &mut Criterion) {
     let mut group = c.benchmark_group("destruction_scale");
-    
+
     for count in [100, 500, 1000].iter() {
         group.throughput(Throughput::Elements(*count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
@@ -149,7 +162,7 @@ fn destruction_many_objects(c: &mut Criterion) {
             );
         });
     }
-    
+
     group.finish();
 }
 

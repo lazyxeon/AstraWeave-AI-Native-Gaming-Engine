@@ -1266,4 +1266,125 @@ mod tests {
         assert!(display.contains("PromptSanitizer"));
         assert!(display.contains("config"));
     }
+
+    // === Mutation Remediation Tests ===
+
+    #[test]
+    fn test_permissive_config_escapes_html_false() {
+        // Remediation: kills "replace escapes_html -> bool with true"
+        let config = SanitizationConfig::permissive();
+        assert!(!config.escapes_html(), "permissive config should not escape HTML");
+    }
+
+    #[test]
+    fn test_permissive_config_blocks_injection_false() {
+        // Remediation: kills "replace blocks_injection -> bool with true"
+        let config = SanitizationConfig::permissive();
+        assert!(!config.blocks_injection(), "permissive config should not block injection");
+    }
+
+    #[test]
+    fn test_permissive_config_allows_control_chars_true() {
+        // Remediation: kills "replace allows_control_chars -> bool with false"
+        let config = SanitizationConfig::permissive();
+        assert!(config.allows_control_chars(), "permissive config should allow control chars");
+    }
+
+    #[test]
+    fn test_default_config_does_not_allow_control_chars() {
+        // Ensures default differs from permissive for control_chars
+        let config = SanitizationConfig::default();
+        assert!(!config.allows_control_chars(), "default config should not allow control chars");
+    }
+
+    #[test]
+    fn test_strict_config_disallows_unicode() {
+        // Remediation: kills "replace allows_unicode -> bool with true"
+        let config = SanitizationConfig::strict();
+        assert!(!config.allows_unicode(), "strict config should not allow unicode");
+    }
+
+    // ── Mutation-resistant truncate + getter tests (v3.3 shard 6 remediation) ──
+
+    #[test]
+    fn test_truncate_input_word_boundary_requires_good_position() {
+        // Kills: replace > with >= in `last_space > max_length / 2`
+        // When last_space == max_length / 2 exactly, it should NOT be considered
+        // a "good" break point — it falls through to hard truncation.
+        // Build a string where the only space is exactly at max_length / 2.
+        // max_length = 20, so max_length / 2 = 10. Space at position 10.
+        let input = "aaaaaaaaaa bbbbbbbbbbbbbbbbbbbb"; // space at index 10, total 31 chars
+        let result = truncate_input(input, 20);
+        // With >: last_space=10, 10 > 10 is false → hard truncate → "aaaaaaaaaa bbbbbbbb..."
+        // With >=: last_space=10, 10 >= 10 is true → word break → "aaaaaaaaaa..."
+        // We verify the > behavior: should NOT break at the space since it's not a "good" point
+        assert!(
+            result.contains("bbbb"),
+            "When break point is exactly at half, should hard-truncate (not word-break). Got: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_truncate_input_division_not_modulo() {
+        // Kills: replace / with % in `max_length / 2`
+        // max_length=20: 20/2=10 (threshold), 20%2=0 (threshold with modulo)
+        // Use an odd max_length where / and % diverge more clearly.
+        // max_length=21: 21/2=10 (threshold), 21%2=1 (threshold with modulo)
+        // Put a space at position 5 — with /, 5 > 10 is false (hard truncate).
+        // With %, 5 > 1 is true (word break).
+        let input = "hello world and more text padding here";
+        let _result = truncate_input(input, 21);
+        // With /: last_space in "hello world and more " — last whitespace in [..21] is at 20 ("more ").
+        // Actually let me trace more carefully. input[..21] = "hello world and more "
+        // last_space searching for whitespace: position 20 (space before next word)
+        // 20 > 21/2 (10) → true → word break at 20 → "hello world and more..."
+        // 20 > 21%2 (1) → true → same result. Not distinct enough.
+        // Need case where last_space is BETWEEN max_length%2 and max_length/2.
+        // max_length=21: /=10, %=1. Space at position 5 and nowhere else in [..21].
+        let input = "12345 7890123456789012345678";
+        let result2 = truncate_input(input, 21);
+        // input2[..21] = "12345 789012345678901"
+        // last_space at index 5. With /: 5 > 10 → false → hard truncate
+        // With %: 5 > 1 → true → word break at 5 → "12345..."
+        // Verify hard truncation behavior (includes chars after space)
+        assert!(
+            result2.contains("78901"),
+            "Should hard-truncate when space is not past half. Got: {}",
+            result2
+        );
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_config_returns_constructed_config() {
+        // Kills: replace PromptSanitizer::config -> &SanitizationConfig with Box::leak(...)
+        let config = SanitizationConfig {
+            max_user_input_length: 42,
+            ..SanitizationConfig::default()
+        };
+        let sanitizer = PromptSanitizer::new(config);
+        assert_eq!(
+            sanitizer.config().max_user_input_length, 42,
+            "config() must return the config passed to new(), not a leaked default"
+        );
+    }
+
+    #[test]
+    fn test_prompt_sanitizer_truncate_actually_truncates() {
+        // Kills: replace PromptSanitizer::truncate -> String with String::new()
+        // Kills: replace PromptSanitizer::truncate -> String with "xyzzy".into()
+        let config = SanitizationConfig {
+            max_user_input_length: 10,
+            ..SanitizationConfig::default()
+        };
+        let sanitizer = PromptSanitizer::new(config);
+        let short = sanitizer.truncate("hello");
+        assert_eq!(short, "hello", "short input must pass through unchanged");
+
+        let long = sanitizer.truncate("this is a longer input that must be truncated");
+        assert!(!long.is_empty(), "truncate must not return empty string");
+        assert_ne!(long, "xyzzy", "truncate must not return a dummy value");
+        assert!(long.ends_with("..."), "truncated output should end with ...");
+        assert!(long.len() <= 13, "truncated output must be bounded by max_length + 3");
+    }
 }

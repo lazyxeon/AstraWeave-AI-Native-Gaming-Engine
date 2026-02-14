@@ -532,7 +532,10 @@ fn duck_timer_decreases_after_tick() {
     if let Ok(mut engine) = AudioEngine::new() {
         engine.play_voice_beep(100);
         let before = engine.test_duck_timer();
-        assert!(before > 0.0, "duck_timer should be positive after voice beep");
+        assert!(
+            before > 0.0,
+            "duck_timer should be positive after voice beep"
+        );
         engine.tick(0.1);
         let after = engine.test_duck_timer();
         assert!(

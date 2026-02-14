@@ -634,4 +634,76 @@ mod tests {
         assert_eq!(removed, Some(2));
         assert_eq!(set.len(), 1);
     }
+
+    // ===================================================================
+    // Shard 3/6 Remediation: is_empty()→true, entities()→empty
+    // ===================================================================
+
+    #[test]
+    fn test_sparse_set_is_empty_false_after_insert() {
+        // Kills: SparseSet::is_empty() → true
+        let mut set = SparseSet::new();
+        let e1 = unsafe { Entity::from_raw(1) };
+
+        set.insert(e1);
+        assert!(
+            !set.is_empty(),
+            "is_empty() must return false when entities are present"
+        );
+    }
+
+    #[test]
+    fn test_sparse_set_entities_returns_inserted() {
+        // Kills: SparseSet::entities() → Vec::leak(Vec::new()) (empty slice)
+        let mut set = SparseSet::new();
+        let e1 = unsafe { Entity::from_raw(3) };
+        let e2 = unsafe { Entity::from_raw(7) };
+
+        set.insert(e1);
+        set.insert(e2);
+
+        let ents = set.entities();
+        assert_eq!(
+            ents.len(),
+            2,
+            "entities() must return all inserted entities"
+        );
+        assert!(
+            ents.contains(&e1),
+            "entities() must contain e1"
+        );
+        assert!(
+            ents.contains(&e2),
+            "entities() must contain e2"
+        );
+    }
+
+    #[test]
+    fn test_sparse_set_data_is_empty_false_after_insert() {
+        // Also kill: SparseSetData::is_empty() → true (if mutated)
+        let mut set = SparseSetData::new();
+        let e1 = unsafe { Entity::from_raw(5) };
+
+        set.insert(e1, 42);
+        assert!(
+            !set.is_empty(),
+            "SparseSetData::is_empty() must return false when populated"
+        );
+    }
+
+    #[test]
+    fn test_sparse_set_data_entities_returns_inserted() {
+        // Also kill: SparseSetData::entities() → empty slice (if mutated)
+        let mut set = SparseSetData::new();
+        let e1 = unsafe { Entity::from_raw(2) };
+        let e2 = unsafe { Entity::from_raw(9) };
+
+        set.insert(e1, 100);
+        set.insert(e2, 200);
+
+        let ents = set.entities();
+        assert_eq!(ents.len(), 2, "entities() must return all inserted entities");
+        assert!(ents.contains(&e1), "entities() must contain e1");
+        assert!(ents.contains(&e2), "entities() must contain e2");
+    }
 }

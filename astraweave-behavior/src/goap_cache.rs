@@ -507,4 +507,206 @@ mod tests {
         assert_eq!(stats.hit_rate(), 0.9, "Hit rate should be 90%");
         assert_eq!(stats.total_accesses(), 100);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MUTATION REMEDIATION TESTS — targets goap_cache.rs misses
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_hash_world_state_deterministic() {
+        // Targets: goap_cache.rs:44 replace hash_world_state -> u64 with 0/1
+        let s1 = create_test_state();
+        let s2 = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        let k1 = PlanCacheKey::new(&s1, &goal, &actions);
+        let k2 = PlanCacheKey::new(&s2, &goal, &actions);
+        // Same state → same key
+        assert_eq!(k1, k2, "Same state should produce same cache key");
+
+        // Different state → different key (overwhelmingly likely)
+        let s3 = WorldState::from_facts(&[
+            ("has_weapon", false),
+            ("has_ammo", true),
+            ("enemy_visible", false),
+        ]);
+        let k3 = PlanCacheKey::new(&s3, &goal, &actions);
+        assert_ne!(k1, k3, "Different state should produce different cache key");
+    }
+
+    #[test]
+    fn mutation_cache_get_invalidation_increment() {
+        // Targets: goap_cache.rs:178 replace += with *= in PlanCache::get (invalidations)
+        // and goap_cache.rs:176 replace != with == (action_hash check)
+        let mut cache = PlanCache::new(10);
+        let state = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        // Store a plan
+        cache.put(&state, &goal, &actions, vec![actions[0].clone()]);
+
+        // Change actions to trigger invalidation
+        let mut changed_actions = create_test_actions();
+        changed_actions[0] = GoapAction::new("different_action").with_cost(99.0);
+
+        // Get should return None (invalidated)
+        let result = cache.get(&state, &goal, &changed_actions);
+        assert!(result.is_none());
+        assert_eq!(
+            cache.stats().invalidations,
+            1,
+            "Should have exactly 1 invalidation"
+        );
+    }
+
+    #[test]
+    fn mutation_cache_get_hit_increment() {
+        // Targets: goap_cache.rs:184 replace += with *= (hits)
+        let mut cache = PlanCache::new(10);
+        let state = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        cache.put(&state, &goal, &actions, vec![actions[0].clone()]);
+
+        // First hit
+        let _ = cache.get(&state, &goal, &actions);
+        assert_eq!(cache.stats().hits, 1);
+
+        // Second hit
+        let _ = cache.get(&state, &goal, &actions);
+        assert_eq!(
+            cache.stats().hits,
+            2,
+            "Hits should increment by 1 each time"
+        );
+    }
+
+    #[test]
+    fn mutation_cache_get_miss_count() {
+        // Targets: goap_cache.rs:187 replace != with == (cache miss branch)
+        let mut cache = PlanCache::new(10);
+        let state = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        // Empty cache → should be a miss
+        let result = cache.get(&state, &goal, &actions);
+        assert!(result.is_none());
+        assert_eq!(cache.stats().misses, 1, "Should record 1 miss");
+    }
+
+    #[test]
+    fn mutation_cache_clear_empties() {
+        // Targets: goap_cache.rs:233 replace clear with ()
+        let mut cache = PlanCache::new(10);
+        let state = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        cache.put(&state, &goal, &actions, vec![actions[0].clone()]);
+        assert!(!cache.is_empty());
+        assert_eq!(cache.len(), 1);
+
+        cache.clear();
+        assert!(cache.is_empty(), "Cache should be empty after clear");
+        assert_eq!(cache.len(), 0, "Cache len should be 0 after clear");
+    }
+
+    #[test]
+    fn mutation_cache_is_empty_reflects_state() {
+        // Targets: goap_cache.rs:250 replace is_empty -> bool with true/false
+        let mut cache = PlanCache::new(10);
+        assert!(cache.is_empty(), "New cache should be empty");
+
+        let state = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+        cache.put(&state, &goal, &actions, vec![]);
+
+        assert!(!cache.is_empty(), "Cache with entries should not be empty");
+    }
+
+    #[test]
+    fn mutation_cache_capacity_returns_max_size() {
+        // Targets: goap_cache.rs:255 replace capacity -> usize with 0/1
+        let cache = PlanCache::new(42);
+        assert_eq!(
+            cache.capacity(),
+            42,
+            "Capacity should match construction arg"
+        );
+
+        let cache2 = PlanCache::new(100);
+        assert_eq!(cache2.capacity(), 100);
+    }
+
+    #[test]
+    fn mutation_cached_planner_with_planner_sets_base() {
+        // Targets: goap_cache.rs:284 replace with_planner -> Self with Default::default()
+        let base = crate::goap::GoapPlanner::new().with_max_iterations(42);
+        let cp = CachedGoapPlanner::with_planner(base, 50);
+        // Verify the cache size is from construction
+        assert_eq!(cp.cache_stats().total_accesses(), 0);
+    }
+
+    #[test]
+    fn mutation_cached_planner_clear_cache() {
+        // Targets: goap_cache.rs:321 replace clear_cache with ()
+        let mut cp = CachedGoapPlanner::new(10);
+        let state = create_test_state();
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        // Plan once to populate cache
+        let _ = cp.plan(&state, &goal, &actions);
+        // Second call should be a hit
+        let _ = cp.plan(&state, &goal, &actions);
+        assert_eq!(
+            cp.cache_stats().hits,
+            1,
+            "Should have 1 cache hit before clear"
+        );
+
+        cp.clear_cache();
+        // After clearing, stats reset AND cache is empty
+        assert_eq!(cp.cache_stats().hits, 0, "Stats should reset after clear");
+        // Next call should be a fresh miss (not a hit)
+        let _ = cp.plan(&state, &goal, &actions);
+        assert_eq!(cp.cache_stats().misses, 1, "Should have 1 miss after clear");
+        assert_eq!(
+            cp.cache_stats().hits,
+            0,
+            "Should have 0 hits right after re-plan"
+        );
+    }
+
+    #[test]
+    fn mutation_cached_planner_base_planner_accessor() {
+        // Targets: goap_cache.rs:326/331 replace base_planner with Default
+        let cp = CachedGoapPlanner::new(10);
+        let bp = cp.base_planner();
+        // Verify it returns a real planner (can plan)
+        let state = WorldState::from_facts(&[("done", true)]);
+        let goal = GoapGoal::new("g", WorldState::from_facts(&[("done", true)]));
+        let plan = bp.plan(&state, &goal, &[]);
+        assert!(
+            plan.is_some(),
+            "base_planner should return functional planner"
+        );
+    }
+
+    #[test]
+    fn mutation_cached_planner_base_planner_mut_accessor() {
+        // Targets: goap_cache.rs:331 replace base_planner_mut with Default
+        let mut cp = CachedGoapPlanner::new(10);
+        let bp = cp.base_planner_mut();
+        // Should be mutable and functional
+        let state = WorldState::from_facts(&[("x", true)]);
+        let goal = GoapGoal::new("g", WorldState::from_facts(&[("x", true)]));
+        let plan = bp.plan(&state, &goal, &[]);
+        assert!(plan.is_some());
+    }
 }

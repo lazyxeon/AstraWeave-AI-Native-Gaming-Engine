@@ -68,6 +68,17 @@ mod tests {
     use super::*;
     use crate::{IVec2, SimConfig, Team};
     use std::fs;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    static TEST_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+    /// Generate a unique temp file path to avoid parallel race conditions.
+    fn unique_path(label: &str) -> String {
+        let n = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
+        let pid = std::process::id();
+        let dir = std::env::temp_dir();
+        format!("{}\\aw_cr_{}_{}_{}.json", dir.display(), pid, n, label)
+    }
 
     #[test]
     fn test_world_serde_default() {
@@ -191,7 +202,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_creates_file() {
-        let temp_path = "test_capture_state.json";
+        let p = unique_path("creates");
+        let temp_path = p.as_str();
         let mut w = World::new();
         w.t = 5.0;
         w.next_id = 50;
@@ -210,7 +222,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_file_content() {
-        let temp_path = "test_capture_content.json";
+        let p = unique_path("content");
+        let temp_path = p.as_str();
         let mut w = World::new();
         w.t = 7.5;
         w.next_id = 75;
@@ -234,7 +247,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_overwrites_existing() {
-        let temp_path = "test_capture_overwrite.json";
+        let p = unique_path("overwrite");
+        let temp_path = p.as_str();
 
         // First capture
         let mut w1 = World::new();
@@ -259,7 +273,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_loads_file() {
-        let temp_path = "test_replay_load.json";
+        let p = unique_path("load");
+        let temp_path = p.as_str();
         let mut w = World::new();
         w.t = 3.0;
         w.next_id = 30;
@@ -283,7 +298,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_with_steps() {
-        let temp_path = "test_replay_steps.json";
+        let p = unique_path("steps");
+        let temp_path = p.as_str();
         let mut w = World::new();
         w.t = 0.0;
         w.obstacles.insert((0, 0));
@@ -303,7 +319,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_zero_steps() {
-        let temp_path = "test_replay_zero.json";
+        let p = unique_path("zero");
+        let temp_path = p.as_str();
         let mut w = World::new();
         w.t = 10.0;
 
@@ -331,7 +348,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_invalid_json() {
-        let temp_path = "test_replay_invalid.json";
+        let p = unique_path("invalid");
+        let temp_path = p.as_str();
         fs::write(temp_path, b"{ invalid json ").unwrap();
 
         let cfg = SimConfig { dt: 0.1 };
@@ -346,7 +364,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_replay_state_wrong_structure() {
-        let temp_path = "test_replay_wrong.json";
+        let p = unique_path("wrong");
+        let temp_path = p.as_str();
         fs::write(temp_path, br#"{"tick": 1}"#).unwrap();
 
         let cfg = SimConfig { dt: 0.1 };
@@ -361,7 +380,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_replay_roundtrip_with_entities() {
-        let temp_path = "test_roundtrip_entities.json";
+        let p = unique_path("roundtrip");
+        let temp_path = p.as_str();
 
         // Create world with entities
         let mut w1 = World::new();
@@ -397,7 +417,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_determinism_verification() {
-        let temp_path = "test_determinism.json";
+        let p = unique_path("determ");
+        let temp_path = p.as_str();
 
         // Create initial state
         let mut w = World::new();
@@ -423,7 +444,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_with_empty_world() {
-        let temp_path = "test_empty_world.json";
+        let p = unique_path("empty");
+        let temp_path = p.as_str();
         let w = World::new();
 
         let result = capture_state(0, temp_path, &w);
@@ -441,7 +463,8 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)] // Miri doesn't support SetFileInformationByHandle on Windows
     fn test_capture_state_with_many_obstacles() {
-        let temp_path = "test_many_obstacles.json";
+        let p = unique_path("many");
+        let temp_path = p.as_str();
         let mut w = World::new();
 
         // Add 100 obstacles

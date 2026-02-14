@@ -27,36 +27,46 @@ fn assert_raycast_hit_valid(
         // Hit distance must be positive and within max_distance
         assert!(
             intersection.time_of_impact >= 0.0,
-            "[CORRECTNESS FAILURE] {}: negative hit distance {}", context, intersection.time_of_impact
+            "[CORRECTNESS FAILURE] {}: negative hit distance {}",
+            context,
+            intersection.time_of_impact
         );
         assert!(
             intersection.time_of_impact <= max_distance,
-            "[CORRECTNESS FAILURE] {}: hit distance {} exceeds max {}", context, intersection.time_of_impact, max_distance
+            "[CORRECTNESS FAILURE] {}: hit distance {} exceeds max {}",
+            context,
+            intersection.time_of_impact,
+            max_distance
         );
         // Normal must be approximately unit length
-        let normal_len = (intersection.normal.x.powi(2) + intersection.normal.y.powi(2) + intersection.normal.z.powi(2)).sqrt();
+        let normal_len = (intersection.normal.x.powi(2)
+            + intersection.normal.y.powi(2)
+            + intersection.normal.z.powi(2))
+        .sqrt();
         assert!(
             (normal_len - 1.0).abs() < 0.01,
-            "[CORRECTNESS FAILURE] {}: normal not unit length ({})", context, normal_len
+            "[CORRECTNESS FAILURE] {}: normal not unit length ({})",
+            context,
+            normal_len
         );
     }
 }
 
 /// CORRECTNESS: Validate that a ray expected to hit ground actually hits
 #[inline]
-fn assert_hits_ground(
-    result: &Option<(ColliderHandle, RayIntersection)>,
-    context: &str,
-) {
+fn assert_hits_ground(result: &Option<(ColliderHandle, RayIntersection)>, context: &str) {
     assert!(
         result.is_some(),
-        "[CORRECTNESS FAILURE] {}: ray should hit ground but missed", context
+        "[CORRECTNESS FAILURE] {}: ray should hit ground but missed",
+        context
     );
     if let Some((_, intersection)) = result {
         // Ground plane normal should point up (Y positive)
         assert!(
             intersection.normal.y > 0.5,
-            "[CORRECTNESS FAILURE] {}: ground normal should point up, got Y={}", context, intersection.normal.y
+            "[CORRECTNESS FAILURE] {}: ground normal should point up, got Y={}",
+            context,
+            intersection.normal.y
         );
     }
 }
@@ -160,7 +170,7 @@ fn raycast_obstacle_density(c: &mut Criterion) {
 
     for obstacle_count in [0, 10, 50, 100].iter() {
         let world = setup_world_with_obstacles(*obstacle_count);
-        
+
         // CORRECTNESS: Verify world was set up correctly
         assert!(
             world.colliders.len() >= *obstacle_count,
@@ -217,7 +227,7 @@ fn raycast_batch_8_rays(c: &mut Criterion) {
             Layers::DEFAULT,
         );
     }
-    
+
     // CORRECTNESS: Verify setup - 20 obstacles + ground = at least 21 colliders
     assert!(
         world.colliders.len() >= 21,
@@ -251,7 +261,9 @@ fn raycast_batch_8_rays(c: &mut Criterion) {
                 );
                 // CORRECTNESS: Validate each ray result
                 assert_raycast_hit_valid(&result, 20.0, &format!("batch_8_rays/ray_{}", i));
-                if result.is_some() { hit_count += 1; }
+                if result.is_some() {
+                    hit_count += 1;
+                }
                 black_box(result);
             }
             // CORRECTNESS: With 20 obstacles in a circle at radius 10, most rays should hit
@@ -311,9 +323,14 @@ fn raycast_with_and_without_normal(c: &mut Criterion) {
             );
 
             let filter = QueryFilter::default();
-            let result = world
-                .query_pipeline
-                .cast_ray(&world.bodies, &world.colliders, &ray, 10.0, true, filter);
+            let result = world.query_pipeline.cast_ray(
+                &world.bodies,
+                &world.colliders,
+                &ray,
+                10.0,
+                true,
+                filter,
+            );
             // CORRECTNESS: Must hit ground (returns Option<(ColliderHandle, f32)>)
             assert!(
                 result.is_some(),

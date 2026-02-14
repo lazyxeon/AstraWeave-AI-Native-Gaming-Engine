@@ -62,7 +62,12 @@ fn test_hitscan_with_physics() {
     let mut manager = ProjectileManager::new();
 
     // Create a target box
-    let _target = world.add_dynamic_box(Vec3::new(5.0, 0.0, 0.0), Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+    let _target = world.add_dynamic_box(
+        Vec3::new(5.0, 0.0, 0.0),
+        Vec3::splat(0.5),
+        1.0,
+        Layers::DEFAULT,
+    );
 
     // Step to update query pipeline
     world.step();
@@ -89,8 +94,18 @@ fn test_explosion_affects_dynamic_bodies() {
     let _ground = world.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
 
     // Create dynamic boxes around explosion center
-    let box1 = world.add_dynamic_box(Vec3::new(3.0, 1.0, 0.0), Vec3::splat(0.5), 1.0, Layers::DEFAULT);
-    let box2 = world.add_dynamic_box(Vec3::new(0.0, 1.0, 3.0), Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+    let box1 = world.add_dynamic_box(
+        Vec3::new(3.0, 1.0, 0.0),
+        Vec3::splat(0.5),
+        1.0,
+        Layers::DEFAULT,
+    );
+    let box2 = world.add_dynamic_box(
+        Vec3::new(0.0, 1.0, 3.0),
+        Vec3::splat(0.5),
+        1.0,
+        Layers::DEFAULT,
+    );
     let _static_box = world.add_static_trimesh(
         &[
             Vec3::new(-3.0, 0.0, 0.0),
@@ -159,9 +174,9 @@ fn test_explosion_falloff_curves() {
 
     // Test all falloff curves
     let curves = [
-        (FalloffCurve::Linear, 0.5),      // At half radius: 0.5
-        (FalloffCurve::Quadratic, 0.75),  // At half radius: 1 - 0.5^2 = 0.75
-        (FalloffCurve::Constant, 1.0),    // At half radius: 1.0
+        (FalloffCurve::Linear, 0.5),     // At half radius: 0.5
+        (FalloffCurve::Quadratic, 0.75), // At half radius: 1 - 0.5^2 = 0.75
+        (FalloffCurve::Constant, 1.0),   // At half radius: 1.0
     ];
 
     for (curve, expected) in curves {
@@ -211,7 +226,10 @@ fn test_projectile_with_wind() {
     let proj = manager.get(id).unwrap();
     // Should have drifted in wind direction
     assert!(proj.position.x > 1.0, "Wind should push projectile in +X");
-    assert!((proj.position.z - 10.0).abs() < 1.0, "Should still move ~10 in +Z");
+    assert!(
+        (proj.position.z - 10.0).abs() < 1.0,
+        "Should still move ~10 in +Z"
+    );
 }
 
 #[test]
@@ -234,13 +252,23 @@ fn test_projectile_bouncing() {
         if origin.x < 5.0 && dir.x > 0.0 {
             let dist = 5.0 - origin.x;
             if dist < max && dist > 0.0 {
-                return Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), None, dist));
+                return Some((
+                    Vec3::new(5.0, 0.0, 0.0),
+                    Vec3::new(-1.0, 0.0, 0.0),
+                    None,
+                    dist,
+                ));
             }
         }
         if origin.x > -5.0 && dir.x < 0.0 {
             let dist = origin.x + 5.0;
             if dist < max && dist > 0.0 {
-                return Some((Vec3::new(-5.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0), None, dist));
+                return Some((
+                    Vec3::new(-5.0, 0.0, 0.0),
+                    Vec3::new(1.0, 0.0, 0.0),
+                    None,
+                    dist,
+                ));
             }
         }
         None
@@ -252,7 +280,11 @@ fn test_projectile_bouncing() {
     }
 
     let hits = manager.drain_hits();
-    assert!(hits.len() >= 3, "Should have bounced at least 3 times, got {}", hits.len());
+    assert!(
+        hits.len() >= 3,
+        "Should have bounced at least 3 times, got {}",
+        hits.len()
+    );
 }
 
 #[test]
@@ -276,5 +308,8 @@ fn test_projectile_lifetime_despawn() {
     }
 
     // Should be despawned
-    assert!(manager.get(id).is_none(), "Projectile should despawn after lifetime");
+    assert!(
+        manager.get(id).is_none(),
+        "Projectile should despawn after lifetime"
+    );
 }

@@ -85,6 +85,11 @@ impl Events {
         self
     }
 
+    /// Get the number of frames events are kept before cleanup.
+    pub fn keep_frames(&self) -> u64 {
+        self.keep_frames
+    }
+
     /// Send an event of type `E`.
     ///
     /// The event is queued and can be read by any [`EventReader<E>`] until
@@ -623,5 +628,43 @@ mod tests {
         // Both types should be gone
         assert_eq!(events.len::<EventA>(), 0);
         assert_eq!(events.len::<EventB>(), 0);
+    }
+
+    // ===================================================================
+    // Shard 3/6 Remediation: with_keep_frames → Default::default()
+    // ===================================================================
+
+    #[test]
+    fn test_with_keep_frames_stores_custom_value() {
+        // Kills: with_keep_frames(mut self, frames) → Default::default()
+        // Default keep_frames is 2 — we must verify a non-default value is stored.
+        let events = Events::new().with_keep_frames(10);
+        assert_eq!(
+            events.keep_frames(),
+            10,
+            "with_keep_frames must store the custom frame count, not default"
+        );
+    }
+
+    #[test]
+    fn test_with_keep_frames_zero() {
+        // Edge case: 0 frames should be stored, distinguishable from default 2
+        let events = Events::new().with_keep_frames(0);
+        assert_eq!(
+            events.keep_frames(),
+            0,
+            "with_keep_frames(0) must store 0"
+        );
+    }
+
+    #[test]
+    fn test_keep_frames_default_is_two() {
+        // Baseline: Events::new() default is 2
+        let events = Events::new();
+        assert_eq!(
+            events.keep_frames(),
+            2,
+            "default keep_frames must be 2"
+        );
     }
 }

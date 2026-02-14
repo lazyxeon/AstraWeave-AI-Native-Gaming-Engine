@@ -583,4 +583,71 @@ mod tests {
         rng.fill_bytes(&mut buf);
         assert_eq!(buf.len(), 0, "Empty buffer should remain empty");
     }
+
+    // ===================================================================
+    // Shard 3/6 Remediation: shuffle()→(), choose()→None, next_u32()→0/1
+    // ===================================================================
+
+    #[test]
+    fn test_shuffle_actually_permutes() {
+        // Kills: shuffle(&mut self, slice) → () (no-op)
+        // With 10 elements and seed 444, the chance of shuffle producing
+        // the original order is 1/10! ≈ 2.76e-7.
+        let mut rng = Rng::from_seed(444);
+        let original = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let mut deck = original.clone();
+
+        rng.shuffle(&mut deck);
+
+        assert_ne!(
+            deck, original,
+            "shuffle must actually permute the slice — it should differ from original order"
+        );
+    }
+
+    #[test]
+    fn test_choose_returns_some_for_nonempty() {
+        // Kills: choose(&mut self, slice) → None
+        let mut rng = Rng::from_seed(777);
+        let options = vec![10, 20, 30, 40, 50];
+
+        let result = rng.choose(&options);
+        assert!(
+            result.is_some(),
+            "choose on a non-empty slice must return Some, not None"
+        );
+        assert!(
+            options.contains(result.unwrap()),
+            "chosen value must be from the original slice"
+        );
+    }
+
+    #[test]
+    fn test_next_u32_not_always_zero_or_one() {
+        // Kills: next_u32() → 0 AND next_u32() → 1
+        // Generate several u32 values and verify not ALL are 0 or 1.
+        let mut rng = Rng::from_seed(999);
+
+        let mut saw_nonzero = false;
+        let mut saw_nonone = false;
+
+        for _ in 0..10 {
+            let v = RngCore::next_u32(&mut rng);
+            if v != 0 {
+                saw_nonzero = true;
+            }
+            if v != 1 {
+                saw_nonone = true;
+            }
+        }
+
+        assert!(
+            saw_nonzero,
+            "next_u32 must produce at least one value != 0 over 10 calls"
+        );
+        assert!(
+            saw_nonone,
+            "next_u32 must produce at least one value != 1 over 10 calls"
+        );
+    }
 }

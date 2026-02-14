@@ -1672,4 +1672,141 @@ mod tests {
         );
         assert_eq!(budget.terrain_edits, 0, "Budget should remain zero");
     }
+
+    // ========================================================================
+    // Mutation-resistant boundary tests
+    // ========================================================================
+
+    /// Catches: `* 5.0` → `/ 5.0` in cover_fire damage (line 323)
+    /// and: `-= dmg` → `/= dmg` (line 324)
+    #[test]
+    fn cover_fire_damage_arithmetic() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("ally", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", IVec2 { x: 1, y: 0 }, Team { id: 2 }, 100, 0);
+        let plan = PlanIntent {
+            plan_id: "dmg".into(),
+            steps: vec![crate::ActionStep::CoverFire {
+                target_id: enemy,
+                duration: 2.0, // dmg = (2.0 * 5.0) as i32 = 10
+            }],
+        };
+        let cfg = ValidateCfg { world_bounds: (-100, -100, 100, 100) };
+        let mut logs = vec![];
+        let result = validate_and_execute(&mut w, actor, &plan, &cfg, &mut |s| logs.push(s));
+        assert!(result.is_ok());
+        let hp = w.health(enemy).unwrap().hp;
+        // 100 - 10 = 90
+        assert_eq!(hp, 90, "CoverFire with duration=2.0 should deal 10 dmg (2.0*5.0), got hp={}", hp);
+    }
+
+    /// Catches: arithmetic mutations in draw_line_obs (lines 381-382, 389)
+    /// `- with +` in signum calc, `+= with -=` in stepping
+    #[test]
+    fn draw_line_obs_correct_stepping() {
+        let mut obs = std::collections::HashSet::new();
+        let a = IVec2 { x: 0, y: 0 };
+        let b = IVec2 { x: 3, y: 3 };
+        draw_line_obs(&mut obs, a, b);
+        // Should draw diagonal: (0,0), (1,1), (2,2), (3,3)
+        assert!(obs.contains(&(0, 0)), "Start should be in line");
+        assert!(obs.contains(&(1, 1)), "(1,1) should be on diagonal");
+        assert!(obs.contains(&(2, 2)), "(2,2) should be on diagonal");
+        assert!(obs.contains(&(3, 3)), "End should be in line");
+    }
+
+    /// Catches: `|| with &&` in draw_line_obs (line 383)
+    /// With `&&`, if only one coord matches, loop exits too early
+    #[test]
+    fn draw_line_obs_horizontal_line() {
+        let mut obs = std::collections::HashSet::new();
+        let a = IVec2 { x: 0, y: 0 };
+        let b = IVec2 { x: 3, y: 0 }; // Horizontal line — y matches immediately
+        draw_line_obs(&mut obs, a, b);
+        // With && mutation, loop would exit immediately since y==b.y at start
+        assert!(obs.contains(&(0, 0)));
+        assert!(obs.contains(&(1, 0)));
+        assert!(obs.contains(&(2, 0)));
+        assert!(obs.contains(&(3, 0)));
+        assert_eq!(obs.len(), 4, "Horizontal line from (0,0) to (3,0) should have 4 points");
+    }
+
+    /// Catches: spawn wave coordinate arithmetic mutations (lines 439-440)
+    /// `+ (k % 3) - 1` → various mutations, `+ (k / 3)` → `- (k / 3)`
+    #[test]
+    fn spawn_wave_exact_positions() {
+        let mut w = mk_world_clear();
+        let mut budget = crate::DirectorBudget {
+            traps: 0,
+            spawns: 1,
+            terrain_edits: 0,
+        };
+        let plan = crate::DirectorPlan {
+            ops: vec![crate::DirectorOp::SpawnWave {
+                archetype: "grunt".to_string(),
+                count: 6, // k=0..5: tests all arithmetic
+                origin: IVec2 { x: 10, y: 20 },
+            }],
+        };
+        let initial_count = w.entities().len();
+        let mut logs = vec![];
+        apply_director_plan(&mut w, &mut budget, &plan, &mut |s| logs.push(s));
+
+        // 6 new entities should be spawned
+        let new_count = w.entities().len() - initial_count;
+        assert_eq!(new_count, 6, "Should spawn 6 entities");
+
+        // Expected positions from the formula:
+        // k=0: x = 10 + (0%3) - 1 = 9,   y = 20 + (0/3) = 20
+        // k=1: x = 10 + (1%3) - 1 = 10,  y = 20 + (1/3) = 20
+        // k=2: x = 10 + (2%3) - 1 = 11,  y = 20 + (2/3) = 20
+        // k=3: x = 10 + (3%3) - 1 = 9,   y = 20 + (3/3) = 21
+        // k=4: x = 10 + (4%3) - 1 = 10,  y = 20 + (4/3) = 21
+        // k=5: x = 10 + (5%3) - 1 = 11,  y = 20 + (5/3) = 21
+        let expected: std::collections::HashSet<(i32,i32)> = 
+            [(9,20),(10,20),(11,20),(9,21),(10,21),(11,21)].into_iter().collect();
+        let all = w.entities();
+        let mut actual = std::collections::HashSet::new();
+        for &eid in all.iter().skip(initial_count) {
+            if let Some(pos) = w.pos_of(eid) {
+                actual.insert((pos.x, pos.y));
+            }
+        }
+        assert_eq!(actual, expected, "Spawn positions should form 3×2 grid offset from origin");
+    }
+
+    // ========================================================================
+    // Mutation-resistant remediation: draw_line_obs direction tests
+    // ========================================================================
+
+    /// Kills: `replace - with + in draw_line_obs` lines 381-382
+    /// (b.x - a.x).signum() → (b.x + a.x).signum()
+    /// When a=(0,0), mutation is equivalent. Using non-zero a catches it.
+    #[test]
+    fn draw_line_obs_negative_direction_catches_sign_mutation() {
+        let mut obs = std::collections::HashSet::new();
+        // Line going from higher to lower coords — requires negative dx/dy
+        let a = IVec2 { x: 4, y: 4 };
+        let b = IVec2 { x: 1, y: 1 };
+        draw_line_obs(&mut obs, a, b);
+        // With correct signum: dx=(1-4).signum()=-1, dy=-1
+        // Steps: (4,4), (3,3), (2,2), (1,1) — 4 points
+        assert!(obs.contains(&(3, 3)), "(3,3) must be on line from (4,4) to (1,1)");
+        assert!(obs.contains(&(2, 2)), "(2,2) must be on line from (4,4) to (1,1)");
+        assert_eq!(obs.len(), 4, "diagonal from (4,4) to (1,1) should have 4 points");
+        // With mutation: dx=(1+4).signum()=+1 → steps go (4,4),(5,5),(6,6)... infinite loop
+    }
+
+    /// Kills: `replace - with + in draw_line_obs` line 381 only (x component)
+    /// Tests horizontal negative direction specifically.
+    #[test]
+    fn draw_line_obs_horizontal_negative() {
+        let mut obs = std::collections::HashSet::new();
+        let a = IVec2 { x: 5, y: 2 };
+        let b = IVec2 { x: 2, y: 2 };
+        draw_line_obs(&mut obs, a, b);
+        assert!(obs.contains(&(4, 2)), "(4,2) on line from (5,2) to (2,2)");
+        assert!(obs.contains(&(3, 2)), "(3,2) on line from (5,2) to (2,2)");
+        assert_eq!(obs.len(), 4);
+    }
 }

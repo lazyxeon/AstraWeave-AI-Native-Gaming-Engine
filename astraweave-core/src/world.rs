@@ -623,4 +623,45 @@ mod tests {
         assert_eq!(w.team(e2).unwrap().id, 1);
         assert_eq!(w.ammo(e2).unwrap().rounds, 20);
     }
+
+    // ========================================================================
+    // Mutation-resistant remediation: _mut getter tests
+    // ========================================================================
+
+    /// Kills: `World::team_mut -> Option<&mut Team> with None`
+    /// Existing tests only use the immutable `team()` getter.
+    #[test]
+    fn test_team_mut_modifies_value() {
+        let mut w = World::new();
+        let e = w.spawn("unit", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 0);
+        assert_eq!(w.team(e).unwrap().id, 1);
+
+        // Mutate through team_mut — if team_mut returns None, this panics
+        w.team_mut(e).unwrap().id = 5;
+        assert_eq!(w.team(e).unwrap().id, 5, "team_mut must allow mutation");
+    }
+
+    /// Kills: `World::behavior_graph_mut -> Option<&mut BehaviorGraph> with None`
+    /// Existing test `test_behavior_graph_assignment_and_retrieval` never uses behavior_graph_mut.
+    #[test]
+    fn test_behavior_graph_mut_modifies_root() {
+        use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+
+        let mut w = World::new();
+        let e = w.spawn("ai", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
+        let graph = BehaviorGraph::new(BehaviorNode::Action("patrol".into()));
+        w.set_behavior_graph(e, graph);
+
+        // Mutate through behavior_graph_mut — if it returns None, this panics
+        let bg = w.behavior_graph_mut(e).unwrap();
+        bg.root = BehaviorNode::Action("attack".into());
+
+        // Verify mutation persisted
+        let stored = w.behavior_graph(e).unwrap();
+        if let BehaviorNode::Action(name) = &stored.root {
+            assert_eq!(name, "attack", "behavior_graph_mut must allow mutation");
+        } else {
+            panic!("expected Action node after mutation");
+        }
+    }
 }

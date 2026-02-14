@@ -4,9 +4,7 @@
 
 use astraweave_physics::{
     cloth::{Cloth, ClothCollider, ClothConfig, ClothId, ClothManager},
-    destruction::{
-        DestructibleConfig, DestructionManager, DestructionTrigger, FracturePattern,
-    },
+    destruction::{DestructibleConfig, DestructionManager, DestructionTrigger, FracturePattern},
     environment::{EnvironmentManager, WindType, WindZoneConfig, WindZoneShape},
     PhysicsWorld,
 };
@@ -259,7 +257,11 @@ fn test_force_destruction() {
     // Below threshold (force is reset each frame, so needs 100+ in one frame)
     manager.apply_force(id, 50.0);
     manager.update(0.016, Vec3::ZERO);
-    assert_eq!(manager.debris_count(), 0, "Should not break below threshold");
+    assert_eq!(
+        manager.debris_count(),
+        0,
+        "Should not break below threshold"
+    );
 
     // Above threshold - apply enough force in single frame
     manager.apply_force(id, 110.0);
@@ -390,7 +392,10 @@ fn test_cloth_simulation() {
     );
 
     // Pinned particles should stay in place
-    assert_eq!(cloth.particles[0].position.y, 0.0, "Pinned particle should not move");
+    assert_eq!(
+        cloth.particles[0].position.y, 0.0,
+        "Pinned particle should not move"
+    );
 }
 
 /// Test cloth with wind
@@ -402,9 +407,9 @@ fn test_cloth_wind() {
             width: 5,
             height: 5,
             wind: Vec3::new(50.0, 0.0, 0.0), // Stronger wind
-            gravity: Vec3::ZERO, // No gravity for cleaner test
-            damping: 0.99, // Less damping
-            air_resistance: 0.001, // Less air resistance
+            gravity: Vec3::ZERO,             // No gravity for cleaner test
+            damping: 0.99,                   // Less damping
+            air_resistance: 0.001,           // Less air resistance
             ..Default::default()
         },
         Vec3::ZERO,
@@ -413,7 +418,8 @@ fn test_cloth_wind() {
 
     let initial_x = cloth.particles[12].position.x;
 
-    for _ in 0..300 { // More iterations
+    for _ in 0..300 {
+        // More iterations
         cloth.update(1.0 / 60.0);
     }
 
@@ -422,7 +428,8 @@ fn test_cloth_wind() {
     let moved = cloth.particles[12].position.x - initial_x;
     assert!(
         moved >= -0.01, // Allow tiny backward movement due to constraint solving
-        "Cloth should not move significantly against wind: moved {}", moved
+        "Cloth should not move significantly against wind: moved {}",
+        moved
     );
 }
 
@@ -455,7 +462,10 @@ fn test_cloth_sphere_collision() {
 
     // Check that cloth drapes over sphere (particles near center pushed up/out)
     // Just verify simulation didn't crash and cloth moved
-    assert!(cloth.particles[55].position.y < 5.0, "Cloth should have fallen");
+    assert!(
+        cloth.particles[55].position.y < 5.0,
+        "Cloth should have fallen"
+    );
 }
 
 /// Test cloth collision with plane (ground)
@@ -632,7 +642,8 @@ fn test_environment_cloth_integration() {
     let moved = cloth.particles[12].position.x - initial_x;
     assert!(
         moved >= -0.01,
-        "Cloth should not significantly oppose wind: moved {}", moved
+        "Cloth should not significantly oppose wind: moved {}",
+        moved
     );
 }
 

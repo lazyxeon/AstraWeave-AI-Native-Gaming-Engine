@@ -469,7 +469,7 @@ mod tests {
         }
 
         assert_eq!(grid.object_count(), 1000);
-        
+
         // Verify queries return reasonable results
         let results = grid.query(AABB::from_sphere(Vec3::new(25.0, 25.0, 0.0), 5.0));
         assert!(!results.is_empty(), "Query should find nearby entities");
@@ -488,11 +488,14 @@ mod tests {
         }
 
         assert_eq!(grid.object_count(), 10000);
-        
+
         let stats = grid.stats();
         // With good distribution, average should be reasonable
-        assert!(stats.average_objects_per_cell < 50.0, 
-            "Cell density should stay manageable: {}", stats.average_objects_per_cell);
+        assert!(
+            stats.average_objects_per_cell < 50.0,
+            "Cell density should stay manageable: {}",
+            stats.average_objects_per_cell
+        );
     }
 
     #[test]
@@ -506,7 +509,7 @@ mod tests {
 
         let stats = grid.stats();
         assert_eq!(stats.max_objects_per_cell, 500);
-        
+
         // Query should find all entities
         let results = grid.query(AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 0.5));
         assert_eq!(results.len(), 500);
@@ -525,10 +528,13 @@ mod tests {
 
         // Query a small area - should NOT return all 1000
         let results = grid.query(AABB::from_sphere(Vec3::new(50.0, 50.0, 0.0), 5.0));
-        
+
         // With O(n log n), we should only get nearby entities
-        assert!(results.len() < 100, 
-            "Query should be localized, got {} results", results.len());
+        assert!(
+            results.len() < 100,
+            "Query should be localized, got {} results",
+            results.len()
+        );
     }
 
     // ============================================================================
@@ -578,7 +584,7 @@ mod tests {
 
         // Query from adjacent cell
         let results = grid.query(AABB::from_sphere(Vec3::new(9.0, 9.0, 9.0), 2.0));
-        
+
         // Should find entity spanning boundary
         assert!(results.contains(&1), "Should find entity on boundary");
     }
@@ -595,8 +601,11 @@ mod tests {
         grid.insert(1, boundary_aabb);
 
         // Should be in multiple cells
-        assert!(grid.cell_count() >= 8, 
-            "Boundary-spanning entity should be in multiple cells: {}", grid.cell_count());
+        assert!(
+            grid.cell_count() >= 8,
+            "Boundary-spanning entity should be in multiple cells: {}",
+            grid.cell_count()
+        );
     }
 
     #[test]
@@ -612,9 +621,12 @@ mod tests {
 
         // Should span 100×100×100 = 1,000,000 cells
         let expected_cells = 100 * 100 * 100;
-        assert!(grid.cell_count() >= expected_cells - 1, 
-            "Huge AABB should span many cells: {} vs expected {}", 
-            grid.cell_count(), expected_cells);
+        assert!(
+            grid.cell_count() >= expected_cells - 1,
+            "Huge AABB should span many cells: {} vs expected {}",
+            grid.cell_count(),
+            expected_cells
+        );
     }
 
     #[test]
@@ -625,8 +637,11 @@ mod tests {
 
         // 2-unit diameter sphere should span 20×20×20 = 8000 cells
         let stats = grid.stats();
-        assert!(stats.cell_count >= 8000, 
-            "Small cells should result in many cells: {}", stats.cell_count);
+        assert!(
+            stats.cell_count >= 8000,
+            "Small cells should result in many cells: {}",
+            stats.cell_count
+        );
     }
 
     #[test]
@@ -641,8 +656,11 @@ mod tests {
         }
 
         // With large cells, all entities should be in very few cells
-        assert!(grid.cell_count() <= 8, 
-            "Large cells should contain entities in few cells: {}", grid.cell_count());
+        assert!(
+            grid.cell_count() <= 8,
+            "Large cells should contain entities in few cells: {}",
+            grid.cell_count()
+        );
     }
 
     // ============================================================================
@@ -655,7 +673,7 @@ mod tests {
 
         // Entity just inside cell (0,0,0)
         grid.insert(1, AABB::from_sphere(Vec3::new(9.5, 9.5, 9.5), 1.0));
-        
+
         // Entity just inside cell (1,1,1)
         grid.insert(2, AABB::from_sphere(Vec3::new(10.5, 10.5, 10.5), 1.0));
 
@@ -677,8 +695,11 @@ mod tests {
         grid.insert(1, AABB::from_sphere(Vec3::ZERO, 1.0));
 
         // Check it's in multiple cells around origin
-        assert!(grid.cell_count() >= 8, 
-            "Origin entity should span 8 cells: {}", grid.cell_count());
+        assert!(
+            grid.cell_count() >= 8,
+            "Origin entity should span 8 cells: {}",
+            grid.cell_count()
+        );
     }
 
     #[test]
@@ -687,7 +708,7 @@ mod tests {
 
         // Entity at negative cell
         grid.insert(1, AABB::from_sphere(Vec3::new(-5.0, 0.0, 0.0), 1.0));
-        
+
         // Entity at positive cell
         grid.insert(2, AABB::from_sphere(Vec3::new(5.0, 0.0, 0.0), 1.0));
 
@@ -733,7 +754,8 @@ mod tests {
 
     #[test]
     fn test_aabb_from_center_extents() {
-        let aabb = AABB::from_center_extents(Vec3::new(5.0, 10.0, 15.0), Vec3::new(5.0, 10.0, 15.0));
+        let aabb =
+            AABB::from_center_extents(Vec3::new(5.0, 10.0, 15.0), Vec3::new(5.0, 10.0, 15.0));
 
         assert!((aabb.min.x - 0.0).abs() < 0.001);
         assert!((aabb.min.y - 0.0).abs() < 0.001);
@@ -755,7 +777,10 @@ mod tests {
             max: Vec3::new(20.0, 10.0, 10.0),
         };
 
-        assert!(aabb1.intersects(&aabb2), "Edge-touching AABBs should intersect");
+        assert!(
+            aabb1.intersects(&aabb2),
+            "Edge-touching AABBs should intersect"
+        );
     }
 
     #[test]
@@ -770,7 +795,10 @@ mod tests {
             max: Vec3::new(20.0, 20.0, 20.0),
         };
 
-        assert!(aabb1.intersects(&aabb2), "Corner-touching AABBs should intersect");
+        assert!(
+            aabb1.intersects(&aabb2),
+            "Corner-touching AABBs should intersect"
+        );
     }
 
     #[test]
@@ -806,8 +834,12 @@ mod tests {
         let naive_pairs = 100 * 99; // O(n²) pairs to test
 
         // Grid should significantly reduce pairs (at least 2× improvement)
-        assert!(grid_pairs < naive_pairs / 2, 
-            "Grid should reduce pairs: {} vs naive {}", grid_pairs, naive_pairs);
+        assert!(
+            grid_pairs < naive_pairs / 2,
+            "Grid should reduce pairs: {} vs naive {}",
+            grid_pairs,
+            naive_pairs
+        );
     }
 
     #[test]
@@ -831,7 +863,7 @@ mod tests {
         // Both positions should be queryable
         let results1 = grid.query(AABB::from_sphere(Vec3::ZERO, 2.0));
         let results2 = grid.query(AABB::from_sphere(Vec3::new(20.0, 20.0, 20.0), 2.0));
-        
+
         assert!(results1.contains(&1));
         assert!(results2.contains(&1));
     }
@@ -928,16 +960,20 @@ mod tests {
 
         // 10 entities each in distinct cells (large spacing, tiny radius)
         for i in 0..10 {
-            grid.insert(i, AABB::from_sphere(
-                Vec3::new(i as f32 * 20.0 + 5.0, 5.0, 5.0), 0.01,
-            ));
+            grid.insert(
+                i,
+                AABB::from_sphere(Vec3::new(i as f32 * 20.0 + 5.0, 5.0, 5.0), 0.01),
+            );
         }
 
         let density = grid.average_cell_density();
         // With tiny radius and large spacing, each entity is in 1 cell
         // density = objects_in_cells / num_cells which should be ~1.0
-        assert!(density >= 0.5 && density <= 2.0,
-            "Uniform distribution density should be near 1.0, got {}", density);
+        assert!(
+            density >= 0.5 && density <= 2.0,
+            "Uniform distribution density should be near 1.0, got {}",
+            density
+        );
     }
 
     #[test]
@@ -992,8 +1028,11 @@ mod tests {
             max: Vec3::new(100.0, 100.0, 100.0),
         });
 
-        assert_eq!(results.len(), 50,
-            "Full-space query should find all 50 entities, got {}", results.len());
+        assert_eq!(
+            results.len(),
+            50,
+            "Full-space query should find all 50 entities, got {}",
+            results.len()
+        );
     }
 }
-

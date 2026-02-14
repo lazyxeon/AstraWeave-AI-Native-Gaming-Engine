@@ -20,21 +20,36 @@ use std::hint::black_box;
 /// CORRECTNESS: Validate a body's transformation matrix is geometrically valid
 #[inline]
 fn assert_body_transform_valid(transform: Option<Mat4>, context: &str) {
-    assert!(transform.is_some(), 
-        "[CORRECTNESS FAILURE] {}: body transform lookup returned None", context);
+    assert!(
+        transform.is_some(),
+        "[CORRECTNESS FAILURE] {}: body transform lookup returned None",
+        context
+    );
     if let Some(mat) = transform {
         // Extract position from column 3 (translation column)
         let pos = mat.col(3).truncate();
         // Position must be finite
-        assert!(pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
-            "[CORRECTNESS FAILURE] {}: position contains non-finite values {:?}", context, pos);
+        assert!(
+            pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
+            "[CORRECTNESS FAILURE] {}: position contains non-finite values {:?}",
+            context,
+            pos
+        );
         // Position shouldn't be absurdly far (exploded simulation)
-        assert!(pos.length_squared() < 10000.0 * 10000.0,
-            "[CORRECTNESS FAILURE] {}: body position exploded to {:?}", context, pos);
+        assert!(
+            pos.length_squared() < 10000.0 * 10000.0,
+            "[CORRECTNESS FAILURE] {}: body position exploded to {:?}",
+            context,
+            pos
+        );
         // Check matrix has valid scaling (determinant should be non-zero, not NaN)
         let det = mat.determinant();
-        assert!(det.is_finite() && det.abs() > 1e-10,
-            "[CORRECTNESS FAILURE] {}: transform matrix has invalid determinant {}", context, det);
+        assert!(
+            det.is_finite() && det.abs() > 1e-10,
+            "[CORRECTNESS FAILURE] {}: transform matrix has invalid determinant {}",
+            context,
+            det
+        );
     }
 }
 
@@ -43,8 +58,13 @@ fn assert_body_transform_valid(transform: Option<Mat4>, context: &str) {
 fn assert_body_above_ground(transform: Option<Mat4>, min_y: f32, context: &str) {
     if let Some(mat) = transform {
         let pos_y = mat.col(3).y;
-        assert!(pos_y > min_y,
-            "[CORRECTNESS FAILURE] {}: body fell through ground (y={}, min={})", context, pos_y, min_y);
+        assert!(
+            pos_y > min_y,
+            "[CORRECTNESS FAILURE] {}: body fell through ground (y={}, min={})",
+            context,
+            pos_y,
+            min_y
+        );
     }
 }
 
@@ -63,7 +83,7 @@ fn rigid_body_single_step(c: &mut Criterion) {
         1.0,
         Layers::DEFAULT,
     );
-    
+
     // CORRECTNESS: Verify body created with valid initial transform
     let initial = world.body_transform(body_id);
     assert_body_transform_valid(initial, "rigid_body_single_step/initial");
@@ -103,11 +123,15 @@ fn rigid_body_batch_step(c: &mut Criterion) {
             );
             body_ids.push(id);
         }
-        
+
         // CORRECTNESS: Verify all bodies spawned
-        assert_eq!(body_ids.len(), *body_count,
-            "[CORRECTNESS FAILURE] rigid_body_batch_step: expected {} bodies, spawned {}", 
-            body_count, body_ids.len());
+        assert_eq!(
+            body_ids.len(),
+            *body_count,
+            "[CORRECTNESS FAILURE] rigid_body_batch_step: expected {} bodies, spawned {}",
+            body_count,
+            body_ids.len()
+        );
 
         group.throughput(Throughput::Elements(*body_count as u64));
         group.bench_with_input(
@@ -119,7 +143,10 @@ fn rigid_body_batch_step(c: &mut Criterion) {
                     // CORRECTNESS: Validate subset of bodies for performance
                     for &id in body_ids.iter().take(5.min(count)) {
                         let transform = world.body_transform(id);
-                        assert_body_transform_valid(transform, &format!("rigid_body_batch_step/{}", count));
+                        assert_body_transform_valid(
+                            transform,
+                            &format!("rigid_body_batch_step/{}", count),
+                        );
                     }
                 });
             },
@@ -206,9 +233,13 @@ fn rigid_body_stacked_simulation(c: &mut Criterion) {
         );
         tower_ids.push(id);
     }
-    
+
     // CORRECTNESS: Verify tower spawned correctly
-    assert_eq!(tower_ids.len(), 10, "[CORRECTNESS FAILURE] tower should have 10 boxes");
+    assert_eq!(
+        tower_ids.len(),
+        10,
+        "[CORRECTNESS FAILURE] tower should have 10 boxes"
+    );
 
     c.bench_function("rigid_body_stacked_simulation", |b| {
         b.iter(|| {
@@ -246,7 +277,7 @@ fn rigid_body_destructible_creation(c: &mut Criterion) {
 fn rigid_body_mixed_simulation(c: &mut Criterion) {
     let mut world = setup_world();
     world.create_ground_plane(vec3(50.0, 0.5, 50.0), 0.9);
-    
+
     let mut all_body_ids = Vec::new();
 
     // Add dynamic boxes
@@ -277,10 +308,13 @@ fn rigid_body_mixed_simulation(c: &mut Criterion) {
         );
         all_body_ids.push(id);
     }
-    
+
     // CORRECTNESS: Verify all bodies created
-    assert_eq!(all_body_ids.len(), 20, 
-        "[CORRECTNESS FAILURE] mixed simulation should have 20 bodies (10+5+5)");
+    assert_eq!(
+        all_body_ids.len(),
+        20,
+        "[CORRECTNESS FAILURE] mixed simulation should have 20 bodies (10+5+5)"
+    );
 
     c.bench_function("rigid_body_mixed_simulation", |b| {
         b.iter(|| {

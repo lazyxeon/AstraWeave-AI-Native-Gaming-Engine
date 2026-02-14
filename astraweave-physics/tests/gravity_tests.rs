@@ -4,8 +4,8 @@
 //! involving multiple bodies and zone interactions.
 
 use astraweave_physics::{
-    gravity::{GravityManager, GravityZone, GravityZoneShape, BodyGravitySettings},
-    PhysicsWorld, Layers,
+    gravity::{BodyGravitySettings, GravityManager, GravityZone, GravityZoneShape},
+    Layers, PhysicsWorld,
 };
 use glam::Vec3;
 
@@ -24,7 +24,8 @@ fn test_gravity_manager_integration_basic() {
     );
 
     // Get position from transform
-    let pos = physics.body_transform(body_id)
+    let pos = physics
+        .body_transform(body_id)
         .map(|m| Vec3::new(m.w_axis.x, m.w_axis.y, m.w_axis.z))
         .unwrap_or(Vec3::ZERO);
     let gravity = gravity_manager.calculate_gravity(body_id, pos);
@@ -38,23 +39,28 @@ fn test_zero_g_zone_integration() {
     let mut gravity_manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
 
     // Add a zero-G zone in the middle of the world
-    gravity_manager.add_zero_g_box(
-        Vec3::new(-10.0, 5.0, -10.0),
-        Vec3::new(10.0, 15.0, 10.0),
-        1,
-    );
+    gravity_manager.add_zero_g_box(Vec3::new(-10.0, 5.0, -10.0), Vec3::new(10.0, 15.0, 10.0), 1);
 
     // Body inside the zone
     let gravity_inside = gravity_manager.calculate_gravity(1, Vec3::new(0.0, 10.0, 0.0));
-    assert!(gravity_inside.length() < 0.001, "Should be zero-G inside zone");
+    assert!(
+        gravity_inside.length() < 0.001,
+        "Should be zero-G inside zone"
+    );
 
     // Body below the zone
     let gravity_below = gravity_manager.calculate_gravity(2, Vec3::new(0.0, 0.0, 0.0));
-    assert!((gravity_below.y - (-10.0)).abs() < 0.01, "Should have normal gravity below zone");
+    assert!(
+        (gravity_below.y - (-10.0)).abs() < 0.01,
+        "Should have normal gravity below zone"
+    );
 
     // Body above the zone
     let gravity_above = gravity_manager.calculate_gravity(3, Vec3::new(0.0, 20.0, 0.0));
-    assert!((gravity_above.y - (-10.0)).abs() < 0.01, "Should have normal gravity above zone");
+    assert!(
+        (gravity_above.y - (-10.0)).abs() < 0.01,
+        "Should have normal gravity above zone"
+    );
 }
 
 /// Test orbital mechanics with point gravity
@@ -172,7 +178,10 @@ fn test_overlapping_zones_priority() {
 
     // Test at (7, 0, 0) - inside large and medium zones - priority 5 wins
     let gravity = gravity_manager.calculate_gravity(2, Vec3::new(7.0, 0.0, 0.0));
-    assert!((gravity.x - 10.0).abs() < 0.01, "Should have rightward gravity");
+    assert!(
+        (gravity.x - 10.0).abs() < 0.01,
+        "Should have rightward gravity"
+    );
     assert!(gravity.y.abs() < 0.01, "Should have no vertical gravity");
 
     // Test at (15, 0, 0) - inside only large zone - priority 1
@@ -182,7 +191,10 @@ fn test_overlapping_zones_priority() {
 
     // Test at (25, 0, 0) - outside all zones - global gravity
     let gravity = gravity_manager.calculate_gravity(4, Vec3::new(25.0, 0.0, 0.0));
-    assert!((gravity.y - (-10.0)).abs() < 0.01, "Should have global gravity");
+    assert!(
+        (gravity.y - (-10.0)).abs() < 0.01,
+        "Should have global gravity"
+    );
 }
 
 /// Test per-body gravity scale with physics simulation
@@ -191,10 +203,10 @@ fn test_per_body_gravity_scale_simulation() {
     let mut gravity_manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
 
     // Different gravity scales for different bodies
-    gravity_manager.set_gravity_scale(1, 0.0);  // Floating
-    gravity_manager.set_gravity_scale(2, 0.5);  // Half gravity (moon-like)
-    gravity_manager.set_gravity_scale(3, 1.0);  // Normal
-    gravity_manager.set_gravity_scale(4, 2.0);  // Double gravity (heavy planet)
+    gravity_manager.set_gravity_scale(1, 0.0); // Floating
+    gravity_manager.set_gravity_scale(2, 0.5); // Half gravity (moon-like)
+    gravity_manager.set_gravity_scale(3, 1.0); // Normal
+    gravity_manager.set_gravity_scale(4, 2.0); // Double gravity (heavy planet)
 
     // Verify each body's gravity
     let g1 = gravity_manager.calculate_gravity(1, Vec3::ZERO);
@@ -203,9 +215,18 @@ fn test_per_body_gravity_scale_simulation() {
     let g4 = gravity_manager.calculate_gravity(4, Vec3::ZERO);
 
     assert!(g1.length() < 0.001, "Body 1 should have zero gravity");
-    assert!((g2.y - (-5.0)).abs() < 0.01, "Body 2 should have half gravity");
-    assert!((g3.y - (-10.0)).abs() < 0.01, "Body 3 should have normal gravity");
-    assert!((g4.y - (-20.0)).abs() < 0.01, "Body 4 should have double gravity");
+    assert!(
+        (g2.y - (-5.0)).abs() < 0.01,
+        "Body 2 should have half gravity"
+    );
+    assert!(
+        (g3.y - (-10.0)).abs() < 0.01,
+        "Body 3 should have normal gravity"
+    );
+    assert!(
+        (g4.y - (-20.0)).abs() < 0.01,
+        "Body 4 should have double gravity"
+    );
 }
 
 /// Test wall-walking with directional gravity zones
@@ -247,19 +268,31 @@ fn test_wall_walking_directional_gravity() {
 
     // Test on floor
     let g_floor = gravity_manager.calculate_gravity(1, Vec3::new(0.0, 1.0, 0.0));
-    assert!((g_floor.y - (-10.0)).abs() < 0.01, "Should fall down on floor");
+    assert!(
+        (g_floor.y - (-10.0)).abs() < 0.01,
+        "Should fall down on floor"
+    );
 
     // Test on left wall
     let g_left = gravity_manager.calculate_gravity(2, Vec3::new(-99.0, 25.0, 0.0));
-    assert!((g_left.x - (-10.0)).abs() < 0.01, "Should be pulled to left wall");
+    assert!(
+        (g_left.x - (-10.0)).abs() < 0.01,
+        "Should be pulled to left wall"
+    );
 
     // Test on right wall
     let g_right = gravity_manager.calculate_gravity(3, Vec3::new(99.0, 25.0, 0.0));
-    assert!((g_right.x - 10.0).abs() < 0.01, "Should be pulled to right wall");
+    assert!(
+        (g_right.x - 10.0).abs() < 0.01,
+        "Should be pulled to right wall"
+    );
 
     // Test on ceiling
     let g_ceiling = gravity_manager.calculate_gravity(4, Vec3::new(0.0, 49.0, 0.0));
-    assert!((g_ceiling.y - 10.0).abs() < 0.01, "Should be pulled to ceiling");
+    assert!(
+        (g_ceiling.y - 10.0).abs() < 0.01,
+        "Should be pulled to ceiling"
+    );
 }
 
 /// Test dynamic zone activation/deactivation
@@ -276,12 +309,18 @@ fn test_dynamic_zone_toggle() {
     // Deactivate
     gravity_manager.set_zone_active(zero_g_zone, false);
     let g2 = gravity_manager.calculate_gravity(1, Vec3::ZERO);
-    assert!((g2.y - (-10.0)).abs() < 0.01, "Should have gravity when zone inactive");
+    assert!(
+        (g2.y - (-10.0)).abs() < 0.01,
+        "Should have gravity when zone inactive"
+    );
 
     // Reactivate
     gravity_manager.set_zone_active(zero_g_zone, true);
     let g3 = gravity_manager.calculate_gravity(1, Vec3::ZERO);
-    assert!(g3.length() < 0.001, "Should be zero-G when zone reactivated");
+    assert!(
+        g3.length() < 0.001,
+        "Should be zero-G when zone reactivated"
+    );
 }
 
 /// Test sphere gravity zone
@@ -297,11 +336,17 @@ fn test_sphere_gravity_zone() {
     assert!(g_inside.length() < 0.001, "Should be zero-G inside sphere");
 
     let g_edge = gravity_manager.calculate_gravity(2, Vec3::new(5.0, 20.0, 0.0));
-    assert!(g_edge.length() < 0.001, "Should be zero-G near edge of sphere");
+    assert!(
+        g_edge.length() < 0.001,
+        "Should be zero-G near edge of sphere"
+    );
 
     // Just outside the sphere
     let g_outside = gravity_manager.calculate_gravity(3, Vec3::new(0.0, 31.0, 0.0));
-    assert!((g_outside.y - (-10.0)).abs() < 0.01, "Should have gravity outside sphere");
+    assert!(
+        (g_outside.y - (-10.0)).abs() < 0.01,
+        "Should have gravity outside sphere"
+    );
 }
 
 /// Test repulsor (negative strength point gravity)
@@ -348,14 +393,20 @@ fn test_body_ignores_zones() {
     assert!(g1.length() < 0.001, "Body 1 should be affected by zone");
 
     // Body 2: ignores zones
-    gravity_manager.set_body_gravity(2, BodyGravitySettings {
-        scale: 1.0,
-        custom_direction: None,
-        ignore_zones: true,
-    });
+    gravity_manager.set_body_gravity(
+        2,
+        BodyGravitySettings {
+            scale: 1.0,
+            custom_direction: None,
+            ignore_zones: true,
+        },
+    );
 
     let g2 = gravity_manager.calculate_gravity(2, Vec3::ZERO);
-    assert!((g2.y - (-10.0)).abs() < 0.01, "Body 2 should ignore zone and use global gravity");
+    assert!(
+        (g2.y - (-10.0)).abs() < 0.01,
+        "Body 2 should ignore zone and use global gravity"
+    );
 }
 
 /// Test combining scale with zones
@@ -377,7 +428,10 @@ fn test_scale_combined_with_zone() {
     let gravity = gravity_manager.calculate_gravity(1, Vec3::ZERO);
 
     // Should be half of the zone gravity
-    assert!((gravity.x - 10.0).abs() < 0.01, "Should have halved zone gravity");
+    assert!(
+        (gravity.x - 10.0).abs() < 0.01,
+        "Should have halved zone gravity"
+    );
     assert!(gravity.y.abs() < 0.01, "Should have no vertical component");
 }
 

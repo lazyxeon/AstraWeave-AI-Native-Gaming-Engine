@@ -51,14 +51,15 @@ impl BoneShape {
     /// Get the approximate volume of this shape (for mass distribution)
     pub fn volume(&self) -> f32 {
         match self {
-            BoneShape::Capsule { radius, half_height } => {
+            BoneShape::Capsule {
+                radius,
+                half_height,
+            } => {
                 let cylinder = std::f32::consts::PI * radius * radius * (half_height * 2.0);
                 let sphere = (4.0 / 3.0) * std::f32::consts::PI * radius.powi(3);
                 cylinder + sphere
             }
-            BoneShape::Sphere { radius } => {
-                (4.0 / 3.0) * std::f32::consts::PI * radius.powi(3)
-            }
+            BoneShape::Sphere { radius } => (4.0 / 3.0) * std::f32::consts::PI * radius.powi(3),
             BoneShape::Box { half_extents } => {
                 half_extents.x * half_extents.y * half_extents.z * 8.0
             }
@@ -234,7 +235,7 @@ impl Ragdoll {
     }
 
     /// Apply an impulse to the ragdoll with propagation through joints
-    /// 
+    ///
     /// The impulse is applied at the specified position and propagates
     /// through the joint chain with falloff based on distance.
     pub fn apply_impulse_with_propagation(
@@ -435,7 +436,10 @@ impl RagdollBuilder {
 
             // Create the body based on shape
             let body_id = match bone.shape {
-                BoneShape::Capsule { radius, half_height } => physics.add_dynamic_box(
+                BoneShape::Capsule {
+                    radius,
+                    half_height,
+                } => physics.add_dynamic_box(
                     bone_pos,
                     Vec3::new(radius, half_height, radius),
                     bone.mass,
@@ -509,7 +513,7 @@ pub struct RagdollPresets;
 
 impl RagdollPresets {
     /// Create a simple humanoid ragdoll (10 bones)
-    /// 
+    ///
     /// Bones: pelvis, spine, chest, head, upper_arm_l/r, lower_arm_l/r, upper_leg_l/r, lower_leg_l/r
     pub fn humanoid(config: RagdollConfig) -> RagdollBuilder {
         let mut builder = RagdollBuilder::new(config);
@@ -629,7 +633,7 @@ impl RagdollPresets {
     }
 
     /// Create a simple quadruped ragdoll (8 bones)
-    /// 
+    ///
     /// Bones: body, head, front_leg_l/r, back_leg_l/r
     pub fn quadruped(config: RagdollConfig) -> RagdollBuilder {
         let mut builder = RagdollBuilder::new(config);
@@ -775,7 +779,9 @@ mod tests {
         assert_eq!(RagdollState::Active, RagdollState::Active);
         assert_ne!(RagdollState::Active, RagdollState::Disabled);
 
-        let blending = RagdollState::BlendingToPhysics { progress_percent: 50 };
+        let blending = RagdollState::BlendingToPhysics {
+            progress_percent: 50,
+        };
         match blending {
             RagdollState::BlendingToPhysics { progress_percent } => {
                 assert_eq!(progress_percent, 50);
@@ -787,7 +793,7 @@ mod tests {
     #[test]
     fn test_humanoid_preset() {
         let builder = RagdollPresets::humanoid(RagdollConfig::default());
-        // Humanoid should have: pelvis, spine, chest, head, 
+        // Humanoid should have: pelvis, spine, chest, head,
         // upper_arm_l, upper_arm_r, lower_arm_l, lower_arm_r,
         // upper_leg_l, upper_leg_r, lower_leg_l, lower_leg_r
         assert_eq!(builder.bones.len(), 12);
@@ -804,12 +810,21 @@ mod tests {
     fn test_add_hinge_bone() {
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
 
-        builder.add_bone("parent", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        builder.add_bone(
+            "parent",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.1 },
+            1.0,
+        );
         builder.add_hinge_bone(
             "child",
             "parent",
             Vec3::Y,
-            BoneShape::Capsule { radius: 0.05, half_height: 0.1 },
+            BoneShape::Capsule {
+                radius: 0.05,
+                half_height: 0.1,
+            },
             0.5,
             Vec3::X,
             Some((0.0, std::f32::consts::PI)),
@@ -829,7 +844,13 @@ mod tests {
     fn test_add_ball_bone() {
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
 
-        builder.add_bone("parent", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        builder.add_bone(
+            "parent",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.1 },
+            1.0,
+        );
         builder.add_ball_bone(
             "child",
             "parent",
@@ -851,7 +872,13 @@ mod tests {
     #[test]
     fn test_builder_clear() {
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
-        builder.add_bone("test", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        builder.add_bone(
+            "test",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.1 },
+            1.0,
+        );
         assert_eq!(builder.bones.len(), 1);
 
         builder.clear();
@@ -866,7 +893,13 @@ mod tests {
         };
         let mut builder = RagdollBuilder::new(config);
 
-        builder.add_bone("test", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 5.0);
+        builder.add_bone(
+            "test",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.1 },
+            5.0,
+        );
 
         // Mass should be scaled
         assert!((builder.bones[0].mass - 10.0).abs() < 0.001);
@@ -949,7 +982,13 @@ mod tests {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
 
-        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.2 }, 1.0);
+        builder.add_bone(
+            "root",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.2 },
+            1.0,
+        );
 
         let ragdoll = builder.build(&mut physics, Vec3::new(0.0, 5.0, 0.0));
         let com = ragdoll.center_of_mass(&physics);
@@ -963,7 +1002,13 @@ mod tests {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
 
-        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.2 }, 1.0);
+        builder.add_bone(
+            "root",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.2 },
+            1.0,
+        );
 
         let ragdoll = builder.build(&mut physics, Vec3::new(0.0, 5.0, 0.0));
 
@@ -1044,12 +1089,16 @@ mod tests {
 
     #[test]
     fn test_blend_state_to_physics() {
-        let state = RagdollState::BlendingToPhysics { progress_percent: 0 };
+        let state = RagdollState::BlendingToPhysics {
+            progress_percent: 0,
+        };
         assert!(matches!(state, RagdollState::BlendingToPhysics { .. }));
 
         // Progress validation
         for progress in [0, 25, 50, 75, 100] {
-            let s = RagdollState::BlendingToPhysics { progress_percent: progress };
+            let s = RagdollState::BlendingToPhysics {
+                progress_percent: progress,
+            };
             if let RagdollState::BlendingToPhysics { progress_percent } = s {
                 assert!(progress_percent <= 100);
             }
@@ -1058,8 +1107,10 @@ mod tests {
 
     #[test]
     fn test_blend_state_to_animation() {
-        let state = RagdollState::BlendingToAnimation { progress_percent: 50 };
-        
+        let state = RagdollState::BlendingToAnimation {
+            progress_percent: 50,
+        };
+
         if let RagdollState::BlendingToAnimation { progress_percent } = state {
             assert_eq!(progress_percent, 50);
         } else {
@@ -1072,7 +1123,9 @@ mod tests {
         // Valid state flow: Disabled -> BlendingToPhysics -> Active
         let states = [
             RagdollState::Disabled,
-            RagdollState::BlendingToPhysics { progress_percent: 50 },
+            RagdollState::BlendingToPhysics {
+                progress_percent: 50,
+            },
             RagdollState::Active,
         ];
 
@@ -1107,10 +1160,12 @@ mod tests {
         let ragdoll = builder.build(&mut physics, Vec3::ZERO);
 
         // All non-root bones should have joints
-        let non_root_count = ragdoll.bone_defs.iter()
+        let non_root_count = ragdoll
+            .bone_defs
+            .iter()
             .filter(|b| b.parent.is_some())
             .count();
-        
+
         assert_eq!(ragdoll.bone_joints.len(), non_root_count);
     }
 
@@ -1121,7 +1176,7 @@ mod tests {
     #[test]
     fn test_bone_def_default() {
         let def = BoneDef::default();
-        
+
         assert!(def.name.is_empty());
         assert!(def.parent.is_none());
         assert_eq!(def.offset, Vec3::ZERO);
@@ -1154,7 +1209,13 @@ mod tests {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
 
-        builder.add_bone("only", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.5 }, 5.0);
+        builder.add_bone(
+            "only",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.5 },
+            5.0,
+        );
 
         let ragdoll = builder.build(&mut physics, Vec3::ZERO);
 
@@ -1167,10 +1228,15 @@ mod tests {
         let sphere = BoneShape::Sphere { radius: 0.0 };
         assert_eq!(sphere.volume(), 0.0);
 
-        let capsule = BoneShape::Capsule { radius: 0.0, half_height: 1.0 };
+        let capsule = BoneShape::Capsule {
+            radius: 0.0,
+            half_height: 1.0,
+        };
         assert_eq!(capsule.volume(), 0.0);
 
-        let box_shape = BoneShape::Box { half_extents: Vec3::ZERO };
+        let box_shape = BoneShape::Box {
+            half_extents: Vec3::ZERO,
+        };
         assert_eq!(box_shape.volume(), 0.0);
     }
 
@@ -1182,10 +1248,10 @@ mod tests {
 
         // Should have body as root
         assert_eq!(ragdoll.root_bone, "body");
-        
+
         // Should have 7 bones
         assert_eq!(ragdoll.bone_bodies.len(), 7);
-        
+
         // Should have 6 joints (all except root)
         assert_eq!(ragdoll.bone_joints.len(), 6);
     }
@@ -1194,8 +1260,14 @@ mod tests {
     fn test_ragdoll_spawn_position() {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut builder = RagdollBuilder::new(RagdollConfig::default());
-        
-        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+
+        builder.add_bone(
+            "root",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.1 },
+            1.0,
+        );
 
         let spawn_pos = Vec3::new(10.0, 20.0, 30.0);
         let ragdoll = builder.build(&mut physics, spawn_pos);
@@ -1211,9 +1283,15 @@ mod tests {
             mass_scale: 0.5,
             ..Default::default()
         };
-        
+
         let mut builder = RagdollBuilder::new(config);
-        builder.add_bone("test", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 10.0);
+        builder.add_bone(
+            "test",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.1 },
+            10.0,
+        );
 
         // Mass should be halved
         assert!((builder.bones[0].mass - 5.0).abs() < 0.001);
@@ -1232,4 +1310,3 @@ mod tests {
         assert!(config.max_angular_velocity < 100.0); // Reasonable limit
     }
 }
-

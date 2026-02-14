@@ -174,7 +174,6 @@ mod vehicle_friction_curve_mutations {
     use super::*;
     use astraweave_physics::vehicle::*;
     #[allow(unused_imports)]
-
     #[test]
     fn friction_at_zero_slip_returns_zero() {
         let fc = FrictionCurve::default();
@@ -339,10 +338,7 @@ mod vehicle_friction_curve_mutations {
         let mid_rpm = (engine.max_torque_rpm + engine.max_rpm) / 2.0;
         let t = engine.torque_at_rpm(mid_rpm);
         assert!(t > 0.0, "Torque still positive after peak");
-        assert!(
-            t < engine.max_torque,
-            "Torque should decay after peak RPM"
-        );
+        assert!(t < engine.max_torque, "Torque should decay after peak RPM");
     }
 
     #[test]
@@ -495,7 +491,6 @@ mod cloth_simulation_mutations {
     use super::*;
     use astraweave_physics::cloth::*;
     #[allow(unused_imports)]
-
     #[test]
     fn cloth_particle_verlet_integration() {
         let mut p = ClothParticle::new(Vec3::ZERO, 1.0);
@@ -580,7 +575,10 @@ mod cloth_simulation_mutations {
         );
         // Verify the 0.5 factor: if it were 1.0 instead, each would move by 0.5
         // This catches mutations that change the 0.5 constant
-        assert!(particles[0].position.x < 0.3, "0.5 factor should limit movement");
+        assert!(
+            particles[0].position.x < 0.3,
+            "0.5 factor should limit movement"
+        );
     }
 
     #[test]
@@ -624,8 +622,14 @@ mod cloth_simulation_mutations {
             particles[1].position.x
         );
         // p1 moved closer to rest length but not all the way (due to 0.5 factor)
-        assert!(particles[1].position.x < 3.0, "p1 should have moved toward p0");
-        assert!(particles[1].position.x > 1.0, "p1 should not overshoot rest length in one step");
+        assert!(
+            particles[1].position.x < 3.0,
+            "p1 should have moved toward p0"
+        );
+        assert!(
+            particles[1].position.x > 1.0,
+            "p1 should not overshoot rest length in one step"
+        );
     }
 
     #[test]
@@ -640,9 +644,10 @@ mod cloth_simulation_mutations {
         let cloth = Cloth::new(ClothId(0), config, Vec3::ZERO);
 
         // Find a shear (diagonal) constraint — rest length should be spacing * SQRT_2
-        let shear = cloth.constraints.iter().find(|c| {
-            (c.rest_length - SQRT_2).abs() < 0.01
-        });
+        let shear = cloth
+            .constraints
+            .iter()
+            .find(|c| (c.rest_length - SQRT_2).abs() < 0.01);
         assert!(
             shear.is_some(),
             "Should have shear constraints with rest_length = SQRT_2"
@@ -667,9 +672,10 @@ mod cloth_simulation_mutations {
         let cloth = Cloth::new(ClothId(0), config, Vec3::ZERO);
 
         // Bend constraints have rest_length = spacing * 2.0
-        let bend = cloth.constraints.iter().find(|c| {
-            (c.rest_length - 1.0).abs() < 0.01
-        });
+        let bend = cloth
+            .constraints
+            .iter()
+            .find(|c| (c.rest_length - 1.0).abs() < 0.01);
         assert!(
             bend.is_some(),
             "Should have bend constraints with rest_length = 2*spacing"
@@ -718,7 +724,11 @@ mod cloth_simulation_mutations {
         cloth.pin_top_edge();
 
         for x in 0..5 {
-            assert!(cloth.particles[x].pinned, "Top edge particle {} not pinned", x);
+            assert!(
+                cloth.particles[x].pinned,
+                "Top edge particle {} not pinned",
+                x
+            );
             assert_eq!(cloth.particles[x].inv_mass, 0.0);
         }
         // Non-top particles should not be pinned
@@ -776,7 +786,6 @@ mod environment_wind_mutations {
     use super::*;
     use astraweave_physics::environment::*;
     #[allow(unused_imports)]
-
     #[test]
     fn wind_force_formula_exact() {
         // F = 0.5 * 1.225 * speed^2 * drag * area
@@ -921,13 +930,21 @@ mod environment_wind_mutations {
         let mut g = GustEvent::new(Vec3::X, 100.0, 1.0);
         g.smoothness = 0.0;
         g.elapsed = 0.1;
-        assert_eq!(g.current_strength(), 100.0, "Smoothness=0 → constant strength");
+        assert_eq!(
+            g.current_strength(),
+            100.0,
+            "Smoothness=0 → constant strength"
+        );
     }
 
     #[test]
     fn water_volume_buoyancy_archimedes() {
         // F = ρ * V * fraction * g
-        let w = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 5.0, 0.0), Vec3::splat(10.0));
+        let w = WaterVolume::new(
+            WaterVolumeId(1),
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::splat(10.0),
+        );
         let force = w.buoyancy_force(Vec3::ZERO, 1.0, 0.5);
         let expected = 1000.0 * 1.0 * 0.5 * 9.81;
         assert!(
@@ -940,7 +957,11 @@ mod environment_wind_mutations {
 
     #[test]
     fn water_volume_defaults() {
-        let w = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 5.0, 0.0), Vec3::splat(10.0));
+        let w = WaterVolume::new(
+            WaterVolumeId(1),
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::splat(10.0),
+        );
         assert_eq!(w.density, 1000.0);
         assert_eq!(w.linear_drag, 0.5);
         assert_eq!(w.angular_drag, 0.5);
@@ -951,7 +972,11 @@ mod environment_wind_mutations {
 
     #[test]
     fn sphere_submerged_fraction_fully_above() {
-        let w = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 0.0, 0.0), Vec3::splat(100.0));
+        let w = WaterVolume::new(
+            WaterVolumeId(1),
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::splat(100.0),
+        );
         // surface_height = 0.0 + 100.0 = 100.0
         // center at y=200, radius=1 → depth = 100-200 = -100 → -100 <= -1 → fully above
         let frac = w.sphere_submerged_fraction(Vec3::new(0.0, 200.0, 0.0), 1.0);
@@ -960,7 +985,11 @@ mod environment_wind_mutations {
 
     #[test]
     fn sphere_submerged_fraction_fully_below() {
-        let w = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 0.0, 0.0), Vec3::splat(100.0));
+        let w = WaterVolume::new(
+            WaterVolumeId(1),
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::splat(100.0),
+        );
         // center at y=-100, radius=1 → depth = 100-(-100)=200 → 200>=1 → fully submerged
         let frac = w.sphere_submerged_fraction(Vec3::new(0.0, -100.0, 0.0), 1.0);
         assert_eq!(frac, 1.0);
@@ -968,19 +997,23 @@ mod environment_wind_mutations {
 
     #[test]
     fn sphere_submerged_fraction_partial() {
-        let w = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 0.0, 0.0), Vec3::splat(100.0));
+        let w = WaterVolume::new(
+            WaterVolumeId(1),
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::splat(100.0),
+        );
         // center at y=100 (at surface), radius=1 → depth=0 → h=0+1=1 → fraction=1/(2*1)=0.5
         let frac = w.sphere_submerged_fraction(Vec3::new(0.0, 100.0, 0.0), 1.0);
-        assert!(
-            (frac - 0.5).abs() < 0.01,
-            "Half-submerged: got {}",
-            frac
-        );
+        assert!((frac - 0.5).abs() < 0.01, "Half-submerged: got {}", frac);
     }
 
     #[test]
     fn water_volume_surface_height_no_waves() {
-        let w = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 5.0, 0.0), Vec3::splat(10.0));
+        let w = WaterVolume::new(
+            WaterVolumeId(1),
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::splat(10.0),
+        );
         assert_eq!(w.surface_height_at(0.0, 0.0), 15.0); // pos.y + half_extents.y
     }
 
@@ -1011,7 +1044,6 @@ mod destruction_mutations {
     use super::*;
     use astraweave_physics::destruction::*;
     #[allow(unused_imports)]
-
     #[test]
     fn fracture_uniform_piece_count_uses_cbrt() {
         let fp = FracturePattern::uniform(27, Vec3::splat(3.0), 27.0);
@@ -1077,7 +1109,10 @@ mod destruction_mutations {
         assert_eq!(fp.debris.len(), 10);
         // Each piece should have velocity_factor = 1.5 (radial)
         for d in &fp.debris {
-            assert_eq!(d.velocity_factor, 1.5, "Radial velocity_factor should be 1.5");
+            assert_eq!(
+                d.velocity_factor, 1.5,
+                "Radial velocity_factor should be 1.5"
+            );
         }
     }
 
@@ -1170,7 +1205,11 @@ mod destruction_mutations {
 
         // Force above threshold → damage = (force - threshold) * conversion
         d.apply_force(110.0); // damage = (110-10)*0.1 = 10.0
-        assert!((d.health - 90.0).abs() < 0.01, "Health should be ~90, got {}", d.health);
+        assert!(
+            (d.health - 90.0).abs() < 0.01,
+            "Health should be ~90, got {}",
+            d.health
+        );
     }
 
     #[test]
@@ -1241,7 +1280,6 @@ mod gravity_system_mutations {
     use super::*;
     use astraweave_physics::gravity::*;
     #[allow(unused_imports)]
-
     #[test]
     fn point_gravity_falloff_formula_quadratic() {
         let shape = GravityZoneShape::Point {
@@ -1253,7 +1291,9 @@ mod gravity_system_mutations {
         // At distance 50 from center (50% of radius):
         // falloff = 1.0 - (50/100).min(1.0) = 0.5
         // force = strength * falloff * falloff = 100 * 0.25 = 25
-        let gravity = shape.get_gravity(Vec3::new(50.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+        let gravity = shape
+            .get_gravity(Vec3::new(50.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
         let magnitude = gravity.length();
         assert!(
             (magnitude - 25.0).abs() < 0.5,
@@ -1286,7 +1326,9 @@ mod gravity_system_mutations {
         };
 
         // At exactly at radius: falloff = 1.0 - (10/10).min(1.0) = 0.0 → force = 0
-        let gravity = shape.get_gravity(Vec3::new(10.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+        let gravity = shape
+            .get_gravity(Vec3::new(10.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
         assert!(
             gravity.length() < 0.01,
             "At edge, force should be ~0, got {:?}",
@@ -1304,13 +1346,19 @@ mod gravity_system_mutations {
 
         // Beyond radius: contains() returns false → get_gravity returns None
         let gravity = shape.get_gravity(Vec3::new(20.0, 0.0, 0.0), Vec3::ZERO);
-        assert!(gravity.is_none(), "Beyond radius should return None, not Some");
+        assert!(
+            gravity.is_none(),
+            "Beyond radius should return None, not Some"
+        );
 
         // At exactly the boundary (distance² == radius²), should still be inside
         let at_edge = shape.get_gravity(Vec3::new(10.0, 0.0, 0.0), Vec3::ZERO);
         assert!(at_edge.is_some(), "At exact radius should be Some (<=)");
         // But force should be zero since falloff = (1 - 1.0)² = 0
-        assert!(at_edge.unwrap().length() < 0.01, "Force at edge should be ~0");
+        assert!(
+            at_edge.unwrap().length() < 0.01,
+            "Force at edge should be ~0"
+        );
     }
 
     #[test]
@@ -1322,7 +1370,9 @@ mod gravity_system_mutations {
         };
 
         // At distance 0.0005 (< 0.001), should return ZERO
-        let gravity = shape.get_gravity(Vec3::new(0.0005, 0.0, 0.0), Vec3::ZERO).unwrap();
+        let gravity = shape
+            .get_gravity(Vec3::new(0.0005, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
         assert_eq!(gravity, Vec3::ZERO);
     }
 
@@ -1344,7 +1394,7 @@ mod gravity_system_mutations {
             radius: 10.0,
         };
         assert!(shape.contains(Vec3::ZERO)); // center
-        // At exactly radius: distance_squared = 100, radius^2 = 100 → contains (<=)
+                                             // At exactly radius: distance_squared = 100, radius^2 = 100 → contains (<=)
         assert!(shape.contains(Vec3::new(10.0, 0.0, 0.0)));
         assert!(!shape.contains(Vec3::new(10.01, 0.0, 0.0)));
     }
@@ -1539,7 +1589,6 @@ mod projectile_mutations {
     use super::*;
     use astraweave_physics::projectile::*;
     #[allow(unused_imports)]
-
     #[test]
     fn falloff_linear() {
         assert_eq!(FalloffCurve::Linear.calculate(0.0, 10.0), 1.0); // at center
@@ -1751,22 +1800,22 @@ mod misc_types_mutations {
         assert!(ActorKind::Dynamic.is_dynamic());
         assert!(ActorKind::Character.is_character());
         assert!(ActorKind::Other.is_other());
-        
+
         // Negative assertions for is_static (kills mutation "replace is_static with true")
         assert!(!ActorKind::Dynamic.is_static());
         assert!(!ActorKind::Character.is_static());
         assert!(!ActorKind::Other.is_static());
-        
+
         // Negative assertions for is_dynamic (kills mutation "replace is_dynamic with true")
         assert!(!ActorKind::Static.is_dynamic());
         assert!(!ActorKind::Character.is_dynamic());
         assert!(!ActorKind::Other.is_dynamic());
-        
+
         // Negative assertions for is_character (kills mutation "replace is_character with true")
         assert!(!ActorKind::Static.is_character());
         assert!(!ActorKind::Dynamic.is_character());
         assert!(!ActorKind::Other.is_character());
-        
+
         // Negative assertions for is_other (kills mutation "replace is_other with true")
         assert!(!ActorKind::Static.is_other());
         assert!(!ActorKind::Dynamic.is_other());
@@ -1805,7 +1854,11 @@ mod misc_types_mutations {
     fn debug_line_length_nonzero_start_y() {
         let line = DebugLine::new([1.0, 2.0, 3.0], [4.0, 6.0, 3.0], [1.0, 0.0, 0.0]);
         // dx = 4-1 = 3, dy = 6-2 = 4, dz = 3-3 = 0 → length = 5.0
-        assert!((line.length() - 5.0).abs() < 1e-4, "length={}, expected 5.0", line.length());
+        assert!(
+            (line.length() - 5.0).abs() < 1e-4,
+            "length={}, expected 5.0",
+            line.length()
+        );
     }
 
     /// Additional mutation killer: negative Y direction
@@ -1815,7 +1868,11 @@ mod misc_types_mutations {
     fn debug_line_length_negative_y_direction() {
         let line = DebugLine::new([0.0, 10.0, 0.0], [0.0, 2.0, 0.0], [1.0, 0.0, 0.0]);
         // dy = 2 - 10 = -8, length = 8.0
-        assert!((line.length() - 8.0).abs() < 1e-4, "length={}, expected 8.0", line.length());
+        assert!(
+            (line.length() - 8.0).abs() < 1e-4,
+            "length={}, expected 8.0",
+            line.length()
+        );
     }
 
     /// Test with all non-zero coordinates to catch any axis mutation
@@ -1823,7 +1880,11 @@ mod misc_types_mutations {
     fn debug_line_length_all_nonzero() {
         let line = DebugLine::new([1.0, 2.0, 3.0], [2.0, 4.0, 5.0], [1.0, 0.0, 0.0]);
         // dx = 1, dy = 2, dz = 2 → length = sqrt(1+4+4) = 3.0
-        assert!((line.length() - 3.0).abs() < 1e-4, "length={}, expected 3.0", line.length());
+        assert!(
+            (line.length() - 3.0).abs() < 1e-4,
+            "length={}, expected 3.0",
+            line.length()
+        );
     }
 
     /// Mutation killer: catches `*` → `+` mutations in the squared distance formula.
@@ -1945,17 +2006,11 @@ mod misc_types_mutations {
 
         // 0.9× factor: well below threshold → degenerate (0.81 * 1e-10 ≈ 8.1e-11)
         let smaller = DebugLine::new([0.0, 0.0, 0.0], [dx * 0.9, 0.0, 0.0], [1.0, 0.0, 0.0]);
-        assert!(
-            smaller.is_degenerate(),
-            "0.9x should be degenerate"
-        );
+        assert!(smaller.is_degenerate(), "0.9x should be degenerate");
 
         // 1.1× factor: well above threshold → NOT degenerate (1.21 * 1e-10 ≈ 1.21e-10)
         let larger = DebugLine::new([0.0, 0.0, 0.0], [dx * 1.1, 0.0, 0.0], [1.0, 0.0, 0.0]);
-        assert!(
-            !larger.is_degenerate(),
-            "1.1x should NOT be degenerate"
-        );
+        assert!(!larger.is_degenerate(), "1.1x should NOT be degenerate");
     }
 
     #[test]

@@ -172,7 +172,12 @@ fn test_dynamic_box_zero_size() {
 fn test_dynamic_box_negative_size() {
     should_not_panic("Negative size dynamic box", || {
         let mut world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        let _id = world.add_dynamic_box(Vec3::ZERO, Vec3::new(-1.0, -1.0, -1.0), 1.0, Layers::DEFAULT);
+        let _id = world.add_dynamic_box(
+            Vec3::ZERO,
+            Vec3::new(-1.0, -1.0, -1.0),
+            1.0,
+            Layers::DEFAULT,
+        );
     });
 }
 
@@ -430,7 +435,7 @@ fn test_step_with_nan_body() {
             Layers::DEFAULT,
         );
         world.set_velocity(id, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
-        
+
         // Step should not crash
         for _ in 0..10 {
             world.step();
@@ -444,7 +449,7 @@ fn test_step_after_nan_force() {
         let mut world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let id = world.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::ONE, 1.0, Layers::DEFAULT);
         world.apply_force(id, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
-        
+
         // Step should not crash
         for _ in 0..10 {
             world.step();
@@ -458,7 +463,7 @@ fn test_step_after_infinity_impulse() {
         let mut world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let id = world.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::ONE, 1.0, Layers::DEFAULT);
         world.apply_impulse(id, Vec3::new(f32::INFINITY, 0.0, 0.0));
-        
+
         // Step should not crash
         for _ in 0..10 {
             world.step();
@@ -606,10 +611,10 @@ fn test_config_nan_fluid_density() {
 fn test_multiple_nan_bodies_simulation() {
     should_not_panic("Multiple NaN bodies", || {
         let mut world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create ground
         world.create_ground_plane(Vec3::new(50.0, 0.5, 50.0), 0.9);
-        
+
         // Create various invalid bodies
         for i in 0..10 {
             let pos = if i % 3 == 0 {
@@ -619,10 +624,10 @@ fn test_multiple_nan_bodies_simulation() {
             } else {
                 Vec3::new(i as f32, 5.0, f32::NEG_INFINITY)
             };
-            
+
             let _id = world.add_dynamic_box(pos, Vec3::ONE, 1.0, Layers::DEFAULT);
         }
-        
+
         // Simulate for 100 frames
         for _ in 0..100 {
             world.step();
@@ -634,32 +639,22 @@ fn test_multiple_nan_bodies_simulation() {
 fn test_nan_propagation_isolation() {
     // Test that NaN in one body doesn't corrupt other bodies
     let mut world = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-    
+
     // Create ground
     world.create_ground_plane(Vec3::new(50.0, 0.5, 50.0), 0.9);
-    
+
     // Create a valid body
-    let valid_id = world.add_dynamic_box(
-        Vec3::new(0.0, 5.0, 0.0),
-        Vec3::ONE,
-        1.0,
-        Layers::DEFAULT,
-    );
-    
+    let valid_id = world.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::ONE, 1.0, Layers::DEFAULT);
+
     // Create a NaN-infected body
-    let _nan_id = world.add_dynamic_box(
-        Vec3::new(5.0, 5.0, 0.0),
-        Vec3::ONE,
-        1.0,
-        Layers::DEFAULT,
-    );
+    let _nan_id = world.add_dynamic_box(Vec3::new(5.0, 5.0, 0.0), Vec3::ONE, 1.0, Layers::DEFAULT);
     world.set_velocity(_nan_id, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
-    
+
     // Step simulation
     for _ in 0..10 {
         world.step();
     }
-    
+
     // Valid body should still have valid transform (may be NaN depending on Rapier behavior)
     // The key test is that this doesn't crash
     let _transform = world.body_transform(valid_id);

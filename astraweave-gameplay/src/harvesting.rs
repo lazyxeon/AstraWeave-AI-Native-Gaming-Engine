@@ -202,4 +202,111 @@ mod tests {
         assert_eq!(results[1], results[2], "Run 1 and 2 should match");
         assert!(results[0] > 0, "Should respawn resources");
     }
+
+    // ===== Mutation-resistant tests for tick/tick_seeded respawn formula =====
+
+    #[test]
+    fn tick_legacy_respawn_formula_exact_values() {
+        // tick: self.amount = 1 + (3 * rand::random::<u8>() as u32 % 5)
+        // Operator precedence: `as` first, then * and % left-to-right:
+        //   = 1 + ((3 * (random as u32)) % 5)
+        // (3 * byte) % 5 covers all residues 0..4, so result is always in 1..=5
+        // Catches: + → -, + → * at the `1 +` (would give 0 or out of range)
+        #[allow(deprecated)]
+        {
+            let mut node = create_test_node();
+            node.amount = 0;
+            node.timer = 0.5;
+            node.tick(1.0); // timer -> -0.5, triggers respawn
+            // Result must be in 1..=5
+            assert!(
+                node.amount >= 1 && node.amount <= 5,
+                "Legacy tick respawn must be in 1..=5, got {}",
+                node.amount
+            );
+        }
+    }
+
+    #[test]
+    fn tick_seeded_respawn_formula_exact_value() {
+        // tick_seeded: self.amount = 1 + (rng.random::<u8>() as u32 % 5) * 3
+        // With seed 42, rng.random::<u8>() gives a deterministic value
+        // Formula: 1 + (byte % 5) * 3
+        // Catches: + → *, * → +, * → /, % → /, % → +
+        let mut node = create_test_node();
+        node.amount = 0;
+        node.timer = 0.5;
+        let mut rng = StdRng::seed_from_u64(42);
+        node.tick_seeded(1.0, &mut rng);
+
+        // Must be one of the valid values
+        assert!(
+            [1, 4, 7, 10, 13].contains(&node.amount),
+            "Seeded tick respawn must be one of [1,4,7,10,13], got {}",
+            node.amount
+        );
+        assert!(node.amount >= 1, "Must be >= 1 (base offset)");
+
+        // Run again with same seed, result must match
+        let mut node2 = create_test_node();
+        node2.amount = 0;
+        node2.timer = 0.5;
+        let mut rng2 = StdRng::seed_from_u64(42);
+        node2.tick_seeded(1.0, &mut rng2);
+        assert_eq!(node.amount, node2.amount, "Same seed must produce same result");
+    }
+
+    #[test]
+    fn tick_seeded_multiple_seeds_cover_formula_range() {
+        // Run many seeds, collect unique amounts → verify they're all in valid set
+        let mut seen = std::collections::HashSet::new();
+        for seed in 0..200u64 {
+            let mut node = create_test_node();
+            node.amount = 0;
+            node.timer = 0.5;
+            let mut rng = StdRng::seed_from_u64(seed);
+            node.tick_seeded(1.0, &mut rng);
+            seen.insert(node.amount);
+        }
+        // All values must be in valid set
+        for &v in &seen {
+            assert!(
+                [1, 4, 7, 10, 13].contains(&v),
+                "Invalid respawn amount: {}",
+                v
+            );
+        }
+        // We should see multiple distinct values
+        assert!(seen.len() > 1, "Expected multiple distinct respawn values, got {:?}", seen);
+    }
+
+    #[test]
+    fn tick_legacy_formula_statistical_catches_mutations() {
+        // tick: self.amount = 1 + (3 * rand::random::<u8>() as u32 % 5)
+        // = 1 + ((3 * byte) % 5) → values {1,2,3,4,5} each with equal probability
+        //
+        // Mutations to catch:
+        //   + → * : gives (3*byte)%5 = {0,1,2,3,4} → amount=0 possible → fails >= 1
+        //   * → + : gives 1+(3+byte%5) = {4,5,6,7,8} → amount>5 possible → fails <= 5
+        //   * → / : gives 1+((3/byte)%5) = {1,2,4} only → never produces 3 or 5
+        #[allow(deprecated)]
+        {
+            let mut seen = std::collections::HashSet::new();
+            for _ in 0..200 {
+                let mut node = create_test_node();
+                node.amount = 0;
+                node.timer = 0.5;
+                node.tick(1.0);
+                assert!(node.amount >= 1, "amount must be >= 1, got {}", node.amount);
+                assert!(node.amount <= 5, "amount must be <= 5, got {}", node.amount);
+                seen.insert(node.amount);
+            }
+            // Over 200 trials, must see 3 or 5 (impossible with * → / mutation)
+            assert!(
+                seen.contains(&3) || seen.contains(&5),
+                "Expected to see value 3 or 5 in 200 trials; saw {:?}",
+                seen
+            );
+        }
+    }
 }

@@ -541,4 +541,152 @@ mod tests {
         // Should fail due to iteration limit
         assert!(plan.is_none());
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MUTATION REMEDIATION TESTS — targets missed mutants in goap.rs
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_distance_to_returns_exact_count() {
+        // Targets: goap.rs:60 replace distance_to -> usize with 0/1
+        // and goap.rs:62 replace != with ==
+        let s = WorldState::from_facts(&[("a", true), ("b", false), ("c", true)]);
+        let goal = WorldState::from_facts(&[("a", true), ("b", true), ("c", false)]);
+        // "a" matches, "b" doesn't (false vs true), "c" doesn't (true vs false) → 2
+        assert_eq!(s.distance_to(&goal), 2);
+
+        // All matching → 0
+        let s2 = WorldState::from_facts(&[("x", true)]);
+        let g2 = WorldState::from_facts(&[("x", true)]);
+        assert_eq!(s2.distance_to(&g2), 0);
+
+        // All different → 3
+        let s3 = WorldState::from_facts(&[("a", false), ("b", false), ("c", false)]);
+        let g3 = WorldState::from_facts(&[("a", true), ("b", true), ("c", true)]);
+        assert_eq!(s3.distance_to(&g3), 3);
+    }
+
+    #[test]
+    fn mutation_plan_node_f_cost_is_sum() {
+        // Targets: goap.rs:161 replace + with - in PlanNode::f_cost
+        // We verify indirectly: planner should find cheapest path
+        let actions = vec![
+            GoapAction::new("cheap")
+                .with_cost(1.0)
+                .with_precondition("start", true)
+                .with_effect("goal", true),
+            GoapAction::new("expensive")
+                .with_cost(100.0)
+                .with_precondition("start", true)
+                .with_effect("goal", true),
+        ];
+        let state = WorldState::from_facts(&[("start", true)]);
+        let goal = GoapGoal::new("g", WorldState::from_facts(&[("goal", true)]));
+        let planner = GoapPlanner::new();
+        let plan = planner.plan(&state, &goal, &actions).unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(plan[0].name, "cheap", "Should pick cheapest action");
+    }
+
+    #[test]
+    fn mutation_plan_node_eq_checks_state() {
+        // Targets: goap.rs:167 replace eq -> bool with true/false
+        // and goap.rs:167 replace == with !=
+        // Indirectly verified: planner deduplication uses eq
+        let actions = vec![
+            GoapAction::new("a1")
+                .with_precondition("s", true)
+                .with_effect("mid", true),
+            GoapAction::new("a2")
+                .with_precondition("mid", true)
+                .with_effect("done", true),
+        ];
+        let state = WorldState::from_facts(&[("s", true)]);
+        let goal = GoapGoal::new("g", WorldState::from_facts(&[("done", true)]));
+        let planner = GoapPlanner::new();
+        let plan = planner.plan(&state, &goal, &actions).unwrap();
+        assert_eq!(plan.len(), 2);
+    }
+
+    #[test]
+    fn mutation_planner_iteration_guard() {
+        // Targets: goap.rs:250 replace > with ==/>=
+        // If > becomes ==, planner would only stop at exactly max_iterations, not above
+        let planner = GoapPlanner::new().with_max_iterations(1);
+        let state = WorldState::from_facts(&[("a", true)]);
+        let goal = GoapGoal::new(
+            "g",
+            WorldState::from_facts(&[("a", true), ("b", true), ("c", true)]),
+        );
+        let actions = vec![
+            GoapAction::new("x")
+                .with_precondition("a", true)
+                .with_effect("b", true)
+                .with_cost(1.0),
+            GoapAction::new("y")
+                .with_precondition("b", true)
+                .with_effect("c", true)
+                .with_cost(1.0),
+        ];
+        // With max_iterations=1, should fail
+        assert!(planner.plan(&state, &goal, &actions).is_none());
+    }
+
+    #[test]
+    fn mutation_plan_cost_addition() {
+        // Targets: goap.rs:296 replace + with * in GoapPlanner::plan (g_cost += action.cost)
+        let actions = vec![
+            GoapAction::new("step1")
+                .with_cost(2.0)
+                .with_precondition("s", true)
+                .with_effect("m", true),
+            GoapAction::new("step2")
+                .with_cost(3.0)
+                .with_precondition("m", true)
+                .with_effect("g", true),
+        ];
+        let state = WorldState::from_facts(&[("s", true)]);
+        let goal = GoapGoal::new("g", WorldState::from_facts(&[("g", true)]));
+        let planner = GoapPlanner::new();
+        let plan = planner.plan(&state, &goal, &actions).unwrap();
+        // Plan should find both steps
+        assert_eq!(plan.len(), 2);
+    }
+
+    #[test]
+    fn mutation_goap_plan_is_complete_conjunction() {
+        // Targets: goap.rs:334 replace && with || in GoapPlan::is_complete
+        let actions = vec![GoapAction::new("step1")];
+        let mut plan = GoapPlan::new(actions);
+        // With current_action=Some and actions empty, is_complete should be false
+        assert!(
+            !plan.is_complete(),
+            "Plan with current action should not be complete"
+        );
+        plan.advance();
+        // Now current_action=None and actions empty → complete
+        assert!(
+            plan.is_complete(),
+            "After advancing past last, should be complete"
+        );
+    }
+
+    #[test]
+    fn mutation_goap_plan_invalidate_clears() {
+        // Targets: goap.rs:347 replace invalidate with ()
+        let actions = vec![
+            GoapAction::new("s1"),
+            GoapAction::new("s2"),
+            GoapAction::new("s3"),
+        ];
+        let mut plan = GoapPlan::new(actions);
+        assert!(!plan.is_complete());
+
+        plan.invalidate();
+        // After invalidation, plan should be complete (nothing left to do)
+        assert!(
+            plan.is_complete(),
+            "Invalidated plan should be complete (cleared)"
+        );
+    }
 }

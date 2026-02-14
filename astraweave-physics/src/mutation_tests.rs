@@ -10,12 +10,12 @@ mod aabb_tests {
     #[test]
     fn test_aabb_from_center_extents() {
         let aabb = AABB::from_center_extents(Vec3::new(5.0, 5.0, 5.0), Vec3::new(2.0, 3.0, 4.0));
-        
+
         // Verify min = center - extents
         assert_eq!(aabb.min.x, 3.0);
         assert_eq!(aabb.min.y, 2.0);
         assert_eq!(aabb.min.z, 1.0);
-        
+
         // Verify max = center + extents
         assert_eq!(aabb.max.x, 7.0);
         assert_eq!(aabb.max.y, 8.0);
@@ -25,7 +25,7 @@ mod aabb_tests {
     #[test]
     fn test_aabb_from_sphere() {
         let aabb = AABB::from_sphere(Vec3::ZERO, 5.0);
-        
+
         // Sphere creates cube AABB with half-extent = radius
         assert_eq!(aabb.min, Vec3::new(-5.0, -5.0, -5.0));
         assert_eq!(aabb.max, Vec3::new(5.0, 5.0, 5.0));
@@ -35,7 +35,7 @@ mod aabb_tests {
     fn test_aabb_intersects_touching() {
         let a = AABB::from_center_extents(Vec3::ZERO, Vec3::splat(1.0));
         let b = AABB::from_center_extents(Vec3::new(2.0, 0.0, 0.0), Vec3::splat(1.0));
-        
+
         // Boxes touch at x=1.0, should intersect
         assert!(a.intersects(&b));
     }
@@ -44,7 +44,7 @@ mod aabb_tests {
     fn test_aabb_intersects_separated() {
         let a = AABB::from_center_extents(Vec3::ZERO, Vec3::splat(1.0));
         let b = AABB::from_center_extents(Vec3::new(3.0, 0.0, 0.0), Vec3::splat(1.0));
-        
+
         // Boxes separated on X axis
         assert!(!a.intersects(&b));
     }
@@ -52,11 +52,11 @@ mod aabb_tests {
     #[test]
     fn test_aabb_intersects_all_axes() {
         let a = AABB::from_center_extents(Vec3::ZERO, Vec3::splat(1.0));
-        
+
         // Separated on Y
         let b = AABB::from_center_extents(Vec3::new(0.0, 3.0, 0.0), Vec3::splat(1.0));
         assert!(!a.intersects(&b));
-        
+
         // Separated on Z
         let c = AABB::from_center_extents(Vec3::new(0.0, 0.0, 3.0), Vec3::splat(1.0));
         assert!(!a.intersects(&c));
@@ -68,7 +68,7 @@ mod aabb_tests {
             min: Vec3::new(-2.0, -4.0, -6.0),
             max: Vec3::new(2.0, 4.0, 6.0),
         };
-        
+
         let center = aabb.center();
         assert_eq!(center, Vec3::ZERO);
     }
@@ -79,7 +79,7 @@ mod aabb_tests {
             min: Vec3::new(0.0, 0.0, 0.0),
             max: Vec3::new(10.0, 20.0, 30.0),
         };
-        
+
         let center = aabb.center();
         assert_eq!(center, Vec3::new(5.0, 10.0, 15.0));
     }
@@ -93,10 +93,10 @@ mod spatial_hash_tests {
     #[test]
     fn test_spatial_hash_insert_and_query() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         let aabb = AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 1.0);
         grid.insert(1, aabb);
-        
+
         let results = grid.query(aabb);
         assert!(results.contains(&1));
     }
@@ -104,16 +104,16 @@ mod spatial_hash_tests {
     #[test]
     fn test_spatial_hash_multiple_objects() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         // Insert objects at different locations
         grid.insert(1, AABB::from_sphere(Vec3::new(0.0, 0.0, 0.0), 1.0));
         grid.insert(2, AABB::from_sphere(Vec3::new(5.0, 0.0, 0.0), 1.0));
         grid.insert(3, AABB::from_sphere(Vec3::new(100.0, 0.0, 0.0), 1.0));
-        
+
         // Query near origin should find 1 and 2
         let query_aabb = AABB::from_sphere(Vec3::new(2.5, 0.0, 0.0), 5.0);
         let results = grid.query(query_aabb);
-        
+
         assert!(results.contains(&1));
         assert!(results.contains(&2));
         // Object 3 is far away
@@ -122,10 +122,10 @@ mod spatial_hash_tests {
     #[test]
     fn test_spatial_hash_clear() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         grid.insert(1, AABB::from_sphere(Vec3::ZERO, 1.0));
         grid.clear();
-        
+
         let results = grid.query(AABB::from_sphere(Vec3::ZERO, 1.0));
         assert!(!results.contains(&1));
     }
@@ -133,10 +133,10 @@ mod spatial_hash_tests {
     #[test]
     fn test_spatial_hash_negative_coordinates() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         let aabb = AABB::from_sphere(Vec3::new(-50.0, -50.0, -50.0), 1.0);
         grid.insert(1, aabb);
-        
+
         let results = grid.query(aabb);
         assert!(results.contains(&1));
     }
@@ -146,7 +146,7 @@ mod spatial_hash_tests {
         // Small cell size
         let grid_small = SpatialHash::<u32>::new(1.0);
         assert_eq!(grid_small.cell_size(), 1.0);
-        
+
         // Large cell size
         let grid_large = SpatialHash::<u32>::new(100.0);
         assert_eq!(grid_large.cell_size(), 100.0);
@@ -161,7 +161,7 @@ mod projectile_tests {
     #[test]
     fn test_projectile_config_defaults() {
         let config = ProjectileConfig::default();
-        
+
         assert_eq!(config.kind, ProjectileKind::Kinematic);
         assert_eq!(config.gravity_scale, 1.0);
         assert_eq!(config.drag, 0.0);
@@ -174,13 +174,13 @@ mod projectile_tests {
     #[test]
     fn test_projectile_spawn() {
         let mut manager = ProjectileManager::new();
-        
+
         let config = ProjectileConfig {
             position: Vec3::new(0.0, 1.0, 0.0),
             velocity: Vec3::new(10.0, 5.0, 0.0),
             ..Default::default()
         };
-        
+
         let id = manager.spawn(config);
         assert!(id > 0);
     }
@@ -188,11 +188,11 @@ mod projectile_tests {
     #[test]
     fn test_projectile_spawn_multiple() {
         let mut manager = ProjectileManager::new();
-        
+
         let id1 = manager.spawn(ProjectileConfig::default());
         let id2 = manager.spawn(ProjectileConfig::default());
         let id3 = manager.spawn(ProjectileConfig::default());
-        
+
         // Each ID should be unique
         assert_ne!(id1, id2);
         assert_ne!(id2, id3);
@@ -205,7 +205,7 @@ mod projectile_tests {
             kind: ProjectileKind::Hitscan,
             ..Default::default()
         };
-        
+
         assert_eq!(config.kind, ProjectileKind::Hitscan);
     }
 
@@ -217,14 +217,14 @@ mod projectile_tests {
             ..Default::default()
         };
         assert_eq!(config_zero.gravity_scale, 0.0);
-        
+
         // Negative (reverse) gravity
         let config_neg = ProjectileConfig {
             gravity_scale: -1.0,
             ..Default::default()
         };
         assert_eq!(config_neg.gravity_scale, -1.0);
-        
+
         // High gravity
         let config_high = ProjectileConfig {
             gravity_scale: 5.0,
@@ -240,7 +240,7 @@ mod projectile_tests {
             user_data: 12345,
             ..Default::default()
         };
-        
+
         assert_eq!(config.owner, Some(42));
         assert_eq!(config.user_data, 12345);
     }
@@ -248,7 +248,7 @@ mod projectile_tests {
 
 #[cfg(test)]
 mod gravity_zone_tests {
-    use crate::gravity::{GravityZoneShape, GravityZone, GravityManager};
+    use crate::gravity::{GravityManager, GravityZone, GravityZoneShape};
     use glam::Vec3;
 
     #[test]
@@ -257,16 +257,16 @@ mod gravity_zone_tests {
             min: Vec3::new(-10.0, -10.0, -10.0),
             max: Vec3::new(10.0, 10.0, 10.0),
         };
-        
+
         // Inside
         assert!(shape.contains(Vec3::ZERO));
         assert!(shape.contains(Vec3::new(5.0, 5.0, 5.0)));
         assert!(shape.contains(Vec3::new(-5.0, -5.0, -5.0)));
-        
+
         // On boundary (should be inside)
         assert!(shape.contains(Vec3::new(10.0, 0.0, 0.0)));
         assert!(shape.contains(Vec3::new(-10.0, 0.0, 0.0)));
-        
+
         // Outside
         assert!(!shape.contains(Vec3::new(11.0, 0.0, 0.0)));
         assert!(!shape.contains(Vec3::new(0.0, 11.0, 0.0)));
@@ -279,15 +279,15 @@ mod gravity_zone_tests {
             center: Vec3::ZERO,
             radius: 10.0,
         };
-        
+
         // Inside
         assert!(shape.contains(Vec3::ZERO));
         assert!(shape.contains(Vec3::new(5.0, 0.0, 0.0)));
         assert!(shape.contains(Vec3::new(0.0, 5.0, 0.0)));
-        
+
         // On boundary
         assert!(shape.contains(Vec3::new(10.0, 0.0, 0.0)));
-        
+
         // Outside
         assert!(!shape.contains(Vec3::new(11.0, 0.0, 0.0)));
         assert!(!shape.contains(Vec3::new(8.0, 8.0, 0.0))); // sqrt(128) > 10
@@ -300,12 +300,12 @@ mod gravity_zone_tests {
             radius: 20.0,
             strength: 100.0,
         };
-        
+
         // Inside effect radius
         assert!(shape.contains(Vec3::new(50.0, 0.0, 0.0)));
         assert!(shape.contains(Vec3::new(60.0, 0.0, 0.0)));
         assert!(shape.contains(Vec3::new(40.0, 0.0, 0.0)));
-        
+
         // Outside effect radius
         assert!(!shape.contains(Vec3::new(80.0, 0.0, 0.0)));
         assert!(!shape.contains(Vec3::ZERO));
@@ -314,7 +314,7 @@ mod gravity_zone_tests {
     #[test]
     fn test_gravity_manager_default_gravity() {
         let manager = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Get gravity at a position with no zones - need a body ID
         let body_id = 1u64;
         let gravity = manager.calculate_gravity(body_id, Vec3::new(100.0, 100.0, 100.0));
@@ -324,7 +324,7 @@ mod gravity_zone_tests {
     #[test]
     fn test_gravity_zone_priority() {
         let mut manager = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Low priority zone
         manager.add_zone(GravityZone {
             shape: GravityZoneShape::Box {
@@ -335,7 +335,7 @@ mod gravity_zone_tests {
             priority: 1,
             ..Default::default()
         });
-        
+
         // High priority zone (overlapping)
         manager.add_zone(GravityZone {
             shape: GravityZoneShape::Box {
@@ -346,7 +346,7 @@ mod gravity_zone_tests {
             priority: 10,
             ..Default::default()
         });
-        
+
         // High priority should win - need a body ID
         let body_id = 1u64;
         let gravity = manager.calculate_gravity(body_id, Vec3::ZERO);
@@ -362,7 +362,7 @@ mod debug_line_tests {
     #[test]
     fn test_debug_line_new() {
         let line = DebugLine::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
-        
+
         assert_eq!(line.start, [0.0, 0.0, 0.0]);
         assert_eq!(line.end, [1.0, 0.0, 0.0]);
         assert_eq!(line.color, [1.0, 0.0, 0.0]);
@@ -370,12 +370,8 @@ mod debug_line_tests {
 
     #[test]
     fn test_debug_line_from_vec3() {
-        let line = DebugLine::from_vec3(
-            Vec3::ZERO,
-            Vec3::new(5.0, 0.0, 0.0),
-            [0.0, 1.0, 0.0],
-        );
-        
+        let line = DebugLine::from_vec3(Vec3::ZERO, Vec3::new(5.0, 0.0, 0.0), [0.0, 1.0, 0.0]);
+
         assert_eq!(line.start, [0.0, 0.0, 0.0]);
         assert_eq!(line.end, [5.0, 0.0, 0.0]);
     }
@@ -383,7 +379,7 @@ mod debug_line_tests {
     #[test]
     fn test_debug_line_length() {
         let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 0.0], [1.0, 1.0, 1.0]);
-        
+
         // 3-4-5 triangle
         assert!((line.length() - 5.0).abs() < 0.0001);
     }
@@ -391,14 +387,14 @@ mod debug_line_tests {
     #[test]
     fn test_debug_line_length_squared() {
         let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 0.0], [1.0, 1.0, 1.0]);
-        
+
         assert!((line.length_squared() - 25.0).abs() < 0.0001);
     }
 
     #[test]
     fn test_debug_line_midpoint() {
         let line = DebugLine::new([0.0, 0.0, 0.0], [10.0, 20.0, 30.0], [1.0, 1.0, 1.0]);
-        
+
         let mid = line.midpoint();
         assert_eq!(mid, [5.0, 10.0, 15.0]);
     }
@@ -406,7 +402,7 @@ mod debug_line_tests {
     #[test]
     fn test_debug_line_direction() {
         let line = DebugLine::new([1.0, 2.0, 3.0], [4.0, 6.0, 8.0], [1.0, 1.0, 1.0]);
-        
+
         let dir = line.direction();
         assert_eq!(dir, [3.0, 4.0, 5.0]);
     }
@@ -416,7 +412,7 @@ mod debug_line_tests {
         // Zero-length line
         let degenerate = DebugLine::new([5.0, 5.0, 5.0], [5.0, 5.0, 5.0], [1.0, 1.0, 1.0]);
         assert!(degenerate.is_degenerate());
-        
+
         // Normal line
         let normal = DebugLine::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
         assert!(!normal.is_degenerate());
@@ -426,13 +422,13 @@ mod debug_line_tests {
     fn test_debug_line_color_constructors() {
         let red = DebugLine::red([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert_eq!(red.color, [1.0, 0.0, 0.0]);
-        
+
         let green = DebugLine::green([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert_eq!(green.color, [0.0, 1.0, 0.0]);
-        
+
         let blue = DebugLine::blue([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert_eq!(blue.color, [0.0, 0.0, 1.0]);
-        
+
         let white = DebugLine::white([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
         assert_eq!(white.color, [1.0, 1.0, 1.0]);
     }
@@ -553,12 +549,12 @@ mod layers_tests {
 
 #[cfg(test)]
 mod behavioral_correctness_tests {
-    use crate::spatial_hash::{SpatialHash, AABB};
     use crate::projectile::{ProjectileConfig, ProjectileKind};
+    use crate::spatial_hash::{SpatialHash, AABB};
     use glam::Vec3;
 
     // AABB Behavioral Tests
-    
+
     #[test]
     fn test_aabb_center_is_geometric_midpoint() {
         // Behavioral: center must be exactly midway between min and max
@@ -567,12 +563,16 @@ mod behavioral_correctness_tests {
             max: Vec3::new(10.0, 20.0, 30.0),
         };
         let center = aabb.center();
-        
+
         // Center is equidistant from min and max
         let dist_to_min = (center - aabb.min).length();
         let dist_to_max = (aabb.max - center).length();
-        assert!((dist_to_min - dist_to_max).abs() < 0.0001, 
-            "Center must be equidistant: min={}, max={}", dist_to_min, dist_to_max);
+        assert!(
+            (dist_to_min - dist_to_max).abs() < 0.0001,
+            "Center must be equidistant: min={}, max={}",
+            dist_to_min,
+            dist_to_max
+        );
     }
 
     #[test]
@@ -580,14 +580,23 @@ mod behavioral_correctness_tests {
         // Behavioral: sphere AABB must be a cube (all extents equal)
         let radius = 5.0;
         let aabb = AABB::from_sphere(Vec3::new(100.0, 200.0, 300.0), radius);
-        
+
         let extent_x = aabb.max.x - aabb.min.x;
         let extent_y = aabb.max.y - aabb.min.y;
         let extent_z = aabb.max.z - aabb.min.z;
-        
-        assert!((extent_x - extent_y).abs() < 0.0001, "Sphere AABB must be a cube");
-        assert!((extent_y - extent_z).abs() < 0.0001, "Sphere AABB must be a cube");
-        assert!((extent_x - 2.0 * radius).abs() < 0.0001, "Extent must equal diameter");
+
+        assert!(
+            (extent_x - extent_y).abs() < 0.0001,
+            "Sphere AABB must be a cube"
+        );
+        assert!(
+            (extent_y - extent_z).abs() < 0.0001,
+            "Sphere AABB must be a cube"
+        );
+        assert!(
+            (extent_x - 2.0 * radius).abs() < 0.0001,
+            "Extent must equal diameter"
+        );
     }
 
     #[test]
@@ -597,12 +606,14 @@ mod behavioral_correctness_tests {
             min: Vec3::new(-3.0, -5.0, -7.0),
             max: Vec3::new(3.0, 5.0, 7.0),
         };
-        
+
         let half_ext = aabb.half_extents();
         let full_size = aabb.max - aabb.min;
-        
-        assert!((half_ext * 2.0 - full_size).length() < 0.0001,
-            "half_extents * 2 must equal full size");
+
+        assert!(
+            (half_ext * 2.0 - full_size).length() < 0.0001,
+            "half_extents * 2 must equal full size"
+        );
     }
 
     #[test]
@@ -610,14 +621,19 @@ mod behavioral_correctness_tests {
         // Behavioral: A.intersects(B) == B.intersects(A)
         let a = AABB::from_sphere(Vec3::new(0.0, 0.0, 0.0), 2.0);
         let b = AABB::from_sphere(Vec3::new(3.0, 0.0, 0.0), 2.0);
-        
-        assert_eq!(a.intersects(&b), b.intersects(&a), "Intersection must be symmetric");
+
+        assert_eq!(
+            a.intersects(&b),
+            b.intersects(&a),
+            "Intersection must be symmetric"
+        );
     }
 
     #[test]
     fn test_aabb_self_intersection_always_true() {
         // Behavioral: any AABB must intersect itself
-        let aabb = AABB::from_center_extents(Vec3::new(100.0, -50.0, 25.0), Vec3::new(1.0, 2.0, 3.0));
+        let aabb =
+            AABB::from_center_extents(Vec3::new(100.0, -50.0, 25.0), Vec3::new(1.0, 2.0, 3.0));
         assert!(aabb.intersects(&aabb), "AABB must intersect itself");
     }
 
@@ -626,7 +642,7 @@ mod behavioral_correctness_tests {
         // Behavioral: center must be inside the AABB
         let aabb = AABB::from_center_extents(Vec3::new(10.0, 20.0, 30.0), Vec3::new(5.0, 5.0, 5.0));
         let center = aabb.center();
-        
+
         assert!(center.x >= aabb.min.x && center.x <= aabb.max.x);
         assert!(center.y >= aabb.min.y && center.y <= aabb.max.y);
         assert!(center.z >= aabb.min.z && center.z <= aabb.max.z);
@@ -639,10 +655,10 @@ mod behavioral_correctness_tests {
         // Behavioral: inserted objects must be queryable
         let mut grid = SpatialHash::<u32>::new(10.0);
         let aabb = AABB::from_sphere(Vec3::new(5.0, 5.0, 5.0), 1.0);
-        
+
         grid.insert(42, aabb);
         let results = grid.query(aabb);
-        
+
         assert!(results.contains(&42), "Inserted object must be queryable");
     }
 
@@ -650,14 +666,14 @@ mod behavioral_correctness_tests {
     fn test_spatial_hash_clear_empties_grid() {
         // Behavioral: after clear, queries return empty
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         for i in 0..10 {
             let aabb = AABB::from_sphere(Vec3::splat(i as f32 * 5.0), 1.0);
             grid.insert(i, aabb);
         }
-        
+
         grid.clear();
-        
+
         let aabb = AABB::from_sphere(Vec3::ZERO, 100.0);
         let results = grid.query(aabb);
         assert!(results.is_empty(), "Clear must empty the grid");
@@ -667,16 +683,19 @@ mod behavioral_correctness_tests {
     fn test_spatial_hash_distant_objects_not_returned() {
         // Behavioral: very distant objects should not collide
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         let aabb_a = AABB::from_sphere(Vec3::ZERO, 1.0);
         let aabb_b = AABB::from_sphere(Vec3::new(1000.0, 0.0, 0.0), 1.0);
-        
+
         grid.insert(1, aabb_a);
         grid.insert(2, aabb_b);
-        
+
         // Query around origin should not return distant object
         let results = grid.query(aabb_a);
-        assert!(!results.contains(&2), "Distant objects should not be returned");
+        assert!(
+            !results.contains(&2),
+            "Distant objects should not be returned"
+        );
     }
 
     // Projectile Behavioral Tests
@@ -685,16 +704,20 @@ mod behavioral_correctness_tests {
     fn test_projectile_config_default_gravity_is_normal() {
         // Behavioral: default projectile should fall downward
         let config = ProjectileConfig::default();
-        assert!((config.gravity_scale - 1.0).abs() < 0.0001, 
-            "Default gravity scale should be 1.0 (normal gravity)");
+        assert!(
+            (config.gravity_scale - 1.0).abs() < 0.0001,
+            "Default gravity scale should be 1.0 (normal gravity)"
+        );
     }
 
     #[test]
     fn test_projectile_config_default_drag_is_zero() {
         // Behavioral: default should have no air resistance
         let config = ProjectileConfig::default();
-        assert!((config.drag).abs() < 0.0001, 
-            "Default drag should be 0 (no air resistance)");
+        assert!(
+            (config.drag).abs() < 0.0001,
+            "Default drag should be 0 (no air resistance)"
+        );
     }
 
     #[test]
@@ -702,10 +725,16 @@ mod behavioral_correctness_tests {
         // Behavioral: verify both projectile types exist and are distinct
         let hitscan = ProjectileKind::Hitscan;
         let kinematic = ProjectileKind::Kinematic;
-        
-        assert_ne!(hitscan, kinematic, "Hitscan and Kinematic must be different");
-        assert_eq!(ProjectileKind::default(), ProjectileKind::Kinematic, 
-            "Default projectile kind should be Kinematic");
+
+        assert_ne!(
+            hitscan, kinematic,
+            "Hitscan and Kinematic must be different"
+        );
+        assert_eq!(
+            ProjectileKind::default(),
+            ProjectileKind::Kinematic,
+            "Default projectile kind should be Kinematic"
+        );
     }
 
     #[test]
@@ -729,14 +758,14 @@ mod behavioral_correctness_tests {
 
 #[cfg(test)]
 mod boundary_condition_tests {
-    use crate::spatial_hash::{SpatialHash, AABB};
-    use crate::gravity::{GravityZoneShape, GravityZone, GravityManager};
+    use crate::gravity::{GravityManager, GravityZone, GravityZoneShape};
     use crate::projectile::{ProjectileConfig, ProjectileKind};
+    use crate::spatial_hash::{SpatialHash, AABB};
     use crate::{ActorKind, DebugLine, Layers};
     use glam::Vec3;
 
     // --- AABB boundary tests ---
-    
+
     #[test]
     fn aabb_min_equals_max_is_degenerate() {
         let aabb = AABB {
@@ -794,14 +823,14 @@ mod boundary_condition_tests {
     }
 
     // --- Gravity zone boundary tests ---
-    
+
     #[test]
     fn box_zone_at_exact_boundary() {
         let shape = GravityZoneShape::Box {
             min: Vec3::ZERO,
             max: Vec3::splat(10.0),
         };
-        
+
         // Exactly at min boundary (should be inside)
         assert!(shape.contains(Vec3::ZERO));
         // Exactly at max boundary (should be inside with <=)
@@ -814,7 +843,7 @@ mod boundary_condition_tests {
             min: Vec3::ZERO,
             max: Vec3::splat(10.0),
         };
-        
+
         // Epsilon outside max
         assert!(!shape.contains(Vec3::splat(10.001)));
         // Epsilon outside min
@@ -827,7 +856,7 @@ mod boundary_condition_tests {
             center: Vec3::ZERO,
             radius: 10.0,
         };
-        
+
         // Exactly at radius (should be inside with <=)
         assert!(shape.contains(Vec3::new(10.0, 0.0, 0.0)));
     }
@@ -838,7 +867,7 @@ mod boundary_condition_tests {
             center: Vec3::ZERO,
             radius: 10.0,
         };
-        
+
         // Epsilon outside radius
         assert!(!shape.contains(Vec3::new(10.001, 0.0, 0.0)));
     }
@@ -849,14 +878,14 @@ mod boundary_condition_tests {
             center: Vec3::new(5.0, 5.0, 5.0),
             radius: 0.0,
         };
-        
+
         // Only the center point should be inside
         assert!(shape.contains(Vec3::new(5.0, 5.0, 5.0)));
         assert!(!shape.contains(Vec3::new(5.001, 5.0, 5.0)));
     }
 
     // --- DebugLine boundaries ---
-    
+
     #[test]
     fn debug_line_zero_length() {
         let line = DebugLine::new([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
@@ -879,7 +908,7 @@ mod boundary_condition_tests {
     }
 
     // --- Projectile config boundaries ---
-    
+
     #[test]
     fn projectile_gravity_at_zero() {
         let config = ProjectileConfig {
@@ -926,7 +955,7 @@ mod boundary_condition_tests {
     }
 
     // --- Spatial hash cell size boundaries ---
-    
+
     #[test]
     fn spatial_hash_small_cell_size() {
         let grid = SpatialHash::<u32>::new(0.1);
@@ -946,13 +975,13 @@ mod boundary_condition_tests {
 
 #[cfg(test)]
 mod comparison_operator_tests {
-    use crate::spatial_hash::AABB;
     use crate::projectile::ProjectileKind;
+    use crate::spatial_hash::AABB;
     use crate::{ActorKind, Layers};
     use glam::Vec3;
 
     // --- AABB equality ---
-    
+
     #[test]
     fn aabb_equal_when_same() {
         let a = AABB::from_sphere(Vec3::ZERO, 5.0);
@@ -976,7 +1005,7 @@ mod comparison_operator_tests {
     }
 
     // --- ProjectileKind comparisons ---
-    
+
     #[test]
     fn projectile_kind_hitscan_equals_hitscan() {
         assert_eq!(ProjectileKind::Hitscan, ProjectileKind::Hitscan);
@@ -993,7 +1022,7 @@ mod comparison_operator_tests {
     }
 
     // --- ActorKind comparisons ---
-    
+
     #[test]
     fn actor_kind_static_equals_static() {
         assert_eq!(ActorKind::Static, ActorKind::Static);
@@ -1010,7 +1039,7 @@ mod comparison_operator_tests {
     }
 
     // --- Layers comparisons ---
-    
+
     #[test]
     fn layers_default_equals_default() {
         assert_eq!(Layers::DEFAULT, Layers::DEFAULT);
@@ -1027,12 +1056,18 @@ mod comparison_operator_tests {
     }
 
     // --- Vec3 comparisons in AABBs ---
-    
+
     #[test]
     fn vec3_comparison_for_intersection() {
-        let a = AABB { min: Vec3::ZERO, max: Vec3::splat(2.0) };
-        let b = AABB { min: Vec3::splat(1.0), max: Vec3::splat(3.0) };
-        
+        let a = AABB {
+            min: Vec3::ZERO,
+            max: Vec3::splat(2.0),
+        };
+        let b = AABB {
+            min: Vec3::splat(1.0),
+            max: Vec3::splat(3.0),
+        };
+
         // Test overlap condition: a.max >= b.min AND b.max >= a.min
         assert!(a.max.x >= b.min.x);
         assert!(b.max.x >= a.min.x);
@@ -1041,9 +1076,15 @@ mod comparison_operator_tests {
 
     #[test]
     fn vec3_comparison_no_intersection() {
-        let a = AABB { min: Vec3::ZERO, max: Vec3::splat(1.0) };
-        let b = AABB { min: Vec3::splat(2.0), max: Vec3::splat(3.0) };
-        
+        let a = AABB {
+            min: Vec3::ZERO,
+            max: Vec3::splat(1.0),
+        };
+        let b = AABB {
+            min: Vec3::splat(2.0),
+            max: Vec3::splat(3.0),
+        };
+
         // No overlap: a.max < b.min on all axes
         assert!(a.max.x < b.min.x);
         assert!(!a.intersects(&b));
@@ -1056,13 +1097,13 @@ mod comparison_operator_tests {
 
 #[cfg(test)]
 mod boolean_return_path_tests {
-    use crate::spatial_hash::{SpatialHash, AABB};
     use crate::gravity::GravityZoneShape;
+    use crate::spatial_hash::{SpatialHash, AABB};
     use crate::{ActorKind, DebugLine};
     use glam::Vec3;
 
     // --- AABB.intersects() paths ---
-    
+
     #[test]
     fn aabb_intersects_returns_true_for_overlap() {
         let a = AABB::from_sphere(Vec3::ZERO, 2.0);
@@ -1084,7 +1125,7 @@ mod boolean_return_path_tests {
     }
 
     // --- GravityZoneShape.contains() paths ---
-    
+
     #[test]
     fn box_zone_contains_returns_true_for_inside() {
         let shape = GravityZoneShape::Box {
@@ -1122,7 +1163,7 @@ mod boolean_return_path_tests {
     }
 
     // --- ActorKind boolean methods ---
-    
+
     #[test]
     fn is_static_returns_true_for_static() {
         assert!(ActorKind::Static.is_static());
@@ -1169,7 +1210,7 @@ mod boolean_return_path_tests {
     }
 
     // --- DebugLine.is_degenerate() paths ---
-    
+
     #[test]
     fn is_degenerate_returns_true_for_zero_length() {
         let line = DebugLine::new([5.0, 5.0, 5.0], [5.0, 5.0, 5.0], [1.0, 0.0, 0.0]);
@@ -1183,13 +1224,13 @@ mod boolean_return_path_tests {
     }
 
     // --- SpatialHash query result paths ---
-    
+
     #[test]
     fn query_returns_non_empty_when_object_exists() {
         let mut grid = SpatialHash::<u32>::new(10.0);
         let aabb = AABB::from_sphere(Vec3::ZERO, 1.0);
         grid.insert(1, aabb);
-        
+
         let results = grid.query(aabb);
         assert!(!results.is_empty());
     }
@@ -1200,7 +1241,7 @@ mod boolean_return_path_tests {
         let aabb = AABB::from_sphere(Vec3::ZERO, 1.0);
         grid.insert(1, aabb);
         grid.clear();
-        
+
         let results = grid.query(aabb);
         assert!(results.is_empty());
     }
@@ -1209,11 +1250,10 @@ mod boolean_return_path_tests {
     fn query_returns_empty_for_distant_query() {
         let mut grid = SpatialHash::<u32>::new(10.0);
         grid.insert(1, AABB::from_sphere(Vec3::ZERO, 1.0));
-        
+
         // Query far away
         let distant_query = AABB::from_sphere(Vec3::splat(1000.0), 1.0);
         let results = grid.query(distant_query);
         assert!(!results.contains(&1));
     }
 }
-

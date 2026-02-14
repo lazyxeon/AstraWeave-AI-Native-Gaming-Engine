@@ -294,7 +294,11 @@ impl GravityManager {
                 .zones
                 .values()
                 .filter(|z| z.active)
-                .filter_map(|z| z.shape.get_gravity(position, z.gravity).map(|g| (z.priority, g)))
+                .filter_map(|z| {
+                    z.shape
+                        .get_gravity(position, z.gravity)
+                        .map(|g| (z.priority, g))
+                })
                 .max_by_key(|(priority, _)| *priority)
                 .map(|(_, g)| g);
 
@@ -308,7 +312,11 @@ impl GravityManager {
 
     /// Get all bodies affected by a specific zone
     /// Useful for debugging and visualization
-    pub fn bodies_in_zone(&self, zone_id: GravityZoneId, body_positions: &[(BodyGravityId, Vec3)]) -> Vec<BodyGravityId> {
+    pub fn bodies_in_zone(
+        &self,
+        zone_id: GravityZoneId,
+        body_positions: &[(BodyGravityId, Vec3)],
+    ) -> Vec<BodyGravityId> {
         let Some(zone) = self.zones.get(&zone_id) else {
             return Vec::new();
         };
@@ -341,7 +349,13 @@ impl GravityManager {
     }
 
     /// Create a point attractor (like a planet or black hole)
-    pub fn add_attractor(&mut self, center: Vec3, radius: f32, strength: f32, priority: i32) -> GravityZoneId {
+    pub fn add_attractor(
+        &mut self,
+        center: Vec3,
+        radius: f32,
+        strength: f32,
+        priority: i32,
+    ) -> GravityZoneId {
         self.add_zone(GravityZone {
             shape: GravityZoneShape::Point {
                 center,
@@ -394,7 +408,11 @@ mod tests {
         manager.set_gravity_scale(1, 0.5);
 
         let gravity = manager.calculate_gravity(1, Vec3::ZERO);
-        assert!((gravity.y - (-5.0)).abs() < 0.001, "Expected -5.0, got {}", gravity.y);
+        assert!(
+            (gravity.y - (-5.0)).abs() < 0.001,
+            "Expected -5.0, got {}",
+            gravity.y
+        );
     }
 
     #[test]
@@ -412,7 +430,11 @@ mod tests {
         manager.set_gravity_scale(1, -1.0);
 
         let gravity = manager.calculate_gravity(1, Vec3::ZERO);
-        assert!((gravity.y - 10.0).abs() < 0.001, "Expected +10.0, got {}", gravity.y);
+        assert!(
+            (gravity.y - 10.0).abs() < 0.001,
+            "Expected +10.0, got {}",
+            gravity.y
+        );
     }
 
     #[test]
@@ -452,11 +474,7 @@ mod tests {
     #[test]
     fn test_zero_g_zone() {
         let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
-        manager.add_zero_g_box(
-            Vec3::new(-5.0, -5.0, -5.0),
-            Vec3::new(5.0, 5.0, 5.0),
-            1,
-        );
+        manager.add_zero_g_box(Vec3::new(-5.0, -5.0, -5.0), Vec3::new(5.0, 5.0, 5.0), 1);
 
         // Inside zone: zero gravity
         let gravity_inside = manager.calculate_gravity(1, Vec3::ZERO);
@@ -509,7 +527,11 @@ mod tests {
 
         // Body at position (0, 50, 0) should be pulled toward (0, 100, 0)
         let gravity = manager.calculate_gravity(1, Vec3::new(0.0, 50.0, 0.0));
-        assert!(gravity.y > 0.0, "Should be pulled upward toward attractor, got {}", gravity.y);
+        assert!(
+            gravity.y > 0.0,
+            "Should be pulled upward toward attractor, got {}",
+            gravity.y
+        );
     }
 
     #[test]
@@ -542,11 +564,14 @@ mod tests {
         manager.add_zero_g_box(Vec3::splat(-10.0), Vec3::splat(10.0), 1);
 
         // Set body to ignore zones
-        manager.set_body_gravity(1, BodyGravitySettings {
-            scale: 1.0,
-            custom_direction: None,
-            ignore_zones: true,
-        });
+        manager.set_body_gravity(
+            1,
+            BodyGravitySettings {
+                scale: 1.0,
+                custom_direction: None,
+                ignore_zones: true,
+            },
+        );
 
         // Should ignore the zero-G zone and use global gravity
         let gravity = manager.calculate_gravity(1, Vec3::ZERO);
@@ -586,15 +611,12 @@ mod tests {
     #[test]
     fn test_bodies_in_zone() {
         let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
-        let zone_id = manager.add_zero_g_box(
-            Vec3::new(-5.0, -5.0, -5.0),
-            Vec3::new(5.0, 5.0, 5.0),
-            1,
-        );
+        let zone_id =
+            manager.add_zero_g_box(Vec3::new(-5.0, -5.0, -5.0), Vec3::new(5.0, 5.0, 5.0), 1);
 
         let bodies = vec![
-            (1, Vec3::ZERO),           // Inside
-            (2, Vec3::new(3.0, 0.0, 0.0)), // Inside
+            (1, Vec3::ZERO),                // Inside
+            (2, Vec3::new(3.0, 0.0, 0.0)),  // Inside
             (3, Vec3::new(10.0, 0.0, 0.0)), // Outside
         ];
 
@@ -693,7 +715,7 @@ mod tests {
     #[test]
     fn test_multiple_attractors() {
         let mut manager = GravityManager::new(Vec3::ZERO);
-        
+
         // Two attractors on opposite sides
         manager.add_attractor(Vec3::new(-50.0, 0.0, 0.0), 100.0, 100.0, 1);
         manager.add_attractor(Vec3::new(50.0, 0.0, 0.0), 100.0, 100.0, 2);
@@ -701,7 +723,7 @@ mod tests {
         // At the midpoint, forces should (roughly) cancel
         // Note: Implementation may not sum attractors, testing highest priority
         let gravity = manager.calculate_gravity(1, Vec3::ZERO);
-        
+
         // Priority 2 is higher, so should pull toward +X
         assert!(gravity.x > 0.0 || gravity.length() < 1.0);
     }
@@ -754,12 +776,12 @@ mod tests {
     #[test]
     fn test_reset_body_gravity_to_default() {
         let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
-        
+
         // Set custom gravity
         manager.set_gravity_scale(1, 0.5);
         let gravity1 = manager.calculate_gravity(1, Vec3::ZERO);
         assert!((gravity1.y - (-5.0)).abs() < 0.01);
-        
+
         // Reset to default settings
         manager.set_body_gravity(1, BodyGravitySettings::default());
         let gravity2 = manager.calculate_gravity(1, Vec3::ZERO);
@@ -823,7 +845,7 @@ mod tests {
             },
             ..Default::default()
         };
-        
+
         let id = manager.add_zone(zone);
         let retrieved = manager.get_zone(id).unwrap();
         assert_eq!(retrieved.name, Some("TestZone".to_string()));
@@ -832,14 +854,255 @@ mod tests {
     #[test]
     fn test_global_gravity_update() {
         let mut manager = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
-        
+
         let gravity1 = manager.calculate_gravity(1, Vec3::ZERO);
         assert!((gravity1.y - (-10.0)).abs() < 0.01);
-        
+
         // Change global gravity
         manager.global_gravity = Vec3::new(0.0, -20.0, 0.0);
-        
+
         let gravity2 = manager.calculate_gravity(1, Vec3::ZERO);
         assert!((gravity2.y - (-20.0)).abs() < 0.01);
+    }
+
+    // ===== Mutation-Targeted Remediation Tests =====
+
+    #[test]
+    fn mutation_get_zone_mut_returns_mutable_ref() {
+        // Targets: gravity.rs:229 replace get_zone_mut -> Option<&mut GravityZone> with None / Some(Default)
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let id = mgr.add_zone(GravityZone {
+            gravity: Vec3::new(0.0, -5.0, 0.0),
+            priority: 3,
+            ..Default::default()
+        });
+
+        // get_zone_mut should return Some and allow mutation
+        let zone = mgr
+            .get_zone_mut(id)
+            .expect("get_zone_mut should return Some for valid id");
+        assert_eq!(zone.priority, 3);
+        zone.gravity = Vec3::new(0.0, 100.0, 0.0);
+
+        // Verify mutation persisted
+        let zone2 = mgr.get_zone(id).unwrap();
+        assert!(
+            (zone2.gravity.y - 100.0).abs() < 0.01,
+            "Mutation via get_zone_mut must persist"
+        );
+
+        // Non-existent ID → None
+        assert!(mgr.get_zone_mut(9999).is_none());
+    }
+
+    #[test]
+    fn mutation_zones_iterator_returns_all() {
+        // Targets: gravity.rs:244 replace zones -> impl Iterator with ::std::iter::empty()
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        mgr.add_zone(GravityZone {
+            priority: 1,
+            ..Default::default()
+        });
+        mgr.add_zone(GravityZone {
+            priority: 2,
+            ..Default::default()
+        });
+        mgr.add_zone(GravityZone {
+            priority: 3,
+            ..Default::default()
+        });
+
+        let all: Vec<&GravityZone> = mgr.zones().collect();
+        assert_eq!(
+            all.len(),
+            3,
+            "zones() must return all 3 zones, got {}",
+            all.len()
+        );
+        // If replaced with empty(), we'd get 0
+    }
+
+    #[test]
+    fn mutation_remove_body_gravity_actually_removes() {
+        // Targets: gravity.rs:262 replace remove_body_gravity with ()
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        mgr.set_body_gravity(
+            42,
+            BodyGravitySettings {
+                scale: 5.0,
+                ..Default::default()
+            },
+        );
+
+        let before = mgr.get_body_gravity(42);
+        assert!(
+            (before.scale - 5.0).abs() < 0.01,
+            "should have custom scale"
+        );
+
+        mgr.remove_body_gravity(42);
+
+        let after = mgr.get_body_gravity(42);
+        assert!(
+            (after.scale - 1.0).abs() < 0.01,
+            "After remove, should return default scale 1.0, got {}",
+            after.scale
+        );
+    }
+
+    #[test]
+    fn mutation_add_zero_g_box_fields() {
+        // Targets: gravity.rs:327 delete field gravity, :328 delete field priority
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let id = mgr.add_zero_g_box(Vec3::new(-5.0, -5.0, -5.0), Vec3::new(5.0, 5.0, 5.0), 10);
+
+        let zone = mgr.get_zone(id).unwrap();
+        // gravity must be ZERO (zero-G zone)
+        assert_eq!(
+            zone.gravity,
+            Vec3::ZERO,
+            "Zero-G box must have Vec3::ZERO gravity"
+        );
+        // priority must match
+        assert_eq!(
+            zone.priority, 10,
+            "Priority must be 10, got {}",
+            zone.priority
+        );
+        // shape must be box with correct bounds
+        match &zone.shape {
+            GravityZoneShape::Box { min, max } => {
+                assert!((*min - Vec3::new(-5.0, -5.0, -5.0)).length() < 0.01);
+                assert!((*max - Vec3::new(5.0, 5.0, 5.0)).length() < 0.01);
+            }
+            _ => panic!("add_zero_g_box should create a Box shape"),
+        }
+    }
+
+    #[test]
+    fn mutation_add_zero_g_sphere_fields() {
+        // Targets: gravity.rs:335 replace with Default, :336 delete shape, :337 delete gravity, :338 delete priority
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let center = Vec3::new(10.0, 20.0, 30.0);
+        let id = mgr.add_zero_g_sphere(center, 15.0, 7);
+
+        let zone = mgr.get_zone(id).unwrap();
+        assert_eq!(
+            zone.gravity,
+            Vec3::ZERO,
+            "Zero-G sphere must have Vec3::ZERO gravity"
+        );
+        assert_eq!(zone.priority, 7, "Priority mismatch");
+        match &zone.shape {
+            GravityZoneShape::Sphere { center: c, radius } => {
+                assert!((*c - center).length() < 0.01, "Center mismatch");
+                assert!((*radius - 15.0).abs() < 0.01, "Radius mismatch");
+            }
+            _ => panic!("add_zero_g_sphere should create a Sphere shape"),
+        }
+        // If replaced with Default::default(), id=0 and zone wouldn't have correct fields
+        assert!(id > 0, "Returned ID must be > 0");
+    }
+
+    #[test]
+    fn mutation_add_attractor_gravity_field() {
+        // Targets: gravity.rs:351 delete field gravity
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let id = mgr.add_attractor(Vec3::new(0.0, 0.0, 0.0), 50.0, 100.0, 5);
+
+        let zone = mgr.get_zone(id).unwrap();
+        // Attractor gravity field should be Vec3::ZERO (ignored for point gravity)
+        assert_eq!(zone.gravity, Vec3::ZERO);
+        assert_eq!(zone.priority, 5);
+        match &zone.shape {
+            GravityZoneShape::Point {
+                center,
+                radius,
+                strength,
+            } => {
+                assert!(center.length() < 0.01, "Center should be origin");
+                assert!((*radius - 50.0).abs() < 0.01);
+                assert!((*strength - 100.0).abs() < 0.01);
+            }
+            _ => panic!("add_attractor should create a Point shape"),
+        }
+    }
+
+    #[test]
+    fn mutation_add_directional_zone_fields() {
+        // Targets: gravity.rs:366 delete shape, :368 delete priority
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let grav_dir = Vec3::new(0.0, 0.0, -5.0); // sideways gravity
+        let id = mgr.add_directional_zone(
+            Vec3::new(-10.0, -10.0, -10.0),
+            Vec3::new(10.0, 10.0, 10.0),
+            grav_dir,
+            20,
+        );
+
+        let zone = mgr.get_zone(id).unwrap();
+        assert_eq!(zone.priority, 20, "Priority must be 20");
+        assert!(
+            (zone.gravity - grav_dir).length() < 0.01,
+            "Gravity direction mismatch"
+        );
+        match &zone.shape {
+            GravityZoneShape::Box { min, max } => {
+                assert!((*min - Vec3::new(-10.0, -10.0, -10.0)).length() < 0.01);
+                assert!((*max - Vec3::new(10.0, 10.0, 10.0)).length() < 0.01);
+            }
+            _ => panic!("add_directional_zone should create a Box shape"),
+        }
+    }
+
+    #[test]
+    fn mutation_point_gravity_inverse_square_falloff() {
+        // Targets: gravity.rs:111 replace < with <=, :116 replace - with /, :117 replace * with +
+        let shape = GravityZoneShape::Point {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            strength: 100.0,
+        };
+
+        // At distance 5 (half radius): falloff = 1 - 5/10 = 0.5, force = 100 * 0.25 = 25
+        let g = shape
+            .get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
+        let expected_force = 100.0 * 0.5 * 0.5; // strength * falloff^2 = 25
+        assert!(
+            (g.length() - expected_force).abs() < 0.5,
+            "At half-radius, force should be ~25, got {}",
+            g.length()
+        );
+        // Direction should be toward center (negative X)
+        assert!(
+            g.x < 0.0,
+            "Gravity should pull toward center (negative X), got gx={}",
+            g.x
+        );
+
+        // At the very center: should return ZERO
+        let g_center = shape
+            .get_gravity(Vec3::new(0.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
+        assert!(
+            g_center.length() < 0.01,
+            "At center, gravity should be zero"
+        );
+
+        // At outer edge (distance == radius): falloff = 0, force = 0
+        let g_edge = shape
+            .get_gravity(Vec3::new(10.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
+        assert!(
+            g_edge.length() < 0.01,
+            "At edge of radius, gravity should be ~zero"
+        );
+
+        // If < became <=, the center check (distance < 0.001) would fail for 0.001 exactly
+        let g_near = shape
+            .get_gravity(Vec3::new(0.0005, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
+        assert!(g_near.length() < 0.01, "Very near center should be ~zero");
     }
 }
