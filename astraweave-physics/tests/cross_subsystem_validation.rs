@@ -6,14 +6,13 @@
 
 use astraweave_physics::{
     cloth::{ClothConfig, ClothManager},
-    destruction::{DestructibleConfig, DestructionManager, DestructibleId},
+    destruction::{DestructibleConfig, DestructibleId, DestructionManager},
     gravity::GravityManager,
     projectile::{ProjectileConfig, ProjectileKind, ProjectileManager},
     ragdoll::RagdollConfig,
-    vehicle::{VehicleConfig, FrictionCurve},
     spatial_hash::SpatialHash,
-    AABB,
-    PhysicsWorld,
+    vehicle::{FrictionCurve, VehicleConfig},
+    PhysicsWorld, AABB,
 };
 use glam::Vec3;
 
@@ -41,11 +40,14 @@ fn test_cloth_responds_to_gravity() {
 
     // Get initial center position from particles (skip potential NaN values)
     let initial_positions = cloth_mgr.get(cloth_id).unwrap().get_positions();
-    let valid_initial: Vec<f32> = initial_positions.iter()
+    let valid_initial: Vec<f32> = initial_positions
+        .iter()
         .map(|p| p.y)
         .filter(|y| y.is_finite())
         .collect();
-    let initial_y: f32 = if valid_initial.is_empty() { 10.0 } else {
+    let initial_y: f32 = if valid_initial.is_empty() {
+        10.0
+    } else {
         valid_initial.iter().sum::<f32>() / valid_initial.len() as f32
     };
 
@@ -56,16 +58,22 @@ fn test_cloth_responds_to_gravity() {
 
     // Cloth should have fallen due to gravity (check only finite values)
     let final_positions = cloth_mgr.get(cloth_id).unwrap().get_positions();
-    let valid_final: Vec<f32> = final_positions.iter()
+    let valid_final: Vec<f32> = final_positions
+        .iter()
         .map(|p| p.y)
         .filter(|y| y.is_finite())
         .collect();
-    
+
     // If we have valid particles, check they fell
     if !valid_final.is_empty() && !valid_initial.is_empty() {
         let final_y: f32 = valid_final.iter().sum::<f32>() / valid_final.len() as f32;
         // Allow small tolerance for nearly stationary cloths
-        assert!(final_y <= initial_y + 0.1, "Cloth should not rise under gravity: initial={}, final={}", initial_y, final_y);
+        assert!(
+            final_y <= initial_y + 0.1,
+            "Cloth should not rise under gravity: initial={}, final={}",
+            initial_y,
+            final_y
+        );
     }
 }
 
@@ -75,11 +83,7 @@ fn test_cloth_in_zero_g_zone() {
     let mut cloth_mgr = ClothManager::new();
 
     // Create zero-G zone
-    gravity_mgr.add_zero_g_box(
-        Vec3::new(-10.0, 0.0, -10.0),
-        Vec3::new(10.0, 20.0, 10.0),
-        1,
-    );
+    gravity_mgr.add_zero_g_box(Vec3::new(-10.0, 0.0, -10.0), Vec3::new(10.0, 20.0, 10.0), 1);
 
     // Create cloth with no gravity (simulating zero-G)
     let config = ClothConfig {
@@ -96,7 +100,10 @@ fn test_cloth_in_zero_g_zone() {
     let effective_gravity = gravity_mgr.calculate_gravity(1, avg_pos);
 
     // The zone should provide zero gravity
-    assert!(effective_gravity.length() < 0.01, "Cloth in zero-G zone should have no gravity");
+    assert!(
+        effective_gravity.length() < 0.01,
+        "Cloth in zero-G zone should have no gravity"
+    );
 }
 
 // ============================================================================
@@ -112,9 +119,11 @@ fn test_vehicle_config_with_destruction_compatible_mass() {
     // Impact force = mass * acceleration
     let impact_velocity = 10.0; // m/s collision
     let impact_force = vehicle_config.mass * impact_velocity;
-    
-    assert!(impact_force > destruction_config.damage_threshold * 0.1,
-        "Vehicle mass should generate meaningful destruction forces");
+
+    assert!(
+        impact_force > destruction_config.damage_threshold * 0.1,
+        "Vehicle mass should generate meaningful destruction forces"
+    );
 }
 
 #[test]
@@ -127,7 +136,7 @@ fn test_destruction_debris_generation() {
     };
 
     let id = destruction_mgr.add_destructible(config, Vec3::ZERO);
-    
+
     // Apply enough damage to destroy
     destruction_mgr.apply_damage(id, 150.0);
     destruction_mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
@@ -135,8 +144,10 @@ fn test_destruction_debris_generation() {
     // Object should be destroyed or have spawned debris
     let obj = destruction_mgr.get(id);
     // After heavy damage, object may be destroyed
-    assert!(obj.is_none() || obj.unwrap().health <= 0.0,
-        "Object should be destroyed after excessive damage");
+    assert!(
+        obj.is_none() || obj.unwrap().health <= 0.0,
+        "Object should be destroyed after excessive damage"
+    );
 }
 
 // ============================================================================
@@ -146,31 +157,43 @@ fn test_destruction_debris_generation() {
 #[test]
 fn test_ragdoll_config_has_valid_defaults() {
     let config = RagdollConfig::default();
-    
+
     // Default config should have reasonable values
-    assert!(config.mass_scale > 0.0, "Ragdoll mass scale should be positive");
-    assert!(config.joint_stiffness >= 0.0, "Ragdoll joint stiffness should be non-negative");
-    assert!(config.joint_damping >= 0.0, "Ragdoll joint damping should be non-negative");
+    assert!(
+        config.mass_scale > 0.0,
+        "Ragdoll mass scale should be positive"
+    );
+    assert!(
+        config.joint_stiffness >= 0.0,
+        "Ragdoll joint stiffness should be non-negative"
+    );
+    assert!(
+        config.joint_damping >= 0.0,
+        "Ragdoll joint damping should be non-negative"
+    );
 }
 
 #[test]
 fn test_ragdoll_responds_to_gravity_manager() {
     let gravity_mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
-    
+
     // Create ragdoll at a position
     let ragdoll_pos = Vec3::new(5.0, 10.0, 0.0);
-    
+
     // Calculate gravity for ragdoll position
     let gravity = gravity_mgr.calculate_gravity(1, ragdoll_pos);
-    
+
     // Should get standard gravity
-    assert!((gravity.y - (-9.81)).abs() < 0.1, "Ragdoll should experience normal gravity");
+    assert!(
+        (gravity.y - (-9.81)).abs() < 0.1,
+        "Ragdoll should experience normal gravity"
+    );
 }
 
 #[test]
 fn test_ragdoll_in_reverse_gravity_zone() {
     let mut gravity_mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
-    
+
     // Add reverse gravity zone
     gravity_mgr.add_zone(astraweave_physics::gravity::GravityZone {
         shape: astraweave_physics::gravity::GravityZoneShape::Box {
@@ -181,12 +204,15 @@ fn test_ragdoll_in_reverse_gravity_zone() {
         priority: 10,
         ..Default::default()
     });
-    
+
     let ragdoll_pos = Vec3::ZERO; // Inside zone
     let gravity = gravity_mgr.calculate_gravity(1, ragdoll_pos);
-    
+
     // Should get reverse gravity from zone
-    assert!(gravity.y > 0.0, "Ragdoll in reverse gravity zone should experience upward force");
+    assert!(
+        gravity.y > 0.0,
+        "Ragdoll in reverse gravity zone should experience upward force"
+    );
 }
 
 // ============================================================================
@@ -197,7 +223,7 @@ fn test_ragdoll_in_reverse_gravity_zone() {
 fn test_projectile_affected_by_gravity() {
     // ProjectileManager uses internal gravity set during construction
     let mut mgr = ProjectileManager::new();
-    
+
     let config = ProjectileConfig {
         kind: ProjectileKind::Kinematic,
         position: Vec3::new(0.0, 10.0, 0.0),
@@ -206,15 +232,15 @@ fn test_projectile_affected_by_gravity() {
         drag: 0.0,
         ..Default::default()
     };
-    
+
     let id = mgr.spawn(config);
     let initial_y = mgr.get(id).unwrap().position.y;
-    
+
     // Update with dummy raycast function
     for _ in 0..60 {
         mgr.update(1.0 / 60.0, |_, _, _| None);
     }
-    
+
     let final_y = mgr.get(id).unwrap().position.y;
     assert!(final_y < initial_y, "Projectile should fall under gravity");
 }
@@ -222,7 +248,7 @@ fn test_projectile_affected_by_gravity() {
 #[test]
 fn test_projectile_with_custom_gravity_zone() {
     let mut gravity_mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
-    
+
     // Create low-gravity zone
     gravity_mgr.add_zone(astraweave_physics::gravity::GravityZone {
         shape: astraweave_physics::gravity::GravityZoneShape::Sphere {
@@ -233,14 +259,17 @@ fn test_projectile_with_custom_gravity_zone() {
         priority: 5,
         ..Default::default()
     });
-    
+
     // Projectile in zone
     let pos = Vec3::new(5.0, 5.0, 0.0);
     let gravity = gravity_mgr.calculate_gravity(1, pos);
-    
+
     // Should have low gravity from zone
-    assert!(gravity.y > -5.0 && gravity.y < 0.0,
-        "Projectile in low-gravity zone: got {}", gravity.y);
+    assert!(
+        gravity.y > -5.0 && gravity.y < 0.0,
+        "Projectile in low-gravity zone: got {}",
+        gravity.y
+    );
 }
 
 // ============================================================================
@@ -250,12 +279,12 @@ fn test_projectile_with_custom_gravity_zone() {
 #[test]
 fn test_spatial_hash_with_multiple_physics_objects() {
     let mut hash = SpatialHash::<u64>::new(2.0);
-    
+
     // Insert various physics object types using AABB
-    hash.insert(1, AABB::from_sphere(Vec3::new(0.0, 0.0, 0.0), 0.5));  // Small object (projectile)
-    hash.insert(2, AABB::from_sphere(Vec3::new(5.0, 0.0, 0.0), 1.0));  // Medium object (ragdoll bone)
+    hash.insert(1, AABB::from_sphere(Vec3::new(0.0, 0.0, 0.0), 0.5)); // Small object (projectile)
+    hash.insert(2, AABB::from_sphere(Vec3::new(5.0, 0.0, 0.0), 1.0)); // Medium object (ragdoll bone)
     hash.insert(3, AABB::from_sphere(Vec3::new(10.0, 0.0, 0.0), 2.5)); // Large object (vehicle)
-    
+
     // Query should find appropriate nearby objects
     let query_aabb = AABB::from_sphere(Vec3::new(0.5, 0.0, 0.0), 1.0);
     let nearby = hash.query(query_aabb);
@@ -267,25 +296,28 @@ fn test_spatial_hash_determinism() {
     // Run same insertions twice
     let mut hash1 = SpatialHash::<u64>::new(2.0);
     let mut hash2 = SpatialHash::<u64>::new(2.0);
-    
+
     for i in 0..100 {
         let pos = Vec3::new(i as f32 * 0.5, (i % 10) as f32, 0.0);
         let aabb = AABB::from_sphere(pos, 0.5);
         hash1.insert(i as u64, aabb);
         hash2.insert(i as u64, aabb);
     }
-    
+
     // Queries should return same results
     let query_aabb = AABB::from_sphere(Vec3::new(25.0, 5.0, 0.0), 5.0);
     let query1 = hash1.query(query_aabb);
     let query2 = hash2.query(query_aabb);
-    
+
     let mut sorted1: Vec<_> = query1.into_iter().collect();
     let mut sorted2: Vec<_> = query2.into_iter().collect();
     sorted1.sort();
     sorted2.sort();
-    
-    assert_eq!(sorted1, sorted2, "Spatial hash queries should be deterministic");
+
+    assert_eq!(
+        sorted1, sorted2,
+        "Spatial hash queries should be deterministic"
+    );
 }
 
 // ============================================================================
@@ -300,25 +332,29 @@ fn test_cloth_simulation_determinism() {
         gravity: Vec3::new(0.0, -9.81, 0.0),
         ..Default::default()
     };
-    
+
     // Run twice
     let mut mgr1 = ClothManager::new();
     let mut mgr2 = ClothManager::new();
-    
+
     let id1 = mgr1.create(config.clone(), Vec3::ZERO);
     let id2 = mgr2.create(config, Vec3::ZERO);
-    
+
     for _ in 0..100 {
         mgr1.update(1.0 / 60.0);
         mgr2.update(1.0 / 60.0);
     }
-    
+
     let pos1 = mgr1.get(id1).unwrap().get_positions();
     let pos2 = mgr2.get(id2).unwrap().get_positions();
-    
+
     for (p1, p2) in pos1.iter().zip(pos2.iter()) {
-        assert!((p1 - p2).length() < 0.0001, 
-            "Cloth simulation should be deterministic: {:?} vs {:?}", p1, p2);
+        assert!(
+            (p1 - p2).length() < 0.0001,
+            "Cloth simulation should be deterministic: {:?} vs {:?}",
+            p1,
+            p2
+        );
     }
 }
 
@@ -332,23 +368,27 @@ fn test_projectile_trajectory_determinism() {
         drag: 0.01,
         ..Default::default()
     };
-    
+
     let mut mgr1 = ProjectileManager::new();
     let mut mgr2 = ProjectileManager::new();
-    
+
     let id1 = mgr1.spawn(config.clone());
     let id2 = mgr2.spawn(config);
-    
+
     for _ in 0..60 {
         mgr1.update(1.0 / 60.0, |_, _, _| None);
         mgr2.update(1.0 / 60.0, |_, _, _| None);
     }
-    
+
     let pos1 = mgr1.get(id1).unwrap().position;
     let pos2 = mgr2.get(id2).unwrap().position;
-    
-    assert!((pos1 - pos2).length() < 0.0001,
-        "Projectile trajectories should be deterministic: {:?} vs {:?}", pos1, pos2);
+
+    assert!(
+        (pos1 - pos2).length() < 0.0001,
+        "Projectile trajectories should be deterministic: {:?} vs {:?}",
+        pos1,
+        pos2
+    );
 }
 
 // ============================================================================
@@ -360,27 +400,30 @@ fn test_empty_managers_handle_updates() {
     let mut cloth_mgr = ClothManager::new();
     let mut destruction_mgr = DestructionManager::new();
     let mut projectile_mgr = ProjectileManager::new();
-    
+
     // Should not panic with no objects
     cloth_mgr.update(1.0 / 60.0);
     destruction_mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
     projectile_mgr.update(1.0 / 60.0, |_, _, _| None);
-    
+
     assert_eq!(cloth_mgr.count(), 0);
 }
 
 #[test]
 fn test_extreme_gravity_doesnt_break_physics() {
     let gravity_mgr = GravityManager::new(Vec3::new(0.0, -1000.0, 0.0)); // Extreme gravity
-    
+
     let gravity = gravity_mgr.calculate_gravity(1, Vec3::ZERO);
-    assert!(gravity.y.is_finite(), "Extreme gravity should still produce finite values");
+    assert!(
+        gravity.y.is_finite(),
+        "Extreme gravity should still produce finite values"
+    );
 }
 
 #[test]
 fn test_many_simultaneous_objects() {
     let mut destruction_mgr = DestructionManager::new();
-    
+
     // Create many destructibles
     for i in 0..100 {
         destruction_mgr.add_destructible(
@@ -388,10 +431,10 @@ fn test_many_simultaneous_objects() {
             Vec3::new(i as f32 * 2.0, 0.0, 0.0),
         );
     }
-    
+
     // Update should handle all
     destruction_mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
-    
+
     // Should have all objects
     // Count active destructibles
     let mut count = 0;
@@ -400,7 +443,11 @@ fn test_many_simultaneous_objects() {
             count += 1;
         }
     }
-    assert!(count >= 50, "Should maintain many simultaneous objects, got {}", count);
+    assert!(
+        count >= 50,
+        "Should maintain many simultaneous objects, got {}",
+        count
+    );
 }
 
 // ============================================================================
@@ -410,26 +457,40 @@ fn test_many_simultaneous_objects() {
 #[test]
 fn test_friction_curve_values_are_physical() {
     let curve = FrictionCurve::default();
-    
+
     // Test friction at various slip values using friction_at_slip
     for slip in [0.0, 0.1, 0.3, 0.5, 1.0, 2.0].iter() {
         let friction = curve.friction_at_slip(*slip);
-        assert!(friction >= 0.0, "Friction should be non-negative at slip {}", slip);
-        assert!(friction <= 2.0, "Friction should be realistic (<=2.0) at slip {}", slip);
+        assert!(
+            friction >= 0.0,
+            "Friction should be non-negative at slip {}",
+            slip
+        );
+        assert!(
+            friction <= 2.0,
+            "Friction should be realistic (<=2.0) at slip {}",
+            slip
+        );
     }
 }
 
 #[test]
 fn test_friction_curve_peak_exists() {
     let curve = FrictionCurve::default();
-    
+
     let friction_0 = curve.friction_at_slip(0.0);
     let friction_peak = curve.friction_at_slip(curve.optimal_slip);
     let friction_high = curve.friction_at_slip(1.0);
-    
+
     // Peak friction should be highest
-    assert!(friction_peak >= friction_0, "Peak friction should be >= static friction");
-    assert!(friction_peak >= friction_high * 0.9, "Peak friction should be near maximum");
+    assert!(
+        friction_peak >= friction_0,
+        "Peak friction should be >= static friction"
+    );
+    assert!(
+        friction_peak >= friction_high * 0.9,
+        "Peak friction should be near maximum"
+    );
 }
 
 // ============================================================================
@@ -440,7 +501,7 @@ fn test_friction_curve_peak_exists() {
 fn test_physics_world_gravity_matches_subsystems() {
     let gravity = Vec3::new(0.0, -9.81, 0.0);
     let _physics = PhysicsWorld::new(gravity);
-    
+
     // Create cloth with same gravity
     let cloth_config = ClothConfig {
         gravity,
@@ -448,14 +509,14 @@ fn test_physics_world_gravity_matches_subsystems() {
     };
     let mut cloth_mgr = ClothManager::new();
     cloth_mgr.create(cloth_config, Vec3::ZERO);
-    
+
     // Create projectile manager (uses default gravity internally)
     let mut projectile_mgr = ProjectileManager::new();
-    
+
     // Both should use same gravity vector
     cloth_mgr.update(1.0 / 60.0);
     projectile_mgr.update(1.0 / 60.0, |_, _, _| None);
-    
+
     // No panic = success
 }
 
@@ -465,14 +526,20 @@ fn test_vehicle_friction_surfaces() {
     let tarmac = FrictionCurve::tarmac();
     let gravel = FrictionCurve::gravel();
     let ice = FrictionCurve::ice();
-    
+
     // Tarmac should have highest friction
     let tarmac_friction = tarmac.friction_at_slip(tarmac.optimal_slip);
     let gravel_friction = gravel.friction_at_slip(gravel.optimal_slip);
     let ice_friction = ice.friction_at_slip(ice.optimal_slip);
-    
-    assert!(tarmac_friction > gravel_friction, "Tarmac should have more friction than gravel");
-    assert!(gravel_friction > ice_friction, "Gravel should have more friction than ice");
+
+    assert!(
+        tarmac_friction > gravel_friction,
+        "Tarmac should have more friction than gravel"
+    );
+    assert!(
+        gravel_friction > ice_friction,
+        "Gravel should have more friction than ice"
+    );
 }
 
 // ============================================================================
@@ -486,24 +553,28 @@ fn test_cloth_update_completes_in_reasonable_time() {
         height: 16,
         ..Default::default()
     };
-    
+
     let mut mgr = ClothManager::new();
     mgr.create(config, Vec3::ZERO);
-    
+
     let start = std::time::Instant::now();
     for _ in 0..60 {
         mgr.update(1.0 / 60.0);
     }
     let elapsed = start.elapsed();
-    
+
     // Should complete in reasonable time (<100ms for 1 second of simulation)
-    assert!(elapsed.as_millis() < 500, "Cloth simulation took too long: {:?}", elapsed);
+    assert!(
+        elapsed.as_millis() < 500,
+        "Cloth simulation took too long: {:?}",
+        elapsed
+    );
 }
 
 #[test]
 fn test_spatial_hash_scales_linearly() {
     let mut hash = SpatialHash::<u64>::new(5.0); // Larger cell size for better performance
-    
+
     // Insert many objects
     for i in 0..10000 {
         let x = (i % 100) as f32;
@@ -511,15 +582,20 @@ fn test_spatial_hash_scales_linearly() {
         let aabb = AABB::from_sphere(Vec3::new(x, y, 0.0), 0.5);
         hash.insert(i as u64, aabb);
     }
-    
+
     // Queries should be reasonably fast (but not strict timing on CI/debug builds)
     let start = std::time::Instant::now();
-    for _ in 0..100 { // Reduce query count for faster test
+    for _ in 0..100 {
+        // Reduce query count for faster test
         let query_aabb = AABB::from_sphere(Vec3::new(50.0, 50.0, 0.0), 5.0);
         let _ = hash.query(query_aabb);
     }
     let elapsed = start.elapsed();
-    
+
     // 100 queries should be <500ms (very relaxed for debug builds)
-    assert!(elapsed.as_millis() < 1000, "Spatial hash queries too slow: {:?}", elapsed);
+    assert!(
+        elapsed.as_millis() < 1000,
+        "Spatial hash queries too slow: {:?}",
+        elapsed
+    );
 }

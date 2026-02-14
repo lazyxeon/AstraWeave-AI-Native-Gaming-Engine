@@ -1,0 +1,54 @@
+astraweave-ecs/src/archetype.rs:371:9: replace Archetype::iter_components -> impl Iterator<Item =(Entity, &T)>+'_ with ::std::iter::empty()
+astraweave-ecs/src/archetype.rs:395:9: replace Archetype::iter_components_blob -> Option<(&[Entity], &[T])> with None
+astraweave-ecs/src/archetype.rs:395:9: replace Archetype::iter_components_blob -> Option<(&[Entity], &[T])> with Some((Vec::leak(Vec::new()), Vec::leak(Vec::new())))
+astraweave-ecs/src/archetype.rs:395:12: delete ! in Archetype::iter_components_blob
+astraweave-ecs/src/archetype.rs:414:9: replace Archetype::iter_components_blob_mut -> Option<(&[Entity], &mut[T])> with None
+astraweave-ecs/src/archetype.rs:414:9: replace Archetype::iter_components_blob_mut -> Option<(&[Entity], &mut[T])> with Some((Vec::leak(Vec::new()), Vec::leak(Vec::new())))
+astraweave-ecs/src/archetype.rs:414:12: delete ! in Archetype::iter_components_blob_mut
+astraweave-ecs/src/archetype.rs:482:22: replace += with -= in ArchetypeStorage::get_or_create_archetype
+astraweave-ecs/src/archetype.rs:482:22: replace += with *= in ArchetypeStorage::get_or_create_archetype
+astraweave-ecs/src/archetype.rs:516:22: replace += with -= in ArchetypeStorage::get_or_create_archetype_with_blob
+astraweave-ecs/src/archetype.rs:516:22: replace += with *= in ArchetypeStorage::get_or_create_archetype_with_blob
+astraweave-ecs/src/archetype.rs:531:9: replace ArchetypeStorage::get_archetype -> Option<&Archetype> with None
+astraweave-ecs/src/archetype.rs:535:9: replace ArchetypeStorage::get_archetype_mut -> Option<&mut Archetype> with None
+astraweave-ecs/src/archetype.rs:541:9: replace ArchetypeStorage::get_entity_archetype -> Option<ArchetypeId> with None
+astraweave-ecs/src/archetype.rs:547:9: replace ArchetypeStorage::set_entity_archetype with ()
+astraweave-ecs/src/archetype.rs:549:15: replace >= with < in ArchetypeStorage::set_entity_archetype
+astraweave-ecs/src/archetype.rs:550:48: replace + with - in ArchetypeStorage::set_entity_archetype
+astraweave-ecs/src/archetype.rs:550:48: replace + with * in ArchetypeStorage::set_entity_archetype
+astraweave-ecs/src/archetype.rs:558:9: replace ArchetypeStorage::remove_entity -> Option<ArchetypeId> with None
+astraweave-ecs/src/archetype.rs:559:15: replace < with == in ArchetypeStorage::remove_entity
+astraweave-ecs/src/archetype.rs:559:15: replace < with > in ArchetypeStorage::remove_entity
+astraweave-ecs/src/archetype.rs:559:15: replace < with <= in ArchetypeStorage::remove_entity
+astraweave-ecs/src/archetype.rs:568:9: replace ArchetypeStorage::archetypes -> impl Iterator<Item =&Archetype> with ::std::iter::empty()
+astraweave-ecs/src/archetype.rs:573:9: replace ArchetypeStorage::iter -> impl Iterator<Item =&Archetype> with ::std::iter::empty()
+astraweave-ecs/src/archetype.rs:578:9: replace ArchetypeStorage::archetypes_mut -> impl Iterator<Item =&mut Archetype> with ::std::iter::empty()
+astraweave-ecs/src/archetype.rs:586:9: replace ArchetypeStorage::archetypes_with_component -> impl Iterator<Item =&Archetype> with ::std::iter::empty()
+astraweave-ecs/src/blob_vec.rs:62:21: replace > with == in BlobVec::with_capacity
+astraweave-ecs/src/blob_vec.rs:62:21: replace > with < in BlobVec::with_capacity
+astraweave-ecs/src/blob_vec.rs:96:21: replace > with == in BlobVec::from_layout_with_capacity
+astraweave-ecs/src/blob_vec.rs:96:21: replace > with < in BlobVec::from_layout_with_capacity
+astraweave-ecs/src/blob_vec.rs:111:9: replace BlobVec::reserve with ()
+astraweave-ecs/src/blob_vec.rs:112:25: replace <= with > in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:119:37: replace * with + in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:119:37: replace * with / in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:124:41: replace == with != in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:194:9: replace BlobVec::get_raw -> Option<*const u8> with None
+astraweave-ecs/src/blob_vec.rs:194:9: replace BlobVec::get_raw -> Option<*const u8> with Some(Default::default())
+astraweave-ecs/src/blob_vec.rs:194:18: replace >= with < in BlobVec::get_raw
+astraweave-ecs/src/blob_vec.rs:198:52: replace * with + in BlobVec::get_raw
+astraweave-ecs/src/blob_vec.rs:198:52: replace * with / in BlobVec::get_raw
+astraweave-ecs/src/blob_vec.rs:209:9: replace BlobVec::get_raw_mut -> Option<*mut u8> with None
+astraweave-ecs/src/blob_vec.rs:209:9: replace BlobVec::get_raw_mut -> Option<*mut u8> with Some(Default::default())
+astraweave-ecs/src/blob_vec.rs:209:18: replace >= with < in BlobVec::get_raw_mut
+astraweave-ecs/src/blob_vec.rs:214:52: replace * with + in BlobVec::get_raw_mut
+astraweave-ecs/src/blob_vec.rs:214:52: replace * with / in BlobVec::get_raw_mut
+astraweave-ecs/src/blob_vec.rs:225:9: replace BlobVec::swap_remove_raw with ()
+astraweave-ecs/src/blob_vec.rs:228:35: replace - with + in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:228:35: replace - with / in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:241:18: replace != with == in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:245:61: replace * with + in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:245:61: replace * with / in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:246:56: replace * with + in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:246:56: replace * with / in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:251:18: replace -= with += in BlobVec::swap_remove_raw

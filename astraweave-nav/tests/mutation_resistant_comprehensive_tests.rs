@@ -737,7 +737,11 @@ fn triangle_normal_direction_changes_with_vertex_order() {
     let c = Vec3::new(3.0, 4.0, 0.0);
     let t = Triangle::new(a, b, c);
     let n = t.normal();
-    assert!(n.x < -1.0, "normal.x should be strongly negative, got {}", n.x);
+    assert!(
+        n.x < -1.0,
+        "normal.x should be strongly negative, got {}",
+        n.x
+    );
     assert!((n.y).abs() < 1e-6, "normal.y should be 0, got {}", n.y);
     assert!((n.z).abs() < 1e-6, "normal.z should be 0, got {}", n.z);
     // Exact magnitude: |(-20, 0, 0)| = 20

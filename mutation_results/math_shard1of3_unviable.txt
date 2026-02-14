@@ -1,0 +1,2 @@
+astraweave-math/src/simd_mat.rs:40:15: replace * with / in mul_simd
+astraweave-math/src/simd_quat.rs:40:15: replace * with / in mul_quat_simd

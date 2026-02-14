@@ -73,8 +73,7 @@ impl MetricsRegistry {
         let count = values.len();
         let min = values.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max = values.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-        let sum: f64 = values.iter().sum();
-        let avg = sum / count as f64;
+        let avg = values.iter().sum::<f64>() / count as f64;
 
         Some((count, min, max, avg))
     }

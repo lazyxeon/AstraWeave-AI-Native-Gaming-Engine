@@ -1,0 +1,8 @@
+astraweave-physics/src/destruction.rs:483:9: replace DestructionManager::add_destructible -> DestructibleId with Default::default()
+astraweave-physics/src/destruction.rs:499:9: replace DestructionManager::get -> Option<&Destructible> with Some(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/destruction.rs:504:9: replace DestructionManager::get_mut -> Option<&mut Destructible> with Some(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/destruction.rs:539:9: replace DestructionManager::get_debris -> Option<&Debris> with Some(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/destruction.rs:544:9: replace DestructionManager::debris_iter -> impl Iterator<Item =&Debris> with ::std::iter::once(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/destruction.rs:549:9: replace DestructionManager::spawn_debris -> Vec<DebrisId> with vec![Default::default()]
+astraweave-physics/src/destruction.rs:639:9: replace DestructionManager::take_events -> Vec<DestructionEvent> with vec![Default::default()]
+astraweave-physics/src/cloth.rs:45:9: replace ClothParticle::pinned -> Self with Default::default()

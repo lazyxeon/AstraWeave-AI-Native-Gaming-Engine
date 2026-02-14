@@ -1,0 +1,85 @@
+astraweave-core/src/tools.rs:161:47: replace - with / in astar_path
+astraweave-core/src/tools.rs:161:67: replace - with / in astar_path
+astraweave-core/src/tools.rs:178:19: replace == with != in astar_path
+astraweave-core/src/tools.rs:183:25: replace == with != in astar_path
+astraweave-core/src/tools.rs:193:35: delete - in astar_path
+astraweave-core/src/tools.rs:193:55: delete - in astar_path
+astraweave-core/src/tools.rs:194:24: replace + with * in astar_path
+astraweave-core/src/tools.rs:195:24: replace + with * in astar_path
+astraweave-core/src/tools.rs:196:32: replace < with <= in astar_path
+astraweave-core/src/tools.rs:196:45: replace > with == in astar_path
+astraweave-core/src/tools.rs:196:45: replace > with < in astar_path
+astraweave-core/src/tools.rs:196:45: replace > with >= in astar_path
+astraweave-core/src/tools.rs:196:58: replace > with < in astar_path
+astraweave-core/src/tools.rs:196:58: replace > with >= in astar_path
+astraweave-core/src/tools.rs:202:28: replace + with - in astar_path
+astraweave-core/src/tools.rs:204:19: replace < with == in astar_path
+astraweave-core/src/tools.rs:204:19: replace < with > in astar_path
+astraweave-core/src/tools.rs:239:39: replace || with && in find_cover_positions
+astraweave-core/src/tools.rs:239:26: replace || with && in find_cover_positions
+astraweave-core/src/tools.rs:239:19: replace < with == in find_cover_positions
+astraweave-core/src/tools.rs:239:19: replace < with > in find_cover_positions
+astraweave-core/src/tools.rs:239:32: replace < with == in find_cover_positions
+astraweave-core/src/tools.rs:239:32: replace < with > in find_cover_positions
+astraweave-core/src/tools.rs:248:27: replace && with || in find_cover_positions
+astraweave-core/src/tools.rs:248:30: delete ! in find_cover_positions
+astraweave-core/src/util.rs:4:5: replace manhattan -> i32 with 0
+astraweave-core/src/util.rs:4:5: replace manhattan -> i32 with 1
+astraweave-core/src/util.rs:4:5: replace manhattan -> i32 with -1
+astraweave-core/src/util.rs:4:23: replace + with - in manhattan
+astraweave-core/src/util.rs:4:23: replace + with * in manhattan
+astraweave-core/src/util.rs:4:10: replace - with + in manhattan
+astraweave-core/src/util.rs:4:10: replace - with / in manhattan
+astraweave-core/src/util.rs:4:30: replace - with + in manhattan
+astraweave-core/src/util.rs:4:30: replace - with / in manhattan
+astraweave-core/src/validation.rs:17:5: replace validate_and_execute -> Result<(), EngineError> with Ok(())
+astraweave-core/src/validation.rs:32:20: delete ! in validate_and_execute
+astraweave-core/src/validation.rs:102:26: replace -= with += in validate_and_execute
+astraweave-core/src/validation.rs:102:26: replace -= with /= in validate_and_execute
+astraweave-core/src/validation.rs:109:26: replace -= with += in validate_and_execute
+astraweave-core/src/validation.rs:109:26: replace -= with /= in validate_and_execute
+astraweave-core/src/validation.rs:116:26: replace -= with += in validate_and_execute
+astraweave-core/src/validation.rs:116:26: replace -= with /= in validate_and_execute
+astraweave-core/src/validation.rs:123:26: replace -= with += in validate_and_execute
+astraweave-core/src/validation.rs:123:26: replace -= with /= in validate_and_execute
+astraweave-core/src/validation.rs:168:20: delete ! in validate_and_execute
+astraweave-core/src/validation.rs:178:26: replace += with -= in validate_and_execute
+astraweave-core/src/validation.rs:178:26: replace += with *= in validate_and_execute
+astraweave-core/src/validation.rs:291:20: delete ! in validate_and_execute
+astraweave-core/src/validation.rs:298:65: replace > with == in validate_and_execute
+astraweave-core/src/validation.rs:298:65: replace > with < in validate_and_execute
+astraweave-core/src/validation.rs:298:65: replace > with >= in validate_and_execute
+astraweave-core/src/validation.rs:312:20: delete ! in validate_and_execute
+astraweave-core/src/validation.rs:317:34: replace <= with > in validate_and_execute
+astraweave-core/src/validation.rs:323:44: replace * with + in validate_and_execute
+astraweave-core/src/validation.rs:323:44: replace * with / in validate_and_execute
+astraweave-core/src/validation.rs:324:26: replace -= with += in validate_and_execute
+astraweave-core/src/validation.rs:324:26: replace -= with /= in validate_and_execute
+astraweave-core/src/validation.rs:327:44: replace - with + in validate_and_execute
+astraweave-core/src/validation.rs:327:44: replace - with / in validate_and_execute
+astraweave-core/src/validation.rs:335:29: replace <= with > in validate_and_execute
+astraweave-core/src/validation.rs:371:5: replace fill_rect_obs with ()
+astraweave-core/src/validation.rs:379:5: replace draw_line_obs with ()
+astraweave-core/src/validation.rs:381:19: replace - with / in draw_line_obs
+astraweave-core/src/validation.rs:382:19: replace - with / in draw_line_obs
+astraweave-core/src/validation.rs:383:20: replace || with && in draw_line_obs
+astraweave-core/src/validation.rs:386:15: replace += with -= in draw_line_obs
+astraweave-core/src/validation.rs:402:5: replace apply_director_plan with ()
+astraweave-core/src/validation.rs:405:41: replace <= with > in apply_director_plan
+astraweave-core/src/validation.rs:410:38: replace -= with += in apply_director_plan
+astraweave-core/src/validation.rs:410:38: replace -= with /= in apply_director_plan
+astraweave-core/src/validation.rs:417:41: replace <= with > in apply_director_plan
+astraweave-core/src/validation.rs:422:38: replace -= with += in apply_director_plan
+astraweave-core/src/validation.rs:422:38: replace -= with /= in apply_director_plan
+astraweave-core/src/validation.rs:433:34: replace <= with > in apply_director_plan
+astraweave-core/src/validation.rs:439:54: replace - with + in apply_director_plan
+astraweave-core/src/validation.rs:439:54: replace - with / in apply_director_plan
+astraweave-core/src/validation.rs:439:37: replace + with - in apply_director_plan
+astraweave-core/src/validation.rs:439:37: replace + with * in apply_director_plan
+astraweave-core/src/validation.rs:439:49: replace % with / in apply_director_plan
+astraweave-core/src/validation.rs:439:49: replace % with + in apply_director_plan
+astraweave-core/src/validation.rs:440:37: replace + with - in apply_director_plan
+astraweave-core/src/validation.rs:440:37: replace + with * in apply_director_plan
+astraweave-core/src/validation.rs:440:49: replace / with % in apply_director_plan
+astraweave-core/src/validation.rs:440:49: replace / with * in apply_director_plan
+astraweave-core/src/validation.rs:451:31: replace -= with += in apply_director_plan

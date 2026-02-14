@@ -1,0 +1,20 @@
+astraweave-nav/src/lib.rs:493:24: replace || with && in NavMesh::find_path
+astraweave-nav/src/lib.rs:556:9: replace NavMesh::dirty_regions -> &[Aabb] with Vec::leak(Vec::new())
+astraweave-nav/src/lib.rs:585:9: replace NavMesh::partial_rebake -> usize with 0
+astraweave-nav/src/lib.rs:585:9: replace NavMesh::partial_rebake -> usize with 1
+astraweave-nav/src/lib.rs:595:36: replace += with -= in NavMesh::partial_rebake
+astraweave-nav/src/lib.rs:595:36: replace += with *= in NavMesh::partial_rebake
+astraweave-nav/src/lib.rs:603:27: replace > with == in NavMesh::partial_rebake
+astraweave-nav/src/lib.rs:603:27: replace > with < in NavMesh::partial_rebake
+astraweave-nav/src/lib.rs:603:27: replace > with >= in NavMesh::partial_rebake
+astraweave-nav/src/lib.rs:619:42: replace || with && in NavMesh::path_crosses_dirty_region
+astraweave-nav/src/lib.rs:648:9: replace NavMesh::edge_count -> usize with 1
+astraweave-nav/src/lib.rs:654:9: replace NavMesh::average_neighbor_count -> f32 with 1.0
+astraweave-nav/src/lib.rs:758:13: replace astar_tri::<impl PartialOrd for Node>::partial_cmp -> Option<Ordering> with None
+astraweave-nav/src/lib.rs:776:25: replace + with * in astar_tri
+astraweave-nav/src/lib.rs:780:28: replace + with - in astar_tri
+astraweave-nav/src/lib.rs:780:28: replace + with * in astar_tri
+astraweave-nav/src/lib.rs:805:5: replace smooth with ()
+astraweave-nav/src/lib.rs:805:18: replace < with <= in smooth
+astraweave-nav/src/lib.rs:812:24: replace * with + in smooth
+astraweave-nav/src/lib.rs:812:24: replace * with / in smooth

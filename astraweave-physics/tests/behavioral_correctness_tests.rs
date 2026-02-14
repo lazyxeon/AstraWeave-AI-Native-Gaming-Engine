@@ -292,7 +292,7 @@ fn test_projectile_bounce_reflection_correct() {
     manager.gravity = Vec3::ZERO;
 
     let config = ProjectileConfig {
-        position: Vec3::new(0.0, 5.0, 0.0), // Start above floor
+        position: Vec3::new(0.0, 5.0, 0.0),    // Start above floor
         velocity: Vec3::new(10.0, -10.0, 0.0), // Moving right and down
         gravity_scale: 0.0,
         max_bounces: 1,
@@ -352,9 +352,18 @@ fn test_projectile_bounce_reflection_correct() {
 fn test_falloff_curves_mathematical_correctness() {
     // Linear: f(d) = 1 - d/r
     let linear = FalloffCurve::Linear;
-    assert!((linear.calculate(0.0, 10.0) - 1.0).abs() < 1e-6, "Linear at 0");
-    assert!((linear.calculate(5.0, 10.0) - 0.5).abs() < 1e-6, "Linear at 0.5r");
-    assert!((linear.calculate(10.0, 10.0) - 0.0).abs() < 1e-6, "Linear at r");
+    assert!(
+        (linear.calculate(0.0, 10.0) - 1.0).abs() < 1e-6,
+        "Linear at 0"
+    );
+    assert!(
+        (linear.calculate(5.0, 10.0) - 0.5).abs() < 1e-6,
+        "Linear at 0.5r"
+    );
+    assert!(
+        (linear.calculate(10.0, 10.0) - 0.0).abs() < 1e-6,
+        "Linear at r"
+    );
 
     // Quadratic: f(d) = 1 - (d/r)^2
     let quadratic = FalloffCurve::Quadratic;
@@ -421,11 +430,11 @@ fn test_gravity_distance_falloff() {
     // At distance 10 (10% of radius): falloff = (1 - 0.1)² = 0.81
     // At distance 50 (50% of radius): falloff = (1 - 0.5)² = 0.25
     // At distance 90 (90% of radius): falloff = (1 - 0.9)² = 0.01
-    
+
     let g_10 = manager.calculate_gravity(1, Vec3::new(10.0, 0.0, 0.0));
     let g_50 = manager.calculate_gravity(1, Vec3::new(50.0, 0.0, 0.0));
     let g_90 = manager.calculate_gravity(1, Vec3::new(90.0, 0.0, 0.0));
-    
+
     // Gravity should decrease with distance
     assert!(
         g_10.length() > g_50.length(),
@@ -433,18 +442,18 @@ fn test_gravity_distance_falloff() {
         g_10.length(),
         g_50.length()
     );
-    
+
     assert!(
         g_50.length() > g_90.length(),
         "Gravity should decrease with distance. g(50)={}, g(90)={}",
         g_50.length(),
         g_90.length()
     );
-    
+
     // Gravity should be directed toward center (negative X for +X position)
     assert!(g_10.x < 0.0, "Gravity should point toward center");
     assert!(g_50.x < 0.0, "Gravity should point toward center");
-    
+
     // Outside radius should have no gravity
     let g_110 = manager.calculate_gravity(1, Vec3::new(110.0, 0.0, 0.0));
     assert!(
@@ -508,7 +517,10 @@ fn test_gravity_scale_multiplication() {
         "Scale 1.0 should give full gravity"
     );
     assert!((g2.y - (-5.0)).abs() < 0.01, "Scale 0.5 should give half");
-    assert!((g3.y - (-20.0)).abs() < 0.01, "Scale 2.0 should give double");
+    assert!(
+        (g3.y - (-20.0)).abs() < 0.01,
+        "Scale 2.0 should give double"
+    );
     assert!(g4.length() < 0.01, "Scale 0.0 should give zero");
 }
 
@@ -601,12 +613,8 @@ fn test_cloth_gravity_direction_correct() {
     };
 
     let mut cloth = Cloth::new(ClothId(1), config, Vec3::ZERO);
-    let initial_y: f32 = cloth
-        .particles
-        .iter()
-        .map(|p| p.position.y)
-        .sum::<f32>()
-        / cloth.particles.len() as f32;
+    let initial_y: f32 =
+        cloth.particles.iter().map(|p| p.position.y).sum::<f32>() / cloth.particles.len() as f32;
 
     // Simulate for 1 second
     for _ in 0..60 {
@@ -619,7 +627,12 @@ fn test_cloth_gravity_direction_correct() {
         .filter(|p| !p.position.y.is_nan())
         .map(|p| p.position.y)
         .sum::<f32>()
-        / cloth.particles.iter().filter(|p| !p.position.y.is_nan()).count().max(1) as f32;
+        / cloth
+            .particles
+            .iter()
+            .filter(|p| !p.position.y.is_nan())
+            .count()
+            .max(1) as f32;
 
     // Cloth should have fallen (negative Y direction)
     assert!(
@@ -672,10 +685,7 @@ fn test_spatial_hash_no_false_positives() {
     let mut hash = SpatialHash::new(10.0);
 
     // Insert entity at origin
-    hash.insert(
-        1,
-        AABB::from_center_extents(Vec3::ZERO, Vec3::splat(1.0)),
-    );
+    hash.insert(1, AABB::from_center_extents(Vec3::ZERO, Vec3::splat(1.0)));
 
     // Insert entity far away
     hash.insert(
@@ -687,10 +697,7 @@ fn test_spatial_hash_no_false_positives() {
     let query = AABB::from_center_extents(Vec3::new(1.5, 0.0, 0.0), Vec3::splat(2.0));
     let results = hash.query(query);
 
-    assert!(
-        results.contains(&1),
-        "Should find nearby entity"
-    );
+    assert!(results.contains(&1), "Should find nearby entity");
 
     // Entity 2 should not be in results (it's 100 units away)
     assert!(
@@ -707,7 +714,11 @@ fn test_aabb_intersection_symmetric() {
     let b = AABB::from_center_extents(Vec3::new(3.0, 0.0, 0.0), Vec3::splat(5.0));
 
     // Intersection should be symmetric: a∩b = b∩a
-    assert_eq!(a.intersects(&b), b.intersects(&a), "AABB intersection should be symmetric");
+    assert_eq!(
+        a.intersects(&b),
+        b.intersects(&a),
+        "AABB intersection should be symmetric"
+    );
     assert!(a.intersects(&b), "Overlapping AABBs should intersect");
 }
 
@@ -736,12 +747,13 @@ fn test_friction_curve_physical_shape() {
         // Friction should peak near optimal slip
         let f_at_optimal = curve.friction_at_slip(curve.optimal_slip);
         let f_well_beyond = curve.friction_at_slip(curve.optimal_slip * 3.0);
-        
+
         // After peak, friction should decrease (or stay stable)
         assert!(
             f_at_optimal >= f_well_beyond - 0.05,
             "Friction at optimal ({}) should be >= friction beyond optimal ({})",
-            f_at_optimal, f_well_beyond
+            f_at_optimal,
+            f_well_beyond
         );
 
         // Friction at optimal should be close to peak_friction
@@ -751,11 +763,16 @@ fn test_friction_curve_physical_shape() {
             curve.peak_friction,
             f_at_optimal
         );
-        
+
         // Friction should not be negative
         for slip in [0.0, 0.05, 0.1, 0.2, 0.5, 1.0] {
             let f = curve.friction_at_slip(slip);
-            assert!(f >= 0.0, "Friction should never be negative, got {} at slip {}", f, slip);
+            assert!(
+                f >= 0.0,
+                "Friction should never be negative, got {} at slip {}",
+                f,
+                slip
+            );
         }
     }
 }

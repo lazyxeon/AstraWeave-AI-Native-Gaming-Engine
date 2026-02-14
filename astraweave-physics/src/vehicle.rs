@@ -516,7 +516,7 @@ impl Vehicle {
             body_id,
             config,
             wheels: vec![WheelState::default(); num_wheels],
-            current_gear: 1, // Start in 1st
+            current_gear: 1,   // Start in 1st
             engine_rpm: 800.0, // Idle
             shift_timer: 0.0,
             speed: 0.0,
@@ -623,7 +623,12 @@ impl VehicleManager {
     }
 
     /// Spawn a vehicle
-    pub fn spawn(&mut self, physics: &mut PhysicsWorld, position: Vec3, config: VehicleConfig) -> VehicleId {
+    pub fn spawn(
+        &mut self,
+        physics: &mut PhysicsWorld,
+        position: Vec3,
+        config: VehicleConfig,
+    ) -> VehicleId {
         let body_id = physics.add_dynamic_box(
             position + config.center_of_mass_offset,
             Vec3::new(1.0, 0.5, 2.0), // Approximate vehicle half-extents
@@ -661,7 +666,13 @@ impl VehicleManager {
     }
 
     /// Update vehicle with input
-    pub fn update_with_input(&mut self, id: VehicleId, physics: &mut PhysicsWorld, input: &VehicleInput, dt: f32) {
+    pub fn update_with_input(
+        &mut self,
+        id: VehicleId,
+        physics: &mut PhysicsWorld,
+        input: &VehicleInput,
+        dt: f32,
+    ) {
         if let Some(vehicle) = self.get_mut(id) {
             // Handle gear shifts
             if input.shift > 0 {
@@ -738,7 +749,12 @@ impl VehicleManager {
         }
     }
 
-    fn apply_forces(vehicle: &mut Vehicle, physics: &mut PhysicsWorld, input: &VehicleInput, dt: f32) {
+    fn apply_forces(
+        vehicle: &mut Vehicle,
+        physics: &mut PhysicsWorld,
+        input: &VehicleInput,
+        dt: f32,
+    ) {
         let mut total_force = Vec3::ZERO;
         let mut total_torque = Vec3::ZERO;
 
@@ -750,9 +766,17 @@ impl VehicleManager {
         let rotation = Quat::from_mat4(&transform);
 
         // Calculate engine torque
-        let effective_throttle = if vehicle.is_shifting() { 0.0 } else { input.throttle };
-        let gear_ratio = vehicle.config.transmission.effective_ratio(vehicle.current_gear);
-        let engine_torque = vehicle.config.engine.torque_at_rpm(vehicle.engine_rpm) * effective_throttle;
+        let effective_throttle = if vehicle.is_shifting() {
+            0.0
+        } else {
+            input.throttle
+        };
+        let gear_ratio = vehicle
+            .config
+            .transmission
+            .effective_ratio(vehicle.current_gear);
+        let engine_torque =
+            vehicle.config.engine.torque_at_rpm(vehicle.engine_rpm) * effective_throttle;
         let wheel_torque = engine_torque * gear_ratio;
 
         // Count driven wheels
@@ -812,7 +836,10 @@ impl VehicleManager {
 
             // Friction forces
             let long_friction = vehicle.config.friction_forward.friction_at_slip(slip_ratio);
-            let lat_friction = vehicle.config.friction_lateral.friction_at_slip(slip_angle.abs());
+            let lat_friction = vehicle
+                .config
+                .friction_lateral
+                .friction_at_slip(slip_angle.abs());
 
             // Longitudinal force (drive/brake)
             let mut long_force = 0.0;
@@ -845,7 +872,9 @@ impl VehicleManager {
             let lat_force = -lat_velocity.signum() * normal_force * lat_friction;
 
             // Total wheel force
-            let wheel_force = wheel_forward * long_force + wheel_right * lat_force + wheel_state.contact_normal * suspension_force;
+            let wheel_force = wheel_forward * long_force
+                + wheel_right * lat_force
+                + wheel_state.contact_normal * suspension_force;
             wheel_state.force = wheel_force;
 
             // Accumulate forces
@@ -873,17 +902,21 @@ impl VehicleManager {
 
         // Aerodynamic drag
         let speed_sq = vehicle.speed * vehicle.speed;
-        let drag_force = 0.5 * 1.225 * vehicle.config.drag_coefficient * vehicle.config.frontal_area * speed_sq;
-        total_force -= vehicle.forward * drag_force * vehicle.velocity.dot(vehicle.forward).signum();
+        let drag_force =
+            0.5 * 1.225 * vehicle.config.drag_coefficient * vehicle.config.frontal_area * speed_sq;
+        total_force -=
+            vehicle.forward * drag_force * vehicle.velocity.dot(vehicle.forward).signum();
 
         // Apply forces to physics body
         physics.apply_force(vehicle.body_id, total_force);
 
         // Update engine RPM based on throttle and wheel load
         // Engine revs up with throttle input
-        let throttle_rpm_target = vehicle.config.engine.idle_rpm + 
-            input.throttle * (vehicle.config.engine.max_rpm - vehicle.config.engine.idle_rpm) * 0.8;
-        
+        let throttle_rpm_target = vehicle.config.engine.idle_rpm
+            + input.throttle
+                * (vehicle.config.engine.max_rpm - vehicle.config.engine.idle_rpm)
+                * 0.8;
+
         if gear_ratio.abs() > 0.01 && driven_count > 0.0 {
             let avg_wheel_rpm: f32 = vehicle
                 .wheels
@@ -895,13 +928,13 @@ impl VehicleManager {
                 / driven_count;
 
             let wheel_target_rpm = avg_wheel_rpm * gear_ratio.abs();
-            
+
             // Engine RPM is influenced by both throttle and wheel feedback
             // Throttle pulls RPM up, wheel speed provides load feedback
             let load_factor = (vehicle.speed / 20.0).clamp(0.0, 0.5); // More wheel influence at speed
-            let target_rpm = throttle_rpm_target * (1.0 - load_factor) + 
-                wheel_target_rpm.max(throttle_rpm_target * 0.3) * load_factor;
-            
+            let target_rpm = throttle_rpm_target * (1.0 - load_factor)
+                + wheel_target_rpm.max(throttle_rpm_target * 0.3) * load_factor;
+
             // Smooth RPM changes
             vehicle.engine_rpm = vehicle.engine_rpm * 0.85 + target_rpm * 0.15;
         } else {
@@ -1017,7 +1050,10 @@ mod tests {
         let ice_friction = ice.friction_at_slip(ice.optimal_slip);
         let tarmac_friction = tarmac.friction_at_slip(tarmac.optimal_slip);
 
-        assert!(ice_friction < tarmac_friction, "Ice should have less grip than tarmac");
+        assert!(
+            ice_friction < tarmac_friction,
+            "Ice should have less grip than tarmac"
+        );
     }
 
     #[test]
@@ -1221,7 +1257,7 @@ mod tests {
     #[test]
     fn test_friction_curve_gravel() {
         let curve = FrictionCurve::gravel();
-        
+
         assert!((curve.optimal_slip - 0.15).abs() < 0.01);
         assert!(curve.peak_friction < FrictionCurve::tarmac().peak_friction);
     }
@@ -1229,7 +1265,7 @@ mod tests {
     #[test]
     fn test_friction_curve_mud() {
         let curve = FrictionCurve::mud();
-        
+
         assert!((curve.optimal_slip - 0.2).abs() < 0.01);
         assert!(curve.peak_friction < FrictionCurve::gravel().peak_friction);
     }
@@ -1237,7 +1273,7 @@ mod tests {
     #[test]
     fn test_friction_curve_defaults() {
         let curve = FrictionCurve::default();
-        
+
         assert!(curve.optimal_slip > 0.0);
         assert!(curve.peak_friction > 0.0);
         assert!(curve.sliding_friction > 0.0);
@@ -1247,7 +1283,7 @@ mod tests {
     #[test]
     fn test_friction_rising_portion() {
         let curve = FrictionCurve::tarmac();
-        
+
         // Below optimal slip, friction should be increasing
         let f1 = curve.friction_at_slip(0.02);
         let f2 = curve.friction_at_slip(0.05);
@@ -1257,7 +1293,7 @@ mod tests {
     #[test]
     fn test_friction_falling_portion() {
         let curve = FrictionCurve::tarmac();
-        
+
         // Well above optimal slip, friction should be lower than peak
         let peak = curve.friction_at_slip(curve.optimal_slip);
         let high_slip = curve.friction_at_slip(0.5);
@@ -1349,7 +1385,7 @@ mod tests {
         vehicle.shift_timer = 0.0;
         vehicle.shift_down();
         vehicle.shift_timer = 0.0;
-        
+
         assert_eq!(vehicle.current_gear, -1);
     }
 
@@ -1406,7 +1442,7 @@ mod tests {
             contact_normal: Vec3::new(0.0, 1.0, 0.0),
             ..Default::default()
         };
-        
+
         assert!((state.contact_normal.y - 1.0).abs() < 0.01);
     }
 
@@ -1436,7 +1472,7 @@ mod tests {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut manager = VehicleManager::new();
         let config = VehicleConfig::default();
-        
+
         let id = manager.spawn(&mut physics, Vec3::ZERO, config);
         assert_eq!(manager.vehicles().len(), 1);
         assert!(manager.get(id).is_some());
@@ -1447,10 +1483,10 @@ mod tests {
     fn test_vehicle_orientation_update() {
         let config = VehicleConfig::default();
         let mut vehicle = Vehicle::new(1, 42, config);
-        
+
         let rotation = Quat::from_rotation_y(std::f32::consts::FRAC_PI_2);
         vehicle.update_orientation(rotation);
-        
+
         // Forward should now be along X axis
         assert!(vehicle.forward.x > 0.9);
     }
@@ -1459,16 +1495,16 @@ mod tests {
     fn test_vehicle_slip_averages() {
         let config = VehicleConfig::default();
         let mut vehicle = Vehicle::new(1, 42, config);
-        
+
         // Airborne case
         assert_eq!(vehicle.average_slip_ratio(), 0.0);
         assert_eq!(vehicle.average_slip_angle(), 0.0);
-        
+
         // Grounded case
         vehicle.wheels[0].grounded = true;
         vehicle.wheels[0].slip_ratio = 0.5;
         vehicle.wheels[0].slip_angle = 0.1;
-        
+
         assert!((vehicle.average_slip_ratio() - 0.5).abs() < 0.01);
         assert!((vehicle.average_slip_angle() - 0.1).abs() < 0.01);
     }
@@ -1482,7 +1518,7 @@ mod tests {
             idle_rpm: 1000.0,
             ..Default::default()
         };
-        
+
         // In falling portion (between 4000 and 6000)
         let torque = engine.torque_at_rpm(5000.0);
         assert!(torque > 0.0 && torque < 400.0);
@@ -1493,10 +1529,10 @@ mod tests {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut manager = VehicleManager::new();
         let id = manager.spawn(&mut physics, Vec3::ZERO, VehicleConfig::default());
-        
+
         // Update without input
         manager.update(&mut physics, 0.016);
-        
+
         // Update with input
         let input = VehicleInput {
             throttle: 1.0,
@@ -1505,7 +1541,7 @@ mod tests {
             ..Default::default()
         };
         manager.update_with_input(id, &mut physics, &input, 0.016);
-        
+
         let vehicle = manager.get(id).unwrap();
         assert_eq!(vehicle.current_gear, 2);
     }
@@ -1575,10 +1611,10 @@ mod tests {
     fn test_friction_tarmac_vs_ice() {
         let tarmac = FrictionCurve::tarmac();
         let ice = FrictionCurve::ice();
-        
+
         // Tarmac should have much higher friction
         assert!(tarmac.peak_friction > ice.peak_friction * 2.0);
-        
+
         // Ice should have lower optimal slip
         assert!(ice.optimal_slip < tarmac.optimal_slip);
     }
@@ -1587,7 +1623,7 @@ mod tests {
     fn test_friction_curve_monotonic_rising() {
         let curve = FrictionCurve::default();
         let mut prev_friction = 0.0;
-        
+
         // Should be monotonically increasing up to optimal slip
         for i in 1..10 {
             let slip = (i as f32) * curve.optimal_slip / 10.0;
@@ -1644,7 +1680,7 @@ mod tests {
     fn test_suspension_critical_damping() {
         // Critical damping = 2 * sqrt(k * m)
         let wheel = WheelConfig::default();
-        
+
         // Suspension damping should be positive and reasonable
         assert!(wheel.suspension_damping > 0.0);
         // Damping ratio relative to stiffness should be reasonable
@@ -1685,7 +1721,7 @@ mod tests {
             WheelConfig::rear_left(Vec3::ZERO),
             WheelConfig::rear_right(Vec3::ZERO),
         ];
-        
+
         // All wheels should be driven in AWD
         assert!(wheels.iter().all(|w| w.driven));
     }
@@ -1737,7 +1773,7 @@ mod tests {
     fn test_engine_max_torque_point() {
         let engine = EngineConfig::default();
         let at_max_torque = engine.torque_at_rpm(engine.max_torque_rpm);
-        
+
         // Should be close to max torque at max torque RPM
         assert!(at_max_torque > engine.max_torque * 0.9);
     }
@@ -1745,11 +1781,11 @@ mod tests {
     #[test]
     fn test_engine_torque_curve_shape() {
         let engine = EngineConfig::default();
-        
+
         // Torque at mid-range
         let mid_rpm = (engine.idle_rpm + engine.max_torque_rpm) / 2.0;
         let mid_torque = engine.torque_at_rpm(mid_rpm);
-        
+
         // Should have positive torque at mid-range
         assert!(mid_torque > 0.0);
         assert!(mid_torque < engine.max_torque);
@@ -1792,13 +1828,13 @@ mod tests {
     #[test]
     fn test_vehicle_wheel_positions_symmetric() {
         let config = VehicleConfig::default();
-        
+
         // Front wheels should be symmetric about X axis
         let fl = config.wheels[0].position;
         let fr = config.wheels[1].position;
         assert!((fl.x + fr.x).abs() < 0.01);
         assert!((fl.z - fr.z).abs() < 0.01);
-        
+
         // Rear wheels should be symmetric about X axis
         let rl = config.wheels[2].position;
         let rr = config.wheels[3].position;
@@ -1823,10 +1859,10 @@ mod tests {
     fn test_vehicle_manager_remove() {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         let mut manager = VehicleManager::new();
-        
+
         let id = manager.spawn(&mut physics, Vec3::ZERO, VehicleConfig::default());
         assert_eq!(manager.vehicles().len(), 1);
-        
+
         let removed = manager.remove(id);
         assert!(removed);
         assert_eq!(manager.vehicles().len(), 0);
@@ -1847,9 +1883,9 @@ mod tests {
     fn test_vehicle_input_clamping() {
         // Input values should be clamped to valid ranges
         let input = VehicleInput {
-            throttle: 1.5,  // Over max
-            brake: -0.5,    // Under min
-            steering: 2.0,  // Over max
+            throttle: 1.5, // Over max
+            brake: -0.5,   // Under min
+            steering: 2.0, // Over max
             handbrake: 1.0,
             clutch: 0.0,
             shift: 0,

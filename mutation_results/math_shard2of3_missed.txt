@@ -1,0 +1,38 @@
+astraweave-math/src/simd_quat.rs:46:11: replace * with / in mul_quat_simd
+astraweave-math/src/simd_vec_kani.rs:21:5: replace dot_product_symmetric with ()
+astraweave-math/src/simd_vec_kani.rs:23:10: delete - in dot_product_symmetric
+astraweave-math/src/simd_vec_kani.rs:23:31: delete - in dot_product_symmetric
+astraweave-math/src/simd_vec_kani.rs:25:17: delete - in dot_product_symmetric
+astraweave-math/src/simd_vec_kani.rs:36:29: replace == with != in dot_product_symmetric
+astraweave-math/src/simd_vec_kani.rs:43:5: replace dot_product_zero_identity with ()
+astraweave-math/src/simd_vec_kani.rs:47:51: replace && with || in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:47:33: replace && with || in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:53: replace && with || in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:34: replace && with || in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:27: replace < with == in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:27: replace < with > in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:27: replace < with <= in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:46: replace < with == in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:46: replace < with > in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:46: replace < with <= in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:65: replace < with == in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:65: replace < with > in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:48:65: replace < with <= in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:54:22: replace == with != in dot_product_zero_identity
+astraweave-math/src/simd_vec_kani.rs:63:5: replace cross_product_anticommutative with ()
+astraweave-math/src/simd_vec_kani.rs:66:10: delete - in cross_product_anticommutative
+astraweave-math/src/simd_vec_kani.rs:66:31: delete - in cross_product_anticommutative
+astraweave-math/src/simd_vec_kani.rs:76:28: delete - in cross_product_anticommutative
+astraweave-math/src/simd_vec_kani.rs:80:22: replace == with != in cross_product_anticommutative
+astraweave-math/src/simd_vec_kani.rs:92:5: replace cross_product_orthogonal with ()
+astraweave-math/src/simd_vec_kani.rs:110:24: replace < with == in cross_product_orthogonal
+astraweave-math/src/simd_vec_kani.rs:110:24: replace < with > in cross_product_orthogonal
+astraweave-math/src/simd_vec_kani.rs:110:24: replace < with <= in cross_product_orthogonal
+astraweave-math/src/simd_vec_kani.rs:114:24: replace < with == in cross_product_orthogonal
+astraweave-math/src/simd_vec_kani.rs:114:24: replace < with > in cross_product_orthogonal
+astraweave-math/src/simd_vec_kani.rs:114:24: replace < with <= in cross_product_orthogonal
+astraweave-math/src/simd_vec_kani.rs:123:5: replace length_non_negative with ()
+astraweave-math/src/simd_vec_kani.rs:127:49: replace && with || in length_non_negative
+astraweave-math/src/simd_vec_kani.rs:127:32: replace && with || in length_non_negative
+astraweave-math/src/simd_vec_kani.rs:132:29: replace || with && in length_non_negative
+astraweave-math/src/simd_vec_kani.rs:132:22: replace >= with < in length_non_negative

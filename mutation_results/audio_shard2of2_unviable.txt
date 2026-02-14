@@ -1,0 +1,2 @@
+astraweave-audio/src/engine.rs:408:9: replace AudioEngine::test_pan_mode -> PanMode with Default::default()
+astraweave-audio/src/voice.rs:28:5: replace load_voice_bank -> Result<VoiceBank> with Ok(Default::default())

@@ -1,0 +1,69 @@
+astraweave-behavior/src/lib.rs:413:9: replace BehaviorGraph::summary -> String with String::new()
+astraweave-behavior/src/lib.rs:413:9: replace BehaviorGraph::summary -> String with "xyzzy".into()
+astraweave-behavior/src/lib.rs:424:9: replace <impl fmt::Display for BehaviorGraph>::fmt -> fmt::Result with Ok(Default::default())
+astraweave-behavior/src/lib.rs:1456:9: replace BehaviorStatus::is_success -> bool with true
+astraweave-behavior/src/lib.rs:1456:9: replace BehaviorStatus::is_success -> bool with false
+astraweave-behavior/src/lib.rs:1462:9: replace BehaviorStatus::is_failure -> bool with true
+astraweave-behavior/src/lib.rs:1462:9: replace BehaviorStatus::is_failure -> bool with false
+astraweave-behavior/src/lib.rs:1468:9: replace BehaviorStatus::is_running -> bool with true
+astraweave-behavior/src/lib.rs:1468:9: replace BehaviorStatus::is_running -> bool with false
+astraweave-behavior/src/lib.rs:1474:9: replace BehaviorStatus::is_terminal -> bool with true
+astraweave-behavior/src/lib.rs:1474:9: replace BehaviorStatus::is_terminal -> bool with false
+astraweave-behavior/src/lib.rs:1480:9: replace BehaviorStatus::name -> &'static str with ""
+astraweave-behavior/src/lib.rs:1480:9: replace BehaviorStatus::name -> &'static str with "xyzzy"
+astraweave-behavior/src/lib.rs:1518:9: replace BehaviorStatus::all -> &'static[BehaviorStatus] with Vec::leak(Vec::new())
+astraweave-behavior/src/lib.rs:1524:9: replace <impl fmt::Display for BehaviorStatus>::fmt -> fmt::Result with Ok(Default::default())
+astraweave-behavior/src/lib.rs:1552:9: replace BehaviorContext::register_action with ()
+astraweave-behavior/src/lib.rs:1559:9: replace BehaviorContext::register_condition with ()
+astraweave-behavior/src/lib.rs:1565:9: replace BehaviorContext::action_count -> usize with 0
+astraweave-behavior/src/lib.rs:1565:9: replace BehaviorContext::action_count -> usize with 1
+astraweave-behavior/src/lib.rs:1571:9: replace BehaviorContext::condition_count -> usize with 0
+astraweave-behavior/src/lib.rs:1571:9: replace BehaviorContext::condition_count -> usize with 1
+astraweave-behavior/src/lib.rs:1577:9: replace BehaviorContext::total_count -> usize with 0
+astraweave-behavior/src/lib.rs:1577:9: replace BehaviorContext::total_count -> usize with 1
+astraweave-behavior/src/lib.rs:1577:28: replace + with - in BehaviorContext::total_count
+astraweave-behavior/src/lib.rs:1577:28: replace + with * in BehaviorContext::total_count
+astraweave-behavior/src/lib.rs:1583:9: replace BehaviorContext::is_empty -> bool with true
+astraweave-behavior/src/lib.rs:1583:9: replace BehaviorContext::is_empty -> bool with false
+astraweave-behavior/src/lib.rs:1583:33: replace && with || in BehaviorContext::is_empty
+astraweave-behavior/src/lib.rs:1589:9: replace BehaviorContext::has_action -> bool with true
+astraweave-behavior/src/lib.rs:1589:9: replace BehaviorContext::has_action -> bool with false
+astraweave-behavior/src/lib.rs:1595:9: replace BehaviorContext::has_condition -> bool with true
+astraweave-behavior/src/lib.rs:1595:9: replace BehaviorContext::has_condition -> bool with false
+astraweave-behavior/src/lib.rs:1601:9: replace BehaviorContext::action_names -> Vec<&str> with vec![]
+astraweave-behavior/src/lib.rs:1601:9: replace BehaviorContext::action_names -> Vec<&str> with vec![""]
+astraweave-behavior/src/lib.rs:1601:9: replace BehaviorContext::action_names -> Vec<&str> with vec!["xyzzy"]
+astraweave-behavior/src/lib.rs:1607:9: replace BehaviorContext::condition_names -> Vec<&str> with vec![]
+astraweave-behavior/src/lib.rs:1607:9: replace BehaviorContext::condition_names -> Vec<&str> with vec![""]
+astraweave-behavior/src/lib.rs:1607:9: replace BehaviorContext::condition_names -> Vec<&str> with vec!["xyzzy"]
+astraweave-behavior/src/lib.rs:1612:9: replace BehaviorContext::remove_action -> bool with true
+astraweave-behavior/src/lib.rs:1612:9: replace BehaviorContext::remove_action -> bool with false
+astraweave-behavior/src/lib.rs:1617:9: replace BehaviorContext::remove_condition -> bool with true
+astraweave-behavior/src/lib.rs:1617:9: replace BehaviorContext::remove_condition -> bool with false
+astraweave-behavior/src/lib.rs:1622:9: replace BehaviorContext::clear_actions with ()
+astraweave-behavior/src/lib.rs:1627:9: replace BehaviorContext::clear_conditions with ()
+astraweave-behavior/src/lib.rs:1632:9: replace BehaviorContext::clear with ()
+astraweave-behavior/src/lib.rs:1639:9: replace BehaviorContext::summary -> String with String::new()
+astraweave-behavior/src/lib.rs:1639:9: replace BehaviorContext::summary -> String with "xyzzy".into()
+astraweave-behavior/src/lib.rs:1675:9: replace <impl fmt::Display for BehaviorContext>::fmt -> fmt::Result with Ok(Default::default())
+astraweave-behavior/src/ecs.rs:18:5: replace behavior_tick_system with ()
+astraweave-behavior/src/ecs.rs:41:9: replace <impl astraweave_ecs::Plugin for BehaviorPlugin>::build with ()
+astraweave-behavior/src/goap.rs:27:9: replace WorldState::from_facts -> Self with Default::default()
+astraweave-behavior/src/goap.rs:35:9: replace WorldState::set with ()
+astraweave-behavior/src/goap.rs:39:9: replace WorldState::get -> Option<bool> with None
+astraweave-behavior/src/goap.rs:39:9: replace WorldState::get -> Option<bool> with Some(true)
+astraweave-behavior/src/goap.rs:39:9: replace WorldState::get -> Option<bool> with Some(false)
+astraweave-behavior/src/goap.rs:43:9: replace WorldState::satisfies -> bool with true
+astraweave-behavior/src/goap.rs:43:9: replace WorldState::satisfies -> bool with false
+astraweave-behavior/src/goap.rs:44:45: replace != with == in WorldState::satisfies
+astraweave-behavior/src/goap.rs:53:9: replace WorldState::apply with ()
+astraweave-behavior/src/goap.rs:109:9: replace GoapAction::can_apply -> bool with true
+astraweave-behavior/src/goap.rs:109:9: replace GoapAction::can_apply -> bool with false
+astraweave-behavior/src/goap.rs:114:9: replace GoapAction::apply -> WorldState with Default::default()
+astraweave-behavior/src/goap.rs:144:9: replace GoapGoal::is_satisfied -> bool with true
+astraweave-behavior/src/goap.rs:144:9: replace GoapGoal::is_satisfied -> bool with false
+astraweave-behavior/src/goap.rs:161:9: replace PlanNode::f_cost -> f32 with 0.0
+astraweave-behavior/src/goap.rs:161:9: replace PlanNode::f_cost -> f32 with 1.0
+astraweave-behavior/src/goap.rs:161:9: replace PlanNode::f_cost -> f32 with -1.0
+astraweave-behavior/src/goap.rs:161:21: replace + with * in PlanNode::f_cost
+astraweave-behavior/src/goap.rs:175:9: replace <impl PartialOrd for PlanNode>::partial_cmp -> Option<Ordering> with None

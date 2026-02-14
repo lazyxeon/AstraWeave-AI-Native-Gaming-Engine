@@ -1,0 +1,41 @@
+astraweave-audio/src/engine.rs:315:36: replace * with / in AudioEngine::play_voice_beep
+astraweave-audio/src/engine.rs:320:31: replace + with - in AudioEngine::play_voice_beep
+astraweave-audio/src/engine.rs:320:31: replace + with * in AudioEngine::play_voice_beep
+astraweave-audio/src/engine.rs:326:9: replace AudioEngine::play_sfx_file -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:342:9: replace AudioEngine::play_sfx_3d_file -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:361:9: replace AudioEngine::play_sfx_3d_beep -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:374:9: replace AudioEngine::ensure_spatial_sink -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:374:12: delete ! in AudioEngine::ensure_spatial_sink
+astraweave-audio/src/engine.rs:390:9: replace AudioEngine::test_duck_timer -> f32 with 0.0
+astraweave-audio/src/engine.rs:390:9: replace AudioEngine::test_duck_timer -> f32 with 1.0
+astraweave-audio/src/engine.rs:390:9: replace AudioEngine::test_duck_timer -> f32 with -1.0
+astraweave-audio/src/engine.rs:393:9: replace AudioEngine::test_duck_factor -> f32 with 0.0
+astraweave-audio/src/engine.rs:393:9: replace AudioEngine::test_duck_factor -> f32 with 1.0
+astraweave-audio/src/engine.rs:393:9: replace AudioEngine::test_duck_factor -> f32 with -1.0
+astraweave-audio/src/engine.rs:396:9: replace AudioEngine::test_music_base_volume -> f32 with 0.0
+astraweave-audio/src/engine.rs:396:9: replace AudioEngine::test_music_base_volume -> f32 with 1.0
+astraweave-audio/src/engine.rs:396:9: replace AudioEngine::test_music_base_volume -> f32 with -1.0
+astraweave-audio/src/engine.rs:399:9: replace AudioEngine::test_voice_base_volume -> f32 with 0.0
+astraweave-audio/src/engine.rs:399:9: replace AudioEngine::test_voice_base_volume -> f32 with -1.0
+astraweave-audio/src/engine.rs:402:9: replace AudioEngine::test_sfx_base_volume -> f32 with 0.0
+astraweave-audio/src/engine.rs:402:9: replace AudioEngine::test_sfx_base_volume -> f32 with -1.0
+astraweave-audio/src/engine.rs:405:9: replace AudioEngine::test_ear_sep -> f32 with 0.0
+astraweave-audio/src/engine.rs:405:9: replace AudioEngine::test_ear_sep -> f32 with 1.0
+astraweave-audio/src/engine.rs:405:9: replace AudioEngine::test_ear_sep -> f32 with -1.0
+astraweave-audio/src/engine.rs:411:9: replace AudioEngine::test_music_target_vol -> f32 with 0.0
+astraweave-audio/src/engine.rs:411:9: replace AudioEngine::test_music_target_vol -> f32 with 1.0
+astraweave-audio/src/engine.rs:411:9: replace AudioEngine::test_music_target_vol -> f32 with -1.0
+astraweave-audio/src/engine.rs:414:9: replace AudioEngine::test_music_using_a -> bool with false
+astraweave-audio/src/engine.rs:417:9: replace AudioEngine::test_music_crossfade_left -> f32 with 1.0
+astraweave-audio/src/engine.rs:417:9: replace AudioEngine::test_music_crossfade_left -> f32 with -1.0
+astraweave-audio/src/engine.rs:420:9: replace AudioEngine::test_music_crossfade_time -> f32 with 1.0
+astraweave-audio/src/engine.rs:420:9: replace AudioEngine::test_music_crossfade_time -> f32 with -1.0
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([0.0; 3], [0.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([0.0; 3], [1.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([0.0; 3], [-1.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([1.0; 3], [0.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([1.0; 3], [1.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([1.0; 3], [-1.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([-1.0; 3], [0.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([-1.0; 3], [1.0; 3])
+astraweave-audio/src/engine.rs:423:9: replace AudioEngine::test_compute_ears -> ([f32; 3], [f32; 3]) with ([-1.0; 3], [-1.0; 3])

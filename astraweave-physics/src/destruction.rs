@@ -171,8 +171,7 @@ impl FracturePattern {
             let y = (layer as f32 + 0.5) * layer_height - half_extents.y;
 
             for piece in 0..pieces_per_layer {
-                let angle =
-                    piece as f32 * std::f32::consts::TAU / pieces_per_layer as f32;
+                let angle = piece as f32 * std::f32::consts::TAU / pieces_per_layer as f32;
                 let x = angle.cos() * half_extents.x * 0.7;
                 let z = angle.sin() * half_extents.z * 0.7;
 
@@ -326,10 +325,11 @@ impl Destructible {
 
         // Apply force-based damage for Health trigger
         if matches!(self.config.trigger, DestructionTrigger::Health)
-            && force >= self.config.damage_threshold {
-                let damage = (force - self.config.damage_threshold) * self.config.force_to_damage;
-                self.apply_damage(damage);
-            }
+            && force >= self.config.damage_threshold
+        {
+            let damage = (force - self.config.damage_threshold) * self.config.force_to_damage;
+            self.apply_damage(damage);
+        }
     }
 
     /// Handle collision
@@ -550,9 +550,20 @@ impl DestructionManager {
 
         // Respect debris limit
         let available_slots = self.max_debris.saturating_sub(self.debris.len());
-        let debris_to_spawn = dest.config.fracture_pattern.debris.len().min(available_slots);
+        let debris_to_spawn = dest
+            .config
+            .fracture_pattern
+            .debris
+            .len()
+            .min(available_slots);
 
-        for debris_config in dest.config.fracture_pattern.debris.iter().take(debris_to_spawn) {
+        for debris_config in dest
+            .config
+            .fracture_pattern
+            .debris
+            .iter()
+            .take(debris_to_spawn)
+        {
             let id = DebrisId(self.next_debris_id);
             self.next_debris_id += 1;
 
@@ -601,8 +612,7 @@ impl DestructionManager {
                 let dest_clone = dest.clone();
 
                 // Spawn debris
-                let debris_ids =
-                    self.spawn_debris(&dest_clone, Vec3::Y); // Default upward force direction
+                let debris_ids = self.spawn_debris(&dest_clone, Vec3::Y); // Default upward force direction
 
                 // Create event
                 self.pending_events.push(DestructionEvent {
@@ -725,7 +735,8 @@ mod tests {
 
     #[test]
     fn test_manual_destruction() {
-        let mut dest = Destructible::new(DestructibleId(1), DestructibleConfig::default(), Vec3::ZERO);
+        let mut dest =
+            Destructible::new(DestructibleId(1), DestructibleConfig::default(), Vec3::ZERO);
 
         dest.destroy();
         assert_eq!(dest.state, DestructibleState::Destroying);
@@ -751,7 +762,10 @@ mod tests {
         assert_eq!(pattern.debris.len(), 8);
 
         let total_mass: f32 = pattern.debris.iter().map(|d| d.mass).sum();
-        assert!((total_mass - 10.0).abs() < 0.01, "Total mass should be preserved");
+        assert!(
+            (total_mass - 10.0).abs() < 0.01,
+            "Total mass should be preserved"
+        );
     }
 
     #[test]
@@ -945,7 +959,7 @@ mod tests {
             damage_on_hit: 25.0,
             ..Default::default()
         };
-        
+
         assert!(config.can_damage);
         assert_eq!(config.damage_on_hit, 25.0);
     }
@@ -955,7 +969,8 @@ mod tests {
         let mut manager = DestructionManager::new();
 
         let id1 = manager.add_destructible(DestructibleConfig::default(), Vec3::ZERO);
-        let id2 = manager.add_destructible(DestructibleConfig::default(), Vec3::new(10.0, 0.0, 0.0));
+        let id2 =
+            manager.add_destructible(DestructibleConfig::default(), Vec3::new(10.0, 0.0, 0.0));
 
         manager.apply_damage(id1, 1000.0);
         manager.update(0.016, Vec3::ZERO);
@@ -963,7 +978,7 @@ mod tests {
         // id1 should be destroyed, id2 should be intact
         let d1 = manager.get(id1).unwrap();
         let d2 = manager.get(id2).unwrap();
-        
+
         assert_eq!(d1.state, DestructibleState::Destroyed);
         assert_eq!(d2.state, DestructibleState::Intact);
     }
@@ -993,7 +1008,7 @@ mod tests {
         manager.update(0.016, Vec3::ZERO);
 
         assert_eq!(manager.debris_count(), 10); // 5 objects × 2 debris each
-        
+
         let events = manager.take_events();
         assert_eq!(events.len(), 5);
     }
@@ -1031,7 +1046,7 @@ mod tests {
         dest.reset_frame();
 
         assert_eq!(dest.accumulated_force, 0.0);
-        
+
         // Object should still be intact after reset
         assert_eq!(dest.state, DestructibleState::Intact);
     }
@@ -1202,7 +1217,7 @@ mod tests {
         );
 
         dest.apply_damage(-50.0); // Negative damage (healing?)
-        
+
         // Implementation should allow this (health goes up)
         // or clamp to max health
         assert!(dest.health >= 100.0 && dest.health <= 150.0);
@@ -1210,35 +1225,29 @@ mod tests {
 
     #[test]
     fn test_destroyed_ignores_damage() {
-        let mut dest = Destructible::new(
-            DestructibleId(1),
-            DestructibleConfig::default(),
-            Vec3::ZERO,
-        );
+        let mut dest =
+            Destructible::new(DestructibleId(1), DestructibleConfig::default(), Vec3::ZERO);
 
         dest.destroy();
         dest.complete_destruction();
-        
+
         let health_before = dest.health;
         dest.apply_damage(50.0);
-        
+
         // Destroyed objects should ignore damage
         assert_eq!(dest.health, health_before);
     }
 
     #[test]
     fn test_destroying_state_ignores_damage() {
-        let mut dest = Destructible::new(
-            DestructibleId(1),
-            DestructibleConfig::default(),
-            Vec3::ZERO,
-        );
+        let mut dest =
+            Destructible::new(DestructibleId(1), DestructibleConfig::default(), Vec3::ZERO);
 
         dest.destroy(); // Now in Destroying state
-        
+
         let health_before = dest.health;
         dest.apply_damage(50.0);
-        
+
         // Destroying objects should also ignore damage
         assert_eq!(dest.health, health_before);
     }
@@ -1260,7 +1269,7 @@ mod tests {
     #[test]
     fn test_debris_config_default() {
         let config = DebrisConfig::default();
-        
+
         assert_eq!(config.mass, 1.0);
         assert_eq!(config.velocity_factor, 1.0);
         assert_eq!(config.angular_velocity_factor, 0.5);
@@ -1272,7 +1281,7 @@ mod tests {
     #[test]
     fn test_destructible_config_default() {
         let config = DestructibleConfig::default();
-        
+
         assert_eq!(config.max_health, 100.0);
         assert_eq!(config.damage_threshold, 10.0);
         assert_eq!(config.force_to_damage, 0.1);
@@ -1355,8 +1364,14 @@ mod tests {
         let config = DestructibleConfig {
             fracture_pattern: FracturePattern {
                 debris: vec![
-                    DebrisConfig { lifetime: 1.0, ..Default::default() },
-                    DebrisConfig { lifetime: 10.0, ..Default::default() },
+                    DebrisConfig {
+                        lifetime: 1.0,
+                        ..Default::default()
+                    },
+                    DebrisConfig {
+                        lifetime: 10.0,
+                        ..Default::default()
+                    },
                 ],
                 center_of_mass: Vec3::ZERO,
             },
@@ -1375,4 +1390,3 @@ mod tests {
         assert_eq!(manager.debris_count(), 1); // One removed
     }
 }
-

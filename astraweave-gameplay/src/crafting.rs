@@ -469,4 +469,146 @@ mod tests {
         let item = recipe_book.craft_seeded("Free Item", &mut inv, &mut rng);
         assert!(item.is_some());
     }
+
+    // ===== Mutation-resistant tests for RecipeBook::craft (deprecated but still code) =====
+
+    #[test]
+    #[allow(deprecated)]
+    fn craft_legacy_returns_some_on_success() {
+        // Catches: replace RecipeBook::craft -> Option<Item> with None
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Potion".to_string(),
+                output_item: ItemKind::Consumable { heal: 10 },
+                costs: vec![CraftCost { kind: ResourceKind::Fiber, count: 2 }],
+            }],
+        };
+        let mut inv = Inventory::default();
+        inv.add_resource(ResourceKind::Fiber, 5);
+        let result = book.craft("Potion", &mut inv);
+        assert!(result.is_some(), "craft() must return Some on valid recipe with resources");
+        let item = result.unwrap();
+        assert_eq!(item.name, "Potion");
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn craft_legacy_finds_correct_recipe_by_name() {
+        // Catches: replace == with != in RecipeBook::craft (line 27 name match)
+        let book = RecipeBook {
+            recipes: vec![
+                CraftRecipe {
+                    name: "Alpha".to_string(),
+                    output_item: ItemKind::Consumable { heal: 1 },
+                    costs: vec![],
+                },
+                CraftRecipe {
+                    name: "Beta".to_string(),
+                    output_item: ItemKind::Consumable { heal: 2 },
+                    costs: vec![],
+                },
+            ],
+        };
+        let mut inv = Inventory::default();
+        let result = book.craft("Beta", &mut inv);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().name, "Beta", "Must find recipe by exact name match");
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn craft_legacy_checks_resource_kind_equality() {
+        // Catches: replace == with != in cost kind check (line 33)
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Sword".to_string(),
+                output_item: ItemKind::Weapon { base_damage: 10, dtype: DamageType::Physical },
+                costs: vec![CraftCost { kind: ResourceKind::Ore, count: 3 }],
+            }],
+        };
+        let mut inv = Inventory::default();
+        inv.add_resource(ResourceKind::Wood, 10); // Wrong resource
+        let result = book.craft("Sword", &mut inv);
+        assert!(result.is_none(), "Must not craft when resource kind doesn't match");
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn craft_legacy_exact_resource_count_boundary() {
+        // Catches: replace < with ==, >, <= in have < c.count (line 36)
+        // With exact count (have == count), < is false, so craft should succeed
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Shield".to_string(),
+                output_item: ItemKind::Armor { defense: 5 },
+                costs: vec![CraftCost { kind: ResourceKind::Ore, count: 3 }],
+            }],
+        };
+        let mut inv = Inventory::default();
+        inv.add_resource(ResourceKind::Ore, 3); // Exactly enough
+        let result = book.craft("Shield", &mut inv);
+        assert!(result.is_some(), "Exact resource count must allow crafting (have==cost)");
+        // Resources should be consumed
+        let remaining = inv.resources.iter().find(|(k,_)| *k == ResourceKind::Ore).map(|(_,n)| *n).unwrap_or(0);
+        assert_eq!(remaining, 0, "Resources must be fully consumed");
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn craft_legacy_one_short_fails() {
+        // Catches: replace < with <= (have < count vs have <= count)
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Shield".to_string(),
+                output_item: ItemKind::Armor { defense: 5 },
+                costs: vec![CraftCost { kind: ResourceKind::Ore, count: 3 }],
+            }],
+        };
+        let mut inv = Inventory::default();
+        inv.add_resource(ResourceKind::Ore, 2); // One short
+        let result = book.craft("Shield", &mut inv);
+        assert!(result.is_none(), "Must fail when have < cost");
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn craft_legacy_remove_resource_failure_returns_none() {
+        // Catches: delete ! in `if !inv.remove_resource(...)` (line 42)
+        // If ! is deleted, the branch executes on successful removal → returns None early
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Gem".to_string(),
+                output_item: ItemKind::Consumable { heal: 50 },
+                costs: vec![CraftCost { kind: ResourceKind::Crystal, count: 1 }],
+            }],
+        };
+        let mut inv = Inventory::default();
+        inv.add_resource(ResourceKind::Crystal, 5);
+        let result = book.craft("Gem", &mut inv);
+        assert!(result.is_some(), "Successful remove_resource must not return None");
+    }
+
+    #[test]
+    fn craft_seeded_exact_resource_boundary() {
+        // Catches: replace < with == or <= in craft_seeded (line 81)
+        let book = RecipeBook {
+            recipes: vec![CraftRecipe {
+                name: "Ring".to_string(),
+                output_item: ItemKind::Consumable { heal: 1 },
+                costs: vec![CraftCost { kind: ResourceKind::Essence, count: 4 }],
+            }],
+        };
+        let mut inv = Inventory::default();
+        inv.add_resource(ResourceKind::Essence, 4); // Exact
+        let mut rng = seeded_rng();
+        let result = book.craft_seeded("Ring", &mut inv, &mut rng);
+        assert!(result.is_some(), "Exact count must succeed in craft_seeded");
+
+        // Also test one-short fails
+        let mut inv2 = Inventory::default();
+        inv2.add_resource(ResourceKind::Essence, 3);
+        let mut rng2 = seeded_rng();
+        let result2 = book.craft_seeded("Ring", &mut inv2, &mut rng2);
+        assert!(result2.is_none(), "One short must fail in craft_seeded");
+    }
 }

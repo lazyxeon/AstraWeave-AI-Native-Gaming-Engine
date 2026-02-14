@@ -1,0 +1,1 @@
+astraweave-prompts/src/lib.rs:922:22: replace > with >= in RenderMetrics::update_avg_time

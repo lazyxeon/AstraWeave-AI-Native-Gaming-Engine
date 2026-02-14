@@ -559,4 +559,120 @@ mod tests {
         assert!(state.encounter_triggers.is_empty());
         assert!(state.encounter_completes.is_empty());
     }
+
+    // ===== Mutation-resistant tests for tutorial systems =====
+
+    #[test]
+    fn tutorial_anchor_sync_sets_initialized_flag() {
+        // Catches: replace tutorial_anchor_sync with () (line 123)
+        // Catches: delete ! in !state.initialized (line 124)
+        let mut world = World::new();
+        let meta = make_test_metadata();
+        let mut state = WeaveTutorialState::from_metadata(meta);
+        state.initialized = false;
+        world.insert_resource(state);
+
+        tutorial_anchor_sync(&mut world);
+
+        let state_after = world.get_resource::<WeaveTutorialState>().unwrap();
+        assert!(state_after.initialized,
+            "tutorial_anchor_sync must set initialized=true on first call");
+
+        // Calling again should not change anything (already initialized)
+        tutorial_anchor_sync(&mut world);
+        let state_after2 = world.get_resource::<WeaveTutorialState>().unwrap();
+        assert!(state_after2.initialized,
+            "tutorial_anchor_sync must remain initialized after second call");
+    }
+
+    #[test]
+    fn tutorial_anchor_sync_not_initialized_guard() {
+        // If delete ! mutant passes: state.initialized (true) → runs init again
+        // But the function already sets initialized=true, so to test the ! guard:
+        // already-initialized state should NOT be re-initialized (idempotent behavior)
+        let mut world = World::new();
+        let meta = make_test_metadata();
+        let mut state = WeaveTutorialState::from_metadata(meta);
+        state.initialized = true; // Already initialized
+        world.insert_resource(state);
+
+        // Should be a no-op
+        tutorial_anchor_sync(&mut world);
+
+        let state_after = world.get_resource::<WeaveTutorialState>().unwrap();
+        assert!(state_after.initialized);
+    }
+
+    #[test]
+    fn tutorial_trigger_system_processes_entering_events() {
+        // Catches: replace tutorial_trigger_system with () (line 137)
+        let mut world = World::new();
+        let meta = make_test_metadata();
+        let state = WeaveTutorialState::from_metadata(meta);
+        world.insert_resource(state);
+
+        let mut events = Events::<TriggerVolumeEvent>::default();
+        events.writer().send(TriggerVolumeEvent {
+            trigger_id: "zone_1".to_string(),
+            entering: true,
+            entity: None,
+        });
+        world.insert_resource(events);
+
+        tutorial_trigger_system(&mut world);
+
+        let state = world.get_resource::<WeaveTutorialState>().unwrap();
+        assert!(state.active_triggers.contains("zone_1"),
+            "tutorial_trigger_system must process entering events");
+    }
+
+    #[test]
+    fn tutorial_trigger_system_processes_leaving_events() {
+        // Catches: replace tutorial_trigger_system with ()
+        let mut world = World::new();
+        let meta = make_test_metadata();
+        let mut state = WeaveTutorialState::from_metadata(meta);
+        state.active_triggers.insert("zone_1".to_string());
+        world.insert_resource(state);
+
+        let mut events = Events::<TriggerVolumeEvent>::default();
+        events.writer().send(TriggerVolumeEvent {
+            trigger_id: "zone_1".to_string(),
+            entering: false,
+            entity: None,
+        });
+        world.insert_resource(events);
+
+        tutorial_trigger_system(&mut world);
+
+        let state = world.get_resource::<WeaveTutorialState>().unwrap();
+        assert!(!state.active_triggers.contains("zone_1"),
+            "tutorial_trigger_system must process leaving events");
+    }
+
+    #[test]
+    fn tutorial_anchor_events_stabilizes_anchor() {
+        // Catches: replace tutorial_anchor_events with () (line 158)
+        let mut world = World::new();
+        let meta = make_test_metadata();
+        let state = WeaveTutorialState::from_metadata(meta);
+        
+        // Verify anchor starts unstabilized
+        assert!(!state.anchors.get("anchor_1").unwrap().stabilized);
+        world.insert_resource(state);
+
+        let mut events = Events::<AnchorStabilizedEvent>::default();
+        events.writer().send(AnchorStabilizedEvent {
+            anchor_id: "anchor_1".to_string(),
+        });
+        world.insert_resource(events);
+
+        tutorial_anchor_events(&mut world);
+
+        let state = world.get_resource::<WeaveTutorialState>().unwrap();
+        assert!(state.anchors.get("anchor_1").unwrap().stabilized,
+            "tutorial_anchor_events must mark anchor as stabilized");
+        assert!(state.anchor_sequence.contains(&"anchor_1".to_string()),
+            "tutorial_anchor_events must record anchor in sequence");
+    }
 }

@@ -18,19 +18,36 @@ use std::hint::black_box;
 /// CORRECTNESS: Validate character transform matrix is geometrically valid
 #[inline]
 fn assert_transform_valid(transform: Option<Mat4>, context: &str) {
-    assert!(transform.is_some(), "[CORRECTNESS FAILURE] {}: transform lookup returned None", context);
+    assert!(
+        transform.is_some(),
+        "[CORRECTNESS FAILURE] {}: transform lookup returned None",
+        context
+    );
     if let Some(mat) = transform {
         // Extract position from column 3 (translation column)
         let pos = mat.col(3).truncate();
         // Position must be finite
-        assert!(pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
-            "[CORRECTNESS FAILURE] {}: position contains non-finite values {:?}", context, pos);
+        assert!(
+            pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
+            "[CORRECTNESS FAILURE] {}: position contains non-finite values {:?}",
+            context,
+            pos
+        );
         // Position Y should be above ground (not fallen through)
-        assert!(pos.y > -10.0, "[CORRECTNESS FAILURE] {}: character fell through ground (y={})", context, pos.y);
+        assert!(
+            pos.y > -10.0,
+            "[CORRECTNESS FAILURE] {}: character fell through ground (y={})",
+            context,
+            pos.y
+        );
         // Check matrix has valid scaling (determinant should be non-zero, not NaN)
         let det = mat.determinant();
-        assert!(det.is_finite() && det.abs() > 1e-10,
-            "[CORRECTNESS FAILURE] {}: transform matrix has invalid determinant {}", context, det);
+        assert!(
+            det.is_finite() && det.abs() > 1e-10,
+            "[CORRECTNESS FAILURE] {}: transform matrix has invalid determinant {}",
+            context,
+            det
+        );
     }
 }
 
@@ -45,7 +62,7 @@ fn setup_simple_world() -> PhysicsWorld {
 fn character_move_straight(c: &mut Criterion) {
     let mut world = setup_simple_world();
     let char_id = world.add_character(vec3(0.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     // CORRECTNESS: Verify initial transform is valid
     let initial_transform = world.body_transform(char_id);
     assert_transform_valid(initial_transform, "character_move_straight/initial");
@@ -97,11 +114,15 @@ fn character_move_batch(c: &mut Criterion) {
             let id = world.add_character(vec3(x, 1.0, z), vec3(0.4, 0.9, 0.4));
             char_ids.push(id);
         }
-        
+
         // CORRECTNESS: Verify all characters spawned correctly
-        assert_eq!(char_ids.len(), *char_count, 
-            "[CORRECTNESS FAILURE] character_move_batch: expected {} characters, got {}", 
-            char_count, char_ids.len());
+        assert_eq!(
+            char_ids.len(),
+            *char_count,
+            "[CORRECTNESS FAILURE] character_move_batch: expected {} characters, got {}",
+            char_count,
+            char_ids.len()
+        );
 
         group.throughput(Throughput::Elements(*char_count as u64));
         group.bench_with_input(
@@ -116,7 +137,10 @@ fn character_move_batch(c: &mut Criterion) {
                     // CORRECTNESS: Verify all characters still have valid transforms
                     for (i, &id) in char_ids.iter().enumerate() {
                         let transform = world.body_transform(id);
-                        assert_transform_valid(transform, &format!("character_move_batch/{}/char_{}", count, i));
+                        assert_transform_valid(
+                            transform,
+                            &format!("character_move_batch/{}/char_{}", count, i),
+                        );
                     }
                 });
             },

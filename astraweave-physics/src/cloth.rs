@@ -137,11 +137,7 @@ pub enum ClothCollider {
     /// Sphere collider
     Sphere { center: Vec3, radius: f32 },
     /// Capsule collider
-    Capsule {
-        start: Vec3,
-        end: Vec3,
-        radius: f32,
-    },
+    Capsule { start: Vec3, end: Vec3, radius: f32 },
     /// Infinite plane
     Plane { point: Vec3, normal: Vec3 },
 }
@@ -285,8 +281,8 @@ impl Cloth {
         // Create particles in a grid
         for y in 0..config.height {
             for x in 0..config.width {
-                let pos = origin
-                    + Vec3::new(x as f32 * config.spacing, 0.0, y as f32 * config.spacing);
+                let pos =
+                    origin + Vec3::new(x as f32 * config.spacing, 0.0, y as f32 * config.spacing);
                 particles.push(ClothParticle::new(pos, config.particle_mass));
             }
         }
@@ -325,17 +321,13 @@ impl Cloth {
 
                 // Bend constraints (skip one particle)
                 if x < config.width - 2 {
-                    let mut c =
-                        DistanceConstraint::new(idx, idx + 2, config.spacing * 2.0);
+                    let mut c = DistanceConstraint::new(idx, idx + 2, config.spacing * 2.0);
                     c.stiffness = config.stiffness * 0.3;
                     constraints.push(c);
                 }
                 if y < config.height - 2 {
-                    let mut c = DistanceConstraint::new(
-                        idx,
-                        idx + config.width * 2,
-                        config.spacing * 2.0,
-                    );
+                    let mut c =
+                        DistanceConstraint::new(idx, idx + config.width * 2, config.spacing * 2.0);
                     c.stiffness = config.stiffness * 0.3;
                     constraints.push(c);
                 }
@@ -753,7 +745,10 @@ mod tests {
 
         // Particle should be pushed out of sphere
         let dist = particle.position.length();
-        assert!(dist >= 0.99, "Particle should be at or outside sphere surface");
+        assert!(
+            dist >= 0.99,
+            "Particle should be at or outside sphere surface"
+        );
     }
 
     #[test]
@@ -953,7 +948,7 @@ mod tests {
             ClothParticle::new(Vec3::ZERO, 1.0),
             ClothParticle::new(Vec3::new(1.0, 0.0, 0.0), 1.0),
         ];
-        
+
         // Zero rest length constraint
         let constraint = DistanceConstraint::new(0, 1, 0.0);
         constraint.solve(&mut particles);
@@ -969,9 +964,9 @@ mod tests {
             ClothParticle::new(Vec3::ZERO, 1.0),
             ClothParticle::new(Vec3::new(10.0, 0.0, 0.0), 1.0), // Very stretched
         ];
-        
+
         let constraint = DistanceConstraint::new(0, 1, 1.0);
-        
+
         // Multiple iterations should converge
         for _ in 0..10 {
             constraint.solve(&mut particles);
@@ -997,7 +992,7 @@ mod tests {
         };
         let mut cloth_x = Cloth::new(ClothId(1), config_x, Vec3::ZERO);
         cloth_x.pin_top_edge();
-        
+
         // Test Z wind
         let config_z = ClothConfig {
             width: 3,
@@ -1008,7 +1003,7 @@ mod tests {
         };
         let mut cloth_z = Cloth::new(ClothId(2), config_z, Vec3::ZERO);
         cloth_z.pin_top_edge();
-        
+
         for _ in 0..20 {
             cloth_x.update(0.016);
             cloth_z.update(0.016);
@@ -1016,7 +1011,7 @@ mod tests {
 
         // Bottom center particle
         let bottom = cloth_x.config.width * (cloth_x.config.height - 1) + 1;
-        
+
         // X wind should push X, Z wind should push Z
         assert!(cloth_x.particles[bottom].position.x > 0.0);
         assert!(cloth_z.particles[bottom].position.z > 0.0);
@@ -1031,7 +1026,7 @@ mod tests {
             gravity: Vec3::new(0.0, -10.0, 0.0),
             ..Default::default()
         };
-        
+
         let config_high_drag = ClothConfig {
             width: 3,
             height: 3,
@@ -1039,10 +1034,10 @@ mod tests {
             gravity: Vec3::new(0.0, -10.0, 0.0),
             ..Default::default()
         };
-        
+
         let mut cloth_low = Cloth::new(ClothId(1), config_low_drag, Vec3::ZERO);
         let mut cloth_high = Cloth::new(ClothId(2), config_high_drag, Vec3::ZERO);
-        
+
         for _ in 0..30 {
             cloth_low.update(0.016);
             cloth_high.update(0.016);
@@ -1051,7 +1046,7 @@ mod tests {
         // High drag should fall slower
         let vel_low = cloth_low.particles[4].velocity().length();
         let vel_high = cloth_high.particles[4].velocity().length();
-        
+
         assert!(vel_high < vel_low, "High drag should have lower velocity");
     }
 
@@ -1065,12 +1060,12 @@ mod tests {
             ClothParticle::new(Vec3::ZERO, 1.0),
             ClothParticle::new(Vec3::ZERO, 1.0), // Same position
         ];
-        
+
         let constraint = DistanceConstraint::new(0, 1, 1.0);
-        
+
         // Should not panic or produce NaN
         constraint.solve(&mut particles);
-        
+
         assert!(!particles[0].position.x.is_nan());
         assert!(!particles[1].position.x.is_nan());
     }
@@ -1088,7 +1083,7 @@ mod tests {
             height: 2,
             ..Default::default()
         };
-        
+
         let cloth = Cloth::new(ClothId(1), config, Vec3::ZERO);
         assert_eq!(cloth.particle_count(), 4);
         assert!(cloth.constraint_count() > 0);
@@ -1103,7 +1098,7 @@ mod tests {
             spacing: 0.2,
             ..Default::default()
         };
-        
+
         let cloth = Cloth::new(ClothId(1), config, Vec3::ZERO);
         assert_eq!(cloth.particle_count(), 10);
         // Should have constraints
@@ -1114,7 +1109,7 @@ mod tests {
     fn test_particle_velocity() {
         let mut particle = ClothParticle::new(Vec3::ZERO, 1.0);
         particle.prev_position = Vec3::new(-1.0, 0.0, 0.0);
-        
+
         let velocity = particle.velocity();
         assert_eq!(velocity, Vec3::new(1.0, 0.0, 0.0));
     }
@@ -1124,7 +1119,7 @@ mod tests {
         let mut cloth = Cloth::new(ClothId(1), ClothConfig::default(), Vec3::ZERO);
         cloth.pin_particle(0);
         assert!(cloth.particles[0].pinned);
-        
+
         cloth.unpin_particle(0);
         assert!(!cloth.particles[0].pinned);
         assert!(cloth.particles[0].inv_mass > 0.0);
@@ -1133,9 +1128,15 @@ mod tests {
     #[test]
     fn test_clear_colliders() {
         let mut cloth = Cloth::new(ClothId(1), ClothConfig::default(), Vec3::ZERO);
-        cloth.add_collider(ClothCollider::Sphere { center: Vec3::ZERO, radius: 1.0 });
-        cloth.add_collider(ClothCollider::Plane { point: Vec3::ZERO, normal: Vec3::Y });
-        
+        cloth.add_collider(ClothCollider::Sphere {
+            center: Vec3::ZERO,
+            radius: 1.0,
+        });
+        cloth.add_collider(ClothCollider::Plane {
+            point: Vec3::ZERO,
+            normal: Vec3::Y,
+        });
+
         assert_eq!(cloth.colliders.len(), 2);
         cloth.clear_colliders();
         assert_eq!(cloth.colliders.len(), 0);
@@ -1144,11 +1145,11 @@ mod tests {
     #[test]
     fn test_particle_position_getter() {
         let cloth = Cloth::new(ClothId(1), ClothConfig::default(), Vec3::new(5.0, 5.0, 5.0));
-        
+
         let pos = cloth.particle_position(0);
         assert!(pos.is_some());
         assert_eq!(pos.unwrap(), Vec3::new(5.0, 5.0, 5.0));
-        
+
         // Out of bounds
         assert!(cloth.particle_position(10000).is_none());
     }
@@ -1156,7 +1157,7 @@ mod tests {
     #[test]
     fn test_config_default() {
         let config = ClothConfig::default();
-        
+
         assert_eq!(config.width, 20);
         assert_eq!(config.height, 20);
         assert_eq!(config.spacing, 0.1);
@@ -1187,12 +1188,12 @@ mod tests {
     fn test_manager_get_mut() {
         let mut manager = ClothManager::new();
         let id = manager.create(ClothConfig::default(), Vec3::ZERO);
-        
+
         {
             let cloth = manager.get_mut(id).unwrap();
             cloth.pin_top_edge();
         }
-        
+
         let cloth = manager.get(id).unwrap();
         assert!(cloth.particles[0].pinned);
     }
@@ -1203,7 +1204,7 @@ mod tests {
         manager.create(ClothConfig::default(), Vec3::ZERO);
         manager.create(ClothConfig::default(), Vec3::new(5.0, 0.0, 0.0));
         manager.create(ClothConfig::default(), Vec3::new(10.0, 0.0, 0.0));
-        
+
         assert_eq!(manager.iter().count(), 3);
     }
 
@@ -1223,11 +1224,10 @@ mod tests {
     fn test_pinned_particle_no_integrate() {
         let mut particle = ClothParticle::pinned(Vec3::new(1.0, 1.0, 1.0));
         particle.acceleration = Vec3::new(100.0, 100.0, 100.0);
-        
+
         particle.integrate(1.0, 1.0);
-        
+
         // Position should not change
         assert_eq!(particle.position, Vec3::new(1.0, 1.0, 1.0));
     }
 }
-

@@ -1,0 +1,65 @@
+astraweave-physics/src/ragdoll.rs:531:13: delete field offset from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:532:13: delete field shape from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:535:13: delete field mass from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:536:13: delete field joint_type from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:538:36: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:546:13: delete field offset from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:547:13: delete field shape from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:550:13: delete field mass from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:551:13: delete field joint_type from struct BoneDef expression in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:553:36: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:567:41: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:586:32: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:593:56: replace * with + in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:593:56: replace * with / in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:598:41: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:605:37: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:617:32: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:624:52: replace * with + in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:624:52: replace * with / in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:624:23: delete - in RagdollPresets::humanoid
+astraweave-physics/src/ragdoll.rs:659:41: delete - in RagdollPresets::quadruped
+astraweave-physics/src/ragdoll.rs:664:37: delete - in RagdollPresets::quadruped
+astraweave-physics/src/ragdoll.rs:675:41: delete - in RagdollPresets::quadruped
+astraweave-physics/src/ragdoll.rs:680:37: delete - in RagdollPresets::quadruped
+astraweave-physics/src/ragdoll.rs:680:43: delete - in RagdollPresets::quadruped
+astraweave-physics/src/ragdoll.rs:694:34: delete - in RagdollPresets::quadruped
+astraweave-physics/src/vehicle.rs:103:13: delete field driven from struct Self expression in WheelConfig::front_left
+astraweave-physics/src/vehicle.rs:113:13: delete field steerable from struct Self expression in WheelConfig::front_right
+astraweave-physics/src/vehicle.rs:114:13: delete field driven from struct Self expression in WheelConfig::front_right
+astraweave-physics/src/vehicle.rs:124:13: delete field steerable from struct Self expression in WheelConfig::rear_left
+astraweave-physics/src/vehicle.rs:135:13: delete field steerable from struct Self expression in WheelConfig::rear_right
+astraweave-physics/src/vehicle.rs:206:16: replace < with <= in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:209:16: replace > with == in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:209:16: replace > with >= in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:214:71: replace - with + in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:215:28: replace - with / in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:215:67: replace - with + in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:217:16: replace <= with > in EngineConfig::torque_at_rpm
+astraweave-physics/src/vehicle.rs:256:24: replace < with <= in TransmissionConfig::effective_ratio
+astraweave-physics/src/vehicle.rs:260:28: replace - with + in TransmissionConfig::effective_ratio
+astraweave-physics/src/vehicle.rs:260:28: replace - with / in TransmissionConfig::effective_ratio
+astraweave-physics/src/vehicle.rs:265:20: replace * with / in TransmissionConfig::effective_ratio
+astraweave-physics/src/vehicle.rs:303:21: replace < with == in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:303:21: replace < with <= in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:314:18: replace * with + in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:317:36: replace * with + in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:317:36: replace * with / in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:317:29: replace - with + in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:317:29: replace - with / in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:318:35: replace * with / in FrictionCurve::friction_at_slip
+astraweave-physics/src/vehicle.rs:324:9: replace FrictionCurve::tarmac -> Self with Default::default()
+astraweave-physics/src/vehicle.rs:628:22: replace + with - in VehicleManager::spawn
+astraweave-physics/src/vehicle.rs:628:22: replace + with * in VehicleManager::spawn
+astraweave-physics/src/vehicle.rs:638:22: replace += with -= in VehicleManager::spawn
+astraweave-physics/src/vehicle.rs:638:22: replace += with *= in VehicleManager::spawn
+astraweave-physics/src/vehicle.rs:658:9: replace VehicleManager::update with ()
+astraweave-physics/src/vehicle.rs:667:28: replace > with >= in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:669:35: replace < with == in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:669:35: replace < with > in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:669:35: replace < with <= in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:674:36: replace > with == in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:674:36: replace > with < in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:674:36: replace > with >= in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:675:60: replace - with + in VehicleManager::update_with_input
+astraweave-physics/src/vehicle.rs:675:60: replace - with / in VehicleManager::update_with_input

@@ -244,4 +244,115 @@ mod tests {
         assert!(TERRAIN_SYSTEM_PROMPT.contains("TerrainFeatureType"));
         assert!(TERRAIN_SYSTEM_PROMPT.contains("RelativeLocation"));
     }
+
+    // ── Mutation-resistant field-assertion tests (v3.3 remediation) ──
+
+    #[test]
+    fn test_terrain_feature_metadata_description_not_default() {
+        // Kills: delete field description from struct TemplateMetadata in terrain_feature_template
+        let t = terrain_feature_template();
+        assert!(
+            !t.metadata().description.is_empty(),
+            "terrain_feature must have a non-empty description"
+        );
+        assert!(
+            t.metadata().description.contains("terrain"),
+            "description should mention terrain"
+        );
+    }
+
+    #[test]
+    fn test_terrain_feature_metadata_category_is_terrain() {
+        // Kills: delete field category from struct TemplateMetadata in terrain_feature_template
+        let t = terrain_feature_template();
+        assert_eq!(
+            t.metadata().category,
+            TemplateCategory::TerrainGeneration,
+            "terrain_feature must use TerrainGeneration category, not Default (Custom)"
+        );
+    }
+
+    #[test]
+    fn test_terrain_modify_metadata_description_not_default() {
+        // Kills: delete field description from struct TemplateMetadata in terrain_modify_template
+        let t = terrain_modify_template();
+        assert!(!t.metadata().description.is_empty());
+    }
+
+    #[test]
+    fn test_terrain_modify_metadata_category_is_terrain() {
+        // Kills: delete field category from struct TemplateMetadata in terrain_modify_template
+        let t = terrain_modify_template();
+        assert_eq!(t.metadata().category, TemplateCategory::TerrainGeneration);
+    }
+
+    #[test]
+    fn test_terrain_modify_metadata_tags_not_empty() {
+        // Kills: delete field tags from struct TemplateMetadata in terrain_modify_template
+        let t = terrain_modify_template();
+        assert!(!t.metadata().tags.is_empty(), "terrain_modify must have tags");
+        assert!(t.metadata().tags.contains(&"terrain".to_string()));
+    }
+
+    #[test]
+    fn test_terrain_modify_metadata_required_variables_not_empty() {
+        // Kills: delete field required_variables from struct TemplateMetadata in terrain_modify_template
+        let t = terrain_modify_template();
+        assert!(
+            !t.metadata().required_variables.is_empty(),
+            "terrain_modify must declare required_variables"
+        );
+        assert!(t.metadata().required_variables.contains(&"request_text".to_string()));
+    }
+
+    #[test]
+    fn test_terrain_batch_metadata_description_not_default() {
+        // Kills: delete field description from struct TemplateMetadata in terrain_batch_template
+        let t = terrain_batch_template();
+        assert!(!t.metadata().description.is_empty());
+    }
+
+    #[test]
+    fn test_terrain_batch_metadata_category_is_terrain() {
+        // Kills: delete field category from struct TemplateMetadata in terrain_batch_template
+        let t = terrain_batch_template();
+        assert_eq!(t.metadata().category, TemplateCategory::TerrainGeneration);
+    }
+
+    #[test]
+    fn test_terrain_batch_metadata_tags_not_empty() {
+        // Kills: delete field tags from struct TemplateMetadata in terrain_batch_template
+        let t = terrain_batch_template();
+        assert!(!t.metadata().tags.is_empty());
+        assert!(t.metadata().tags.contains(&"batch".to_string()));
+    }
+
+    #[test]
+    fn test_terrain_system_metadata_description_not_default() {
+        // Kills: delete field description from struct TemplateMetadata in terrain_system_metadata
+        let t = terrain_system_template();
+        assert!(!t.metadata().description.is_empty());
+        assert!(t.metadata().description.contains("terrain"));
+    }
+
+    #[test]
+    fn test_terrain_system_metadata_required_variables_empty() {
+        // Kills: delete field required_variables from struct TemplateMetadata in terrain_system_metadata
+        // (System template has explicitly empty vec — deleting the field leaves Default which is also
+        // empty, BUT this confirms the field *is* set and we can distinguish if logic changes.)
+        let t = terrain_system_template();
+        assert!(t.metadata().required_variables.is_empty());
+    }
+
+    #[test]
+    fn test_register_terrain_templates_actually_registers() {
+        // Kills: replace register_terrain_templates -> anyhow::Result<()> with Ok(())
+        let mut engine = crate::TemplateEngine::new();
+        register_terrain_templates(&mut engine).unwrap();
+        // After registration the engine must contain all 4 terrain templates
+        assert!(engine.has_template("terrain_system"));
+        assert!(engine.has_template("terrain_feature"));
+        assert!(engine.has_template("terrain_modify"));
+        assert!(engine.has_template("terrain_batch"));
+    }
 }

@@ -1,0 +1,59 @@
+astraweave-ecs/src/entity_allocator.rs:368:9: replace EntityAllocator::despawned_count -> u64 with 1
+astraweave-ecs/src/entity_allocator.rs:377:9: replace EntityAllocator::clear with ()
+astraweave-ecs/src/events.rs:32:9: replace EventQueue<E>::send with ()
+astraweave-ecs/src/events.rs:37:9: replace EventQueue<E>::drain -> impl Iterator<Item = E>+'_ with ::std::iter::empty()
+astraweave-ecs/src/events.rs:42:9: replace EventQueue<E>::iter -> impl Iterator<Item =&E> with ::std::iter::empty()
+astraweave-ecs/src/events.rs:46:9: replace EventQueue<E>::len -> usize with 0
+astraweave-ecs/src/events.rs:46:9: replace EventQueue<E>::len -> usize with 1
+astraweave-ecs/src/events.rs:50:9: replace EventQueue<E>::clear with ()
+astraweave-ecs/src/events.rs:105:9: replace Events::send with ()
+astraweave-ecs/src/events.rs:126:9: replace Events::read -> impl Iterator<Item =&E> with ::std::iter::empty()
+astraweave-ecs/src/events.rs:136:9: replace Events::drain -> impl Iterator<Item = E>+'_ with ::std::iter::empty()
+astraweave-ecs/src/events.rs:146:9: replace Events::clear with ()
+astraweave-ecs/src/events.rs:155:9: replace Events::len -> usize with 0
+astraweave-ecs/src/events.rs:155:9: replace Events::len -> usize with 1
+astraweave-ecs/src/events.rs:164:9: replace Events::is_empty -> bool with true
+astraweave-ecs/src/events.rs:164:9: replace Events::is_empty -> bool with false
+astraweave-ecs/src/events.rs:164:25: replace == with != in Events::is_empty
+astraweave-ecs/src/events.rs:169:9: replace Events::update with ()
+astraweave-ecs/src/events.rs:172:28: replace += with -= in Events::update
+astraweave-ecs/src/events.rs:172:28: replace += with *= in Events::update
+astraweave-ecs/src/events.rs:184:9: replace Events::clear_all with ()
+astraweave-ecs/src/events.rs:188:9: replace Events::current_frame -> u64 with 0
+astraweave-ecs/src/events.rs:188:9: replace Events::current_frame -> u64 with 1
+astraweave-ecs/src/events.rs:211:9: replace EventReader<E>::read -> impl Iterator<Item =&'a E> with ::std::iter::empty()
+astraweave-ecs/src/rng.rs:151:9: replace Rng::seed -> u64 with 0
+astraweave-ecs/src/rng.rs:151:9: replace Rng::seed -> u64 with 1
+astraweave-ecs/src/rng.rs:163:9: replace Rng::gen_u32 -> u32 with 0
+astraweave-ecs/src/rng.rs:163:9: replace Rng::gen_u32 -> u32 with 1
+astraweave-ecs/src/rng.rs:175:9: replace Rng::gen_u64 -> u64 with 0
+astraweave-ecs/src/rng.rs:175:9: replace Rng::gen_u64 -> u64 with 1
+astraweave-ecs/src/rng.rs:204:9: replace Rng::gen_bool -> bool with true
+astraweave-ecs/src/rng.rs:204:9: replace Rng::gen_bool -> bool with false
+astraweave-ecs/src/rng.rs:241:9: replace <impl RngCore for Rng>::next_u64 -> u64 with 0
+astraweave-ecs/src/rng.rs:241:9: replace <impl RngCore for Rng>::next_u64 -> u64 with 1
+astraweave-ecs/src/rng.rs:245:9: replace <impl RngCore for Rng>::fill_bytes with ()
+astraweave-ecs/src/sparse_set.rs:43:9: replace SparseSet::with_capacity -> Self with Default::default()
+astraweave-ecs/src/sparse_set.rs:54:9: replace SparseSet::insert -> usize with 0
+astraweave-ecs/src/sparse_set.rs:54:9: replace SparseSet::insert -> usize with 1
+astraweave-ecs/src/sparse_set.rs:62:15: replace >= with < in SparseSet::insert
+astraweave-ecs/src/sparse_set.rs:63:35: replace + with - in SparseSet::insert
+astraweave-ecs/src/sparse_set.rs:63:35: replace + with * in SparseSet::insert
+astraweave-ecs/src/sparse_set.rs:78:9: replace SparseSet::get -> Option<usize> with None
+astraweave-ecs/src/sparse_set.rs:78:9: replace SparseSet::get -> Option<usize> with Some(0)
+astraweave-ecs/src/sparse_set.rs:78:9: replace SparseSet::get -> Option<usize> with Some(1)
+astraweave-ecs/src/sparse_set.rs:84:9: replace SparseSet::contains -> bool with true
+astraweave-ecs/src/sparse_set.rs:84:9: replace SparseSet::contains -> bool with false
+astraweave-ecs/src/sparse_set.rs:92:9: replace SparseSet::remove -> Option<usize> with None
+astraweave-ecs/src/sparse_set.rs:92:9: replace SparseSet::remove -> Option<usize> with Some(0)
+astraweave-ecs/src/sparse_set.rs:92:9: replace SparseSet::remove -> Option<usize> with Some(1)
+astraweave-ecs/src/sparse_set.rs:97:43: replace - with + in SparseSet::remove
+astraweave-ecs/src/sparse_set.rs:97:43: replace - with / in SparseSet::remove
+astraweave-ecs/src/sparse_set.rs:99:24: replace != with == in SparseSet::remove
+astraweave-ecs/src/sparse_set.rs:113:9: replace SparseSet::len -> usize with 0
+astraweave-ecs/src/sparse_set.rs:113:9: replace SparseSet::len -> usize with 1
+astraweave-ecs/src/sparse_set.rs:118:9: replace SparseSet::is_empty -> bool with false
+astraweave-ecs/src/sparse_set.rs:130:9: replace SparseSet::clear with ()
+astraweave-ecs/src/sparse_set.rs:136:9: replace SparseSet::capacity -> usize with 0
+astraweave-ecs/src/sparse_set.rs:136:9: replace SparseSet::capacity -> usize with 1
+astraweave-ecs/src/sparse_set.rs:141:9: replace SparseSet::reserve with ()

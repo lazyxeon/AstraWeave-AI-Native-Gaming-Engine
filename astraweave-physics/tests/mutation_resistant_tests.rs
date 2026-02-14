@@ -6,11 +6,11 @@
 
 #![cfg(test)]
 
+use astraweave_physics::gravity::{BodyGravitySettings, GravityZoneShape};
 use astraweave_physics::projectile::FalloffCurve;
 use astraweave_physics::vehicle::{
     EngineConfig, FrictionCurve, TransmissionConfig, WheelConfig, WheelPosition,
 };
-use astraweave_physics::gravity::{GravityZoneShape, BodyGravitySettings};
 use glam::Vec3;
 
 // =============================================================================
@@ -25,7 +25,11 @@ mod falloff_curve_tests {
     fn linear_at_center_returns_exactly_1() {
         let curve = FalloffCurve::Linear;
         let result = curve.calculate(0.0, 10.0);
-        assert!((result - 1.0).abs() < 1e-6, "Linear at center should be exactly 1.0, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 1e-6,
+            "Linear at center should be exactly 1.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -33,7 +37,11 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Linear;
         let result = curve.calculate(5.0, 10.0);
         // Linear formula: 1.0 - (5.0 / 10.0) = 1.0 - 0.5 = 0.5
-        assert!((result - 0.5).abs() < 1e-6, "Linear at half radius should be 0.5, got {}", result);
+        assert!(
+            (result - 0.5).abs() < 1e-6,
+            "Linear at half radius should be 0.5, got {}",
+            result
+        );
     }
 
     #[test]
@@ -41,7 +49,11 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Linear;
         let result = curve.calculate(2.5, 10.0);
         // Linear formula: 1.0 - (2.5 / 10.0) = 1.0 - 0.25 = 0.75
-        assert!((result - 0.75).abs() < 1e-6, "Linear at quarter radius should be 0.75, got {}", result);
+        assert!(
+            (result - 0.75).abs() < 1e-6,
+            "Linear at quarter radius should be 0.75, got {}",
+            result
+        );
     }
 
     #[test]
@@ -49,14 +61,22 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Linear;
         let result = curve.calculate(10.0, 10.0);
         // Linear formula: 1.0 - (10.0 / 10.0) = 1.0 - 1.0 = 0.0
-        assert!((result - 0.0).abs() < 1e-6, "Linear at edge should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Linear at edge should be 0.0, got {}",
+            result
+        );
     }
 
     #[test]
     fn linear_beyond_radius_returns_0() {
         let curve = FalloffCurve::Linear;
         let result = curve.calculate(15.0, 10.0);
-        assert!((result - 0.0).abs() < 1e-6, "Linear beyond radius should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Linear beyond radius should be 0.0, got {}",
+            result
+        );
     }
 
     // --- Quadratic Curve ---
@@ -64,7 +84,11 @@ mod falloff_curve_tests {
     fn quadratic_at_center_returns_exactly_1() {
         let curve = FalloffCurve::Quadratic;
         let result = curve.calculate(0.0, 10.0);
-        assert!((result - 1.0).abs() < 1e-6, "Quadratic at center should be 1.0, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 1e-6,
+            "Quadratic at center should be 1.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -72,7 +96,11 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Quadratic;
         let result = curve.calculate(5.0, 10.0);
         // Quadratic formula: 1.0 - (0.5)^2 = 1.0 - 0.25 = 0.75
-        assert!((result - 0.75).abs() < 1e-6, "Quadratic at half radius should be 0.75, got {}", result);
+        assert!(
+            (result - 0.75).abs() < 1e-6,
+            "Quadratic at half radius should be 0.75, got {}",
+            result
+        );
     }
 
     #[test]
@@ -80,7 +108,11 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Quadratic;
         let result = curve.calculate(2.5, 10.0);
         // Quadratic formula: 1.0 - (0.25)^2 = 1.0 - 0.0625 = 0.9375
-        assert!((result - 0.9375).abs() < 1e-6, "Quadratic at quarter radius should be 0.9375, got {}", result);
+        assert!(
+            (result - 0.9375).abs() < 1e-6,
+            "Quadratic at quarter radius should be 0.9375, got {}",
+            result
+        );
     }
 
     #[test]
@@ -88,14 +120,22 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Quadratic;
         let result = curve.calculate(7.5, 10.0);
         // Quadratic formula: 1.0 - (0.75)^2 = 1.0 - 0.5625 = 0.4375
-        assert!((result - 0.4375).abs() < 1e-6, "Quadratic at 3/4 radius should be 0.4375, got {}", result);
+        assert!(
+            (result - 0.4375).abs() < 1e-6,
+            "Quadratic at 3/4 radius should be 0.4375, got {}",
+            result
+        );
     }
 
     #[test]
     fn quadratic_at_edge_returns_exactly_0() {
         let curve = FalloffCurve::Quadratic;
         let result = curve.calculate(10.0, 10.0);
-        assert!((result - 0.0).abs() < 1e-6, "Quadratic at edge should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Quadratic at edge should be 0.0, got {}",
+            result
+        );
     }
 
     // --- Exponential Curve ---
@@ -104,7 +144,11 @@ mod falloff_curve_tests {
         let curve = FalloffCurve::Exponential;
         let result = curve.calculate(0.0, 10.0);
         // e^(-0 * 3) = e^0 = 1.0
-        assert!((result - 1.0).abs() < 1e-6, "Exponential at center should be 1.0, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 1e-6,
+            "Exponential at center should be 1.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -113,7 +157,12 @@ mod falloff_curve_tests {
         let result = curve.calculate(5.0, 10.0);
         // e^(-0.5 * 3) = e^(-1.5) ≈ 0.2231
         let expected = (-1.5_f32).exp();
-        assert!((result - expected).abs() < 1e-4, "Exponential at half radius should be {}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 1e-4,
+            "Exponential at half radius should be {}, got {}",
+            expected,
+            result
+        );
     }
 
     #[test]
@@ -122,16 +171,26 @@ mod falloff_curve_tests {
         let result = curve.calculate(10.0 / 3.0, 10.0);
         // e^(-(1/3) * 3) = e^(-1) ≈ 0.3679
         let expected = (-1.0_f32).exp();
-        assert!((result - expected).abs() < 1e-4, "Exponential at 1/3 radius should be {}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 1e-4,
+            "Exponential at 1/3 radius should be {}, got {}",
+            expected,
+            result
+        );
     }
 
     #[test]
     fn exponential_at_edge_returns_exp_minus_3() {
         let curve = FalloffCurve::Exponential;
-        let result = curve.calculate(9.999, 10.0);  // Just inside radius
-        // e^(-1 * 3) = e^(-3) ≈ 0.0498
+        let result = curve.calculate(9.999, 10.0); // Just inside radius
+                                                   // e^(-1 * 3) = e^(-3) ≈ 0.0498
         let expected = (-3.0_f32).exp();
-        assert!((result - expected).abs() < 0.01, "Exponential at edge should be ~{}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 0.01,
+            "Exponential at edge should be ~{}, got {}",
+            expected,
+            result
+        );
     }
 
     // --- Constant Curve ---
@@ -139,49 +198,84 @@ mod falloff_curve_tests {
     fn constant_at_center_returns_exactly_1() {
         let curve = FalloffCurve::Constant;
         let result = curve.calculate(0.0, 10.0);
-        assert!((result - 1.0).abs() < 1e-6, "Constant at center should be 1.0, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 1e-6,
+            "Constant at center should be 1.0, got {}",
+            result
+        );
     }
 
     #[test]
     fn constant_at_half_radius_returns_exactly_1() {
         let curve = FalloffCurve::Constant;
         let result = curve.calculate(5.0, 10.0);
-        assert!((result - 1.0).abs() < 1e-6, "Constant at half radius should be 1.0, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 1e-6,
+            "Constant at half radius should be 1.0, got {}",
+            result
+        );
     }
 
     #[test]
     fn constant_at_almost_edge_returns_exactly_1() {
         let curve = FalloffCurve::Constant;
         let result = curve.calculate(9.99, 10.0);
-        assert!((result - 1.0).abs() < 1e-6, "Constant at 99.9% radius should be 1.0, got {}", result);
+        assert!(
+            (result - 1.0).abs() < 1e-6,
+            "Constant at 99.9% radius should be 1.0, got {}",
+            result
+        );
     }
 
     #[test]
     fn constant_beyond_radius_returns_0() {
         let curve = FalloffCurve::Constant;
         let result = curve.calculate(10.0, 10.0);
-        assert!((result - 0.0).abs() < 1e-6, "Constant at edge should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Constant at edge should be 0.0, got {}",
+            result
+        );
     }
 
     // --- Edge Cases ---
     #[test]
     fn zero_radius_at_zero_distance_returns_1() {
         // When radius <= 0, the implementation returns 1.0 for all curves
-        for curve in [FalloffCurve::Linear, FalloffCurve::Quadratic, FalloffCurve::Constant, FalloffCurve::Exponential] {
+        for curve in [
+            FalloffCurve::Linear,
+            FalloffCurve::Quadratic,
+            FalloffCurve::Constant,
+            FalloffCurve::Exponential,
+        ] {
             let result = curve.calculate(0.0, 0.0);
             // Per implementation: if radius <= 0.0 { return 1.0; }
             // But also: if distance >= radius { return 0.0; } is checked first
             // So when distance=0, radius=0: distance >= radius is true, returns 0.0
-            assert!((result - 0.0).abs() < 1e-6, "{:?} with zero radius and zero distance returns 0.0 (distance >= radius), got {}", curve, result);
+            assert!(
+                (result - 0.0).abs() < 1e-6,
+                "{:?} with zero radius and zero distance returns 0.0 (distance >= radius), got {}",
+                curve,
+                result
+            );
         }
     }
 
     #[test]
     fn tiny_radius_returns_1_at_center() {
         // With a very small non-zero radius, center should return 1.0
-        for curve in [FalloffCurve::Linear, FalloffCurve::Quadratic, FalloffCurve::Constant] {
+        for curve in [
+            FalloffCurve::Linear,
+            FalloffCurve::Quadratic,
+            FalloffCurve::Constant,
+        ] {
             let result = curve.calculate(0.0, 0.001);
-            assert!((result - 1.0).abs() < 1e-6, "{:?} with tiny radius at center should return 1.0, got {}", curve, result);
+            assert!(
+                (result - 1.0).abs() < 1e-6,
+                "{:?} with tiny radius at center should return 1.0, got {}",
+                curve,
+                result
+            );
         }
     }
 }
@@ -203,7 +297,11 @@ mod engine_torque_tests {
             engine_braking: 0.3,
         };
         let result = engine.torque_at_rpm(799.0);
-        assert!((result - 0.0).abs() < 1e-6, "Torque below idle should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Torque below idle should be 0.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -217,7 +315,11 @@ mod engine_torque_tests {
         };
         // At exactly idle: normalized = 0, so (1 - (1-0)^2) = 0
         let result = engine.torque_at_rpm(800.0);
-        assert!((result - 0.0).abs() < 1e-6, "Torque at exactly idle should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Torque at exactly idle should be 0.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -231,7 +333,11 @@ mod engine_torque_tests {
         };
         let result = engine.torque_at_rpm(4500.0);
         // At max_torque_rpm: normalized = 1.0, so max_torque * (1 - (1-1)^2) = max_torque * 1 = 400
-        assert!((result - 400.0).abs() < 1.0, "Torque at peak RPM should be ~400.0, got {}", result);
+        assert!(
+            (result - 400.0).abs() < 1.0,
+            "Torque at peak RPM should be ~400.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -245,7 +351,11 @@ mod engine_torque_tests {
         };
         let result = engine.torque_at_rpm(7000.0);
         // At max_rpm: falloff = 1.0, so max_torque * (1 - 1^2) = 0
-        assert!((result - 0.0).abs() < 1.0, "Torque at max RPM should be ~0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1.0,
+            "Torque at max RPM should be ~0.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -258,7 +368,11 @@ mod engine_torque_tests {
             engine_braking: 0.3,
         };
         let result = engine.torque_at_rpm(8000.0);
-        assert!((result - 0.0).abs() < 1e-6, "Torque above max RPM should be 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Torque above max RPM should be 0.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -274,7 +388,11 @@ mod engine_torque_tests {
         // normalized = (2650 - 800) / (4500 - 800) = 1850 / 3700 = 0.5
         // torque = 400 * (1 - (1 - 0.5)^2) = 400 * (1 - 0.25) = 400 * 0.75 = 300
         let result = engine.torque_at_rpm(2650.0);
-        assert!((result - 300.0).abs() < 5.0, "Torque at midpoint rising should be ~300.0, got {}", result);
+        assert!(
+            (result - 300.0).abs() < 5.0,
+            "Torque at midpoint rising should be ~300.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -290,7 +408,11 @@ mod engine_torque_tests {
         // falloff = (5750 - 4500) / (7000 - 4500) = 1250 / 2500 = 0.5
         // torque = 400 * max(0, 1 - 0.5^2) = 400 * 0.75 = 300
         let result = engine.torque_at_rpm(5750.0);
-        assert!((result - 300.0).abs() < 5.0, "Torque at midpoint falling should be ~300.0, got {}", result);
+        assert!(
+            (result - 300.0).abs() < 5.0,
+            "Torque at midpoint falling should be ~300.0, got {}",
+            result
+        );
     }
 }
 
@@ -305,7 +427,11 @@ mod transmission_tests {
     fn neutral_gear_returns_exactly_0() {
         let trans = TransmissionConfig::default();
         let result = trans.effective_ratio(0);
-        assert!((result - 0.0).abs() < 1e-6, "Neutral should have 0.0 ratio, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Neutral should have 0.0 ratio, got {}",
+            result
+        );
     }
 
     #[test]
@@ -318,7 +444,11 @@ mod transmission_tests {
         };
         // First gear: 3.5 * 3.7 = 12.95
         let result = trans.effective_ratio(1);
-        assert!((result - 12.95).abs() < 0.01, "First gear should be 12.95, got {}", result);
+        assert!(
+            (result - 12.95).abs() < 0.01,
+            "First gear should be 12.95, got {}",
+            result
+        );
     }
 
     #[test]
@@ -331,7 +461,11 @@ mod transmission_tests {
         };
         // Second gear: 2.1 * 3.7 = 7.77
         let result = trans.effective_ratio(2);
-        assert!((result - 7.77).abs() < 0.01, "Second gear should be 7.77, got {}", result);
+        assert!(
+            (result - 7.77).abs() < 0.01,
+            "Second gear should be 7.77, got {}",
+            result
+        );
     }
 
     #[test]
@@ -344,7 +478,11 @@ mod transmission_tests {
         };
         // Sixth gear: 0.65 * 3.7 = 2.405
         let result = trans.effective_ratio(6);
-        assert!((result - 2.405).abs() < 0.01, "Sixth gear should be 2.405, got {}", result);
+        assert!(
+            (result - 2.405).abs() < 0.01,
+            "Sixth gear should be 2.405, got {}",
+            result
+        );
     }
 
     #[test]
@@ -357,20 +495,28 @@ mod transmission_tests {
         };
         // Reverse: -3.2 * 3.7 = -11.84
         let result = trans.effective_ratio(-1);
-        assert!((result - (-11.84)).abs() < 0.01, "Reverse should be -11.84, got {}", result);
+        assert!(
+            (result - (-11.84)).abs() < 0.01,
+            "Reverse should be -11.84, got {}",
+            result
+        );
     }
 
     #[test]
     fn out_of_range_gear_returns_1_times_final_drive() {
         let trans = TransmissionConfig {
-            gear_ratios: vec![3.5, 2.1, 1.4],  // Only 3 gears
+            gear_ratios: vec![3.5, 2.1, 1.4], // Only 3 gears
             reverse_ratio: -3.2,
             final_drive: 3.7,
             shift_time: 0.2,
         };
         // Gear 4 doesn't exist, so ratio = 1.0 * 3.7 = 3.7
         let result = trans.effective_ratio(4);
-        assert!((result - 3.7).abs() < 0.01, "Out-of-range gear should use 1.0 ratio = 3.7, got {}", result);
+        assert!(
+            (result - 3.7).abs() < 0.01,
+            "Out-of-range gear should use 1.0 ratio = 3.7, got {}",
+            result
+        );
     }
 
     #[test]
@@ -395,51 +541,107 @@ mod friction_curve_tests {
     #[test]
     fn tarmac_preset_has_correct_values() {
         let curve = FrictionCurve::tarmac();
-        assert!((curve.optimal_slip - 0.08).abs() < 1e-6, "Tarmac optimal slip should be 0.08");
-        assert!((curve.peak_friction - 1.2).abs() < 1e-6, "Tarmac peak friction should be 1.2");
-        assert!((curve.sliding_friction - 0.9).abs() < 1e-6, "Tarmac sliding friction should be 0.9");
-        assert!((curve.stiffness - 12.0).abs() < 1e-6, "Tarmac stiffness should be 12.0");
+        assert!(
+            (curve.optimal_slip - 0.08).abs() < 1e-6,
+            "Tarmac optimal slip should be 0.08"
+        );
+        assert!(
+            (curve.peak_friction - 1.2).abs() < 1e-6,
+            "Tarmac peak friction should be 1.2"
+        );
+        assert!(
+            (curve.sliding_friction - 0.9).abs() < 1e-6,
+            "Tarmac sliding friction should be 0.9"
+        );
+        assert!(
+            (curve.stiffness - 12.0).abs() < 1e-6,
+            "Tarmac stiffness should be 12.0"
+        );
     }
 
     #[test]
     fn ice_preset_has_correct_values() {
         let curve = FrictionCurve::ice();
-        assert!((curve.optimal_slip - 0.05).abs() < 1e-6, "Ice optimal slip should be 0.05");
-        assert!((curve.peak_friction - 0.3).abs() < 1e-6, "Ice peak friction should be 0.3");
-        assert!((curve.sliding_friction - 0.15).abs() < 1e-6, "Ice sliding friction should be 0.15");
-        assert!((curve.stiffness - 20.0).abs() < 1e-6, "Ice stiffness should be 20.0");
+        assert!(
+            (curve.optimal_slip - 0.05).abs() < 1e-6,
+            "Ice optimal slip should be 0.05"
+        );
+        assert!(
+            (curve.peak_friction - 0.3).abs() < 1e-6,
+            "Ice peak friction should be 0.3"
+        );
+        assert!(
+            (curve.sliding_friction - 0.15).abs() < 1e-6,
+            "Ice sliding friction should be 0.15"
+        );
+        assert!(
+            (curve.stiffness - 20.0).abs() < 1e-6,
+            "Ice stiffness should be 20.0"
+        );
     }
 
     #[test]
     fn gravel_preset_has_correct_values() {
         let curve = FrictionCurve::gravel();
-        assert!((curve.optimal_slip - 0.15).abs() < 1e-6, "Gravel optimal slip should be 0.15");
-        assert!((curve.peak_friction - 0.8).abs() < 1e-6, "Gravel peak friction should be 0.8");
-        assert!((curve.sliding_friction - 0.6).abs() < 1e-6, "Gravel sliding friction should be 0.6");
-        assert!((curve.stiffness - 6.0).abs() < 1e-6, "Gravel stiffness should be 6.0");
+        assert!(
+            (curve.optimal_slip - 0.15).abs() < 1e-6,
+            "Gravel optimal slip should be 0.15"
+        );
+        assert!(
+            (curve.peak_friction - 0.8).abs() < 1e-6,
+            "Gravel peak friction should be 0.8"
+        );
+        assert!(
+            (curve.sliding_friction - 0.6).abs() < 1e-6,
+            "Gravel sliding friction should be 0.6"
+        );
+        assert!(
+            (curve.stiffness - 6.0).abs() < 1e-6,
+            "Gravel stiffness should be 6.0"
+        );
     }
 
     #[test]
     fn mud_preset_has_correct_values() {
         let curve = FrictionCurve::mud();
-        assert!((curve.optimal_slip - 0.2).abs() < 1e-6, "Mud optimal slip should be 0.2");
-        assert!((curve.peak_friction - 0.5).abs() < 1e-6, "Mud peak friction should be 0.5");
-        assert!((curve.sliding_friction - 0.4).abs() < 1e-6, "Mud sliding friction should be 0.4");
-        assert!((curve.stiffness - 4.0).abs() < 1e-6, "Mud stiffness should be 4.0");
+        assert!(
+            (curve.optimal_slip - 0.2).abs() < 1e-6,
+            "Mud optimal slip should be 0.2"
+        );
+        assert!(
+            (curve.peak_friction - 0.5).abs() < 1e-6,
+            "Mud peak friction should be 0.5"
+        );
+        assert!(
+            (curve.sliding_friction - 0.4).abs() < 1e-6,
+            "Mud sliding friction should be 0.4"
+        );
+        assert!(
+            (curve.stiffness - 4.0).abs() < 1e-6,
+            "Mud stiffness should be 4.0"
+        );
     }
 
     #[test]
     fn zero_slip_returns_zero_friction() {
         let curve = FrictionCurve::tarmac();
         let result = curve.friction_at_slip(0.0);
-        assert!((result - 0.0).abs() < 1e-6, "Zero slip should produce zero friction, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Zero slip should produce zero friction, got {}",
+            result
+        );
     }
 
     #[test]
     fn very_small_slip_returns_zero_friction() {
         let curve = FrictionCurve::tarmac();
         let result = curve.friction_at_slip(0.0005);
-        assert!((result - 0.0).abs() < 1e-6, "Slip < 0.001 should return 0.0, got {}", result);
+        assert!(
+            (result - 0.0).abs() < 1e-6,
+            "Slip < 0.001 should return 0.0, got {}",
+            result
+        );
     }
 
     #[test]
@@ -447,7 +649,10 @@ mod friction_curve_tests {
         let curve = FrictionCurve::tarmac();
         let positive = curve.friction_at_slip(0.04);
         let negative = curve.friction_at_slip(-0.04);
-        assert!((positive - negative).abs() < 1e-6, "Negative slip should behave same as positive");
+        assert!(
+            (positive - negative).abs() < 1e-6,
+            "Negative slip should behave same as positive"
+        );
     }
 
     #[test]
@@ -457,18 +662,30 @@ mod friction_curve_tests {
         // = 1.2 * (1 - e^(-12)) ≈ 1.2 * 0.999994 ≈ 1.1999
         let result = curve.friction_at_slip(curve.optimal_slip);
         let expected = curve.peak_friction * (1.0 - (-curve.stiffness).exp());
-        assert!((result - expected).abs() < 0.01, "Friction at optimal slip should be ~{}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 0.01,
+            "Friction at optimal slip should be ~{}, got {}",
+            expected,
+            result
+        );
     }
 
     #[test]
     fn high_slip_decay_toward_sliding_friction() {
         let curve = FrictionCurve::tarmac();
         // At very high slip (x >> 1), friction should approach sliding_friction
-        let result = curve.friction_at_slip(0.5);  // Way past optimal 0.08
-        // x = 0.5 / 0.08 = 6.25, so decay = min((6.25-1)*2, 1) = min(10.5, 1) = 1
-        // friction = peak - (peak - slide) * 1 = 1.2 - (1.2 - 0.9) * 1 = 0.9
-        assert!(result < curve.peak_friction, "High slip friction should be below peak");
-        assert!(result >= curve.sliding_friction - 0.05, "High slip friction should approach sliding: {}", result);
+        let result = curve.friction_at_slip(0.5); // Way past optimal 0.08
+                                                  // x = 0.5 / 0.08 = 6.25, so decay = min((6.25-1)*2, 1) = min(10.5, 1) = 1
+                                                  // friction = peak - (peak - slide) * 1 = 1.2 - (1.2 - 0.9) * 1 = 0.9
+        assert!(
+            result < curve.peak_friction,
+            "High slip friction should be below peak"
+        );
+        assert!(
+            result >= curve.sliding_friction - 0.05,
+            "High slip friction should approach sliding: {}",
+            result
+        );
     }
 }
 
@@ -482,38 +699,56 @@ mod wheel_config_tests {
     #[test]
     fn default_radius_is_0_35() {
         let wheel = WheelConfig::default();
-        assert!((wheel.radius - 0.35).abs() < 1e-6, "Default radius should be 0.35");
+        assert!(
+            (wheel.radius - 0.35).abs() < 1e-6,
+            "Default radius should be 0.35"
+        );
     }
 
     #[test]
     fn default_width_is_0_25() {
         let wheel = WheelConfig::default();
-        assert!((wheel.width - 0.25).abs() < 1e-6, "Default width should be 0.25");
+        assert!(
+            (wheel.width - 0.25).abs() < 1e-6,
+            "Default width should be 0.25"
+        );
     }
 
     #[test]
     fn default_suspension_rest_length_is_0_3() {
         let wheel = WheelConfig::default();
-        assert!((wheel.suspension_rest_length - 0.3).abs() < 1e-6, "Default rest length should be 0.3");
+        assert!(
+            (wheel.suspension_rest_length - 0.3).abs() < 1e-6,
+            "Default rest length should be 0.3"
+        );
     }
 
     #[test]
     fn default_suspension_stiffness_is_35000() {
         let wheel = WheelConfig::default();
-        assert!((wheel.suspension_stiffness - 35000.0).abs() < 1e-6, "Default stiffness should be 35000");
+        assert!(
+            (wheel.suspension_stiffness - 35000.0).abs() < 1e-6,
+            "Default stiffness should be 35000"
+        );
     }
 
     #[test]
     fn default_suspension_damping_is_4500() {
         let wheel = WheelConfig::default();
-        assert!((wheel.suspension_damping - 4500.0).abs() < 1e-6, "Default damping should be 4500");
+        assert!(
+            (wheel.suspension_damping - 4500.0).abs() < 1e-6,
+            "Default damping should be 4500"
+        );
     }
 
     #[test]
     fn front_left_is_steerable_not_driven() {
         let wheel = WheelConfig::front_left(Vec3::ZERO);
         assert!(wheel.steerable, "Front left should be steerable");
-        assert!(!wheel.driven, "Front left should not be driven (FWD sets this)");
+        assert!(
+            !wheel.driven,
+            "Front left should not be driven (FWD sets this)"
+        );
         assert_eq!(wheel.position_id, WheelPosition::FrontLeft);
     }
 
@@ -534,7 +769,10 @@ mod wheel_config_tests {
     #[test]
     fn with_radius_sets_correct_value() {
         let wheel = WheelConfig::default().with_radius(0.4);
-        assert!((wheel.radius - 0.4).abs() < 1e-6, "with_radius should set radius = 0.4");
+        assert!(
+            (wheel.radius - 0.4).abs() < 1e-6,
+            "with_radius should set radius = 0.4"
+        );
     }
 
     #[test]
@@ -568,8 +806,14 @@ mod gravity_zone_tests {
             min: Vec3::new(-5.0, -5.0, -5.0),
             max: Vec3::new(5.0, 5.0, 5.0),
         };
-        assert!(shape.contains(Vec3::new(5.0, 5.0, 5.0)), "Box should contain max corner");
-        assert!(shape.contains(Vec3::new(-5.0, -5.0, -5.0)), "Box should contain min corner");
+        assert!(
+            shape.contains(Vec3::new(5.0, 5.0, 5.0)),
+            "Box should contain max corner"
+        );
+        assert!(
+            shape.contains(Vec3::new(-5.0, -5.0, -5.0)),
+            "Box should contain min corner"
+        );
     }
 
     #[test]
@@ -578,8 +822,14 @@ mod gravity_zone_tests {
             min: Vec3::new(-5.0, -5.0, -5.0),
             max: Vec3::new(5.0, 5.0, 5.0),
         };
-        assert!(!shape.contains(Vec3::new(5.1, 0.0, 0.0)), "Box should not contain point outside +X");
-        assert!(!shape.contains(Vec3::new(-5.1, 0.0, 0.0)), "Box should not contain point outside -X");
+        assert!(
+            !shape.contains(Vec3::new(5.1, 0.0, 0.0)),
+            "Box should not contain point outside +X"
+        );
+        assert!(
+            !shape.contains(Vec3::new(-5.1, 0.0, 0.0)),
+            "Box should not contain point outside -X"
+        );
     }
 
     #[test]
@@ -588,7 +838,10 @@ mod gravity_zone_tests {
             center: Vec3::ZERO,
             radius: 10.0,
         };
-        assert!(shape.contains(Vec3::ZERO), "Sphere should contain its center");
+        assert!(
+            shape.contains(Vec3::ZERO),
+            "Sphere should contain its center"
+        );
     }
 
     #[test]
@@ -597,7 +850,10 @@ mod gravity_zone_tests {
             center: Vec3::ZERO,
             radius: 10.0,
         };
-        assert!(shape.contains(Vec3::new(10.0, 0.0, 0.0)), "Sphere should contain point at radius");
+        assert!(
+            shape.contains(Vec3::new(10.0, 0.0, 0.0)),
+            "Sphere should contain point at radius"
+        );
     }
 
     #[test]
@@ -607,24 +863,36 @@ mod gravity_zone_tests {
             radius: 10.0,
         };
         // sqrt(8^2 + 8^2) = sqrt(128) ≈ 11.3 > 10
-        assert!(!shape.contains(Vec3::new(8.0, 8.0, 0.0)), "Sphere should not contain point at distance 11.3");
+        assert!(
+            !shape.contains(Vec3::new(8.0, 8.0, 0.0)),
+            "Sphere should not contain point at distance 11.3"
+        );
     }
 
     #[test]
     fn body_gravity_settings_default_scale_is_1() {
         let settings = BodyGravitySettings::default();
-        assert!((settings.scale - 1.0).abs() < 1e-6, "Default gravity scale should be 1.0");
+        assert!(
+            (settings.scale - 1.0).abs() < 1e-6,
+            "Default gravity scale should be 1.0"
+        );
     }
 
     #[test]
     fn body_gravity_settings_default_ignore_zones_is_false() {
         let settings = BodyGravitySettings::default();
-        assert!(!settings.ignore_zones, "Default ignore_zones should be false");
+        assert!(
+            !settings.ignore_zones,
+            "Default ignore_zones should be false"
+        );
     }
 
     #[test]
     fn body_gravity_settings_default_custom_direction_is_none() {
         let settings = BodyGravitySettings::default();
-        assert!(settings.custom_direction.is_none(), "Default custom_direction should be None");
+        assert!(
+            settings.custom_direction.is_none(),
+            "Default custom_direction should be None"
+        );
     }
 }

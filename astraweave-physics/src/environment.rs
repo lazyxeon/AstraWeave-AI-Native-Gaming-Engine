@@ -131,9 +131,7 @@ impl WindZone {
                     && local.y.abs() <= half_extents.y
                     && local.z.abs() <= half_extents.z
             }
-            WindZoneShape::Sphere { radius } => {
-                (point - self.config.position).length() <= radius
-            }
+            WindZoneShape::Sphere { radius } => (point - self.config.position).length() <= radius,
             WindZoneShape::Cylinder { radius, height } => {
                 let local = point - self.config.position;
                 let horizontal_dist = Vec3::new(local.x, 0.0, local.z).length();
@@ -209,12 +207,10 @@ impl WindZone {
             WindZoneShape::Global => 0.0,
             WindZoneShape::Box { half_extents } => {
                 let local = (point - self.config.position).abs();
-                
+
                 (local / half_extents).max_element()
             }
-            WindZoneShape::Sphere { radius } => {
-                (point - self.config.position).length() / radius
-            }
+            WindZoneShape::Sphere { radius } => (point - self.config.position).length() / radius,
             WindZoneShape::Cylinder { radius, height } => {
                 let local = point - self.config.position;
                 let horizontal_dist = Vec3::new(local.x, 0.0, local.z).length() / radius;
@@ -487,7 +483,8 @@ impl EnvironmentManager {
 
     /// Trigger a gust event
     pub fn trigger_gust(&mut self, direction: Vec3, strength: f32, duration: f32) {
-        self.gusts.push(GustEvent::new(direction, strength, duration));
+        self.gusts
+            .push(GustEvent::new(direction, strength, duration));
     }
 
     /// Get current gust force
@@ -804,7 +801,10 @@ mod tests {
 
         // Small step forward - should have strength now
         gust.update(0.1);
-        assert!(gust.current_strength() > 0.0, "Gust should have strength after starting");
+        assert!(
+            gust.current_strength() > 0.0,
+            "Gust should have strength after starting"
+        );
 
         // Mid-gust
         gust.update(0.4);
@@ -859,7 +859,10 @@ mod tests {
 
         // Half submerged (center at surface)
         let half = water.sphere_submerged_fraction(Vec3::new(0.0, 10.0, 0.0), 2.0);
-        assert!(half > 0.4 && half < 0.6, "Should be approximately half submerged");
+        assert!(
+            half > 0.4 && half < 0.6,
+            "Should be approximately half submerged"
+        );
     }
 
     #[test]
@@ -914,7 +917,10 @@ mod tests {
         // Advance time slightly for gust attack envelope to ramp up
         manager.update(0.1);
         let gust_force = manager.current_gust_force();
-        assert!(gust_force.length() > 0.0, "Gust should produce force after ramp");
+        assert!(
+            gust_force.length() > 0.0,
+            "Gust should produce force after ramp"
+        );
 
         // After duration, gust should be removed
         manager.update(1.1);
@@ -1001,7 +1007,9 @@ mod tests {
     fn test_wind_zone_falloff_shapes() {
         // Box falloff
         let config_box = WindZoneConfig {
-            shape: WindZoneShape::Box { half_extents: Vec3::ONE * 10.0 },
+            shape: WindZoneShape::Box {
+                half_extents: Vec3::ONE * 10.0,
+            },
             falloff: 1.0,
             ..Default::default()
         };
@@ -1011,7 +1019,10 @@ mod tests {
 
         // Cylinder falloff
         let config_cyl = WindZoneConfig {
-            shape: WindZoneShape::Cylinder { radius: 10.0, height: 10.0 },
+            shape: WindZoneShape::Cylinder {
+                radius: 10.0,
+                height: 10.0,
+            },
             falloff: 1.0,
             ..Default::default()
         };

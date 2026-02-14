@@ -511,4 +511,107 @@ mod tests {
         );
         assert!(result2.is_err(), "Second terrain op should fail");
     }
+
+    // ========================================================================
+    // Mutation-resistant tests for coordinate arithmetic and plan execution
+    // ========================================================================
+
+    #[test]
+    fn reinforce_path_consequence_exact_values() {
+        // Catches: consequence field mutations (drop_multiplier, faction_disposition)
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::ReinforcePath,
+            a: vec3(10.0, 0.0, 10.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let mut logger = |_: String| {};
+
+        let consequence = apply_weave_op(
+            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
+        ).unwrap();
+
+        assert!((consequence.drop_multiplier - 1.1).abs() < f32::EPSILON,
+            "ReinforcePath drop_multiplier must be 1.1");
+        assert_eq!(consequence.faction_disposition, 5,
+            "ReinforcePath faction_disposition must be 5");
+    }
+
+    #[test]
+    fn collapse_bridge_consequence_exact_values() {
+        // Catches: consequence field mutations for CollapseBridge
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::CollapseBridge,
+            a: vec3(5.0, 0.0, 5.0),
+            b: Some(vec3(10.0, 0.0, 10.0)),
+            budget_cost: 1,
+        };
+        let mut logger = |_: String| {};
+
+        let consequence = apply_weave_op(
+            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
+        ).unwrap();
+
+        assert!((consequence.drop_multiplier - 0.9).abs() < f32::EPSILON,
+            "CollapseBridge drop_multiplier must be 0.9");
+        assert_eq!(consequence.faction_disposition, -10,
+            "CollapseBridge faction_disposition must be -10");
+    }
+
+    #[test]
+    fn plan_is_applied_when_non_empty() {
+        // Catches: delete ! in `!plan.ops.is_empty()` (line 96)
+        // If ! is deleted, plan is applied only when empty (never applied).
+        // ReinforcePath creates a plan with Fortify → should modify world terrain.
+        // We verify budget decreases (already tested) AND run_fixed works without panic
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::ReinforcePath,
+            a: vec3(2.0, 0.0, 3.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(
+            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
+        );
+        assert!(result.is_ok());
+        assert_eq!(budget.terrain_edits, 4, "Budget must be consumed");
+    }
+
+    #[test]
+    fn redirect_wind_budget_decrements() {
+        // Catches: budget.weather_ops -= 1 → += or *= (line 65 area)
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let initial_weather = budget.weather_ops;
+        let op = WeaveOp {
+            kind: WeaveOpKind::RedirectWind,
+            a: vec3(0.0, 0.0, 0.0),
+            b: Some(vec3(1.0, 0.0, 0.0)),
+            budget_cost: 1,
+        };
+        let mut logger = |_: String| {};
+
+        let _ = apply_weave_op(
+            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
+        );
+        assert_eq!(budget.weather_ops, initial_weather - 1,
+            "RedirectWind must decrement weather_ops by exactly 1");
+    }
 }

@@ -253,7 +253,7 @@ impl ProjectileManager {
     pub fn spawn(&mut self, config: ProjectileConfig) -> ProjectileId {
         let id = self.next_id;
         self.next_id += 1;
-        
+
         let projectile = Projectile::new(id, config);
         self.projectiles.insert(id, projectile);
         id
@@ -365,8 +365,8 @@ impl ProjectileManager {
                         && projectile.config.restitution > 0.0
                     {
                         // Reflect velocity
-                        let reflect = projectile.velocity
-                            - 2.0 * projectile.velocity.dot(normal) * normal;
+                        let reflect =
+                            projectile.velocity - 2.0 * projectile.velocity.dot(normal) * normal;
                         projectile.velocity = reflect * projectile.config.restitution;
                         projectile.position = hit_pos + normal * 0.01; // Offset from surface
                         projectile.bounces += 1;
@@ -452,8 +452,9 @@ impl ProjectileManager {
                 Vec3::Y // Default to up if at center
             };
 
-            let biased_dir =
-                (radial_dir * (1.0 - config.upward_bias) + Vec3::Y * config.upward_bias).normalize();
+            let biased_dir = (radial_dir * (1.0 - config.upward_bias)
+                + Vec3::Y * config.upward_bias)
+                .normalize();
 
             let impulse = biased_dir * force_magnitude;
 
@@ -558,9 +559,17 @@ mod tests {
 
         let proj = manager.get(id).unwrap();
         // Should have fallen ~4.9m (1/2 * 9.81 * 1^2)
-        assert!(proj.position.y < 6.0, "Y should be < 6, got {}", proj.position.y);
+        assert!(
+            proj.position.y < 6.0,
+            "Y should be < 6, got {}",
+            proj.position.y
+        );
         // Should have moved ~10m horizontally
-        assert!(proj.position.x > 9.0, "X should be > 9, got {}", proj.position.x);
+        assert!(
+            proj.position.x > 9.0,
+            "X should be > 9, got {}",
+            proj.position.x
+        );
     }
 
     #[test]
@@ -608,15 +617,21 @@ mod tests {
         let id = manager.spawn(config);
 
         // Simulate hitting a wall at X=5
-        let raycast = |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
-            if origin.x < 5.0 && dir.x > 0.0 {
-                let dist = 5.0 - origin.x;
-                if dist < max {
-                    return Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), dist));
+        let raycast =
+            |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if origin.x < 5.0 && dir.x > 0.0 {
+                    let dist = 5.0 - origin.x;
+                    if dist < max {
+                        return Some((
+                            Vec3::new(5.0, 0.0, 0.0),
+                            Vec3::new(-1.0, 0.0, 0.0),
+                            Some(1),
+                            dist,
+                        ));
+                    }
                 }
-            }
-            None
-        };
+                None
+            };
 
         // First update should hit the wall
         manager.update(1.0, raycast);
@@ -642,7 +657,10 @@ mod tests {
             manager.update(1.0 / 60.0, raycast);
         }
 
-        assert!(manager.get(id).is_none(), "Projectile should have despawned");
+        assert!(
+            manager.get(id).is_none(),
+            "Projectile should have despawned"
+        );
     }
 
     #[test]
@@ -682,7 +700,10 @@ mod tests {
         assert_eq!(results.len(), 1, "Only one body should be affected");
         assert_eq!(results[0].body_id, 1);
         assert!((results[0].falloff_multiplier - 0.5).abs() < 0.01);
-        assert!(results[0].impulse.x > 0.0, "Impulse should push away from center");
+        assert!(
+            results[0].impulse.x > 0.0,
+            "Impulse should push away from center"
+        );
     }
 
     #[test]
@@ -701,7 +722,10 @@ mod tests {
 
         assert_eq!(results.len(), 1);
         // With full upward bias, impulse should be purely vertical
-        assert!(results[0].impulse.y > 900.0, "Impulse should be mostly upward");
+        assert!(
+            results[0].impulse.y > 900.0,
+            "Impulse should be mostly upward"
+        );
     }
 
     #[test]
@@ -727,7 +751,12 @@ mod tests {
 
         // Mock raycast that hits at distance 5
         let raycast = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
-            Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), 5.0))
+            Some((
+                Vec3::new(5.0, 0.0, 0.0),
+                Vec3::new(-1.0, 0.0, 0.0),
+                Some(1),
+                5.0,
+            ))
         };
 
         let hit = manager.hitscan(Vec3::ZERO, Vec3::X, 100.0, raycast);
@@ -789,16 +818,22 @@ mod tests {
         }
 
         let proj = manager.get(id).unwrap();
-        assert!((proj.position.x - 10.0).abs() < 0.1, 
-            "Should travel ~10m, got {}", proj.position.x);
-        assert!((proj.position.y - 0.0).abs() < 0.001, 
-            "Y should be 0, got {}", proj.position.y);
+        assert!(
+            (proj.position.x - 10.0).abs() < 0.1,
+            "Should travel ~10m, got {}",
+            proj.position.x
+        );
+        assert!(
+            (proj.position.y - 0.0).abs() < 0.001,
+            "Y should be 0, got {}",
+            proj.position.y
+        );
     }
 
     #[test]
     fn test_ballistics_parabolic_arc() {
         let mut manager = ProjectileManager::new();
-        
+
         // Classic 45-degree launch
         let speed = 20.0;
         let angle = std::f32::consts::FRAC_PI_4; // 45 degrees
@@ -825,14 +860,17 @@ mod tests {
 
         // Peak height for 45-degree launch: h = v^2 * sin^2(45) / (2g)
         // h = 20^2 * 0.5 / (2 * 9.81) ≈ 10.2
-        assert!(max_y > 8.0 && max_y < 12.0, 
-            "Peak should be ~10m, got {}", max_y);
+        assert!(
+            max_y > 8.0 && max_y < 12.0,
+            "Peak should be ~10m, got {}",
+            max_y
+        );
     }
 
     #[test]
     fn test_ballistics_range_calculation() {
         let mut manager = ProjectileManager::new();
-        
+
         // 45-degree launch for max range
         let speed = 20.0;
         let angle = std::f32::consts::FRAC_PI_4;
@@ -847,16 +885,17 @@ mod tests {
         let id = manager.spawn(config);
 
         // Ground plane raycast
-        let raycast = |origin: Vec3, dir: Vec3, max_dist: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
-            if dir.y < 0.0 && origin.y > 0.0 {
-                let t = -origin.y / dir.y;
-                if t > 0.0 && t < max_dist {
-                    let hit = origin + dir * t;
-                    return Some((hit, Vec3::Y, Some(0), t));
+        let raycast =
+            |origin: Vec3, dir: Vec3, max_dist: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if dir.y < 0.0 && origin.y > 0.0 {
+                    let t = -origin.y / dir.y;
+                    if t > 0.0 && t < max_dist {
+                        let hit = origin + dir * t;
+                        return Some((hit, Vec3::Y, Some(0), t));
+                    }
                 }
-            }
-            None
-        };
+                None
+            };
 
         for _ in 0..300 {
             manager.update(1.0 / 60.0, raycast);
@@ -867,15 +906,18 @@ mod tests {
         if !hits.is_empty() {
             // Range for 45-degree: R = v^2 / g = 400 / 9.81 ≈ 40.8
             let range = hits[0].position.x;
-            assert!(range > 35.0 && range < 45.0, 
-                "Range should be ~40m, got {}", range);
+            assert!(
+                range > 35.0 && range < 45.0,
+                "Range should be ~40m, got {}",
+                range
+            );
         }
     }
 
     #[test]
     fn test_ballistics_negative_gravity_scale() {
         let mut manager = ProjectileManager::new();
-        
+
         let config = ProjectileConfig {
             position: Vec3::ZERO,
             velocity: Vec3::ZERO,
@@ -902,7 +944,7 @@ mod tests {
     #[test]
     fn test_penetration_flag_set() {
         let mut manager = ProjectileManager::new();
-        
+
         let config = ProjectileConfig {
             position: Vec3::ZERO,
             velocity: Vec3::new(100.0, 0.0, 0.0),
@@ -913,14 +955,19 @@ mod tests {
 
         let raycast = |origin: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
             if origin.x < 5.0 {
-                Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), 5.0))
+                Some((
+                    Vec3::new(5.0, 0.0, 0.0),
+                    Vec3::new(-1.0, 0.0, 0.0),
+                    Some(1),
+                    5.0,
+                ))
             } else {
                 None
             }
         };
 
         manager.update(0.1, raycast);
-        
+
         let hits = manager.drain_hits();
         assert!(!hits.is_empty(), "Should have hit");
         assert!(hits[0].penetrated, "Penetration flag should be set");
@@ -929,7 +976,7 @@ mod tests {
     #[test]
     fn test_no_penetration_flag() {
         let mut manager = ProjectileManager::new();
-        
+
         let config = ProjectileConfig {
             position: Vec3::ZERO,
             velocity: Vec3::new(100.0, 0.0, 0.0),
@@ -940,14 +987,19 @@ mod tests {
 
         let raycast = |origin: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
             if origin.x < 5.0 {
-                Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), 5.0))
+                Some((
+                    Vec3::new(5.0, 0.0, 0.0),
+                    Vec3::new(-1.0, 0.0, 0.0),
+                    Some(1),
+                    5.0,
+                ))
             } else {
                 None
             }
         };
 
         manager.update(0.1, raycast);
-        
+
         let hits = manager.drain_hits();
         assert!(!hits.is_empty(), "Should have hit");
         assert!(!hits[0].penetrated, "Penetration flag should NOT be set");
@@ -995,15 +1047,15 @@ mod tests {
             (3, Vec3::new(0.0, 0.0, 5.0)),
             (4, Vec3::new(15.0, 0.0, 0.0)),
         ];
-        
+
         let results = manager.calculate_explosion(&config, bodies);
 
         assert_eq!(results.len(), 4);
-        
+
         // Bodies at same distance should have same falloff
         assert!((results[0].falloff_multiplier - results[1].falloff_multiplier).abs() < 0.01);
         assert!((results[0].falloff_multiplier - results[2].falloff_multiplier).abs() < 0.01);
-        
+
         // Body 4 is further, should have less falloff
         assert!(results[3].falloff_multiplier < results[0].falloff_multiplier);
     }
@@ -1023,7 +1075,7 @@ mod tests {
             (1, Vec3::new(10.0, 0.0, 0.0)),
             (2, Vec3::new(0.0, 10.0, 0.0)),
         ];
-        
+
         let results = manager.calculate_explosion(&config, bodies);
         assert!(results.is_empty(), "No bodies should be affected");
     }
@@ -1065,7 +1117,7 @@ mod tests {
     #[test]
     fn test_manager_multiple_projectiles() {
         let mut manager = ProjectileManager::new();
-        
+
         for i in 0..100 {
             let config = ProjectileConfig {
                 position: Vec3::new(i as f32, 0.0, 0.0),
@@ -1094,7 +1146,7 @@ mod tests {
     #[test]
     fn test_manager_iter() {
         let mut manager = ProjectileManager::new();
-        
+
         for _ in 0..10 {
             manager.spawn(ProjectileConfig::default());
         }
@@ -1106,7 +1158,10 @@ mod tests {
     #[test]
     fn test_manager_despawn_nonexistent() {
         let mut manager = ProjectileManager::new();
-        assert!(!manager.despawn(999), "Should return false for non-existent ID");
+        assert!(
+            !manager.despawn(999),
+            "Should return false for non-existent ID"
+        );
     }
 
     #[test]
@@ -1124,7 +1179,7 @@ mod tests {
     #[test]
     fn test_config_default() {
         let config = ProjectileConfig::default();
-        
+
         assert_eq!(config.kind, ProjectileKind::Kinematic);
         assert_eq!(config.position, Vec3::ZERO);
         assert_eq!(config.velocity, Vec3::ZERO);
@@ -1142,7 +1197,7 @@ mod tests {
     #[test]
     fn test_explosion_config_default() {
         let config = ExplosionConfig::default();
-        
+
         assert_eq!(config.center, Vec3::ZERO);
         assert_eq!(config.radius, 5.0);
         assert_eq!(config.force, 1000.0);
@@ -1183,7 +1238,12 @@ mod tests {
         let mut manager = ProjectileManager::new();
 
         let raycast = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
-            Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), None, 5.0))
+            Some((
+                Vec3::new(5.0, 0.0, 0.0),
+                Vec3::new(-1.0, 0.0, 0.0),
+                None,
+                5.0,
+            ))
         };
 
         let hit = manager.hitscan(Vec3::ZERO, Vec3::X, 100.0, raycast);
@@ -1207,26 +1267,22 @@ mod tests {
         );
 
         assert_eq!(points.len(), 20);
-        
+
         // With drag, spacing between points should decrease
         let first_gap = (points[1] - points[0]).length();
         let last_gap = (points[19] - points[18]).length();
-        
-        assert!(last_gap < first_gap, 
-            "Drag should slow projectile: first_gap={}, last_gap={}", 
-            first_gap, last_gap);
+
+        assert!(
+            last_gap < first_gap,
+            "Drag should slow projectile: first_gap={}, last_gap={}",
+            first_gap,
+            last_gap
+        );
     }
 
     #[test]
     fn test_predict_trajectory_empty() {
-        let points = predict_trajectory(
-            Vec3::ZERO,
-            Vec3::X,
-            Vec3::ZERO,
-            0.0,
-            0.1,
-            0,
-        );
+        let points = predict_trajectory(Vec3::ZERO, Vec3::X, Vec3::ZERO, 0.0, 0.1, 0);
 
         // Implementation starts with initial point, so count=0 still gives 1 point
         // (the function always includes the starting position)
@@ -1235,14 +1291,7 @@ mod tests {
 
     #[test]
     fn test_predict_trajectory_single_point() {
-        let points = predict_trajectory(
-            Vec3::new(1.0, 2.0, 3.0),
-            Vec3::X,
-            Vec3::ZERO,
-            0.0,
-            0.1,
-            1,
-        );
+        let points = predict_trajectory(Vec3::new(1.0, 2.0, 3.0), Vec3::X, Vec3::ZERO, 0.0, 0.1, 1);
 
         assert_eq!(points.len(), 1);
         assert_eq!(points[0], Vec3::new(1.0, 2.0, 3.0));
@@ -1268,20 +1317,31 @@ mod tests {
         let id = manager.spawn(config);
 
         // Walls at X=5 and X=-5
-        let raycast = |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
-            if dir.x > 0.0 && origin.x < 5.0 {
-                let dist = 5.0 - origin.x;
-                if dist < max && dist > 0.01 {
-                    return Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), dist));
+        let raycast =
+            |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if dir.x > 0.0 && origin.x < 5.0 {
+                    let dist = 5.0 - origin.x;
+                    if dist < max && dist > 0.01 {
+                        return Some((
+                            Vec3::new(5.0, 0.0, 0.0),
+                            Vec3::new(-1.0, 0.0, 0.0),
+                            Some(1),
+                            dist,
+                        ));
+                    }
+                } else if dir.x < 0.0 && origin.x > -5.0 {
+                    let dist = origin.x + 5.0;
+                    if dist < max && dist > 0.01 {
+                        return Some((
+                            Vec3::new(-5.0, 0.0, 0.0),
+                            Vec3::new(1.0, 0.0, 0.0),
+                            Some(1),
+                            dist,
+                        ));
+                    }
                 }
-            } else if dir.x < 0.0 && origin.x > -5.0 {
-                let dist = origin.x + 5.0;
-                if dist < max && dist > 0.01 {
-                    return Some((Vec3::new(-5.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0), Some(1), dist));
-                }
-            }
-            None
-        };
+                None
+            };
 
         // Simulate multiple bounces
         for _ in 0..100 {
@@ -1289,7 +1349,10 @@ mod tests {
         }
 
         // After max bounces, projectile should be gone
-        assert!(manager.get(id).is_none(), "Projectile should despawn after max bounces");
+        assert!(
+            manager.get(id).is_none(),
+            "Projectile should despawn after max bounces"
+        );
     }
 
     #[test]
@@ -1307,7 +1370,12 @@ mod tests {
 
         let raycast = |origin: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
             if origin.x < 5.0 {
-                Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), 5.0))
+                Some((
+                    Vec3::new(5.0, 0.0, 0.0),
+                    Vec3::new(-1.0, 0.0, 0.0),
+                    Some(1),
+                    5.0,
+                ))
             } else {
                 None
             }
@@ -1319,4 +1387,3 @@ mod tests {
         assert!(manager.get(id).is_none());
     }
 }
-

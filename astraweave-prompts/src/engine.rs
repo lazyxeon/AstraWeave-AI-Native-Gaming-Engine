@@ -489,6 +489,14 @@ mod tests {
     }
 
     #[test]
+    fn test_template_engine_sanitizer_returns_engine_sanitizer() {
+        // Remediation: kills "replace TemplateEngine::sanitizer() with leaked default" mutation
+        // Default engine uses default sanitization config, which is NOT strict
+        let engine = TemplateEngine::new();
+        assert!(!engine.sanitizer().is_strict(), "default TemplateEngine sanitizer should not be strict");
+    }
+
+    #[test]
     fn test_template_engine_register_template() {
         let mut engine = TemplateEngine::new();
         let template = PromptTemplate::new("greeting", "Hello {{name}}!");
@@ -722,6 +730,51 @@ mod tests {
             ..Default::default()
         };
         assert!(config.is_strict());
+    }
+
+    #[test]
+    fn test_engine_config_default_is_not_strict() {
+        // Remediation: kills "replace is_strict -> bool with true" mutation
+        let config = EngineConfig::default();
+        assert!(!config.is_strict(), "default config should not be strict");
+    }
+
+    #[test]
+    fn test_sanitizer_reflects_engine_config() {
+        // Remediation: kills "replace sanitizer() -> &PromptSanitizer with leaked default" mutation
+        let config = EngineConfig {
+            sanitization: SanitizationConfig::strict(),
+            ..Default::default()
+        };
+        let engine = PromptEngine::new(config);
+        assert!(engine.sanitizer().is_strict(), "engine built with strict config should return strict sanitizer");
+
+        let default_engine = PromptEngine::new(EngineConfig::default());
+        assert!(!default_engine.sanitizer().is_strict(), "default engine should not have strict sanitizer");
+    }
+
+    #[test]
+    fn test_config_getter_reflects_construction() {
+        // Remediation: kills "replace config() -> &EngineConfig with leaked default" mutation
+        let config = EngineConfig {
+            max_template_size: 42,
+            enable_caching: false,
+            ..Default::default()
+        };
+        let engine = PromptEngine::new(config);
+        assert_eq!(engine.config().max_template_size, 42, "config getter must reflect constructed value");
+        assert!(!engine.config().enable_caching, "caching must reflect constructed value");
+    }
+
+    #[test]
+    fn test_caching_enabled_reflects_config() {
+        // Remediation: kills "replace caching_enabled() -> bool with true" mutation
+        let config = EngineConfig {
+            enable_caching: false,
+            ..Default::default()
+        };
+        let engine = PromptEngine::new(config);
+        assert!(!engine.caching_enabled(), "caching_enabled must be false when constructed with caching disabled");
     }
 
     #[test]

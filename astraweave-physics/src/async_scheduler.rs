@@ -275,7 +275,8 @@ impl AsyncPhysicsScheduler {
         N: FnOnce(BroadOut) -> NarrowOut,
         I: FnOnce(NarrowOut),
     {
-        let mut profile = self.step_parallel_staged(broad_phase_fn, narrow_phase_fn, integration_fn);
+        let mut profile =
+            self.step_parallel_staged(broad_phase_fn, narrow_phase_fn, integration_fn);
         profile.active_body_count = active_body_count;
         profile.collision_pair_count = collision_pair_count;
         profile.solver_iterations = solver_iterations;
@@ -362,7 +363,7 @@ mod tests {
     #[test]
     fn profile_default_values() {
         let profile = PhysicsStepProfile::default();
-        
+
         assert_eq!(profile.total_duration, Duration::ZERO);
         assert_eq!(profile.broad_phase_duration, Duration::ZERO);
         assert_eq!(profile.narrow_phase_duration, Duration::ZERO);
@@ -376,9 +377,12 @@ mod tests {
     fn profile_new_equals_default() {
         let profile_new = PhysicsStepProfile::new();
         let profile_default = PhysicsStepProfile::default();
-        
+
         assert_eq!(profile_new.total_duration, profile_default.total_duration);
-        assert_eq!(profile_new.active_body_count, profile_default.active_body_count);
+        assert_eq!(
+            profile_new.active_body_count,
+            profile_default.active_body_count
+        );
     }
 
     #[test]
@@ -435,8 +439,11 @@ mod tests {
             + profile.integration_percent();
 
         // Should sum close to 100%
-        assert!((total_percent - 100.0).abs() < 1.0, 
-            "Got {}% total", total_percent);
+        assert!(
+            (total_percent - 100.0).abs() < 1.0,
+            "Got {}% total",
+            total_percent
+        );
     }
 
     #[test]
@@ -527,7 +534,7 @@ mod tests {
     fn scheduler_get_last_profile_initial() {
         let scheduler = AsyncPhysicsScheduler::new();
         let profile = scheduler.get_last_profile();
-        
+
         // Should be default (no steps yet)
         assert_eq!(profile.total_duration, Duration::ZERO);
     }
@@ -536,9 +543,9 @@ mod tests {
     #[cfg(feature = "async-physics")]
     fn scheduler_record_step_telemetry() {
         let mut scheduler = AsyncPhysicsScheduler::new();
-        
+
         scheduler.record_step_telemetry(Duration::from_millis(16));
-        
+
         let profile = scheduler.get_last_profile();
         assert_eq!(profile.total_duration, Duration::from_millis(16));
     }
@@ -548,9 +555,9 @@ mod tests {
     fn scheduler_record_telemetry_disabled() {
         let mut scheduler = AsyncPhysicsScheduler::new();
         scheduler.enable_profiling = false;
-        
+
         scheduler.record_step_telemetry(Duration::from_millis(16));
-        
+
         // Should not record when disabled
         let profile = scheduler.get_last_profile();
         assert_eq!(profile.total_duration, Duration::ZERO);
@@ -560,7 +567,7 @@ mod tests {
     #[cfg(feature = "async-physics")]
     fn scheduler_step_parallel_simple() {
         let mut scheduler = AsyncPhysicsScheduler::new();
-        
+
         let profile = scheduler.step_parallel(|| {
             std::thread::sleep(Duration::from_millis(10));
             PhysicsStepProfile {
@@ -580,12 +587,10 @@ mod tests {
     #[cfg(feature = "async-physics")]
     fn scheduler_step_parallel_profiling_recorded() {
         let mut scheduler = AsyncPhysicsScheduler::new();
-        
-        scheduler.step_parallel(|| {
-            PhysicsStepProfile {
-                active_body_count: 100,
-                ..Default::default()
-            }
+
+        scheduler.step_parallel(|| PhysicsStepProfile {
+            active_body_count: 100,
+            ..Default::default()
         });
 
         let recorded = scheduler.get_last_profile();
@@ -597,12 +602,10 @@ mod tests {
     fn scheduler_step_parallel_profiling_disabled() {
         let mut scheduler = AsyncPhysicsScheduler::new();
         scheduler.enable_profiling = false;
-        
-        scheduler.step_parallel(|| {
-            PhysicsStepProfile {
-                active_body_count: 100,
-                ..Default::default()
-            }
+
+        scheduler.step_parallel(|| PhysicsStepProfile {
+            active_body_count: 100,
+            ..Default::default()
         });
 
         let recorded = scheduler.get_last_profile();
@@ -614,15 +617,13 @@ mod tests {
     #[cfg(feature = "async-physics")]
     fn scheduler_multiple_steps() {
         let mut scheduler = AsyncPhysicsScheduler::new();
-        
+
         for i in 1..=5 {
-            scheduler.step_parallel(|| {
-                PhysicsStepProfile {
-                    active_body_count: i * 10,
-                    ..Default::default()
-                }
+            scheduler.step_parallel(|| PhysicsStepProfile {
+                active_body_count: i * 10,
+                ..Default::default()
             });
-            
+
             let profile = scheduler.get_last_profile();
             assert_eq!(profile.active_body_count, i * 10);
         }
@@ -678,7 +679,7 @@ mod tests {
         let processed = par_process_bodies(&bodies, |&x| x + 1);
 
         assert_eq!(processed.len(), 10000);
-        
+
         // Verify all processed correctly
         for (i, &val) in processed.iter().enumerate() {
             assert_eq!(val, (i as i32) + 1);
@@ -743,7 +744,10 @@ mod tests {
         );
 
         assert!(profile.total_duration > Duration::ZERO);
-        assert!(profile.broad_phase_duration > Duration::ZERO || profile.narrow_phase_duration > Duration::ZERO);
+        assert!(
+            profile.broad_phase_duration > Duration::ZERO
+                || profile.narrow_phase_duration > Duration::ZERO
+        );
     }
 
     #[test]
@@ -768,11 +772,17 @@ mod tests {
         );
 
         // Narrow-phase (10ms) should dominate
-        assert!(profile.narrow_phase_duration >= Duration::from_millis(9),
-            "Narrow-phase should be ~10ms, got {:?}", profile.narrow_phase_duration);
+        assert!(
+            profile.narrow_phase_duration >= Duration::from_millis(9),
+            "Narrow-phase should be ~10ms, got {:?}",
+            profile.narrow_phase_duration
+        );
         // Total should be >= sum of stages
-        assert!(profile.total_duration >= Duration::from_millis(19),
-            "Total should be >=20ms, got {:?}", profile.total_duration);
+        assert!(
+            profile.total_duration >= Duration::from_millis(19),
+            "Total should be >=20ms, got {:?}",
+            profile.total_duration
+        );
     }
 
     #[test]
@@ -780,11 +790,7 @@ mod tests {
     fn staged_pipeline_profiling_recorded() {
         let mut scheduler = AsyncPhysicsScheduler::new();
 
-        scheduler.step_parallel_staged(
-            || vec![1, 2, 3],
-            |v| v.len(),
-            |_| {},
-        );
+        scheduler.step_parallel_staged(|| vec![1, 2, 3], |v| v.len(), |_| {});
 
         let recorded = scheduler.get_last_profile();
         assert!(recorded.total_duration > Duration::ZERO);
@@ -798,15 +804,14 @@ mod tests {
         let mut scheduler = AsyncPhysicsScheduler::new();
         scheduler.enable_profiling = false;
 
-        scheduler.step_parallel_staged(
-            || 42,
-            |x| x * 2,
-            |_| {},
-        );
+        scheduler.step_parallel_staged(|| 42, |x| x * 2, |_| {});
 
         let recorded = scheduler.get_last_profile();
-        assert_eq!(recorded.total_duration, Duration::ZERO,
-            "Profiling disabled should not record");
+        assert_eq!(
+            recorded.total_duration,
+            Duration::ZERO,
+            "Profiling disabled should not record"
+        );
     }
 
     #[test]
@@ -825,7 +830,10 @@ mod tests {
             },
             |pairs| {
                 // Narrow-phase filters even pairs
-                pairs.into_iter().filter(|p| p % 2 == 0).collect::<Vec<u32>>()
+                pairs
+                    .into_iter()
+                    .filter(|p| p % 2 == 0)
+                    .collect::<Vec<u32>>()
             },
             move |contacts| {
                 // Integration receives 50 even contacts
@@ -868,11 +876,7 @@ mod tests {
         let mut scheduler = AsyncPhysicsScheduler::new();
 
         // All stages are no-ops
-        let profile = scheduler.step_parallel_staged(
-            || (),
-            |_| (),
-            |_| {},
-        );
+        let profile = scheduler.step_parallel_staged(|| (), |_| (), |_| {});
 
         assert!(profile.broad_phase_duration <= Duration::from_millis(1));
         assert!(profile.narrow_phase_duration <= Duration::from_millis(1));
@@ -885,11 +889,7 @@ mod tests {
         let mut scheduler = AsyncPhysicsScheduler::new();
 
         for frame in 0..10 {
-            let profile = scheduler.step_parallel_staged(
-                || frame,
-                |f| f * 2,
-                |_| {},
-            );
+            let profile = scheduler.step_parallel_staged(|| frame, |f| f * 2, |_| {});
 
             assert!(profile.total_duration > Duration::ZERO);
             let recorded = scheduler.get_last_profile();
@@ -940,9 +940,9 @@ mod tests {
             || vec![1, 2, 3],
             |v| v.len(),
             |_| {},
-            500,  // active bodies
-            120,  // collision pairs
-            8,    // solver iterations
+            500, // active bodies
+            120, // collision pairs
+            8,   // solver iterations
         );
 
         assert_eq!(profile.active_body_count, 500);
@@ -956,12 +956,7 @@ mod tests {
     fn staged_with_stats_updates_last_profile() {
         let mut scheduler = AsyncPhysicsScheduler::new();
 
-        scheduler.step_parallel_staged_with_stats(
-            || (),
-            |_| (),
-            |_| {},
-            200, 50, 4,
-        );
+        scheduler.step_parallel_staged_with_stats(|| (), |_| (), |_| {}, 200, 50, 4);
 
         let recorded = scheduler.get_last_profile();
         assert_eq!(recorded.active_body_count, 200);
@@ -975,16 +970,10 @@ mod tests {
         let mut scheduler = AsyncPhysicsScheduler::new();
         scheduler.enable_profiling = false;
 
-        scheduler.step_parallel_staged_with_stats(
-            || (),
-            |_| (),
-            |_| {},
-            200, 50, 4,
-        );
+        scheduler.step_parallel_staged_with_stats(|| (), |_| (), |_| {}, 200, 50, 4);
 
         let recorded = scheduler.get_last_profile();
         // Stats should NOT be recorded when profiling disabled
         assert_eq!(recorded.active_body_count, 0);
     }
 }
-

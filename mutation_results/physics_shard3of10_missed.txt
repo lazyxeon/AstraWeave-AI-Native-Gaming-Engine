@@ -1,0 +1,58 @@
+astraweave-physics/src/async_scheduler.rs:62:55: replace / with % in PhysicsStepProfile::narrow_phase_percent
+astraweave-physics/src/async_scheduler.rs:62:55: replace / with * in PhysicsStepProfile::narrow_phase_percent
+astraweave-physics/src/async_scheduler.rs:68:9: replace PhysicsStepProfile::integration_percent -> f32 with 0.0
+astraweave-physics/src/async_scheduler.rs:68:9: replace PhysicsStepProfile::integration_percent -> f32 with 1.0
+astraweave-physics/src/async_scheduler.rs:68:9: replace PhysicsStepProfile::integration_percent -> f32 with -1.0
+astraweave-physics/src/async_scheduler.rs:68:43: replace == with != in PhysicsStepProfile::integration_percent
+astraweave-physics/src/async_scheduler.rs:72:13: replace * with + in PhysicsStepProfile::integration_percent
+astraweave-physics/src/async_scheduler.rs:72:13: replace * with / in PhysicsStepProfile::integration_percent
+astraweave-physics/src/async_scheduler.rs:71:54: replace / with % in PhysicsStepProfile::integration_percent
+astraweave-physics/src/async_scheduler.rs:71:54: replace / with * in PhysicsStepProfile::integration_percent
+astraweave-physics/src/async_scheduler.rs:109:9: replace AsyncPhysicsScheduler::with_threads -> Self with Default::default()
+astraweave-physics/src/async_scheduler.rs:110:13: delete field thread_count from struct Self expression in AsyncPhysicsScheduler::with_threads
+astraweave-physics/src/async_scheduler.rs:117:9: replace AsyncPhysicsScheduler::get_last_profile -> PhysicsStepProfile with Default::default()
+astraweave-physics/src/async_scheduler.rs:123:9: replace AsyncPhysicsScheduler::record_step_telemetry with ()
+astraweave-physics/src/async_scheduler.rs:123:12: delete ! in AsyncPhysicsScheduler::record_step_telemetry
+astraweave-physics/src/async_scheduler.rs:146:9: replace AsyncPhysicsScheduler::step_parallel -> PhysicsStepProfile with Default::default()
+astraweave-physics/src/async_scheduler.rs:151:13: delete field total_duration from struct PhysicsStepProfile expression in AsyncPhysicsScheduler::step_parallel
+astraweave-physics/src/async_scheduler.rs:222:9: replace AsyncPhysicsScheduler::step_parallel_staged -> PhysicsStepProfile with Default::default()
+astraweave-physics/src/async_scheduler.rs:246:13: delete field total_duration from struct PhysicsStepProfile expression in AsyncPhysicsScheduler::step_parallel_staged
+astraweave-physics/src/async_scheduler.rs:247:13: delete field broad_phase_duration from struct PhysicsStepProfile expression in AsyncPhysicsScheduler::step_parallel_staged
+astraweave-physics/src/async_scheduler.rs:248:13: delete field narrow_phase_duration from struct PhysicsStepProfile expression in AsyncPhysicsScheduler::step_parallel_staged
+astraweave-physics/src/async_scheduler.rs:249:13: delete field integration_duration from struct PhysicsStepProfile expression in AsyncPhysicsScheduler::step_parallel_staged
+astraweave-physics/src/async_scheduler.rs:278:9: replace AsyncPhysicsScheduler::step_parallel_staged_with_stats -> PhysicsStepProfile with Default::default()
+astraweave-physics/src/async_scheduler.rs:293:9: replace AsyncPhysicsScheduler::export_telemetry -> anyhow::Result<()> with Ok(())
+astraweave-physics/src/async_scheduler.rs:319:9: replace parallel::par_process_bodies -> Vec<T> with vec![]
+astraweave-physics/src/async_scheduler.rs:319:9: replace parallel::par_process_bodies -> Vec<T> with vec![Default::default()]
+astraweave-physics/src/async_scheduler.rs:330:9: replace parallel::par_process_collision_pairs with ()
+astraweave-physics/src/ecs.rs:16:9: replace <impl Plugin for PhysicsPlugin>::build with ()
+astraweave-physics/src/ecs.rs:17:63: delete - in <impl Plugin for PhysicsPlugin>::build
+astraweave-physics/src/ecs.rs:27:5: replace physics_step_system with ()
+astraweave-physics/src/ecs.rs:35:5: replace sync_physics_to_transform_system with ()
+astraweave-physics/src/projectile.rs:332:30: replace && with || in ProjectileManager::update
+astraweave-physics/src/projectile.rs:332:22: replace > with >= in ProjectileManager::update
+astraweave-physics/src/projectile.rs:332:56: replace > with >= in ProjectileManager::update
+astraweave-physics/src/projectile.rs:333:65: replace * with + in ProjectileManager::update
+astraweave-physics/src/projectile.rs:333:65: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:333:57: replace * with + in ProjectileManager::update
+astraweave-physics/src/projectile.rs:333:57: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:334:53: replace * with + in ProjectileManager::update
+astraweave-physics/src/projectile.rs:334:53: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:334:46: replace / with * in ProjectileManager::update
+astraweave-physics/src/projectile.rs:336:37: replace -= with /= in ProjectileManager::update
+astraweave-physics/src/projectile.rs:336:72: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:340:41: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:348:26: replace > with >= in ProjectileManager::update
+astraweave-physics/src/projectile.rs:351:57: replace + with - in ProjectileManager::update
+astraweave-physics/src/projectile.rs:365:58: replace > with >= in ProjectileManager::update
+astraweave-physics/src/projectile.rs:369:69: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:370:55: replace * with + in ProjectileManager::update
+astraweave-physics/src/projectile.rs:370:55: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:371:55: replace + with - in ProjectileManager::update
+astraweave-physics/src/projectile.rs:371:55: replace + with * in ProjectileManager::update
+astraweave-physics/src/projectile.rs:371:64: replace * with + in ProjectileManager::update
+astraweave-physics/src/projectile.rs:371:64: replace * with / in ProjectileManager::update
+astraweave-physics/src/projectile.rs:438:36: replace - with + in ProjectileManager::calculate_explosion
+astraweave-physics/src/projectile.rs:446:48: replace * with + in ProjectileManager::calculate_explosion
+astraweave-physics/src/projectile.rs:446:48: replace * with / in ProjectileManager::calculate_explosion
+astraweave-physics/src/projectile.rs:449:42: replace > with >= in ProjectileManager::calculate_explosion

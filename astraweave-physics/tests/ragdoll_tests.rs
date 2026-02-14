@@ -4,7 +4,7 @@
 //! and state management.
 
 use astraweave_physics::{
-    ragdoll::{RagdollBuilder, RagdollConfig, RagdollPresets, BoneShape, RagdollState},
+    ragdoll::{BoneShape, RagdollBuilder, RagdollConfig, RagdollPresets, RagdollState},
     PhysicsWorld,
 };
 use glam::Vec3;
@@ -19,7 +19,13 @@ fn test_ragdoll_simulation_basic() {
 
     // Create simple ragdoll
     let mut builder = RagdollBuilder::new(RagdollConfig::default());
-    builder.add_bone("body", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.3 }, 5.0);
+    builder.add_bone(
+        "body",
+        None,
+        Vec3::ZERO,
+        BoneShape::Sphere { radius: 0.3 },
+        5.0,
+    );
     builder.add_bone(
         "head",
         Some("body"),
@@ -37,7 +43,11 @@ fn test_ragdoll_simulation_basic() {
 
     // Ragdoll should have fallen
     let com = ragdoll.center_of_mass(&physics);
-    assert!(com.y < 5.0, "Ragdoll should have fallen, COM at y={}", com.y);
+    assert!(
+        com.y < 5.0,
+        "Ragdoll should have fallen, COM at y={}",
+        com.y
+    );
 }
 
 /// Test humanoid ragdoll preset with full simulation
@@ -142,7 +152,10 @@ fn test_ragdoll_impulse_propagation() {
 
     // Both should have some velocity
     assert!(spine_vel.length() > 0.1, "Spine should be moving");
-    assert!(pelvis_vel.length() > 0.1, "Pelvis should be moving (propagated)");
+    assert!(
+        pelvis_vel.length() > 0.1,
+        "Pelvis should be moving (propagated)"
+    );
 }
 
 /// Test ragdoll doesn't explode (stability test)
@@ -169,7 +182,10 @@ fn test_ragdoll_stability() {
         if let Some(transform) = physics.body_transform(body_id) {
             let pos = Vec3::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
             assert!(pos.is_finite(), "Body position should be finite");
-            assert!(pos.length() < 100.0, "Body should not have exploded far away");
+            assert!(
+                pos.length() < 100.0,
+                "Body should not have exploded far away"
+            );
         }
     }
 }
@@ -180,7 +196,13 @@ fn test_ragdoll_state() {
     let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
 
     let mut builder = RagdollBuilder::new(RagdollConfig::default());
-    builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.2 }, 1.0);
+    builder.add_bone(
+        "root",
+        None,
+        Vec3::ZERO,
+        BoneShape::Sphere { radius: 0.2 },
+        1.0,
+    );
 
     let ragdoll = builder.build(&mut physics, Vec3::ZERO);
 
@@ -195,7 +217,13 @@ fn test_ragdoll_at_rest_detection() {
     physics.create_ground_plane(Vec3::new(50.0, 0.5, 50.0), 0.8);
 
     let mut builder = RagdollBuilder::new(RagdollConfig::default());
-    builder.add_bone("body", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.3 }, 2.0);
+    builder.add_bone(
+        "body",
+        None,
+        Vec3::ZERO,
+        BoneShape::Sphere { radius: 0.3 },
+        2.0,
+    );
 
     let ragdoll = builder.build(&mut physics, Vec3::new(0.0, 0.5, 0.0));
 
@@ -260,11 +288,23 @@ fn test_ragdoll_mass_scale() {
     };
 
     let mut heavy_builder = RagdollBuilder::new(heavy_config);
-    heavy_builder.add_bone("body", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.3 }, 10.0);
+    heavy_builder.add_bone(
+        "body",
+        None,
+        Vec3::ZERO,
+        BoneShape::Sphere { radius: 0.3 },
+        10.0,
+    );
     let _heavy_ragdoll = heavy_builder.build(&mut physics, Vec3::new(-5.0, 2.0, 0.0));
 
     let mut light_builder = RagdollBuilder::new(light_config);
-    light_builder.add_bone("body", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.3 }, 10.0);
+    light_builder.add_bone(
+        "body",
+        None,
+        Vec3::ZERO,
+        BoneShape::Sphere { radius: 0.3 },
+        10.0,
+    );
     let _light_ragdoll = light_builder.build(&mut physics, Vec3::new(5.0, 2.0, 0.0));
 
     // Both ragdolls should have been created successfully

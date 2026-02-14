@@ -1,0 +1,20 @@
+astraweave-behavior/src/goap.rs:250:27: replace > with == in GoapPlanner::plan
+astraweave-behavior/src/goap.rs:250:27: replace > with >= in GoapPlanner::plan
+astraweave-behavior/src/goap.rs:296:46: replace + with * in GoapPlanner::plan
+astraweave-behavior/src/goap.rs:334:39: replace && with || in GoapPlan::is_complete
+astraweave-behavior/src/goap.rs:347:9: replace GoapPlan::invalidate with ()
+astraweave-behavior/src/goap_cache.rs:44:9: replace PlanCacheKey::hash_world_state -> u64 with 0
+astraweave-behavior/src/goap_cache.rs:44:9: replace PlanCacheKey::hash_world_state -> u64 with 1
+astraweave-behavior/src/goap_cache.rs:176:45: replace != with == in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:178:35: replace += with *= in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:184:30: replace += with *= in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:187:41: replace != with == in PlanCache::get
+astraweave-behavior/src/goap_cache.rs:233:9: replace PlanCache::clear with ()
+astraweave-behavior/src/goap_cache.rs:250:9: replace PlanCache::is_empty -> bool with true
+astraweave-behavior/src/goap_cache.rs:250:9: replace PlanCache::is_empty -> bool with false
+astraweave-behavior/src/goap_cache.rs:255:9: replace PlanCache::capacity -> usize with 0
+astraweave-behavior/src/goap_cache.rs:255:9: replace PlanCache::capacity -> usize with 1
+astraweave-behavior/src/goap_cache.rs:284:9: replace CachedGoapPlanner::with_planner -> Self with Default::default()
+astraweave-behavior/src/goap_cache.rs:321:9: replace CachedGoapPlanner::clear_cache with ()
+astraweave-behavior/src/goap_cache.rs:326:9: replace CachedGoapPlanner::base_planner -> &crate::goap::GoapPlanner with Box::leak(Box::new(Default::default()))
+astraweave-behavior/src/goap_cache.rs:331:9: replace CachedGoapPlanner::base_planner_mut -> &mut crate::goap::GoapPlanner with Box::leak(Box::new(Default::default()))

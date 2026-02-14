@@ -34,15 +34,30 @@ fn assert_world_valid_after_step(world: &PhysicsWorld, sample_ids: &[u64], conte
             // Extract position from column 3 (translation column)
             let pos = mat.col(3).truncate();
             // Position must be finite
-            assert!(pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
-                "[CORRECTNESS FAILURE] {}/body_{}: position non-finite {:?}", context, i, pos);
+            assert!(
+                pos.x.is_finite() && pos.y.is_finite() && pos.z.is_finite(),
+                "[CORRECTNESS FAILURE] {}/body_{}: position non-finite {:?}",
+                context,
+                i,
+                pos
+            );
             // Position shouldn't explode
-            assert!(pos.length_squared() < 10000.0 * 10000.0,
-                "[CORRECTNESS FAILURE] {}/body_{}: position exploded {:?}", context, i, pos);
+            assert!(
+                pos.length_squared() < 10000.0 * 10000.0,
+                "[CORRECTNESS FAILURE] {}/body_{}: position exploded {:?}",
+                context,
+                i,
+                pos
+            );
             // Check matrix has valid determinant
             let det = mat.determinant();
-            assert!(det.is_finite() && det.abs() > 1e-10,
-                "[CORRECTNESS FAILURE] {}/body_{}: invalid determinant {}", context, i, det);
+            assert!(
+                det.is_finite() && det.abs() > 1e-10,
+                "[CORRECTNESS FAILURE] {}/body_{}: invalid determinant {}",
+                context,
+                i,
+                det
+            );
         }
     }
 }
@@ -51,12 +66,24 @@ fn assert_world_valid_after_step(world: &PhysicsWorld, sample_ids: &[u64], conte
 #[inline]
 fn assert_telemetry_valid(profile: &astraweave_physics::PhysicsProfile, context: &str) {
     // All timing values must be non-negative
-    assert!(profile.step_time_ms >= 0.0,
-        "[CORRECTNESS FAILURE] {}: negative step_time_ms {}", context, profile.step_time_ms);
-    assert!(profile.broad_phase_ms >= 0.0,
-        "[CORRECTNESS FAILURE] {}: negative broad_phase_ms {}", context, profile.broad_phase_ms);
-    assert!(profile.narrow_phase_ms >= 0.0,
-        "[CORRECTNESS FAILURE] {}: negative narrow_phase_ms {}", context, profile.narrow_phase_ms);
+    assert!(
+        profile.step_time_ms >= 0.0,
+        "[CORRECTNESS FAILURE] {}: negative step_time_ms {}",
+        context,
+        profile.step_time_ms
+    );
+    assert!(
+        profile.broad_phase_ms >= 0.0,
+        "[CORRECTNESS FAILURE] {}: negative broad_phase_ms {}",
+        context,
+        profile.broad_phase_ms
+    );
+    assert!(
+        profile.narrow_phase_ms >= 0.0,
+        "[CORRECTNESS FAILURE] {}: negative narrow_phase_ms {}",
+        context,
+        profile.narrow_phase_ms
+    );
 }
 
 /// Create a world with N characters for benchmarking
@@ -77,11 +104,15 @@ fn create_world_with_characters(char_count: usize) -> (PhysicsWorld, Vec<u64>) {
         let id = world.add_character(vec3(x, 1.0, z), vec3(0.4, 0.9, 0.4));
         char_ids.push(id);
     }
-    
+
     // CORRECTNESS: Verify all characters spawned
-    assert_eq!(char_ids.len(), char_count,
-        "[CORRECTNESS FAILURE] create_world_with_characters: expected {}, got {}", 
-        char_count, char_ids.len());
+    assert_eq!(
+        char_ids.len(),
+        char_count,
+        "[CORRECTNESS FAILURE] create_world_with_characters: expected {}, got {}",
+        char_count,
+        char_ids.len()
+    );
 
     (world, char_ids)
 }
@@ -105,11 +136,15 @@ fn create_world_with_rigid_bodies(body_count: usize) -> (PhysicsWorld, Vec<u64>)
         let id = world.add_dynamic_box(vec3(x, y, z), vec3(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
         body_ids.push(id);
     }
-    
+
     // CORRECTNESS: Verify all bodies spawned
-    assert_eq!(body_ids.len(), body_count,
-        "[CORRECTNESS FAILURE] create_world_with_rigid_bodies: expected {}, got {}", 
-        body_count, body_ids.len());
+    assert_eq!(
+        body_ids.len(),
+        body_count,
+        "[CORRECTNESS FAILURE] create_world_with_rigid_bodies: expected {}, got {}",
+        body_count,
+        body_ids.len()
+    );
 
     (world, body_ids)
 }
@@ -122,13 +157,21 @@ fn physics_full_tick_baseline(c: &mut Criterion) {
         let (mut world, char_ids) = create_world_with_characters(*npc_count);
 
         group.throughput(Throughput::Elements(*npc_count as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(npc_count), npc_count, |b, &count| {
-            b.iter(|| {
-                world.step();
-                // CORRECTNESS: Validate world state after step
-                assert_world_valid_after_step(&world, &char_ids, &format!("baseline/{}", count));
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(npc_count),
+            npc_count,
+            |b, &count| {
+                b.iter(|| {
+                    world.step();
+                    // CORRECTNESS: Validate world state after step
+                    assert_world_valid_after_step(
+                        &world,
+                        &char_ids,
+                        &format!("baseline/{}", count),
+                    );
+                });
+            },
+        );
     }
 
     group.finish();
@@ -145,13 +188,17 @@ fn physics_async_full_tick(c: &mut Criterion) {
         world.enable_async_physics(4);
 
         group.throughput(Throughput::Elements(*npc_count as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(npc_count), npc_count, |b, &count| {
-            b.iter(|| {
-                world.step();
-                // CORRECTNESS: Async simulation must produce valid state
-                assert_world_valid_after_step(&world, &char_ids, &format!("async_4/{}", count));
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(npc_count),
+            npc_count,
+            |b, &count| {
+                b.iter(|| {
+                    world.step();
+                    // CORRECTNESS: Async simulation must produce valid state
+                    assert_world_valid_after_step(&world, &char_ids, &format!("async_4/{}", count));
+                });
+            },
+        );
     }
 
     group.finish();
@@ -176,7 +223,11 @@ fn physics_async_thread_scaling(c: &mut Criterion) {
                 b.iter(|| {
                     world.step();
                     // CORRECTNESS: Thread count shouldn't affect correctness
-                    assert_world_valid_after_step(&world, &char_ids, &format!("scaling/{}threads", threads));
+                    assert_world_valid_after_step(
+                        &world,
+                        &char_ids,
+                        &format!("scaling/{}threads", threads),
+                    );
                 });
             },
         );
@@ -262,7 +313,7 @@ fn physics_async_character_simulation(c: &mut Criterion) {
 
             // Step physics
             world.step();
-            
+
             // CORRECTNESS: Validate world after character simulation
             assert_world_valid_after_step(&world, &char_ids, "character_simulation");
 
@@ -295,15 +346,20 @@ fn physics_async_mixed_workload(c: &mut Criterion) {
             let x = rng.gen_range(-40.0..40.0);
             let y = rng.gen_range(5.0..15.0);
             let z = rng.gen_range(-40.0..40.0);
-            let id = world.add_dynamic_box(vec3(x, y, z), vec3(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
+            let id =
+                world.add_dynamic_box(vec3(x, y, z), vec3(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
             all_body_ids.push(id);
         }
-        
+
         // CORRECTNESS: Verify all bodies spawned
         let expected_total = char_count + body_count;
-        assert_eq!(all_body_ids.len(), expected_total,
-            "[CORRECTNESS FAILURE] mixed_workload: expected {} bodies, got {}", 
-            expected_total, all_body_ids.len());
+        assert_eq!(
+            all_body_ids.len(),
+            expected_total,
+            "[CORRECTNESS FAILURE] mixed_workload: expected {} bodies, got {}",
+            expected_total,
+            all_body_ids.len()
+        );
 
         // Enable async
         world.enable_async_physics(4);

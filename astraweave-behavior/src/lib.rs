@@ -1439,6 +1439,41 @@ mod tests {
         let display = format!("{}", ctx);
         assert!(display.contains("BehaviorContext"));
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MUTATION REMEDIATION TESTS — targets lib.rs missed mutants
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_is_parallel_only_for_parallel_variant() {
+        // Targets: lib.rs:92 replace is_parallel -> bool with true
+        assert!(!BehaviorNode::action("a").is_parallel());
+        assert!(!BehaviorNode::condition("c").is_parallel());
+        assert!(!BehaviorNode::sequence(vec![]).is_parallel());
+        assert!(!BehaviorNode::selector(vec![]).is_parallel());
+        assert!(BehaviorNode::parallel(vec![], 1).is_parallel());
+    }
+
+    #[test]
+    fn mutation_total_node_count_addition_check() {
+        // Targets: lib.rs:157 replace + with -/* in total_node_count
+        // Single leaf
+        assert_eq!(BehaviorNode::action("a").total_node_count(), 1);
+
+        // Sequence with 2 children → 1 (seq) + 2 (leaves) = 3
+        let seq =
+            BehaviorNode::sequence(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]);
+        assert_eq!(seq.total_node_count(), 3);
+
+        // If + was replaced with -, 1 - 2 would underflow or be negative
+        // If + was replaced with *, 1 * 2 = 2 which != 3
+        // Deeper: Selector > [Sequence > [Action, Action], Action] = 1 + (1 + 1 + 1) + 1 = 5
+        let deep = BehaviorNode::selector(vec![
+            BehaviorNode::sequence(vec![BehaviorNode::action("a"), BehaviorNode::action("b")]),
+            BehaviorNode::action("c"),
+        ]);
+        assert_eq!(deep.total_node_count(), 5);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

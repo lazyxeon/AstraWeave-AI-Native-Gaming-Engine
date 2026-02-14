@@ -673,4 +673,320 @@ mod tests {
         // Radius 0 means only check (0,0)
         assert!(cover.len() <= 1);
     }
+
+    // ========================================================================
+    // Mutation-resistant boundary tests
+    // ========================================================================
+
+    // --- path_exists boundary tests ---
+
+    /// Catches: `+ dx` → `- dx`, `+ dy` → `- dy` in neighbor generation (lines 113-114)
+    /// If signs flip, BFS goes in wrong direction and can't reach (3,0) from (0,0)
+    #[test]
+    fn path_exists_neighbor_direction_matters() {
+        let obstacles = HashSet::new();
+        let bounds = (0, 0, 5, 5);
+        // Goal is reachable only by moving in +x direction
+        assert!(path_exists(&obstacles, iv2(0, 0), iv2(3, 0), bounds));
+        // Goal is reachable only by moving in +y direction
+        assert!(path_exists(&obstacles, iv2(0, 0), iv2(0, 3), bounds));
+    }
+
+    /// Catches: `< minx` → `<= minx`, `> maxx` → `>= maxx` (line 115)
+    /// If bounds become exclusive, positions AT the boundary are rejected
+    #[test]
+    fn path_exists_boundary_inclusive() {
+        let obstacles = HashSet::new();
+        let bounds = (0, 0, 3, 3);
+        // Start at min bound, goal at max bound — both should be valid
+        assert!(path_exists(&obstacles, iv2(0, 0), iv2(3, 3), bounds));
+        // Goal AT the exact max bound
+        assert!(path_exists(&obstacles, iv2(0, 0), iv2(3, 0), bounds));
+        assert!(path_exists(&obstacles, iv2(0, 0), iv2(0, 3), bounds));
+    }
+
+    /// Catches: `< miny` → `<= miny`, `> maxy` → `>= maxy` (line 115)
+    /// Path with a step THROUGH min/max boundary must fail, step TO boundary succeeds
+    #[test]
+    fn path_exists_beyond_boundary_fails() {
+        let obstacles = HashSet::new();
+        let bounds = (0, 0, 3, 3);
+        // Goal outside max bound — unreachable
+        assert!(!path_exists(&obstacles, iv2(0, 0), iv2(4, 0), bounds));
+        assert!(!path_exists(&obstacles, iv2(0, 0), iv2(0, 4), bounds));
+        // Goal below min bound — unreachable
+        assert!(!path_exists(&obstacles, iv2(0, 0), iv2(-1, 0), bounds));
+        assert!(!path_exists(&obstacles, iv2(0, 0), iv2(0, -1), bounds));
+    }
+
+    /// Catches: `delete -` in `p.x + dx` (line 112) — removes negation from dx=-1
+    #[test]
+    fn path_exists_requires_negative_step() {
+        let obstacles = HashSet::new();
+        let bounds = (-5, -5, 5, 5);
+        // Requires moving in -x direction
+        assert!(path_exists(&obstacles, iv2(3, 0), iv2(0, 0), bounds));
+        // Requires moving in -y direction
+        assert!(path_exists(&obstacles, iv2(0, 3), iv2(0, 0), bounds));
+    }
+
+    // --- astar_path boundary tests ---
+
+    /// Catches: `- with +` and `+ with -` in heuristic (line 161)
+    /// Heuristic h(a,b) = |a.x-b.x| + |a.y-b.y|
+    /// Mutating `.abs()` operand signs or `+` → `-` breaks admissibility
+    #[test]
+    fn astar_heuristic_arithmetic_matters() {
+        let obstacles = HashSet::new();
+        let bounds = (-10, -10, 10, 10);
+        // Path from (-3,-3) to (3,3): Manhattan distance = 12
+        let path = astar_path(&obstacles, iv2(-3, -3), iv2(3, 3), bounds);
+        assert!(!path.is_empty());
+        // Path should be optimal: exactly 12 steps + 1 for start = 13
+        assert_eq!(path.len(), 13, "A* should find optimal 12-step path, got {}", path.len() - 1);
+        assert_eq!((path[0].x, path[0].y), (-3, -3));
+        assert_eq!((path.last().unwrap().x, path.last().unwrap().y), (3, 3));
+    }
+
+    /// Catches: `+ dx` → `- dx`, `+ dy` → `- dy` in neighbor generation (lines 194-195)
+    #[test]
+    fn astar_neighbor_direction_matters() {
+        let obstacles = HashSet::new();
+        let bounds = (0, 0, 5, 5);
+        let path = astar_path(&obstacles, iv2(0, 0), iv2(5, 5), bounds);
+        assert!(!path.is_empty());
+        assert_eq!(path.last().unwrap().x, 5);
+        assert_eq!(path.last().unwrap().y, 5);
+    }
+
+    /// Catches: `< minx` → `<= minx`, `> maxx` → `>= maxx` (line 196)
+    #[test]
+    fn astar_boundary_inclusive() {
+        let obstacles = HashSet::new();
+        let bounds = (0, 0, 2, 2);
+        // Goal at exact boundary — must be reachable
+        let path = astar_path(&obstacles, iv2(0, 0), iv2(2, 2), bounds);
+        assert!(!path.is_empty(), "Goal at max boundary should be reachable");
+        assert_eq!((path.last().unwrap().x, path.last().unwrap().y), (2, 2));
+    }
+
+    /// Catches: `delete -` in neighbor generation (line 193)
+    #[test]
+    fn astar_requires_negative_step() {
+        let obstacles = HashSet::new();
+        let bounds = (-5, -5, 5, 5);
+        let path = astar_path(&obstacles, iv2(3, 3), iv2(0, 0), bounds);
+        assert!(!path.is_empty());
+        assert_eq!((path[0].x, path[0].y), (3, 3));
+        assert_eq!((path.last().unwrap().x, path.last().unwrap().y), (0, 0));
+    }
+
+    /// Catches: `ng + h(...)` → `ng * h(...)` (line 202) and `ng < ...` → `ng <= ...` (line 204)
+    #[test]
+    fn astar_priority_calculation_matters() {
+        let mut obstacles = HashSet::new();
+        // Obstacle forces going around — makes priority ordering critical
+        obstacles.insert((1, 0));
+        obstacles.insert((1, 1));
+        let bounds = (-5, -5, 5, 5);
+        let path = astar_path(&obstacles, iv2(0, 0), iv2(2, 0), bounds);
+        assert!(!path.is_empty());
+        // With correct A*, path should be short (4 steps)
+        assert!(path.len() <= 5, "A* should find efficient path, got {} steps", path.len());
+    }
+
+    /// Catches: `cur_g + 1` → `cur_g - 1` or `cur_g * 1` (line 207)
+    #[test]
+    fn astar_cost_increment_matters() {
+        let obstacles = HashSet::new();
+        let bounds = (0, 0, 5, 0);
+        // Simple horizontal path, each step should cost exactly 1
+        let path = astar_path(&obstacles, iv2(0, 0), iv2(5, 0), bounds);
+        assert_eq!(path.len(), 6, "5 steps should produce path of length 6");
+    }
+
+    // --- find_cover_positions boundary tests ---
+
+    /// Catches: `+ dx` → `- dx`, `+ dy` → `- dy` in coordinate gen (lines 237-238)
+    #[test]
+    fn cover_positions_coordinate_generation_correct() {
+        let mut obstacles = HashSet::new();
+        // Block enemy LOS in +x direction
+        obstacles.insert((3, 0));
+        let bounds = (-10, -10, 10, 10);
+        let from = iv2(2, 0);
+        let player = iv2(-5, 0);
+        let enemy = iv2(5, 0);
+        let radius = 2;
+        let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
+        // With obstacle at (3,0), positions behind it (>3 x) should have no enemy LOS
+        // but the actual positions depend on radius from `from`
+        for pos in &cover {
+            assert!(los_clear(&obstacles, player, *pos), "Cover pos should have player LOS");
+            assert!(!los_clear(&obstacles, enemy, *pos), "Cover pos should NOT have enemy LOS");
+        }
+    }
+
+    /// Catches: boundary check mutations in find_cover_positions (line 239)
+    #[test]
+    fn cover_positions_boundary_inclusive() {
+        let mut obstacles = HashSet::new();
+        obstacles.insert((2, 0)); // Block enemy LOS
+        let bounds = (0, 0, 4, 4);
+        let from = iv2(2, 2);
+        let player = iv2(0, 2);
+        let enemy = iv2(4, 2);
+        let radius = 3;
+        let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
+        // All cover positions must be within bounds
+        for pos in &cover {
+            assert!(pos.x >= 0 && pos.x <= 4, "x={} out of bounds", pos.x);
+            assert!(pos.y >= 0 && pos.y <= 4, "y={} out of bounds", pos.y);
+        }
+    }
+
+    // ========================================================================
+    // Mutation-resistant remediation: find_cover_positions + astar boundary
+    // ========================================================================
+
+    /// Kills: `find_cover_positions -> vec![]` and `-> vec![Default::default()]`
+    /// Previous tests never asserted cover is non-empty.
+    #[test]
+    fn find_cover_returns_nonempty_behind_wall() {
+        let mut obstacles = HashSet::new();
+        // Solid wall at x=3, blocking ALL enemy LOS through it
+        for y in -10..=10 {
+            obstacles.insert((3, y));
+        }
+        let bounds = (-10, -10, 10, 10);
+        let from = iv2(2, 0); // just left of wall
+        let player = iv2(-5, 0); // far left — clear LOS to positions left of wall
+        let enemy = iv2(8, 0); // far right — wall blocks LOS
+        let radius = 3;
+
+        let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
+        // Must find multiple cover positions (player can see through, enemy can't)
+        assert!(
+            cover.len() > 1,
+            "Should find >1 cover positions behind wall, got {}",
+            cover.len()
+        );
+        // Every cover position must satisfy the invariant
+        for pos in &cover {
+            assert!(
+                los_clear(&obstacles, player, *pos),
+                "Cover pos ({},{}) must have player LOS",
+                pos.x,
+                pos.y
+            );
+            assert!(
+                !los_clear(&obstacles, enemy, *pos),
+                "Cover pos ({},{}) must NOT have enemy LOS",
+                pos.x,
+                pos.y
+            );
+        }
+    }
+
+    /// Kills: `delete -` in `for dx in -radius..=radius` (line 235)
+    /// and `delete -` in `for dy in -radius..=radius` (line 236)
+    /// Mutation turns `-radius..=radius` into `radius..=radius` (only checks positive offsets).
+    #[test]
+    fn find_cover_requires_negative_offsets() {
+        let mut obstacles = HashSet::new();
+        // Wall at x=4, blocking enemy LOS from the right
+        for y in -10..=10 {
+            obstacles.insert((4, y));
+        }
+        let bounds = (-10, -10, 10, 10);
+        let from = iv2(3, 0); // just left of wall
+        let player = iv2(-5, 0);
+        let enemy = iv2(8, 0);
+        let radius = 4;
+
+        let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
+        // Cover must include positions at NEGATIVE offsets from `from` (x < 3)
+        // With `delete -`, only dx=radius=4 is checked: nx = 3+4 = 7 (right of wall, enemy side)
+        // Positions at x=7 have enemy LOS (no wall between 8 and 7) — no cover there
+        let has_neg_x_offset = cover.iter().any(|p| p.x < from.x);
+        assert!(
+            has_neg_x_offset,
+            "Cover at negative x offset from from.x={} required; got {:?}",
+            from.x,
+            cover
+        );
+    }
+
+    /// Kills: `replace + with *` in `from_glam.x + dx` (line 237)
+    /// and `replace + with *` in `from_glam.y + dy` (line 238)
+    /// With `*`: nx = from.x * dx, which gives wildly wrong positions when from != (0,0).
+    #[test]
+    fn find_cover_from_nonzero_origin_correct_offsets() {
+        let mut obstacles = HashSet::new();
+        // Wall at x=8
+        for y in -10..=10 {
+            obstacles.insert((8, y));
+        }
+        let bounds = (-10, -10, 20, 10);
+        let from = iv2(6, 3); // non-zero origin
+        let player = iv2(0, 3);
+        let enemy = iv2(12, 3);
+        let radius = 2;
+
+        let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
+        // With correct arithmetic: positions checked are (4..=8, 1..=5)
+        // Should find cover at positions like (7, y) which are behind wall from enemy
+        // With `* dx` mutation: nx = 6*(-2)=-12, 6*(-1)=-6, 6*0=0, 6*1=6, 6*2=12
+        // None of those are near the wall, so no cover found — test fails
+        assert!(
+            !cover.is_empty(),
+            "Cover near from=(6,3) behind wall at x=8 should exist"
+        );
+        // All cover positions should be near `from` (within radius)
+        for pos in &cover {
+            let dx = (pos.x - from.x).abs();
+            let dy = (pos.y - from.y).abs();
+            assert!(
+                dx <= radius && dy <= radius,
+                "Cover ({},{}) too far from from=({},{}), radius={}",
+                pos.x,
+                pos.y,
+                from.x,
+                from.y,
+                radius
+            );
+        }
+    }
+
+    /// Kills: `< with ==` and `< with <=` in `nx < minx` (astar_path boundary check)
+    /// In a narrow corridor at x=minx, mutation wrongly rejects positions AT the boundary.
+    #[test]
+    fn astar_narrow_corridor_at_min_boundary() {
+        let obstacles = HashSet::new();
+        // 1-wide corridor along x=0 (minx)
+        let bounds = (0, 0, 0, 5);
+        let path = astar_path(&obstacles, iv2(0, 0), iv2(0, 5), bounds);
+        // With `nx < 0` -> `nx == 0`: neighbor (0, y+1) has nx=0. 0==0 -> skip! Path blocked.
+        // With `nx < 0` -> `nx <= 0`: same effect at boundary.
+        assert_eq!(
+            path.len(),
+            6,
+            "Corridor path at min boundary should have 6 nodes"
+        );
+    }
+
+    /// Kills: `> with ==` and `> with >=` in `nx > maxx` (astar_path boundary check)
+    #[test]
+    fn astar_narrow_corridor_at_max_boundary() {
+        let obstacles = HashSet::new();
+        // 1-wide corridor along x=5 (maxx)
+        let bounds = (5, 0, 5, 5);
+        let path = astar_path(&obstacles, iv2(5, 0), iv2(5, 5), bounds);
+        // With `nx > 5` -> `nx >= 5`: neighbor (5, y) has nx=5. 5>=5 -> skip! Path blocked.
+        assert_eq!(
+            path.len(),
+            6,
+            "Corridor path at max boundary should have 6 nodes"
+        );
+    }
 }

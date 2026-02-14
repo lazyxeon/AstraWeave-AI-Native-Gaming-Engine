@@ -1,0 +1,71 @@
+astraweave-nav/src/lib.rs:491:9: replace NavMesh::find_path -> Vec<Vec3> with vec![Default::default()]
+astraweave-nav/src/lib.rs:531:9: replace NavMesh::invalidate_region with ()
+astraweave-nav/src/lib.rs:539:12: delete ! in NavMesh::invalidate_region
+astraweave-nav/src/lib.rs:546:9: replace NavMesh::needs_rebake -> bool with true
+astraweave-nav/src/lib.rs:546:9: replace NavMesh::needs_rebake -> bool with false
+astraweave-nav/src/lib.rs:546:9: delete ! in NavMesh::needs_rebake
+astraweave-nav/src/lib.rs:551:9: replace NavMesh::dirty_region_count -> usize with 0
+astraweave-nav/src/lib.rs:551:9: replace NavMesh::dirty_region_count -> usize with 1
+astraweave-nav/src/lib.rs:561:9: replace NavMesh::clear_dirty_regions with ()
+astraweave-nav/src/lib.rs:569:9: replace NavMesh::rebake_dirty_regions with ()
+astraweave-nav/src/lib.rs:577:27: replace += with -= in NavMesh::rebake_dirty_regions
+astraweave-nav/src/lib.rs:577:27: replace += with *= in NavMesh::rebake_dirty_regions
+astraweave-nav/src/lib.rs:612:9: replace NavMesh::rebake_count -> u32 with 0
+astraweave-nav/src/lib.rs:612:9: replace NavMesh::rebake_count -> u32 with 1
+astraweave-nav/src/lib.rs:619:9: replace NavMesh::path_crosses_dirty_region -> bool with true
+astraweave-nav/src/lib.rs:619:9: replace NavMesh::path_crosses_dirty_region -> bool with false
+astraweave-nav/src/lib.rs:636:9: replace NavMesh::triangle_count -> usize with 0
+astraweave-nav/src/lib.rs:636:9: replace NavMesh::triangle_count -> usize with 1
+astraweave-nav/src/lib.rs:642:9: replace NavMesh::is_empty -> bool with true
+astraweave-nav/src/lib.rs:642:9: replace NavMesh::is_empty -> bool with false
+astraweave-nav/src/lib.rs:648:9: replace NavMesh::edge_count -> usize with 0
+astraweave-nav/src/lib.rs:648:68: replace / with % in NavMesh::edge_count
+astraweave-nav/src/lib.rs:648:68: replace / with * in NavMesh::edge_count
+astraweave-nav/src/lib.rs:654:9: replace NavMesh::average_neighbor_count -> f32 with 0.0
+astraweave-nav/src/lib.rs:654:9: replace NavMesh::average_neighbor_count -> f32 with -1.0
+astraweave-nav/src/lib.rs:658:22: replace / with % in NavMesh::average_neighbor_count
+astraweave-nav/src/lib.rs:658:22: replace / with * in NavMesh::average_neighbor_count
+astraweave-nav/src/lib.rs:664:9: replace NavMesh::isolated_count -> usize with 0
+astraweave-nav/src/lib.rs:664:9: replace NavMesh::isolated_count -> usize with 1
+astraweave-nav/src/lib.rs:670:9: replace NavMesh::total_area -> f32 with 0.0
+astraweave-nav/src/lib.rs:670:9: replace NavMesh::total_area -> f32 with 1.0
+astraweave-nav/src/lib.rs:670:9: replace NavMesh::total_area -> f32 with -1.0
+astraweave-nav/src/lib.rs:676:9: replace NavMesh::bounds -> Option<Aabb> with None
+astraweave-nav/src/lib.rs:696:9: replace NavMesh::get_triangle -> Option<&NavTri> with None
+astraweave-nav/src/lib.rs:702:9: replace NavMesh::summary -> String with String::new()
+astraweave-nav/src/lib.rs:702:9: replace NavMesh::summary -> String with "xyzzy".into()
+astraweave-nav/src/lib.rs:714:9: replace <impl fmt::Display for NavMesh>::fmt -> fmt::Result with Ok(Default::default())
+astraweave-nav/src/lib.rs:719:5: replace share_edge -> bool with true
+astraweave-nav/src/lib.rs:719:5: replace share_edge -> bool with false
+astraweave-nav/src/lib.rs:722:32: replace <= with > in share_edge
+astraweave-nav/src/lib.rs:723:24: replace += with -= in share_edge
+astraweave-nav/src/lib.rs:723:24: replace += with *= in share_edge
+astraweave-nav/src/lib.rs:727:12: replace >= with < in share_edge
+astraweave-nav/src/lib.rs:731:5: replace closest_tri -> Option<usize> with None
+astraweave-nav/src/lib.rs:731:5: replace closest_tri -> Option<usize> with Some(0)
+astraweave-nav/src/lib.rs:731:5: replace closest_tri -> Option<usize> with Some(1)
+astraweave-nav/src/lib.rs:742:5: replace astar_tri -> Vec<usize> with vec![]
+astraweave-nav/src/lib.rs:742:5: replace astar_tri -> Vec<usize> with vec![0]
+astraweave-nav/src/lib.rs:742:5: replace astar_tri -> Vec<usize> with vec![1]
+astraweave-nav/src/lib.rs:770:14: replace == with != in astar_tri
+astraweave-nav/src/lib.rs:776:25: replace + with - in astar_tri
+astraweave-nav/src/lib.rs:777:19: replace < with == in astar_tri
+astraweave-nav/src/lib.rs:777:19: replace < with > in astar_tri
+astraweave-nav/src/lib.rs:793:16: replace == with != in astar_tri
+astraweave-nav/src/lib.rs:798:30: replace != with == in astar_tri
+astraweave-nav/src/lib.rs:805:18: replace < with == in smooth
+astraweave-nav/src/lib.rs:805:18: replace < with > in smooth
+astraweave-nav/src/lib.rs:809:31: replace - with + in smooth
+astraweave-nav/src/lib.rs:809:31: replace - with / in smooth
+astraweave-nav/src/lib.rs:810:27: replace - with + in smooth
+astraweave-nav/src/lib.rs:810:27: replace - with / in smooth
+astraweave-nav/src/lib.rs:811:27: replace + with - in smooth
+astraweave-nav/src/lib.rs:811:27: replace + with * in smooth
+astraweave-nav/src/lib.rs:812:46: replace + with - in smooth
+astraweave-nav/src/lib.rs:812:46: replace + with * in smooth
+astraweave-nav/src/lib.rs:812:31: replace + with - in smooth
+astraweave-nav/src/lib.rs:812:31: replace + with * in smooth
+astraweave-nav/src/lib.rs:812:40: replace * with + in smooth
+astraweave-nav/src/lib.rs:812:40: replace * with / in smooth
+astraweave-nav/src/lib.rs:812:50: replace * with + in smooth
+astraweave-nav/src/lib.rs:812:50: replace * with / in smooth

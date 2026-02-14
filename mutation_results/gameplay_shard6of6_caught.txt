@@ -1,0 +1,57 @@
+astraweave-gameplay/src/water_movement.rs:506:77: replace * with + in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:506:59: replace * with + in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:506:59: replace * with / in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:506:39: replace * with + in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:506:39: replace * with / in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:507:27: delete - in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:515:38: replace * with + in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:515:38: replace * with / in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/weaving.rs:28:37: replace <= with > in apply_weave_op
+astraweave-gameplay/src/weaving.rs:41:34: replace -= with += in apply_weave_op
+astraweave-gameplay/src/weaving.rs:41:34: replace -= with /= in apply_weave_op
+astraweave-gameplay/src/weaving.rs:44:37: replace <= with > in apply_weave_op
+astraweave-gameplay/src/weaving.rs:59:34: replace -= with += in apply_weave_op
+astraweave-gameplay/src/weaving.rs:59:34: replace -= with /= in apply_weave_op
+astraweave-gameplay/src/weaving.rs:62:35: replace <= with > in apply_weave_op
+astraweave-gameplay/src/weaving.rs:67:32: replace -= with += in apply_weave_op
+astraweave-gameplay/src/weaving.rs:67:32: replace -= with /= in apply_weave_op
+astraweave-gameplay/src/weaving.rs:71:35: replace <= with > in apply_weave_op
+astraweave-gameplay/src/weaving.rs:76:32: replace -= with += in apply_weave_op
+astraweave-gameplay/src/weaving.rs:76:32: replace -= with /= in apply_weave_op
+astraweave-gameplay/src/weaving.rs:80:37: replace <= with > in apply_weave_op
+astraweave-gameplay/src/weaving.rs:92:34: replace -= with += in apply_weave_op
+astraweave-gameplay/src/weaving.rs:92:34: replace -= with /= in apply_weave_op
+astraweave-gameplay/src/weaving.rs:112:34: delete - in apply_weave_op
+astraweave-gameplay/src/weave_portals.rs:25:18: replace < with == in build_portals
+astraweave-gameplay/src/weave_portals.rs:49:5: replace shared_edge -> Option<(Vec3, Vec3)> with None
+astraweave-gameplay/src/weave_portals.rs:49:5: replace shared_edge -> Option<(Vec3, Vec3)> with Some((Default::default(), Default::default()))
+astraweave-gameplay/src/weave_portals.rs:52:33: replace <= with > in shared_edge
+astraweave-gameplay/src/weave_portals.rs:57:21: replace >= with < in shared_edge
+astraweave-gameplay/src/weave_portals.rs:73:5: replace string_pull -> Vec<Vec3> with vec![]
+astraweave-gameplay/src/weave_portals.rs:73:5: replace string_pull -> Vec<Vec3> with vec![Default::default()]
+astraweave-gameplay/src/weave_portals.rs:101:13: replace < with <= in string_pull
+astraweave-gameplay/src/weave_portals.rs:120:27: replace + with - in string_pull
+astraweave-gameplay/src/weave_portals.rs:125:11: replace += with -= in string_pull
+astraweave-gameplay/src/weave_portals.rs:132:5: replace triangle_area2 -> f32 with 0.0
+astraweave-gameplay/src/weave_portals.rs:132:5: replace triangle_area2 -> f32 with 1.0
+astraweave-gameplay/src/weave_portals.rs:132:5: replace triangle_area2 -> f32 with -1.0
+astraweave-gameplay/src/weave_portals.rs:132:16: replace - with + in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:132:16: replace - with / in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:133:16: replace - with + in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:133:16: replace - with / in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:134:17: replace - with + in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:134:17: replace - with / in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:134:10: replace * with + in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:134:10: replace * with / in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:134:24: replace * with + in triangle_area2
+astraweave-gameplay/src/weave_portals.rs:134:24: replace * with / in triangle_area2
+astraweave-gameplay/src/weave_telemetry.rs:15:9: replace WeaveTelemetry::add_terrain with ()
+astraweave-gameplay/src/weave_telemetry.rs:15:26: replace += with -= in WeaveTelemetry::add_terrain
+astraweave-gameplay/src/weave_telemetry.rs:15:26: replace += with *= in WeaveTelemetry::add_terrain
+astraweave-gameplay/src/weave_telemetry.rs:16:27: replace += with -= in WeaveTelemetry::add_terrain
+astraweave-gameplay/src/weave_telemetry.rs:16:27: replace += with *= in WeaveTelemetry::add_terrain
+astraweave-gameplay/src/weave_telemetry.rs:19:9: replace WeaveTelemetry::add_weather with ()
+astraweave-gameplay/src/weave_telemetry.rs:19:26: replace += with -= in WeaveTelemetry::add_weather
+astraweave-gameplay/src/weave_telemetry.rs:19:26: replace += with *= in WeaveTelemetry::add_weather
+astraweave-gameplay/src/weave_telemetry.rs:20:27: replace += with -= in WeaveTelemetry::add_weather
+astraweave-gameplay/src/weave_telemetry.rs:20:27: replace += with *= in WeaveTelemetry::add_weather

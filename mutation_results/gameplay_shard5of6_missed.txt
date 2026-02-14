@@ -1,0 +1,38 @@
+astraweave-gameplay/src/water_movement.rs:300:40: replace > with < in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:326:9: replace WaterPlayerState::toggle_dive with ()
+astraweave-gameplay/src/water_movement.rs:326:26: delete ! in WaterPlayerState::toggle_dive
+astraweave-gameplay/src/water_movement.rs:331:9: replace WaterPlayerState::oxygen_percent -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:331:9: replace WaterPlayerState::oxygen_percent -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:331:9: replace WaterPlayerState::oxygen_percent -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:331:21: replace / with % in WaterPlayerState::oxygen_percent
+astraweave-gameplay/src/water_movement.rs:331:21: replace / with * in WaterPlayerState::oxygen_percent
+astraweave-gameplay/src/water_movement.rs:346:9: replace WaterPlayerState::get_speed_multiplier -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:346:9: replace WaterPlayerState::get_speed_multiplier -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:346:9: replace WaterPlayerState::get_speed_multiplier -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:351:9: replace WaterPlayerState::get_stamina_drain_multiplier -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:351:9: replace WaterPlayerState::get_stamina_drain_multiplier -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:351:9: replace WaterPlayerState::get_stamina_drain_multiplier -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:356:9: replace WaterPlayerState::get_stamina_regen_multiplier -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:360:13: delete match arm 0 in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:361:13: delete match arm 1 in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:362:13: delete match arm 2 in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:366:13: replace - with + in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:366:13: replace - with / in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:366:32: replace * with + in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:376:9: replace WaterPlayerState::add_oxygen with ()
+astraweave-gameplay/src/water_movement.rs:376:36: replace + with - in WaterPlayerState::add_oxygen
+astraweave-gameplay/src/water_movement.rs:376:36: replace + with * in WaterPlayerState::add_oxygen
+astraweave-gameplay/src/water_movement.rs:381:9: replace WaterPlayerState::can_breathe -> bool with true
+astraweave-gameplay/src/water_movement.rs:381:9: replace WaterPlayerState::can_breathe -> bool with false
+astraweave-gameplay/src/water_movement.rs:381:38: replace || with && in WaterPlayerState::can_breathe
+astraweave-gameplay/src/water_movement.rs:381:9: delete ! in WaterPlayerState::can_breathe
+astraweave-gameplay/src/water_movement.rs:381:53: replace > with == in WaterPlayerState::can_breathe
+astraweave-gameplay/src/water_movement.rs:381:53: replace > with < in WaterPlayerState::can_breathe
+astraweave-gameplay/src/water_movement.rs:381:53: replace > with >= in WaterPlayerState::can_breathe
+astraweave-gameplay/src/water_movement.rs:449:13: delete match arm 0 in WaterSkills::oxygen_bonus
+astraweave-gameplay/src/water_movement.rs:450:13: delete match arm 1 in WaterSkills::oxygen_bonus
+astraweave-gameplay/src/water_movement.rs:451:13: delete match arm 2 in WaterSkills::oxygen_bonus
+astraweave-gameplay/src/water_movement.rs:459:13: delete match arm 0 in WaterSkills::swim_speed_bonus
+astraweave-gameplay/src/water_movement.rs:460:13: delete match arm 1 in WaterSkills::swim_speed_bonus
+astraweave-gameplay/src/water_movement.rs:461:13: delete match arm 2 in WaterSkills::swim_speed_bonus
+astraweave-gameplay/src/water_movement.rs:500:23: replace > with >= in WaterMovementHelper::calculate_water_forces

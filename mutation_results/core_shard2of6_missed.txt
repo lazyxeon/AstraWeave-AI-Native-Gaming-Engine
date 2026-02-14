@@ -1,0 +1,1 @@
+astraweave-core/src/schema.rs:329:9: replace PlanIntent::empty -> Self with Default::default()

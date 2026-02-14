@@ -3,8 +3,8 @@
 //! Benchmarks for vehicle simulation including suspension, drivetrain, and friction.
 
 use astraweave_physics::vehicle::{
-    EngineConfig, FrictionCurve, TransmissionConfig, Vehicle, VehicleConfig, 
-    VehicleInput, VehicleManager,
+    EngineConfig, FrictionCurve, TransmissionConfig, Vehicle, VehicleConfig, VehicleInput,
+    VehicleManager,
 };
 use astraweave_physics::PhysicsWorld;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
@@ -15,7 +15,7 @@ const DT: f32 = 1.0 / 60.0;
 
 fn vehicle_creation(c: &mut Criterion) {
     let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-    
+
     c.bench_function("vehicle_creation", |b| {
         b.iter(|| {
             let mut mgr = VehicleManager::new();
@@ -27,9 +27,13 @@ fn vehicle_creation(c: &mut Criterion) {
 fn vehicle_update_single(c: &mut Criterion) {
     let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
     physics.create_ground_plane(Vec3::new(100.0, 0.5, 100.0), 0.9);
-    
+
     let mut mgr = VehicleManager::new();
-    mgr.spawn(&mut physics, Vec3::new(0.0, 1.0, 0.0), VehicleConfig::default());
+    mgr.spawn(
+        &mut physics,
+        Vec3::new(0.0, 1.0, 0.0),
+        VehicleConfig::default(),
+    );
 
     c.bench_function("vehicle_update_single", |b| {
         b.iter(|| {
@@ -42,10 +46,14 @@ fn vehicle_update_single(c: &mut Criterion) {
 fn vehicle_update_with_input(c: &mut Criterion) {
     let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
     physics.create_ground_plane(Vec3::new(100.0, 0.5, 100.0), 0.9);
-    
+
     let mut mgr = VehicleManager::new();
-    let id = mgr.spawn(&mut physics, Vec3::new(0.0, 1.0, 0.0), VehicleConfig::default());
-    
+    let id = mgr.spawn(
+        &mut physics,
+        Vec3::new(0.0, 1.0, 0.0),
+        VehicleConfig::default(),
+    );
+
     let input = VehicleInput {
         throttle: 1.0,
         steering: 0.3,
@@ -62,25 +70,29 @@ fn vehicle_update_with_input(c: &mut Criterion) {
 
 fn vehicle_multiple(c: &mut Criterion) {
     let mut group = c.benchmark_group("vehicle_multiple");
-    
+
     for count in [1, 5, 10, 20].iter() {
         group.throughput(Throughput::Elements(*count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
             let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
             physics.create_ground_plane(Vec3::new(200.0, 0.5, 200.0), 0.9);
-            
+
             let mut mgr = VehicleManager::new();
             for i in 0..count {
-                mgr.spawn(&mut physics, Vec3::new(i as f32 * 10.0, 1.0, 0.0), VehicleConfig::default());
+                mgr.spawn(
+                    &mut physics,
+                    Vec3::new(i as f32 * 10.0, 1.0, 0.0),
+                    VehicleConfig::default(),
+                );
             }
-            
+
             b.iter(|| {
                 mgr.update(&mut physics, DT);
                 black_box(())
             });
         });
     }
-    
+
     group.finish();
 }
 
@@ -91,9 +103,9 @@ fn friction_curve_evaluation(c: &mut Criterion) {
         ("ice", FrictionCurve::ice()),
         ("mud", FrictionCurve::mud()),
     ];
-    
+
     let mut group = c.benchmark_group("friction_curve");
-    
+
     for (name, curve) in curves.iter() {
         group.bench_with_input(BenchmarkId::from_parameter(name), &curve, |b, curve| {
             b.iter(|| {
@@ -106,13 +118,13 @@ fn friction_curve_evaluation(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn engine_torque_curve(c: &mut Criterion) {
     let engine = EngineConfig::default();
-    
+
     c.bench_function("engine_torque_curve", |b| {
         b.iter(|| {
             let mut sum = 0.0f32;
@@ -127,7 +139,7 @@ fn engine_torque_curve(c: &mut Criterion) {
 
 fn transmission_gear_ratios(c: &mut Criterion) {
     let trans = TransmissionConfig::default();
-    
+
     c.bench_function("transmission_effective_ratio", |b| {
         b.iter(|| {
             let mut sum = 0.0f32;

@@ -206,7 +206,10 @@ mod projectile_coverage {
         if let Some(proj) = manager.get_mut(id) {
             proj.velocity = Vec3::new(100.0, 0.0, 0.0);
         }
-        assert_eq!(manager.get(id).unwrap().velocity, Vec3::new(100.0, 0.0, 0.0));
+        assert_eq!(
+            manager.get(id).unwrap().velocity,
+            Vec3::new(100.0, 0.0, 0.0)
+        );
 
         assert_eq!(manager.iter().count(), 1);
 
@@ -239,7 +242,7 @@ mod projectile_coverage {
 
         // Edge case: zero radius - distance (0.0) >= radius (0.0) is true, returns 0.0
         assert_eq!(linear.calculate(0.0, 0.0), 0.0);
-        
+
         // Positive radius, center position returns 1.0
         assert_eq!(constant.calculate(0.0, 1.0), 1.0);
     }
@@ -551,7 +554,9 @@ mod cloth_coverage {
         }
 
         // Cloth should have fallen and moved with wind
-        let bottom_center = cloth.particle_position(cloth.config.width * (cloth.config.height - 1) + cloth.config.width / 2);
+        let bottom_center = cloth.particle_position(
+            cloth.config.width * (cloth.config.height - 1) + cloth.config.width / 2,
+        );
         assert!(bottom_center.is_some());
     }
 }
@@ -593,7 +598,10 @@ mod destruction_coverage {
         };
         let id1 = manager.add_destructible(config1, Vec3::ZERO);
         manager.apply_force(id1, 150.0);
-        assert_eq!(manager.get(id1).unwrap().state, DestructibleState::Destroying);
+        assert_eq!(
+            manager.get(id1).unwrap().state,
+            DestructibleState::Destroying
+        );
 
         // Health trigger
         let config2 = DestructibleConfig {
@@ -605,7 +613,10 @@ mod destruction_coverage {
         };
         let id2 = manager.add_destructible(config2, Vec3::new(5.0, 0.0, 0.0));
         manager.apply_damage(id2, 100.0);
-        assert_eq!(manager.get(id2).unwrap().state, DestructibleState::Destroying);
+        assert_eq!(
+            manager.get(id2).unwrap().state,
+            DestructibleState::Destroying
+        );
 
         // Collision trigger
         let config3 = DestructibleConfig {
@@ -614,7 +625,10 @@ mod destruction_coverage {
         };
         let id3 = manager.add_destructible(config3, Vec3::new(10.0, 0.0, 0.0));
         manager.on_collision(id3, 1.0);
-        assert_eq!(manager.get(id3).unwrap().state, DestructibleState::Destroying);
+        assert_eq!(
+            manager.get(id3).unwrap().state,
+            DestructibleState::Destroying
+        );
 
         // Manual trigger
         let config4 = DestructibleConfig {
@@ -623,7 +637,10 @@ mod destruction_coverage {
         };
         let id4 = manager.add_destructible(config4, Vec3::new(15.0, 0.0, 0.0));
         manager.destroy(id4);
-        assert_eq!(manager.get(id4).unwrap().state, DestructibleState::Destroying);
+        assert_eq!(
+            manager.get(id4).unwrap().state,
+            DestructibleState::Destroying
+        );
     }
 
     #[test]
@@ -656,7 +673,7 @@ mod destruction_coverage {
         // After health <= 0, state is Destroying, not Destroyed
         assert_eq!(dest.state, DestructibleState::Destroying);
         assert!(dest.should_spawn_debris());
-        
+
         // Must call complete_destruction to reach Destroyed state
         dest.complete_destruction();
         assert!(dest.is_destroyed());
@@ -703,10 +720,8 @@ mod environment_coverage {
     fn test_water_volume_operations() {
         let mut manager = EnvironmentManager::new();
 
-        let water_id = manager.add_water_volume(
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(50.0, 10.0, 50.0),
-        );
+        let water_id =
+            manager.add_water_volume(Vec3::new(0.0, 0.0, 0.0), Vec3::new(50.0, 10.0, 50.0));
 
         if let Some(water) = manager.get_water_volume_mut(water_id) {
             water.current = Vec3::new(5.0, 0.0, 0.0);
@@ -861,10 +876,8 @@ mod spatial_hash_coverage {
         for i in 0..100 {
             let x = (i % 10) as f32 * 5.0;
             let z = (i / 10) as f32 * 5.0;
-            let aabb = AABB::from_center_extents(
-                Vec3::new(x + 0.5, 0.5, z + 0.5),
-                Vec3::splat(0.5),
-            );
+            let aabb =
+                AABB::from_center_extents(Vec3::new(x + 0.5, 0.5, z + 0.5), Vec3::splat(0.5));
             hash.insert(i as u64, aabb);
         }
 
@@ -974,7 +987,8 @@ mod physics_world_coverage {
     fn test_velocity_operations() {
         let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
 
-        let body_id = physics.add_dynamic_box(Vec3::new(0.0, 10.0, 0.0), Vec3::ONE, 1.0, Layers::DEFAULT);
+        let body_id =
+            physics.add_dynamic_box(Vec3::new(0.0, 10.0, 0.0), Vec3::ONE, 1.0, Layers::DEFAULT);
 
         physics.set_velocity(body_id, Vec3::new(10.0, 5.0, -3.0));
 
@@ -992,7 +1006,9 @@ mod physics_world_coverage {
         physics.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
         physics.add_dynamic_box(Vec3::new(0.0, 2.0, 0.0), Vec3::ONE, 10.0, Layers::DEFAULT);
 
-        if let Some(hit) = physics.raycast(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.0, -1.0, 0.0), 20.0) {
+        if let Some(hit) =
+            physics.raycast(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.0, -1.0, 0.0), 20.0)
+        {
             assert!(hit.3 < 20.0); // hit.3 is distance
         }
     }

@@ -1,0 +1,6 @@
+astraweave-prompts/src/library.rs:51:9: replace PromptLibrary::get_template -> anyhow::Result<crate::template::PromptTemplate> with Ok(Default::default())
+astraweave-prompts/src/library.rs:60:9: replace PromptLibrary::delete_template -> Option<crate::template::PromptTemplate> with Some(Default::default())
+astraweave-prompts/src/library.rs:271:9: replace TemplateLibrary::get_collection -> Option<&TemplateCollection> with Some(Box::leak(Box::new(Default::default())))
+astraweave-prompts/src/library.rs:321:9: replace TemplateLibrary::load_from_directory -> Result<Self> with Ok(Default::default())
+astraweave-prompts/src/loader.rs:40:9: replace PromptLoader::load_from_dir -> Result<Vec<PromptTemplate>> with Ok(vec![Default::default()])
+astraweave-prompts/src/loader.rs:71:9: replace PromptLoader::load_file -> Result<PromptTemplate> with Ok(Default::default())

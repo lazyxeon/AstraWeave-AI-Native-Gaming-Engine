@@ -1,0 +1,65 @@
+astraweave-gameplay/src/water_movement.rs:291:9: replace WaterPlayerState::update_oxygen -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:293:25: replace -= with += in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:293:25: replace -= with /= in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:293:58: replace * with + in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:293:58: replace * with / in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:295:28: replace <= with > in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:297:37: replace += with -= in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:297:37: replace += with *= in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:300:40: replace > with == in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:300:40: replace > with >= in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:301:61: replace * with + in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:301:61: replace * with / in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:306:25: replace += with -= in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:306:25: replace += with *= in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:306:61: replace * with + in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:306:61: replace * with / in WaterPlayerState::update_oxygen
+astraweave-gameplay/src/water_movement.rs:316:9: replace WaterPlayerState::start_dive with ()
+astraweave-gameplay/src/water_movement.rs:321:9: replace WaterPlayerState::stop_dive with ()
+astraweave-gameplay/src/water_movement.rs:336:9: replace WaterPlayerState::is_drowning -> bool with true
+astraweave-gameplay/src/water_movement.rs:336:9: replace WaterPlayerState::is_drowning -> bool with false
+astraweave-gameplay/src/water_movement.rs:336:28: replace && with || in WaterPlayerState::is_drowning
+astraweave-gameplay/src/water_movement.rs:336:21: replace <= with > in WaterPlayerState::is_drowning
+astraweave-gameplay/src/water_movement.rs:336:51: replace > with == in WaterPlayerState::is_drowning
+astraweave-gameplay/src/water_movement.rs:336:51: replace > with < in WaterPlayerState::is_drowning
+astraweave-gameplay/src/water_movement.rs:336:51: replace > with >= in WaterPlayerState::is_drowning
+astraweave-gameplay/src/water_movement.rs:341:9: replace WaterPlayerState::is_low_oxygen -> bool with true
+astraweave-gameplay/src/water_movement.rs:341:9: replace WaterPlayerState::is_low_oxygen -> bool with false
+astraweave-gameplay/src/water_movement.rs:341:21: replace < with == in WaterPlayerState::is_low_oxygen
+astraweave-gameplay/src/water_movement.rs:341:21: replace < with > in WaterPlayerState::is_low_oxygen
+astraweave-gameplay/src/water_movement.rs:341:21: replace < with <= in WaterPlayerState::is_low_oxygen
+astraweave-gameplay/src/water_movement.rs:341:39: replace * with + in WaterPlayerState::is_low_oxygen
+astraweave-gameplay/src/water_movement.rs:341:39: replace * with / in WaterPlayerState::is_low_oxygen
+astraweave-gameplay/src/water_movement.rs:356:9: replace WaterPlayerState::get_stamina_regen_multiplier -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:356:9: replace WaterPlayerState::get_stamina_regen_multiplier -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:366:32: replace * with / in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:366:20: replace - with + in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:366:20: replace - with / in WaterPlayerState::get_stamina_regen_multiplier
+astraweave-gameplay/src/water_movement.rs:371:9: replace WaterPlayerState::get_stamina_max_multiplier -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:371:9: replace WaterPlayerState::get_stamina_max_multiplier -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:371:9: replace WaterPlayerState::get_stamina_max_multiplier -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:386:9: replace WaterPlayerState::set_wet_resistance with ()
+astraweave-gameplay/src/water_movement.rs:429:9: replace WaterSkills::can_splash_dash -> bool with true
+astraweave-gameplay/src/water_movement.rs:429:9: replace WaterSkills::can_splash_dash -> bool with false
+astraweave-gameplay/src/water_movement.rs:429:26: replace && with || in WaterSkills::can_splash_dash
+astraweave-gameplay/src/water_movement.rs:429:52: replace <= with > in WaterSkills::can_splash_dash
+astraweave-gameplay/src/water_movement.rs:434:9: replace WaterSkills::use_splash_dash with ()
+astraweave-gameplay/src/water_movement.rs:441:9: replace WaterSkills::update with ()
+astraweave-gameplay/src/water_movement.rs:441:35: replace > with == in WaterSkills::update
+astraweave-gameplay/src/water_movement.rs:441:35: replace > with < in WaterSkills::update
+astraweave-gameplay/src/water_movement.rs:441:35: replace > with >= in WaterSkills::update
+astraweave-gameplay/src/water_movement.rs:442:36: replace -= with += in WaterSkills::update
+astraweave-gameplay/src/water_movement.rs:442:36: replace -= with /= in WaterSkills::update
+astraweave-gameplay/src/water_movement.rs:448:9: replace WaterSkills::oxygen_bonus -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:448:9: replace WaterSkills::oxygen_bonus -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:448:9: replace WaterSkills::oxygen_bonus -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:458:9: replace WaterSkills::swim_speed_bonus -> f32 with 0.0
+astraweave-gameplay/src/water_movement.rs:458:9: replace WaterSkills::swim_speed_bonus -> f32 with 1.0
+astraweave-gameplay/src/water_movement.rs:458:9: replace WaterSkills::swim_speed_bonus -> f32 with -1.0
+astraweave-gameplay/src/water_movement.rs:497:9: replace WaterMovementHelper::calculate_water_forces -> WaterForces with Default::default()
+astraweave-gameplay/src/water_movement.rs:500:23: replace > with == in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:500:23: replace > with < in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:501:66: replace * with + in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:501:66: replace * with / in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:505:38: replace > with == in WaterMovementHelper::calculate_water_forces
+astraweave-gameplay/src/water_movement.rs:505:38: replace > with < in WaterMovementHelper::calculate_water_forces

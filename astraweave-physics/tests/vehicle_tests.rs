@@ -5,8 +5,8 @@
 
 use astraweave_physics::{
     vehicle::{
-        DrivetrainType, EngineConfig, FrictionCurve, TransmissionConfig, Vehicle,
-        VehicleConfig, VehicleInput, VehicleManager, WheelConfig, WheelPosition,
+        DrivetrainType, EngineConfig, FrictionCurve, TransmissionConfig, Vehicle, VehicleConfig,
+        VehicleInput, VehicleManager, WheelConfig, WheelPosition,
     },
     PhysicsWorld,
 };
@@ -35,9 +35,21 @@ fn test_multiple_vehicles() {
 
     let mut manager = VehicleManager::new();
 
-    let id1 = manager.spawn(&mut physics, Vec3::new(-10.0, 1.0, 0.0), VehicleConfig::default());
-    let id2 = manager.spawn(&mut physics, Vec3::new(0.0, 1.0, 0.0), VehicleConfig::default());
-    let id3 = manager.spawn(&mut physics, Vec3::new(10.0, 1.0, 0.0), VehicleConfig::default());
+    let id1 = manager.spawn(
+        &mut physics,
+        Vec3::new(-10.0, 1.0, 0.0),
+        VehicleConfig::default(),
+    );
+    let id2 = manager.spawn(
+        &mut physics,
+        Vec3::new(0.0, 1.0, 0.0),
+        VehicleConfig::default(),
+    );
+    let id3 = manager.spawn(
+        &mut physics,
+        Vec3::new(10.0, 1.0, 0.0),
+        VehicleConfig::default(),
+    );
 
     assert_ne!(id1, id2);
     assert_ne!(id2, id3);
@@ -69,7 +81,11 @@ fn test_suspension_compression() {
     physics.create_ground_plane(Vec3::new(100.0, 0.5, 100.0), 0.8);
 
     let mut manager = VehicleManager::new();
-    let id = manager.spawn(&mut physics, Vec3::new(0.0, 2.0, 0.0), VehicleConfig::default());
+    let id = manager.spawn(
+        &mut physics,
+        Vec3::new(0.0, 2.0, 0.0),
+        VehicleConfig::default(),
+    );
 
     // Simulate dropping the vehicle
     for _ in 0..120 {
@@ -80,7 +96,7 @@ fn test_suspension_compression() {
     // Check that some wheels are grounded
     let vehicle = manager.get(id).unwrap();
     let grounded = vehicle.grounded_wheels();
-    
+
     // Vehicle should settle with wheels on ground
     // Note: This depends on raycast working correctly
     assert!(
@@ -96,12 +112,20 @@ fn test_engine_torque_curve_shape() {
     let engine = EngineConfig::default();
 
     // Sample torque curve at various RPMs
-    let rpm_samples = [800.0, 1500.0, 2500.0, 3500.0, 4500.0, 5500.0, 6500.0, 7000.0];
-    let torques: Vec<f32> = rpm_samples.iter().map(|&rpm| engine.torque_at_rpm(rpm)).collect();
+    let rpm_samples = [
+        800.0, 1500.0, 2500.0, 3500.0, 4500.0, 5500.0, 6500.0, 7000.0,
+    ];
+    let torques: Vec<f32> = rpm_samples
+        .iter()
+        .map(|&rpm| engine.torque_at_rpm(rpm))
+        .collect();
 
     // Torque should rise then fall
     assert!(torques[0] < torques[2], "Torque should increase from idle");
-    assert!(torques[4] > torques[6], "Torque should decrease after peak RPM");
+    assert!(
+        torques[4] > torques[6],
+        "Torque should decrease after peak RPM"
+    );
 }
 
 /// Test transmission gear progression
@@ -113,7 +137,12 @@ fn test_transmission_gear_progression() {
     let mut prev_ratio = f32::MAX;
     for gear in 1..=trans.num_gears() as i32 {
         let ratio = trans.effective_ratio(gear);
-        assert!(ratio < prev_ratio, "Gear {} should have lower ratio than gear {}", gear, gear - 1);
+        assert!(
+            ratio < prev_ratio,
+            "Gear {} should have lower ratio than gear {}",
+            gear,
+            gear - 1
+        );
         prev_ratio = ratio;
     }
 }
@@ -132,13 +161,20 @@ fn test_friction_surface_variety() {
     for (name, curve) in &surfaces {
         let friction = curve.friction_at_slip(curve.optimal_slip);
         assert!(friction > 0.0, "{} should have positive friction", name);
-        assert!(friction < 2.0, "{} friction should be realistic (< 2.0)", name);
+        assert!(
+            friction < 2.0,
+            "{} friction should be realistic (< 2.0)",
+            name
+        );
     }
 
     // Tarmac should have highest grip
     let tarmac_grip = FrictionCurve::tarmac().friction_at_slip(0.08);
     let ice_grip = FrictionCurve::ice().friction_at_slip(0.05);
-    assert!(tarmac_grip > ice_grip * 2.0, "Tarmac should have much more grip than ice");
+    assert!(
+        tarmac_grip > ice_grip * 2.0,
+        "Tarmac should have much more grip than ice"
+    );
 }
 
 /// Test vehicle with throttle input
@@ -148,7 +184,11 @@ fn test_vehicle_throttle() {
     physics.create_ground_plane(Vec3::new(100.0, 0.5, 100.0), 0.8);
 
     let mut manager = VehicleManager::new();
-    let id = manager.spawn(&mut physics, Vec3::new(0.0, 0.5, 0.0), VehicleConfig::default());
+    let id = manager.spawn(
+        &mut physics,
+        Vec3::new(0.0, 0.5, 0.0),
+        VehicleConfig::default(),
+    );
 
     let input = VehicleInput {
         throttle: 1.0,
@@ -165,9 +205,12 @@ fn test_vehicle_throttle() {
 
     let vehicle = manager.get(id).unwrap();
     // Engine should be revving above idle
-    assert!(vehicle.engine_rpm > idle_rpm, 
+    assert!(
+        vehicle.engine_rpm > idle_rpm,
         "Engine RPM ({:.0}) should increase above idle ({:.0}) with throttle",
-        vehicle.engine_rpm, idle_rpm);
+        vehicle.engine_rpm,
+        idle_rpm
+    );
 }
 
 /// Test vehicle steering
@@ -175,7 +218,11 @@ fn test_vehicle_throttle() {
 fn test_vehicle_steering() {
     let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
     let mut manager = VehicleManager::new();
-    let id = manager.spawn(&mut physics, Vec3::new(0.0, 0.5, 0.0), VehicleConfig::default());
+    let id = manager.spawn(
+        &mut physics,
+        Vec3::new(0.0, 0.5, 0.0),
+        VehicleConfig::default(),
+    );
 
     // Apply steering input
     let input = VehicleInput {
@@ -186,14 +233,26 @@ fn test_vehicle_steering() {
     manager.update_with_input(id, &mut physics, &input, 1.0 / 60.0);
 
     let vehicle = manager.get(id).unwrap();
-    
+
     // Front wheels should be steered
-    assert!(vehicle.wheels[0].steering_angle.abs() > 0.0, "Front left should steer");
-    assert!(vehicle.wheels[1].steering_angle.abs() > 0.0, "Front right should steer");
-    
+    assert!(
+        vehicle.wheels[0].steering_angle.abs() > 0.0,
+        "Front left should steer"
+    );
+    assert!(
+        vehicle.wheels[1].steering_angle.abs() > 0.0,
+        "Front right should steer"
+    );
+
     // Rear wheels should not steer (in default config)
-    assert!((vehicle.wheels[2].steering_angle).abs() < 0.01, "Rear left should not steer");
-    assert!((vehicle.wheels[3].steering_angle).abs() < 0.01, "Rear right should not steer");
+    assert!(
+        (vehicle.wheels[2].steering_angle).abs() < 0.01,
+        "Rear left should not steer"
+    );
+    assert!(
+        (vehicle.wheels[3].steering_angle).abs() < 0.01,
+        "Rear right should not steer"
+    );
 }
 
 /// Test gear shifting
@@ -304,7 +363,11 @@ fn test_vehicle_braking() {
     physics.create_ground_plane(Vec3::new(100.0, 0.5, 100.0), 0.8);
 
     let mut manager = VehicleManager::new();
-    let id = manager.spawn(&mut physics, Vec3::new(0.0, 0.5, 0.0), VehicleConfig::default());
+    let id = manager.spawn(
+        &mut physics,
+        Vec3::new(0.0, 0.5, 0.0),
+        VehicleConfig::default(),
+    );
 
     // Give vehicle some initial velocity by throttling
     let throttle_input = VehicleInput {
@@ -337,14 +400,21 @@ fn test_vehicle_braking() {
 #[test]
 fn test_handbrake() {
     let config = VehicleConfig::default();
-    
+
     // Verify rear wheels are affected by handbrake multiplier
-    let rear_wheels: Vec<_> = config.wheels.iter()
-        .filter(|w| w.position_id == WheelPosition::RearLeft || w.position_id == WheelPosition::RearRight)
+    let rear_wheels: Vec<_> = config
+        .wheels
+        .iter()
+        .filter(|w| {
+            w.position_id == WheelPosition::RearLeft || w.position_id == WheelPosition::RearRight
+        })
         .collect();
 
     assert_eq!(rear_wheels.len(), 2, "Should have 2 rear wheels");
-    assert!(config.handbrake_multiplier > 1.0, "Handbrake should amplify braking");
+    assert!(
+        config.handbrake_multiplier > 1.0,
+        "Handbrake should amplify braking"
+    );
 }
 
 /// Test vehicle airborne state
@@ -364,8 +434,10 @@ fn test_engine_idle() {
     let config = VehicleConfig::default();
     let vehicle = Vehicle::new(1, 42, config);
 
-    assert!((vehicle.engine_rpm - vehicle.config.engine.idle_rpm).abs() < 10.0,
-        "Engine should start at idle RPM");
+    assert!(
+        (vehicle.engine_rpm - vehicle.config.engine.idle_rpm).abs() < 10.0,
+        "Engine should start at idle RPM"
+    );
 }
 
 /// Test slip ratio and slip angle calculations
@@ -378,11 +450,17 @@ fn test_slip_calculations() {
 
     // At optimal slip, friction should be at peak
     let peak = curve.friction_at_slip(curve.optimal_slip);
-    assert!(peak > curve.sliding_friction, "Peak should exceed sliding friction");
+    assert!(
+        peak > curve.sliding_friction,
+        "Peak should exceed sliding friction"
+    );
 
     // At high slip (wheelspin/lockup), friction drops
     let high_slip = curve.friction_at_slip(0.5);
-    assert!(high_slip < peak, "High slip should have less grip than optimal");
+    assert!(
+        high_slip < peak,
+        "High slip should have less grip than optimal"
+    );
 }
 
 /// Test average slip calculations
@@ -398,7 +476,10 @@ fn test_average_slip() {
     vehicle.wheels[1].slip_ratio = 0.2;
 
     let avg_slip = vehicle.average_slip_ratio();
-    assert!((avg_slip - 0.15).abs() < 0.01, "Average slip should be 0.15");
+    assert!(
+        (avg_slip - 0.15).abs() < 0.01,
+        "Average slip should be 0.15"
+    );
 }
 
 /// Test total suspension force

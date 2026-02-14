@@ -1,0 +1,8 @@
+astraweave-ecs/src/blob_vec.rs:62:21: replace > with >= in BlobVec::with_capacity
+astraweave-ecs/src/blob_vec.rs:96:21: replace > with >= in BlobVec::from_layout_with_capacity
+astraweave-ecs/src/blob_vec.rs:116:59: replace * with + in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:116:59: replace * with / in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:131:41: replace * with + in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:131:41: replace * with / in BlobVec::reserve
+astraweave-ecs/src/blob_vec.rs:235:56: replace * with + in BlobVec::swap_remove_raw
+astraweave-ecs/src/blob_vec.rs:235:56: replace * with / in BlobVec::swap_remove_raw
