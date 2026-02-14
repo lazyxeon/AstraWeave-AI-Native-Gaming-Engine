@@ -709,4 +709,319 @@ mod tests {
         let plan = bp.plan(&state, &goal, &[]);
         assert!(plan.is_some());
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6: Cache stress tests — production-risk focus
+    // Verifies cache correctness under rapid state changes, high churn,
+    // and action set mutations (conditions at 12,700+ agent scale).
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn stress_rapid_plan_invalidate_replan_cycles() {
+        // Production scenario: Agent rapidly re-plans as world state changes.
+        // Verify cache never returns stale plans after action set changes.
+        let mut planner = CachedGoapPlanner::new(100);
+
+        let actions_v1 = vec![
+            GoapAction::new("scout")
+                .with_cost(2.0)
+                .with_effect("area_scouted", true),
+            GoapAction::new("attack")
+                .with_cost(5.0)
+                .with_precondition("area_scouted", true)
+                .with_effect("enemy_dead", true),
+        ];
+
+        let state = WorldState::from_facts(&[("has_weapon", true)]);
+        let goal = GoapGoal::new(
+            "eliminate",
+            WorldState::from_facts(&[("enemy_dead", true)]),
+        );
+
+        // Plan with v1 actions
+        let plan1 = planner.plan(&state, &goal, &actions_v1);
+        assert!(plan1.is_some(), "v1 plan should succeed");
+
+        // Modify actions (simulate changing capabilities)
+        let actions_v2 = vec![
+            GoapAction::new("snipe")
+                .with_cost(1.0)
+                .with_effect("enemy_dead", true),
+        ];
+
+        // Plan with v2 — cache should NOT return stale v1 plan
+        let plan2 = planner.plan(&state, &goal, &actions_v2);
+        assert!(plan2.is_some(), "v2 plan should succeed");
+        assert_eq!(
+            plan2.as_ref().unwrap().len(),
+            1,
+            "v2 plan should use snipe (1 action)"
+        );
+        assert_eq!(plan2.as_ref().unwrap()[0].name, "snipe");
+
+        // Note: different action counts produce different cache keys (miss, not invalidation).
+        // But the fact that a correct v2 plan was returned proves no stale v1 plan leaked.
+        assert!(
+            planner.cache_stats().misses >= 2,
+            "Should have at least 2 misses (v1 initial + v2 new key)"
+        );
+    }
+
+    #[test]
+    fn stress_lru_eviction_under_high_churn() {
+        // Production scenario: 12,700 agents each with unique world states.
+        // Small cache means constant eviction. Verify LRU correctness.
+        let mut cache = PlanCache::new(10); // Tiny cache for 100 agents
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        // Simulate 50 agents with truly unique states (unique fact keys)
+        for i in 0..50u32 {
+            let key_name = format!("agent_{}_status", i);
+            let state = WorldState::from_facts(&[(&key_name, true)]);
+            cache.put(&state, &goal, &actions, vec![actions[0].clone()]);
+        }
+
+        // Cache should never exceed capacity
+        assert!(
+            cache.len() <= 10,
+            "Cache should respect max_size, got {}",
+            cache.len()
+        );
+
+        // Eviction count should be high (50 unique inserts into cache of 10)
+        assert!(
+            cache.stats().evictions >= 40,
+            "Should have at least 40 evictions (50 unique inserts, cap 10), got {}",
+            cache.stats().evictions
+        );
+
+        // Cache should still be functional with recent entries
+        assert!(cache.len() > 0, "Cache should not be empty after insertions");
+    }
+
+    #[test]
+    fn stress_cache_coherence_different_states_same_goal() {
+        // Production scenario: Many agents share the same goal but have different
+        // world states. Each agent should get a plan tailored to their state.
+        let mut planner = CachedGoapPlanner::new(50);
+
+        let actions = vec![
+            GoapAction::new("find_ammo")
+                .with_cost(3.0)
+                .with_effect("has_ammo", true),
+            GoapAction::new("attack")
+                .with_cost(1.0)
+                .with_precondition("has_ammo", true)
+                .with_effect("enemy_dead", true),
+        ];
+
+        let goal = GoapGoal::new(
+            "kill",
+            WorldState::from_facts(&[("enemy_dead", true)]),
+        );
+
+        // Agent A: already has ammo → 1-step plan (attack)
+        let state_a = WorldState::from_facts(&[("has_ammo", true)]);
+        let plan_a = planner.plan(&state_a, &goal, &actions).unwrap();
+        assert_eq!(plan_a.len(), 1, "Agent A should just attack");
+        assert_eq!(plan_a[0].name, "attack");
+
+        // Agent B: no ammo → 2-step plan (find_ammo + attack)
+        let state_b = WorldState::from_facts(&[("has_ammo", false)]);
+        let plan_b = planner.plan(&state_b, &goal, &actions).unwrap();
+        assert_eq!(plan_b.len(), 2, "Agent B needs to find ammo first");
+        assert_eq!(plan_b[0].name, "find_ammo");
+
+        // Agent C: same as Agent A → should get cached plan
+        let state_c = WorldState::from_facts(&[("has_ammo", true)]);
+        let plan_c = planner.plan(&state_c, &goal, &actions).unwrap();
+        assert_eq!(plan_c.len(), 1, "Agent C should get cached 1-step plan");
+        assert_eq!(plan_c[0].name, "attack");
+
+        // At least one cache hit (Agent C should hit Agent A's cached plan)
+        assert!(
+            planner.cache_stats().hits >= 1,
+            "Agent C should cache-hit on Agent A's plan, hits={}",
+            planner.cache_stats().hits
+        );
+    }
+
+    #[test]
+    fn stress_clear_prevents_stale_data() {
+        // Verify that after clear(), no stale plans are ever returned.
+        let mut cache = PlanCache::new(100);
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        // Fill with plans for different states
+        for i in 0..50u32 {
+            let state = WorldState::from_facts(&[("state", i % 2 == 0)]);
+            cache.put(&state, &goal, &actions, vec![actions[0].clone()]);
+        }
+
+        assert!(cache.len() > 0, "Cache should have entries");
+
+        // Clear
+        cache.clear();
+
+        // Everything should be gone
+        assert!(cache.is_empty(), "Cache should be empty after clear");
+        assert_eq!(cache.len(), 0);
+        assert_eq!(cache.stats().hits, 0, "Stats should reset after clear");
+        assert_eq!(cache.stats().misses, 0, "Stats should reset after clear");
+        assert_eq!(cache.stats().evictions, 0);
+        assert_eq!(cache.stats().invalidations, 0);
+
+        // Try to get previously cached plans — all should miss
+        for i in 0..50u32 {
+            let state = WorldState::from_facts(&[("state", i % 2 == 0)]);
+            let result = cache.get(&state, &goal, &actions);
+            assert!(result.is_none(), "Stale plan returned after clear for i={}", i);
+        }
+    }
+
+    #[test]
+    fn stress_stats_accuracy_under_load() {
+        // Verify cache stats remain accurate after many mixed operations.
+        let mut cache = PlanCache::new(5);
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        // Use unique states so each is a distinct cache key
+        // Round 1: Fill cache (all misses since empty, each key unique)
+        for i in 0..5u32 {
+            let key_name = format!("fact_{}", i);
+            let state = WorldState::from_facts(&[(&key_name, true)]);
+            let result = cache.get(&state, &goal, &actions);
+            assert!(result.is_none(), "Round 1 get should miss (empty cache)");
+            cache.put(&state, &goal, &actions, vec![]);
+        }
+
+        // After round 1: 5 misses, 0 hits
+        assert_eq!(cache.stats().misses, 5, "Round 1: all 5 should be misses");
+        assert_eq!(cache.stats().hits, 0, "Round 1: no hits yet");
+
+        // Round 2: Re-access all 5 (should all be hits)
+        for i in 0..5u32 {
+            let key_name = format!("fact_{}", i);
+            let state = WorldState::from_facts(&[(&key_name, true)]);
+            let result = cache.get(&state, &goal, &actions);
+            assert!(result.is_some(), "Round 2 get should hit for fact_{}", i);
+        }
+
+        // After round 2: 5 misses, 5 hits
+        assert_eq!(cache.stats().hits, 5, "Round 2: all 5 should be hits");
+        assert_eq!(cache.stats().misses, 5, "Misses should not change in round 2");
+        assert_eq!(
+            cache.stats().total_accesses(),
+            10,
+            "Total accesses should be 10 (5 misses + 5 hits)"
+        );
+    }
+
+    #[test]
+    fn stress_action_set_mutation_invalidation() {
+        // Production scenario: Action set changes (agent gains/loses abilities).
+        // Cached plans from old action set must be invalidated.
+        let mut cache = PlanCache::new(100);
+        let state = create_test_state();
+        let goal = create_test_goal();
+
+        // Store plans with original actions
+        let actions_v1 = vec![
+            GoapAction::new("find_ammo")
+                .with_cost(1.0)
+                .with_effect("has_ammo", true),
+            GoapAction::new("attack")
+                .with_cost(1.0)
+                .with_precondition("has_ammo", true)
+                .with_effect("enemy_dead", true),
+        ];
+        cache.put(&state, &goal, &actions_v1, vec![actions_v1[0].clone()]);
+
+        // Verify hit with same actions
+        let hit = cache.get(&state, &goal, &actions_v1);
+        assert!(hit.is_some(), "Should hit with same actions");
+
+        // Now simulate gaining a new ability (different action set)
+        let actions_v2 = vec![
+            GoapAction::new("find_ammo")
+                .with_cost(1.0)
+                .with_effect("has_ammo", true),
+            GoapAction::new("attack")
+                .with_cost(1.0)
+                .with_precondition("has_ammo", true)
+                .with_effect("enemy_dead", true),
+            GoapAction::new("grenade") // NEW ability
+                .with_cost(2.0)
+                .with_effect("enemy_dead", true),
+        ];
+
+        // Should NOT return old plan (action count changed)
+        let miss = cache.get(&state, &goal, &actions_v2);
+        assert!(
+            miss.is_none(),
+            "Should invalidate when action set changes (different count)"
+        );
+
+        // Also test when action count is same but content differs
+        let actions_v3 = vec![
+            GoapAction::new("find_ammo_v2")  // different name
+                .with_cost(1.0)
+                .with_effect("has_ammo", true),
+            GoapAction::new("attack")
+                .with_cost(1.0)
+                .with_precondition("has_ammo", true)
+                .with_effect("enemy_dead", true),
+        ];
+        cache.put(&state, &goal, &actions_v3, vec![actions_v3[0].clone()]);
+        let hit3 = cache.get(&state, &goal, &actions_v3);
+        assert!(hit3.is_some(), "Should hit with same v3 actions");
+
+        // With v1 actions (same count but different names → different hash)
+        let result_v1 = cache.get(&state, &goal, &actions_v1);
+        // The cache key uses action_count, so same count would produce same key
+        // BUT the action_hash validation should detect the difference
+        assert!(
+            result_v1.is_none(),
+            "Should invalidate when action names differ despite same count"
+        );
+    }
+
+    #[test]
+    fn stress_lru_access_pattern_correctness() {
+        // Verify that accessing a cached entry moves it to the back of LRU queue,
+        // preventing eviction of frequently-used plans.
+        let mut cache = PlanCache::new(3);
+        let goal = create_test_goal();
+        let actions = create_test_actions();
+
+        let state_a = WorldState::from_facts(&[("agent", true), ("type_a", true)]);
+        let state_b = WorldState::from_facts(&[("agent", true), ("type_b", true)]);
+        let state_c = WorldState::from_facts(&[("agent", true), ("type_c", true)]);
+
+        // Fill cache: A, B, C
+        cache.put(&state_a, &goal, &actions, vec![actions[0].clone()]);
+        cache.put(&state_b, &goal, &actions, vec![actions[1].clone()]);
+        cache.put(&state_c, &goal, &actions, vec![]);
+
+        // Access A (moves to back of LRU → B is now oldest)
+        let hit_a = cache.get(&state_a, &goal, &actions);
+        assert!(hit_a.is_some(), "A should be cached");
+
+        // Add new entry D → should evict B (oldest after A's access)
+        let state_d = WorldState::from_facts(&[("agent", true), ("type_d", true)]);
+        cache.put(&state_d, &goal, &actions, vec![]);
+
+        assert_eq!(cache.len(), 3, "Cache should still have 3 entries");
+
+        // A should still be cached (was recently accessed)
+        let hit_a2 = cache.get(&state_a, &goal, &actions);
+        assert!(hit_a2.is_some(), "A should survive eviction (recently accessed)");
+
+        // B should be evicted (oldest after A's access bump)
+        let hit_b = cache.get(&state_b, &goal, &actions);
+        assert!(hit_b.is_none(), "B should have been evicted (LRU oldest)");
+    }
 }

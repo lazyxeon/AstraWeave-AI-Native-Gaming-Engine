@@ -1894,4 +1894,185 @@ mod tests {
         // These would need clamping in real use
         assert!(input.throttle > 1.0); // Unclamped for test
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6 — vehicle physics critical path tests
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_torque_at_rpm_below_idle() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.idle_rpm - 100.0);
+        assert_eq!(torque, 0.0, "Below idle RPM should produce 0 torque");
+    }
+
+    #[test]
+    fn mutation_torque_at_rpm_above_max() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.max_rpm + 100.0);
+        assert_eq!(torque, 0.0, "Above max RPM should produce 0 torque");
+    }
+
+    #[test]
+    fn mutation_torque_at_peak_rpm() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.max_torque_rpm);
+        // At peak RPM, torque should be close to max_torque
+        assert!(
+            (torque - engine.max_torque).abs() < 5.0,
+            "At max_torque_rpm, torque should be near max_torque={}, got {}",
+            engine.max_torque, torque
+        );
+    }
+
+    #[test]
+    fn mutation_torque_curve_rises_then_falls() {
+        let engine = EngineConfig::default();
+        let mid_rising = (engine.idle_rpm + engine.max_torque_rpm) / 2.0;
+        let mid_falling = (engine.max_torque_rpm + engine.max_rpm) / 2.0;
+
+        let t_rising = engine.torque_at_rpm(mid_rising);
+        let t_peak = engine.torque_at_rpm(engine.max_torque_rpm);
+        let t_falling = engine.torque_at_rpm(mid_falling);
+
+        assert!(t_rising > 0.0, "Rising portion should have positive torque");
+        assert!(t_peak > t_rising, "Peak should exceed rising portion");
+        assert!(t_falling < t_peak, "Falling portion should be less than peak");
+        assert!(t_falling > 0.0, "Falling portion should still be positive");
+    }
+
+    #[test]
+    fn mutation_friction_at_zero_slip() {
+        let curve = FrictionCurve::tarmac();
+        let f = curve.friction_at_slip(0.0);
+        assert_eq!(f, 0.0, "Zero slip should produce zero friction");
+    }
+
+    #[test]
+    fn mutation_friction_at_optimal_slip() {
+        let curve = FrictionCurve::tarmac();
+        let f = curve.friction_at_slip(curve.optimal_slip);
+        // At optimal slip, friction should be near peak
+        assert!(
+            f > curve.sliding_friction,
+            "At optimal slip, friction should exceed sliding friction"
+        );
+        assert!(
+            f <= curve.peak_friction * 1.01,
+            "At optimal slip, friction should not exceed peak"
+        );
+    }
+
+    #[test]
+    fn mutation_friction_curve_shape() {
+        let curve = FrictionCurve::tarmac();
+        let f_low = curve.friction_at_slip(curve.optimal_slip * 0.5);
+        let f_opt = curve.friction_at_slip(curve.optimal_slip);
+        let f_high = curve.friction_at_slip(curve.optimal_slip * 3.0);
+
+        // Should rise toward peak, then decay toward sliding
+        assert!(f_low < f_opt, "Pre-peak should be less than peak");
+        assert!(f_high < f_opt, "Post-peak should be less than peak");
+        assert!(f_high > 0.0, "Post-peak should still be positive");
+    }
+
+    #[test]
+    fn mutation_friction_surface_types_differ() {
+        let tarmac = FrictionCurve::tarmac();
+        let ice = FrictionCurve::ice();
+        let gravel = FrictionCurve::gravel();
+
+        assert!(
+            tarmac.peak_friction > ice.peak_friction,
+            "Tarmac should have more grip than ice"
+        );
+        assert!(
+            gravel.peak_friction < tarmac.peak_friction,
+            "Gravel should have less grip than tarmac"
+        );
+    }
+
+    #[test]
+    fn mutation_effective_ratio_neutral() {
+        let trans = TransmissionConfig::default();
+        assert_eq!(
+            trans.effective_ratio(0),
+            0.0,
+            "Neutral gear should have 0 effective ratio"
+        );
+    }
+
+    #[test]
+    fn mutation_effective_ratio_reverse() {
+        let trans = TransmissionConfig::default();
+        let ratio = trans.effective_ratio(-1);
+        assert!(
+            ratio != 0.0,
+            "Reverse gear should have non-zero ratio"
+        );
+        assert_eq!(
+            ratio,
+            trans.reverse_ratio * trans.final_drive,
+            "Reverse ratio should be reverse_ratio * final_drive"
+        );
+    }
+
+    #[test]
+    fn mutation_effective_ratio_first_gear() {
+        let trans = TransmissionConfig::default();
+        let ratio = trans.effective_ratio(1);
+        assert!(ratio > 0.0, "First gear ratio should be positive");
+        assert_eq!(
+            ratio,
+            trans.gear_ratios[0] * trans.final_drive,
+            "First gear ratio should be gear_ratios[0] * final_drive"
+        );
+    }
+
+    #[test]
+    fn mutation_effective_ratio_higher_gears_decrease() {
+        let trans = TransmissionConfig::default();
+        if trans.gear_ratios.len() >= 2 {
+            let r1 = trans.effective_ratio(1);
+            let r2 = trans.effective_ratio(2);
+            assert!(
+                r1 > r2,
+                "Higher gears should have lower effective ratio (r1={}, r2={})",
+                r1, r2
+            );
+        }
+    }
+
+    #[test]
+    fn mutation_num_gears() {
+        let trans = TransmissionConfig::default();
+        assert_eq!(
+            trans.num_gears(),
+            trans.gear_ratios.len(),
+            "num_gears should match gear_ratios length"
+        );
+        assert!(trans.num_gears() > 0, "Should have at least 1 gear");
+    }
+
+    #[test]
+    fn mutation_speed_conversions() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 42, config);
+        vehicle.speed = 10.0; // 10 m/s
+
+        let kmh = vehicle.speed_kmh();
+        let mph = vehicle.speed_mph();
+
+        // 10 m/s = 36 km/h = 22.37 mph
+        assert!(
+            (kmh - 36.0).abs() < 0.1,
+            "10 m/s should be ~36 km/h, got {}",
+            kmh
+        );
+        assert!(
+            (mph - 22.37).abs() < 0.1,
+            "10 m/s should be ~22.37 mph, got {}",
+            mph
+        );
+    }
 }

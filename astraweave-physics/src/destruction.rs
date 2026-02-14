@@ -1389,4 +1389,206 @@ mod tests {
         manager.update(2.0, Vec3::ZERO);
         assert_eq!(manager.debris_count(), 1); // One removed
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6 — destruction system tests
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_uniform_piece_count_exact() {
+        let pattern = FracturePattern::uniform(8, Vec3::splat(1.0), 100.0);
+        assert_eq!(pattern.debris.len(), 8, "Should have exactly 8 pieces");
+    }
+
+    #[test]
+    fn mutation_uniform_mass_conservation() {
+        let total_mass = 120.0;
+        let count = 6;
+        let pattern = FracturePattern::uniform(count, Vec3::splat(2.0), total_mass);
+        let sum: f32 = pattern.debris.iter().map(|d| d.mass).sum();
+        assert!(
+            (sum - total_mass).abs() < 0.01,
+            "Total debris mass {} should equal input mass {}",
+            sum,
+            total_mass
+        );
+        // Each piece should have equal mass
+        for d in &pattern.debris {
+            assert!(
+                (d.mass - total_mass / count as f32).abs() < 0.01,
+                "Each piece should have mass {}, got {}",
+                total_mass / count as f32,
+                d.mass
+            );
+        }
+    }
+
+    #[test]
+    fn mutation_uniform_grid_positions_bounded() {
+        let he = Vec3::new(2.0, 3.0, 1.0);
+        let pattern = FracturePattern::uniform(27, he, 50.0);
+        for d in &pattern.debris {
+            assert!(
+                d.local_position.x.abs() <= he.x + 0.01,
+                "X {} out of bounds ±{}",
+                d.local_position.x,
+                he.x
+            );
+            assert!(
+                d.local_position.y.abs() <= he.y + 0.01,
+                "Y {} out of bounds ±{}",
+                d.local_position.y,
+                he.y
+            );
+            assert!(
+                d.local_position.z.abs() <= he.z + 0.01,
+                "Z {} out of bounds ±{}",
+                d.local_position.z,
+                he.z
+            );
+        }
+    }
+
+    #[test]
+    fn mutation_radial_piece_count_and_mass() {
+        let pattern = FracturePattern::radial(20, 5.0, 80.0);
+        assert_eq!(pattern.debris.len(), 20);
+        let sum: f32 = pattern.debris.iter().map(|d| d.mass).sum();
+        assert!(
+            (sum - 80.0).abs() < 0.01,
+            "Radial mass sum {} should be 80",
+            sum
+        );
+    }
+
+    #[test]
+    fn mutation_radial_positions_within_radius() {
+        let radius = 3.0;
+        let pattern = FracturePattern::radial(30, radius, 50.0);
+        for d in &pattern.debris {
+            let dist = d.local_position.length();
+            assert!(
+                dist <= radius,
+                "Piece at dist {} should be within radius {}",
+                dist,
+                radius
+            );
+        }
+    }
+
+    #[test]
+    fn mutation_radial_velocity_factor() {
+        let pattern = FracturePattern::radial(5, 2.0, 10.0);
+        for d in &pattern.debris {
+            assert!(
+                (d.velocity_factor - 1.5).abs() < 1e-6,
+                "Radial velocity_factor should be 1.5, got {}",
+                d.velocity_factor
+            );
+        }
+    }
+
+    #[test]
+    fn mutation_layered_count_exact() {
+        let layers = 4;
+        let per_layer = 6;
+        let pattern =
+            FracturePattern::layered(layers, per_layer, Vec3::new(2.0, 5.0, 2.0), 100.0);
+        assert_eq!(
+            pattern.debris.len(),
+            layers * per_layer,
+            "Should have {} total pieces",
+            layers * per_layer
+        );
+    }
+
+    #[test]
+    fn mutation_layered_mass_conservation() {
+        let total = 200.0;
+        let pattern = FracturePattern::layered(3, 8, Vec3::splat(2.0), total);
+        let sum: f32 = pattern.debris.iter().map(|d| d.mass).sum();
+        assert!(
+            (sum - total).abs() < 0.01,
+            "Layered mass sum {} should be {}",
+            sum,
+            total
+        );
+    }
+
+    #[test]
+    fn mutation_layered_height_distribution() {
+        let he = Vec3::new(1.0, 5.0, 1.0);
+        let layers = 5;
+        let pattern = FracturePattern::layered(layers, 4, he, 50.0);
+        // Each layer should have pieces at a distinct Y level
+        let mut y_values: Vec<f32> = pattern.debris.iter().map(|d| d.local_position.y).collect();
+        y_values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        y_values.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+        assert_eq!(
+            y_values.len(),
+            layers,
+            "Should have {} distinct Y layers, got {:?}",
+            layers,
+            y_values
+        );
+    }
+
+    #[test]
+    fn mutation_apply_damage_state_transitions() {
+        let config = DestructibleConfig {
+            max_health: 100.0,
+            trigger: DestructionTrigger::Health,
+            ..Default::default()
+        };
+        let mut d = Destructible::new(DestructibleId(0), config, Vec3::ZERO);
+
+        assert_eq!(d.state, DestructibleState::Intact);
+        assert_eq!(d.health, 100.0);
+
+        // 30 damage: still above 50%, stays Intact
+        d.apply_damage(30.0);
+        assert_eq!(d.state, DestructibleState::Intact);
+        assert!((d.health - 70.0).abs() < 0.01);
+
+        // 30 more: at 40, below 50% threshold → Damaged
+        d.apply_damage(30.0);
+        assert_eq!(d.state, DestructibleState::Damaged);
+        assert!((d.health - 40.0).abs() < 0.01);
+
+        // Finish it off
+        d.apply_damage(50.0);
+        assert_eq!(d.state, DestructibleState::Destroying);
+        assert!((d.health - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn mutation_apply_damage_immune_when_destroying() {
+        let config = DestructibleConfig {
+            max_health: 50.0,
+            trigger: DestructionTrigger::Health,
+            ..Default::default()
+        };
+        let mut d = Destructible::new(DestructibleId(0), config, Vec3::ZERO);
+        d.state = DestructibleState::Destroying;
+        let hp_before = d.health;
+
+        d.apply_damage(999.0);
+
+        assert_eq!(d.health, hp_before, "Health should not change when Destroying");
+    }
+
+    #[test]
+    fn mutation_apply_damage_immune_when_destroyed() {
+        let config = DestructibleConfig {
+            max_health: 50.0,
+            trigger: DestructionTrigger::Health,
+            ..Default::default()
+        };
+        let mut d = Destructible::new(DestructibleId(0), config, Vec3::ZERO);
+        d.state = DestructibleState::Destroyed;
+
+        d.apply_damage(999.0);
+
+        assert_eq!(d.health, 50.0, "Health should not change when Destroyed");
+    }
 }

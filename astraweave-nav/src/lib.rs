@@ -2101,10 +2101,10 @@ mod tests {
         });
 
         let affected = nav.partial_rebake(&tris);
-        // At least 1 triangle should be affected
-        assert!(
-            affected >= 1,
-            "Should find at least 1 affected triangle, got {}",
+        // At least 1 triangle should be affected (note: 2nd triangle at (5,5) is outside region)
+        assert_eq!(
+            affected, 1,
+            "Should find exactly 1 affected triangle, got {}",
             affected
         );
 
@@ -2136,7 +2136,7 @@ mod tests {
             Vec3::new(10.0, 0.0, 0.0),
             Vec3::new(0.0, 0.0, 10.0),
         )];
-        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
 
         // Empty path → should not cross dirty region
         assert!(!nav.path_crosses_dirty_region(&[]));
@@ -2147,22 +2147,24 @@ mod tests {
     #[test]
     fn mutation_edge_count_returns_actual_count() {
         // Targets: lib.rs:648 replace edge_count -> usize with 1
+        // CCW winding for +Y normals (critical for bake to accept)
         let tris = vec![
             Triangle::new(
                 Vec3::ZERO,
-                Vec3::new(1.0, 0.0, 0.0),
                 Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
             ),
             Triangle::new(
                 Vec3::new(1.0, 0.0, 0.0),
-                Vec3::new(1.0, 0.0, 1.0),
                 Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 1.0),
             ),
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 2, "Both triangles should be accepted by bake");
         let ec = nav.edge_count();
-        // 2 triangles sharing 1 edge → at least 1 internal edge
-        assert!(ec >= 0, "Edge count should be >= 0");
+        // 2 triangles sharing 1 edge → exactly 1 internal edge
+        assert_eq!(ec, 1, "Two triangles sharing one edge should have edge_count=1");
     }
 
     #[test]
@@ -2241,6 +2243,392 @@ mod tests {
             path.len() >= 2,
             "Should find multi-node path, got {} waypoints",
             path.len()
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION TESTS v3.6 — production-risk-focused
+    // Targets specific missed mutants with stronger assertions
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_triangle_normal_nonzero_origin() {
+        // Targets: lib.rs:59 replace - with + in Triangle::normal
+        // Previous test used a=ZERO making b+a == b-a. This uses non-zero a.
+        let t = Triangle::new(
+            Vec3::new(2.0, 3.0, 1.0), // a ≠ ZERO
+            Vec3::new(4.0, 3.0, 1.0), // b
+            Vec3::new(2.0, 3.0, 3.0), // c
+        );
+        let n = t.normal();
+        // b - a = (2, 0, 0), c - a = (0, 0, 2)
+        // cross = (0*2 - 0*0, 0*0 - 2*2, 2*0 - 0*0) = (0, -4, 0)
+        // If mutation b+a: (6,6,2), c-a: (0,0,2) → cross = (12,-12,0) ← DIFFERENT
+        // If mutation c+a: b-a: (2,0,0), (4,6,4) → cross = (0*4-0*6, 0*4-2*4, 2*6-0*4) = (0,-8,12) ← DIFFERENT
+        assert!(
+            (n.x).abs() < 1e-6,
+            "Normal X should be 0, got {}",
+            n.x
+        );
+        assert!(
+            (n.y - (-4.0)).abs() < 1e-6,
+            "Normal Y should be -4, got {}",
+            n.y
+        );
+        assert!(
+            (n.z).abs() < 1e-6,
+            "Normal Z should be 0, got {}",
+            n.z
+        );
+    }
+
+    #[test]
+    fn mutation_navtri_area_nonzero_first_vert() {
+        // Targets: lib.rs:197 replace - with + in NavTri::area
+        // Previous test used verts[0]=ZERO. This uses non-zero first vertex.
+        let navtri = NavTri {
+            idx: 0,
+            verts: [
+                Vec3::new(3.0, 0.0, 2.0),
+                Vec3::new(5.0, 0.0, 2.0),
+                Vec3::new(3.0, 0.0, 4.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::new(3.67, 0.0, 2.67),
+            neighbors: vec![],
+        };
+        let area = navtri.area();
+        // b - a = (2, 0, 0), c - a = (0, 0, 2)
+        // cross = (0, -4, 0), length = 4, area = 2.0
+        // With b+a mutation: (8,0,4), cross with (0,0,2) = (0*2-4*0, 4*0-8*2, 8*0-0*0) = (0,-16,0)
+        // area = 16*0.5 = 8.0 ← DIFFERENT
+        assert!(
+            (area - 2.0).abs() < 0.01,
+            "NavTri area should be 2.0, got {}",
+            area
+        );
+    }
+
+    #[test]
+    fn mutation_bake_rejects_clearly_downward() {
+        // Targets: lib.rs:439 replace < with == in `dot < 0.0`
+        // CW winding in XZ → normal faces -Y → dot(Y) = -1 (clearly negative)
+        // With < → ==: -1 == 0 is false → triangle NOT filtered → WRONG
+        let tri = Triangle::new(
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(2.0, 0.0, 0.0),  // CW in XZ
+            Vec3::new(0.0, 0.0, 2.0),
+        );
+        // Normal: (2,0,0) × (0,0,2) = (0,-4,0), normalized = (0,-1,0). dot(Y) = -1.
+        let nav = NavMesh::bake(&[tri], 0.4, 60.0);
+        assert!(
+            nav.tris.is_empty(),
+            "Clearly downward-facing triangle (dot=-1) must be rejected, got {} tris",
+            nav.tris.len()
+        );
+    }
+
+    #[test]
+    fn mutation_bake_accepts_vertical_wall_at_90() {
+        // Targets: lib.rs:439 replace < with <= in `dot < 0.0`
+        // Vertical wall has dot(Y) = 0.0 exactly.
+        // With < → <=: 0 <= 0 is true → filtered → WRONG (should be accepted at 90° max_slope)
+        let wall = Triangle::new(
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+        );
+        // Normal: (0,1,0)×(1,0,0) = (0*0-0*0, 0*1-0*0, 0*0-1*1) = (0,0,-1)
+        // dot(Y) = 0.0 exactly. angle_from_vertical = acos(0) = 90°
+        // With max_slope=90°: slope_ok = 90 <= 90 = true → should be accepted
+        let nav = NavMesh::bake(&[wall], 0.4, 90.0);
+        assert!(
+            !nav.tris.is_empty(),
+            "Vertical wall (dot=0) should be accepted when max_slope=90°"
+        );
+    }
+
+    #[test]
+    fn mutation_astar_greedy_trap() {
+        // Targets: lib.rs:776 replace + with * in `gi + cost`
+        // With +→*, all g-scores become 0, turning A* into pure greedy.
+        // This graph has two paths where greedy picks the WRONG (expensive) one.
+        //
+        // Graph:  Start(T0) → A(T1) → B(T3) → Goal(T5)  [expensive, greedy-preferred]
+        //         Start(T0) → C(T2) → D(T4) → Goal(T5)  [cheap, A*-optimal]
+        //
+        // A is closer to Goal (lower heuristic) so greedy picks it first.
+        // But the path through C→D has lower total cost.
+        let tris = vec![
+            // T0: Start — center (0, 0, 0)
+            NavTri {
+                idx: 0,
+                verts: [Vec3::ZERO; 3],
+                normal: Vec3::Y,
+                center: Vec3::new(0.0, 0.0, 0.0),
+                neighbors: vec![1, 2],
+            },
+            // T1: A — closer to goal by heuristic (h=5.83)
+            NavTri {
+                idx: 1,
+                verts: [Vec3::ZERO; 3],
+                normal: Vec3::Y,
+                center: Vec3::new(5.0, 0.0, 3.0),
+                neighbors: vec![0, 3],
+            },
+            // T2: C — farther from goal by heuristic (h=8.25) but cheaper path
+            NavTri {
+                idx: 2,
+                verts: [Vec3::ZERO; 3],
+                normal: Vec3::Y,
+                center: Vec3::new(2.0, 0.0, -2.0),
+                neighbors: vec![0, 4],
+            },
+            // T3: B — on the expensive path
+            NavTri {
+                idx: 3,
+                verts: [Vec3::ZERO; 3],
+                normal: Vec3::Y,
+                center: Vec3::new(8.0, 0.0, 5.0),
+                neighbors: vec![1, 5],
+            },
+            // T4: D — on the cheap path
+            NavTri {
+                idx: 4,
+                verts: [Vec3::ZERO; 3],
+                normal: Vec3::Y,
+                center: Vec3::new(5.0, 0.0, -1.0),
+                neighbors: vec![2, 5],
+            },
+            // T5: Goal — center (10, 0, 0)
+            NavTri {
+                idx: 5,
+                verts: [Vec3::ZERO; 3],
+                normal: Vec3::Y,
+                center: Vec3::new(10.0, 0.0, 0.0),
+                neighbors: vec![3, 4],
+            },
+        ];
+
+        // Verify cost analysis:
+        // Via A→B: dist(0→5,3) + dist(5,3→8,5) + dist(8,5→10,0) = 5.83 + 3.61 + 5.39 = 14.83
+        // Via C→D: dist(0→2,-2) + dist(2,-2→5,-1) + dist(5,-1→10,0) = 2.83 + 3.16 + 5.10 = 11.09
+        // Optimal path is through C→D: [0, 2, 4, 5]
+        let path = astar_tri(&tris, 0, 5);
+        assert_eq!(
+            path,
+            vec![0, 2, 4, 5],
+            "A* must find optimal path [0,2,4,5] (cost 11.09), not greedy path [0,1,3,5] (cost 14.83)"
+        );
+    }
+
+    #[test]
+    fn mutation_smooth_exact_coefficients() {
+        // Targets: lib.rs:805 replace smooth body with ()
+        //          lib.rs:812 replace * with + and * with /
+        //          lib.rs:812 replace < with <= (pts.len() < 3)
+        // Calls smooth() directly with known input and verifies exact output.
+        let mut pts = vec![
+            Vec3::new(2.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(10.0, 0.0, 0.0),
+        ];
+        let empty_tris: Vec<NavTri> = vec![];
+        smooth(&mut pts, &empty_tris);
+
+        // Manual calculation (2 passes of 0.25/0.5/0.25 averaging):
+        // Pass 1: pts[1] = 2*0.25 + 1*0.5 + 10*0.25 = 0.5 + 0.5 + 2.5 = 3.5
+        // Pass 2: pts[1] = 2*0.25 + 3.5*0.5 + 10*0.25 = 0.5 + 1.75 + 2.5 = 4.75
+        // Endpoints unchanged.
+        assert!(
+            (pts[0].x - 2.0).abs() < 1e-6,
+            "Start point should be unchanged, got {}",
+            pts[0].x
+        );
+        assert!(
+            (pts[2].x - 10.0).abs() < 1e-6,
+            "End point should be unchanged, got {}",
+            pts[2].x
+        );
+        assert!(
+            (pts[1].x - 4.75).abs() < 0.01,
+            "Midpoint should be 4.75 after smooth, got {} (check coefficients 0.25/0.5/0.25)",
+            pts[1].x
+        );
+    }
+
+    #[test]
+    fn mutation_smooth_multipoint_coefficients() {
+        // Additional smooth test with 5 points to catch all coefficient mutations.
+        // Different interior points verify each of the three * operators.
+        let mut pts = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 10.0, 0.0), // far above
+            Vec3::new(5.0, 0.0, 0.0),
+            Vec3::new(5.0, 10.0, 0.0), // far above
+            Vec3::new(10.0, 0.0, 0.0),
+        ];
+        let original_1 = pts[1];
+        let original_3 = pts[3];
+        let empty_tris: Vec<NavTri> = vec![];
+        smooth(&mut pts, &empty_tris);
+
+        // Interior points must have moved toward their neighbors
+        assert!(
+            (pts[1] - original_1).length() > 0.1,
+            "pts[1] should move after smooth"
+        );
+        assert!(
+            (pts[3] - original_3).length() > 0.1,
+            "pts[3] should move after smooth"
+        );
+        // Endpoints unchanged
+        assert!(
+            (pts[0] - Vec3::new(0.0, 0.0, 0.0)).length() < 1e-6,
+            "Start unchanged"
+        );
+        assert!(
+            (pts[4] - Vec3::new(10.0, 0.0, 0.0)).length() < 1e-6,
+            "End unchanged"
+        );
+        // Verify coefficients sum to 1.0 (smoothed value is weighted average)
+        // pts[2] should be: 0.25*pts[1]_smoothed + 0.5*pts[2] + 0.25*pts[3]_smoothed
+        // Since coefficients sum to 1.0, any interior point stays within convex hull
+        // With * → + or * → /, values would explode or be wrong
+        assert!(
+            pts[2].y >= 0.0 && pts[2].y <= 10.0,
+            "Smoothed pt[2].y should be in [0, 10], got {}",
+            pts[2].y
+        );
+    }
+
+    #[test]
+    fn mutation_smooth_three_point_boundary() {
+        // Targets: lib.rs:805 replace < with <= in `pts.len() < 3`
+        // With < → <=, a 3-point path would NOT be smoothed (returns early).
+        // Verify that 3 points ARE smoothed.
+        let mut pts = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 20.0, 0.0), // wildly off-center
+            Vec3::new(10.0, 0.0, 0.0),
+        ];
+        let empty_tris: Vec<NavTri> = vec![];
+        smooth(&mut pts, &empty_tris);
+
+        // If smooth runs: pts[1] moves toward average of neighbors
+        // Pass 1: pts[1] = 0*0.25 + (0,20,0)*0.5 + (10,0,0)*0.25 = (2.5, 10, 0)
+        // Pass 2: pts[1] = 0*0.25 + (2.5,10,0)*0.5 + (10,0,0)*0.25 = (3.75, 5, 0)
+        // If smooth is skipped (< → <=): pts[1] stays at (0, 20, 0)
+        assert!(
+            pts[1].y < 20.0,
+            "Three-point path must be smoothed. pts[1].y should be < 20, got {}",
+            pts[1].y
+        );
+        assert!(
+            (pts[1].y - 5.0).abs() < 0.01,
+            "pts[1].y should be 5.0 after smooth, got {}",
+            pts[1].y
+        );
+    }
+
+    #[test]
+    fn mutation_edge_count_multiple_edges() {
+        // Targets: lib.rs:648 replace edge_count -> usize with 1
+        // Previous test had 2 triangles sharing 1 edge → edge_count = 1 → mutation passes!
+        // Build 3 triangles in a strip sharing 2 edges → edge_count = 2.
+        // CCW winding for +Y normals.
+        let tris = vec![
+            Triangle::new(
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+                Vec3::new(2.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+                Vec3::new(2.0, 0.0, 2.0),
+            ),
+            Triangle::new(
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(2.0, 0.0, 2.0),
+                Vec3::new(4.0, 0.0, 0.0),
+            ),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let ec = nav.edge_count();
+        // 3 triangles in strip: T0-T1 share edge, T1-T2 share edge → 2 edges minimum
+        assert!(
+            ec >= 2,
+            "3-triangle strip should have at least 2 edges, got {}",
+            ec
+        );
+    }
+
+    #[test]
+    fn mutation_partial_rebake_multiple_affected() {
+        // Targets: lib.rs:585 replace partial_rebake -> usize with 1
+        // Previous test had 1 affected → returns 1 → mutation passes!
+        // Build 3 triangles all within a single dirty region → affected = 3.
+        let tris = vec![
+            Triangle::new(
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+                Vec3::new(2.0, 0.0, 0.0),
+            ),
+            Triangle::new(
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+                Vec3::new(2.0, 0.0, 2.0),
+            ),
+            Triangle::new(
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(2.0, 0.0, 2.0),
+                Vec3::new(4.0, 0.0, 0.0),
+            ),
+        ];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+        // Dirty region covers all triangles
+        nav.invalidate_region(Aabb {
+            min: Vec3::new(-1.0, -1.0, -1.0),
+            max: Vec3::new(5.0, 1.0, 3.0),
+        });
+        let affected = nav.partial_rebake(&tris);
+        assert!(
+            affected >= 2,
+            "3 triangles in dirty region should have at least 2 affected, got {}",
+            affected
+        );
+    }
+
+    #[test]
+    fn mutation_partial_rebake_comparison_correctness() {
+        // Targets: lib.rs:603 replace > with ==/</>=/<= in `affected_count > 0`
+        // Verify that when affected > 0, a rebake actually happens (rebake_count increases)
+        let tris = vec![
+            Triangle::new(
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+                Vec3::new(2.0, 0.0, 0.0),
+            ),
+        ];
+        let mut nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let before = nav.rebake_count();
+        nav.invalidate_region(Aabb {
+            min: Vec3::new(-0.5, -1.0, -0.5),
+            max: Vec3::new(1.5, 1.0, 1.5),
+        });
+        let affected = nav.partial_rebake(&tris);
+        let after = nav.rebake_count();
+        assert!(affected >= 1, "Should find affected triangles");
+        assert!(
+            after > before,
+            "Rebake count should increase when affected > 0, before={}, after={}",
+            before, after
+        );
+        // Dirty regions should be cleared after successful rebake
+        assert!(
+            nav.dirty_regions().is_empty(),
+            "Dirty regions should be cleared after rebake"
         );
     }
 }

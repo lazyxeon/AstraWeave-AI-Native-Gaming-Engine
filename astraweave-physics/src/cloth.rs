@@ -1230,4 +1230,168 @@ mod tests {
         // Position should not change
         assert_eq!(particle.position, Vec3::new(1.0, 1.0, 1.0));
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6 — cloth simulation tests
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_particle_integrate_verlet() {
+        let mut p = ClothParticle::new(Vec3::new(0.0, 5.0, 0.0), 1.0);
+        // Set prev_position different from position to create velocity
+        p.prev_position = Vec3::new(0.0, 5.0, 0.0);
+        // Apply gravity-like force
+        p.apply_force(Vec3::new(0.0, -9.81, 0.0));
+
+        let dt = 0.016; // 60 FPS
+        p.integrate(dt, 0.99);
+
+        // After integration, particle should move downward
+        assert!(
+            p.position.y < 5.0,
+            "Particle should fall under gravity, got y={}",
+            p.position.y
+        );
+        // Acceleration should be reset
+        assert_eq!(p.acceleration, Vec3::ZERO, "Acceleration should reset after integrate");
+    }
+
+    #[test]
+    fn mutation_particle_velocity() {
+        let mut p = ClothParticle::new(Vec3::new(1.0, 0.0, 0.0), 1.0);
+        p.prev_position = Vec3::new(0.0, 0.0, 0.0);
+        let vel = p.velocity();
+        assert!(
+            (vel.x - 1.0).abs() < 1e-6,
+            "Velocity X should be 1.0, got {}",
+            vel.x
+        );
+    }
+
+    #[test]
+    fn mutation_particle_apply_force_mass() {
+        let mut p = ClothParticle::new(Vec3::ZERO, 2.0); // mass=2, inv_mass=0.5
+        p.apply_force(Vec3::new(10.0, 0.0, 0.0));
+        // Acceleration = force * inv_mass = 10 * 0.5 = 5
+        assert!(
+            (p.acceleration.x - 5.0).abs() < 1e-6,
+            "Acceleration should be force*inv_mass=5, got {}",
+            p.acceleration.x
+        );
+    }
+
+    #[test]
+    fn mutation_pinned_particle_ignores_force() {
+        let mut p = ClothParticle::pinned(Vec3::ZERO);
+        p.apply_force(Vec3::new(1000.0, 1000.0, 1000.0));
+        assert_eq!(p.acceleration, Vec3::ZERO, "Pinned particle should ignore forces");
+    }
+
+    #[test]
+    fn mutation_constraint_solve_pulls_together() {
+        // Two particles too far apart — constraint should pull them together
+        let mut particles = vec![
+            ClothParticle::new(Vec3::new(0.0, 0.0, 0.0), 1.0),
+            ClothParticle::new(Vec3::new(3.0, 0.0, 0.0), 1.0), // 3 units apart
+        ];
+        let constraint = DistanceConstraint::new(0, 1, 1.0); // rest_length=1
+
+        constraint.solve(&mut particles);
+
+        // Both should move toward each other
+        assert!(
+            particles[0].position.x > 0.0,
+            "Particle 0 should move positive X"
+        );
+        assert!(
+            particles[1].position.x < 3.0,
+            "Particle 1 should move negative X"
+        );
+        // Distance should be closer to rest_length
+        let new_dist = (particles[1].position - particles[0].position).length();
+        assert!(
+            new_dist < 3.0,
+            "Distance should decrease from 3.0, got {}",
+            new_dist
+        );
+    }
+
+    #[test]
+    fn mutation_constraint_solve_pushes_apart() {
+        // Two particles too close — constraint should push them apart
+        let mut particles = vec![
+            ClothParticle::new(Vec3::new(0.0, 0.0, 0.0), 1.0),
+            ClothParticle::new(Vec3::new(0.1, 0.0, 0.0), 1.0), // 0.1 apart
+        ];
+        let constraint = DistanceConstraint::new(0, 1, 2.0); // rest_length=2
+
+        constraint.solve(&mut particles);
+
+        let new_dist = (particles[1].position - particles[0].position).length();
+        assert!(
+            new_dist > 0.1,
+            "Distance should increase from 0.1, got {}",
+            new_dist
+        );
+    }
+
+    #[test]
+    fn mutation_constraint_respects_pinned() {
+        let mut particles = vec![
+            ClothParticle::pinned(Vec3::new(0.0, 0.0, 0.0)),
+            ClothParticle::new(Vec3::new(3.0, 0.0, 0.0), 1.0),
+        ];
+        let constraint = DistanceConstraint::new(0, 1, 1.0);
+
+        constraint.solve(&mut particles);
+
+        // Pinned particle should not move
+        assert_eq!(
+            particles[0].position,
+            Vec3::new(0.0, 0.0, 0.0),
+            "Pinned particle should not move"
+        );
+        // Free particle should move toward pinned
+        assert!(
+            particles[1].position.x < 3.0,
+            "Free particle should move toward pinned"
+        );
+    }
+
+    #[test]
+    fn mutation_collider_sphere_pushout() {
+        let mut particle = ClothParticle::new(Vec3::new(0.1, 0.0, 0.0), 1.0);
+        let collider = ClothCollider::Sphere {
+            center: Vec3::ZERO,
+            radius: 1.0,
+        };
+
+        collider.resolve_collision(&mut particle, 0.0);
+
+        // Particle was inside sphere (dist=0.1 < radius=1.0), should be pushed out
+        let dist = particle.position.length();
+        assert!(
+            dist >= 0.99,
+            "Particle should be pushed to sphere surface, dist={}",
+            dist
+        );
+    }
+
+    #[test]
+    fn mutation_collider_plane_pushout() {
+        let mut particle = ClothParticle::new(Vec3::new(0.0, -0.5, 0.0), 1.0);
+        let collider = ClothCollider::Plane {
+            point: Vec3::ZERO,
+            normal: Vec3::Y,
+        };
+
+        collider.resolve_collision(&mut particle, 0.0);
+
+        // Particle was below plane (y=-0.5, dist below plane < 0), should be pushed up
+        assert!(
+            particle.position.y >= 0.0,
+            "Particle should be pushed above plane, y={}",
+            particle.position.y
+        );
+    }
 }

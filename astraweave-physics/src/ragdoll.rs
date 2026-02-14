@@ -1309,4 +1309,147 @@ mod tests {
         assert!(config.max_angular_velocity > 0.0);
         assert!(config.max_angular_velocity < 100.0); // Reasonable limit
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6 — ragdoll / bone shape tests
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_sphere_volume_exact() {
+        let r = 2.0;
+        let shape = BoneShape::Sphere { radius: r };
+        let expected = (4.0 / 3.0) * std::f32::consts::PI * r.powi(3);
+        assert!(
+            (shape.volume() - expected).abs() < 0.01,
+            "Sphere volume: expected {}, got {}",
+            expected,
+            shape.volume()
+        );
+    }
+
+    #[test]
+    fn mutation_box_volume_exact() {
+        let he = Vec3::new(1.0, 2.0, 3.0);
+        let shape = BoneShape::Box {
+            half_extents: he,
+        };
+        let expected = 8.0 * he.x * he.y * he.z; // = 48.0
+        assert!(
+            (shape.volume() - expected).abs() < 0.01,
+            "Box volume: expected {}, got {}",
+            expected,
+            shape.volume()
+        );
+        assert!(
+            (shape.volume() - 48.0).abs() < 0.01,
+            "Box(1,2,3) should be 48.0"
+        );
+    }
+
+    #[test]
+    fn mutation_capsule_volume_exact() {
+        let r = 1.0;
+        let hh = 2.0;
+        let shape = BoneShape::Capsule {
+            radius: r,
+            half_height: hh,
+        };
+        // Cylinder part: π * r² * 2h = π * 1 * 4 = 4π
+        let cylinder = std::f32::consts::PI * r * r * (hh * 2.0);
+        // Sphere caps: 4/3 * π * r³ = 4/3 * π
+        let sphere = (4.0 / 3.0) * std::f32::consts::PI * r.powi(3);
+        let expected = cylinder + sphere;
+        assert!(
+            (shape.volume() - expected).abs() < 0.01,
+            "Capsule volume: expected {}, got {}",
+            expected,
+            shape.volume()
+        );
+    }
+
+    #[test]
+    fn mutation_capsule_larger_than_sphere_same_radius() {
+        let r = 1.5;
+        let capsule = BoneShape::Capsule {
+            radius: r,
+            half_height: 1.0,
+        };
+        let sphere = BoneShape::Sphere { radius: r };
+        assert!(
+            capsule.volume() > sphere.volume(),
+            "Capsule with half_height>0 should have greater volume than sphere of same radius"
+        );
+    }
+
+    #[test]
+    fn mutation_volume_scales_with_size() {
+        let small = BoneShape::Sphere { radius: 1.0 };
+        let big = BoneShape::Sphere { radius: 2.0 };
+        // Volume scales as r³, so 2³ = 8x
+        let ratio = big.volume() / small.volume();
+        assert!(
+            (ratio - 8.0).abs() < 0.01,
+            "Volume should scale as r³, ratio {}",
+            ratio
+        );
+    }
+
+    #[test]
+    fn mutation_builder_bone_mass_scale() {
+        let config = RagdollConfig {
+            mass_scale: 2.0,
+            ..Default::default()
+        };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone(
+            "bone_a",
+            None,
+            Vec3::ZERO,
+            BoneShape::Sphere { radius: 0.5 },
+            10.0,
+        );
+        // Mass should be doubled
+        assert!(
+            (builder.bones[0].mass - 20.0).abs() < 0.001,
+            "Mass should be 10*2=20, got {}",
+            builder.bones[0].mass
+        );
+    }
+
+    #[test]
+    fn mutation_builder_parent_child_relationship() {
+        let config = RagdollConfig::default();
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone(
+            "spine",
+            None,
+            Vec3::ZERO,
+            BoneShape::Box {
+                half_extents: Vec3::new(0.2, 0.3, 0.15),
+            },
+            5.0,
+        );
+        builder.add_bone(
+            "head",
+            Some("spine"),
+            Vec3::new(0.0, 0.5, 0.0),
+            BoneShape::Sphere { radius: 0.1 },
+            3.0,
+        );
+
+        assert_eq!(builder.bones.len(), 2);
+        assert!(builder.bones[0].parent.is_none());
+        assert_eq!(builder.bones[1].parent, Some("spine".to_string()));
+    }
+
+    #[test]
+    fn mutation_box_volume_zero_extent() {
+        let shape = BoneShape::Box {
+            half_extents: Vec3::new(0.0, 1.0, 1.0),
+        };
+        assert!(
+            shape.volume().abs() < 1e-6,
+            "Box with zero-extent axis should have zero volume"
+        );
+    }
 }

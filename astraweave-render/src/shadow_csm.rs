@@ -513,14 +513,16 @@ impl CsmRenderer {
             // Need at least -30 to +30 to capture everything
             let ortho_size = 35.0; // Large enough for test scene (can optimize per-cascade later)
 
-            // DEBUG: Print ortho_size on first call
+            // Log ortho_size on first call for diagnostics
             if i == 0 {
                 static FIRST_UPDATE: std::sync::atomic::AtomicBool =
                     std::sync::atomic::AtomicBool::new(true);
                 if FIRST_UPDATE.swap(false, std::sync::atomic::Ordering::Relaxed) {
-                    println!(
-                        "🔍 Light frustum: ortho_size = {}, covers [{}, {}] in X and Z",
-                        ortho_size, -ortho_size, ortho_size
+                    log::debug!(
+                        "Light frustum: ortho_size = {}, covers [{}, {}] in X and Z",
+                        ortho_size,
+                        -ortho_size,
+                        ortho_size
                     );
                 }
             }
@@ -609,17 +611,19 @@ impl CsmRenderer {
         index_buffer: &wgpu::Buffer,
         index_count: u32,
     ) {
-        // DEBUG: Print cascade matrices on first call
+        // Log cascade matrices on first call for diagnostics
         static FIRST_CALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
         if FIRST_CALL.swap(false, std::sync::atomic::Ordering::Relaxed) {
-            println!("🔍 Shadow rendering debug:");
-            println!("  - Index count: {}", index_count);
+            log::debug!("Shadow rendering debug:");
+            log::debug!("  - Index count: {}", index_count);
             for (i, cascade) in self.cascades.iter().enumerate() {
-                println!(
+                log::debug!(
                     "  - Cascade {}: near={:.1}, far={:.1}",
-                    i, cascade.near, cascade.far
+                    i,
+                    cascade.near,
+                    cascade.far
                 );
-                println!("    view_proj = {:#?}", cascade.view_proj_matrix);
+                log::debug!("    view_proj = {:#?}", cascade.view_proj_matrix);
             }
         }
 

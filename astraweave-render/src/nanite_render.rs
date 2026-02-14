@@ -33,6 +33,7 @@ struct CameraUniform {
 }
 
 impl NaniteRenderContext {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         device: &wgpu::Device,
         width: u32,
@@ -242,7 +243,7 @@ impl NaniteRenderContext {
         for &meshlet_id in &visible_meshlets {
             let meshlet = &meshlets[meshlet_id as usize];
             let vertex_count = meshlet.triangle_count * 3;
-            render_pass.draw(0..vertex_count as u32, meshlet_id..meshlet_id + 1);
+            render_pass.draw(0..vertex_count, meshlet_id..meshlet_id + 1);
         }
     }
 
