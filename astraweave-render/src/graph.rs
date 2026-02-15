@@ -355,4 +355,87 @@ mod tests {
         let retrieved = table.tex("hdr_target").unwrap();
         assert_eq!(retrieved.width(), 1024);
     }
+
+    // --- Mutation-resistant tests ---
+
+    #[test]
+    fn render_graph_default_has_no_nodes() {
+        let g = RenderGraph::new();
+        assert_eq!(g.nodes.len(), 0);
+    }
+
+    #[test]
+    fn render_graph_add_node_increases_count() {
+        let mut g = RenderGraph::new();
+        g.add_node(TestNode { name: "a", log: vec![] });
+        assert_eq!(g.nodes.len(), 1);
+        g.add_node(TestNode { name: "b", log: vec![] });
+        assert_eq!(g.nodes.len(), 2);
+    }
+
+    #[test]
+    fn render_graph_empty_executes_ok() {
+        let mut g = RenderGraph::new();
+        let mut dummy = 0u32;
+        let mut ctx = GraphContext::new(&mut dummy);
+        assert!(g.execute(&mut ctx).is_ok());
+    }
+
+    #[test]
+    fn resource_table_insert_and_retrieve_view_errors_on_wrong_type() {
+        let table = ResourceTable::default();
+        // Insert nothing — lookup should fail
+        assert!(table.view("nonexistent").is_err());
+    }
+
+    #[test]
+    fn resource_table_missing_key_returns_error() {
+        let table = ResourceTable::default();
+        assert!(table.tex("missing").is_err());
+        assert!(table.view("missing").is_err());
+        assert!(table.bind_group("missing").is_err());
+    }
+
+    #[test]
+    fn clear_node_name() {
+        let node = ClearNode::new("clear_bg", "surface", wgpu::Color::BLACK);
+        assert_eq!(node.name(), "clear_bg");
+    }
+
+    #[test]
+    fn renderer_main_node_name() {
+        let node = RendererMainNode::new("scene", "surface");
+        assert_eq!(node.name(), "scene");
+    }
+
+    #[test]
+    fn target_view_returns_primary_for_surface_key() {
+        // Create a headless device for texture creation
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        })).expect("adapter");
+        let (device, _queue) = pollster::block_on(
+            adapter.request_device(&wgpu::DeviceDescriptor::default())
+        ).expect("device");
+
+        let tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("primary"),
+            size: wgpu::Extent3d { width: 64, height: 64, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let table = ResourceTable::default();
+        // "surface" key with primary_view should return Ok
+        assert!(table.target_view("surface", Some(&view)).is_ok());
+        // "surface" without primary should fail
+        assert!(table.target_view("surface", None).is_err());
+    }
 }

@@ -336,7 +336,7 @@ impl MaterialManager {
         queue: &wgpu::Queue,
         biome_dir: &std::path::Path,
     ) -> Result<MaterialLoadStats> {
-        println!(
+        log::info!(
             "[materials] Hot-reloading biome from {}",
             biome_dir.display()
         );
@@ -425,14 +425,14 @@ impl MaterialManager {
         for l in doc.layer {
             // Validate layer key
             if l.key.is_empty() {
-                eprintln!("[materials] Skipping layer with empty key");
+                log::warn!("[materials] Skipping layer with empty key");
                 skipped += 1;
                 continue;
             }
 
             // Validate tiling
             if l.tiling[0] <= 0.0 || l.tiling[1] <= 0.0 {
-                eprintln!(
+                log::warn!(
                     "[materials] Warning: Layer '{}' has invalid tiling {:?}, using default",
                     l.key, l.tiling
                 );
@@ -440,7 +440,7 @@ impl MaterialManager {
 
             if !arrays.layers.contains_key(&l.key) {
                 skipped += 1;
-                eprintln!(
+                log::warn!(
                     "[materials] arrays.toml missing key '{}' → skip layer",
                     l.key
                 );
@@ -481,7 +481,7 @@ impl MaterialManager {
         self._mra_tex = Some(mra_tex);
 
         if skipped > 0 {
-            eprintln!(
+            log::warn!(
                 "[materials] skipped {} layers not present in arrays.toml",
                 skipped
             );
@@ -496,7 +496,7 @@ impl MaterialManager {
         self._mra_tex = None;
         self.current_arrays = None;
         self.current_stats = None;
-        println!("[materials] Unloaded current biome");
+        log::info!("[materials] Unloaded current biome");
     }
 }
 
@@ -562,7 +562,7 @@ pub fn validate_material_pack(pack: &MaterialPackDesc) -> Result<()> {
             && layer.roughness.is_none()
             && layer.ao.is_none()
         {
-            eprintln!(
+            log::warn!(
                 "[materials] Warning: Layer '{}' has no texture paths",
                 layer.key
             );
@@ -578,7 +578,7 @@ pub fn validate_array_layout(layout: &ArrayLayout) -> Result<()> {
     if layout.count > 0 {
         let max_index = layout.layer_indices.values().max().copied().unwrap_or(0);
         if max_index >= layout.count {
-            eprintln!(
+            log::warn!(
                 "[materials] Warning: Max index {} >= count {}, possible gap",
                 max_index, layout.count
             );

@@ -92,3 +92,125 @@ pub enum RenderError {
 
 /// Convenience alias for results from the rendering pipeline.
 pub type RenderResult<T> = std::result::Result<T, RenderError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn device_error_display() {
+        let e = RenderError::Device("lost".into());
+        assert_eq!(format!("{e}"), "GPU device error: lost");
+    }
+
+    #[test]
+    fn shader_error_display() {
+        let e = RenderError::Shader("compile fail".into());
+        assert_eq!(format!("{e}"), "shader/pipeline error: compile fail");
+    }
+
+    #[test]
+    fn asset_load_error_display() {
+        let e = RenderError::AssetLoad {
+            asset: "texture".into(),
+            detail: "file not found".into(),
+        };
+        assert_eq!(format!("{e}"), "failed to load texture: file not found");
+    }
+
+    #[test]
+    fn surface_error_display() {
+        let e = RenderError::Surface("timeout".into());
+        assert_eq!(format!("{e}"), "surface error: timeout");
+    }
+
+    #[test]
+    fn graph_error_display() {
+        let e = RenderError::Graph("cycle".into());
+        assert_eq!(format!("{e}"), "render graph error: cycle");
+    }
+
+    #[test]
+    fn material_error_display() {
+        let e = RenderError::Material("missing array".into());
+        assert_eq!(format!("{e}"), "material error: missing array");
+    }
+
+    #[test]
+    fn post_process_error_display() {
+        let e = RenderError::PostProcess("bad shader".into());
+        assert_eq!(format!("{e}"), "post-processing error: bad shader");
+    }
+
+    #[test]
+    fn shadow_error_display() {
+        let e = RenderError::Shadow("cascade overflow".into());
+        assert_eq!(format!("{e}"), "shadow error: cascade overflow");
+    }
+
+    #[test]
+    fn animation_error_display() {
+        let e = RenderError::Animation("bad joint".into());
+        assert_eq!(format!("{e}"), "animation error: bad joint");
+    }
+
+    #[test]
+    fn io_error_from_conversion() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing");
+        let e: RenderError = io_err.into();
+        let msg = format!("{e}");
+        assert!(msg.contains("I/O error"), "should display I/O prefix, got: {msg}");
+        assert!(msg.contains("missing"), "should contain original message");
+    }
+
+    #[test]
+    fn image_error_display() {
+        let e = RenderError::Image("bad png".into());
+        assert_eq!(format!("{e}"), "image error: bad png");
+    }
+
+    #[test]
+    fn wgpu_error_display() {
+        let e = RenderError::Wgpu("validation".into());
+        assert_eq!(format!("{e}"), "wgpu error: validation");
+    }
+
+    #[test]
+    fn other_error_from_anyhow() {
+        let anyhow_err = anyhow::anyhow!("something else went wrong");
+        let e: RenderError = anyhow_err.into();
+        let msg = format!("{e}");
+        assert!(msg.contains("something else went wrong"));
+    }
+
+    #[test]
+    fn render_result_ok_works() {
+        let r: RenderResult<u32> = Ok(42);
+        assert_eq!(r.unwrap(), 42);
+    }
+
+    #[test]
+    fn render_result_with_question_mark() -> RenderResult<()> {
+        let inner: RenderResult<i32> = Ok(10);
+        let _v = inner?;
+        Ok(())
+    }
+
+    #[test]
+    fn error_is_debug() {
+        let e = RenderError::Device("test".into());
+        let debug = format!("{e:?}");
+        assert!(debug.contains("Device"));
+    }
+
+    #[test]
+    fn asset_load_fields_distinct() {
+        let e = RenderError::AssetLoad {
+            asset: "mesh".into(),
+            detail: "corrupt data".into(),
+        };
+        let msg = format!("{e}");
+        assert!(msg.contains("mesh"));
+        assert!(msg.contains("corrupt data"));
+    }
+}

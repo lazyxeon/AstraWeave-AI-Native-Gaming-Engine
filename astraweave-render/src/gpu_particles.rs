@@ -409,6 +409,7 @@ fn emit_particles(@builtin(global_invocation_id) global_id: vec3<u32>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bytemuck::Zeroable;
 
     #[test]
     fn test_gpu_particle_size() {
@@ -418,5 +419,58 @@ mod tests {
     #[test]
     fn test_emitter_params_size() {
         assert_eq!(std::mem::size_of::<EmitterParams>(), 80);
+    }
+
+    // --- Mutation-resistant tests ---
+
+    #[test]
+    fn gpu_particle_zeroed_is_valid() {
+        let p = GpuParticle::zeroed();
+        assert_eq!(p.position, [0.0; 4]);
+        assert_eq!(p.velocity, [0.0; 4]);
+        assert_eq!(p.color, [0.0; 4]);
+        assert_eq!(p.scale, [0.0; 4]);
+    }
+
+    #[test]
+    fn emitter_params_zeroed_is_valid() {
+        let p = EmitterParams::zeroed();
+        assert_eq!(p.emission_rate, 0.0);
+        assert_eq!(p.lifetime, 0.0);
+        assert_eq!(p.particle_count, 0);
+        assert_eq!(p.max_particles, 0);
+    }
+
+    #[test]
+    fn particle_update_shader_parses() {
+        let module = naga::front::wgsl::parse_str(PARTICLE_UPDATE_SHADER)
+            .expect("particle update WGSL should parse");
+        assert!(
+            module.entry_points.iter().any(|e| e.name == "update_particles"),
+            "must have update_particles entry point"
+        );
+    }
+
+    #[test]
+    fn particle_emit_shader_parses() {
+        let module = naga::front::wgsl::parse_str(PARTICLE_EMIT_SHADER)
+            .expect("particle emit WGSL should parse");
+        assert!(
+            module.entry_points.iter().any(|e| e.name == "emit_particles"),
+            "must have emit_particles entry point"
+        );
+    }
+
+    #[test]
+    fn gpu_particle_is_16_byte_aligned() {
+        // 4 × vec4<f32> = 4 × 16 = 64 bytes, naturally 16-byte aligned
+        assert_eq!(std::mem::size_of::<GpuParticle>() % 16, 0);
+    }
+
+    #[test]
+    fn emitter_params_has_gravity_field() {
+        let mut p = EmitterParams::zeroed();
+        p.gravity = [0.0, -9.81, 0.0, 0.0];
+        assert_eq!(p.gravity[1], -9.81);
     }
 }

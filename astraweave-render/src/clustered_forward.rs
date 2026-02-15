@@ -713,6 +713,7 @@ fn calculate_clustered_lighting(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bytemuck::Zeroable;
 
     #[test]
     fn test_cluster_config_default() {
@@ -734,5 +735,60 @@ mod tests {
         assert_eq!(light.position[0], 1.0);
         assert_eq!(light.position[3], 10.0);
         assert_eq!(light.color[3], 2.0);
+    }
+
+    // --- Mutation-resistant tests ---
+
+    #[test]
+    fn cluster_config_default_near_far() {
+        let c = ClusterConfig::default();
+        assert!((c.near - 0.1).abs() < f32::EPSILON);
+        assert!((c.far - 100.0).abs() < f32::EPSILON);
+        assert_eq!(c._pad, [0; 3]);
+    }
+
+    #[test]
+    fn cluster_config_total_clusters() {
+        let c = ClusterConfig::default();
+        let total = c.cluster_x * c.cluster_y * c.cluster_z;
+        assert_eq!(total, 16 * 9 * 24);
+        assert_eq!(total, 3456);
+    }
+
+    #[test]
+    fn cluster_config_struct_size() {
+        // 5 fields × 4 bytes + 3 padding × 4 bytes = 32 bytes
+        assert_eq!(std::mem::size_of::<ClusterConfig>(), 32);
+    }
+
+    #[test]
+    fn gpu_light_stores_all_fields() {
+        let light = GpuLight::new(
+            Vec3::new(10.0, 20.0, 30.0),
+            5.0,
+            Vec3::new(0.1, 0.2, 0.3),
+            7.5,
+        );
+        assert_eq!(light.position, [10.0, 20.0, 30.0, 5.0]);
+        assert_eq!(light.color, [0.1, 0.2, 0.3, 7.5]);
+    }
+
+    #[test]
+    fn gpu_light_struct_size() {
+        // 2 × vec4<f32> = 32 bytes
+        assert_eq!(std::mem::size_of::<GpuLight>(), 32);
+    }
+
+    #[test]
+    fn gpu_cluster_struct_size() {
+        // min_bounds(16) + max_bounds(16) + offset(4) + count(4) + pad(8) = 48 bytes
+        assert_eq!(std::mem::size_of::<GpuCluster>(), 48);
+    }
+
+    #[test]
+    fn gpu_light_zeroed_is_valid() {
+        let light = GpuLight::zeroed();
+        assert_eq!(light.position, [0.0; 4]);
+        assert_eq!(light.color, [0.0; 4]);
     }
 }

@@ -175,7 +175,7 @@ impl Texture {
         path: &Path,
         usage: TextureUsage,
     ) -> Result<Self> {
-        println!("Loading texture from: {}", path.display());
+        log::info!("Loading texture from: {}", path.display());
 
         if !path.exists() {
             return Err(anyhow::anyhow!(
@@ -220,7 +220,7 @@ impl Texture {
             1
         };
 
-        println!(
+        log::info!(
             "Loaded texture '{}': {}x{} pixels, {} as {}, {} mip levels",
             label,
             width,
@@ -566,7 +566,7 @@ fn generate_and_upload_mipmaps(
 /// Validate that texture files exist and can be loaded
 #[cfg(feature = "textures")]
 pub fn validate_texture_assets(asset_paths: &[&str]) -> Result<()> {
-    println!("🎨 Validating texture assets...");
+    log::info!("🎨 Validating texture assets...");
 
     let mut valid_count = 0;
 
@@ -575,26 +575,26 @@ pub fn validate_texture_assets(asset_paths: &[&str]) -> Result<()> {
             match image::open(texture_path) {
                 Ok(img) => {
                     let (w, h) = img.dimensions();
-                    println!("  ✅ {}: {}x{} pixels", texture_path, w, h);
+                    log::info!("  ✅ {}: {}x{} pixels", texture_path, w, h);
                     valid_count += 1;
                 }
                 Err(e) => {
-                    println!("  ❌ {}: Failed to load - {}", texture_path, e);
+                    log::info!("  ❌ {}: Failed to load - {}", texture_path, e);
                 }
             }
         } else {
-            println!("  ❌ {}: File not found", texture_path);
+            log::info!("  ❌ {}: File not found", texture_path);
         }
     }
 
-    println!(
+    log::info!(
         "📊 Texture validation: {}/{} textures valid",
         valid_count,
         asset_paths.len()
     );
 
     if valid_count > 0 {
-        println!("✅ Found valid textures for rendering!");
+        log::info!("✅ Found valid textures for rendering!");
         Ok(())
     } else {
         Err(anyhow::anyhow!("No valid textures found"))

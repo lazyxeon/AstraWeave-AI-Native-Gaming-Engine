@@ -655,4 +655,245 @@ mod tests {
         assert!((aabb.extent[1] - 1.0).abs() < 0.01);
         assert!((aabb.extent[2] - 1.0).abs() < 0.01);
     }
+
+    // --- Mutation-resistant tests ---
+
+    #[test]
+    fn parse_culling_wgsl_shader() {
+        let module =
+            naga::front::wgsl::parse_str(CULLING_SHADER).expect("WGSL culling shader should parse");
+        assert!(
+            module.entry_points.iter().any(|e| e.name == "main"),
+            "culling shader must have 'main' entry point"
+        );
+    }
+
+    #[test]
+    fn instance_aabb_new_stores_fields_correctly() {
+        let center = Vec3::new(1.0, 2.0, 3.0);
+        let extent = Vec3::new(4.0, 5.0, 6.0);
+        let aabb = InstanceAABB::new(center, extent, 42);
+        assert_eq!(aabb.center, [1.0, 2.0, 3.0]);
+        assert_eq!(aabb.extent, [4.0, 5.0, 6.0]);
+        assert_eq!(aabb.instance_index, 42);
+        assert_eq!(aabb._pad0, 0);
+    }
+
+    #[test]
+    fn draw_indirect_command_new_stores_all_fields() {
+        let cmd = DrawIndirectCommand::new(100, 5, 200, 3);
+        assert_eq!(cmd.vertex_count, 100);
+        assert_eq!(cmd.instance_count, 5);
+        assert_eq!(cmd.first_vertex, 200);
+        assert_eq!(cmd.first_instance, 3);
+    }
+
+    #[test]
+    fn draw_indirect_command_default_is_zeroed() {
+        let cmd = DrawIndirectCommand::default();
+        assert_eq!(cmd.vertex_count, 0);
+        assert_eq!(cmd.instance_count, 0);
+        assert_eq!(cmd.first_vertex, 0);
+        assert_eq!(cmd.first_instance, 0);
+    }
+
+    #[test]
+    fn batch_id_new_stores_fields() {
+        let bid = BatchId::new(7, 13);
+        assert_eq!(bid.mesh_id, 7);
+        assert_eq!(bid.material_id, 13);
+    }
+
+    #[test]
+    fn batch_id_equality_and_ordering() {
+        let a = BatchId::new(1, 2);
+        let b = BatchId::new(1, 2);
+        let c = BatchId::new(1, 3);
+        let d = BatchId::new(2, 1);
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+        assert!(a < c, "same mesh_id, lower material_id should be less");
+        assert!(c < d, "lower mesh_id should be less regardless of material_id");
+    }
+
+    #[test]
+    fn draw_batch_new_starts_empty() {
+        let bid = BatchId::new(0, 0);
+        let batch = DrawBatch::new(bid, 36, 100);
+        assert_eq!(batch.vertex_count, 36);
+        assert_eq!(batch.first_vertex, 100);
+        assert_eq!(batch.instance_count(), 0);
+        assert!(batch.instances.is_empty());
+    }
+
+    #[test]
+    fn draw_batch_add_instance_increments_count() {
+        let bid = BatchId::new(0, 0);
+        let mut batch = DrawBatch::new(bid, 36, 0);
+        assert_eq!(batch.instance_count(), 0);
+        batch.add_instance(10);
+        assert_eq!(batch.instance_count(), 1);
+        batch.add_instance(20);
+        batch.add_instance(30);
+        assert_eq!(batch.instance_count(), 3);
+        assert_eq!(batch.instances, vec![10, 20, 30]);
+    }
+
+    #[test]
+    fn build_indirect_commands_empty_batches() {
+        let commands = build_indirect_commands_cpu(&[]);
+        assert!(commands.is_empty());
+    }
+
+    #[test]
+    fn build_indirect_commands_maps_batch_fields() {
+        let bid = BatchId::new(1, 2);
+        let mut batch = DrawBatch::new(bid, 36, 100);
+        batch.add_instance(0);
+        batch.add_instance(1);
+        batch.add_instance(2);
+
+        let commands = build_indirect_commands_cpu(&[batch]);
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].vertex_count, 36);
+        assert_eq!(commands[0].instance_count, 3);
+        assert_eq!(commands[0].first_vertex, 100);
+        assert_eq!(commands[0].first_instance, 0);
+    }
+
+    #[test]
+    fn build_indirect_commands_multiple_batches() {
+        let mut b1 = DrawBatch::new(BatchId::new(0, 0), 24, 0);
+        b1.add_instance(0);
+        let mut b2 = DrawBatch::new(BatchId::new(1, 0), 36, 24);
+        b2.add_instance(1);
+        b2.add_instance(2);
+
+        let commands = build_indirect_commands_cpu(&[b1, b2]);
+        assert_eq!(commands.len(), 2);
+        assert_eq!(commands[0].vertex_count, 24);
+        assert_eq!(commands[0].instance_count, 1);
+        assert_eq!(commands[1].vertex_count, 36);
+        assert_eq!(commands[1].instance_count, 2);
+    }
+
+    #[test]
+    fn batch_visible_instances_groups_by_batch_id() {
+        let visible = vec![0u32, 1, 2, 3, 4];
+        // Even instances → mesh 0, odd → mesh 1
+        let get_batch = |idx: u32| {
+            if idx % 2 == 0 {
+                BatchId::new(0, 0)
+            } else {
+                BatchId::new(1, 0)
+            }
+        };
+        let get_mesh = |bid: BatchId| {
+            if bid.mesh_id == 0 { (24u32, 0u32) } else { (36, 24) }
+        };
+        let batches = batch_visible_instances(&visible, get_batch, get_mesh);
+        assert_eq!(batches.len(), 2, "should produce 2 distinct batches");
+
+        // BTreeMap orders by BatchId, so mesh_id=0 comes first
+        let b0 = &batches[0];
+        assert_eq!(b0.batch_id.mesh_id, 0);
+        assert_eq!(b0.vertex_count, 24);
+        assert_eq!(b0.instance_count(), 3); // indices 0, 2, 4
+        assert_eq!(b0.instances, vec![0, 2, 4]);
+
+        let b1 = &batches[1];
+        assert_eq!(b1.batch_id.mesh_id, 1);
+        assert_eq!(b1.vertex_count, 36);
+        assert_eq!(b1.instance_count(), 2); // indices 1, 3
+        assert_eq!(b1.instances, vec![1, 3]);
+    }
+
+    #[test]
+    fn batch_visible_instances_empty_input() {
+        let batches = batch_visible_instances(
+            &[],
+            |_| BatchId::new(0, 0),
+            |_| (36, 0),
+        );
+        assert!(batches.is_empty());
+    }
+
+    #[test]
+    fn cpu_frustum_cull_empty_instances() {
+        let view_proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
+        let frustum = FrustumPlanes::from_view_proj(&view_proj);
+        let visible = cpu_frustum_cull(&[], &frustum);
+        assert!(visible.is_empty());
+    }
+
+    #[test]
+    fn cpu_frustum_cull_preserves_instance_indices() {
+        let view_proj = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
+        let frustum = FrustumPlanes::from_view_proj(&view_proj);
+
+        // Use non-sequential instance indices
+        let instances = vec![
+            InstanceAABB::new(Vec3::ZERO, Vec3::splat(1.0), 99),
+            InstanceAABB::new(Vec3::new(100.0, 0.0, -50.0), Vec3::splat(1.0), 42),
+        ];
+        let visible = cpu_frustum_cull(&instances, &frustum);
+        assert_eq!(visible, vec![99], "should return the actual instance_index field value");
+    }
+
+    #[test]
+    fn frustum_planes_are_six() {
+        let vp = Mat4::perspective_rh(std::f32::consts::FRAC_PI_3, 16.0 / 9.0, 0.1, 1000.0);
+        let frustum = FrustumPlanes::from_view_proj(&vp);
+        assert_eq!(frustum.planes.len(), 6);
+        // Each plane normal should be normalized (length ≈ 1)
+        for (i, plane) in frustum.planes.iter().enumerate() {
+            let len = (plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]).sqrt();
+            assert!(
+                (len - 1.0).abs() < 0.01,
+                "plane {i} normal length {len} should be ~1.0"
+            );
+        }
+    }
+
+    #[test]
+    fn aabb_from_rotated_transform_expands_extent() {
+        // 45-degree rotation around Y axis should expand AABB
+        let rotation = Mat4::from_rotation_y(std::f32::consts::FRAC_PI_4);
+        let local_min = Vec3::new(-1.0, -1.0, -1.0);
+        let local_max = Vec3::new(1.0, 1.0, 1.0);
+
+        let aabb = InstanceAABB::from_transform(&rotation, local_min, local_max, 0);
+
+        // For a unit cube rotated 45°, x and z extents should expand to ~√2
+        let sqrt2 = std::f32::consts::SQRT_2;
+        assert!(
+            aabb.extent[0] > 1.0 && aabb.extent[0] < sqrt2 + 0.1,
+            "rotated x extent {} should be > 1.0 and ≤ √2",
+            aabb.extent[0]
+        );
+        // Y extent should remain ~1.0 (rotation around Y)
+        assert!(
+            (aabb.extent[1] - 1.0).abs() < 0.01,
+            "y extent should stay ~1.0, got {}",
+            aabb.extent[1]
+        );
+    }
+
+    #[test]
+    fn instance_aabb_struct_size_matches_wgsl_layout() {
+        // WGSL std140: center(12) + pad(4) + extent(12) + instance_index(4) = 32 bytes
+        assert_eq!(std::mem::size_of::<InstanceAABB>(), 32);
+    }
+
+    #[test]
+    fn frustum_planes_struct_size_matches_wgsl_layout() {
+        // 6 planes × 4 floats × 4 bytes = 96 bytes
+        assert_eq!(std::mem::size_of::<FrustumPlanes>(), 96);
+    }
+
+    #[test]
+    fn draw_indirect_command_struct_size() {
+        // 4 × u32 = 16 bytes, matches wgpu::DrawIndirect layout
+        assert_eq!(std::mem::size_of::<DrawIndirectCommand>(), 16);
+    }
 }

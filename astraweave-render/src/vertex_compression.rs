@@ -133,7 +133,8 @@ impl OctahedralEncoder {
     pub fn encoding_error(original: Vec3) -> f32 {
         let encoded = Self::encode(original);
         let decoded = Self::decode(encoded);
-        original.dot(decoded).acos()
+        // Clamp to [-1, 1] to avoid NaN from floating-point imprecision
+        original.dot(decoded).clamp(-1.0, 1.0).acos()
     }
 }
 
@@ -417,5 +418,104 @@ mod tests {
         assert_eq!(size_of::<CompressedVertex>(), 20);
         assert_eq!(CompressedVertex::COMPRESSED_SIZE, 20);
         assert_eq!(CompressedVertex::STANDARD_SIZE, 32);
+    }
+
+    // --- Lower hemisphere octahedral encoding (z < 0) ---
+
+    #[test]
+    fn octahedral_neg_z_axis() {
+        let normal = Vec3::new(0.0, 0.0, -1.0); // Straight down -Z
+        let encoded = OctahedralEncoder::encode(normal);
+        let decoded = OctahedralEncoder::decode(encoded);
+        assert_relative_eq!(decoded.x, normal.x, epsilon = 0.02);
+        assert_relative_eq!(decoded.y, normal.y, epsilon = 0.02);
+        assert_relative_eq!(decoded.z, normal.z, epsilon = 0.02);
+    }
+
+    #[test]
+    fn octahedral_lower_hemisphere_diagonal() {
+        let normal = Vec3::new(1.0, 1.0, -1.0).normalize();
+        let encoded = OctahedralEncoder::encode(normal);
+        let decoded = OctahedralEncoder::decode(encoded);
+        let error = OctahedralEncoder::encoding_error(normal);
+        assert!(error < 0.02, "Lower-hemisphere error too high: {}", error);
+        // Decoded should match sign of each component
+        assert!(decoded.x > 0.0, "x should be positive");
+        assert!(decoded.y > 0.0, "y should be positive");
+        assert!(decoded.z < 0.0, "z should be negative");
+    }
+
+    #[test]
+    fn octahedral_lower_hemisphere_many_normals() {
+        // Sweep across lower hemisphere
+        for phi_i in 0..8 {
+            for theta_i in 1..4 {
+                let phi = phi_i as f32 * std::f32::consts::TAU / 8.0;
+                let theta = std::f32::consts::PI * 0.5
+                    + theta_i as f32 * std::f32::consts::PI * 0.5 / 4.0;
+                let normal = Vec3::new(
+                    theta.sin() * phi.cos(),
+                    theta.sin() * phi.sin(),
+                    theta.cos(), // negative for theta > PI/2
+                );
+                let normal = normal.normalize();
+                let error = OctahedralEncoder::encoding_error(normal);
+                assert!(
+                    error < 0.03,
+                    "Error {} too high for phi={} theta={}",
+                    error,
+                    phi_i,
+                    theta_i
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn octahedral_encoding_error_nonzero_for_non_axis() {
+        // Error should be > 0 for most normals (quantization is lossy)
+        let normal = Vec3::new(0.3, 0.5, 0.8).normalize();
+        let error = OctahedralEncoder::encoding_error(normal);
+        assert!(error > 0.0, "Non-axis normal should have nonzero error");
+        assert!(error < 0.02, "Error should be small");
+    }
+
+    #[test]
+    fn octahedral_axis_aligned_normals_exact() {
+        for axis in [Vec3::X, Vec3::Y, Vec3::Z, Vec3::NEG_X, Vec3::NEG_Y, Vec3::NEG_Z] {
+            let encoded = OctahedralEncoder::encode(axis);
+            let decoded = OctahedralEncoder::decode(encoded);
+            assert!(
+                (decoded - axis).length() < 0.02,
+                "Axis {:?} decoded to {:?}",
+                axis,
+                decoded
+            );
+        }
+    }
+
+    // --- Half-float edge cases ---
+
+    #[test]
+    fn half_float_negative_values() {
+        let encoded = HalfFloatEncoder::encode(-1.0);
+        let decoded = HalfFloatEncoder::decode(encoded);
+        assert_relative_eq!(decoded, -1.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn half_float_zero_is_exact() {
+        let encoded = HalfFloatEncoder::encode(0.0);
+        let decoded = HalfFloatEncoder::decode(encoded);
+        assert_eq!(decoded, 0.0);
+    }
+
+    // --- Constants ---
+
+    #[test]
+    fn memory_reduction_constant_matches_calculation() {
+        let reduction =
+            1.0 - (CompressedVertex::COMPRESSED_SIZE as f32 / CompressedVertex::STANDARD_SIZE as f32);
+        assert_relative_eq!(reduction, CompressedVertex::MEMORY_REDUCTION, epsilon = 0.001);
     }
 }

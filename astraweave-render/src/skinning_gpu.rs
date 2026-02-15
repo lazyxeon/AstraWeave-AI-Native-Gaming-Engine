@@ -496,7 +496,51 @@ mod tests {
         assert_eq!(palette.joint_count, MAX_JOINTS as u32);
     }
 
-    // GPU tests require wgpu instance - add integration tests later
+    // --- Mutation-resistant tests ---
+
+    #[test]
+    fn joint_palette_handle_equality() {
+        let a = JointPaletteHandle(5);
+        let b = JointPaletteHandle(5);
+        let c = JointPaletteHandle(6);
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+    }
+
+    #[test]
+    fn joint_palette_from_empty_matrices() {
+        let palette = JointPalette::from_matrices(&[]);
+        assert_eq!(palette.joint_count, 0);
+    }
+
+    #[test]
+    fn joint_palette_stores_translation() {
+        let matrices = vec![
+            Mat4::from_translation(glam::Vec3::new(3.0, 4.0, 5.0)),
+        ];
+        let palette = JointPalette::from_matrices(&matrices);
+        assert_eq!(palette.joint_count, 1);
+        // Mat4 column-major: col 3 is translation
+        assert_eq!(palette.joints[0].matrix[3][0], 3.0);
+        assert_eq!(palette.joints[0].matrix[3][1], 4.0);
+        assert_eq!(palette.joints[0].matrix[3][2], 5.0);
+    }
+
+    #[test]
+    fn skinning_shader_constant_is_nonempty() {
+        assert!(!SKINNING_GPU_SHADER.is_empty());
+        assert!(SKINNING_GPU_SHADER.contains("apply_skinning"), "must define apply_skinning fn");
+        assert!(SKINNING_GPU_SHADER.contains("joint_palette"), "must reference joint_palette");
+    }
+
+    #[test]
+    fn skinning_shader_handles_four_joint_influences() {
+        // The shader should reference all 4 weight components (w.x, w.y, w.z, w.w)
+        assert!(SKINNING_GPU_SHADER.contains("w.x"));
+        assert!(SKINNING_GPU_SHADER.contains("w.y"));
+        assert!(SKINNING_GPU_SHADER.contains("w.z"));
+        assert!(SKINNING_GPU_SHADER.contains("w.w"));
+    }
 }
 
 // ============================================================================

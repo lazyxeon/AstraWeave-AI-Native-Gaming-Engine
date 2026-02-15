@@ -85,7 +85,7 @@ pub(crate) mod material_loader_impl {
         match texture_type {
             "albedo" => {
                 if meta.color_space != ColorSpace::Srgb {
-                    eprintln!(
+                    log::warn!(
                         "[materials] WARN {}/{} albedo has {:?} color-space, expected Srgb",
                         biome_name, material_key, meta.color_space
                     );
@@ -93,7 +93,7 @@ pub(crate) mod material_loader_impl {
             }
             "normal" | "mra" => {
                 if meta.color_space != ColorSpace::Linear {
-                    eprintln!(
+                    log::warn!(
                         "[materials] WARN {}/{} {} has {:?} color-space, expected Linear",
                         biome_name, material_key, texture_type, meta.color_space
                     );
@@ -320,8 +320,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         // In ktx2 0.4+, check supercompression_scheme instead of data_format_descriptors
         let has_basis_data = reader.header().supercompression_scheme.is_some();
 
-        println!(
-            "[ktx2] Loading texture: {} ({}x{}, basis={:?})",
+        log::debug!("[ktx2] Loading texture: {} ({}x{}, basis={:?})",
             path.display(),
             width,
             height,
@@ -361,7 +360,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             let img = image::RgbaImage::from_raw(width, height, transcoded)
                 .ok_or_else(|| anyhow!("failed to create RGBA image from transcoded data"))?;
 
-            println!("[ktx2] ✓ Transcoded Basis Universal texture to RGBA");
+            log::debug!("[ktx2] ✓ Transcoded Basis Universal texture to RGBA");
             Ok(img)
         } else {
             // Raw BC-compressed texture - use texture2ddecoder for decoding
@@ -374,8 +373,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 || format_desc.contains("BC3");
             let is_bc1 = format_desc.contains("131") || format_desc.contains("BC1");
 
-            println!(
-                "[ktx2] Decoding BC format: BC7={}, BC5={}, BC3={}, BC1={}",
+            log::debug!("[ktx2] Decoding BC format: BC7={}, BC5={}, BC3={}, BC1={}",
                 is_bc7, is_bc5, is_bc3, is_bc1
             );
 
@@ -404,7 +402,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 let img = image::RgbaImage::from_raw(width, height, rgba)
                     .ok_or_else(|| anyhow!("failed to create RGBA image from BC7 data"))?;
 
-                println!("[ktx2] ✓ Decoded BC7 texture");
+                log::debug!("[ktx2] ✓ Decoded BC7 texture");
                 Ok(img)
             } else if is_bc5 {
                 // BC5: 2-channel for normal maps, reconstruct Z component
@@ -438,7 +436,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
                 let img = image::RgbaImage::from_raw(width, height, rgba)
                     .ok_or_else(|| anyhow!("failed to create RGBA image from BC5 data"))?;
-                println!("[ktx2] ✓ Decoded BC5 normal map with Z reconstruction");
+                log::debug!("[ktx2] ✓ Decoded BC5 normal map with Z reconstruction");
                 Ok(img)
             } else if is_bc3 {
                 // BC3 (DXT5): RGBA with interpolated alpha
@@ -463,7 +461,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
                 let img = image::RgbaImage::from_raw(width, height, rgba)
                     .ok_or_else(|| anyhow!("failed to create RGBA image from BC3 data"))?;
-                println!("[ktx2] ✓ Decoded BC3 texture");
+                log::debug!("[ktx2] ✓ Decoded BC3 texture");
                 Ok(img)
             } else if is_bc1 {
                 // BC1 (DXT1): RGB 565 with 1-bit alpha
@@ -488,7 +486,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 let img = image::RgbaImage::from_raw(width, height, rgba)
                     .ok_or_else(|| anyhow!("failed to create RGBA image from BC1 data"))?;
 
-                println!("[ktx2] ✓ Decoded BC1 texture");
+                log::debug!("[ktx2] ✓ Decoded BC1 texture");
                 Ok(img)
             } else {
                 Err(anyhow!(
@@ -627,7 +625,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         );
 
         // Diagnostic: print chosen formats and mip count so test runs can validate expectations
-        println!("[materials-debug] building arrays: layers={} size={}x{} mips={} formats: albedo={:?} normal={:?} mra={:?}",
+        log::debug!("[materials-debug] building arrays: layers={} size={}x{} mips={} formats: albedo={:?} normal={:?} mra={:?}",
             layer_count, width, height, mip_level_count, alb_fmt, nrm_fmt, mra_fmt);
 
         let mut stats = MaterialLoadStats {
@@ -734,10 +732,10 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     // Load metadata to check color-space
                     let meta = try_load_metadata(p);
                     if let Some(ref m) = meta {
-                        println!("[materials] INFO loaded metadata for {}/{} albedo: color_space={:?} mips={} compression={:?}",
+                        log::info!("[materials] loaded metadata for {}/{} albedo: color_space={:?} mips={} compression={:?}",
                             biome_name, key, m.color_space, m.mip_levels, m.compression);
                     } else {
-                        println!(
+                        log::info!(
                             "[materials] WARN no metadata for {}/{} albedo → assuming sRGB",
                             biome_name, key
                         );
@@ -749,7 +747,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     if let Err(e) =
                         validate_texture_metadata(meta.as_ref(), "albedo", key, biome_name)
                     {
-                        eprintln!(
+                        log::warn!(
                             "[materials] VALIDATION WARNING: {} (loading anyway with fallbacks)",
                             e
                         );
@@ -774,13 +772,13 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                             has_albedo = true;
                         }
                         Err(e) => {
-                            eprintln!("[materials] WARN missing/bad albedo for {}/{}: {} → substituting neutral", biome_name, key, e);
+                            log::warn!("[materials] WARN missing/bad albedo for {}/{}: {} → substituting neutral", biome_name, key, e);
                             stats.albedo_substituted += 1;
                         }
                     }
                 } else {
                     // 1x1 policy mentioned → we log and keep the neutral (already written full-res neutral)
-                    eprintln!(
+                    log::warn!(
                         "[materials] WARN albedo not provided for {}/{} → substituting 1×1 neutral",
                         biome_name, key
                     );
@@ -792,10 +790,10 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     // Load metadata to check color-space
                     let meta = try_load_metadata(p);
                     if let Some(ref m) = meta {
-                        println!("[materials] INFO loaded metadata for {}/{} normal: color_space={:?} mips={} compression={:?}",
+                        log::info!("[materials] loaded metadata for {}/{} normal: color_space={:?} mips={} compression={:?}",
                             biome_name, key, m.color_space, m.mip_levels, m.compression);
                     } else {
-                        println!(
+                        log::info!(
                             "[materials] WARN no metadata for {}/{} normal → assuming Linear RG",
                             biome_name, key
                         );
@@ -805,7 +803,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     if let Err(e) =
                         validate_texture_metadata(meta.as_ref(), "normal", key, biome_name)
                     {
-                        eprintln!(
+                        log::warn!(
                             "[materials] VALIDATION WARNING: {} (loading anyway with fallbacks)",
                             e
                         );
@@ -838,12 +836,12 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                             has_normal = true;
                         }
                         Err(e) => {
-                            eprintln!("[materials] WARN missing/bad normal for {}/{}: {} → substituting neutral", biome_name, key, e);
+                            log::warn!("[materials] WARN missing/bad normal for {}/{}: {} → substituting neutral", biome_name, key, e);
                             stats.normal_substituted += 1;
                         }
                     }
                 } else {
-                    eprintln!(
+                    log::warn!(
                         "[materials] WARN normal not provided for {}/{} → substituting neutral",
                         biome_name, key
                     );
@@ -855,10 +853,10 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     // Load metadata to check color-space
                     let meta = try_load_metadata(p);
                     if let Some(ref m) = meta {
-                        println!("[materials] INFO loaded metadata for {}/{} mra: color_space={:?} mips={} compression={:?}",
+                        log::info!("[materials] loaded metadata for {}/{} mra: color_space={:?} mips={} compression={:?}",
                             biome_name, key, m.color_space, m.mip_levels, m.compression);
                     } else {
-                        println!(
+                        log::info!(
                             "[materials] WARN no metadata for {}/{} mra → assuming Linear RGBA",
                             biome_name, key
                         );
@@ -867,7 +865,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     // Validate metadata (production requirement)
                     if let Err(e) = validate_texture_metadata(meta.as_ref(), "mra", key, biome_name)
                     {
-                        eprintln!(
+                        log::warn!(
                             "[materials] VALIDATION WARNING: {} (loading anyway with fallbacks)",
                             e
                         );
@@ -892,7 +890,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                             has_orm = true;
                         }
                         Err(e) => {
-                            eprintln!(
+                            log::warn!(
                                 "[materials] WARN missing/bad MRA for {}/{}: {}",
                                 biome_name, key, e
                             );
@@ -946,7 +944,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                                         has_orm = true;
                                     }
                                     _ => {
-                                        eprintln!("[materials] WARN cannot pack MRA for {}/{} → substituting neutral", biome_name, key);
+                                        log::warn!("[materials] WARN cannot pack MRA for {}/{} → substituting neutral", biome_name, key);
                                         stats.mra_substituted += 1;
                                     }
                                 }
@@ -1004,7 +1002,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                             has_orm = true;
                         }
                         _ => {
-                            eprintln!(
+                            log::warn!(
                                 "[materials] WARN cannot pack MRA for {}/{} → substituting neutral",
                                 biome_name, key
                             );
@@ -1012,7 +1010,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                         }
                     }
                 } else {
-                    eprintln!(
+                    log::warn!(
                         "[materials] WARN MRA not provided for {}/{} → substituting neutral",
                         biome_name, key
                     );

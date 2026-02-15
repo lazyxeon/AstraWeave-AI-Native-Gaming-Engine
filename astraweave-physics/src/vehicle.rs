@@ -2075,4 +2075,451 @@ mod tests {
             mph
         );
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6.1 — vehicle Round 2 boundary/arithmetic tests
+    // ═══════════════════════════════════════════════════════════════
+
+    // --- EngineConfig::torque_at_rpm boundary precision ---
+    #[test]
+    fn mutation_torque_at_idle_rpm_exact() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.idle_rpm);
+        // At idle_rpm, normalized = 0, torque = max_torque * (1 - (1-0)^2) = 0
+        assert_eq!(torque, 0.0, "At exactly idle RPM, torque should be 0, got {}", torque);
+    }
+
+    #[test]
+    fn mutation_torque_at_max_rpm_exact() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.max_rpm);
+        // At max_rpm, falloff = (max_rpm - max_torque_rpm)/(max_rpm - max_torque_rpm) = 1.0
+        // torque = max_torque * (1 - 1^2).max(0) = 0
+        assert_eq!(torque, 0.0, "At exactly max RPM, torque should be 0, got {}", torque);
+    }
+
+    #[test]
+    fn mutation_torque_below_idle_boundary() {
+        let engine = EngineConfig::default();
+        // Just barely below idle
+        let torque = engine.torque_at_rpm(engine.idle_rpm - 0.001);
+        assert_eq!(torque, 0.0, "Below idle RPM should return 0");
+        // Just barely at idle
+        let torque_at = engine.torque_at_rpm(engine.idle_rpm);
+        assert_eq!(torque_at, 0.0, "At idle RPM should return 0 (normalized=0)");
+    }
+
+    #[test]
+    fn mutation_torque_above_max_boundary() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(engine.max_rpm + 0.001);
+        assert_eq!(torque, 0.0, "Above max RPM should return 0");
+    }
+
+    #[test]
+    fn mutation_torque_curve_parabolic_rising() {
+        let engine = EngineConfig::default();
+        // Test specific points on the rising parabola
+        let rpm_quarter = engine.idle_rpm + (engine.max_torque_rpm - engine.idle_rpm) * 0.25;
+        let rpm_half = engine.idle_rpm + (engine.max_torque_rpm - engine.idle_rpm) * 0.5;
+        let rpm_three_quarter = engine.idle_rpm + (engine.max_torque_rpm - engine.idle_rpm) * 0.75;
+
+        let t25 = engine.torque_at_rpm(rpm_quarter);
+        let t50 = engine.torque_at_rpm(rpm_half);
+        let t75 = engine.torque_at_rpm(rpm_three_quarter);
+
+        // Verify parabolic: 1 - (1 - x)^2 at x=0.25 → 1-0.5625=0.4375
+        let expected_25 = engine.max_torque * (1.0 - (1.0 - 0.25_f32).powi(2));
+        assert!((t25 - expected_25).abs() < 0.1, "At 25%, torque should be {}, got {}", expected_25, t25);
+
+        // Should be monotonically increasing
+        assert!(t50 > t25, "t50={} should > t25={}", t50, t25);
+        assert!(t75 > t50, "t75={} should > t50={}", t75, t50);
+    }
+
+    #[test]
+    fn mutation_torque_curve_parabolic_falling() {
+        let engine = EngineConfig::default();
+        // Falling portion: at 75% between max_torque_rpm and max_rpm
+        let rpm_fall = engine.max_torque_rpm + (engine.max_rpm - engine.max_torque_rpm) * 0.75;
+        let falloff = (rpm_fall - engine.max_torque_rpm) / (engine.max_rpm - engine.max_torque_rpm);
+        let expected = engine.max_torque * (1.0 - falloff.powi(2)).max(0.0);
+        let actual = engine.torque_at_rpm(rpm_fall);
+        assert!((actual - expected).abs() < 0.1, "Falling torque at 75% should be {}, got {}", expected, actual);
+    }
+
+    // --- FrictionCurve::friction_at_slip boundary/arithmetic ---
+    #[test]
+    fn mutation_friction_near_zero_slip_threshold() {
+        let curve = FrictionCurve::tarmac();
+        // Below 0.001 threshold (strictly < 0.001 returns 0)
+        assert_eq!(curve.friction_at_slip(0.0005), 0.0, "Very small slip should return 0");
+        assert_eq!(curve.friction_at_slip(0.0009), 0.0, "0.0009 < 0.001 returns 0");
+        // At threshold: 0.001 is NOT < 0.001, so enters rising portion
+        let f = curve.friction_at_slip(0.001);
+        assert!(f > 0.0, "At exactly 0.001, enters rising portion, got {}", f);
+        // x = 0.001/0.08 = 0.0125, peak*(1-exp(-12*0.0125)) = 1.2*(1-exp(-0.15)) ≈ 0.167
+        let expected = curve.peak_friction * (1.0 - (-curve.stiffness * (0.001 / curve.optimal_slip)).exp());
+        assert!((f - expected).abs() < 1e-5, "Should match formula, expected {}, got {}", expected, f);
+    }
+
+    #[test]
+    fn mutation_friction_rising_exact_formula() {
+        let curve = FrictionCurve::tarmac();
+        let slip = curve.optimal_slip * 0.5; // x = 0.5
+        let f = curve.friction_at_slip(slip);
+        let x = 0.5;
+        let expected = curve.peak_friction * (1.0 - (-curve.stiffness * x).exp());
+        assert!((f - expected).abs() < 1e-5, "Rising portion at x=0.5 should be {}, got {}", expected, f);
+    }
+
+    #[test]
+    fn mutation_friction_falling_decay_clamped() {
+        let curve = FrictionCurve::tarmac();
+        // x > 1 → falling portion
+        // At x = 1.5: decay = ((1.5-1)*2).min(1) = 1.0
+        let slip = curve.optimal_slip * 1.5;
+        let f = curve.friction_at_slip(slip);
+        let expected = curve.peak_friction - (curve.peak_friction - curve.sliding_friction) * 1.0;
+        assert!((f - expected).abs() < 1e-5, "At x=1.5, friction should equal sliding_friction={}, got {}", expected, f);
+    }
+
+    #[test]
+    fn mutation_friction_falling_midpoint() {
+        let curve = FrictionCurve::tarmac();
+        // x = 1.25: decay = ((1.25-1)*2).min(1) = 0.5
+        let slip = curve.optimal_slip * 1.25;
+        let f = curve.friction_at_slip(slip);
+        let decay = 0.5;
+        let expected = curve.peak_friction - (curve.peak_friction - curve.sliding_friction) * decay;
+        assert!((f - expected).abs() < 1e-4, "At x=1.25, friction should be {}, got {}", expected, f);
+    }
+
+    #[test]
+    fn mutation_friction_negative_slip_abs() {
+        let curve = FrictionCurve::tarmac();
+        let f_pos = curve.friction_at_slip(0.05);
+        let f_neg = curve.friction_at_slip(-0.05);
+        assert!((f_pos - f_neg).abs() < 1e-6, "friction_at_slip should be symmetric: pos={}, neg={}", f_pos, f_neg);
+    }
+
+    // --- TransmissionConfig::effective_ratio ---
+    #[test]
+    fn mutation_effective_ratio_out_of_bounds_gear() {
+        let trans = TransmissionConfig::default();
+        let max_gear = trans.gear_ratios.len() as i32;
+        let ratio = trans.effective_ratio(max_gear + 1);
+        // Out of bounds defaults to 1.0 * final_drive
+        assert!((ratio - 1.0 * trans.final_drive).abs() < 1e-5,
+            "Out-of-bounds gear should use fallback ratio=1.0*final_drive={}, got {}", 1.0 * trans.final_drive, ratio);
+    }
+
+    #[test]
+    fn mutation_effective_ratio_all_gears() {
+        let trans = TransmissionConfig::default();
+        for gear in 1..=(trans.gear_ratios.len() as i32) {
+            let ratio = trans.effective_ratio(gear);
+            let expected = trans.gear_ratios[(gear - 1) as usize] * trans.final_drive;
+            assert!((ratio - expected).abs() < 1e-5,
+                "Gear {} ratio should be {}, got {}", gear, expected, ratio);
+        }
+    }
+
+    // --- WheelConfig constructors ---
+    #[test]
+    fn mutation_wheel_config_front_left_flags() {
+        let w = WheelConfig::front_left(Vec3::new(-0.8, 0.0, 1.2));
+        assert!(w.steerable, "Front left should be steerable");
+        assert!(!w.driven, "Front left should not be driven (default is RWD)");
+        assert_eq!(w.position_id, WheelPosition::FrontLeft);
+    }
+
+    #[test]
+    fn mutation_wheel_config_rear_right_flags() {
+        let w = WheelConfig::rear_right(Vec3::new(0.8, 0.0, -1.2));
+        assert!(!w.steerable, "Rear right should not be steerable");
+        assert!(w.driven, "Rear right should be driven");
+        assert_eq!(w.position_id, WheelPosition::RearRight);
+    }
+
+    // --- Vehicle shifting ---
+    #[test]
+    fn mutation_shift_up_from_max_gear() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 1, config.clone());
+        let max = config.transmission.num_gears() as i32;
+        vehicle.current_gear = max;
+        vehicle.shift_timer = 0.0;
+        vehicle.shift_up();
+        assert_eq!(vehicle.current_gear, max, "Should not shift above max gear");
+    }
+
+    #[test]
+    fn mutation_shift_down_from_minus_one() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 1, config);
+        vehicle.current_gear = -1;
+        vehicle.shift_timer = 0.0;
+        vehicle.shift_down();
+        assert_eq!(vehicle.current_gear, -1, "Should not shift below -1");
+    }
+
+    #[test]
+    fn mutation_shift_blocked_during_shift() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 1, config);
+        vehicle.current_gear = 1;
+        vehicle.shift_timer = 0.1; // Currently shifting
+        let gear_before = vehicle.current_gear;
+        vehicle.shift_up();
+        assert_eq!(vehicle.current_gear, gear_before, "Should not shift while shift_timer > 0");
+    }
+
+    // --- Vehicle state queries ---
+    #[test]
+    fn mutation_grounded_wheels_count() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 1, config);
+        vehicle.wheels[0].grounded = true;
+        vehicle.wheels[1].grounded = true;
+        vehicle.wheels[2].grounded = false;
+        vehicle.wheels[3].grounded = false;
+        assert_eq!(vehicle.grounded_wheels(), 2);
+        assert!(!vehicle.is_airborne());
+    }
+
+    #[test]
+    fn mutation_is_airborne() {
+        let config = VehicleConfig::default();
+        let vehicle = Vehicle::new(1, 1, config);
+        // Default all wheels have grounded=false
+        assert!(vehicle.is_airborne());
+    }
+
+    #[test]
+    fn mutation_average_slip_no_grounded_wheels() {
+        let config = VehicleConfig::default();
+        let vehicle = Vehicle::new(1, 1, config);
+        assert_eq!(vehicle.average_slip_ratio(), 0.0, "No grounded wheels should return 0");
+        assert_eq!(vehicle.average_slip_angle(), 0.0, "No grounded wheels should return 0");
+    }
+
+    #[test]
+    fn mutation_average_slip_ratio_calculation() {
+        let config = VehicleConfig::default();
+        let mut vehicle = Vehicle::new(1, 1, config);
+        vehicle.wheels[0].grounded = true;
+        vehicle.wheels[0].slip_ratio = 0.1;
+        vehicle.wheels[1].grounded = true;
+        vehicle.wheels[1].slip_ratio = -0.3;
+        vehicle.wheels[2].grounded = false; // Not counted
+        vehicle.wheels[3].grounded = true;
+        vehicle.wheels[3].slip_ratio = 0.2;
+        // avg = (0.1 + 0.3 + 0.2) / 3 = 0.2
+        let avg = vehicle.average_slip_ratio();
+        assert!((avg - 0.2).abs() < 1e-5, "Average slip ratio should be 0.2, got {}", avg);
+    }
+
+    // ===== DEEP REMEDIATION v3.6.2 — vehicle Round 3 remaining mutations =====
+
+    // --- FrictionCurve::tarmac preset ---
+    #[test]
+    fn mutation_r3_tarmac_not_default() {
+        // Mutation: replace tarmac() -> Self with Default::default()
+        let tarmac = FrictionCurve::tarmac();
+        let default_fc = FrictionCurve::default();
+        // Tarmac has specific values that differ from default
+        assert!((tarmac.optimal_slip - 0.08).abs() < 1e-5, "Tarmac optimal_slip should be 0.08");
+        assert!((tarmac.peak_friction - 1.2).abs() < 1e-5, "Tarmac peak_friction should be 1.2");
+        assert!((tarmac.sliding_friction - 0.9).abs() < 1e-5, "Tarmac sliding_friction should be 0.9");
+        assert!((tarmac.stiffness - 12.0).abs() < 1e-5, "Tarmac stiffness should be 12.0");
+        // At least one field should differ from default
+        let differs = (tarmac.optimal_slip - default_fc.optimal_slip).abs() > 1e-5
+            || (tarmac.peak_friction - default_fc.peak_friction).abs() > 1e-5
+            || (tarmac.sliding_friction - default_fc.sliding_friction).abs() > 1e-5
+            || (tarmac.stiffness - default_fc.stiffness).abs() > 1e-5;
+        assert!(differs, "Tarmac should differ from default");
+    }
+
+    // --- effective_ratio subtraction mutation ---
+    #[test]
+    fn mutation_r3_effective_ratio_gear_index_subtraction() {
+        // gear_ratios.get((gear - 1) as usize)  (mutation: - → / or + )
+        let cfg = TransmissionConfig {
+            gear_ratios: vec![3.0, 2.0, 1.5],
+            final_drive: 4.0,
+            ..Default::default()
+        };
+        // Gear 1 should use index 0 → ratio 3.0
+        assert!((cfg.effective_ratio(1) - 12.0).abs() < 1e-5, "Gear 1: 3.0 * 4.0 = 12.0");
+        // Gear 2 should use index 1 → ratio 2.0
+        assert!((cfg.effective_ratio(2) - 8.0).abs() < 1e-5, "Gear 2: 2.0 * 4.0 = 8.0");
+        // Gear 3 should use index 2 → ratio 1.5
+        assert!((cfg.effective_ratio(3) - 6.0).abs() < 1e-5, "Gear 3: 1.5 * 4.0 = 6.0");
+    }
+
+    #[test]
+    fn mutation_r3_effective_ratio_multiply_final_drive() {
+        // gear_ratio * self.final_drive  (mutation: * → /)
+        let cfg = TransmissionConfig {
+            gear_ratios: vec![2.5],
+            final_drive: 3.0,
+            ..Default::default()
+        };
+        let result = cfg.effective_ratio(1);
+        assert!((result - 7.5).abs() < 1e-5, "2.5 * 3.0 = 7.5, got {}", result);
+    }
+
+    // --- torque_at_rpm boundary precision ---
+    #[test]
+    fn mutation_r3_torque_boundary_just_below_idle() {
+        // rpm < idle_rpm → return 0  (mutation: < → <=)
+        let cfg = EngineConfig {
+            idle_rpm: 800.0,
+            max_rpm: 6000.0,
+            max_torque_rpm: 3500.0,
+            max_torque: 400.0,
+            ..Default::default()
+        };
+        // At exactly idle_rpm, should NOT return 0 (< is false when ==)
+        let at_idle = cfg.torque_at_rpm(800.0);
+        // normalized = (800-800)/(3500-800) = 0, torque = 400*(1-(1-0)^2) = 0
+        // It's technically 0 due to normalized=0, but it enters the branch
+        assert!(at_idle >= 0.0, "At idle should be >= 0");
+        // Just below → exactly 0 (early return)
+        let below = cfg.torque_at_rpm(799.0);
+        assert_eq!(below, 0.0, "Below idle should be exactly 0.0");
+    }
+
+    #[test]
+    fn mutation_r3_torque_boundary_at_max_rpm() {
+        // rpm > max_rpm → return 0  (mutation: > → == or >=)
+        let cfg = EngineConfig {
+            idle_rpm: 800.0,
+            max_rpm: 6000.0,
+            max_torque_rpm: 3500.0,
+            max_torque: 400.0,
+            ..Default::default()
+        };
+        // At exactly max_rpm: falloff = (6000-3500)/(6000-3500) = 1.0
+        // torque = 400 * (1 - 1^2).max(0) = 0
+        let at_max = cfg.torque_at_rpm(6000.0);
+        assert!(at_max >= 0.0, "At max_rpm result should be >= 0");
+        // Just above → 0 (early return)
+        let above = cfg.torque_at_rpm(6001.0);
+        assert_eq!(above, 0.0, "Above max_rpm should be exactly 0.0");
+    }
+
+    #[test]
+    fn mutation_r3_torque_falling_subtraction() {
+        // falloff = (rpm - max_torque_rpm) / (max_rpm - max_torque_rpm)
+        // Mutations: - → + or / on line 215
+        let cfg = EngineConfig {
+            idle_rpm: 1000.0,
+            max_rpm: 7000.0,
+            max_torque_rpm: 4000.0,
+            max_torque: 500.0,
+            ..Default::default()
+        };
+        // At rpm=5500 (falling portion): falloff = (5500-4000)/(7000-4000) = 0.5
+        // torque = 500 * (1 - 0.5^2) = 500 * 0.75 = 375
+        let t = cfg.torque_at_rpm(5500.0);
+        assert!((t - 375.0).abs() < 1.0, "Falling at 5500: expected ~375, got {}", t);
+    }
+
+    #[test]
+    fn mutation_r3_torque_normalized_subtraction() {
+        // normalized = (rpm - idle_rpm) / (max_torque_rpm - idle_rpm)
+        // Line 214: - → +
+        let cfg = EngineConfig {
+            idle_rpm: 1000.0,
+            max_rpm: 7000.0,
+            max_torque_rpm: 4000.0,
+            max_torque: 500.0,
+            ..Default::default()
+        };
+        // At rpm=2500 (rising): normalized = (2500-1000)/(4000-1000) = 0.5
+        // torque = 500 * (1 - (1-0.5)^2) = 500 * (1-0.25) = 375
+        let t = cfg.torque_at_rpm(2500.0);
+        assert!((t - 375.0).abs() < 1.0, "Rising at 2500: expected ~375, got {}", t);
+    }
+
+    // --- WheelConfig field deletion ---
+    #[test]
+    fn mutation_r3_wheel_config_front_right_fields() {
+        // "delete field steerable" + "delete field driven" from front_right
+        let fr = WheelConfig::front_right(Vec3::new(0.7, -0.3, 1.2));
+        assert!(fr.steerable, "front_right should be steerable");
+        assert!(!fr.driven, "front_right should NOT be driven (RWD default)");
+    }
+
+    #[test]
+    fn mutation_r3_wheel_config_rear_left_steerable_false() {
+        // "delete field steerable" from rear_left
+        let rl = WheelConfig::rear_left(Vec3::new(-0.7, -0.3, -1.2));
+        assert!(!rl.steerable, "rear_left should NOT be steerable");
+    }
+
+    #[test]
+    fn mutation_r3_wheel_config_rear_right_steerable_false() {
+        // "delete field steerable" from rear_right
+        let rr = WheelConfig::rear_right(Vec3::new(0.7, -0.3, -1.2));
+        assert!(!rr.steerable, "rear_right should NOT be steerable");
+    }
+
+    #[test]
+    fn mutation_r3_wheel_config_front_left_driven() {
+        // "delete field driven" from front_left
+        let fl = WheelConfig::front_left(Vec3::new(-0.7, -0.3, 1.2));
+        assert!(!fl.driven, "front_left should NOT be driven (RWD default)");
+        // But rear should be driven
+        let rl = WheelConfig::rear_left(Vec3::new(-0.7, -0.3, -1.2));
+        assert!(rl.driven, "rear_left should be driven");
+    }
+
+    // --- friction_at_slip boundary mutations ---
+    #[test]
+    fn mutation_r3_friction_precise_at_optimal() {
+        // At optimal_slip, should be peak friction
+        let fc = FrictionCurve {
+            optimal_slip: 0.1,
+            peak_friction: 1.5,
+            sliding_friction: 0.8,
+            stiffness: 10.0,
+        };
+        let f = fc.friction_at_slip(0.1);
+        assert!((f - 1.5).abs() < 1e-4, "At optimal_slip, should get peak_friction, got {}", f);
+    }
+
+    #[test]
+    fn mutation_r3_friction_falling_subtraction() {
+        // decay = (x - 1.0) * 2.0  line 317: - → / or +
+        let fc = FrictionCurve {
+            optimal_slip: 0.1,
+            peak_friction: 1.0,
+            sliding_friction: 0.5,
+            stiffness: 10.0,
+        };
+        // At slip=0.125: x = 1.25 (falling)
+        // decay = ((1.25 - 1.0) * 2.0).min(1.0) = 0.5
+        // friction = 1.0 - (1.0 - 0.5) * 0.5 = 0.75
+        let f = fc.friction_at_slip(0.125);
+        assert!((f - 0.75).abs() < 0.02, "Falling at slip=0.125: expected ~0.75, got {}", f);
+    }
+
+    #[test]
+    fn mutation_r3_friction_stiffness_product() {
+        // result = peak * (1.0 - (-stiffness * x).exp())  line 312: * → +
+        let fc = FrictionCurve {
+            optimal_slip: 0.2,
+            peak_friction: 1.0,
+            sliding_friction: 0.6,
+            stiffness: 5.0,
+        };
+        // At slip=0.02 (rising): x = 0.02/0.2 = 0.1
+        // friction = 1.0 * (1 - exp(-5.0 * 0.1)) = 1 - exp(-0.5) ≈ 0.3935
+        let f = fc.friction_at_slip(0.02);
+        let expected = 1.0_f32 * (1.0 - (-0.5_f32).exp());
+        assert!((f - expected).abs() < 0.01, "Rising with stiffness: expected ~{:.4}, got {}", expected, f);
+    }
 }

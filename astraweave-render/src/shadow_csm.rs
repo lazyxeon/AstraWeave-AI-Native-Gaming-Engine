@@ -727,4 +727,126 @@ mod tests {
             assert!(offset.y == 0.0 || offset.y == 0.5);
         }
     }
+
+    // --- Mutation-resistant tests ---
+
+    #[test]
+    fn cascade_count_is_four() {
+        assert_eq!(CASCADE_COUNT, 4);
+    }
+
+    #[test]
+    fn cascade_resolution_is_2048() {
+        assert_eq!(CASCADE_RESOLUTION, 2048);
+    }
+
+    #[test]
+    fn depth_bias_is_positive() {
+        assert!(DEPTH_BIAS > 0.0, "depth bias must be positive to prevent shadow acne");
+        assert!(DEPTH_BIAS < 0.1, "depth bias should be small");
+    }
+
+    #[test]
+    fn gpu_shadow_cascade_from_shadow_cascade() {
+        let cascade = ShadowCascade {
+            near: 0.5,
+            far: 25.0,
+            view_matrix: Mat4::IDENTITY,
+            proj_matrix: Mat4::IDENTITY,
+            view_proj_matrix: Mat4::look_at_rh(
+                Vec3::new(0.0, 50.0, 0.0),
+                Vec3::ZERO,
+                Vec3::X,
+            ),
+            atlas_offset: Vec4::new(0.0, 0.0, 1.0, 1.0),
+        };
+        let gpu: GpuShadowCascade = (&cascade).into();
+        assert_eq!(gpu.split_distances[0], 0.5);
+        assert_eq!(gpu.split_distances[1], 25.0);
+        assert_eq!(gpu.split_distances[2], 0.0);
+        assert_eq!(gpu.split_distances[3], 0.0);
+        assert_eq!(gpu.atlas_transform, [0.0, 0.0, 1.0, 1.0]);
+        // view_proj should match cascade.view_proj_matrix
+        let expected = cascade.view_proj_matrix.to_cols_array_2d();
+        assert_eq!(gpu.view_proj, expected);
+    }
+
+    #[test]
+    fn cascade_splits_are_monotonic_for_various_ranges() {
+        let test_cases = [
+            (0.1f32, 100.0f32),
+            (0.1, 1000.0),
+            (1.0, 50.0),
+            (0.01, 10000.0),
+        ];
+        let lambda = 0.5;
+        for (near, far) in test_cases {
+            let mut splits = [0.0f32; CASCADE_COUNT + 1];
+            splits[0] = near;
+            splits[CASCADE_COUNT] = far;
+            for (i, split) in splits.iter_mut().enumerate().take(CASCADE_COUNT).skip(1) {
+                let i_f = i as f32;
+                let n_f = CASCADE_COUNT as f32;
+                let log_split = near * (far / near).powf(i_f / n_f);
+                let uniform_split = near + (far - near) * (i_f / n_f);
+                *split = lambda * log_split + (1.0 - lambda) * uniform_split;
+            }
+            for pair in splits.windows(2) {
+                assert!(pair[0] < pair[1], "splits must be monotonic for near={near}, far={far}");
+            }
+            assert_eq!(splits[0], near);
+            assert_eq!(splits[CASCADE_COUNT], far);
+        }
+    }
+
+    #[test]
+    fn cascade_splits_first_is_near_and_last_is_far() {
+        let near = 0.5f32;
+        let far = 500.0f32;
+        let lambda = 0.5;
+        let mut splits = [0.0f32; CASCADE_COUNT + 1];
+        splits[0] = near;
+        splits[CASCADE_COUNT] = far;
+        for (i, split) in splits.iter_mut().enumerate().take(CASCADE_COUNT).skip(1) {
+            let i_f = i as f32;
+            let n_f = CASCADE_COUNT as f32;
+            *split = lambda * (near * (far / near).powf(i_f / n_f))
+                   + (1.0 - lambda) * (near + (far - near) * (i_f / n_f));
+        }
+        assert_eq!(splits[0], near, "first split must equal near");
+        assert_eq!(splits[CASCADE_COUNT], far, "last split must equal far");
+    }
+
+    #[test]
+    fn light_view_matrix_up_vector_selection() {
+        // Light mostly vertical (|y| > 0.9) should use X as up
+        let vertical_dir = Vec3::new(0.0, -0.95, 0.1).normalize();
+        let up = if vertical_dir.y.abs() > 0.9 { Vec3::X } else { Vec3::Y };
+        assert_eq!(up, Vec3::X, "vertical light should use X as up");
+
+        // Light horizontal should use Y as up
+        let horizontal_dir = Vec3::new(0.5, -0.3, 0.8).normalize();
+        let up2 = if horizontal_dir.y.abs() > 0.9 { Vec3::X } else { Vec3::Y };
+        assert_eq!(up2, Vec3::Y, "horizontal light should use Y as up");
+    }
+
+    #[test]
+    fn shadow_depth_shader_parses() {
+        let module = naga::front::wgsl::parse_str(SHADOW_DEPTH_SHADER)
+            .expect("SHADOW_DEPTH_SHADER WGSL should parse");
+        let entry_names: Vec<&str> = module.entry_points.iter().map(|e| e.name.as_str()).collect();
+        assert!(entry_names.contains(&"shadow_vertex_main"), "must have vertex entry");
+        assert!(entry_names.contains(&"shadow_fragment_main"), "must have fragment entry");
+    }
+
+    #[test]
+    fn gpu_shadow_cascade_struct_size() {
+        // 64 (mat4) + 16 (split_distances) + 16 (atlas_transform) = 96 bytes
+        assert_eq!(std::mem::size_of::<GpuShadowCascade>(), 96);
+    }
+
+    #[test]
+    fn atlas_resolution_equals_cascade_resolution() {
+        assert_eq!(ATLAS_RESOLUTION, CASCADE_RESOLUTION);
+    }
 }

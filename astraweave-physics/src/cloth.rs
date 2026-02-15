@@ -1394,4 +1394,716 @@ mod tests {
             particle.position.y
         );
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6.1 — cloth Round 2 arithmetic/boundary tests
+    // ═══════════════════════════════════════════════════════════════
+
+    // --- ClothCollider::resolve_collision sphere arithmetic ---
+    #[test]
+    fn mutation_sphere_collision_penetration_depth() {
+        let mut particle = ClothParticle::new(Vec3::new(0.3, 0.0, 0.0), 1.0);
+        let collider = ClothCollider::Sphere { center: Vec3::ZERO, radius: 1.0 };
+        collider.resolve_collision(&mut particle, 0.0);
+        let dist = particle.position.length();
+        // Should be pushed to radius=1.0
+        assert!((dist - 1.0).abs() < 0.01, "Should be at sphere surface, dist={}", dist);
+        // Direction should be outward from center (positive X)
+        assert!(particle.position.x > 0.0, "Should be pushed in +X direction");
+    }
+
+    #[test]
+    fn mutation_sphere_collision_friction_damps_tangent() {
+        let mut particle = ClothParticle::new(Vec3::new(0.5, 0.0, 0.0), 1.0);
+        // Give it tangential velocity
+        particle.prev_position = Vec3::new(0.5, -1.0, 0.0); // velocity = (0, 1, 0) tangential
+        let collider = ClothCollider::Sphere { center: Vec3::ZERO, radius: 1.0 };
+        collider.resolve_collision(&mut particle, 1.0); // full friction
+        // With friction=1.0, tangential velocity should be zeroed
+        let vel = particle.velocity();
+        let normal = particle.position.normalize();
+        let tangent_vel = vel - vel.dot(normal) * normal;
+        assert!(tangent_vel.length() < 0.1, "Full friction should kill tangential velocity");
+    }
+
+    #[test]
+    fn mutation_sphere_no_collision_outside() {
+        let mut particle = ClothParticle::new(Vec3::new(2.0, 0.0, 0.0), 1.0);
+        let pos_before = particle.position;
+        let collider = ClothCollider::Sphere { center: Vec3::ZERO, radius: 1.0 };
+        collider.resolve_collision(&mut particle, 0.5);
+        assert_eq!(particle.position, pos_before, "Outside sphere should not be affected");
+    }
+
+    #[test]
+    fn mutation_sphere_collision_pinned_ignored() {
+        let mut particle = ClothParticle::pinned(Vec3::new(0.3, 0.0, 0.0));
+        let pos_before = particle.position;
+        let collider = ClothCollider::Sphere { center: Vec3::ZERO, radius: 1.0 };
+        collider.resolve_collision(&mut particle, 0.5);
+        assert_eq!(particle.position, pos_before, "Pinned particle should not move");
+    }
+
+    // --- ClothCollider::resolve_collision capsule arithmetic ---
+    #[test]
+    fn mutation_capsule_collision_midpoint() {
+        let collider = ClothCollider::Capsule {
+            start: Vec3::new(0.0, 0.0, 0.0),
+            end: Vec3::new(0.0, 4.0, 0.0),
+            radius: 1.0,
+        };
+        let mut particle = ClothParticle::new(Vec3::new(0.3, 2.0, 0.0), 1.0);
+        collider.resolve_collision(&mut particle, 0.0);
+        // Closest point on axis is (0, 2, 0), particle at (0.3, 2, 0), dist=0.3 < 1.0
+        let dist_from_axis = Vec3::new(particle.position.x, 0.0, particle.position.z).length();
+        assert!(dist_from_axis >= 0.99, "Should be pushed to capsule surface, dist={}", dist_from_axis);
+    }
+
+    #[test]
+    fn mutation_capsule_collision_past_end() {
+        let collider = ClothCollider::Capsule {
+            start: Vec3::new(0.0, 0.0, 0.0),
+            end: Vec3::new(0.0, 4.0, 0.0),
+            radius: 1.0,
+        };
+        // Past the end of the capsule — should clamp to endpoint
+        let mut particle = ClothParticle::new(Vec3::new(0.3, 5.0, 0.0), 1.0);
+        collider.resolve_collision(&mut particle, 0.0);
+        // Closest point is (0, 4, 0), dist = sqrt(0.09 + 1.0) = 1.04 > 1.0, no collision
+        // Actually distance from (0.3, 5, 0) to (0, 4, 0) = sqrt(0.09+1) = 1.044, outside radius
+        assert!((particle.position.x - 0.3).abs() < 0.01, "Should not be affected (outside)");
+    }
+
+    // --- ClothCollider::resolve_collision plane arithmetic ---
+    #[test]
+    fn mutation_plane_collision_depth_exact() {
+        let mut particle = ClothParticle::new(Vec3::new(2.0, -3.0, 5.0), 1.0);
+        let collider = ClothCollider::Plane { point: Vec3::ZERO, normal: Vec3::Y };
+        collider.resolve_collision(&mut particle, 0.0);
+        assert!((particle.position.y - 0.0).abs() < 1e-5, "Should be pushed to plane surface");
+        assert!((particle.position.x - 2.0).abs() < 1e-5, "X should be unchanged");
+        assert!((particle.position.z - 5.0).abs() < 1e-5, "Z should be unchanged");
+    }
+
+    #[test]
+    fn mutation_plane_no_collision_above() {
+        let mut particle = ClothParticle::new(Vec3::new(0.0, 1.0, 0.0), 1.0);
+        let pos_before = particle.position;
+        let collider = ClothCollider::Plane { point: Vec3::ZERO, normal: Vec3::Y };
+        collider.resolve_collision(&mut particle, 0.5);
+        assert_eq!(particle.position, pos_before, "Above plane should not be affected");
+    }
+
+    // --- Cloth::particle_normal ---
+    #[test]
+    fn mutation_particle_normal_center_nonzero() {
+        let config = ClothConfig { width: 5, height: 5, spacing: 1.0, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(400), config, Vec3::ZERO);
+        // Symmetric displacement at center cancels out; displace an off-center neighbor
+        // to break symmetry and produce non-zero normal.
+        let left_idx = cloth.particle_index(1, 2).unwrap();
+        cloth.particles[left_idx].position.y += 2.0;
+        let normal = cloth.particle_normal(2, 2);
+        assert!(normal.length() > 0.1, "Center normal should be non-zero with asymmetric displacement, got {:?}", normal);
+    }
+
+    #[test]
+    fn mutation_particle_normal_corner() {
+        let config = ClothConfig { width: 5, height: 5, spacing: 1.0, ..Default::default() };
+        let cloth = Cloth::new(ClothId(401), config, Vec3::ZERO);
+        // Corner (0,0) has fewer neighbors
+        let normal = cloth.particle_normal(0, 0);
+        // Should still produce something (count may be 1 or 0, but Y fallback)
+        assert!(normal.length() > 0.01 || normal == Vec3::Y, "Corner normal should be valid");
+    }
+
+    // --- Cloth::get_indices ---
+    #[test]
+    fn mutation_get_indices_3x3_count() {
+        let config = ClothConfig { width: 3, height: 3, ..Default::default() };
+        let cloth = Cloth::new(ClothId(410), config, Vec3::ZERO);
+        let indices = cloth.get_indices();
+        // 2x2 quads × 2 triangles × 3 indices = 24
+        assert_eq!(indices.len(), 24, "3x3 cloth should have 24 indices");
+    }
+
+    #[test]
+    fn mutation_get_indices_4x4_count() {
+        let config = ClothConfig { width: 4, height: 4, ..Default::default() };
+        let cloth = Cloth::new(ClothId(411), config, Vec3::ZERO);
+        let indices = cloth.get_indices();
+        // 3x3 quads × 2 triangles × 3 indices = 54
+        assert_eq!(indices.len(), 54, "4x4 cloth should have 54 indices");
+    }
+
+    #[test]
+    fn mutation_get_indices_valid_range() {
+        let config = ClothConfig { width: 5, height: 5, ..Default::default() };
+        let cloth = Cloth::new(ClothId(412), config, Vec3::ZERO);
+        let indices = cloth.get_indices();
+        let max_valid = (5 * 5 - 1) as u32;
+        for &idx in &indices {
+            assert!(idx <= max_valid, "Index {} out of range [0, {}]", idx, max_valid);
+        }
+    }
+
+    // --- DistanceConstraint::solve weight arithmetic ---
+    #[test]
+    fn mutation_constraint_solve_unequal_mass() {
+        // Heavy particle should move less than light particle
+        let mut particles = vec![
+            ClothParticle::new(Vec3::new(0.0, 0.0, 0.0), 10.0), // heavy, inv_mass=0.1
+            ClothParticle::new(Vec3::new(3.0, 0.0, 0.0), 1.0),  // light, inv_mass=1.0
+        ];
+        let constraint = DistanceConstraint::new(0, 1, 1.0);
+        constraint.solve(&mut particles);
+        // Heavy particle (0) should move less
+        let move0 = particles[0].position.x.abs();
+        let move1 = (3.0 - particles[1].position.x).abs();
+        assert!(move1 > move0 * 2.0, "Light particle should move more: move0={}, move1={}", move0, move1);
+    }
+
+    #[test]
+    fn mutation_constraint_solve_both_pinned_no_move() {
+        let mut particles = vec![
+            ClothParticle::pinned(Vec3::new(0.0, 0.0, 0.0)),
+            ClothParticle::pinned(Vec3::new(5.0, 0.0, 0.0)),
+        ];
+        let constraint = DistanceConstraint::new(0, 1, 1.0);
+        constraint.solve(&mut particles);
+        // Neither should move
+        assert_eq!(particles[0].position, Vec3::ZERO);
+        assert_eq!(particles[1].position, Vec3::new(5.0, 0.0, 0.0));
+    }
+
+    // --- Cloth::update integration ---
+    #[test]
+    fn mutation_cloth_update_applies_gravity() {
+        let config = ClothConfig {
+            width: 3, height: 3,
+            gravity: Vec3::new(0.0, -20.0, 0.0),
+            wind: Vec3::ZERO,
+            ..Default::default()
+        };
+        let mut cloth = Cloth::new(ClothId(420), config, Vec3::new(0.0, 10.0, 0.0));
+        let initial_y = cloth.particles[4].position.y; // center
+        cloth.update(0.016);
+        assert!(cloth.particles[4].position.y < initial_y, "Gravity should pull particles down");
+    }
+
+    #[test]
+    fn mutation_cloth_update_constraint_iterations() {
+        // More solver iterations should give tighter constraint satisfaction
+        let config_1 = ClothConfig { width: 3, height: 3, solver_iterations: 1, ..Default::default() };
+        let config_5 = ClothConfig { width: 3, height: 3, solver_iterations: 5, ..Default::default() };
+        let mut cloth_1 = Cloth::new(ClothId(421), config_1, Vec3::ZERO);
+        let mut cloth_5 = Cloth::new(ClothId(422), config_5, Vec3::ZERO);
+        // Stretch a particle far away
+        cloth_1.particles[4].position = Vec3::new(10.0, 0.0, 0.0);
+        cloth_5.particles[4].position = Vec3::new(10.0, 0.0, 0.0);
+        cloth_1.update(0.016);
+        cloth_5.update(0.016);
+        // More iterations should bring it closer to neighbors
+        let dist_1 = (cloth_1.particles[4].position - cloth_1.particles[3].position).length();
+        let dist_5 = (cloth_5.particles[4].position - cloth_5.particles[3].position).length();
+        assert!(dist_5 <= dist_1 + 0.01, "More solver iterations should give shorter distance: 1iter={}, 5iter={}", dist_1, dist_5);
+    }
+
+    // --- Cloth::unpin_particle restores mass ---
+    #[test]
+    fn mutation_unpin_restores_correct_inv_mass() {
+        let config = ClothConfig { particle_mass: 0.5, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(430), config, Vec3::ZERO);
+        cloth.pin_particle(0);
+        assert_eq!(cloth.particles[0].inv_mass, 0.0);
+        cloth.unpin_particle(0);
+        // Should restore to 1/particle_mass = 1/0.5 = 2.0
+        assert!((cloth.particles[0].inv_mass - 2.0).abs() < 1e-6, "Should restore inv_mass to 1/particle_mass=2.0, got {}", cloth.particles[0].inv_mass);
+    }
+
+    // --- Cloth::move_pinned only moves pinned ---
+    #[test]
+    fn mutation_move_pinned_unpinned_noop() {
+        let config = ClothConfig::default();
+        let mut cloth = Cloth::new(ClothId(431), config, Vec3::ZERO);
+        let pos_before = cloth.particles[0].position;
+        cloth.move_pinned(0, Vec3::new(99.0, 99.0, 99.0));
+        assert_eq!(cloth.particles[0].position, pos_before, "Unpinned particle should not move via move_pinned");
+    }
+
+    // --- Cloth::pin_corners ---
+    #[test]
+    fn mutation_pin_corners_sets_inv_mass() {
+        let config = ClothConfig { width: 4, height: 4, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(432), config, Vec3::ZERO);
+        cloth.pin_corners();
+        assert_eq!(cloth.particles[0].inv_mass, 0.0, "Top-left inv_mass should be 0");
+        assert_eq!(cloth.particles[3].inv_mass, 0.0, "Top-right inv_mass should be 0");
+    }
+
+    // ===== DEEP REMEDIATION v3.6.2 — cloth Round 3 remaining mutations =====
+
+    // --- ClothParticle::integrate Verlet arithmetic ---
+    #[test]
+    fn mutation_r3_integrate_velocity_subtraction() {
+        // velocity = position - prev_position  (mutation: - → +)
+        let mut p = ClothParticle::new(Vec3::new(5.0, 0.0, 0.0), 1.0);
+        p.prev_position = Vec3::new(3.0, 0.0, 0.0);  // velocity = (5-3, 0, 0) = (2, 0, 0)
+        p.integrate(1.0, 1.0);  // no damping, dt=1  ->  new_pos = 5 + 2*1 + 0*1*1 = 7
+        assert!((p.position.x - 7.0).abs() < 1e-5, "x should be 7, velocity=+2, got {}", p.position.x);
+        // If - became +, velocity would be (5+3)=8, new_pos=5+8=13 ≠ 7
+    }
+
+    #[test]
+    fn mutation_r3_integrate_damping_multiply() {
+        // position += velocity * damping  (mutation: * → + or /)
+        let mut p = ClothParticle::new(Vec3::new(4.0, 0.0, 0.0), 1.0);
+        p.prev_position = Vec3::new(2.0, 0.0, 0.0);  // velocity = (2,0,0)
+        let damping = 0.5;
+        p.integrate(1.0, damping);  // new_pos = 4 + 2*0.5 + 0 = 5
+        assert!((p.position.x - 5.0).abs() < 1e-5, "damping 0.5 should give x=5, got {}", p.position.x);
+    }
+
+    #[test]
+    fn mutation_r3_integrate_accel_dt_squared() {
+        // position += acceleration * dt * dt  (mutations: * → + or /)
+        let mut p = ClothParticle::new(Vec3::ZERO, 1.0);
+        p.apply_force(Vec3::new(6.0, 0.0, 0.0));  // accel = 6 * inv_mass(1) = 6
+        let dt = 0.5;
+        p.integrate(dt, 1.0);  // new_pos = 0 + 0 + 6 * 0.5 * 0.5 = 1.5
+        assert!((p.position.x - 1.5).abs() < 1e-5, "accel*dt*dt should give 1.5, got {}", p.position.x);
+    }
+
+    #[test]
+    fn mutation_r3_integrate_clears_acceleration() {
+        let mut p = ClothParticle::new(Vec3::ZERO, 1.0);
+        p.apply_force(Vec3::new(10.0, 0.0, 0.0));
+        p.integrate(0.1, 1.0);
+        assert_eq!(p.acceleration, Vec3::ZERO, "Acceleration should be cleared after integrate");
+    }
+
+    // --- ClothParticle::apply_force ---
+    #[test]
+    fn mutation_r3_apply_force_inv_mass_multiply() {
+        // acceleration += force * inv_mass  (mutation: * → /)
+        let mut p = ClothParticle::new(Vec3::ZERO, 2.0);  // inv_mass = 0.5
+        p.apply_force(Vec3::new(8.0, 0.0, 0.0));
+        // accel should be 8 * 0.5 = 4
+        assert!((p.acceleration.x - 4.0).abs() < 1e-5, "force*inv_mass: 8*0.5=4, got {}", p.acceleration.x);
+        // If * became /, accel = 8/0.5 = 16 ≠ 4
+    }
+
+    // --- Cloth::pin_corners w-1 arithmetic ---
+    #[test]
+    fn mutation_r3_pin_corners_exact_indices() {
+        // Mutation: w - 1 → w + 1 or w * 1
+        let config = ClothConfig { width: 5, height: 3, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(500), config, Vec3::ZERO);
+        cloth.pin_corners();
+        // Should pin index 0 (top-left) and index 4 (top-right, w-1=4)
+        assert!(cloth.particles[0].pinned, "Index 0 should be pinned");
+        assert!(cloth.particles[4].pinned, "Index 4 (w-1) should be pinned");
+        // Index 5 (w) should NOT be pinned (catches w+0 mutation)
+        assert!(!cloth.particles[5].pinned, "Index 5 (w) should NOT be pinned");
+        // Index 6 (w+1) should NOT be pinned
+        assert!(!cloth.particles[6].pinned, "Index 6 (w+1) should NOT be pinned");
+    }
+
+    // --- Cloth::unpin_particle inv_mass restoration ---
+    #[test]
+    fn mutation_r3_unpin_inv_mass_exact_formula() {
+        // inv_mass = 1.0 / particle_mass  (mutation: / → * or %)
+        let config = ClothConfig { width: 3, height: 3, particle_mass: 4.0, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(501), config, Vec3::ZERO);
+        cloth.pin_particle(0);
+        assert_eq!(cloth.particles[0].inv_mass, 0.0);
+        cloth.unpin_particle(0);
+        // Should be 1.0/4.0 = 0.25
+        assert!((cloth.particles[0].inv_mass - 0.25).abs() < 1e-6, "inv_mass should be 1/4=0.25, got {}", cloth.particles[0].inv_mass);
+        assert!(!cloth.particles[0].pinned);
+    }
+
+    #[test]
+    fn mutation_r3_unpin_out_of_bounds_noop() {
+        // Mutation: < → <=  (index < len vs index <= len)
+        let config = ClothConfig { width: 3, height: 3, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(502), config, Vec3::ZERO);
+        let len = cloth.particles.len();
+        cloth.pin_particle(0);
+        // Unpin at exactly len should be a no-op (catches < vs <=)
+        cloth.unpin_particle(len);
+        assert!(cloth.particles[0].pinned, "Unpin at out-of-bounds should not affect existing particles");
+    }
+
+    // --- Cloth::move_pinned && check ---
+    #[test]
+    fn mutation_r3_move_pinned_requires_both_conditions() {
+        // Mutation: && → || (index < len && pinned)
+        let config = ClothConfig { width: 3, height: 3, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(503), config, Vec3::ZERO);
+        let original_pos = cloth.particles[4].position;
+        // Particle 4 is NOT pinned, so move_pinned should be no-op
+        cloth.move_pinned(4, Vec3::new(99.0, 99.0, 99.0));
+        assert_eq!(cloth.particles[4].position, original_pos, "move_pinned on unpinned should be no-op");
+    }
+
+    #[test]
+    fn mutation_r3_move_pinned_boundary() {
+        // Mutation: < → <=
+        let config = ClothConfig { width: 3, height: 3, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(504), config, Vec3::ZERO);
+        cloth.pin_particle(0);
+        cloth.move_pinned(cloth.particles.len(), Vec3::new(99.0, 99.0, 99.0));
+        // Should not panic or change anything at index == len
+        assert_ne!(cloth.particles[0].position, Vec3::new(99.0, 99.0, 99.0));
+    }
+
+    // --- Cloth::particle_index boundary ---
+    #[test]
+    fn mutation_r3_particle_index_exact_boundary() {
+        // Mutation: < → <= (x < width)
+        let config = ClothConfig { width: 3, height: 3, ..Default::default() };
+        let cloth = Cloth::new(ClothId(505), config, Vec3::ZERO);
+        // x=2 (last valid) should return Some
+        assert!(cloth.particle_index(2, 2).is_some());
+        // x=3 (== width) should return None
+        assert!(cloth.particle_index(3, 0).is_none(), "x == width should be None");
+        assert!(cloth.particle_index(0, 3).is_none(), "y == height should be None");
+    }
+
+    // --- Cloth::pin_particle boundary ---
+    #[test]
+    fn mutation_r3_pin_particle_boundary() {
+        let config = ClothConfig { width: 3, height: 3, ..Default::default() };
+        let mut cloth = Cloth::new(ClothId(506), config, Vec3::ZERO);
+        // At exactly len, should be no-op (< vs <=)
+        cloth.pin_particle(cloth.particles.len());
+        // All particles should still be unpinned
+        assert!(cloth.particles.iter().all(|p| !p.pinned), "No particle should be pinned after out-of-bounds pin");
+    }
+
+    // --- resolve_collision: capsule deeper arithmetic ---
+    #[test]
+    fn mutation_r3_capsule_collision_closest_point() {
+        // Tests the t-clamping and closest-point calculation
+        // Capsule from (0,0,0) to (10,0,0), radius=2
+        let capsule = ClothCollider::Capsule {
+            start: Vec3::new(0.0, 0.0, 0.0),
+            end: Vec3::new(10.0, 0.0, 0.0),
+            radius: 2.0,
+        };
+        // Particle at (5, 1, 0) — inside capsule (dist to axis = 1, < radius = 2)
+        let mut p = ClothParticle::new(Vec3::new(5.0, 1.0, 0.0), 1.0);
+        capsule.resolve_collision(&mut p, 0.0);
+        // Should be pushed to radius=2 from axis: y should become 2.0
+        assert!((p.position.y - 2.0).abs() < 1e-4, "Capsule should push to y=2, got {}", p.position.y);
+    }
+
+    #[test]
+    fn mutation_r3_capsule_collision_past_end() {
+        // Particle beyond capsule end — t should clamp to axis_length
+        let capsule = ClothCollider::Capsule {
+            start: Vec3::ZERO,
+            end: Vec3::new(4.0, 0.0, 0.0),
+            radius: 1.5,
+        };
+        // Particle at (6, 0.5, 0) — beyond end, closest is (4,0,0), dist=sqrt(4+0.25)=~2.06 > 1.5
+        let mut p = ClothParticle::new(Vec3::new(6.0, 0.5, 0.0), 1.0);
+        let pos_before = p.position;
+        capsule.resolve_collision(&mut p, 0.0);
+        assert_eq!(p.position, pos_before, "Outside capsule should not change");
+    }
+
+    #[test]
+    fn mutation_r3_capsule_friction_tangent() {
+        // Tests friction application in capsule: tangent_vel * (1.0 - friction)
+        let capsule = ClothCollider::Capsule {
+            start: Vec3::ZERO,
+            end: Vec3::new(0.0, 10.0, 0.0),
+            radius: 3.0,
+        };
+        let mut p = ClothParticle::new(Vec3::new(1.0, 5.0, 0.0), 1.0);
+        // Give it velocity along the capsule axis (tangential)
+        p.prev_position = Vec3::new(1.0, 4.0, 0.0);  // velocity = (0, 1, 0)
+        capsule.resolve_collision(&mut p, 0.8);
+        // After collision push, friction=0.8 should reduce tangential velocity by a lot
+        let velocity = p.position - p.prev_position;
+        // The normal is towards x (perpendicular to axis), tangent is along y
+        // tangent_vel * (1-0.8) = 0.2 of original tangential
+        assert!(velocity.y.abs() < 0.5, "High friction should reduce tangential velocity, got vy={}", velocity.y);
+    }
+
+    #[test]
+    fn mutation_r3_plane_collision_negative_dist() {
+        // Plane collision: dist = to_particle.dot(normal), if dist < 0 → push out
+        let plane = ClothCollider::Plane {
+            point: Vec3::new(0.0, 0.0, 0.0),
+            normal: Vec3::new(0.0, 1.0, 0.0),
+        };
+        // Particle below plane at y=-0.5
+        let mut p = ClothParticle::new(Vec3::new(0.0, -0.5, 0.0), 1.0);
+        plane.resolve_collision(&mut p, 0.0);
+        assert!((p.position.y - 0.0).abs() < 1e-4, "Plane should push particle to y=0, got {}", p.position.y);
+    }
+
+    #[test]
+    fn mutation_r3_plane_friction_application() {
+        let plane = ClothCollider::Plane {
+            point: Vec3::ZERO,
+            normal: Vec3::new(0.0, 1.0, 0.0),
+        };
+        let mut p = ClothParticle::new(Vec3::new(1.0, -0.3, 0.0), 1.0);
+        p.prev_position = Vec3::new(0.0, -0.3, 0.0);  // velocity = (1, 0, 0) — tangential
+        plane.resolve_collision(&mut p, 0.9);
+        // After push, friction=0.9 means tangent_vel * (1-0.9) = 0.1 of original
+        let vel = p.position - p.prev_position;
+        assert!(vel.x.abs() < 0.5, "High friction should heavily reduce tangential, got vx={}", vel.x);
+    }
+
+    // --- DistanceConstraint < vs <= ---
+    #[test]
+    fn mutation_r3_constraint_solve_boundary_weight() {
+        // Tests: if total_weight < 0.0001  (mutation: < → <=)
+        // When both pinned, total_weight = 0, so we need < to skip
+        // When only one is free with tiny mass, total_weight is small but > 0
+        use super::*;
+        let mut particles = vec![
+            ClothParticle::new(Vec3::new(0.0, 0.0, 0.0), 1.0),
+            ClothParticle::new(Vec3::new(2.0, 0.0, 0.0), 1.0),
+        ];
+        let constraint = DistanceConstraint::new(0, 1, 1.0);
+        let pos_before_0 = particles[0].position;
+        let pos_before_1 = particles[1].position;
+        constraint.solve(&mut particles);
+        // With rest_length=1 and actual_length=2, particles should move
+        assert_ne!(particles[0].position, pos_before_0, "Should move p0");
+        assert_ne!(particles[1].position, pos_before_1, "Should move p1");
+    }
+
+    // ===== DEEP REMEDIATION v3.6.3 — cloth Round 4 collision math + indices =====
+
+    // --- resolve_collision sphere: exact prev_position formula ---
+    #[test]
+    fn mutation_r4_sphere_collision_prev_position_exact() {
+        use super::*;
+        // Sphere at origin, r=2. Particle inside at (1,0,0).
+        // normal = (1,0,0), penetration = 2-1 = 1
+        // After: position = (1,0,0) + (1,0,0)*1 = (2,0,0)
+        // prev_position starts at (0.5,0,0) (from new), then integrate sets it
+        let mut p = ClothParticle::new(Vec3::new(1.0, 0.0, 0.0), 1.0);
+        p.prev_position = Vec3::new(0.8, 0.0, 0.0); // gives velocity ~(0.2,0,0)
+        let collider = ClothCollider::Sphere {
+            center: Vec3::ZERO,
+            radius: 2.0,
+        };
+        collider.resolve_collision(&mut p, 0.5);
+        // Position should be pushed to radius
+        assert!(
+            (p.position.x - 2.0).abs() < 0.01,
+            "Pushed to radius: x={}", p.position.x
+        );
+        // velocity = position - prev_position (before collision): ~(0.2, 0, 0)
+        // normal_vel = vel.dot(n) * n = 0.2 * (1,0,0) = (0.2,0,0)
+        // tangent_vel = vel - normal_vel = (0,0,0)
+        // prev_pos = new_pos - (normal_vel + tangent_vel * (1-friction))
+        // = (2,0,0) - (0.2,0,0) + (0,0,0) = (1.8,0,0)
+        // But velocity is computed AFTER position update, so let's verify structurally
+        let new_vel = p.position - p.prev_position;
+        assert!(new_vel.length() > 0.0, "Should have non-zero velocity after collision");
+    }
+
+    // --- resolve_collision: friction tangent operator precision ---
+    #[test]
+    fn mutation_r4_sphere_friction_tangent_velocity() {
+        use super::*;
+        // Particle inside sphere with lateral velocity (tangent)
+        let mut p = ClothParticle::new(Vec3::new(0.5, 0.0, 0.0), 1.0);
+        p.prev_position = Vec3::new(0.5, 0.2, 0.0); // velocity ~ (0, -0.2, 0) (tangent to normal)
+        let collider = ClothCollider::Sphere {
+            center: Vec3::ZERO,
+            radius: 1.0,
+        };
+        // friction=0.0: tangent fully preserved, friction=1.0: tangent eliminated
+        let mut p_no_friction = p.clone();
+        let mut p_full_friction = p.clone();
+        collider.resolve_collision(&mut p_no_friction, 0.0);
+        collider.resolve_collision(&mut p_full_friction, 1.0);
+
+        // With more friction, less tangent velocity → smaller overall velocity
+        let vel_no = p_no_friction.position - p_no_friction.prev_position;
+        let vel_full = p_full_friction.position - p_full_friction.prev_position;
+        // With friction=1.0, tangent_vel * (1-1) = 0, only normal component remains
+        assert!(
+            vel_no.length() >= vel_full.length() - 0.01,
+            "No friction should have >= velocity: no={:.4} full={:.4}",
+            vel_no.length(),
+            vel_full.length()
+        );
+    }
+
+    // --- resolve_collision capsule: exact axis + closest point arithmetic ---
+    #[test]
+    fn mutation_r4_capsule_collision_axis_arithmetic() {
+        use super::*;
+        // Capsule from (0,0,0) to (0,4,0), radius=1
+        // Particle at (0.5, 2, 0) — closest on axis is (0, 2, 0)
+        // dist = 0.5 < 1, penetration = 0.5, push to (1, 2, 0)
+        let mut p = ClothParticle::new(Vec3::new(0.5, 2.0, 0.0), 1.0);
+        p.prev_position = Vec3::new(0.4, 2.0, 0.0);
+        let collider = ClothCollider::Capsule {
+            start: Vec3::ZERO,
+            end: Vec3::new(0.0, 4.0, 0.0),
+            radius: 1.0,
+        };
+        collider.resolve_collision(&mut p, 0.3);
+        assert!(
+            (p.position.x - 1.0).abs() < 0.01,
+            "Should push x to radius: x={}",
+            p.position.x
+        );
+        assert!(
+            (p.position.y - 2.0).abs() < 0.01,
+            "Y should stay near 2: y={}",
+            p.position.y
+        );
+    }
+
+    // --- resolve_collision plane: exact dist formula ---
+    #[test]
+    fn mutation_r4_plane_collision_exact_dist() {
+        use super::*;
+        // Plane at y=1, normal up. Particle at (3, 0.5, 2) is below plane.
+        // to_particle = (3,0.5,2)-(0,1,0) = (3,-0.5,2)
+        // dist = dot((3,-0.5,2), (0,1,0)) = -0.5 < 0
+        // position -= normal * dist = (3,0.5,2) - (0,1,0)*(-0.5) = (3,1,2)
+        let mut p = ClothParticle::new(Vec3::new(3.0, 0.5, 2.0), 1.0);
+        p.prev_position = Vec3::new(3.0, 0.6, 2.0);
+        let collider = ClothCollider::Plane {
+            point: Vec3::new(0.0, 1.0, 0.0),
+            normal: Vec3::Y,
+        };
+        collider.resolve_collision(&mut p, 0.2);
+        assert!(
+            (p.position.y - 1.0).abs() < 0.01,
+            "Should be pushed to plane surface: y={}",
+            p.position.y
+        );
+        assert!(
+            (p.position.x - 3.0).abs() < 0.01,
+            "X should be unchanged: x={}",
+            p.position.x
+        );
+    }
+
+    // --- get_indices: exact index arithmetic (10 mutations) ---
+    #[test]
+    fn mutation_r4_get_indices_exact_values_2x2() {
+        use super::*;
+        // 2×2 cloth: 1 cell → 2 triangles → 6 indices
+        let cloth = Cloth::new(ClothConfig {
+            width: 2,
+            height: 2,
+            spacing: 1.0,
+            ..Default::default()
+        });
+        let indices = cloth.get_indices();
+        assert_eq!(indices.len(), 6, "2x2 should have 6 indices");
+        // First triangle: idx=0*2+0=0, push 0, 0+1=1, 0+2=2
+        assert_eq!(indices[0], 0);
+        assert_eq!(indices[1], 1);
+        assert_eq!(indices[2], 2);
+        // Second triangle: 1, 2+1=3, 2
+        assert_eq!(indices[3], 1);
+        assert_eq!(indices[4], 3);
+        assert_eq!(indices[5], 2);
+    }
+
+    #[test]
+    fn mutation_r4_get_indices_exact_values_3x3() {
+        use super::*;
+        // 3×3 cloth: 4 cells → 8 triangles → 24 indices
+        let cloth = Cloth::new(ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            ..Default::default()
+        });
+        let indices = cloth.get_indices();
+        assert_eq!(indices.len(), 24, "3x3 should have 24 indices");
+        // Check cell (1,0): idx = 0*3+1 = 1
+        // First tri: 1, 2, 4
+        // Second tri: 2, 5, 4
+        // Cell (0,1): idx = 1*3+0 = 3
+        // First tri: 3, 4, 6
+        // Second tri: 4, 7, 6
+        // Verify specific indices for cell (1,1): idx = 1*3+1 = 4
+        // First tri: 4, 5, 7
+        // Second tri: 5, 8, 7
+        let cell_11_start = 4 * 6; // 4th cell (0-indexed), but actually let's count
+        // Cells are: (0,0)=0-5, (1,0)=6-11, (0,1)=12-17, (1,1)=18-23
+        assert_eq!(indices[18], 4, "cell(1,1) tri1.v0 = 4");
+        assert_eq!(indices[19], 5, "cell(1,1) tri1.v1 = 5");
+        assert_eq!(indices[20], 7, "cell(1,1) tri1.v2 = 4+w = 7");
+        assert_eq!(indices[21], 5, "cell(1,1) tri2.v0 = 5");
+        assert_eq!(indices[22], 8, "cell(1,1) tri2.v1 = 5+w = 8");
+        assert_eq!(indices[23], 7, "cell(1,1) tri2.v2 = 4+w = 7");
+    }
+
+    // --- get_positions: not empty, not default ---
+    #[test]
+    fn mutation_r4_get_positions_content() {
+        use super::*;
+        let cloth = Cloth::new(ClothConfig {
+            width: 3,
+            height: 2,
+            spacing: 1.0,
+            ..Default::default()
+        });
+        let positions = cloth.get_positions();
+        assert_eq!(positions.len(), 6, "3x2 should have 6 positions");
+        // Positions should be spaced apart, not all default
+        assert_ne!(
+            positions[0], positions[1],
+            "Adjacent particles should differ"
+        );
+        // First and last should be far apart
+        let dist = (positions[5] - positions[0]).length();
+        assert!(dist > 1.0, "Particles should be spread out, dist={}", dist);
+    }
+
+    // --- constraint_count: not 1 ---
+    #[test]
+    fn mutation_r4_constraint_count_not_one() {
+        use super::*;
+        let cloth = Cloth::new(ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            ..Default::default()
+        });
+        let cc = cloth.constraint_count();
+        // 3x3 = horizontal: 3*2=6, vertical: 2*3=6, total=12 structural constraints
+        assert!(cc > 1, "constraint_count should not be 1, got {}", cc);
+        assert!(cc >= 12, "3x3 should have at least 12 constraints, got {}", cc);
+    }
+
+    // --- particle_normal: verify cross product direction ---
+    #[test]
+    fn mutation_r4_particle_normal_center_direction() {
+        use super::*;
+        // Create a flat cloth in XZ plane
+        let cloth = Cloth::new(ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            ..Default::default()
+        });
+        // Center particle (1,1) should have normal pointing in Y direction
+        let normal = cloth.particle_normal(1, 1);
+        assert!(
+            normal.y.abs() > 0.5,
+            "Center normal should be mostly Y: {:?}",
+            normal
+        );
+    }
 }

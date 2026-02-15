@@ -596,3 +596,114 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     return color;
 }
 "#;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- Config defaults ---
+
+    #[test]
+    fn taa_config_defaults() {
+        let c = TaaConfig::default();
+        assert!(c.enabled);
+        assert!((c.blend_factor - 0.95).abs() < f32::EPSILON);
+        assert!((c.jitter_scale - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn motion_blur_config_defaults() {
+        let c = MotionBlurConfig::default();
+        assert!(!c.enabled);
+        assert_eq!(c.sample_count, 8);
+        assert!((c.strength - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn dof_config_defaults() {
+        let c = DofConfig::default();
+        assert!(!c.enabled);
+        assert!((c.focus_distance - 10.0).abs() < f32::EPSILON);
+        assert!((c.focus_range - 5.0).abs() < f32::EPSILON);
+        assert!((c.bokeh_size - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn color_grading_config_defaults() {
+        let c = ColorGradingConfig::default();
+        assert!(c.enabled);
+        assert!((c.exposure - 0.0).abs() < f32::EPSILON);
+        assert!((c.contrast - 1.0).abs() < f32::EPSILON);
+        assert!((c.saturation - 1.0).abs() < f32::EPSILON);
+        assert!((c.temperature - 0.0).abs() < f32::EPSILON);
+        assert!((c.tint - 0.0).abs() < f32::EPSILON);
+    }
+
+    // --- Halton sequence ---
+
+    #[test]
+    fn halton_base2_known_values() {
+        // H(1,2)=0.5, H(2,2)=0.25, H(3,2)=0.75, H(4,2)=0.125
+        assert!((halton(1.0, 2) - 0.5).abs() < 1e-6);
+        assert!((halton(2.0, 2) - 0.25).abs() < 1e-6);
+        assert!((halton(3.0, 2) - 0.75).abs() < 1e-6);
+        assert!((halton(4.0, 2) - 0.125).abs() < 1e-6);
+    }
+
+    #[test]
+    fn halton_base3_known_values() {
+        // H(1,3)=1/3, H(2,3)=2/3, H(3,3)=1/9
+        assert!((halton(1.0, 3) - 1.0 / 3.0).abs() < 1e-6);
+        assert!((halton(2.0, 3) - 2.0 / 3.0).abs() < 1e-6);
+        assert!((halton(3.0, 3) - 1.0 / 9.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn halton_zero_returns_zero() {
+        assert_eq!(halton(0.0, 2), 0.0);
+        assert_eq!(halton(0.0, 3), 0.0);
+    }
+
+    #[test]
+    fn halton_values_in_unit_interval() {
+        for i in 0..64 {
+            let v2 = halton(i as f32, 2);
+            let v3 = halton(i as f32, 3);
+            assert!(
+                v2 >= 0.0 && v2 < 1.0,
+                "halton({}, 2) = {} out of range",
+                i,
+                v2
+            );
+            assert!(
+                v3 >= 0.0 && v3 < 1.0,
+                "halton({}, 3) = {} out of range",
+                i,
+                v3
+            );
+        }
+    }
+
+    // --- Shader constants ---
+
+    #[test]
+    fn shader_constants_non_empty() {
+        assert!(!TAA_SHADER.is_empty());
+        assert!(!MOTION_BLUR_SHADER.is_empty());
+        assert!(!DOF_SHADER.is_empty());
+        assert!(!COLOR_GRADING_SHADER.is_empty());
+    }
+
+    #[test]
+    fn shader_constants_have_entry_points() {
+        for (name, src) in [
+            ("TAA", TAA_SHADER),
+            ("MotionBlur", MOTION_BLUR_SHADER),
+            ("DOF", DOF_SHADER),
+            ("ColorGrading", COLOR_GRADING_SHADER),
+        ] {
+            assert!(src.contains("fn vs_main"), "{name} shader missing vs_main");
+            assert!(src.contains("fn fs_main"), "{name} shader missing fs_main");
+        }
+    }
+}

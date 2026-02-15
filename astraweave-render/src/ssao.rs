@@ -634,4 +634,74 @@ mod tests {
         assert!(config.enabled);
         assert!((config.intensity - 1.0).abs() < 0.01);
     }
+
+    #[test]
+    fn halton_base2_known_values() {
+        // H(1,2) = 1/2, H(2,2) = 1/4, H(3,2) = 3/4
+        assert!((SsaoKernel::halton(1, 2) - 0.5).abs() < 1e-6);
+        assert!((SsaoKernel::halton(2, 2) - 0.25).abs() < 1e-6);
+        assert!((SsaoKernel::halton(3, 2) - 0.75).abs() < 1e-6);
+    }
+
+    #[test]
+    fn halton_zero_returns_zero() {
+        assert_eq!(SsaoKernel::halton(0, 2), 0.0);
+        assert_eq!(SsaoKernel::halton(0, 3), 0.0);
+    }
+
+    #[test]
+    fn kernel_samples_are_hemisphere() {
+        let kernel = SsaoKernel::generate(64);
+        for i in 0..64 {
+            let s = kernel.samples[i];
+            assert!(s[2] >= 0.0, "Sample {} z={} must be >= 0", i, s[2]);
+            let len = (s[0] * s[0] + s[1] * s[1] + s[2] * s[2]).sqrt();
+            assert!(len <= 1.0 + 1e-6, "Sample {} length {} > 1", i, len);
+            assert!(len > 0.0, "Sample {} is zero-length", i);
+        }
+    }
+
+    #[test]
+    fn kernel_samples_scale_increases() {
+        // Later samples should generally be farther from origin
+        let kernel = SsaoKernel::generate(32);
+        let len_first = {
+            let s = kernel.samples[0];
+            (s[0] * s[0] + s[1] * s[1] + s[2] * s[2]).sqrt()
+        };
+        let len_last = {
+            let s = kernel.samples[31];
+            (s[0] * s[0] + s[1] * s[1] + s[2] * s[2]).sqrt()
+        };
+        assert!(
+            len_last > len_first,
+            "Last sample length {} should be > first {}",
+            len_last,
+            len_first
+        );
+    }
+
+    #[test]
+    fn kernel_unused_samples_are_zero() {
+        let kernel = SsaoKernel::generate(8);
+        for i in 8..64 {
+            assert_eq!(
+                kernel.samples[i],
+                [0.0, 0.0, 0.0, 0.0],
+                "Unused sample {} should be zero",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn quality_levels_ascending_samples() {
+        let low = SsaoQuality::Low.sample_count();
+        let med = SsaoQuality::Medium.sample_count();
+        let high = SsaoQuality::High.sample_count();
+        let ultra = SsaoQuality::Ultra.sample_count();
+        assert!(low < med, "Low {} >= Medium {}", low, med);
+        assert!(med < high, "Medium {} >= High {}", med, high);
+        assert!(high < ultra, "High {} >= Ultra {}", high, ultra);
+    }
 }
