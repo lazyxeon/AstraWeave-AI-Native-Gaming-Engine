@@ -572,4 +572,158 @@ mod tests {
         assert!(simplified.vertex_count() > 0);
         assert_eq!(simplified.indices.len() % 3, 0);
     }
+
+    // --- Mutation-resistant additions ---
+
+    #[test]
+    fn mesh_vertex_and_triangle_counts_exact() {
+        let cube = create_test_cube();
+        assert_eq!(cube.vertex_count(), 8, "Cube should have 8 vertices");
+        assert_eq!(cube.triangle_count(), 12, "Cube should have 12 triangles");
+    }
+
+    #[test]
+    fn lod_levels_monotonically_reducing() {
+        let config = LODConfig::default();
+        let generator = LODGenerator::new(config);
+        let cube = create_test_cube();
+        let lods = generator.generate_lods(&cube);
+        assert!(lods.len() >= 2, "Need at least 2 LODs");
+        // Each subsequent LOD should have <= vertices of the previous
+        for w in lods.windows(2) {
+            assert!(
+                w[1].vertex_count() <= w[0].vertex_count(),
+                "LOD[i+1] ({}) should have <= vertices than LOD[i] ({})",
+                w[1].vertex_count(),
+                w[0].vertex_count()
+            );
+        }
+    }
+
+    #[test]
+    fn calculate_reduction_specific_values() {
+        let config = LODConfig::default();
+        let generator = LODGenerator::new(config);
+        let cube = create_test_cube();
+
+        // Identity reduction (same mesh) should be 0.0
+        let reduction = generator.calculate_reduction(&cube, &cube);
+        assert!(
+            reduction.abs() < f32::EPSILON,
+            "Identical meshes should have 0 reduction, got {}",
+            reduction
+        );
+    }
+
+    #[test]
+    fn quadric_zero_has_zero_error() {
+        let q = Quadric::zero();
+        let err = q.evaluate(Vec3::new(42.0, -7.0, 100.0));
+        assert!(
+            err.abs() < 1e-12,
+            "Zero quadric should give zero error, got {}",
+            err
+        );
+    }
+
+    #[test]
+    fn quadric_add_is_commutative() {
+        let a = Quadric::from_plane(1.0, 0.0, 0.0, 0.0);
+        let b = Quadric::from_plane(0.0, 1.0, 0.0, 0.0);
+        let ab = a.add(&b);
+        let ba = b.add(&a);
+        for i in 0..10 {
+            assert!(
+                (ab.data[i] - ba.data[i]).abs() < 1e-12,
+                "Quadric add not commutative at index {}",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn quadric_add_accumulates_error() {
+        let a = Quadric::from_plane(1.0, 0.0, 0.0, 1.0); // plane x = -1
+        let b = Quadric::from_plane(1.0, 0.0, 0.0, -1.0); // plane x = 1
+        let sum = a.add(&b);
+
+        // Point x=0 is equidistant between planes; error should be 2.0 (1^2 + 1^2)
+        let err_origin = sum.evaluate(Vec3::ZERO);
+        assert!(
+            (err_origin - 2.0).abs() < 1e-10,
+            "Expected error 2.0 at origin, got {}",
+            err_origin
+        );
+    }
+
+    #[test]
+    fn quadric_from_plane_error_on_plane_is_zero() {
+        let q = Quadric::from_plane(0.0, 0.0, 1.0, -5.0); // z = 5
+        let on_plane = Vec3::new(100.0, -200.0, 5.0);
+        let err = q.evaluate(on_plane);
+        assert!(err.abs() < 1e-10, "Point on plane should have zero error");
+    }
+
+    #[test]
+    fn quadric_from_plane_error_off_plane_proportional() {
+        let q = Quadric::from_plane(0.0, 1.0, 0.0, 0.0); // y = 0
+        let err1 = q.evaluate(Vec3::new(0.0, 1.0, 0.0));
+        let err2 = q.evaluate(Vec3::new(0.0, 2.0, 0.0));
+        // Error should be distance^2: err1 = 1, err2 = 4
+        assert!((err1 - 1.0).abs() < 1e-10, "err1 should be 1.0, got {}", err1);
+        assert!((err2 - 4.0).abs() < 1e-10, "err2 should be 4.0, got {}", err2);
+    }
+
+    #[test]
+    fn edge_collapse_min_heap_order() {
+        use std::collections::BinaryHeap;
+        let mut heap = BinaryHeap::new();
+        heap.push(EdgeCollapse {
+            v1: 0,
+            v2: 1,
+            error: 10.0,
+            new_pos: Vec3::ZERO,
+        });
+        heap.push(EdgeCollapse {
+            v1: 2,
+            v2: 3,
+            error: 1.0,
+            new_pos: Vec3::ZERO,
+        });
+        heap.push(EdgeCollapse {
+            v1: 4,
+            v2: 5,
+            error: 5.0,
+            new_pos: Vec3::ZERO,
+        });
+        // Min-heap: should pop lowest error first
+        let first = heap.pop().unwrap();
+        assert!(
+            (first.error - 1.0).abs() < 1e-10,
+            "Should pop error=1.0 first, got {}",
+            first.error
+        );
+        let second = heap.pop().unwrap();
+        assert!(
+            (second.error - 5.0).abs() < 1e-10,
+            "Should pop error=5.0 second, got {}",
+            second.error
+        );
+        let third = heap.pop().unwrap();
+        assert!(
+            (third.error - 10.0).abs() < 1e-10,
+            "Should pop error=10.0 third, got {}",
+            third.error
+        );
+    }
+
+    #[test]
+    fn lod_config_default_has_three_targets() {
+        let config = LODConfig::default();
+        assert_eq!(config.reduction_targets.len(), 3);
+        // Each target should be in (0, 1)
+        for &t in &config.reduction_targets {
+            assert!(t > 0.0 && t < 1.0, "Target {} out of (0,1)", t);
+        }
+    }
 }

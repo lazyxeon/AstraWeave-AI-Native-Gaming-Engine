@@ -1105,4 +1105,147 @@ mod tests {
             .unwrap();
         assert!(g_near.length() < 0.01, "Very near center should be ~zero");
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6.1 — gravity Round 2 arithmetic/boundary tests
+    // ═══════════════════════════════════════════════════════════════
+
+    // --- GravityZoneShape::get_gravity exact arithmetic for Point ---
+    #[test]
+    fn mutation_point_gravity_at_quarter_radius() {
+        let shape = GravityZoneShape::Point {
+            center: Vec3::ZERO,
+            radius: 20.0,
+            strength: 80.0,
+        };
+        // d=5, falloff = 1 - 5/20 = 0.75, force = 80 * 0.75^2 = 80 * 0.5625 = 45
+        let g = shape.get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+        assert!((g.length() - 45.0).abs() < 0.5, "At d=5/r=20, force should be 45, got {}", g.length());
+        assert!(g.x < 0.0, "Should pull toward center (negative X)");
+    }
+
+    #[test]
+    fn mutation_point_gravity_at_three_quarter_radius() {
+        let shape = GravityZoneShape::Point {
+            center: Vec3::ZERO,
+            radius: 20.0,
+            strength: 80.0,
+        };
+        // d=15, falloff = 1 - 15/20 = 0.25, force = 80 * 0.0625 = 5
+        let g = shape.get_gravity(Vec3::new(0.0, 15.0, 0.0), Vec3::ZERO).unwrap();
+        assert!((g.length() - 5.0).abs() < 0.5, "At d=15/r=20, force should be 5, got {}", g.length());
+        assert!(g.y < 0.0, "Should pull toward center (negative Y)");
+    }
+
+    #[test]
+    fn mutation_point_gravity_negative_strength() {
+        let shape = GravityZoneShape::Point {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            strength: -50.0,
+        };
+        // At d=5: falloff = 0.5, force = -50*0.25 = -12.5 → pushes away
+        let g = shape.get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+        // Direction: to_center = -5 (normalized = (-1,0,0)), * force(-12.5) → pushes +x
+        assert!(g.x > 0.0, "Negative strength should repel: g.x={}", g.x);
+    }
+
+    #[test]
+    fn mutation_point_gravity_outside_returns_none() {
+        let shape = GravityZoneShape::Point {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            strength: 100.0,
+        };
+        let result = shape.get_gravity(Vec3::new(11.0, 0.0, 0.0), Vec3::ZERO);
+        assert!(result.is_none(), "Outside radius should return None");
+    }
+
+    // --- Box/Sphere shapes return zone_gravity ---
+    #[test]
+    fn mutation_box_get_gravity_returns_zone_gravity() {
+        let shape = GravityZoneShape::Box {
+            min: Vec3::new(-10.0, -10.0, -10.0),
+            max: Vec3::new(10.0, 10.0, 10.0),
+        };
+        let zone_g = Vec3::new(0.0, -5.0, 3.0);
+        let g = shape.get_gravity(Vec3::ZERO, zone_g).unwrap();
+        assert_eq!(g, zone_g, "Box shape should return zone_gravity directly");
+    }
+
+    #[test]
+    fn mutation_sphere_get_gravity_returns_zone_gravity() {
+        let shape = GravityZoneShape::Sphere {
+            center: Vec3::ZERO,
+            radius: 50.0,
+        };
+        let zone_g = Vec3::new(1.0, -2.0, 3.0);
+        let g = shape.get_gravity(Vec3::new(10.0, 0.0, 0.0), zone_g).unwrap();
+        assert_eq!(g, zone_g, "Sphere shape should return zone_gravity directly");
+    }
+
+    #[test]
+    fn mutation_box_outside_returns_none() {
+        let shape = GravityZoneShape::Box {
+            min: Vec3::new(-5.0, -5.0, -5.0),
+            max: Vec3::new(5.0, 5.0, 5.0),
+        };
+        assert!(shape.get_gravity(Vec3::new(6.0, 0.0, 0.0), Vec3::Y).is_none());
+    }
+
+    // --- add_zero_g_sphere returns sequential IDs ---
+    #[test]
+    fn mutation_add_zone_ids_increment() {
+        let mut mgr = GravityManager::new(Vec3::ZERO);
+        let id1 = mgr.add_zero_g_box(Vec3::splat(-1.0), Vec3::splat(1.0), 1);
+        let id2 = mgr.add_zero_g_sphere(Vec3::ZERO, 5.0, 2);
+        let id3 = mgr.add_directional_zone(Vec3::splat(-2.0), Vec3::splat(2.0), Vec3::Y, 3);
+        let id4 = mgr.add_attractor(Vec3::ZERO, 10.0, 50.0, 4);
+        assert!(id2 > id1, "IDs should increment");
+        assert!(id3 > id2, "IDs should increment");
+        assert!(id4 > id3, "IDs should increment");
+    }
+
+    // --- calculate_gravity with zones and body settings ---
+    #[test]
+    fn mutation_calculate_gravity_zone_overrides_global() {
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
+        mgr.add_directional_zone(
+            Vec3::splat(-100.0),
+            Vec3::splat(100.0),
+            Vec3::new(5.0, 0.0, 0.0),
+            1,
+        );
+
+        let g = mgr.calculate_gravity(1, Vec3::ZERO);
+        // Zone should override global
+        assert!((g.x - 5.0).abs() < 0.01, "Zone should provide x=5, got {}", g.x);
+        assert!(g.y.abs() < 0.01, "Zone should override y component");
+    }
+
+    #[test]
+    fn mutation_calculate_gravity_body_scale_with_zone() {
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -10.0, 0.0));
+        // No zones, but body has scale=0.5
+        mgr.set_gravity_scale(1, 0.5);
+        let g = mgr.calculate_gravity(1, Vec3::ZERO);
+        assert!((g.y - (-5.0)).abs() < 0.01, "Scaled gravity should be -5, got {}", g.y);
+    }
+
+    #[test]
+    fn mutation_point_gravity_3d_direction() {
+        let shape = GravityZoneShape::Point {
+            center: Vec3::new(10.0, 10.0, 10.0),
+            radius: 100.0,
+            strength: 100.0,
+        };
+        // Body at origin: to_center = (10,10,10), d = sqrt(300) ≈ 17.32
+        let g = shape.get_gravity(Vec3::ZERO, Vec3::ZERO).unwrap();
+        // Direction should be toward (10,10,10), so all components positive
+        assert!(g.x > 0.0 && g.y > 0.0 && g.z > 0.0,
+            "Should pull toward center: g=({},{},{})", g.x, g.y, g.z);
+        // All components should be equal due to symmetry
+        assert!((g.x - g.y).abs() < 0.01, "x and y should be equal");
+        assert!((g.y - g.z).abs() < 0.01, "y and z should be equal");
+    }
 }

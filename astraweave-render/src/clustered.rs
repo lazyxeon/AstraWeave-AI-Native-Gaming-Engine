@@ -571,4 +571,193 @@ mod tests {
             }
         }
     }
+
+    // --- Mutation-resistant edge case tests ---
+
+    #[test]
+    fn clamp_u32_boundary_values() {
+        // Negative values clamp to lo
+        assert_eq!(clamp_u32(-5, 0, 10), 0);
+        assert_eq!(clamp_u32(-1, 0, 10), 0);
+        // Values above hi clamp to hi
+        assert_eq!(clamp_u32(15, 0, 10), 10);
+        assert_eq!(clamp_u32(11, 0, 10), 10);
+        // Values within range pass through
+        assert_eq!(clamp_u32(5, 0, 10), 5);
+        // Boundary values
+        assert_eq!(clamp_u32(0, 0, 10), 0);
+        assert_eq!(clamp_u32(10, 0, 10), 10);
+        // lo == hi collapses to that value
+        assert_eq!(clamp_u32(999, 3, 3), 3);
+        assert_eq!(clamp_u32(-999, 3, 3), 3);
+    }
+
+    #[test]
+    fn empty_lights_produces_zero_counts() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        let (counts, indices, offsets) = bin_lights_cpu(
+            &[],
+            dims,
+            (320, 180),
+            0.1,
+            50.0,
+            std::f32::consts::FRAC_PI_3,
+        );
+        let clusters = (dims.x * dims.y * dims.z) as usize;
+        assert_eq!(counts.len(), clusters);
+        assert!(counts.iter().all(|&c| c == 0), "all counts must be zero for empty lights");
+        assert!(indices.is_empty(), "no indices for empty lights");
+        assert_eq!(offsets.len(), clusters + 1);
+        assert!(offsets.iter().all(|&o| o == 0), "all offsets must be zero for empty lights");
+    }
+
+    #[test]
+    fn light_behind_far_plane_is_skipped() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        let far = 50.0;
+        // Light at z=60 with radius=5 → z - radius = 55 > far=50 → skip
+        let lights = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 60.0),
+            radius: 5.0,
+        }];
+        let (counts, indices, _offsets) = bin_lights_cpu(
+            &lights,
+            dims,
+            (320, 180),
+            0.1,
+            far,
+            std::f32::consts::FRAC_PI_3,
+        );
+        assert!(counts.iter().all(|&c| c == 0), "light beyond far should be skipped");
+        assert!(indices.is_empty());
+    }
+
+    #[test]
+    fn light_z_range_collapse_is_skipped() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        // With near == far, the z-slice formula divides by zero → NaN/Inf.
+        // The function must not panic or produce OOB accesses.
+        let (counts, indices, _) = bin_lights_cpu(
+            &[CpuLight { pos: Vec3::new(0.0, 0.0, 30.0), radius: 1.0 }],
+            dims,
+            (320, 180),
+            30.0,  // near == far
+            30.0,
+            std::f32::consts::FRAC_PI_3,
+        );
+        assert_eq!(counts.len(), (dims.x * dims.y * dims.z) as usize);
+        // The function shouldn't panic — that's the main assertion above.
+        let _ = indices;
+    }
+
+    #[test]
+    fn single_centered_light_occupies_center_clusters() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        let near = 0.1f32;
+        let far = 100.0f32;
+        let fov_y = std::f32::consts::FRAC_PI_3;
+        // Light at center of view (0,0,10) with small radius
+        let lights = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 0.5,
+        }];
+        let (counts, indices, offsets) = bin_lights_cpu(
+            &lights, dims, (320, 180), near, far, fov_y,
+        );
+        let total: u32 = counts.iter().sum();
+        // A small light at center should occupy at least 1 cluster
+        assert!(total >= 1, "centered light must occupy at least 1 cluster, got {total}");
+        // Should not occupy ALL clusters (it's small)
+        let max_clusters = (dims.x * dims.y * dims.z) as u32;
+        assert!(total < max_clusters, "small light should not fill all {max_clusters} clusters");
+        // All indices must be 0 (only one light)
+        assert!(indices.iter().all(|&i| i == 0), "only light index 0 should appear");
+        // Offsets consistency
+        assert_eq!(offsets.last().copied().unwrap(), indices.len() as u32);
+    }
+
+    #[test]
+    fn large_radius_light_fills_many_clusters() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        let near = 0.1f32;
+        let far = 100.0f32;
+        let fov_y = std::f32::consts::FRAC_PI_3;
+        // Huge light that should cover most/all clusters
+        let lights = vec![CpuLight {
+            pos: Vec3::new(0.0, 0.0, 50.0),
+            radius: 200.0,
+        }];
+        let (counts, _indices, _offsets) = bin_lights_cpu(
+            &lights, dims, (320, 180), near, far, fov_y,
+        );
+        let total: u32 = counts.iter().sum();
+        let max_clusters = (dims.x * dims.y * dims.z) as u32;
+        // Should fill all or nearly all clusters
+        assert!(
+            total >= max_clusters / 2,
+            "huge light should fill at least half of {max_clusters} clusters, got {total}"
+        );
+    }
+
+    #[test]
+    fn multiple_lights_indices_cover_all_light_ids() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        let near = 0.1f32;
+        let far = 100.0f32;
+        let fov_y = std::f32::consts::FRAC_PI_3;
+        // 3 lights at different positions, all visible
+        let lights = vec![
+            CpuLight { pos: Vec3::new(-2.0, 0.0, 5.0), radius: 1.0 },
+            CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 1.5 },
+            CpuLight { pos: Vec3::new(2.0, 0.0, 20.0), radius: 2.0 },
+        ];
+        let (_counts, indices, _offsets) = bin_lights_cpu(
+            &lights, dims, (640, 360), near, far, fov_y,
+        );
+        // Every light should appear at least once in the index list
+        let mut seen = [false; 3];
+        for &idx in &indices {
+            seen[idx as usize] = true;
+        }
+        assert!(seen.iter().all(|&s| s), "all 3 light IDs must appear in indices: {:?}", seen);
+    }
+
+    #[test]
+    fn offsets_are_exclusive_scan_of_counts() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        let lights = vec![
+            CpuLight { pos: Vec3::new(0.0, 0.0, 5.0), radius: 3.0 },
+            CpuLight { pos: Vec3::new(1.0, 1.0, 8.0), radius: 2.0 },
+            CpuLight { pos: Vec3::new(-1.0, -1.0, 15.0), radius: 4.0 },
+        ];
+        let (counts, _indices, offsets) = bin_lights_cpu(
+            &lights,
+            dims,
+            (640, 360),
+            0.1,
+            100.0,
+            std::f32::consts::FRAC_PI_3,
+        );
+        // Verify exclusive scan: offsets[0] == 0, offsets[i+1] == offsets[i] + counts[i]
+        assert_eq!(offsets[0], 0, "first offset must be 0");
+        for i in 0..counts.len() {
+            assert_eq!(
+                offsets[i + 1],
+                offsets[i] + counts[i],
+                "offset[{}] = {} + {} = {}, but got {}",
+                i + 1, offsets[i], counts[i], offsets[i] + counts[i], offsets[i + 1]
+            );
+        }
+    }
+
+    #[test]
+    fn cluster_index_linearization_formula() {
+        // Verify the specific formula: ix + iy * x + iz * (x * y)
+        let dims = ClusterDims { x: 3, y: 5, z: 7 };
+        assert_eq!(cluster_index(0, 0, 0, dims), 0);
+        assert_eq!(cluster_index(1, 0, 0, dims), 1);
+        assert_eq!(cluster_index(0, 1, 0, dims), 3);   // iy * x = 1 * 3
+        assert_eq!(cluster_index(0, 0, 1, dims), 15);  // iz * (x * y) = 1 * 15
+        assert_eq!(cluster_index(2, 4, 6, dims), 2 + 4 * 3 + 6 * (3 * 5));
+    }
 }

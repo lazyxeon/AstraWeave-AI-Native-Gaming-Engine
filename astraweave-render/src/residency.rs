@@ -110,7 +110,7 @@ impl ResidencyManager {
             if let Some(info) = self.loaded_assets.remove(&guid) {
                 self.current_memory_mb = self.current_memory_mb.saturating_sub(info.memory_mb);
                 // Placeholder: unload from GPU
-                println!("Evicted asset {}", guid);
+                log::debug!("Evicted asset {}", guid);
             }
         }
         Ok(())
@@ -198,5 +198,120 @@ mod tests {
         assert!(rm.loaded_assets.contains_key(&guid2));
         assert_eq!(rm.current_memory_mb, 7); // 6MB rounds up to 7MB (size/MB + 1)
         Ok(())
+    }
+
+    // --- Mutation-resistant tests ---
+
+    fn make_test_db() -> Arc<Mutex<AssetDatabase>> {
+        Arc::new(Mutex::new(AssetDatabase::new()))
+    }
+
+    fn insert_asset(db: &Arc<Mutex<AssetDatabase>>, guid: &str, size_mb: u64) {
+        let mut db = db.lock().unwrap();
+        db.assets.insert(
+            guid.to_string(),
+            AssetMetadata {
+                guid: guid.to_string(),
+                path: format!("assets/{guid}"),
+                kind: AssetKind::Texture,
+                hash: format!("hash_{guid}"),
+                dependencies: vec![],
+                last_modified: 0,
+                size_bytes: size_mb * 1024 * 1024,
+            },
+        );
+    }
+
+    #[test]
+    fn new_manager_starts_empty() {
+        let db = make_test_db();
+        let rm = ResidencyManager::new(db, 100);
+        assert!(rm.loaded_assets.is_empty());
+        assert_eq!(rm.current_memory_mb, 0);
+        assert!(rm.get_loaded_assets().is_empty());
+    }
+
+    #[test]
+    fn load_asset_not_found_returns_error() {
+        let db = make_test_db();
+        let mut rm = ResidencyManager::new(db, 100);
+        let result = rm.load_asset("nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn load_asset_succeeds_and_appears_in_loaded() {
+        let db = make_test_db();
+        insert_asset(&db, "tex_a", 2);
+        let mut rm = ResidencyManager::new(db, 100);
+        rm.load_asset("tex_a").unwrap();
+        assert!(rm.loaded_assets.contains_key("tex_a"));
+        assert!(rm.get_loaded_assets().contains(&"tex_a".to_string()));
+        assert!(rm.current_memory_mb > 0);
+    }
+
+    #[test]
+    fn duplicate_load_does_not_increase_memory() {
+        let db = make_test_db();
+        insert_asset(&db, "tex_a", 2);
+        let mut rm = ResidencyManager::new(db, 100);
+        rm.load_asset("tex_a").unwrap();
+        let mem_after_first = rm.current_memory_mb;
+        rm.load_asset("tex_a").unwrap(); // duplicate
+        assert_eq!(rm.current_memory_mb, mem_after_first, "duplicate load should not increase memory");
+    }
+
+    #[test]
+    fn evict_lru_removes_oldest_asset() {
+        let db = make_test_db();
+        insert_asset(&db, "a", 1);
+        insert_asset(&db, "b", 1);
+        let mut rm = ResidencyManager::new(db, 100);
+        rm.load_asset("a").unwrap();
+        rm.load_asset("b").unwrap();
+        assert_eq!(rm.get_loaded_assets().len(), 2);
+        rm.evict_lru().unwrap();
+        // "a" was loaded first, should be evicted
+        assert!(!rm.loaded_assets.contains_key("a"));
+        assert!(rm.loaded_assets.contains_key("b"));
+    }
+
+    #[test]
+    fn touch_moves_to_back_of_lru() {
+        let db = make_test_db();
+        insert_asset(&db, "a", 1);
+        insert_asset(&db, "b", 1);
+        let mut rm = ResidencyManager::new(db, 100);
+        rm.load_asset("a").unwrap();
+        rm.load_asset("b").unwrap();
+        rm.touch_asset("a"); // move "a" to back
+        rm.evict_lru().unwrap();
+        // Now "b" should be evicted (it's the LRU)
+        assert!(rm.loaded_assets.contains_key("a"), "touched 'a' should survive");
+        assert!(!rm.loaded_assets.contains_key("b"), "'b' should be evicted");
+    }
+
+    #[test]
+    fn memory_pressure_triggers_eviction() {
+        let db = make_test_db();
+        insert_asset(&db, "big", 8); // will be ~9 MB
+        insert_asset(&db, "new", 5); // will be ~6 MB
+        let mut rm = ResidencyManager::new(db, 12); // 12 MB limit
+        rm.load_asset("big").unwrap();
+        assert!(rm.loaded_assets.contains_key("big"));
+        rm.load_asset("new").unwrap();
+        // big should have been evicted to make room
+        assert!(!rm.loaded_assets.contains_key("big"), "big should be evicted");
+        assert!(rm.loaded_assets.contains_key("new"));
+    }
+
+    #[test]
+    fn gpu_handle_is_set_on_load() {
+        let db = make_test_db();
+        insert_asset(&db, "tex", 1);
+        let mut rm = ResidencyManager::new(db, 100);
+        rm.load_asset("tex").unwrap();
+        let info = &rm.loaded_assets["tex"];
+        assert_eq!(info.gpu_handle, Some("gpu_tex".to_string()));
     }
 }

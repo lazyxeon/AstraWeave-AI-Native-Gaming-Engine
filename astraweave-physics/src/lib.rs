@@ -3599,4 +3599,329 @@ mod tests {
             small_y
         );
     }
+
+    // ===== DEEP REMEDIATION v3.6.3 — lib.rs Round 4 remaining mutations =====
+
+    // --- CharacterController::volume exact arithmetic (19 mutations) ---
+    #[test]
+    fn mutation_r4_volume_exact_capsule_formula() {
+        // volume = PI*r²*(h - 2r) + (4/3)*PI*r³
+        // For r=1.0, h=4.0: cylinder_height = 4-2 = 2, cylinder = PI*1*1*2 = 2PI
+        // sphere = (4/3)*PI*1 = 4PI/3, total = 2PI + 4PI/3 = 10PI/3
+        let cc = CharacterController::new(1.0, 4.0);
+        let expected = 10.0 * std::f32::consts::PI / 3.0;
+        assert!(
+            (cc.volume() - expected).abs() < 0.01,
+            "Volume for r=1 h=4: expected {:.4}, got {:.4}",
+            expected,
+            cc.volume()
+        );
+    }
+
+    #[test]
+    fn mutation_r4_volume_different_dimensions() {
+        // r=0.5, h=3.0: cylinder_height = 3-1 = 2, cylinder = PI*0.25*2 = 0.5PI
+        // sphere = (4/3)*PI*0.125 = PI/6, total = 0.5PI + PI/6 = 2PI/3
+        let cc = CharacterController::new(0.5, 3.0);
+        let expected = 2.0 * std::f32::consts::PI / 3.0;
+        assert!(
+            (cc.volume() - expected).abs() < 0.01,
+            "Volume for r=0.5 h=3: expected {:.4}, got {:.4}",
+            expected,
+            cc.volume()
+        );
+    }
+
+    #[test]
+    fn mutation_r4_volume_height_minus_radius_subtraction() {
+        // If - becomes +: cylinder_height = h + 2r, volume wildly different
+        let cc = CharacterController::new(0.3, 2.0);
+        let cylinder_h = 2.0 - 2.0 * 0.3; // 1.4
+        let cyl_vol = std::f32::consts::PI * 0.3 * 0.3 * cylinder_h;
+        let sph_vol = (4.0 / 3.0) * std::f32::consts::PI * 0.3_f32.powi(3);
+        let expected = cyl_vol + sph_vol;
+        assert!(
+            (cc.volume() - expected).abs() < 0.001,
+            "Subtraction precision: expected {:.6}, got {:.6}",
+            expected,
+            cc.volume()
+        );
+    }
+
+    #[test]
+    fn mutation_r4_volume_multiply_operators() {
+        // Test with asymmetric r and h so * → + and * → / differ significantly
+        let cc = CharacterController::new(2.0, 6.0);
+        let cylinder_h = 6.0 - 2.0 * 2.0; // 2.0
+        let cyl_vol = std::f32::consts::PI * 2.0 * 2.0 * cylinder_h;
+        let sph_vol = (4.0 / 3.0) * std::f32::consts::PI * 2.0_f32.powi(3);
+        let expected = cyl_vol + sph_vol;
+        assert!(
+            (cc.volume() - expected).abs() < 0.01,
+            "Multiply operators: expected {:.4}, got {:.4}",
+            expected,
+            cc.volume()
+        );
+    }
+
+    #[test]
+    fn mutation_r4_volume_division_operator() {
+        // 4.0 / 3.0 in sphere volume (mutation: / → %, / → *)
+        // For r=1, sphere = (4/3)*PI = 4.189, if * instead: 4*3*PI = 37.7
+        let cc = CharacterController::new(1.0, 4.0);
+        let vol = cc.volume();
+        // sphere component = 4.189 (not 37.7 if * instead of /)
+        let sphere_part = (4.0 / 3.0) * std::f32::consts::PI;
+        let cylinder_part = std::f32::consts::PI * 1.0 * 1.0 * 2.0;
+        assert!(
+            (vol - (cylinder_part + sphere_part)).abs() < 0.01,
+            "Division operator: got {:.4}",
+            vol
+        );
+    }
+
+    #[test]
+    fn mutation_r4_volume_final_addition() {
+        // cylinder_volume + sphere_volume (mutation: + → - or + → *)
+        let cc = CharacterController::new(1.0, 4.0);
+        let cyl = std::f32::consts::PI * 1.0 * 1.0 * 2.0;
+        let sph = (4.0 / 3.0) * std::f32::consts::PI;
+        // Both parts are positive, total = cyl + sph
+        assert!(cc.volume() > cyl, "Total should be > cylinder alone");
+        assert!(cc.volume() > sph, "Total should be > sphere alone");
+        assert!(
+            (cc.volume() - (cyl + sph)).abs() < 0.001,
+            "Final addition"
+        );
+    }
+
+    #[test]
+    fn mutation_r4_volume_replace_with_one() {
+        // Mutation: replace volume() → 1.0
+        let cc = CharacterController::new(1.0, 4.0);
+        assert_ne!(cc.volume(), 1.0, "Volume should not be exactly 1.0");
+        assert!(cc.volume() > 5.0, "Volume for r=1 h=4 should be > 5");
+    }
+
+    // --- ActorKind::is_other (2 mutations) ---
+    #[test]
+    fn mutation_r4_actor_kind_is_other_exact() {
+        // Mutation: replace → true, replace → false
+        assert!(ActorKind::Other.is_other(), "Other.is_other() should be true");
+        assert!(
+            !ActorKind::Static.is_other(),
+            "Static.is_other() should be false"
+        );
+        assert!(
+            !ActorKind::Dynamic.is_other(),
+            "Dynamic.is_other() should be false"
+        );
+        assert!(
+            !ActorKind::Character.is_other(),
+            "Character.is_other() should be false"
+        );
+    }
+
+    // --- DebugLine::length_squared component arithmetic (2 mutations) ---
+    #[test]
+    fn mutation_r4_length_squared_all_axes() {
+        // dx*dx + dy*dy + dz*dz — test with all 3 non-zero and unequal
+        // so + → - and * → + are both caught
+        let line = DebugLine::new([1.0, 2.0, 3.0], [4.0, 6.0, 8.0], [1.0, 1.0, 1.0]);
+        // dx=3, dy=4, dz=5 → 9+16+25 = 50
+        let expected = 50.0_f32;
+        assert!(
+            (line.length_squared() - expected).abs() < 0.001,
+            "All axes: expected {}, got {}",
+            expected,
+            line.length_squared()
+        );
+    }
+
+    #[test]
+    fn mutation_r4_length_squared_single_axis_z() {
+        // Pure Z movement to isolate dz*dz term
+        let line = DebugLine::new([0.0, 0.0, 0.0], [0.0, 0.0, 7.0], [1.0, 1.0, 1.0]);
+        assert!(
+            (line.length_squared() - 49.0).abs() < 0.001,
+            "Z-only: expected 49, got {}",
+            line.length_squared()
+        );
+    }
+
+    #[test]
+    fn mutation_r4_length_squared_xy_only() {
+        // X and Y only, Z=0, to catch + → - between dx² and dy²
+        let line = DebugLine::new([0.0, 0.0, 0.0], [3.0, 4.0, 0.0], [1.0, 1.0, 1.0]);
+        assert!(
+            (line.length_squared() - 25.0).abs() < 0.001,
+            "XY only: dx²=9 + dy²=16 = 25"
+        );
+        // If + → -, result would be 9-16 = -7 — very different
+        assert!(line.length_squared() > 0.0, "Should be positive");
+    }
+
+    // --- DebugLine::is_degenerate boundary (1 mutation: < → <=) ---
+    #[test]
+    fn mutation_r4_is_degenerate_boundary() {
+        // Threshold is length_squared < 1e-10
+        // Create line with length_squared = exactly 1e-10 (boundary)
+        // sqrt(1e-10) ≈ 1e-5
+        let tiny = 1e-5_f32;
+        let boundary_line = DebugLine::new([0.0, 0.0, 0.0], [tiny, 0.0, 0.0], [1.0, 1.0, 1.0]);
+        // length_squared = tiny² = 1e-10 exactly — with < it's NOT degenerate, with <= it IS
+        // Actually f32 at this scale: 1e-5² ≈ 1e-10
+        let ls = boundary_line.length_squared();
+        // If < 1e-10 changes to <= 1e-10, line at exactly the boundary changes result
+        // Use a value clearly above: 2e-5 → 4e-10 — not degenerate
+        let above = DebugLine::new([0.0, 0.0, 0.0], [2e-5, 0.0, 0.0], [1.0, 1.0, 1.0]);
+        assert!(
+            !above.is_degenerate(),
+            "Line with length_squared 4e-10 > 1e-10 should not be degenerate, ls={}",
+            above.length_squared()
+        );
+        // Use a value clearly below: 1e-6 → 1e-12 — degenerate
+        let below = DebugLine::new([0.0, 0.0, 0.0], [1e-6, 0.0, 0.0], [1.0, 1.0, 1.0]);
+        assert!(
+            below.is_degenerate(),
+            "Line with length_squared 1e-12 < 1e-10 should be degenerate"
+        );
+    }
+
+    // --- CharState::is_grounded / CharacterController::is_grounded ---
+    // Note: CharState only has one variant (Grounded), so is_grounded always returns true.
+    // These mutations are equivalent mutants. Verify the invariant:
+    #[test]
+    fn mutation_r4_char_state_only_variant() {
+        // All CharState values are grounded (single variant enum)
+        for state in CharState::all() {
+            assert!(state.is_grounded(), "All CharState variants should be grounded");
+        }
+    }
+
+    // --- CharacterController::has_coyote_time boundary (< → <=) ---
+    #[test]
+    fn mutation_r4_coyote_time_exact_boundary() {
+        // time_since_grounded < coyote_time_limit
+        // At exactly the limit: should be false with <, true with <=
+        let mut cc = CharacterController::new(0.5, 2.0);
+        cc.coyote_time_limit = 0.15;
+        cc.time_since_grounded = 0.15; // exactly at limit
+        // With <:  0.15 < 0.15 → false
+        // With <=: 0.15 <= 0.15 → true
+        assert!(
+            !cc.has_coyote_time(),
+            "At exact limit, < should be false"
+        );
+        // Just below
+        cc.time_since_grounded = 0.149;
+        assert!(
+            cc.has_coyote_time(),
+            "Just below limit should be true"
+        );
+    }
+
+    // --- CharacterController::can_jump || vs && and replace true ---
+    #[test]
+    fn mutation_r4_can_jump_neither_grounded_nor_coyote() {
+        // is_grounded() || has_coyote_time()
+        // Mutation: || → &&, replace → true
+        // Need: both conditions FALSE → result should be false
+        let mut cc = CharacterController::new(0.5, 2.0);
+        // Simulate being in-air past coyote time
+        cc.time_since_grounded = 1.0; // way past coyote limit
+        // CharState only has Grounded variant, so is_grounded() is always true...
+        // Actually we can't make is_grounded false since CharState only has one variant.
+        // The || → && mutation is effectively equivalent because is_grounded() is always true.
+        // Verify the tautology:
+        assert!(cc.can_jump(), "can_jump is always true when CharState only has Grounded");
+    }
+
+    // --- CharacterController::is_falling boundary (< → <=) ---
+    #[test]
+    fn mutation_r4_is_falling_exact_boundary() {
+        let mut cc = CharacterController::new(0.5, 2.0);
+        // At exactly -0.01: < -0.01 is false, <= -0.01 is true
+        cc.vertical_velocity = -0.01;
+        assert!(
+            !cc.is_falling(),
+            "At exactly -0.01, < should be false"
+        );
+        cc.vertical_velocity = -0.02;
+        assert!(cc.is_falling(), "Below -0.01 should be falling");
+    }
+
+    // --- CharacterController::is_rising boundary (> → >=) ---
+    #[test]
+    fn mutation_r4_is_rising_exact_boundary() {
+        let mut cc = CharacterController::new(0.5, 2.0);
+        // At exactly 0.01: > 0.01 is false, >= 0.01 is true
+        cc.vertical_velocity = 0.01;
+        assert!(
+            !cc.is_rising(),
+            "At exactly 0.01, > should be false"
+        );
+        cc.vertical_velocity = 0.02;
+        assert!(cc.is_rising(), "Above 0.01 should be rising");
+    }
+
+    // --- PhysicsConfig::is_earth_gravity boundary (< → <= × 3) ---
+    #[test]
+    fn mutation_r4_earth_gravity_y_boundary() {
+        // (gravity.y + 9.81).abs() < 0.1  → at exactly 0.1: false
+        let cfg = PhysicsConfig::new().with_gravity(Vec3::new(0.0, -9.81 + 0.1, 0.0));
+        // (−9.71 + 9.81).abs() = 0.1. With <: false, with <=: true
+        assert!(
+            !cfg.is_earth_gravity(),
+            "At exactly 0.1 deviation, < should be false"
+        );
+        let cfg2 = PhysicsConfig::new().with_gravity(Vec3::new(0.0, -9.81 + 0.099, 0.0));
+        assert!(
+            cfg2.is_earth_gravity(),
+            "At 0.099 deviation, should be earth gravity"
+        );
+    }
+
+    #[test]
+    fn mutation_r4_earth_gravity_x_boundary() {
+        // gravity.x.abs() < 0.01  → at exactly 0.01: false
+        let cfg = PhysicsConfig::new().with_gravity(Vec3::new(0.01, -9.81, 0.0));
+        assert!(
+            !cfg.is_earth_gravity(),
+            "x=0.01: at boundary, < should be false"
+        );
+        let cfg2 = PhysicsConfig::new().with_gravity(Vec3::new(0.009, -9.81, 0.0));
+        assert!(cfg2.is_earth_gravity(), "x=0.009: within threshold");
+    }
+
+    #[test]
+    fn mutation_r4_earth_gravity_z_boundary() {
+        // gravity.z.abs() < 0.01
+        let cfg = PhysicsConfig::new().with_gravity(Vec3::new(0.0, -9.81, 0.01));
+        assert!(
+            !cfg.is_earth_gravity(),
+            "z=0.01: at boundary, < should be false"
+        );
+        let cfg2 = PhysicsConfig::new().with_gravity(Vec3::new(0.0, -9.81, 0.009));
+        assert!(cfg2.is_earth_gravity(), "z=0.009: within threshold");
+    }
+
+    // --- PhysicsConfig::is_zero_gravity boundary (< → <=) ---
+    #[test]
+    fn mutation_r4_zero_gravity_boundary() {
+        // length_squared() < 1e-6
+        // At length_squared = 1e-6: sqrt(1e-6) = 0.001
+        let cfg = PhysicsConfig::new().with_gravity(Vec3::new(0.001, 0.0, 0.0));
+        // length_squared = 0.000001 = 1e-6 exactly
+        // With <: false, with <=: true
+        assert!(
+            !cfg.is_zero_gravity(),
+            "At exact threshold 1e-6, < should be false"
+        );
+        let cfg2 = PhysicsConfig::new().with_gravity(Vec3::new(0.0001, 0.0, 0.0));
+        assert!(
+            cfg2.is_zero_gravity(),
+            "Below threshold should be zero gravity"
+        );
+    }
 }

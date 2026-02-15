@@ -1452,4 +1452,463 @@ mod tests {
             "Box with zero-extent axis should have zero volume"
         );
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEEP REMEDIATION v3.6.1 — ragdoll Round 2 arithmetic/preset tests
+    // ═══════════════════════════════════════════════════════════════
+
+    // --- BoneShape::volume exact formulas ---
+    #[test]
+    fn mutation_capsule_volume_exact_r2_hh3() {
+        let r = 0.5;
+        let hh = 3.0;
+        let shape = BoneShape::Capsule { radius: r, half_height: hh };
+        // cylinder = π * r² * 2hh
+        let cyl = std::f32::consts::PI * r * r * (hh * 2.0);
+        // sphere caps = 4/3 * π * r³
+        let sph = (4.0 / 3.0) * std::f32::consts::PI * r.powi(3);
+        let expected = cyl + sph;
+        assert!((shape.volume() - expected).abs() < 0.01,
+            "Capsule(r=0.5,hh=3) volume: expected {}, got {}", expected, shape.volume());
+    }
+
+    #[test]
+    fn mutation_sphere_volume_tiny() {
+        let r = 0.01;
+        let shape = BoneShape::Sphere { radius: r };
+        let expected = (4.0 / 3.0) * std::f32::consts::PI * r.powi(3);
+        assert!((shape.volume() - expected).abs() < 1e-8,
+            "Tiny sphere: expected {}, got {}", expected, shape.volume());
+    }
+
+    #[test]
+    fn mutation_box_volume_asymmetric() {
+        let he = Vec3::new(0.1, 0.2, 0.3);
+        let shape = BoneShape::Box { half_extents: he };
+        let expected = 8.0 * 0.1 * 0.2 * 0.3; // 0.048
+        assert!((shape.volume() - expected).abs() < 1e-5,
+            "Box(0.1,0.2,0.3): expected {}, got {}", expected, shape.volume());
+    }
+
+    // --- RagdollPresets::humanoid bone structure ---
+    #[test]
+    fn mutation_humanoid_bone_names() {
+        let builder = RagdollPresets::humanoid(RagdollConfig::default());
+        let names: Vec<&str> = builder.bones.iter().map(|b| b.name.as_str()).collect();
+        assert!(names.contains(&"pelvis"), "Missing pelvis");
+        assert!(names.contains(&"spine"), "Missing spine");
+        assert!(names.contains(&"chest"), "Missing chest");
+        assert!(names.contains(&"head"), "Missing head");
+        assert!(names.contains(&"upper_arm_l"), "Missing upper_arm_l");
+        assert!(names.contains(&"upper_arm_r"), "Missing upper_arm_r");
+        assert!(names.contains(&"lower_arm_l"), "Missing lower_arm_l");
+        assert!(names.contains(&"lower_arm_r"), "Missing lower_arm_r");
+        assert!(names.contains(&"upper_leg_l"), "Missing upper_leg_l");
+        assert!(names.contains(&"upper_leg_r"), "Missing upper_leg_r");
+        assert!(names.contains(&"lower_leg_l"), "Missing lower_leg_l");
+        assert!(names.contains(&"lower_leg_r"), "Missing lower_leg_r");
+    }
+
+    #[test]
+    fn mutation_humanoid_pelvis_is_root() {
+        let builder = RagdollPresets::humanoid(RagdollConfig::default());
+        let pelvis = builder.bones.iter().find(|b| b.name == "pelvis").unwrap();
+        assert!(pelvis.parent.is_none(), "Pelvis should be root (no parent)");
+    }
+
+    #[test]
+    fn mutation_humanoid_mass_scale_applied() {
+        let config = RagdollConfig { mass_scale: 3.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        // pelvis base mass = 4.0, scaled = 12.0
+        let pelvis = builder.bones.iter().find(|b| b.name == "pelvis").unwrap();
+        assert!((pelvis.mass - 12.0).abs() < 0.01,
+            "Pelvis mass should be 4.0*3.0=12.0, got {}", pelvis.mass);
+        // head base mass = 1.5, scaled = 4.5
+        let head = builder.bones.iter().find(|b| b.name == "head").unwrap();
+        assert!((head.mass - 4.5).abs() < 0.01,
+            "Head mass should be 1.5*3.0=4.5, got {}", head.mass);
+    }
+
+    #[test]
+    fn mutation_humanoid_joint_types() {
+        let builder = RagdollPresets::humanoid(RagdollConfig::default());
+        // spine should be Spherical
+        let spine = builder.bones.iter().find(|b| b.name == "spine").unwrap();
+        assert!(matches!(spine.joint_type, BoneJointType::Spherical { .. }),
+            "Spine should have Spherical joint");
+        // lower_arm_l should be Hinge
+        let lower_arm = builder.bones.iter().find(|b| b.name == "lower_arm_l").unwrap();
+        assert!(matches!(lower_arm.joint_type, BoneJointType::Hinge { .. }),
+            "Lower arm should have Hinge joint");
+        // upper_arm_l should be Spherical (ball joint)
+        let upper_arm = builder.bones.iter().find(|b| b.name == "upper_arm_l").unwrap();
+        assert!(matches!(upper_arm.joint_type, BoneJointType::Spherical { .. }),
+            "Upper arm should have Spherical joint");
+        // lower_leg_l should be Hinge
+        let lower_leg = builder.bones.iter().find(|b| b.name == "lower_leg_l").unwrap();
+        assert!(matches!(lower_leg.joint_type, BoneJointType::Hinge { .. }),
+            "Lower leg should have Hinge joint");
+    }
+
+    #[test]
+    fn mutation_humanoid_arm_parent_chain() {
+        let builder = RagdollPresets::humanoid(RagdollConfig::default());
+        let lower_arm_l = builder.bones.iter().find(|b| b.name == "lower_arm_l").unwrap();
+        assert_eq!(lower_arm_l.parent, Some("upper_arm_l".to_string()));
+        let upper_arm_l = builder.bones.iter().find(|b| b.name == "upper_arm_l").unwrap();
+        assert_eq!(upper_arm_l.parent, Some("chest".to_string()));
+    }
+
+    // --- RagdollPresets::quadruped ---
+    #[test]
+    fn mutation_quadruped_bone_names() {
+        let builder = RagdollPresets::quadruped(RagdollConfig::default());
+        let names: Vec<&str> = builder.bones.iter().map(|b| b.name.as_str()).collect();
+        assert!(names.contains(&"body"), "Missing body");
+        assert!(names.contains(&"head"), "Missing head");
+        assert!(names.contains(&"front_leg_l"), "Missing front_leg_l");
+        assert!(names.contains(&"front_leg_r"), "Missing front_leg_r");
+        assert!(names.contains(&"back_leg_l"), "Missing back_leg_l");
+        assert!(names.contains(&"back_leg_r"), "Missing back_leg_r");
+        assert!(names.contains(&"tail"), "Missing tail");
+    }
+
+    #[test]
+    fn mutation_quadruped_body_mass_exact() {
+        let builder = RagdollPresets::quadruped(RagdollConfig::default());
+        let body = builder.bones.iter().find(|b| b.name == "body").unwrap();
+        // base mass = 8.0, mass_scale = 1.0
+        assert!((body.mass - 8.0).abs() < 0.01, "Body mass should be 8.0, got {}", body.mass);
+    }
+
+    #[test]
+    fn mutation_quadruped_mass_scale_applied() {
+        let config = RagdollConfig { mass_scale: 0.5, ..Default::default() };
+        let builder = RagdollPresets::quadruped(config);
+        // body base mass = 8.0, scaled = 4.0
+        let body = builder.bones.iter().find(|b| b.name == "body").unwrap();
+        assert!((body.mass - 4.0).abs() < 0.01, "Body mass should be 8.0*0.5=4.0, got {}", body.mass);
+        // tail base mass = 0.3, scaled = 0.15
+        let tail = builder.bones.iter().find(|b| b.name == "tail").unwrap();
+        assert!((tail.mass - 0.15).abs() < 0.01, "Tail mass should be 0.3*0.5=0.15, got {}", tail.mass);
+    }
+
+    #[test]
+    fn mutation_quadruped_all_legs_parent_body() {
+        let builder = RagdollPresets::quadruped(RagdollConfig::default());
+        for name in ["front_leg_l", "front_leg_r", "back_leg_l", "back_leg_r"] {
+            let leg = builder.bones.iter().find(|b| b.name == name).unwrap();
+            assert_eq!(leg.parent, Some("body".to_string()),
+                "{} should have 'body' as parent", name);
+        }
+    }
+
+    // --- add_hinge_bone / add_ball_bone joint details ---
+    #[test]
+    fn mutation_add_hinge_bone_mass_scaled() {
+        let config = RagdollConfig { mass_scale: 2.5, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        builder.add_hinge_bone(
+            "hinge_child",
+            "root",
+            Vec3::Y,
+            BoneShape::Capsule { radius: 0.05, half_height: 0.1 },
+            4.0,
+            Vec3::X,
+            Some((0.0, 1.5)),
+        );
+        // mass = 4.0 * 2.5 = 10.0
+        assert!((builder.bones[1].mass - 10.0).abs() < 0.01,
+            "Hinge bone mass should be 4*2.5=10, got {}", builder.bones[1].mass);
+        // Joint type preserved
+        match builder.bones[1].joint_type {
+            BoneJointType::Hinge { axis, limits } => {
+                assert!((axis.x - 1.0).abs() < 0.01);
+                let (lo, hi) = limits.unwrap();
+                assert!((lo - 0.0).abs() < 0.01);
+                assert!((hi - 1.5).abs() < 0.01);
+            }
+            _ => panic!("Expected Hinge joint"),
+        }
+    }
+
+    #[test]
+    fn mutation_add_ball_bone_mass_scaled() {
+        let config = RagdollConfig { mass_scale: 0.1, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        builder.add_ball_bone(
+            "ball_child",
+            "root",
+            Vec3::new(1.0, 0.0, 0.0),
+            BoneShape::Sphere { radius: 0.05 },
+            20.0,
+            Some(0.8),
+        );
+        // mass = 20.0 * 0.1 = 2.0
+        assert!((builder.bones[1].mass - 2.0).abs() < 0.01,
+            "Ball bone mass should be 20*0.1=2, got {}", builder.bones[1].mass);
+        match builder.bones[1].joint_type {
+            BoneJointType::Spherical { swing_limit, twist_limit } => {
+                assert!((swing_limit.unwrap() - 0.8).abs() < 0.01);
+                assert!(twist_limit.is_none());
+            }
+            _ => panic!("Expected Spherical joint"),
+        }
+    }
+
+    // --- add_bone_full mass_scale ---
+    #[test]
+    fn mutation_add_bone_full_mass_scale() {
+        let config = RagdollConfig { mass_scale: 5.0, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone_full(BoneDef {
+            name: "full_bone".to_string(),
+            parent: None,
+            offset: Vec3::ZERO,
+            shape: BoneShape::Box { half_extents: Vec3::ONE },
+            mass: 3.0,
+            joint_type: BoneJointType::Fixed,
+            ..Default::default()
+        });
+        // mass = 3.0 * 5.0 = 15.0
+        assert!((builder.bones[0].mass - 15.0).abs() < 0.01,
+            "add_bone_full mass should be 3*5=15, got {}", builder.bones[0].mass);
+    }
+
+    // --- Humanoid pelvis shape/mass ---
+    #[test]
+    fn mutation_humanoid_pelvis_shape_and_mass() {
+        let builder = RagdollPresets::humanoid(RagdollConfig::default());
+        let pelvis = builder.bones.iter().find(|b| b.name == "pelvis").unwrap();
+        assert!((pelvis.mass - 4.0).abs() < 0.01, "Pelvis mass should be 4.0");
+        match pelvis.shape {
+            BoneShape::Box { half_extents } => {
+                assert!((half_extents.x - 0.15).abs() < 0.01);
+                assert!((half_extents.y - 0.1).abs() < 0.01);
+                assert!((half_extents.z - 0.1).abs() < 0.01);
+            }
+            _ => panic!("Pelvis should be Box shape"),
+        }
+    }
+
+    // ===== DEEP REMEDIATION v3.6.2 — ragdoll Round 3 remaining mutations =====
+
+    // --- Humanoid offset sign mutations (delete - on line 538, 553, 567, etc.) ---
+    #[test]
+    fn mutation_r3_humanoid_leg_offset_y_negative() {
+        // upper_leg offset = (x, -0.15, 0)  -- delete - gives (x, 0.15, 0)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let upper_leg_l = builder.bones.iter().find(|b| b.name == "upper_leg_l").unwrap();
+        assert!(upper_leg_l.offset.y < 0.0, "Upper leg offset.y should be negative (downward), got {}", upper_leg_l.offset.y);
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_lower_arm_offset_y_negative() {
+        // lower_arm offset = (0, -0.25, 0)  -- delete - gives (0, 0.25, 0)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let lower_arm_l = builder.bones.iter().find(|b| b.name == "lower_arm_l").unwrap();
+        assert!(lower_arm_l.offset.y < 0.0, "Lower arm offset.y should be negative, got {}", lower_arm_l.offset.y);
+        assert!((lower_arm_l.offset.y - (-0.25)).abs() < 0.01);
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_lower_leg_offset_y_negative() {
+        // lower_leg offset = (0, -0.38, 0)  -- delete - gives (0, 0.38, 0)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let lower_leg_l = builder.bones.iter().find(|b| b.name == "lower_leg_l").unwrap();
+        assert!(lower_leg_l.offset.y < 0.0, "Lower leg offset.y should be negative, got {}", lower_leg_l.offset.y);
+        assert!((lower_leg_l.offset.y - (-0.38)).abs() < 0.01);
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_upper_arm_left_x_negative() {
+        // upper_arm_l x_offset = -0.2  -- delete - gives 0.2
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let upper_arm_l = builder.bones.iter().find(|b| b.name == "upper_arm_l").unwrap();
+        assert!(upper_arm_l.offset.x < 0.0, "Left arm should have negative x offset, got {}", upper_arm_l.offset.x);
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_upper_leg_left_x_negative() {
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let upper_leg_l = builder.bones.iter().find(|b| b.name == "upper_leg_l").unwrap();
+        assert!(upper_leg_l.offset.x < 0.0, "Left leg x should be negative, got {}", upper_leg_l.offset.x);
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_hinge_limit_multiplier() {
+        // FRAC_PI_2 * 1.5  (mutation: * → / or +)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let lower_arm_l = builder.bones.iter().find(|b| b.name == "lower_arm_l").unwrap();
+        match &lower_arm_l.joint_type {
+            BoneJointType::Hinge { limits: Some((lo, hi)), .. } => {
+                // Upper limit should be PI/2 * 1.5 = ~2.356
+                let expected = std::f32::consts::FRAC_PI_2 * 1.5;
+                assert!((hi - expected).abs() < 0.01, "Hinge upper limit should be {}, got {}", expected, hi);
+            }
+            _ => panic!("lower_arm should be Hinge with limits"),
+        }
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_lower_leg_hinge_negative_limit() {
+        // lower_leg: Some((-FRAC_PI_2 * 1.5, 0.0))  -- delete - on outer negation
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let lower_leg_l = builder.bones.iter().find(|b| b.name == "lower_leg_l").unwrap();
+        match &lower_leg_l.joint_type {
+            BoneJointType::Hinge { limits: Some((lo, hi)), .. } => {
+                assert!(*lo < 0.0, "Lower leg hinge min limit should be negative, got {}", lo);
+                assert!((*hi - 0.0).abs() < 0.01, "Lower leg hinge max should be 0.0, got {}", hi);
+            }
+            _ => panic!("lower_leg should be Hinge"),
+        }
+    }
+
+    // --- Humanoid spine/chest field deletion catches ---
+    #[test]
+    fn mutation_r3_humanoid_spine_fields_present() {
+        // "delete field offset/shape/mass/joint_type from BoneDef in humanoid" (lines 531-536)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let spine = builder.bones.iter().find(|b| b.name == "spine").unwrap();
+        assert!((spine.offset.y - 0.15).abs() < 0.01, "Spine offset.y should be 0.15");
+        assert!((spine.mass - 3.0).abs() < 0.01, "Spine mass should be 3.0");
+        match &spine.shape {
+            BoneShape::Box { half_extents } => {
+                assert!((half_extents.x - 0.12).abs() < 0.01);
+            }
+            _ => panic!("Spine should be Box shape"),
+        }
+        match &spine.joint_type {
+            BoneJointType::Spherical { swing_limit, .. } => {
+                assert!(swing_limit.is_some(), "Spine should have swing limit");
+            }
+            _ => panic!("Spine should be Spherical joint"),
+        }
+    }
+
+    #[test]
+    fn mutation_r3_humanoid_chest_fields_present() {
+        // "delete field offset/shape/mass/joint_type from BoneDef in humanoid" (lines 546-551)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::humanoid(config);
+        let chest = builder.bones.iter().find(|b| b.name == "chest").unwrap();
+        assert!((chest.offset.y - 0.2).abs() < 0.01, "Chest offset.y should be 0.2");
+        assert!((chest.mass - 3.5).abs() < 0.01, "Chest mass should be 3.5");
+        match &chest.shape {
+            BoneShape::Box { half_extents } => {
+                assert!((half_extents.x - 0.14).abs() < 0.01);
+            }
+            _ => panic!("Chest should be Box"),
+        }
+    }
+
+    // --- Quadruped offset sign mutations (delete - on lines 659-694) ---
+    #[test]
+    fn mutation_r3_quadruped_front_leg_offset_y_negative() {
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::quadruped(config);
+        let fl = builder.bones.iter().find(|b| b.name == "front_leg_l").unwrap();
+        assert!(fl.offset.y < 0.0, "Front leg y should be negative (downward), got {}", fl.offset.y);
+    }
+
+    #[test]
+    fn mutation_r3_quadruped_back_leg_offset_y_negative() {
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::quadruped(config);
+        let bl = builder.bones.iter().find(|b| b.name == "back_leg_l").unwrap();
+        assert!(bl.offset.y < 0.0, "Back leg y should be negative, got {}", bl.offset.y);
+    }
+
+    #[test]
+    fn mutation_r3_quadruped_left_legs_x_negative() {
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::quadruped(config);
+        let fl = builder.bones.iter().find(|b| b.name == "front_leg_l").unwrap();
+        let bl = builder.bones.iter().find(|b| b.name == "back_leg_l").unwrap();
+        assert!(fl.offset.x < 0.0, "Front left leg x should be negative, got {}", fl.offset.x);
+        assert!(bl.offset.x < 0.0, "Back left leg x should be negative, got {}", bl.offset.x);
+    }
+
+    #[test]
+    fn mutation_r3_quadruped_back_leg_offset_z_negative() {
+        // back_leg offset z should be negative (behind body)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let builder = RagdollPresets::quadruped(config);
+        let bl = builder.bones.iter().find(|b| b.name == "back_leg_l").unwrap();
+        assert!(bl.offset.z < 0.0, "Back leg z should be negative (behind), got {}", bl.offset.z);
+    }
+
+    // --- add_hinge_bone/add_ball_bone field deletion and mass scaling ---
+    #[test]
+    fn mutation_r3_add_hinge_bone_offset_stored() {
+        // "delete field offset" from add_hinge_bone struct
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        let offset = Vec3::new(1.5, -2.3, 0.7);
+        builder.add_hinge_bone("hinge_child", "root", offset, BoneShape::Capsule { radius: 0.05, half_height: 0.1 }, 2.0, Vec3::X, None);
+        let bone = builder.bones.iter().find(|b| b.name == "hinge_child").unwrap();
+        assert!((bone.offset - offset).length() < 1e-5, "Offset should be stored exactly");
+    }
+
+    #[test]
+    fn mutation_r3_add_ball_bone_shape_stored() {
+        // "delete field shape" from add_ball_bone struct
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone("root", None, Vec3::ZERO, BoneShape::Sphere { radius: 0.1 }, 1.0);
+        builder.add_ball_bone("ball_child", "root", Vec3::Y, BoneShape::Capsule { radius: 0.08, half_height: 0.2 }, 3.0, Some(1.0));
+        let bone = builder.bones.iter().find(|b| b.name == "ball_child").unwrap();
+        match bone.shape {
+            BoneShape::Capsule { radius, half_height } => {
+                assert!((radius - 0.08).abs() < 1e-5, "Shape radius should match");
+                assert!((half_height - 0.2).abs() < 1e-5, "Shape half_height should match");
+            }
+            _ => panic!("Shape should be Capsule, got {:?}", bone.shape),
+        }
+    }
+
+    #[test]
+    fn mutation_r3_add_bone_offset_and_shape_stored() {
+        // "delete field offset/shape" from add_bone (lines 344-345)
+        let config = RagdollConfig { mass_scale: 1.0, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        let offset = Vec3::new(3.7, -1.2, 0.0);
+        let shape = BoneShape::Box { half_extents: Vec3::new(0.5, 0.3, 0.2) };
+        builder.add_bone("test_bone", None, offset, shape, 5.0);
+        let bone = &builder.bones[0];
+        assert!((bone.offset - offset).length() < 1e-5, "add_bone should store offset");
+        match bone.shape {
+            BoneShape::Box { half_extents } => {
+                assert!((half_extents.x - 0.5).abs() < 1e-5);
+            }
+            _ => panic!("Shape should be Box"),
+        }
+    }
+
+    #[test]
+    fn mutation_r3_add_bone_full_mass_scale_operator() {
+        // mass *= mass_scale  (mutation: *= → /= or +=)
+        let config = RagdollConfig { mass_scale: 2.5, ..Default::default() };
+        let mut builder = RagdollBuilder::new(config);
+        builder.add_bone_full(BoneDef {
+            name: "scaled".to_string(),
+            mass: 4.0,
+            ..Default::default()
+        });
+        let bone = &builder.bones[0];
+        // mass should be 4.0 * 2.5 = 10.0
+        assert!((bone.mass - 10.0).abs() < 1e-5, "mass_scale should multiply: 4*2.5=10, got {}", bone.mass);
+    }
 }
