@@ -1119,8 +1119,14 @@ mod tests {
             strength: 80.0,
         };
         // d=5, falloff = 1 - 5/20 = 0.75, force = 80 * 0.75^2 = 80 * 0.5625 = 45
-        let g = shape.get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO).unwrap();
-        assert!((g.length() - 45.0).abs() < 0.5, "At d=5/r=20, force should be 45, got {}", g.length());
+        let g = shape
+            .get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
+        assert!(
+            (g.length() - 45.0).abs() < 0.5,
+            "At d=5/r=20, force should be 45, got {}",
+            g.length()
+        );
         assert!(g.x < 0.0, "Should pull toward center (negative X)");
     }
 
@@ -1132,8 +1138,14 @@ mod tests {
             strength: 80.0,
         };
         // d=15, falloff = 1 - 15/20 = 0.25, force = 80 * 0.0625 = 5
-        let g = shape.get_gravity(Vec3::new(0.0, 15.0, 0.0), Vec3::ZERO).unwrap();
-        assert!((g.length() - 5.0).abs() < 0.5, "At d=15/r=20, force should be 5, got {}", g.length());
+        let g = shape
+            .get_gravity(Vec3::new(0.0, 15.0, 0.0), Vec3::ZERO)
+            .unwrap();
+        assert!(
+            (g.length() - 5.0).abs() < 0.5,
+            "At d=15/r=20, force should be 5, got {}",
+            g.length()
+        );
         assert!(g.y < 0.0, "Should pull toward center (negative Y)");
     }
 
@@ -1145,7 +1157,9 @@ mod tests {
             strength: -50.0,
         };
         // At d=5: falloff = 0.5, force = -50*0.25 = -12.5 → pushes away
-        let g = shape.get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+        let g = shape
+            .get_gravity(Vec3::new(5.0, 0.0, 0.0), Vec3::ZERO)
+            .unwrap();
         // Direction: to_center = -5 (normalized = (-1,0,0)), * force(-12.5) → pushes +x
         assert!(g.x > 0.0, "Negative strength should repel: g.x={}", g.x);
     }
@@ -1180,8 +1194,13 @@ mod tests {
             radius: 50.0,
         };
         let zone_g = Vec3::new(1.0, -2.0, 3.0);
-        let g = shape.get_gravity(Vec3::new(10.0, 0.0, 0.0), zone_g).unwrap();
-        assert_eq!(g, zone_g, "Sphere shape should return zone_gravity directly");
+        let g = shape
+            .get_gravity(Vec3::new(10.0, 0.0, 0.0), zone_g)
+            .unwrap();
+        assert_eq!(
+            g, zone_g,
+            "Sphere shape should return zone_gravity directly"
+        );
     }
 
     #[test]
@@ -1190,7 +1209,9 @@ mod tests {
             min: Vec3::new(-5.0, -5.0, -5.0),
             max: Vec3::new(5.0, 5.0, 5.0),
         };
-        assert!(shape.get_gravity(Vec3::new(6.0, 0.0, 0.0), Vec3::Y).is_none());
+        assert!(shape
+            .get_gravity(Vec3::new(6.0, 0.0, 0.0), Vec3::Y)
+            .is_none());
     }
 
     // --- add_zero_g_sphere returns sequential IDs ---
@@ -1219,7 +1240,11 @@ mod tests {
 
         let g = mgr.calculate_gravity(1, Vec3::ZERO);
         // Zone should override global
-        assert!((g.x - 5.0).abs() < 0.01, "Zone should provide x=5, got {}", g.x);
+        assert!(
+            (g.x - 5.0).abs() < 0.01,
+            "Zone should provide x=5, got {}",
+            g.x
+        );
         assert!(g.y.abs() < 0.01, "Zone should override y component");
     }
 
@@ -1229,7 +1254,11 @@ mod tests {
         // No zones, but body has scale=0.5
         mgr.set_gravity_scale(1, 0.5);
         let g = mgr.calculate_gravity(1, Vec3::ZERO);
-        assert!((g.y - (-5.0)).abs() < 0.01, "Scaled gravity should be -5, got {}", g.y);
+        assert!(
+            (g.y - (-5.0)).abs() < 0.01,
+            "Scaled gravity should be -5, got {}",
+            g.y
+        );
     }
 
     #[test]
@@ -1242,8 +1271,13 @@ mod tests {
         // Body at origin: to_center = (10,10,10), d = sqrt(300) ≈ 17.32
         let g = shape.get_gravity(Vec3::ZERO, Vec3::ZERO).unwrap();
         // Direction should be toward (10,10,10), so all components positive
-        assert!(g.x > 0.0 && g.y > 0.0 && g.z > 0.0,
-            "Should pull toward center: g=({},{},{})", g.x, g.y, g.z);
+        assert!(
+            g.x > 0.0 && g.y > 0.0 && g.z > 0.0,
+            "Should pull toward center: g=({},{},{})",
+            g.x,
+            g.y,
+            g.z
+        );
         // All components should be equal due to symmetry
         assert!((g.x - g.y).abs() < 0.01, "x and y should be equal");
         assert!((g.y - g.z).abs() < 0.01, "y and z should be equal");

@@ -3689,10 +3689,7 @@ mod tests {
         // Both parts are positive, total = cyl + sph
         assert!(cc.volume() > cyl, "Total should be > cylinder alone");
         assert!(cc.volume() > sph, "Total should be > sphere alone");
-        assert!(
-            (cc.volume() - (cyl + sph)).abs() < 0.001,
-            "Final addition"
-        );
+        assert!((cc.volume() - (cyl + sph)).abs() < 0.001, "Final addition");
     }
 
     #[test]
@@ -3707,7 +3704,10 @@ mod tests {
     #[test]
     fn mutation_r4_actor_kind_is_other_exact() {
         // Mutation: replace → true, replace → false
-        assert!(ActorKind::Other.is_other(), "Other.is_other() should be true");
+        assert!(
+            ActorKind::Other.is_other(),
+            "Other.is_other() should be true"
+        );
         assert!(
             !ActorKind::Static.is_other(),
             "Static.is_other() should be false"
@@ -3795,7 +3795,10 @@ mod tests {
     fn mutation_r4_char_state_only_variant() {
         // All CharState values are grounded (single variant enum)
         for state in CharState::all() {
-            assert!(state.is_grounded(), "All CharState variants should be grounded");
+            assert!(
+                state.is_grounded(),
+                "All CharState variants should be grounded"
+            );
         }
     }
 
@@ -3807,18 +3810,12 @@ mod tests {
         let mut cc = CharacterController::new(0.5, 2.0);
         cc.coyote_time_limit = 0.15;
         cc.time_since_grounded = 0.15; // exactly at limit
-        // With <:  0.15 < 0.15 → false
-        // With <=: 0.15 <= 0.15 → true
-        assert!(
-            !cc.has_coyote_time(),
-            "At exact limit, < should be false"
-        );
+                                       // With <:  0.15 < 0.15 → false
+                                       // With <=: 0.15 <= 0.15 → true
+        assert!(!cc.has_coyote_time(), "At exact limit, < should be false");
         // Just below
         cc.time_since_grounded = 0.149;
-        assert!(
-            cc.has_coyote_time(),
-            "Just below limit should be true"
-        );
+        assert!(cc.has_coyote_time(), "Just below limit should be true");
     }
 
     // --- CharacterController::can_jump || vs && and replace true ---
@@ -3830,11 +3827,14 @@ mod tests {
         let mut cc = CharacterController::new(0.5, 2.0);
         // Simulate being in-air past coyote time
         cc.time_since_grounded = 1.0; // way past coyote limit
-        // CharState only has Grounded variant, so is_grounded() is always true...
-        // Actually we can't make is_grounded false since CharState only has one variant.
-        // The || → && mutation is effectively equivalent because is_grounded() is always true.
-        // Verify the tautology:
-        assert!(cc.can_jump(), "can_jump is always true when CharState only has Grounded");
+                                      // CharState only has Grounded variant, so is_grounded() is always true...
+                                      // Actually we can't make is_grounded false since CharState only has one variant.
+                                      // The || → && mutation is effectively equivalent because is_grounded() is always true.
+                                      // Verify the tautology:
+        assert!(
+            cc.can_jump(),
+            "can_jump is always true when CharState only has Grounded"
+        );
     }
 
     // --- CharacterController::is_falling boundary (< → <=) ---
@@ -3843,10 +3843,7 @@ mod tests {
         let mut cc = CharacterController::new(0.5, 2.0);
         // At exactly -0.01: < -0.01 is false, <= -0.01 is true
         cc.vertical_velocity = -0.01;
-        assert!(
-            !cc.is_falling(),
-            "At exactly -0.01, < should be false"
-        );
+        assert!(!cc.is_falling(), "At exactly -0.01, < should be false");
         cc.vertical_velocity = -0.02;
         assert!(cc.is_falling(), "Below -0.01 should be falling");
     }
@@ -3857,10 +3854,7 @@ mod tests {
         let mut cc = CharacterController::new(0.5, 2.0);
         // At exactly 0.01: > 0.01 is false, >= 0.01 is true
         cc.vertical_velocity = 0.01;
-        assert!(
-            !cc.is_rising(),
-            "At exactly 0.01, > should be false"
-        );
+        assert!(!cc.is_rising(), "At exactly 0.01, > should be false");
         cc.vertical_velocity = 0.02;
         assert!(cc.is_rising(), "Above 0.01 should be rising");
     }
@@ -3922,6 +3916,671 @@ mod tests {
         assert!(
             cfg2.is_zero_gravity(),
             "Below threshold should be zero gravity"
+        );
+    }
+
+    // ===== ECS INTEGRATION SCAFFOLDING v3.7.0 — PhysicsWorld integration tests =====
+
+    // --- PhysicsWorld::control_character gravity (53 mutations) ---
+    #[test]
+    fn integration_control_character_gravity_pulls_down() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step(); // Initialize query pipeline
+
+        // Move with no input for several frames — gravity should pull down
+        for _ in 0..60 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let transform = pw.body_transform(char_id).unwrap();
+        let y = transform.w_axis.y;
+        assert!(
+            y < 10.0,
+            "Character should fall due to gravity: y={}",
+            y
+        );
+    }
+
+    #[test]
+    fn integration_control_character_horizontal_move() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        // Place character on a ground plane
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.8);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step();
+
+        // Move in +X direction
+        for _ in 0..30 {
+            pw.control_character(char_id, Vec3::new(5.0, 0.0, 0.0), 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let transform = pw.body_transform(char_id).unwrap();
+        let x = transform.w_axis.x;
+        assert!(
+            x > 0.1,
+            "Character should have moved in +X: x={}",
+            x
+        );
+    }
+
+    #[test]
+    fn integration_control_character_jump_velocity() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.8);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step();
+
+        // Ground the character first
+        for _ in 0..10 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let before_y = pw.body_transform(char_id).unwrap().w_axis.y;
+
+        // Jump with height 2.0
+        pw.jump(char_id, 2.0);
+
+        // Let the jump execute
+        for _ in 0..5 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let after_y = pw.body_transform(char_id).unwrap().w_axis.y;
+        assert!(
+            after_y > before_y,
+            "Jump should push character up: before={}, after={}",
+            before_y,
+            after_y
+        );
+    }
+
+    #[test]
+    fn integration_control_character_coyote_time() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+
+        // The character has a coyote_time_limit of 0.1s
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        assert!(ctrl.coyote_time_limit > 0.0, "Coyote time should be set");
+
+        // Verify the controller's time_since_grounded starts at 0
+        assert_eq!(
+            ctrl.time_since_grounded, 0.0,
+            "Should start grounded"
+        );
+    }
+
+    #[test]
+    fn integration_control_character_climb_mode() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step();
+
+        let y_before = pw.body_transform(char_id).unwrap().w_axis.y;
+
+        // Climb mode should move upward and zero vertical velocity
+        for _ in 0..30 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, true);
+            pw.step();
+        }
+
+        let y_after = pw.body_transform(char_id).unwrap().w_axis.y;
+        assert!(
+            y_after > y_before,
+            "Climb mode should move up: before={}, after={}",
+            y_before,
+            y_after
+        );
+    }
+
+    #[test]
+    fn integration_control_character_no_id_returns_early() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        // Non-existent character ID should not panic
+        pw.control_character(999, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
+        // If we get here without panic, the early return worked
+    }
+
+    #[test]
+    fn integration_control_character_vertical_velocity_accumulates() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 50.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step();
+
+        // Fall for a bit without ground
+        for _ in 0..10 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        assert!(
+            ctrl.vertical_velocity < 0.0,
+            "Vertical velocity should be negative (falling): {}",
+            ctrl.vertical_velocity
+        );
+    }
+
+    #[test]
+    fn integration_control_character_jump_buffer_consumed() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.8);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step();
+
+        // Ground the character
+        for _ in 0..10 {
+            pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        pw.jump(char_id, 1.0);
+        pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        assert!(
+            ctrl.jump_buffer_timer <= 0.0,
+            "Jump buffer should be consumed after jump: {}",
+            ctrl.jump_buffer_timer
+        );
+    }
+
+    #[test]
+    fn integration_control_character_slope_limit() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+
+        // Verify max climb angle is set
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        assert!(
+            ctrl.max_climb_angle_deg > 0.0 && ctrl.max_climb_angle_deg < 90.0,
+            "Slope limit should be reasonable: {}",
+            ctrl.max_climb_angle_deg
+        );
+    }
+
+    #[test]
+    fn integration_control_character_stores_controller_state() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 50.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+        pw.step();
+
+        // After control_character, the controller state should be updated
+        pw.control_character(char_id, Vec3::ZERO, 0.1, false);
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        // Gravity should have been applied: vertical_velocity -= 9.81 * 1.0 * 0.1
+        assert!(
+            ctrl.vertical_velocity < 0.0,
+            "Gravity should make vertical_velocity negative: {}",
+            ctrl.vertical_velocity
+        );
+    }
+
+    // --- PhysicsWorld::apply_radial_impulse integration (6 mutations) ---
+    #[test]
+    fn integration_radial_impulse_affects_nearby_bodies() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let body1 = pw.add_dynamic_box(
+            Vec3::new(3.0, 1.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        let _body_far = pw.add_dynamic_box(
+            Vec3::new(100.0, 1.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.step();
+
+        let count = pw.apply_radial_impulse(
+            Vec3::ZERO,
+            10.0,
+            500.0,
+            crate::projectile::FalloffCurve::Linear,
+            0.0,
+        );
+        assert!(count >= 1, "At least one body should be affected: {}", count);
+
+        pw.step();
+
+        // Near body should have velocity from impulse
+        let vel = pw.get_velocity(body1).unwrap();
+        assert!(
+            vel.length() > 0.1,
+            "Nearby body should have velocity from impulse: {:?}",
+            vel
+        );
+    }
+
+    #[test]
+    fn integration_radial_impulse_excludes_outside_radius() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _body = pw.add_dynamic_box(
+            Vec3::new(20.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.step();
+
+        let count = pw.apply_radial_impulse(
+            Vec3::ZERO,
+            5.0, // Only 5m radius
+            500.0,
+            crate::projectile::FalloffCurve::Linear,
+            0.0,
+        );
+        assert_eq!(count, 0, "Body at 20m should be outside 5m radius");
+    }
+
+    #[test]
+    fn integration_radial_impulse_upward_bias() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO); // No gravity for easier testing
+        let body = pw.add_dynamic_box(
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.step();
+
+        pw.apply_radial_impulse(
+            Vec3::ZERO,
+            10.0,
+            100.0,
+            crate::projectile::FalloffCurve::Constant,
+            1.0, // Full upward bias
+        );
+        pw.step();
+
+        let vel = pw.get_velocity(body).unwrap();
+        assert!(
+            vel.y > vel.x.abs(),
+            "Full upward bias should give mostly Y velocity: {:?}",
+            vel
+        );
+    }
+
+    // --- PhysicsWorld::apply_buoyancy_forces integration (4 mutations) ---
+    #[test]
+    fn integration_buoyancy_force_applied_underwater() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let body = pw.add_dynamic_box(
+            Vec3::new(0.0, -5.0, 0.0), // Below water
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.water_level = 0.0; // Water surface at y=0
+        pw.fluid_density = 1000.0;
+        pw.add_buoyancy(body, 1.0, 0.5);
+        pw.step();
+
+        // Buoyancy should create upward force on submerged body
+        let vel = pw.get_velocity(body).unwrap();
+        // After one step, the body should have some upward velocity from buoyancy
+        // buoyancy_force = 1.0 * 1000.0 * 9.81 = 9810 N upward
+        assert!(
+            vel.y > -10.0,
+            "Buoyancy should counteract gravity: vel.y={}",
+            vel.y
+        );
+    }
+
+    #[test]
+    fn integration_buoyancy_not_applied_above_water() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO); // No gravity
+        let body = pw.add_dynamic_box(
+            Vec3::new(0.0, 10.0, 0.0), // Above water
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.water_level = 0.0;
+        pw.add_buoyancy(body, 1.0, 0.5);
+        pw.step();
+
+        let vel = pw.get_velocity(body).unwrap();
+        assert!(
+            vel.length() < 0.01,
+            "Above water: no buoyancy force should apply: {:?}",
+            vel
+        );
+    }
+
+    #[test]
+    fn integration_buoyancy_drag_slows_body() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO);
+        let body = pw.add_dynamic_box(
+            Vec3::new(0.0, -5.0, 0.0), // Below water
+            Vec3::new(0.5, 0.5, 0.5),
+            1.0,
+            Layers::DEFAULT,
+        );
+        pw.water_level = 0.0;
+        pw.set_velocity(body, Vec3::new(10.0, 0.0, 0.0));
+        pw.add_buoyancy(body, 0.001, 50.0); // Small volume, high drag
+        pw.step();
+
+        let vel = pw.get_velocity(body).unwrap();
+        assert!(
+            vel.x < 10.0,
+            "Drag should slow the body: vel.x={}",
+            vel.x
+        );
+    }
+
+    // ===== ROUND 6: Deep control_character integration tests =====
+
+    #[test]
+    fn r6_control_character_ground_snap() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step(); // Update query pipeline
+
+        // Character starts slightly above ground 
+        let ch = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Let gravity pull character down, control with no horizontal move
+        for _ in 0..60 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Character should have snapped to ground (y near ground level)
+        let transform = pw.body_transform(ch).unwrap();
+        let y = transform.w_axis.y;
+        assert!(
+            y < 2.0,
+            "Character should have fallen near ground: y={}",
+            y
+        );
+    }
+
+    #[test]
+    fn r6_control_character_wall_slide() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        // Create a wall (tall, heavy box) in front of character
+        let _wall = pw.add_dynamic_box(
+            Vec3::new(5.0, 1.0, 0.0),
+            Vec3::new(0.5, 5.0, 5.0),
+            10000.0,
+            Layers::DEFAULT,
+        );
+        pw.step();
+
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle on ground first
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Move toward the wall (+X)
+        // The raycast should detect the wall and deflect movement
+        for _ in 0..60 {
+            pw.control_character(ch, Vec3::new(5.0, 0.0, 0.0), 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let transform = pw.body_transform(ch).unwrap();
+        let x = transform.w_axis.x;
+        // Character should have been stopped or deflected by wall
+        // Without wall-slide, x would be ~5.0. With it, should be < wall position
+        assert!(
+            x < 6.0,
+            "Wall should limit forward movement: x={}",
+            x
+        );
+    }
+
+    #[test]
+    fn r6_control_character_jump_resets_coyote() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle on ground
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Trigger jump
+        pw.jump(ch, 3.0);
+
+        let ctrl_before = pw.char_map.get(&ch).copied().unwrap();
+        // On ground, time_since_grounded should be small (coyote eligible)
+        assert!(
+            ctrl_before.time_since_grounded < ctrl_before.coyote_time_limit + 0.1,
+            "Should be coyote-eligible before jump"
+        );
+
+        // Execute one control step to process the jump
+        pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+        pw.step();
+
+        let ctrl_after = pw.char_map.get(&ch).copied().unwrap();
+        // After jumping, time_since_grounded should be > coyote_time_limit
+        // (invalidated to prevent double-jump)
+        assert!(
+            ctrl_after.time_since_grounded > ctrl_before.coyote_time_limit,
+            "Jump should invalidate coyote time: time_since_grounded={}",
+            ctrl_after.time_since_grounded
+        );
+        // Jump buffer should be consumed
+        assert!(
+            ctrl_after.jump_buffer_timer <= 0.0,
+            "Jump buffer should be consumed: {}",
+            ctrl_after.jump_buffer_timer
+        );
+    }
+
+    #[test]
+    fn r6_control_character_slope_rejection() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle on ground
+        for _ in 0..60 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let ctrl = pw.char_map.get(&ch).copied().unwrap();
+        // On a flat ground plane (slope=0°), character should be grounded
+        // time_since_grounded should be 0 or very small
+        assert!(
+            ctrl.time_since_grounded < 1.0,
+            "On flat ground, should be recently grounded: time_since_grounded={}",
+            ctrl.time_since_grounded
+        );
+    }
+
+    #[test]
+    fn r6_control_character_climb_mode() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        let y_before = pw.body_transform(ch).unwrap().w_axis.y;
+
+        // Climb mode: vertical_velocity = 0, moves up at 2.0*dt per step
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, true);
+            pw.step();
+        }
+
+        let y_after = pw.body_transform(ch).unwrap().w_axis.y;
+        assert!(
+            y_after > y_before,
+            "Climb mode should move up: before={}, after={}",
+            y_before,
+            y_after
+        );
+
+        // In climb mode, vertical_velocity should be 0
+        let ctrl = pw.char_map.get(&ch).copied().unwrap();
+        assert!(
+            ctrl.vertical_velocity.abs() < 0.01,
+            "Climb mode zeroes vertical_velocity: {}",
+            ctrl.vertical_velocity
+        );
+    }
+
+    #[test]
+    fn r6_control_character_no_id_noop() {
+        // Control a non-existent character should not crash
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        pw.control_character(9999, Vec3::X, 1.0 / 60.0, false);
+        // Should just return without error
+    }
+
+    #[test]
+    fn r6_radial_impulse_count_returns_affected() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO);
+        let _b1 = pw.add_dynamic_box(Vec3::new(1.0, 0.0, 0.0), Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+        let _b2 = pw.add_dynamic_box(Vec3::new(2.0, 0.0, 0.0), Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+        let _b3 = pw.add_dynamic_box(Vec3::new(100.0, 0.0, 0.0), Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+        pw.step();
+
+        let count = pw.apply_radial_impulse(
+            Vec3::ZERO,
+            5.0,
+            100.0,
+            crate::FalloffCurve::Linear,
+            0.0,
+        );
+        // b1 and b2 are within radius 5, b3 is at 100 (outside)
+        assert!(
+            count >= 2,
+            "Should affect at least 2 nearby bodies: {}",
+            count
+        );
+        assert!(
+            count <= 3,
+            "Should not affect far body: {}",
+            count
+        );
+    }
+
+    #[test]
+    fn r6_apply_force_changes_velocity() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO);
+        let body = pw.add_dynamic_box(Vec3::ZERO, Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+        pw.step();
+
+        pw.apply_force(body, Vec3::new(100.0, 0.0, 0.0));
+        pw.step();
+
+        let vel = pw.get_velocity(body).unwrap();
+        assert!(
+            vel.x > 0.0,
+            "Force should produce velocity: {:?}",
+            vel
+        );
+    }
+
+    #[test]
+    fn r6_apply_impulse_changes_velocity() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO);
+        let body = pw.add_dynamic_box(Vec3::ZERO, Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+        pw.step();
+
+        pw.apply_impulse(body, Vec3::new(10.0, 0.0, 0.0));
+        pw.step();
+
+        let vel = pw.get_velocity(body).unwrap();
+        assert!(
+            vel.x > 0.0,
+            "Impulse should produce velocity: {:?}",
+            vel
+        );
+    }
+
+    #[test]
+    fn r6_raycast_hits_ground() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+
+        let result = pw.raycast(Vec3::new(0.0, 10.0, 0.0), -Vec3::Y, 50.0);
+        assert!(result.is_some(), "Raycast should hit ground plane");
+        if let Some((hit_point, hit_normal, _body, _dist)) = result {
+            assert!(
+                hit_point.y < 1.0,
+                "Hit point should be near ground: {:?}",
+                hit_point
+            );
+            assert!(
+                hit_normal.y > 0.5,
+                "Ground normal should point up: {:?}",
+                hit_normal
+            );
+        }
+    }
+
+    #[test]
+    fn r6_enable_ccd_no_crash() {
+        let mut pw = PhysicsWorld::new(Vec3::ZERO);
+        let body = pw.add_dynamic_box(Vec3::ZERO, Vec3::splat(0.5), 1.0, Layers::DEFAULT);
+        pw.enable_ccd(body);
+        pw.step();
+        // CCD should work without error
+        assert!(pw.get_velocity(body).is_some());
+    }
+
+    // ===== ROUND 7: Targeted catches =====
+
+    #[test]
+    fn r7_jump_changes_vertical_velocity() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle on ground
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Jump
+        pw.jump(ch, 3.0);
+
+        // After jump, character should be on_ground = false or have upward velocity
+        // Step the simulation to apply the jump
+        for _ in 0..10 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let transform = pw.body_transform(ch).unwrap();
+        let y = transform.w_axis.y;
+        // Character should have moved significantly upward from jump
+        // Original: v = sqrt(2*9.81*3) ≈ 7.67, so after 10 steps the rise is large
+        // Mutant (*/): v ≈ 2.56 or 0.78, rise is much smaller
+        assert!(
+            y > 1.0,
+            "Jump should move character well above start: y={}",
+            y
         );
     }
 }

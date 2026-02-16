@@ -1063,7 +1063,11 @@ mod tests {
     #[test]
     fn mutation_buoyancy_force_archimedes() {
         // F = density * volume * submerged_fraction * gravity
-        let water = WaterVolume::new(WaterVolumeId(100), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(100),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         let force = water.buoyancy_force(Vec3::ZERO, 1.0, 1.0);
 
         // density=1000, volume=1, fraction=1, gravity=9.81 → F = 9810
@@ -1071,7 +1075,8 @@ mod tests {
         assert!(
             (force.y - expected).abs() < 0.1,
             "Buoyancy should be {} N, got {}",
-            expected, force.y
+            expected,
+            force.y
         );
         assert_eq!(force.x, 0.0, "Buoyancy should be vertical only");
         assert_eq!(force.z, 0.0, "Buoyancy should be vertical only");
@@ -1079,7 +1084,11 @@ mod tests {
 
     #[test]
     fn mutation_buoyancy_force_partial_submersion() {
-        let water = WaterVolume::new(WaterVolumeId(101), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(101),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         let full = water.buoyancy_force(Vec3::ZERO, 2.0, 1.0);
         let half = water.buoyancy_force(Vec3::ZERO, 2.0, 0.5);
 
@@ -1092,14 +1101,22 @@ mod tests {
 
     #[test]
     fn mutation_buoyancy_zero_volume() {
-        let water = WaterVolume::new(WaterVolumeId(102), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(102),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         let force = water.buoyancy_force(Vec3::ZERO, 0.0, 1.0);
         assert_eq!(force.y, 0.0, "Zero volume should produce zero buoyancy");
     }
 
     #[test]
     fn mutation_sphere_submerged_fully_above() {
-        let water = WaterVolume::new(WaterVolumeId(103), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(103),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         // Surface at y=10 (half_extents.y=10), sphere center way above
         let frac = water.sphere_submerged_fraction(Vec3::new(0.0, 50.0, 0.0), 1.0);
         assert_eq!(frac, 0.0, "Sphere fully above water should have 0 fraction");
@@ -1107,15 +1124,26 @@ mod tests {
 
     #[test]
     fn mutation_sphere_submerged_fully_below() {
-        let water = WaterVolume::new(WaterVolumeId(104), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(104),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         // Sphere deep below surface
         let frac = water.sphere_submerged_fraction(Vec3::new(0.0, -50.0, 0.0), 1.0);
-        assert_eq!(frac, 1.0, "Sphere fully below water should have 1.0 fraction");
+        assert_eq!(
+            frac, 1.0,
+            "Sphere fully below water should have 1.0 fraction"
+        );
     }
 
     #[test]
     fn mutation_sphere_submerged_partial() {
-        let water = WaterVolume::new(WaterVolumeId(105), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(105),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         // Put sphere center right at surface level
         let surface = water.surface_height_at(0.0, 0.0);
         let frac = water.sphere_submerged_fraction(Vec3::new(0.0, surface, 0.0), 2.0);
@@ -1135,7 +1163,11 @@ mod tests {
         config.active = false;
         let zone = WindZone::new(WindZoneId(200), config);
         let force = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
-        assert_eq!(force, Vec3::ZERO, "Inactive wind zone should produce no force");
+        assert_eq!(
+            force,
+            Vec3::ZERO,
+            "Inactive wind zone should produce no force"
+        );
     }
 
     #[test]
@@ -1166,7 +1198,10 @@ mod tests {
         assert!(str0 >= 0.0, "Initial gust strength should be non-negative");
 
         gust.update(0.5);
-        assert!(!gust.is_finished(), "Gust should still be active at 0.5s (dur=1.0)");
+        assert!(
+            !gust.is_finished(),
+            "Gust should still be active at 0.5s (dur=1.0)"
+        );
 
         gust.update(0.6);
         assert!(gust.is_finished(), "Gust should be finished after 1.1s");
@@ -1190,20 +1225,30 @@ mod tests {
     #[test]
     fn mutation_windzone_update_noise_phase_advances() {
         let config = WindZoneConfig {
-            wind_type: WindType::Turbulent { intensity: 1.0, frequency: 2.0 },
+            wind_type: WindType::Turbulent {
+                intensity: 1.0,
+                frequency: 2.0,
+            },
             ..Default::default()
         };
         let mut zone = WindZone::new(WindZoneId(300), config);
         assert_eq!(zone.noise_phase, 0.0);
         zone.update(0.5);
         // noise_phase should increase by dt * frequency = 0.5 * 2.0 = 1.0
-        assert!((zone.noise_phase - 1.0).abs() < 1e-6, "noise_phase should be 1.0, got {}", zone.noise_phase);
+        assert!(
+            (zone.noise_phase - 1.0).abs() < 1e-6,
+            "noise_phase should be 1.0, got {}",
+            zone.noise_phase
+        );
     }
 
     #[test]
     fn mutation_windzone_update_gust_offset_nonzero() {
         let config = WindZoneConfig {
-            wind_type: WindType::Turbulent { intensity: 1.0, frequency: 3.0 },
+            wind_type: WindType::Turbulent {
+                intensity: 1.0,
+                frequency: 3.0,
+            },
             ..Default::default()
         };
         let mut zone = WindZone::new(WindZoneId(301), config);
@@ -1213,9 +1258,18 @@ mod tests {
         let expected_x = (3.0_f32 * 1.0).sin() * 0.5 + (3.0_f32 * 2.3).sin() * 0.3;
         let expected_y = (3.0_f32 * 0.7).sin() * 0.2 + (3.0_f32 * 1.9).sin() * 0.15;
         let expected_z = (3.0_f32 * 1.3).sin() * 0.5 + (3.0_f32 * 2.7).sin() * 0.3;
-        assert!((zone.gust_offset.x - expected_x).abs() < 1e-5, "gust_offset.x mismatch");
-        assert!((zone.gust_offset.y - expected_y).abs() < 1e-5, "gust_offset.y mismatch");
-        assert!((zone.gust_offset.z - expected_z).abs() < 1e-5, "gust_offset.z mismatch");
+        assert!(
+            (zone.gust_offset.x - expected_x).abs() < 1e-5,
+            "gust_offset.x mismatch"
+        );
+        assert!(
+            (zone.gust_offset.y - expected_y).abs() < 1e-5,
+            "gust_offset.y mismatch"
+        );
+        assert!(
+            (zone.gust_offset.z - expected_z).abs() < 1e-5,
+            "gust_offset.z mismatch"
+        );
     }
 
     #[test]
@@ -1228,8 +1282,14 @@ mod tests {
         let phase_before = zone.noise_phase;
         let offset_before = zone.gust_offset;
         zone.update(1.0);
-        assert_eq!(zone.noise_phase, phase_before, "Directional wind should not update noise_phase");
-        assert_eq!(zone.gust_offset, offset_before, "Directional wind should not update gust_offset");
+        assert_eq!(
+            zone.noise_phase, phase_before,
+            "Directional wind should not update noise_phase"
+        );
+        assert_eq!(
+            zone.gust_offset, offset_before,
+            "Directional wind should not update gust_offset"
+        );
     }
 
     // --- WindZone::wind_force_at arithmetic ---
@@ -1249,7 +1309,12 @@ mod tests {
         // effective_velocity = direction * strength = (20, 0, 0), speed = 20
         // force_magnitude = 0.5 * 1.225 * 400 * 0.5 * 2.0 = 245.0
         let expected = 0.5 * 1.225 * 20.0 * 20.0 * 0.5 * 2.0;
-        assert!((force.x - expected).abs() < 0.1, "force.x should be {}, got {}", expected, force.x);
+        assert!(
+            (force.x - expected).abs() < 0.1,
+            "force.x should be {}, got {}",
+            expected,
+            force.x
+        );
         assert!(force.y.abs() < 1e-3);
         assert!(force.z.abs() < 1e-3);
     }
@@ -1258,7 +1323,9 @@ mod tests {
     fn mutation_wind_force_at_outside_box_zero() {
         let config = WindZoneConfig {
             position: Vec3::ZERO,
-            shape: WindZoneShape::Box { half_extents: Vec3::splat(5.0) },
+            shape: WindZoneShape::Box {
+                half_extents: Vec3::splat(5.0),
+            },
             strength: 100.0,
             active: true,
             ..Default::default()
@@ -1273,7 +1340,11 @@ mod tests {
         let config = WindZoneConfig {
             position: Vec3::ZERO,
             shape: WindZoneShape::Sphere { radius: 50.0 },
-            wind_type: WindType::Vortex { tangential_speed: 10.0, inward_pull: 5.0, updraft: 3.0 },
+            wind_type: WindType::Vortex {
+                tangential_speed: 10.0,
+                inward_pull: 5.0,
+                updraft: 3.0,
+            },
             active: true,
             ..Default::default()
         };
@@ -1283,7 +1354,12 @@ mod tests {
         // velocity = (0, updraft, 0) = (0, 3, 0), speed = 3
         // force_magnitude = 0.5 * 1.225 * 9 * 1 * 1 = 5.5125
         let expected_mag = 0.5 * 1.225 * 3.0 * 3.0 * 1.0 * 1.0;
-        assert!((force.y - expected_mag).abs() < 0.1, "At center, should be upward force ~{}, got {}", expected_mag, force.y);
+        assert!(
+            (force.y - expected_mag).abs() < 0.1,
+            "At center, should be upward force ~{}, got {}",
+            expected_mag,
+            force.y
+        );
         assert!(force.x.abs() < 0.1);
         assert!(force.z.abs() < 0.1);
     }
@@ -1314,7 +1390,11 @@ mod tests {
             ..Default::default()
         };
         let zone = WindZone::new(WindZoneId(320), config);
-        assert_eq!(zone.calculate_falloff(Vec3::new(9.0, 0.0, 0.0)), 1.0, "Zero falloff means uniform");
+        assert_eq!(
+            zone.calculate_falloff(Vec3::new(9.0, 0.0, 0.0)),
+            1.0,
+            "Zero falloff means uniform"
+        );
     }
 
     #[test]
@@ -1325,7 +1405,11 @@ mod tests {
             ..Default::default()
         };
         let zone = WindZone::new(WindZoneId(321), config);
-        assert_eq!(zone.calculate_falloff(Vec3::new(1000.0, 0.0, 0.0)), 1.0, "Global always has dist=0");
+        assert_eq!(
+            zone.calculate_falloff(Vec3::new(1000.0, 0.0, 0.0)),
+            1.0,
+            "Global always has dist=0"
+        );
     }
 
     #[test]
@@ -1339,7 +1423,11 @@ mod tests {
         let zone = WindZone::new(WindZoneId(322), config);
         let f = zone.calculate_falloff(Vec3::new(10.0, 0.0, 0.0));
         // normalized_dist = 10/10 = 1, falloff = (1 - 1*1).max(0) = 0
-        assert!((f - 0.0).abs() < 1e-5, "At edge with full falloff should be 0, got {}", f);
+        assert!(
+            (f - 0.0).abs() < 1e-5,
+            "At edge with full falloff should be 0, got {}",
+            f
+        );
     }
 
     #[test]
@@ -1353,78 +1441,124 @@ mod tests {
         let zone = WindZone::new(WindZoneId(323), config);
         let f = zone.calculate_falloff(Vec3::new(5.0, 0.0, 0.0));
         // normalized_dist = 5/10 = 0.5, falloff = (1 - 0.5*1).max(0) = 0.5
-        assert!((f - 0.5).abs() < 1e-5, "At midpoint should be 0.5, got {}", f);
+        assert!(
+            (f - 0.5).abs() < 1e-5,
+            "At midpoint should be 0.5, got {}",
+            f
+        );
     }
 
     #[test]
     fn mutation_falloff_box_max_element() {
         let config = WindZoneConfig {
             position: Vec3::ZERO,
-            shape: WindZoneShape::Box { half_extents: Vec3::new(10.0, 20.0, 30.0) },
+            shape: WindZoneShape::Box {
+                half_extents: Vec3::new(10.0, 20.0, 30.0),
+            },
             falloff: 1.0,
             ..Default::default()
         };
         let zone = WindZone::new(WindZoneId(324), config);
         // local = (5, 10, 15), local/he = (0.5, 0.5, 0.5), max_element = 0.5
         let f = zone.calculate_falloff(Vec3::new(5.0, 10.0, 15.0));
-        assert!((f - 0.5).abs() < 1e-5, "Box falloff should use max_element, got {}", f);
+        assert!(
+            (f - 0.5).abs() < 1e-5,
+            "Box falloff should use max_element, got {}",
+            f
+        );
     }
 
     #[test]
     fn mutation_falloff_cylinder_horizontal_vs_vertical() {
         let config = WindZoneConfig {
             position: Vec3::ZERO,
-            shape: WindZoneShape::Cylinder { radius: 10.0, height: 20.0 },
+            shape: WindZoneShape::Cylinder {
+                radius: 10.0,
+                height: 20.0,
+            },
             falloff: 1.0,
             ..Default::default()
         };
         let zone = WindZone::new(WindZoneId(325), config);
         // horizontal_dist = 5/10 = 0.5, vertical_dist = 0/(20/2) = 0
         let f = zone.calculate_falloff(Vec3::new(5.0, 0.0, 0.0));
-        assert!((f - 0.5).abs() < 1e-5, "Horizontal at midpoint, vertical at center -> 0.5, got {}", f);
+        assert!(
+            (f - 0.5).abs() < 1e-5,
+            "Horizontal at midpoint, vertical at center -> 0.5, got {}",
+            f
+        );
     }
 
     // --- WaterVolume::surface_height_at ---
     #[test]
     fn mutation_surface_height_no_waves_exact() {
-        let water = WaterVolume::new(WaterVolumeId(330), Vec3::new(0.0, 5.0, 0.0), Vec3::new(10.0, 5.0, 10.0));
+        let water = WaterVolume::new(
+            WaterVolumeId(330),
+            Vec3::new(0.0, 5.0, 0.0),
+            Vec3::new(10.0, 5.0, 10.0),
+        );
         // surface_height = position.y + half_extents.y = 5 + 5 = 10
         let h = water.surface_height_at(3.0, 7.0);
-        assert_eq!(h, 10.0, "Without waves, surface should be constant at 10, got {}", h);
+        assert_eq!(
+            h, 10.0,
+            "Without waves, surface should be constant at 10, got {}",
+            h
+        );
     }
 
     #[test]
     fn mutation_surface_height_with_waves_varies() {
-        let mut water = WaterVolume::new(WaterVolumeId(331), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let mut water = WaterVolume::new(
+            WaterVolumeId(331),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         water.wave_amplitude = 2.0;
         water.wave_frequency = 1.0;
         water.wave_phase = 1.0;
         let h1 = water.surface_height_at(0.0, 0.0);
         let h2 = water.surface_height_at(50.0, 50.0);
-        assert!((h1 - h2).abs() > 0.01, "Wave should vary height at different XZ positions");
+        assert!(
+            (h1 - h2).abs() > 0.01,
+            "Wave should vary height at different XZ positions"
+        );
     }
 
     #[test]
     fn mutation_surface_height_wave_math_exact() {
-        let mut water = WaterVolume::new(WaterVolumeId(332), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let mut water = WaterVolume::new(
+            WaterVolumeId(332),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         water.wave_amplitude = 1.0;
         water.wave_frequency = 1.0;
         water.wave_phase = 0.0;
         let x = 5.0_f32;
         let z = 3.0_f32;
-        let expected_wave = 1.0 * (0.0 + x * 0.1 + z * 0.15).sin() * (0.0 * 0.7 + x * 0.08 - z * 0.12).cos();
+        let expected_wave =
+            1.0 * (0.0 + x * 0.1 + z * 0.15).sin() * (0.0 * 0.7 + x * 0.08 - z * 0.12).cos();
         let expected = 10.0 + expected_wave; // base=10
         let h = water.surface_height_at(x, z);
-        assert!((h - expected).abs() < 1e-5, "Wave math should match: expected {}, got {}", expected, h);
+        assert!(
+            (h - expected).abs() < 1e-5,
+            "Wave math should match: expected {}, got {}",
+            expected,
+            h
+        );
     }
 
     #[test]
     fn mutation_surface_height_zero_amplitude() {
-        let mut water = WaterVolume::new(WaterVolumeId(333), Vec3::ZERO, Vec3::new(50.0, 5.0, 50.0));
+        let mut water =
+            WaterVolume::new(WaterVolumeId(333), Vec3::ZERO, Vec3::new(50.0, 5.0, 50.0));
         water.wave_amplitude = 0.0;
         water.wave_phase = 42.0; // Should not matter
         let h = water.surface_height_at(10.0, 10.0);
-        assert_eq!(h, water.surface_height, "Zero amplitude should return base surface height");
+        assert_eq!(
+            h, water.surface_height,
+            "Zero amplitude should return base surface height"
+        );
     }
 
     // --- GustEvent::current_strength ---
@@ -1433,7 +1567,11 @@ mod tests {
         let gust = GustEvent::new(Vec3::X, 10.0, 2.0);
         // t=0, envelope: attack = (0*4).min(1)=0, release = ((1-0)*4).min(1)=1
         // with smoothness=0.5, envelope = attack * release = 0
-        assert_eq!(gust.current_strength(), 0.0, "At t=0, gust should have 0 strength due to attack ramp");
+        assert_eq!(
+            gust.current_strength(),
+            0.0,
+            "At t=0, gust should have 0 strength due to attack ramp"
+        );
     }
 
     #[test]
@@ -1444,7 +1582,11 @@ mod tests {
         // attack = (0.5*4).min(1) = 1.0, release = ((1-0.5)*4).min(1) = 1.0
         // envelope = 1.0, strength = 10.0 * 1.0 = 10.0
         let s = gust.current_strength();
-        assert!((s - 10.0).abs() < 0.01, "At midpoint, gust should be at full strength=10, got {}", s);
+        assert!(
+            (s - 10.0).abs() < 0.01,
+            "At midpoint, gust should be at full strength=10, got {}",
+            s
+        );
     }
 
     #[test]
@@ -1455,7 +1597,11 @@ mod tests {
         // attack = (0.95*4).min(1) = 1.0, release = ((1-0.95)*4).min(1) = 0.2
         // envelope = 0.2, strength = 10.0 * 0.2 = 2.0
         let s = gust.current_strength();
-        assert!((s - 2.0).abs() < 0.01, "Near end, gust should be decaying, expected 2.0, got {}", s);
+        assert!(
+            (s - 2.0).abs() < 0.01,
+            "Near end, gust should be decaying, expected 2.0, got {}",
+            s
+        );
     }
 
     #[test]
@@ -1472,7 +1618,11 @@ mod tests {
         gust.elapsed = 0.5;
         // With smoothness=0, envelope = 1.0 always
         let s = gust.current_strength();
-        assert!((s - 10.0).abs() < 0.01, "Zero smoothness should give flat envelope, expected 10, got {}", s);
+        assert!(
+            (s - 10.0).abs() < 0.01,
+            "Zero smoothness should give flat envelope, expected 10, got {}",
+            s
+        );
     }
 
     // --- EnvironmentManager::wind_force_at ---
@@ -1485,7 +1635,12 @@ mod tests {
         // speed = global_wind.length * strength = 10
         // force = 0.5 * 1.225 * 100 * 1 * 1 = 61.25
         let expected = 0.5 * 1.225 * 100.0 * 1.0 * 1.0;
-        assert!((force.x - expected).abs() < 0.1, "Global wind force should be ~{}, got {}", expected, force.x);
+        assert!(
+            (force.x - expected).abs() < 0.1,
+            "Global wind force should be ~{}, got {}",
+            expected,
+            force.x
+        );
     }
 
     #[test]
@@ -1517,13 +1672,19 @@ mod tests {
     // --- WaterVolume::update ---
     #[test]
     fn mutation_water_update_phase_advance() {
-        let mut water = WaterVolume::new(WaterVolumeId(340), Vec3::ZERO, Vec3::new(10.0, 5.0, 10.0));
+        let mut water =
+            WaterVolume::new(WaterVolumeId(340), Vec3::ZERO, Vec3::new(10.0, 5.0, 10.0));
         water.wave_frequency = 2.0;
         water.wave_phase = 0.0;
         water.update(0.5);
         // wave_phase += dt * frequency * TAU = 0.5 * 2.0 * TAU
         let expected = 0.5 * 2.0 * std::f32::consts::TAU;
-        assert!((water.wave_phase - expected).abs() < 1e-5, "wave_phase should be {}, got {}", expected, water.wave_phase);
+        assert!(
+            (water.wave_phase - expected).abs() < 1e-5,
+            "wave_phase should be {}, got {}",
+            expected,
+            water.wave_phase
+        );
     }
 
     // --- EnvironmentManager ID increment ---
@@ -1551,8 +1712,14 @@ mod tests {
         let ad = water.angular_drag;
         // Point below surface (surface at y=5)
         let (linear, angular) = mgr.water_drag_at(Vec3::new(0.0, 3.0, 0.0));
-        assert!((linear - ld).abs() < 1e-6, "Should return water linear_drag");
-        assert!((angular - ad).abs() < 1e-6, "Should return water angular_drag");
+        assert!(
+            (linear - ld).abs() < 1e-6,
+            "Should return water linear_drag"
+        );
+        assert!(
+            (angular - ad).abs() < 1e-6,
+            "Should return water angular_drag"
+        );
     }
 
     #[test]
@@ -1588,11 +1755,18 @@ mod tests {
     #[test]
     fn mutation_r3_water_contains_subtraction() {
         // local = point - position  (mutation: - → +)
-        let wv = WaterVolume::new(WaterVolumeId(900), Vec3::new(10.0, 5.0, 10.0), Vec3::new(2.0, 2.0, 2.0));
+        let wv = WaterVolume::new(
+            WaterVolumeId(900),
+            Vec3::new(10.0, 5.0, 10.0),
+            Vec3::new(2.0, 2.0, 2.0),
+        );
         // Point at (11, 6, 11) — inside (local = (1,1,1), all <= half_extents)
         assert!(wv.contains(Vec3::new(11.0, 6.0, 11.0)), "Should be inside");
         // Point at (20, 5, 10) — outside (local.x = 10 > 2)
-        assert!(!wv.contains(Vec3::new(20.0, 5.0, 10.0)), "Should be outside");
+        assert!(
+            !wv.contains(Vec3::new(20.0, 5.0, 10.0)),
+            "Should be outside"
+        );
     }
 
     // --- WaterVolume::buoyancy_force exact arithmetic ---
@@ -1603,8 +1777,13 @@ mod tests {
         let wv = WaterVolume::new(WaterVolumeId(901), Vec3::ZERO, Vec3::ONE);
         // density = 1000 (default), gravity = 9.81
         let force = wv.buoyancy_force(Vec3::ZERO, 2.0, 0.5);
-        let expected = 1000.0 * 2.0 * 0.5 * 9.81;  // = 9810.0
-        assert!((force.y - expected).abs() < 1e-2, "Buoyancy should be {}, got {}", expected, force.y);
+        let expected = 1000.0 * 2.0 * 0.5 * 9.81; // = 9810.0
+        assert!(
+            (force.y - expected).abs() < 1e-2,
+            "Buoyancy should be {}, got {}",
+            expected,
+            force.y
+        );
         assert_eq!(force.x, 0.0, "Buoyancy should be purely vertical");
         assert_eq!(force.z, 0.0);
     }
@@ -1619,7 +1798,11 @@ mod tests {
         // Center at y=4.0 → depth = surface(5) - center(4) = 1.0
         // h = 1 + 2 = 3, fraction = 3 / (2*2) = 0.75
         let frac = wv.sphere_submerged_fraction(Vec3::new(0.0, 4.0, 0.0), radius);
-        assert!((frac - 0.75).abs() < 1e-4, "Partial submersion should be 0.75, got {}", frac);
+        assert!(
+            (frac - 0.75).abs() < 1e-4,
+            "Partial submersion should be 0.75, got {}",
+            frac
+        );
     }
 
     #[test]
@@ -1647,8 +1830,13 @@ mod tests {
         wv.wave_phase = 0.0;
         let dt = 0.5;
         wv.update(dt);
-        let expected = 0.5 * 2.0 * std::f32::consts::TAU;  // = TAU
-        assert!((wv.wave_phase - expected).abs() < 1e-4, "Phase should be {}, got {}", expected, wv.wave_phase);
+        let expected = 0.5 * 2.0 * std::f32::consts::TAU; // = TAU
+        assert!(
+            (wv.wave_phase - expected).abs() < 1e-4,
+            "Phase should be {}, got {}",
+            expected,
+            wv.wave_phase
+        );
     }
 
     #[test]
@@ -1658,7 +1846,11 @@ mod tests {
         wv.wave_phase = 1.0;
         wv.update(0.25);
         // Should add, not subtract: 1.0 + 0.25 * 1.0 * TAU
-        assert!(wv.wave_phase > 1.0, "Phase should increase, got {}", wv.wave_phase);
+        assert!(
+            wv.wave_phase > 1.0,
+            "Phase should increase, got {}",
+            wv.wave_phase
+        );
     }
 
     // --- WindZone::contains cylinder height/2.0 ---
@@ -1669,15 +1861,24 @@ mod tests {
             position: Vec3::ZERO,
             direction: Vec3::X,
             strength: 5.0,
-            shape: WindZoneShape::Cylinder { radius: 10.0, height: 4.0 },
+            shape: WindZoneShape::Cylinder {
+                radius: 10.0,
+                height: 4.0,
+            },
             active: true,
             ..Default::default()
         };
         let zone = WindZone::new(WindZoneId(907), config);
         // y = 1.9 — inside (|1.9| <= 4/2 = 2)
-        assert!(zone.contains(Vec3::new(0.0, 1.9, 0.0)), "y=1.9 should be inside cylinder h=4");
+        assert!(
+            zone.contains(Vec3::new(0.0, 1.9, 0.0)),
+            "y=1.9 should be inside cylinder h=4"
+        );
         // y = 2.1 — outside (|2.1| > 2)
-        assert!(!zone.contains(Vec3::new(0.0, 2.1, 0.0)), "y=2.1 should be outside cylinder h=4");
+        assert!(
+            !zone.contains(Vec3::new(0.0, 2.1, 0.0)),
+            "y=2.1 should be outside cylinder h=4"
+        );
     }
 
     // --- EnvironmentManager::add_wind_zone ID increment ---
@@ -1685,9 +1886,21 @@ mod tests {
     fn mutation_r3_add_wind_zone_id_increments() {
         // next_wind_id += 1  (mutation: += → -= or *= )
         let mut mgr = EnvironmentManager::new();
-        let id1 = mgr.add_wind_zone(WindZoneConfig { direction: Vec3::X, strength: 1.0, ..Default::default() });
-        let id2 = mgr.add_wind_zone(WindZoneConfig { direction: Vec3::Y, strength: 2.0, ..Default::default() });
-        let id3 = mgr.add_wind_zone(WindZoneConfig { direction: Vec3::Z, strength: 3.0, ..Default::default() });
+        let id1 = mgr.add_wind_zone(WindZoneConfig {
+            direction: Vec3::X,
+            strength: 1.0,
+            ..Default::default()
+        });
+        let id2 = mgr.add_wind_zone(WindZoneConfig {
+            direction: Vec3::Y,
+            strength: 2.0,
+            ..Default::default()
+        });
+        let id3 = mgr.add_wind_zone(WindZoneConfig {
+            direction: Vec3::Z,
+            strength: 3.0,
+            ..Default::default()
+        });
         assert_eq!(id1.0, 1);
         assert_eq!(id2.0, 2);
         assert_eq!(id3.0, 3);
@@ -1720,10 +1933,18 @@ mod tests {
         mgr.add_water_volume(Vec3::ZERO, Vec3::new(10.0, 5.0, 10.0));
         // Far above water — submerged_fraction = 0.0
         let force = mgr.buoyancy_force_at(Vec3::new(0.0, 100.0, 0.0), 1.0, 1.0);
-        assert_eq!(force, Vec3::ZERO, "Fully above water should have zero buoyancy");
+        assert_eq!(
+            force,
+            Vec3::ZERO,
+            "Fully above water should have zero buoyancy"
+        );
         // Below surface — should have positive buoyancy
         let force2 = mgr.buoyancy_force_at(Vec3::new(0.0, 3.0, 0.0), 1.0, 1.0);
-        assert!(force2.y > 0.0, "Submerged should have positive buoyancy, got {}", force2.y);
+        assert!(
+            force2.y > 0.0,
+            "Submerged should have positive buoyancy, got {}",
+            force2.y
+        );
     }
 
     // --- EnvironmentManager::is_underwater boundary ---
@@ -1733,15 +1954,21 @@ mod tests {
         let mut mgr = EnvironmentManager::new();
         let id = mgr.add_water_volume(Vec3::ZERO, Vec3::new(10.0, 5.0, 10.0));
         // Surface is at y = 0 + 5 = 5.0
-        assert!(mgr.is_underwater(Vec3::new(0.0, 4.0, 0.0)), "Below surface should be underwater");
-        assert!(!mgr.is_underwater(Vec3::new(0.0, 6.0, 0.0)), "Above surface should not be underwater");
+        assert!(
+            mgr.is_underwater(Vec3::new(0.0, 4.0, 0.0)),
+            "Below surface should be underwater"
+        );
+        assert!(
+            !mgr.is_underwater(Vec3::new(0.0, 6.0, 0.0)),
+            "Above surface should not be underwater"
+        );
     }
 
     // --- EnvironmentManager::current_gust_force composition ---
     #[test]
     fn mutation_r3_current_gust_force_sum() {
         let mut mgr = EnvironmentManager::new();
-        mgr.trigger_gust(Vec3::X, 5.0, 10.0);  // Very long duration
+        mgr.trigger_gust(Vec3::X, 5.0, 10.0); // Very long duration
         mgr.trigger_gust(Vec3::Y, 3.0, 10.0);
         let force = mgr.current_gust_force();
         // At t=0, current_strength = 0 (smoothness envelope starts at 0)
@@ -1752,7 +1979,10 @@ mod tests {
         // Actually at t=0, current_strength returns the envelope at t=0
         // which is: strength * smoothstep(0/0.5) * smoothstep((10-0)/(10*0.5)) = 5*0*1 = 0
         // So gusts at t=0 give 0. This test verifies the fold doesn't crash and returns ZERO
-        assert!(force.length() >= 0.0, "Gust force should be non-negative length");
+        assert!(
+            force.length() >= 0.0,
+            "Gust force should be non-negative length"
+        );
     }
 
     // ===== DEEP REMEDIATION v3.6.3 — environment Round 4 remaining mutations =====
@@ -1886,7 +2116,11 @@ mod tests {
     // --- WaterVolume::surface_height_at wave math (23 mutations) ---
     #[test]
     fn mutation_r4_surface_height_wave_exact() {
-        let mut wv = WaterVolume::new(WaterVolumeId(950), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let mut wv = WaterVolume::new(
+            WaterVolumeId(950),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         wv.wave_amplitude = 0.5;
         wv.wave_frequency = 1.0;
         wv.wave_phase = 0.0;
@@ -1902,7 +2136,11 @@ mod tests {
 
     #[test]
     fn mutation_r4_surface_height_wave_at_nonzero() {
-        let mut wv = WaterVolume::new(WaterVolumeId(951), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let mut wv = WaterVolume::new(
+            WaterVolumeId(951),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         wv.wave_amplitude = 1.0;
         wv.wave_frequency = 1.0;
         wv.wave_phase = std::f32::consts::FRAC_PI_2; // PI/2
@@ -1910,8 +2148,8 @@ mod tests {
         let h = wv.surface_height_at(0.0, 0.0);
         // wave = 1.0 * sin(PI/2).cos(PI/2 * 0.7) = sin(PI/2)*cos(0.35*PI)
         // = 1.0 * cos(1.0996) ≈ 0.4539
-        let wave_val = 1.0 * (std::f32::consts::FRAC_PI_2).sin()
-            * (std::f32::consts::FRAC_PI_2 * 0.7).cos();
+        let wave_val =
+            1.0 * (std::f32::consts::FRAC_PI_2).sin() * (std::f32::consts::FRAC_PI_2 * 0.7).cos();
         let expected = 10.0 + wave_val;
         assert!(
             (h - expected).abs() < 0.01,
@@ -1923,7 +2161,11 @@ mod tests {
 
     #[test]
     fn mutation_r4_surface_height_wave_x_dependence() {
-        let mut wv = WaterVolume::new(WaterVolumeId(952), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let mut wv = WaterVolume::new(
+            WaterVolumeId(952),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         wv.wave_amplitude = 1.0;
         wv.wave_phase = 1.0;
         wv.surface_height = 5.0;
@@ -1940,7 +2182,11 @@ mod tests {
 
     #[test]
     fn mutation_r4_surface_height_wave_z_dependence() {
-        let mut wv = WaterVolume::new(WaterVolumeId(953), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        let mut wv = WaterVolume::new(
+            WaterVolumeId(953),
+            Vec3::ZERO,
+            Vec3::new(100.0, 10.0, 100.0),
+        );
         wv.wave_amplitude = 1.0;
         wv.wave_phase = 1.0;
         wv.surface_height = 5.0;
@@ -2026,7 +2272,10 @@ mod tests {
     fn mutation_r4_falloff_cylinder_horizontal_vs_vertical() {
         let config = WindZoneConfig {
             position: Vec3::ZERO,
-            shape: WindZoneShape::Cylinder { radius: 10.0, height: 20.0 },
+            shape: WindZoneShape::Cylinder {
+                radius: 10.0,
+                height: 20.0,
+            },
             falloff: 1.0,
             active: true,
             ..Default::default()
@@ -2055,8 +2304,16 @@ mod tests {
         let _id = mgr.add_water_volume(Vec3::new(0.0, 5.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
         // Point below surface should return drag coefficients
         let (linear, angular) = mgr.water_drag_at(Vec3::new(0.0, 3.0, 0.0));
-        assert!(linear > 0.0, "Linear drag underwater should be > 0, got {}", linear);
-        assert!(angular > 0.0, "Angular drag underwater should be > 0, got {}", angular);
+        assert!(
+            linear > 0.0,
+            "Linear drag underwater should be > 0, got {}",
+            linear
+        );
+        assert!(
+            angular > 0.0,
+            "Angular drag underwater should be > 0, got {}",
+            angular
+        );
     }
 
     #[test]
@@ -2109,9 +2366,7 @@ mod tests {
         assert!(
             !all_same,
             "Turbulent wind should vary: f0={:?} f1={:?} f2={:?}",
-            f0,
-            f1,
-            f2
+            f0, f1, f2
         );
     }
 
@@ -2180,5 +2435,511 @@ mod tests {
             expected_z,
             go.z
         );
+    }
+
+    // ===== ROUND 6: EnvironmentManager integration tests =====
+
+    #[test]
+    fn r6_env_manager_wind_force_global_only() {
+        let mut mgr = EnvironmentManager::new();
+        mgr.global_wind = Vec3::new(10.0, 0.0, 0.0);
+        mgr.global_wind_strength = 1.0;
+        let force = mgr.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // F = 0.5 * 1.225 * speed² * Cd * A
+        // speed = |global_wind| * strength = 10
+        let expected_mag = 0.5 * 1.225 * 100.0 * 1.0 * 1.0; // = 61.25
+        assert!(
+            force.x > 0.0,
+            "Wind force should be in +X direction: {:?}",
+            force
+        );
+        assert!(
+            (force.x - expected_mag).abs() < 1.0,
+            "Expected ~{}, got {}",
+            expected_mag,
+            force.x
+        );
+    }
+
+    #[test]
+    fn r6_env_manager_wind_force_aggregates_zones() {
+        let mut mgr = EnvironmentManager::new();
+        // Add a directional wind zone
+        let config = WindZoneConfig {
+            position: Vec3::ZERO,
+            direction: Vec3::X,
+            strength: 5.0,
+            shape: WindZoneShape::Global,
+            wind_type: WindType::Directional,
+            active: true,
+            ..Default::default()
+        };
+        mgr.add_wind_zone(config);
+
+        // Also set global wind
+        mgr.global_wind = Vec3::new(5.0, 0.0, 0.0);
+        mgr.global_wind_strength = 1.0;
+
+        let force = mgr.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // Should aggregate both global and zone forces (both in +X)
+        let global_only = 0.5 * 1.225 * 25.0; // speed=5
+        assert!(
+            force.x > global_only,
+            "Aggregated wind should exceed global-only {}: got {}",
+            global_only,
+            force.x
+        );
+    }
+
+    #[test]
+    fn r6_env_manager_wind_force_includes_gust() {
+        let mut mgr = EnvironmentManager::new();
+        mgr.trigger_gust(Vec3::X, 20.0, 1.0);
+
+        let force = mgr.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // Gust direction = X normalized, strength=20
+        // GustEvent::current_strength at t=0: envelope = min(0*4,1)=0, so force=0
+        // We need to advance time slightly
+        mgr.update(0.1); // elapsed = 0.1, t = 0.1/1.0 = 0.1
+        let force = mgr.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // At t=0.1: attack = min(0.4, 1) = 0.4, release = min(3.6, 1) = 1.0
+        // envelope = 0.4 * 1.0 = 0.4, gust_strength = 20 * 0.4 = 8.0
+        // gust force mag = 0.5 * 1.225 * 64 = 39.2 in X
+        assert!(
+            force.x > 10.0,
+            "Gust should contribute significant X force: {:?}",
+            force
+        );
+    }
+
+    #[test]
+    fn r6_env_manager_gust_removed_after_duration() {
+        let mut mgr = EnvironmentManager::new();
+        mgr.trigger_gust(Vec3::X, 10.0, 0.5);
+        assert_eq!(mgr.gusts.len(), 1);
+
+        mgr.update(0.6); // elapsed 0.6 > duration 0.5
+        assert_eq!(
+            mgr.gusts.len(),
+            0,
+            "Finished gust should be removed by update"
+        );
+    }
+
+    #[test]
+    fn r6_env_manager_update_advances_all() {
+        let mut mgr = EnvironmentManager::new();
+
+        // Add turbulent wind zone
+        let wind_config = WindZoneConfig {
+            position: Vec3::ZERO,
+            direction: Vec3::X,
+            strength: 5.0,
+            shape: WindZoneShape::Global,
+            wind_type: WindType::Turbulent {
+                intensity: 1.0,
+                frequency: 2.0,
+            },
+            active: true,
+            ..Default::default()
+        };
+        let wid = mgr.add_wind_zone(wind_config);
+
+        // Add water volume
+        let water_id = mgr.add_water_volume(Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        if let Some(water) = mgr.get_water_volume_mut(water_id) {
+            water.wave_amplitude = 1.0;
+        }
+
+        let phase_before = mgr.get_water_volume(water_id).unwrap().wave_phase;
+
+        mgr.update(0.1);
+
+        // Wind zone should have updated gust_offset
+        let zone = mgr.get_wind_zone(wid).unwrap();
+        assert!(
+            zone.gust_offset.length() > 0.0,
+            "Turbulent zone gust_offset should be non-zero after update"
+        );
+
+        // Water wave_phase should have advanced
+        let phase_after = mgr.get_water_volume(water_id).unwrap().wave_phase;
+        assert!(
+            phase_after > phase_before,
+            "Water wave_phase should advance: {} -> {}",
+            phase_before,
+            phase_after
+        );
+    }
+
+    #[test]
+    fn r6_water_surface_height_varies_with_waves() {
+        let mut water = WaterVolume::new(WaterVolumeId(1), Vec3::ZERO, Vec3::new(100.0, 10.0, 100.0));
+        water.wave_amplitude = 2.0;
+        water.wave_frequency = 1.0;
+        water.wave_phase = 1.0;
+
+        let h1 = water.surface_height_at(0.0, 0.0);
+        let h2 = water.surface_height_at(50.0, 0.0);
+        let h3 = water.surface_height_at(0.0, 50.0);
+
+        // Different positions should give different heights (wave pattern)
+        let all_same = (h1 - h2).abs() < 1e-4 && (h1 - h3).abs() < 1e-4;
+        assert!(
+            !all_same,
+            "Wave surface should vary: h(0,0)={}, h(50,0)={}, h(0,50)={}",
+            h1,
+            h2,
+            h3
+        );
+    }
+
+    #[test]
+    fn r6_water_surface_height_no_wave() {
+        let water = WaterVolume::new(WaterVolumeId(1), Vec3::new(0.0, 5.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
+        // wave_amplitude = 0 by default
+        let h1 = water.surface_height_at(0.0, 0.0);
+        let h2 = water.surface_height_at(10.0, 20.0);
+        // Without waves, surface is flat at position.y + half_extents.y = 5 + 10 = 15
+        assert!(
+            (h1 - 15.0).abs() < 0.01,
+            "No-wave surface should be flat at 15: {}",
+            h1
+        );
+        assert!(
+            (h1 - h2).abs() < 0.001,
+            "No-wave surface should be uniform: {} vs {}",
+            h1,
+            h2
+        );
+    }
+
+    #[test]
+    fn r6_water_update_advances_wave_phase() {
+        let mut water = WaterVolume::new(WaterVolumeId(1), Vec3::ZERO, Vec3::splat(10.0));
+        water.wave_frequency = 2.0;
+        let before = water.wave_phase;
+        water.update(0.5);
+        // wave_phase += dt * frequency * TAU = 0.5 * 2.0 * TAU
+        let expected = before + 0.5 * 2.0 * std::f32::consts::TAU;
+        assert!(
+            (water.wave_phase - expected).abs() < 0.01,
+            "wave_phase: expected {}, got {}",
+            expected,
+            water.wave_phase
+        );
+    }
+
+    #[test]
+    fn r6_vortex_wind_tangential_component() {
+        let config = WindZoneConfig {
+            position: Vec3::ZERO,
+            direction: Vec3::X, // Not used for vortex
+            strength: 10.0,
+            shape: WindZoneShape::Sphere { radius: 50.0 },
+            wind_type: WindType::Vortex {
+                tangential_speed: 20.0,
+                inward_pull: 5.0,
+                updraft: 3.0,
+            },
+            active: true,
+            ..Default::default()
+        };
+        let zone = WindZone::new(WindZoneId(1), config);
+
+        // Test point at (10, 0, 0) — horizontal distance from center
+        let force = zone.wind_force_at(Vec3::new(10.0, 0.0, 0.0), 1.0, 1.0);
+        // Vortex produces tangential + inward + updraft
+        // Should have Y component (updraft) and Z component (tangential)
+        assert!(
+            force.length() > 0.1,
+            "Vortex should produce non-zero force: {:?}",
+            force
+        );
+        assert!(
+            force.y > 0.0,
+            "Vortex should have updraft (Y>0): {:?}",
+            force
+        );
+    }
+
+    #[test]
+    fn r6_env_buoyancy_force_at_submerged() {
+        let mut mgr = EnvironmentManager::new();
+        let wid = mgr.add_water_volume(Vec3::new(0.0, 0.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
+
+        // Point fully submerged (below surface)
+        let force = mgr.buoyancy_force_at(Vec3::new(0.0, -5.0, 0.0), 1.0, 0.5);
+        assert!(
+            force.y > 0.0,
+            "Buoyancy should push up for submerged body: {:?}",
+            force
+        );
+    }
+
+    #[test]
+    fn r6_env_buoyancy_force_at_above() {
+        let mut mgr = EnvironmentManager::new();
+        mgr.add_water_volume(Vec3::new(0.0, 0.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
+
+        // Point above water (y = 50, surface = 10)
+        let force = mgr.buoyancy_force_at(Vec3::new(0.0, 50.0, 0.0), 1.0, 0.5);
+        assert!(
+            force.y.abs() < 0.01,
+            "No buoyancy above water: {:?}",
+            force
+        );
+    }
+
+    #[test]
+    fn r6_env_water_drag_submerged() {
+        let mut mgr = EnvironmentManager::new();
+        let wid = mgr.add_water_volume(Vec3::new(0.0, 0.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
+
+        // Set known drag values
+        if let Some(water) = mgr.get_water_volume_mut(wid) {
+            water.linear_drag = 2.5;
+            water.angular_drag = 1.5;
+        }
+
+        let (linear, angular) = mgr.water_drag_at(Vec3::new(0.0, -1.0, 0.0));
+        assert!(
+            (linear - 2.5).abs() < 0.01,
+            "Linear drag should be 2.5: {}",
+            linear
+        );
+        assert!(
+            (angular - 1.5).abs() < 0.01,
+            "Angular drag should be 1.5: {}",
+            angular
+        );
+    }
+
+    #[test]
+    fn r6_env_water_current_submerged() {
+        let mut mgr = EnvironmentManager::new();
+        let wid = mgr.add_water_volume(Vec3::new(0.0, 0.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
+
+        if let Some(water) = mgr.get_water_volume_mut(wid) {
+            water.current = Vec3::new(3.0, 0.0, -1.0);
+        }
+
+        let current = mgr.water_current_at(Vec3::new(0.0, -1.0, 0.0));
+        assert!(
+            (current.x - 3.0).abs() < 0.01,
+            "Current X should be 3.0: {}",
+            current.x
+        );
+        assert!(
+            (current.z - (-1.0)).abs() < 0.01,
+            "Current Z should be -1.0: {}",
+            current.z
+        );
+    }
+
+    #[test]
+    fn r6_env_is_underwater() {
+        let mut mgr = EnvironmentManager::new();
+        mgr.add_water_volume(Vec3::new(0.0, 0.0, 0.0), Vec3::new(100.0, 10.0, 100.0));
+        // Surface = position.y + half_extents.y = 0 + 10 = 10
+        assert!(mgr.is_underwater(Vec3::new(0.0, 5.0, 0.0))); // Below surface
+        assert!(!mgr.is_underwater(Vec3::new(0.0, 15.0, 0.0))); // Above surface
+    }
+
+    #[test]
+    fn r6_gust_current_strength_envelope() {
+        let mut gust = GustEvent::new(Vec3::X, 10.0, 2.0);
+        gust.smoothness = 0.5;
+
+        // At t=0: strength = 0 (attack phase starts)
+        assert!(
+            gust.current_strength() < 0.01,
+            "At t=0, gust should be near zero: {}",
+            gust.current_strength()
+        );
+
+        // At t=0.1 (t_norm=0.05): early ramp up, attack = (0.05*4).min(1) = 0.2
+        gust.elapsed = 0.1;
+        let s1 = gust.current_strength();
+        assert!(s1 > 0.0 && s1 < 10.0, "At t=0.1, gust should be rising: {}", s1);
+
+        // At t=1.0 (t_norm=0.5): full peak, attack=min(2,1)=1, release=min(2,1)=1
+        gust.elapsed = 1.0;
+        let s2 = gust.current_strength();
+        assert!(s2 >= s1, "At midpoint, gust should be >= early: {}", s2);
+
+        // At t=1.95 (t_norm=0.975): late release, release = (0.025*4).min(1) = 0.1
+        gust.elapsed = 1.95;
+        let s3 = gust.current_strength();
+        assert!(s3 < s2, "Near end, gust should be declining: {}", s3);
+
+        // At t=2.0: finished
+        gust.elapsed = 2.0;
+        assert!(
+            gust.current_strength() < 0.01,
+            "After duration, gust should be zero: {}",
+            gust.current_strength()
+        );
+    }
+
+    #[test]
+    fn r6_wind_zone_inactive_returns_zero() {
+        let config = WindZoneConfig {
+            position: Vec3::ZERO,
+            direction: Vec3::X,
+            strength: 50.0,
+            shape: WindZoneShape::Global,
+            wind_type: WindType::Directional,
+            active: false,
+            ..Default::default()
+        };
+        let zone = WindZone::new(WindZoneId(1), config);
+        let force = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        assert!(
+            force.length() < 0.001,
+            "Inactive zone should return zero: {:?}",
+            force
+        );
+    }
+
+    // ===== ROUND 7: Targeted catches =====
+
+    #[test]
+    fn r7_sphere_submerged_fraction_partial() {
+        // sphere_submerged_fraction at partial depth: h = depth + radius, fraction = h / (2*radius)
+        let mut wv = WaterVolume::new(WaterVolumeId(0), Vec3::ZERO, Vec3::new(100.0, 1.0, 100.0));
+        wv.wave_amplitude = 0.0; // No waves for exact math
+        wv.surface_height = 0.0; // Force surface at y=0 for clear math
+
+        // Center at y=-0.5, radius=1.0 → surface_height=0.0, depth=0-(-0.5)=0.5
+        // h = 0.5 + 1.0 = 1.5, fraction = 1.5 / (2*1.0) = 0.75
+        let frac = wv.sphere_submerged_fraction(Vec3::new(0.0, -0.5, 0.0), 1.0);
+        assert!(
+            (frac - 0.75).abs() < 0.05,
+            "Partial submersion fraction should be ~0.75: got {}",
+            frac
+        );
+
+        // Center at y=0.0, radius=1.0 → depth=0, h=1.0, fraction=0.5
+        let frac_half = wv.sphere_submerged_fraction(Vec3::new(0.0, 0.0, 0.0), 1.0);
+        assert!(
+            (frac_half - 0.5).abs() < 0.05,
+            "Half-submerged fraction should be ~0.5: got {}",
+            frac_half
+        );
+    }
+
+    #[test]
+    fn r7_current_gust_force_returns_aggregate() {
+        let mut em = EnvironmentManager::new();
+        em.trigger_gust(Vec3::X, 5.0, 2.0);
+        em.trigger_gust(Vec3::Z, 3.0, 2.0);
+
+        let force = em.current_gust_force();
+        // Both gusts at t=0 should have zero strength (attack phase)
+        // actually at t=0, smoothness defaults... let me check
+
+        // Advance slightly to start gust
+        em.update(0.5);
+        let force2 = em.current_gust_force();
+        // Both gusts should contribute
+        assert!(
+            force2.x.abs() > 0.0 || force2.z.abs() > 0.0,
+            "Gust force should be non-zero after update: {:?}",
+            force2
+        );
+        // X gust has strength 5, Z gust has strength 3
+        // After t=0.5 with duration=2.0, both should have rised
+        assert!(
+            force2.length() > 0.1,
+            "Aggregate gust force should have magnitude: {:?}",
+            force2
+        );
+    }
+
+    #[test]
+    fn r7_wind_force_at_global_exact_formula() {
+        let mut em = EnvironmentManager::new();
+        em.global_wind = Vec3::X;
+        em.global_wind_strength = 10.0;
+
+        // Force = 0.5 * 1.225 * (speed=10)^2 * Cd * A
+        let cd = 2.0;
+        let area = 0.5;
+        let force = em.wind_force_at(Vec3::ZERO, cd, area);
+
+        // Expected: 0.5 * 1.225 * 100 * 2.0 * 0.5 = 61.25
+        let expected = 0.5 * 1.225 * 10.0 * 10.0 * cd * area;
+        let diff = (force.x - expected).abs();
+        assert!(
+            diff < 0.5,
+            "Global wind force should be ~{}: got {:?}",
+            expected,
+            force
+        );
+        // Y and Z should be ~0 (wind is purely +X)
+        assert!(force.y.abs() < 0.01, "No Y component: {}", force.y);
+        assert!(force.z.abs() < 0.01, "No Z component: {}", force.z);
+    }
+
+    #[test]
+    fn r7_wind_force_at_with_gust_adds_gust() {
+        let mut em = EnvironmentManager::new();
+        // No global wind
+        em.global_wind = Vec3::ZERO;
+        em.global_wind_strength = 0.0;
+
+        // Add gust with zero smoothness (immediate full strength)
+        em.trigger_gust(Vec3::X, 10.0, 5.0);
+        // Need to set smoothness to 0 on the gust
+        em.gusts[0].smoothness = 0.0;
+
+        let force_with_gust = em.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+
+        // Gust at full strength: speed = 10
+        // Force = 0.5 * 1.225 * 100 * 1 * 1 = 61.25
+        let expected = 0.5 * 1.225 * 10.0 * 10.0;
+        assert!(
+            (force_with_gust.x - expected).abs() < 1.0,
+            "Gust-only force should be ~{}: got {:?}",
+            expected,
+            force_with_gust
+        );
+    }
+
+    #[test]
+    fn r7_vortex_to_center_direction() {
+        // Vortex wind: to_center = position - point
+        // If position=(10,0,0) and point=(5,0,0), to_center=(5,0,0)
+        // tangent should be perpendicular: (-0, 0, 5).normalize = (0,0,1)
+        let config = WindZoneConfig {
+            position: Vec3::new(10.0, 0.0, 0.0),
+            direction: Vec3::X, // not used for Vortex
+            strength: 0.0,      // not used for Vortex
+            shape: WindZoneShape::Sphere { radius: 100.0 },
+            wind_type: WindType::Vortex {
+                tangential_speed: 10.0,
+                inward_pull: 0.0,
+                updraft: 0.0,
+            },
+            active: true,
+            ..Default::default()
+        };
+        let zone = WindZone::new(WindZoneId(1), config);
+
+        let force_a = zone.wind_force_at(Vec3::new(5.0, 0.0, 0.0), 1.0, 1.0);
+        let force_b = zone.wind_force_at(Vec3::new(15.0, 0.0, 0.0), 1.0, 1.0);
+
+        // Force_a is on -X side → tangent in +Z
+        // Force_b is on +X side → tangent in -Z
+        // Opposite sides should produce opposite tangential directions
+        if force_a.length() > 0.01 && force_b.length() > 0.01 {
+            assert!(
+                force_a.z * force_b.z < 0.0,
+                "Vortex tangential force should reverse on opposite sides: a={:?}, b={:?}",
+                force_a,
+                force_b
+            );
+        }
     }
 }
