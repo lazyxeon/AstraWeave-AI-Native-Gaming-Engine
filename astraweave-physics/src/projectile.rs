@@ -1407,11 +1407,23 @@ mod tests {
         // pt[0] = start
         assert_eq!(pts[0], Vec3::new(1.0, 2.0, 3.0));
         // pt[1] = (1 + 10*0.5, 2, 3) = (6, 2, 3)
-        assert!((pts[1].x - 6.0).abs() < 1e-4, "pts[1].x should be 6, got {}", pts[1].x);
+        assert!(
+            (pts[1].x - 6.0).abs() < 1e-4,
+            "pts[1].x should be 6, got {}",
+            pts[1].x
+        );
         // pt[2] = (6 + 10*0.5, 2, 3) = (11, 2, 3)
-        assert!((pts[2].x - 11.0).abs() < 1e-4, "pts[2].x should be 11, got {}", pts[2].x);
+        assert!(
+            (pts[2].x - 11.0).abs() < 1e-4,
+            "pts[2].x should be 11, got {}",
+            pts[2].x
+        );
         // pt[3] = (16, 2, 3)
-        assert!((pts[3].x - 16.0).abs() < 1e-4, "pts[3].x should be 16, got {}", pts[3].x);
+        assert!(
+            (pts[3].x - 16.0).abs() < 1e-4,
+            "pts[3].x should be 16, got {}",
+            pts[3].x
+        );
     }
 
     #[test]
@@ -1419,14 +1431,7 @@ mod tests {
         // Gravity only, no drag
         let g = Vec3::new(0.0, -10.0, 0.0);
         let dt = 1.0;
-        let pts = predict_trajectory(
-            Vec3::ZERO,
-            Vec3::new(5.0, 0.0, 0.0),
-            g,
-            0.0,
-            dt,
-            3,
-        );
+        let pts = predict_trajectory(Vec3::ZERO, Vec3::new(5.0, 0.0, 0.0), g, 0.0, dt, 3);
         assert_eq!(pts.len(), 3);
         // Step 1: vel = (5, 0, 0) + (0, -10, 0)*1 = (5, -10, 0)
         // pos = (0,0,0) + (5,-10,0)*1 = (5, -10, 0)
@@ -1454,7 +1459,11 @@ mod tests {
             2,
         );
         assert_eq!(pts.len(), 2);
-        assert!((pts[1].x - 9.0).abs() < 0.01, "Expected 9.0, got {}", pts[1].x);
+        assert!(
+            (pts[1].x - 9.0).abs() < 0.01,
+            "Expected 9.0, got {}",
+            pts[1].x
+        );
         assert!((pts[1].y).abs() < 1e-5);
     }
 
@@ -1475,9 +1484,17 @@ mod tests {
         // 1 - t^2
         assert!((c.calculate(0.0, 10.0) - 1.0).abs() < 1e-6);
         // t=0.3 → 1-0.09 = 0.91
-        assert!((c.calculate(3.0, 10.0) - 0.91).abs() < 1e-5, "got {}", c.calculate(3.0, 10.0));
+        assert!(
+            (c.calculate(3.0, 10.0) - 0.91).abs() < 1e-5,
+            "got {}",
+            c.calculate(3.0, 10.0)
+        );
         // t=0.7 → 1-0.49 = 0.51
-        assert!((c.calculate(7.0, 10.0) - 0.51).abs() < 1e-5, "got {}", c.calculate(7.0, 10.0));
+        assert!(
+            (c.calculate(7.0, 10.0) - 0.51).abs() < 1e-5,
+            "got {}",
+            c.calculate(7.0, 10.0)
+        );
     }
 
     #[test]
@@ -1487,7 +1504,11 @@ mod tests {
         assert!((c.calculate(0.0, 10.0) - 1.0).abs() < 1e-6);
         // d=5, r=10 → t=0.5 → e^(-1.5) ≈ 0.2231
         let expected = (-1.5_f32).exp();
-        assert!((c.calculate(5.0, 10.0) - expected).abs() < 1e-4, "got {}", c.calculate(5.0, 10.0));
+        assert!(
+            (c.calculate(5.0, 10.0) - expected).abs() < 1e-4,
+            "got {}",
+            c.calculate(5.0, 10.0)
+        );
     }
 
     #[test]
@@ -1547,7 +1568,11 @@ mod tests {
         let results = mgr.calculate_explosion(&config, bodies);
         assert_eq!(results.len(), 1);
         // At center, radial_dir = Vec3::Y, bias=0 → dir = Vec3::Y
-        assert!((results[0].impulse.y - 200.0).abs() < 0.1, "Should be 200 up, got {}", results[0].impulse.y);
+        assert!(
+            (results[0].impulse.y - 200.0).abs() < 0.1,
+            "Should be 200 up, got {}",
+            results[0].impulse.y
+        );
         assert!(results[0].impulse.x.abs() < 0.1);
     }
 
@@ -1594,7 +1619,7 @@ mod tests {
         let id = mgr.spawn(config);
 
         let raycast = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
-        
+
         let dt = 1.0 / 60.0;
         mgr.update(dt, raycast);
 
@@ -1602,8 +1627,12 @@ mod tests {
         // speed=50, drag_force=0.02*50*50=50, drag_decel=50*dt=0.8333
         // new_speed = 50 - 0.8333 = 49.1667
         let expected_speed = 50.0 - 0.02 * 50.0 * 50.0 * dt;
-        assert!((proj.velocity.x - expected_speed).abs() < 0.01,
-            "Expected vel.x={}, got {}", expected_speed, proj.velocity.x);
+        assert!(
+            (proj.velocity.x - expected_speed).abs() < 0.01,
+            "Expected vel.x={}, got {}",
+            expected_speed,
+            proj.velocity.x
+        );
     }
 
     #[test]
@@ -1629,8 +1658,16 @@ mod tests {
         let proj = mgr.get(id).unwrap();
         // After 1 step: vel = (0, -10*0.1, 0) = (0, -1, 0)
         // pos = (0, 100, 0) + (0, -1, 0)*0.1 = (0, 99.9, 0)
-        assert!((proj.velocity.y - (-1.0)).abs() < 0.01, "vel.y={}", proj.velocity.y);
-        assert!((proj.position.y - 99.9).abs() < 0.01, "pos.y={}", proj.position.y);
+        assert!(
+            (proj.velocity.y - (-1.0)).abs() < 0.01,
+            "vel.y={}",
+            proj.velocity.y
+        );
+        assert!(
+            (proj.position.y - 99.9).abs() < 0.01,
+            "pos.y={}",
+            proj.position.y
+        );
     }
 
     #[test]
@@ -1656,9 +1693,21 @@ mod tests {
         let proj = mgr.get(id).unwrap();
         // vel = (0,0,10) + (20,0,0)*0.5 = (10, 0, 10)
         // pos = (0,0,0) + (10,0,10)*0.5 = (5, 0, 5)
-        assert!((proj.velocity.x - 10.0).abs() < 0.01, "vel.x={}", proj.velocity.x);
-        assert!((proj.position.z - 5.0).abs() < 0.01, "pos.z={}", proj.position.z);
-        assert!((proj.position.x - 5.0).abs() < 0.01, "pos.x={}", proj.position.x);
+        assert!(
+            (proj.velocity.x - 10.0).abs() < 0.01,
+            "vel.x={}",
+            proj.velocity.x
+        );
+        assert!(
+            (proj.position.z - 5.0).abs() < 0.01,
+            "pos.z={}",
+            proj.position.z
+        );
+        assert!(
+            (proj.position.x - 5.0).abs() < 0.01,
+            "pos.x={}",
+            proj.position.x
+        );
     }
 
     #[test]
@@ -1704,23 +1753,32 @@ mod tests {
         let id = mgr.spawn(config);
 
         // Wall at x=5
-        let raycast = |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
-            if dir.x > 0.0 && origin.x < 5.0 {
-                let dist = 5.0 - origin.x;
-                if dist < max && dist > 0.01 {
-                    return Some((Vec3::new(5.0, 0.0, 0.0), Vec3::new(-1.0, 0.0, 0.0), Some(1), dist));
+        let raycast =
+            |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if dir.x > 0.0 && origin.x < 5.0 {
+                    let dist = 5.0 - origin.x;
+                    if dist < max && dist > 0.01 {
+                        return Some((
+                            Vec3::new(5.0, 0.0, 0.0),
+                            Vec3::new(-1.0, 0.0, 0.0),
+                            Some(1),
+                            dist,
+                        ));
+                    }
                 }
-            }
-            None
-        };
+                None
+            };
 
         mgr.update(1.0, raycast);
 
         let proj = mgr.get(id).unwrap();
         assert_eq!(proj.bounces, 1);
         // reflected velocity = -(10) * 0.6 = -6
-        assert!((proj.velocity.x - (-6.0)).abs() < 0.1,
-            "After bounce, vel.x should be -6.0, got {}", proj.velocity.x);
+        assert!(
+            (proj.velocity.x - (-6.0)).abs() < 0.1,
+            "After bounce, vel.x should be -6.0, got {}",
+            proj.velocity.x
+        );
     }
 
     #[test]
@@ -1731,5 +1789,452 @@ mod tests {
         let id3 = mgr.spawn(ProjectileConfig::default());
         assert_eq!(id2, id1 + 1);
         assert_eq!(id3, id2 + 1);
+    }
+
+    // ===== DEEP REMEDIATION v3.6.3 — Round 4 remaining update & explosion mutations =====
+
+    #[test]
+    fn mutation_r4_update_position_integration_exact() {
+        // velocity * dt should update position precisely
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO; // No gravity
+        let config = ProjectileConfig {
+            position: Vec3::new(1.0, 2.0, 3.0),
+            velocity: Vec3::new(10.0, -5.0, 7.0),
+            gravity_scale: 0.0,
+            drag: 0.0,
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        let no_hit = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+        mgr.update(0.1, no_hit);
+        let p = mgr.get(id).unwrap();
+        // new_pos = (1,2,3) + (10,-5,7)*0.1 = (2, 1.5, 3.7)
+        assert!((p.position.x - 2.0).abs() < 0.01, "x: {}", p.position.x);
+        assert!((p.position.y - 1.5).abs() < 0.01, "y: {}", p.position.y);
+        assert!((p.position.z - 3.7).abs() < 0.01, "z: {}", p.position.z);
+    }
+
+    #[test]
+    fn mutation_r4_update_gravity_scale_multiplier() {
+        // gravity_scale should multiply the gravity vector
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::new(0.0, -10.0, 0.0);
+        let config = ProjectileConfig {
+            velocity: Vec3::ZERO,
+            gravity_scale: 0.5,
+            drag: 0.0,
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        let no_hit = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+        mgr.update(1.0, no_hit);
+        let p = mgr.get(id).unwrap();
+        // vel = 0 + (-10 * 0.5) * 1.0 = -5
+        assert!(
+            (p.velocity.y - (-5.0)).abs() < 0.01,
+            "vel.y should be -5 with 0.5 scale: {}",
+            p.velocity.y
+        );
+    }
+
+    #[test]
+    fn mutation_r4_update_drag_decel_min_speed() {
+        // drag_decel should be min'd with speed (don't reverse)
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        let config = ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::new(0.01, 0.0, 0.0), // Very slow
+            drag: 1000.0,                        // Huge drag
+            gravity_scale: 0.0,
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        let no_hit = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+        mgr.update(1.0, no_hit);
+        let p = mgr.get(id).unwrap();
+        // Drag should have reduced speed to 0, NOT reversed direction
+        assert!(
+            p.velocity.x >= -0.001,
+            "Don't reverse: vel.x={}",
+            p.velocity.x
+        );
+    }
+
+    #[test]
+    fn mutation_r4_update_wind_adds_to_velocity() {
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        mgr.wind = Vec3::new(5.0, 0.0, 0.0);
+        let config = ProjectileConfig {
+            velocity: Vec3::new(0.0, 0.0, 10.0),
+            drag: 0.0,
+            gravity_scale: 0.0,
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        let no_hit = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+        mgr.update(1.0, no_hit);
+        let p = mgr.get(id).unwrap();
+        // wind adds 5*1=5 to x velocity
+        assert!(
+            (p.velocity.x - 5.0).abs() < 0.1,
+            "Wind should add to vel.x: {}",
+            p.velocity.x
+        );
+        assert!(
+            (p.velocity.z - 10.0).abs() < 0.1,
+            "Z should be unchanged: {}",
+            p.velocity.z
+        );
+    }
+
+    #[test]
+    fn mutation_r4_update_lifetime_accumulates() {
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        let config = ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::new(1.0, 0.0, 0.0),
+            drag: 0.0,
+            gravity_scale: 0.0,
+            max_lifetime: 10.0,
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        let no_hit = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+        mgr.update(0.3, no_hit);
+        let lt1 = mgr.get(id).unwrap().lifetime;
+        assert!((lt1 - 0.3).abs() < 0.001, "lifetime after 0.3s: {}", lt1);
+        mgr.update(0.7, no_hit);
+        let lt2 = mgr.get(id).unwrap().lifetime;
+        assert!((lt2 - 1.0).abs() < 0.001, "lifetime after 1.0s: {}", lt2);
+    }
+
+    #[test]
+    fn mutation_r4_update_hitscan_skipped() {
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::new(0.0, -10.0, 0.0);
+        let config = ProjectileConfig {
+            kind: ProjectileKind::Hitscan,
+            position: Vec3::new(0.0, 5.0, 0.0),
+            velocity: Vec3::new(0.0, 0.0, 0.0),
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        let no_hit = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+        mgr.update(1.0, no_hit);
+        let p = mgr.get(id).unwrap();
+        // Hitscan should not be updated by physics
+        assert!(
+            (p.position.y - 5.0).abs() < 0.01,
+            "Hitscan should stay put: {}",
+            p.position.y
+        );
+    }
+
+    #[test]
+    fn mutation_r4_explosion_zero_upward_bias_radial() {
+        let mgr = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            force: 100.0,
+            falloff: FalloffCurve::Constant,
+            upward_bias: 0.0, // Pure radial
+        };
+        let bodies = vec![(1u64, Vec3::new(5.0, 0.0, 0.0))];
+        let results = mgr.calculate_explosion(&config, bodies);
+        assert_eq!(results.len(), 1);
+        // Pure radial: impulse should be entirely in +X direction
+        let imp = results[0].impulse;
+        assert!(imp.x > 90.0, "Pure radial should be mostly +X: {:?}", imp);
+        assert!(imp.y.abs() < 1.0, "No Y bias: {:?}", imp);
+    }
+
+    #[test]
+    fn mutation_r4_explosion_full_upward_bias() {
+        let mgr = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            force: 100.0,
+            falloff: FalloffCurve::Constant,
+            upward_bias: 1.0, // Pure upward
+        };
+        let bodies = vec![(1u64, Vec3::new(5.0, 0.0, 0.0))];
+        let results = mgr.calculate_explosion(&config, bodies);
+        assert_eq!(results.len(), 1);
+        // Pure upward: biased_dir = (radial*0 + Y*1).normalize = (0,1,0)
+        let imp = results[0].impulse;
+        assert!(imp.y > 90.0, "Pure upward should be mostly +Y: {:?}", imp);
+        assert!(imp.x.abs() < 1.0, "No X: {:?}", imp);
+    }
+
+    #[test]
+    fn mutation_r4_explosion_outside_radius_excluded() {
+        let mgr = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::ZERO,
+            radius: 5.0,
+            force: 100.0,
+            ..Default::default()
+        };
+        let bodies = vec![
+            (1u64, Vec3::new(4.9, 0.0, 0.0)), // Inside
+            (2u64, Vec3::new(5.0, 0.0, 0.0)), // On boundary (excluded: >= radius)
+            (3u64, Vec3::new(6.0, 0.0, 0.0)), // Outside
+        ];
+        let results = mgr.calculate_explosion(&config, bodies);
+        assert_eq!(
+            results.len(),
+            1,
+            "Only inside radius: {:?}",
+            results.iter().map(|r| r.body_id).collect::<Vec<_>>()
+        );
+        assert_eq!(results[0].body_id, 1);
+    }
+
+    #[test]
+    fn mutation_r4_update_bounce_reflects_y() {
+        // Test bounce off a horizontal surface (Y normal)
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        let config = ProjectileConfig {
+            position: Vec3::new(0.0, 1.0, 0.0),
+            velocity: Vec3::new(0.0, -10.0, 0.0),
+            gravity_scale: 0.0,
+            drag: 0.0,
+            max_bounces: 5,
+            restitution: 0.5,
+            ..Default::default()
+        };
+        let id = mgr.spawn(config);
+        // Floor at y=0
+        let raycast =
+            |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if dir.y < 0.0 && origin.y > 0.0 {
+                    let dist = origin.y;
+                    if dist < max && dist > 0.001 {
+                        return Some((Vec3::new(origin.x, 0.0, origin.z), Vec3::Y, Some(1), dist));
+                    }
+                }
+                None
+            };
+        mgr.update(0.5, raycast);
+        let p = mgr.get(id).unwrap();
+        // reflect = (-10) - 2*(-10*1)*Y = (0,10,0) * 0.5 = (0,5,0)
+        assert!(p.velocity.y > 0.0, "Should bounce up: {}", p.velocity.y);
+        assert!(
+            (p.velocity.y - 5.0).abs() < 0.5,
+            "Restitution 0.5: vel.y should be ~5, got {}",
+            p.velocity.y
+        );
+        assert_eq!(p.bounces, 1);
+    }
+
+    #[test]
+    fn mutation_r4_update_collision_offset_from_surface() {
+        // After bounce, position should be offset from surface
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        let config = ProjectileConfig {
+            position: Vec3::new(0.0, 1.0, 0.0),
+            velocity: Vec3::new(0.0, -100.0, 0.0),
+            gravity_scale: 0.0,
+            drag: 0.0,
+            max_bounces: 5,
+            restitution: 0.8,
+            ..Default::default()
+        };
+        let _id = mgr.spawn(config);
+        let raycast =
+            |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if dir.y < 0.0 && origin.y > 0.0 {
+                    let dist = origin.y;
+                    if dist < max {
+                        return Some((Vec3::new(0.0, 0.0, 0.0), Vec3::Y, Some(1), dist));
+                    }
+                }
+                None
+            };
+        mgr.update(0.01, raycast);
+        // Position should be at hit_pos + normal * 0.01 = (0, 0.01, 0)
+        // Check that it bounced and is above the surface
+        let remaining: Vec<_> = mgr.iter().collect();
+        if !remaining.is_empty() {
+            assert!(remaining[0].position.y > 0.0, "Offset above surface");
+        }
+    }
+
+    #[test]
+    fn mutation_r4_falloff_linear_exact_mid() {
+        // Linear at distance=2.5, radius=10 → t=0.25 → 1-0.25=0.75
+        let f = FalloffCurve::Linear.calculate(2.5, 10.0);
+        assert!((f - 0.75).abs() < 0.001, "Linear at 0.25: {}", f);
+    }
+
+    #[test]
+    fn mutation_r4_falloff_quadratic_vs_linear() {
+        // Quadratic should be higher than linear at same point
+        let d = 5.0;
+        let r = 10.0;
+        let fl = FalloffCurve::Linear.calculate(d, r);
+        let fq = FalloffCurve::Quadratic.calculate(d, r);
+        // t=0.5: Linear=0.5, Quadratic=1-0.25=0.75
+        assert!((fl - 0.5).abs() < 0.001);
+        assert!((fq - 0.75).abs() < 0.001);
+        assert!(fq > fl, "Quadratic > Linear at t=0.5");
+    }
+
+    #[test]
+    fn mutation_r4_falloff_exponential_decay_rate() {
+        // Exponential: e^(-3t), at t=0.5 → e^(-1.5) ≈ 0.2231
+        let f = FalloffCurve::Exponential.calculate(5.0, 10.0);
+        let expected = (-1.5_f32).exp();
+        assert!(
+            (f - expected).abs() < 0.01,
+            "Exponential at t=0.5: expected {:.4}, got {:.4}",
+            expected,
+            f
+        );
+    }
+
+    #[test]
+    fn mutation_r4_predict_trajectory_drag_multi_step() {
+        // Multi-step drag should slow down monotonically
+        let pts = predict_trajectory(
+            Vec3::ZERO,
+            Vec3::new(100.0, 0.0, 0.0),
+            Vec3::ZERO,
+            0.5,
+            0.1,
+            10,
+        );
+        // Each successive segment should be shorter than previous
+        for i in 2..pts.len() {
+            let seg_prev = (pts[i - 1] - pts[i - 2]).length();
+            let seg_curr = (pts[i] - pts[i - 1]).length();
+            assert!(
+                seg_curr <= seg_prev + 0.01,
+                "Drag should slow down: seg[{}]={:.3} > seg[{}]={:.3}",
+                i,
+                seg_curr,
+                i - 1,
+                seg_prev
+            );
+        }
+    }
+
+    // ===== ROUND 7: predict_trajectory targeted catches =====
+
+    #[test]
+    fn r7_predict_trajectory_gravity_drops_y() {
+        // vel += gravity * dt → if mutated to -= gravity * dt, Y would increase
+        let pts = predict_trajectory(
+            Vec3::ZERO,
+            Vec3::new(10.0, 0.0, 0.0),
+            Vec3::new(0.0, -9.81, 0.0),
+            0.0,
+            0.1,
+            5,
+        );
+
+        // After a few steps, Y should decrease due to gravity
+        assert!(
+            pts[4].y < pts[0].y,
+            "Gravity should decrease Y: start_y={}, end_y={}",
+            pts[0].y,
+            pts[4].y
+        );
+        // X should increase (positive velocity)
+        assert!(
+            pts[4].x > pts[0].x,
+            "X should increase: start_x={}, end_x={}",
+            pts[0].x,
+            pts[4].x
+        );
+    }
+
+    #[test]
+    fn r7_predict_trajectory_drag_threshold() {
+        // The drag condition checks: speed > 0.001 && drag > 0.0
+        // With zero drag, velocity should NOT be affected by drag
+        let pts_no_drag = predict_trajectory(
+            Vec3::ZERO,
+            Vec3::new(10.0, 0.0, 0.0),
+            Vec3::ZERO,
+            0.0, // no drag
+            0.1,
+            5,
+        );
+        let pts_with_drag = predict_trajectory(
+            Vec3::ZERO,
+            Vec3::new(10.0, 0.0, 0.0),
+            Vec3::ZERO,
+            0.5, // with drag
+            0.1,
+            5,
+        );
+
+        // With drag, final X should be less than without drag
+        assert!(
+            pts_with_drag[4].x < pts_no_drag[4].x,
+            "Drag should reduce distance: drag={}, no_drag={}",
+            pts_with_drag[4].x,
+            pts_no_drag[4].x
+        );
+    }
+
+    #[test]
+    fn r7_predict_trajectory_drag_force_formula() {
+        // drag_force = drag * speed * speed
+        // drag_decel = (drag_force / 1.0) * dt
+        // decel = drag_decel.min(speed)
+        let drag = 0.1;
+        let dt = 0.1;
+        let v0 = Vec3::new(10.0, 0.0, 0.0);
+        let pts = predict_trajectory(Vec3::ZERO, v0, Vec3::ZERO, drag, dt, 3);
+
+        // Step 1: vel = (10,0,0), speed = 10
+        // drag_force = 0.1 * 10 * 10 = 10
+        // drag_decel = 10 * 0.1 = 1.0
+        // decel = min(1.0, 10) = 1.0
+        // vel -= normalize(10,0,0) * 1.0 = vel -= (1,0,0) → vel = (9,0,0)
+        // pos = (0,0,0) + (9,0,0)*0.1 = (0.9, 0, 0)
+        let expected_x1 = 0.9;
+        assert!(
+            (pts[1].x - expected_x1).abs() < 0.01,
+            "First step with drag: expected x~{}, got {}",
+            expected_x1,
+            pts[1].x
+        );
+    }
+
+    #[test]
+    fn r7_predict_trajectory_drag_decel_min_speed() {
+        // Test the .min(speed) clamp: when drag_decel > speed, only decel by speed
+        // Use very high drag with low speed
+        let pts = predict_trajectory(
+            Vec3::ZERO,
+            Vec3::new(0.01, 0.0, 0.0), // Very slow
+            Vec3::ZERO,
+            100.0, // Very high drag
+            0.1,
+            3,
+        );
+
+        // Speed should not go negative (min clamp prevents this)
+        // After drag: drag_force = 100*0.01*0.01 = 0.01, drag_decel = 0.01*0.1 = 0.001
+        // decel = min(0.001, 0.01) = 0.001
+        // vel = 0.01 - 0.001 = 0.009
+        // Each step should still move forward (X increasing)
+        assert!(
+            pts[2].x > pts[0].x,
+            "Should still move forward: start={}, end={}",
+            pts[0].x,
+            pts[2].x
+        );
     }
 }

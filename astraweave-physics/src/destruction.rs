@@ -1492,8 +1492,7 @@ mod tests {
     fn mutation_layered_count_exact() {
         let layers = 4;
         let per_layer = 6;
-        let pattern =
-            FracturePattern::layered(layers, per_layer, Vec3::new(2.0, 5.0, 2.0), 100.0);
+        let pattern = FracturePattern::layered(layers, per_layer, Vec3::new(2.0, 5.0, 2.0), 100.0);
         assert_eq!(
             pattern.debris.len(),
             layers * per_layer,
@@ -1574,7 +1573,10 @@ mod tests {
 
         d.apply_damage(999.0);
 
-        assert_eq!(d.health, hp_before, "Health should not change when Destroying");
+        assert_eq!(
+            d.health, hp_before,
+            "Health should not change when Destroying"
+        );
     }
 
     #[test]
@@ -1611,8 +1613,13 @@ mod tests {
                 inclination.cos() * 5.0 * 0.8,
                 inclination.sin() * azimuth.sin() * 5.0 * 0.8,
             );
-            assert!((d.local_position - expected).length() < 1e-4,
-                "Piece {} position mismatch: {:?} vs {:?}", i, d.local_position, expected);
+            assert!(
+                (d.local_position - expected).length() < 1e-4,
+                "Piece {} position mismatch: {:?} vs {:?}",
+                i,
+                d.local_position,
+                expected
+            );
         }
     }
 
@@ -1622,8 +1629,12 @@ mod tests {
         for d in &pattern.debris {
             match d.shape {
                 DebrisShape::Sphere { radius } => {
-                    assert!((radius - 3.0 * 0.15).abs() < 1e-5,
-                        "Radial debris radius should be radius*0.15={}, got {}", 3.0 * 0.15, radius);
+                    assert!(
+                        (radius - 3.0 * 0.15).abs() < 1e-5,
+                        "Radial debris radius should be radius*0.15={}, got {}",
+                        3.0 * 0.15,
+                        radius
+                    );
                 }
                 _ => panic!("Radial debris should be Sphere shape"),
             }
@@ -1641,8 +1652,12 @@ mod tests {
         let expected_piece_size = he * 2.0 / ppa as f32;
         for d in &pattern.debris {
             if let DebrisShape::Box { half_extents } = d.shape {
-                assert!((half_extents - expected_piece_size * 0.4).length() < 1e-4,
-                    "Piece half_extents {:?} should be {:?}", half_extents, expected_piece_size * 0.4);
+                assert!(
+                    (half_extents - expected_piece_size * 0.4).length() < 1e-4,
+                    "Piece half_extents {:?} should be {:?}",
+                    half_extents,
+                    expected_piece_size * 0.4
+                );
             } else {
                 panic!("Uniform debris should be Box shape");
             }
@@ -1668,8 +1683,14 @@ mod tests {
             let expected_y = (layer as f32 + 0.5) * layer_height - he.y;
             for p in 0..per_layer {
                 let idx = layer * per_layer + p;
-                assert!((pattern.debris[idx].local_position.y - expected_y).abs() < 1e-4,
-                    "Layer {} piece {} Y should be {}, got {}", layer, p, expected_y, pattern.debris[idx].local_position.y);
+                assert!(
+                    (pattern.debris[idx].local_position.y - expected_y).abs() < 1e-4,
+                    "Layer {} piece {} Y should be {}, got {}",
+                    layer,
+                    p,
+                    expected_y,
+                    pattern.debris[idx].local_position.y
+                );
             }
         }
     }
@@ -1684,10 +1705,20 @@ mod tests {
             let angle = i as f32 * std::f32::consts::TAU / per_layer as f32;
             let expected_x = angle.cos() * he.x * 0.7;
             let expected_z = angle.sin() * he.z * 0.7;
-            assert!((d.local_position.x - expected_x).abs() < 1e-4,
-                "Piece {} X: expected {}, got {}", i, expected_x, d.local_position.x);
-            assert!((d.local_position.z - expected_z).abs() < 1e-4,
-                "Piece {} Z: expected {}, got {}", i, expected_z, d.local_position.z);
+            assert!(
+                (d.local_position.x - expected_x).abs() < 1e-4,
+                "Piece {} X: expected {}, got {}",
+                i,
+                expected_x,
+                d.local_position.x
+            );
+            assert!(
+                (d.local_position.z - expected_z).abs() < 1e-4,
+                "Piece {} Z: expected {}, got {}",
+                i,
+                expected_z,
+                d.local_position.z
+            );
         }
     }
 
@@ -1723,19 +1754,35 @@ mod tests {
         mgr.update(0.001, Vec3::ZERO);
         for debris in mgr.debris_iter() {
             // velocity direction should be generally outward from center
-            let dot = debris.velocity.dot(debris.config.local_position.normalize_or_zero());
-            assert!(dot > 0.0 || debris.config.local_position.length() < 0.01,
-                "Debris velocity should have outward component, dot={}", dot);
+            let dot = debris
+                .velocity
+                .dot(debris.config.local_position.normalize_or_zero());
+            assert!(
+                dot > 0.0 || debris.config.local_position.length() < 0.01,
+                "Debris velocity should have outward component, dot={}",
+                dot
+            );
         }
     }
 
     #[test]
     fn mutation_spawn_debris_respects_velocity_factor() {
         let mut mgr = DestructionManager::new();
-        let slow = DebrisConfig { velocity_factor: 0.5, local_position: Vec3::X, ..Default::default() };
-        let fast = DebrisConfig { velocity_factor: 2.0, local_position: Vec3::X, ..Default::default() };
+        let slow = DebrisConfig {
+            velocity_factor: 0.5,
+            local_position: Vec3::X,
+            ..Default::default()
+        };
+        let fast = DebrisConfig {
+            velocity_factor: 2.0,
+            local_position: Vec3::X,
+            ..Default::default()
+        };
         let cfg = DestructibleConfig {
-            fracture_pattern: FracturePattern { debris: vec![slow, fast], center_of_mass: Vec3::ZERO },
+            fracture_pattern: FracturePattern {
+                debris: vec![slow, fast],
+                center_of_mass: Vec3::ZERO,
+            },
             trigger: DestructionTrigger::Manual,
             destruction_force: 10.0,
             ..Default::default()
@@ -1746,17 +1793,29 @@ mod tests {
         let speeds: Vec<f32> = mgr.debris_iter().map(|d| d.velocity.length()).collect();
         assert!(speeds.len() == 2);
         // The fast debris should have higher velocity
-        assert!(speeds[1] > speeds[0] * 1.5 || speeds[0] > speeds[1] * 1.5,
-            "Different velocity_factors should produce different speeds: {:?}", speeds);
+        assert!(
+            speeds[1] > speeds[0] * 1.5 || speeds[0] > speeds[1] * 1.5,
+            "Different velocity_factors should produce different speeds: {:?}",
+            speeds
+        );
     }
 
     #[test]
     fn mutation_spawn_debris_angular_velocity_deterministic() {
         let mut mgr = DestructionManager::new();
-        let d1 = DebrisConfig { angular_velocity_factor: 1.0, ..Default::default() };
-        let d2 = DebrisConfig { angular_velocity_factor: 1.0, ..Default::default() };
+        let d1 = DebrisConfig {
+            angular_velocity_factor: 1.0,
+            ..Default::default()
+        };
+        let d2 = DebrisConfig {
+            angular_velocity_factor: 1.0,
+            ..Default::default()
+        };
         let cfg = DestructibleConfig {
-            fracture_pattern: FracturePattern { debris: vec![d1, d2], center_of_mass: Vec3::ZERO },
+            fracture_pattern: FracturePattern {
+                debris: vec![d1, d2],
+                center_of_mass: Vec3::ZERO,
+            },
             trigger: DestructionTrigger::Manual,
             ..Default::default()
         };
@@ -1767,7 +1826,10 @@ mod tests {
         let angvels: Vec<Vec3> = mgr.debris_iter().map(|d| d.angular_velocity).collect();
         assert!(angvels.len() == 2);
         // Different IDs → different angular velocities
-        assert_ne!(angvels[0], angvels[1], "Different debris IDs should have different angular velocities");
+        assert_ne!(
+            angvels[0], angvels[1],
+            "Different debris IDs should have different angular velocities"
+        );
     }
 
     // --- Debris::update physics ---
@@ -1778,17 +1840,34 @@ mod tests {
         let gravity = Vec3::new(0.0, -9.81, 0.0);
         debris.update(1.0, gravity);
         // v += gravity * dt = (0, -9.81, 0), pos += v * dt = (0, -9.81, 0)
-        assert!((debris.velocity.y - (-9.81)).abs() < 1e-3, "velocity.y should be -9.81, got {}", debris.velocity.y);
-        assert!((debris.position.y - (-9.81)).abs() < 1e-3, "position.y should be -9.81, got {}", debris.position.y);
+        assert!(
+            (debris.velocity.y - (-9.81)).abs() < 1e-3,
+            "velocity.y should be -9.81, got {}",
+            debris.velocity.y
+        );
+        assert!(
+            (debris.position.y - (-9.81)).abs() < 1e-3,
+            "position.y should be -9.81, got {}",
+            debris.position.y
+        );
         assert!((debris.age - 1.0).abs() < 1e-6, "age should be 1.0");
     }
 
     #[test]
     fn mutation_debris_update_with_initial_velocity() {
         let cfg = DebrisConfig::default();
-        let mut debris = Debris::new(DebrisId(2), DestructibleId(1), cfg, Vec3::ZERO, Vec3::new(10.0, 0.0, 0.0));
+        let mut debris = Debris::new(
+            DebrisId(2),
+            DestructibleId(1),
+            cfg,
+            Vec3::ZERO,
+            Vec3::new(10.0, 0.0, 0.0),
+        );
         debris.update(0.5, Vec3::ZERO);
-        assert!((debris.position.x - 5.0).abs() < 1e-3, "x should be ~5 with v=10, dt=0.5");
+        assert!(
+            (debris.position.x - 5.0).abs() < 1e-3,
+            "x should be ~5 with v=10, dt=0.5"
+        );
     }
 
     // ===== DEEP REMEDIATION v3.6.2 — destruction Round 3 remaining mutations =====
@@ -1805,10 +1884,18 @@ mod tests {
         // health starts at 100. Apply 50 damage → health = 50
         obj.apply_damage(50.0);
         // 50 < 100*0.5 = 50 is FALSE, so state should still be Intact
-        assert_eq!(obj.state, DestructibleState::Intact, "Health=50, threshold=50: should stay Intact");
+        assert_eq!(
+            obj.state,
+            DestructibleState::Intact,
+            "Health=50, threshold=50: should stay Intact"
+        );
         // Apply 0.01 more → health = 49.99 < 50 → Damaged
         obj.apply_damage(0.01);
-        assert_eq!(obj.state, DestructibleState::Damaged, "Health<50 should become Damaged");
+        assert_eq!(
+            obj.state,
+            DestructibleState::Damaged,
+            "Health<50 should become Damaged"
+        );
     }
 
     #[test]
@@ -1819,8 +1906,12 @@ mod tests {
             ..Default::default()
         };
         let mut obj = Destructible::new(DestructibleId(801), config, Vec3::ZERO);
-        obj.apply_damage(10.0);  // health = 0 exactly
-        assert_eq!(obj.state, DestructibleState::Destroying, "Health=0 should trigger Destroying");
+        obj.apply_damage(10.0); // health = 0 exactly
+        assert_eq!(
+            obj.state,
+            DestructibleState::Destroying,
+            "Health=0 should trigger Destroying"
+        );
     }
 
     #[test]
@@ -1833,7 +1924,10 @@ mod tests {
         obj.state = DestructibleState::Destroyed;
         let health_before = obj.health;
         obj.apply_damage(5.0);
-        assert_eq!(obj.health, health_before, "Destroyed object should ignore damage");
+        assert_eq!(
+            obj.health, health_before,
+            "Destroyed object should ignore damage"
+        );
     }
 
     // --- DestructionManager::remove_destructible ---
@@ -1841,21 +1935,380 @@ mod tests {
     fn mutation_r3_remove_destructible_cleans_debris() {
         // self.debris.retain(|_, d| d.source != id)  (mutation: != → ==)
         let mut mgr = DestructionManager::new();
-        let d_id = mgr.add_destructible(DestructibleConfig { max_health: 10.0, ..Default::default() }, Vec3::ZERO);
+        let d_id = mgr.add_destructible(
+            DestructibleConfig {
+                max_health: 10.0,
+                ..Default::default()
+            },
+            Vec3::ZERO,
+        );
         // Manually add debris associated with this destructible
         let debris_cfg = DebrisConfig::default();
         let debris_id = DebrisId(1);
-        mgr.debris.insert(debris_id, Debris::new(debris_id, d_id, debris_cfg.clone(), Vec3::ZERO, Vec3::ZERO));
+        mgr.debris.insert(
+            debris_id,
+            Debris::new(debris_id, d_id, debris_cfg.clone(), Vec3::ZERO, Vec3::ZERO),
+        );
         // Add debris from different source
         let other_id = DestructibleId(999);
         let debris_id2 = DebrisId(2);
-        mgr.debris.insert(debris_id2, Debris::new(debris_id2, other_id, debris_cfg, Vec3::ZERO, Vec3::ZERO));
+        mgr.debris.insert(
+            debris_id2,
+            Debris::new(debris_id2, other_id, debris_cfg, Vec3::ZERO, Vec3::ZERO),
+        );
         assert_eq!(mgr.debris.len(), 2);
         // Remove the destructible
         let removed = mgr.remove_destructible(d_id);
         assert!(removed, "Should return true");
         // Debris from d_id should be gone, debris from other_id should remain
-        assert_eq!(mgr.debris.len(), 1, "Only other source's debris should remain");
-        assert!(mgr.debris.contains_key(&debris_id2), "Other debris should survive");
+        assert_eq!(
+            mgr.debris.len(),
+            1,
+            "Only other source's debris should remain"
+        );
+        assert!(
+            mgr.debris.contains_key(&debris_id2),
+            "Other debris should survive"
+        );
+    }
+
+    // ===== ECS INTEGRATION SCAFFOLDING v3.7.0 — Destruction integration tests =====
+
+    // --- spawn_debris via update() (24 misses) ---
+    #[test]
+    fn integration_spawn_debris_via_damage_and_update() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 50.0,
+            fracture_pattern: FracturePattern::uniform(8, Vec3::splat(0.5), 10.0),
+            destruction_force: 5.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::new(1.0, 2.0, 3.0));
+
+        // Damage to zero health → Destroying state
+        mgr.apply_damage(id, 100.0);
+        assert_eq!(
+            mgr.get(id).unwrap().state,
+            DestructibleState::Destroying
+        );
+
+        // update() should spawn debris and move to Destroyed
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+
+        assert_eq!(
+            mgr.get(id).unwrap().state,
+            DestructibleState::Destroyed
+        );
+        assert!(
+            mgr.debris_count() > 0,
+            "Debris should be spawned: count={}",
+            mgr.debris_count()
+        );
+    }
+
+    #[test]
+    fn integration_spawn_debris_position_offset() {
+        let mut mgr = DestructionManager::new();
+        let origin = Vec3::new(10.0, 20.0, 30.0);
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(1.0), 5.0),
+            destruction_force: 5.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, origin);
+        mgr.apply_damage(id, 100.0);
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+
+        // Each debris position should be origin + local_position
+        for debris in mgr.debris_iter() {
+            let dist = (debris.position - origin).length();
+            assert!(
+                dist < 10.0,
+                "Debris should be near the origin: pos={:?}, dist={}",
+                debris.position,
+                dist
+            );
+        }
+    }
+
+    #[test]
+    fn integration_spawn_debris_velocity_has_outward_component() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::radial(12, 1.0, 10.0),
+            destruction_force: 10.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.apply_damage(id, 100.0);
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+
+        // Debris should have velocity (outward + force direction component)
+        let mut any_has_velocity = false;
+        for debris in mgr.debris_iter() {
+            if debris.velocity.length() > 0.1 {
+                any_has_velocity = true;
+            }
+        }
+        assert!(any_has_velocity, "At least some debris should have velocity");
+    }
+
+    #[test]
+    fn integration_spawn_debris_max_limit() {
+        let mut mgr = DestructionManager::new();
+        mgr.max_debris = 3; // Very low limit
+
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::uniform(20, Vec3::splat(1.0), 10.0),
+            destruction_force: 5.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.apply_damage(id, 100.0);
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+
+        assert!(
+            mgr.debris_count() <= 3,
+            "Should respect max_debris limit: count={}",
+            mgr.debris_count()
+        );
+    }
+
+    #[test]
+    fn integration_spawn_debris_angular_velocity() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::radial(6, 1.0, 5.0),
+            destruction_force: 5.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.apply_damage(id, 100.0);
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+
+        // Debris should have angular velocity from sin-based pseudo-random
+        let mut any_spin = false;
+        for debris in mgr.debris_iter() {
+            if debris.angular_velocity.length() > 0.01 {
+                any_spin = true;
+            }
+        }
+        assert!(any_spin, "At least some debris should spin");
+    }
+
+    #[test]
+    fn integration_spawn_debris_event_emitted() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 5.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::new(5.0, 0.0, 0.0));
+        mgr.apply_damage(id, 100.0);
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+
+        let events = mgr.take_events();
+        assert_eq!(events.len(), 1, "Should emit one destruction event");
+        assert_eq!(events[0].destructible_id, id);
+        assert!(events[0].debris_count > 0);
+        assert!((events[0].position.x - 5.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn integration_debris_update_applies_gravity() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::uniform(1, Vec3::splat(0.1), 1.0),
+            destruction_force: 0.0, // No initial velocity
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::new(0.0, 10.0, 0.0));
+        mgr.apply_damage(id, 100.0);
+        mgr.update(0.0, Vec3::ZERO); // Spawn debris at dt=0
+
+        // Now update with gravity for 1 second
+        mgr.update(1.0, Vec3::new(0.0, -9.81, 0.0));
+
+        for debris in mgr.debris_iter() {
+            assert!(
+                debris.velocity.y < -1.0,
+                "Debris should fall: vel.y={}",
+                debris.velocity.y
+            );
+        }
+    }
+
+    #[test]
+    fn integration_debris_removed_after_lifetime() {
+        let mut mgr = DestructionManager::new();
+        mgr.default_debris_lifetime = 10.0;
+
+        let config = DestructibleConfig {
+            max_health: 1.0,
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 5.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.apply_damage(id, 100.0);
+        mgr.update(0.0, Vec3::ZERO); // Spawn debris
+
+        let count_before = mgr.debris_count();
+        assert!(count_before > 0);
+
+        // Advance time well past lifetime
+        // Debris lifetime is from DebrisConfig::default() which has lifetime: 5.0
+        mgr.update(10.0, Vec3::ZERO);
+
+        assert!(
+            mgr.debris_count() < count_before,
+            "Old debris should be removed: before={}, after={}",
+            count_before,
+            mgr.debris_count()
+        );
+    }
+
+    #[test]
+    fn integration_force_trigger_destroys() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 1000.0,
+            trigger: DestructionTrigger::Force { threshold: 500.0 },
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+
+        // Below threshold
+        mgr.apply_force(id, 400.0);
+        assert_ne!(mgr.get(id).unwrap().state, DestructibleState::Destroying);
+
+        mgr.update(0.0, Vec3::ZERO); // reset_frame
+
+        // At threshold
+        mgr.apply_force(id, 500.0);
+        assert_eq!(mgr.get(id).unwrap().state, DestructibleState::Destroying);
+
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+        assert_eq!(mgr.get(id).unwrap().state, DestructibleState::Destroyed);
+    }
+
+    #[test]
+    fn integration_fracture_radial_debris_count() {
+        let fp = FracturePattern::radial(10, 1.0, 5.0);
+        assert_eq!(fp.debris.len(), 10, "Should create exactly 10 pieces");
+
+        // Verify golden angle distribution - consecutive angles differ
+        if fp.debris.len() >= 2 {
+            let p0 = fp.debris[0].local_position;
+            let p1 = fp.debris[1].local_position;
+            assert!(
+                (p0 - p1).length() > 0.01,
+                "Adjacent pieces should have different positions"
+            );
+        }
+    }
+
+    #[test]
+    fn integration_fracture_layered_debris_layout() {
+        let fp = FracturePattern::layered(3, 4, Vec3::splat(1.0), 12.0);
+        assert_eq!(fp.debris.len(), 12, "3 layers x 4 pieces = 12");
+
+        // Verify mass conservation
+        let total_mass: f32 = fp.debris.iter().map(|d| d.mass).sum();
+        assert!(
+            (total_mass - 12.0).abs() < 0.01,
+            "Mass should be conserved: {}",
+            total_mass
+        );
+
+        // Verify layer distribution
+        let mut y_values: Vec<f32> = fp.debris.iter().map(|d| d.local_position.y).collect();
+        y_values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        y_values.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+        assert_eq!(y_values.len(), 3, "Should have 3 distinct layers");
+    }
+
+    #[test]
+    fn integration_fracture_uniform_grid_spacing() {
+        let fp = FracturePattern::uniform(8, Vec3::new(2.0, 1.0, 2.0), 8.0);
+        assert_eq!(fp.debris.len(), 8, "Should create exactly 8 pieces");
+
+        // All debris should be within half_extents
+        for d in &fp.debris {
+            assert!(
+                d.local_position.x.abs() <= 2.1,
+                "X should be within half_extents: {}",
+                d.local_position.x
+            );
+            assert!(
+                d.local_position.y.abs() <= 1.1,
+                "Y should be within half_extents: {}",
+                d.local_position.y
+            );
+            assert!(
+                d.local_position.z.abs() <= 2.1,
+                "Z should be within half_extents: {}",
+                d.local_position.z
+            );
+        }
+    }
+
+    #[test]
+    fn integration_destroy_manual_then_update() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 10000.0,
+            fracture_pattern: FracturePattern::uniform(6, Vec3::splat(0.5), 5.0),
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+
+        // Manual destroy bypasses health/force checks
+        mgr.destroy(id);
+        assert_eq!(mgr.get(id).unwrap().state, DestructibleState::Destroying);
+
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+        assert_eq!(mgr.get(id).unwrap().state, DestructibleState::Destroyed);
+        assert!(mgr.debris_count() > 0);
+    }
+
+    // ===== ROUND 7 =====
+
+    #[test]
+    fn r7_is_destroyed_only_when_destroyed() {
+        let config = DestructibleConfig {
+            max_health: 10.0,
+            fracture_pattern: FracturePattern::uniform(2, Vec3::splat(0.5), 1.0),
+            ..Default::default()
+        };
+        let mut mgr = DestructionManager::new();
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+
+        // Initially not destroyed
+        let d = mgr.get(id).unwrap();
+        assert!(!d.is_destroyed(), "Should not be destroyed initially");
+
+        // After taking damage but still alive
+        mgr.apply_damage(id, 5.0);
+        let d = mgr.get(id).unwrap();
+        assert!(!d.is_destroyed(), "Should not be destroyed at half health");
+
+        // After being destroyed
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::ZERO);
+        let d = mgr.get(id).unwrap();
+        assert!(
+            d.is_destroyed(),
+            "Should be destroyed after destroy+update"
+        );
     }
 }

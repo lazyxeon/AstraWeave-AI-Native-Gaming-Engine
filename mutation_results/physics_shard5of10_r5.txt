@@ -1,0 +1,24 @@
+Found 211 mutants to test
+ok       Unmutated baseline in 54s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:540:13: delete field joint_type from struct BoneDef expression in RagdollPresets::humanoid in 7s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:542:36: delete - in RagdollPresets::humanoid in 7s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:555:13: delete field joint_type from struct BoneDef expression in RagdollPresets::humanoid in 7s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:557:36: delete - in RagdollPresets::humanoid in 7s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:628:52: replace * with + in RagdollPresets::humanoid in 7s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:628:52: replace * with / in RagdollPresets::humanoid in 7s build + 2s test
+MISSED   astraweave-physics/src/ragdoll.rs:698:34: delete - in RagdollPresets::quadruped in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:103:13: delete field driven from struct Self expression in WheelConfig::front_left in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:114:13: delete field driven from struct Self expression in WheelConfig::front_right in 9s build + 3s test
+MISSED   astraweave-physics/src/vehicle.rs:124:13: delete field steerable from struct Self expression in WheelConfig::rear_left in 10s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:135:13: delete field steerable from struct Self expression in WheelConfig::rear_right in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:206:16: replace < with <= in EngineConfig::torque_at_rpm in 6s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:209:16: replace > with == in EngineConfig::torque_at_rpm in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:209:16: replace > with >= in EngineConfig::torque_at_rpm in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:256:24: replace < with <= in TransmissionConfig::effective_ratio in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:633:22: replace + with - in VehicleManager::spawn in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:633:22: replace + with * in VehicleManager::spawn in 7s build + 1s test
+MISSED   astraweave-physics/src/vehicle.rs:643:22: replace += with -= in VehicleManager::spawn in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:643:22: replace += with *= in VehicleManager::spawn in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:663:9: replace VehicleManager::update with () in 7s build + 2s test
+MISSED   astraweave-physics/src/vehicle.rs:685:36: replace > with >= in VehicleManager::update_with_input in 7s build + 2s test
+211 mutants tested in 37m: 21 missed, 180 caught, 10 unviable
