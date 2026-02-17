@@ -395,7 +395,7 @@ mod camera_tests {
         let proj2 = camera2.proj_matrix();
 
         // Different aspect should produce different projections
-        assert!((proj1 - proj2).abs_diff_eq(Mat4::ZERO, 0.001) == false);
+        assert!(!(proj1 - proj2).abs_diff_eq(Mat4::ZERO, 0.001));
     }
 
     #[test]
@@ -1009,6 +1009,7 @@ mod ibl_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::assertions_on_constants, clippy::manual_range_contains)]
 mod shadow_csm_tests {
     use crate::shadow_csm::{ShadowCascade, CASCADE_COUNT, CASCADE_RESOLUTION, DEPTH_BIAS};
     use glam::{Mat4, Vec3, Vec4};

@@ -227,10 +227,8 @@ fn extract_code_fence(text: &str) -> Result<&str> {
 /// Clean common JSON issues (trailing commas, extra fields)
 fn clean_json(text: &str) -> String {
     // Remove trailing commas before closing brackets/braces
-    
 
-    text
-        .replace(",\n  ]", "\n  ]")
+    text.replace(",\n  ]", "\n  ]")
         .replace(", ]", "]")
         .replace(",]", "]")
         .replace(",\n}", "\n}")
@@ -689,7 +687,10 @@ Some text after
         assert_eq!(ExtractionMethod::Direct.as_str(), "direct");
         assert_eq!(ExtractionMethod::CodeFence.as_str(), "code_fence");
         assert_eq!(ExtractionMethod::Envelope.as_str(), "envelope");
-        assert_eq!(ExtractionMethod::ObjectExtraction.as_str(), "object_extraction");
+        assert_eq!(
+            ExtractionMethod::ObjectExtraction.as_str(),
+            "object_extraction"
+        );
         assert_eq!(ExtractionMethod::Tolerant.as_str(), "tolerant");
     }
 
@@ -702,7 +703,7 @@ Some text after
     #[test]
     fn test_extraction_method_clone() {
         let method = ExtractionMethod::Envelope;
-        let cloned = method;  // Copy
+        let cloned = method; // Copy
         assert_eq!(method, cloned);
     }
 
@@ -762,11 +763,30 @@ Some text after
     fn test_action_step_to_tool_name_common_variants() {
         // Test common ActionStep variants map to correct tool names
         use astraweave_core::IVec2;
-        
+
         let test_cases: Vec<(ActionStep, &str)> = vec![
-            (ActionStep::MoveTo { x: 0, y: 0, speed: None }, "MoveTo"),
-            (ActionStep::Approach { target_id: 0, distance: 1.0 }, "Approach"),
-            (ActionStep::Retreat { target_id: 0, distance: 1.0 }, "Retreat"),
+            (
+                ActionStep::MoveTo {
+                    x: 0,
+                    y: 0,
+                    speed: None,
+                },
+                "MoveTo",
+            ),
+            (
+                ActionStep::Approach {
+                    target_id: 0,
+                    distance: 1.0,
+                },
+                "Approach",
+            ),
+            (
+                ActionStep::Retreat {
+                    target_id: 0,
+                    distance: 1.0,
+                },
+                "Retreat",
+            ),
             (ActionStep::TakeCover { position: None }, "TakeCover"),
             (ActionStep::Attack { target_id: 0 }, "Attack"),
             (ActionStep::Reload, "Reload"),
@@ -781,24 +801,55 @@ Some text after
             (ActionStep::AimedShot { target_id: 0 }, "AimedShot"),
             (ActionStep::QuickAttack { target_id: 0 }, "QuickAttack"),
             (ActionStep::HeavyAttack { target_id: 0 }, "HeavyAttack"),
-            (ActionStep::CoverFire { target_id: 0, duration: 1.0 }, "CoverFire"),
+            (
+                ActionStep::CoverFire {
+                    target_id: 0,
+                    duration: 1.0,
+                },
+                "CoverFire",
+            ),
             (ActionStep::Charge { target_id: 0 }, "Charge"),
-            (ActionStep::EquipWeapon { weapon_name: "sword".to_string() }, "EquipWeapon"),
+            (
+                ActionStep::EquipWeapon {
+                    weapon_name: "sword".to_string(),
+                },
+                "EquipWeapon",
+            ),
             (ActionStep::SwitchWeapon { slot: 0 }, "SwitchWeapon"),
-            (ActionStep::CallReinforcements { count: 1 }, "CallReinforcements"),
+            (
+                ActionStep::CallReinforcements { count: 1 },
+                "CallReinforcements",
+            ),
             (ActionStep::MarkTarget { target_id: 0 }, "MarkTarget"),
             (ActionStep::RequestCover { duration: 1.0 }, "RequestCover"),
-            (ActionStep::CoordinateAttack { target_id: 0 }, "CoordinateAttack"),
-            (ActionStep::SetAmbush { position: IVec2 { x: 0, y: 0 } }, "SetAmbush"),
+            (
+                ActionStep::CoordinateAttack { target_id: 0 },
+                "CoordinateAttack",
+            ),
+            (
+                ActionStep::SetAmbush {
+                    position: IVec2 { x: 0, y: 0 },
+                },
+                "SetAmbush",
+            ),
             (ActionStep::Distract { target_id: 0 }, "Distract"),
-            (ActionStep::Regroup { rally_point: IVec2 { x: 0, y: 0 } }, "Regroup"),
+            (
+                ActionStep::Regroup {
+                    rally_point: IVec2 { x: 0, y: 0 },
+                },
+                "Regroup",
+            ),
             (ActionStep::Interact { target_id: 0 }, "Interact"),
             (ActionStep::Taunt { target_id: 0 }, "Taunt"),
         ];
 
         for (step, expected_name) in test_cases {
             let name = action_step_to_tool_name(&step);
-            assert_eq!(name, expected_name, "ActionStep {:?} should map to {}", step, expected_name);
+            assert_eq!(
+                name, expected_name,
+                "ActionStep {:?} should map to {}",
+                step, expected_name
+            );
         }
     }
 
@@ -847,7 +898,16 @@ Some text after
     fn test_registry_with_all_tools() {
         // Create registry with all the common tools
         let mut tools = vec![];
-        for name in ["MoveTo", "Attack", "Heal", "Reload", "Scan", "Wait", "ThrowSmoke", "TakeCover"] {
+        for name in [
+            "MoveTo",
+            "Attack",
+            "Heal",
+            "Reload",
+            "Scan",
+            "Wait",
+            "ThrowSmoke",
+            "TakeCover",
+        ] {
             tools.push(ToolSpec {
                 name: name.to_string(),
                 args: BTreeMap::new(),

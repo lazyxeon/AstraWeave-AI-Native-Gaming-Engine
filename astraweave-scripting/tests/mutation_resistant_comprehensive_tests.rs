@@ -9,6 +9,8 @@
 //          Integration: script execution, set_position, spawn
 // =============================================================================
 
+#![allow(clippy::unnecessary_get_then_check)]
+
 use astraweave_ecs::{App, Entity};
 use astraweave_scripting::api::{
     NavMeshProxy, PhysicsProxy, RaycastHit, ScriptCommand, ScriptCommands,

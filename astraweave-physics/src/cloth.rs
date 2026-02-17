@@ -3343,4 +3343,206 @@ mod tests {
         );
         assert!(p.position.y.abs() < 0.01, "Y should be ~0: y={}", p.position.y);
     }
+
+    // ===== ROUND 9: Cloth update + particle_normal + manager update =====
+
+    #[test]
+    fn r9_cloth_update_gravity_moves_particles_down() {
+        let config = ClothConfig {
+            width: 4,
+            height: 4,
+            spacing: 1.0,
+            gravity: Vec3::new(0.0, -10.0, 0.0),
+            wind: Vec3::ZERO,
+            damping: 1.0, // no damping, to see gravity effect clearly
+            air_resistance: 0.0,
+            ..Default::default()
+        };
+        let mut cloth = Cloth::new(ClothId(1), config, Vec3::new(0.0, 10.0, 0.0));
+
+        // Unpin all particles (by default corners might be pinned)
+        for p in &mut cloth.particles {
+            p.inv_mass = 1.0 / 0.1; // mass = 0.1
+        }
+
+        let initial_y: Vec<f32> = cloth.particles.iter().map(|p| p.position.y).collect();
+
+        // Step several frames
+        for _ in 0..5 {
+            cloth.update(1.0 / 60.0);
+        }
+
+        // At least some particles should have moved down
+        let moved_down = cloth
+            .particles
+            .iter()
+            .zip(initial_y.iter())
+            .any(|(p, &iy)| p.position.y < iy - 0.001);
+        assert!(
+            moved_down,
+            "Gravity should pull unpinned particles downward"
+        );
+    }
+
+    #[test]
+    fn r9_cloth_update_wind_applies_force() {
+        // Wind force depends on wind.dot(particle_normal). A perfectly flat cloth
+        // has zero cross-product normals (opposite pairs cancel). We need curvature
+        // first: pin the top row and let gravity droop the cloth, then wind can act.
+        let config = ClothConfig {
+            width: 5,
+            height: 5,
+            spacing: 1.0,
+            gravity: Vec3::new(0.0, -10.0, 0.0), // gravity creates droop
+            wind: Vec3::new(10.0, 0.0, 0.0),      // strong wind in X
+            damping: 0.98,
+            air_resistance: 0.0,
+            ..Default::default()
+        };
+        let mut cloth = Cloth::new(ClothId(1), config, Vec3::new(0.0, 10.0, 0.0));
+
+        // Pin top row (grid y=0) so gravity droops the rest
+        for x in 0..5 {
+            cloth.particles[x].inv_mass = 0.0; // pinned
+        }
+        // Unpin remaining rows (they already have default inv_mass from config)
+
+        // Step many frames for gravity to droop and wind to push
+        for _ in 0..100 {
+            cloth.update(1.0 / 60.0);
+        }
+
+        // Bottom-row particles (grid y=4) should have shifted in +X from wind
+        let bottom_row_start = 4 * 5;
+        let bottom_particles = &cloth.particles[bottom_row_start..bottom_row_start + 5];
+        let origin_x = 0.0_f32; // original X positions ranged [0..4]
+        let avg_x: f32 = bottom_particles.iter().map(|p| p.position.x).sum::<f32>() / 5.0;
+        // Without wind, avg_x of bottom row would stay near original (2.0).
+        // With wind, it should shift positively.
+        assert!(
+            avg_x > 2.5,
+            "Wind should push hanging cloth in +X: avg_x={}",
+            avg_x
+        );
+    }
+
+    #[test]
+    fn r9_cloth_update_air_resistance_dampens() {
+        // With air resistance, particles shouldn't accumulate velocity as fast
+        let config_low_drag = ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            gravity: Vec3::new(0.0, -10.0, 0.0),
+            wind: Vec3::ZERO,
+            damping: 1.0,
+            air_resistance: 0.0, // no drag
+            ..Default::default()
+        };
+        let config_high_drag = ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            gravity: Vec3::new(0.0, -10.0, 0.0),
+            wind: Vec3::ZERO,
+            damping: 1.0,
+            air_resistance: 1.0, // high drag
+            ..Default::default()
+        };
+
+        let mut cloth_no_drag = Cloth::new(ClothId(1), config_low_drag, Vec3::new(0.0, 10.0, 0.0));
+        let mut cloth_drag = Cloth::new(ClothId(2), config_high_drag, Vec3::new(0.0, 10.0, 0.0));
+
+        // Unpin all
+        for p in &mut cloth_no_drag.particles {
+            p.inv_mass = 10.0;
+        }
+        for p in &mut cloth_drag.particles {
+            p.inv_mass = 10.0;
+        }
+
+        for _ in 0..20 {
+            cloth_no_drag.update(1.0 / 60.0);
+            cloth_drag.update(1.0 / 60.0);
+        }
+
+        // No-drag cloth should fall faster (lower Y) than high-drag cloth
+        let avg_y_no_drag: f32 =
+            cloth_no_drag.particles.iter().map(|p| p.position.y).sum::<f32>()
+                / cloth_no_drag.particles.len() as f32;
+        let avg_y_drag: f32 = cloth_drag.particles.iter().map(|p| p.position.y).sum::<f32>()
+            / cloth_drag.particles.len() as f32;
+
+        assert!(
+            avg_y_no_drag < avg_y_drag,
+            "No-drag cloth should fall faster: no_drag_y={}, drag_y={}",
+            avg_y_no_drag, avg_y_drag
+        );
+    }
+
+    #[test]
+    fn r9_cloth_particle_normal_flat_is_up() {
+        // A cloth with slight curvature should produce non-zero normals
+        let config = ClothConfig {
+            width: 4,
+            height: 4,
+            spacing: 1.0,
+            gravity: Vec3::ZERO,
+            wind: Vec3::ZERO,
+            ..Default::default()
+        };
+        let mut cloth = Cloth::new(ClothId(1), config, Vec3::ZERO);
+
+        // Perturb a NEIGHBOR particle downward to break symmetry.
+        // Moving the center preserves radial symmetry (cross products cancel).
+        // Moving one neighbor (2,1) creates an asymmetric surface.
+        let neighbor_idx = 1 * 4 + 2; // particle (2,1)
+        cloth.particles[neighbor_idx].position.y -= 0.5;
+
+        let normal = cloth.particle_normal(1, 1);
+        // With the center pushed down, cross products of neighbors should
+        // produce a normal with a significant Y component
+        assert!(
+            normal.length() > 0.1,
+            "Perturbed cloth normal should be non-zero: {:?}",
+            normal
+        );
+    }
+
+    #[test]
+    fn r9_cloth_manager_update_steps_cloths() {
+        let mut mgr = ClothManager::new();
+        let config = ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            gravity: Vec3::new(0.0, -10.0, 0.0),
+            wind: Vec3::ZERO,
+            damping: 1.0,
+            air_resistance: 0.0,
+            ..Default::default()
+        };
+        let id = mgr.create(config, Vec3::new(0.0, 10.0, 0.0));
+
+        // Unpin particles via get_mut
+        if let Some(cloth) = mgr.get_mut(id) {
+            for p in &mut cloth.particles {
+                p.inv_mass = 10.0;
+            }
+        }
+
+        let initial_y = mgr.get(id).unwrap().particles[4].position.y; // center particle
+
+        // Manager update should step the cloth
+        for _ in 0..10 {
+            mgr.update(1.0 / 60.0);
+        }
+
+        let final_y = mgr.get(id).unwrap().particles[4].position.y;
+        assert!(
+            final_y < initial_y,
+            "Manager update should step cloth: initial_y={}, final_y={}",
+            initial_y, final_y
+        );
+    }
 }

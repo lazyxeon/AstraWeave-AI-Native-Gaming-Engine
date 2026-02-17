@@ -32,7 +32,9 @@ fn plan_parser_error_message_is_descriptive_and_no_path_leak() {
 
 #[tokio::test]
 async fn rate_limiter_error_message_is_descriptive_and_no_path_leak() {
-    use astraweave_llm::rate_limiter::{RateLimitContext, RateLimiter, RateLimiterConfig, RequestPriority};
+    use astraweave_llm::rate_limiter::{
+        RateLimitContext, RateLimiter, RateLimiterConfig, RequestPriority,
+    };
     use std::time::Duration;
 
     let mut cfg = RateLimiterConfig::default();
@@ -51,7 +53,10 @@ async fn rate_limiter_error_message_is_descriptive_and_no_path_leak() {
         priority: RequestPriority::Normal,
     };
 
-    let _first = rl.acquire(&ctx).await.expect("first acquire should succeed");
+    let _first = rl
+        .acquire(&ctx)
+        .await
+        .expect("first acquire should succeed");
     let msg = match rl.acquire(&ctx).await {
         Ok(_) => panic!("second acquire should fail"),
         Err(e) => e.to_string(),

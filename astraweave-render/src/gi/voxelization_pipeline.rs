@@ -402,6 +402,7 @@ impl VoxelizationPipeline {
     }
 
     /// Create bind group for voxelization
+    #[allow(clippy::expect_used)] // INVARIANT: caller contract requires upload_mesh() before create_bind_group()
     fn create_bind_group(
         &self,
         device: &wgpu::Device,

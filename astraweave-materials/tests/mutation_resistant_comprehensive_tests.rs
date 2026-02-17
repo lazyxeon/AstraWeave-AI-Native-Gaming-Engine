@@ -14,7 +14,6 @@
 // =============================================================================
 
 use astraweave_materials::*;
-use std::collections::BTreeMap;
 
 // ---------------------------------------------------------------------------
 // Helper: build a minimal valid Graph with a Constant3 base_color
@@ -1554,8 +1553,8 @@ fn brdf_lut_sample_center() {
     let s = lut.sample(0.5, 0.5);
     assert!(s.is_some());
     let [scale, bias] = s.unwrap();
-    assert!(scale >= 0.0 && scale <= 1.0, "scale out of range: {}", scale);
-    assert!(bias >= 0.0 && bias <= 1.0, "bias out of range: {}", bias);
+    assert!((0.0..=1.0).contains(&scale), "scale out of range: {}", scale);
+    assert!((0.0..=1.0).contains(&bias), "bias out of range: {}", bias);
 }
 
 #[test]

@@ -53,6 +53,8 @@ impl TerrainRenderer {
             self.loaded_meshes.insert(chunk_id, mesh);
         }
 
+        // INVARIANT: chunk just inserted above
+        #[allow(clippy::expect_used)]
         Ok(self
             .loaded_meshes
             .get(&chunk_id)

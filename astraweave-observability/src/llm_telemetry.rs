@@ -166,6 +166,7 @@ pub struct PerformanceHistograms {
 }
 
 impl Default for PerformanceHistograms {
+    #[allow(clippy::expect_used)] // Histogram::new(3) is infallible for valid significant digit counts
     fn default() -> Self {
         Self {
             latency_histogram: Histogram::new(3).expect("valid histogram config"), // 3 significant digits
@@ -679,6 +680,7 @@ impl LlmTelemetry {
         let mut cost_tracker = self.cost_tracker.write().await;
 
         // Update hourly costs
+        #[allow(clippy::expect_used)] // with_minute(0)/with_second(0)/with_nanosecond(0) are infallible
         let current_hour = trace
             .start_time
             .with_minute(0)

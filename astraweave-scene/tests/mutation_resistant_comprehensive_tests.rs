@@ -785,6 +785,7 @@ mod cell_state_tests {
     #[test]
     fn test_cell_state_clone() {
         let state = CellState::Loaded;
+        #[allow(clippy::clone_on_copy)]
         let cloned = state.clone();
         assert_eq!(state, cloned);
     }

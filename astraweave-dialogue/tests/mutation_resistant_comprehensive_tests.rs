@@ -2,6 +2,8 @@
 //! Targets: DialogueNode, DialogueResponse, DialogueGraph
 //! Focus: exact return values, boundary conditions, off-by-one, negation, operator swaps
 
+#![allow(clippy::bool_assert_comparison, clippy::manual_range_contains)]
+
 use astraweave_dialogue::{DialogueGraph, DialogueNode, DialogueResponse};
 
 // ============================= DialogueNode Construction =============================

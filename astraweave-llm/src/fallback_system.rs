@@ -184,7 +184,8 @@ impl FallbackOrchestrator {
                         debug!("Falling back to tier {}", current_tier.as_str());
                     } else {
                         // No more tiers - this shouldn't happen since Emergency always succeeds
-                        panic!("Emergency tier failed - this should never happen");
+                        #[allow(clippy::panic)] // Unreachable: Emergency tier is infallible by design
+                        { panic!("Emergency tier failed - this should never happen"); }
                     }
                 }
             }
@@ -280,7 +281,8 @@ impl FallbackOrchestrator {
                                 current_tier = next_tier;
                                 debug!("Batch falling back to tier {}", current_tier.as_str());
                             } else {
-                                panic!("Emergency tier failed - this should never happen");
+                                #[allow(clippy::panic)] // Unreachable: Emergency tier is infallible by design
+                                { panic!("Emergency tier failed - this should never happen"); }
                             }
                         }
                     }
@@ -530,7 +532,12 @@ impl FallbackOrchestrator {
         // If no rules matched, ensure we don't return an empty plan (which might cause issues)
         // The default config usually has a "Scan" fallback, but just in case:
         // Check case-insensitively to support both PascalCase and snake_case registries
-        if steps.is_empty() && reg.tools.iter().any(|t| t.name.eq_ignore_ascii_case("scan")) {
+        if steps.is_empty()
+            && reg
+                .tools
+                .iter()
+                .any(|t| t.name.eq_ignore_ascii_case("scan"))
+        {
             steps.push(ActionStep::Scan { radius: 10.0 });
         }
 
@@ -706,6 +713,7 @@ SIMPLE (no params or one param):
                 let example = if param_count == 0 {
                     format!("{{\"act\": \"{}\"}}", tool.name)
                 } else {
+                    #[allow(clippy::expect_used)] // INVARIANT: param_count == 1 guaranteed by branch condition
                     let (key, val) = tool
                         .args
                         .iter()
@@ -1212,9 +1220,18 @@ mod tests {
 
     #[test]
     fn test_fallback_tier_next() {
-        assert_eq!(FallbackTier::FullLlm.next(), Some(FallbackTier::SimplifiedLlm));
-        assert_eq!(FallbackTier::SimplifiedLlm.next(), Some(FallbackTier::Heuristic));
-        assert_eq!(FallbackTier::Heuristic.next(), Some(FallbackTier::Emergency));
+        assert_eq!(
+            FallbackTier::FullLlm.next(),
+            Some(FallbackTier::SimplifiedLlm)
+        );
+        assert_eq!(
+            FallbackTier::SimplifiedLlm.next(),
+            Some(FallbackTier::Heuristic)
+        );
+        assert_eq!(
+            FallbackTier::Heuristic.next(),
+            Some(FallbackTier::Emergency)
+        );
         assert_eq!(FallbackTier::Emergency.next(), None);
     }
 
@@ -1235,7 +1252,7 @@ mod tests {
     #[test]
     fn test_fallback_tier_clone() {
         let tier = FallbackTier::Heuristic;
-        let cloned = tier;  // Copy
+        let cloned = tier; // Copy
         assert_eq!(tier, cloned);
     }
 
@@ -1310,9 +1327,15 @@ mod tests {
     fn test_simplified_tools_list() {
         let orchestrator = FallbackOrchestrator::new();
         // Check that simplified tools contain expected common tools
-        assert!(orchestrator.simplified_tools.contains(&"MoveTo".to_string()));
-        assert!(orchestrator.simplified_tools.contains(&"Attack".to_string()));
-        assert!(orchestrator.simplified_tools.contains(&"Reload".to_string()));
+        assert!(orchestrator
+            .simplified_tools
+            .contains(&"MoveTo".to_string()));
+        assert!(orchestrator
+            .simplified_tools
+            .contains(&"Attack".to_string()));
+        assert!(orchestrator
+            .simplified_tools
+            .contains(&"Reload".to_string()));
         assert!(orchestrator.simplified_tools.contains(&"Scan".to_string()));
     }
 
@@ -1320,7 +1343,7 @@ mod tests {
     fn test_create_simplified_registry() {
         let orchestrator = FallbackOrchestrator::new();
         let mut full_reg = create_test_registry();
-        
+
         // Add some tools from simplified list
         full_reg.tools.push(ToolSpec {
             name: "MoveTo".to_string(),
@@ -1330,11 +1353,14 @@ mod tests {
             name: "Attack".to_string(),
             args: BTreeMap::new(),
         });
-        
+
         let simplified = orchestrator.create_simplified_registry(&full_reg);
-        
+
         // Should only contain tools from simplified_tools list
-        assert!(simplified.tools.iter().all(|t| orchestrator.simplified_tools.contains(&t.name)));
+        assert!(simplified
+            .tools
+            .iter()
+            .all(|t| orchestrator.simplified_tools.contains(&t.name)));
     }
 
     #[tokio::test]
@@ -1342,9 +1368,9 @@ mod tests {
         let orchestrator = FallbackOrchestrator::new();
         let snap = create_test_snapshot(1);
         let reg = create_test_registry();
-        
+
         let plan = orchestrator.try_heuristic(&snap, &reg);
-        
+
         // Should return a valid plan (may have scan as fallback)
         assert!(!plan.plan_id.is_empty());
         assert!(plan.plan_id.starts_with("heuristic-"));
@@ -1354,20 +1380,20 @@ mod tests {
     async fn test_emergency_plan_structure() {
         let orchestrator = FallbackOrchestrator::new();
         let snap = create_test_snapshot(1);
-        
+
         let plan = orchestrator.emergency_plan(&snap);
-        
+
         // Should have 2 steps: Scan and Wait
         assert_eq!(plan.steps.len(), 2);
         assert!(plan.plan_id.starts_with("emergency-"));
-        
+
         // First step is Scan
         if let ActionStep::Scan { radius } = &plan.steps[0] {
             assert_eq!(*radius, 10.0);
         } else {
             panic!("First step should be Scan");
         }
-        
+
         // Second step is Wait
         if let ActionStep::Wait { duration } = &plan.steps[1] {
             assert_eq!(*duration, 1.0);
@@ -1379,7 +1405,7 @@ mod tests {
     #[tokio::test]
     async fn test_record_success_multiple() {
         let orchestrator = FallbackOrchestrator::new();
-        
+
         // Simulate multiple successes
         let attempts1 = vec![FallbackAttempt {
             tier: FallbackTier::SimplifiedLlm,
@@ -1387,8 +1413,10 @@ mod tests {
             error: None,
             duration_ms: 100,
         }];
-        orchestrator.record_success(FallbackTier::SimplifiedLlm, &attempts1, 100).await;
-        
+        orchestrator
+            .record_success(FallbackTier::SimplifiedLlm, &attempts1, 100)
+            .await;
+
         let attempts2 = vec![
             FallbackAttempt {
                 tier: FallbackTier::SimplifiedLlm,
@@ -1403,10 +1431,12 @@ mod tests {
                 duration_ms: 10,
             },
         ];
-        orchestrator.record_success(FallbackTier::Heuristic, &attempts2, 60).await;
-        
+        orchestrator
+            .record_success(FallbackTier::Heuristic, &attempts2, 60)
+            .await;
+
         let metrics = orchestrator.get_metrics().await;
-        
+
         assert_eq!(metrics.total_requests, 2);
         assert!(metrics.tier_successes.contains_key("simplified_llm"));
         assert!(metrics.tier_successes.contains_key("heuristic"));
@@ -1452,49 +1482,53 @@ mod tests {
     #[test]
     fn test_fallback_tier_copy() {
         let tier = FallbackTier::FullLlm;
-        let copied: FallbackTier = tier;  // Should implement Copy
+        let copied: FallbackTier = tier; // Should implement Copy
         assert_eq!(tier, copied);
     }
 
     #[tokio::test]
     async fn test_try_tier_heuristic() {
         struct NeverCalledClient;
-        
+
         #[async_trait]
         impl LlmClient for NeverCalledClient {
             async fn complete(&self, _prompt: &str) -> Result<String> {
                 panic!("Should not be called for heuristic tier");
             }
         }
-        
+
         let orchestrator = FallbackOrchestrator::new();
         let snap = create_test_snapshot(1);
         let reg = create_test_registry();
-        
+
         // try_tier with Heuristic should not call LLM
-        let result = orchestrator.try_tier(FallbackTier::Heuristic, &NeverCalledClient, &snap, &reg).await;
+        let result = orchestrator
+            .try_tier(FallbackTier::Heuristic, &NeverCalledClient, &snap, &reg)
+            .await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_try_tier_emergency() {
         struct NeverCalledClient;
-        
+
         #[async_trait]
         impl LlmClient for NeverCalledClient {
             async fn complete(&self, _prompt: &str) -> Result<String> {
                 panic!("Should not be called for emergency tier");
             }
         }
-        
+
         let orchestrator = FallbackOrchestrator::new();
         let snap = create_test_snapshot(1);
         let reg = create_test_registry();
-        
+
         // try_tier with Emergency should not call LLM
-        let result = orchestrator.try_tier(FallbackTier::Emergency, &NeverCalledClient, &snap, &reg).await;
+        let result = orchestrator
+            .try_tier(FallbackTier::Emergency, &NeverCalledClient, &snap, &reg)
+            .await;
         assert!(result.is_ok());
-        
+
         let plan = result.unwrap();
         assert!(plan.plan_id.starts_with("emergency-"));
     }
@@ -1517,16 +1551,16 @@ mod tests {
 
         let agents = vec![(1, create_test_snapshot(1))];
 
-        // We need to force it to go to emergency. 
+        // We need to force it to go to emergency.
         // Currently it goes SimplifiedLlm -> Heuristic -> Emergency.
-        // Heuristic always succeeds, so we need to mock try_heuristic to fail? 
+        // Heuristic always succeeds, so we need to mock try_heuristic to fail?
         // No, try_heuristic returns PlanIntent directly, it doesn't return Result.
         // So it will always stop at Heuristic unless we change the logic.
         // Wait, the loop in plan_batch_with_fallback:
         // FallbackTier::Heuristic -> break
         // So it never actually reaches Emergency in the current implementation of plan_batch_with_fallback
         // because Heuristic is infallible.
-        
+
         let results = orchestrator
             .plan_batch_with_fallback(&client, agents, &reg)
             .await;
@@ -1552,10 +1586,7 @@ mod tests {
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
 
-        let agents = vec![
-            (1, create_test_snapshot(1)),
-            (2, create_test_snapshot(2)),
-        ];
+        let agents = vec![(1, create_test_snapshot(1)), (2, create_test_snapshot(2))];
 
         let results = orchestrator
             .plan_batch_with_fallback(&client, agents, &reg)
@@ -1597,9 +1628,9 @@ mod tests {
     fn test_deprecated_build_simplified_prompt() {
         let snap = create_test_snapshot(1);
         let reg = create_test_registry();
-        
+
         let prompt = build_simplified_prompt(&snap, &reg);
-        
+
         assert!(prompt.contains("tactical AI"));
         assert!(prompt.contains("ALLOWED TOOLS"));
         assert!(prompt.contains("MoveTo"));
@@ -1618,7 +1649,7 @@ mod tests {
                 enforce_stamina: false,
             },
         };
-        
+
         let prompt = build_simplified_prompt(&snap, &reg);
         assert!(prompt.contains("POSITION-BASED"));
         assert!(prompt.contains("TARGET-BASED"));
@@ -1646,13 +1677,16 @@ mod tests {
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
         assert_eq!(result.tier, FallbackTier::Heuristic);
-        assert!(result.attempts.iter().any(|a| a.error.as_ref().is_some_and(|e| e.contains("circuit breaker"))));
+        assert!(result.attempts.iter().any(|a| a
+            .error
+            .as_ref()
+            .is_some_and(|e| e.contains("circuit breaker"))));
     }
 
     #[tokio::test]
     async fn test_record_success_metrics_math() {
         let orchestrator = FallbackOrchestrator::new();
-        
+
         // 1. First request: 1 attempt, 100ms
         let attempts1 = vec![FallbackAttempt {
             tier: FallbackTier::SimplifiedLlm,
@@ -1660,8 +1694,10 @@ mod tests {
             error: None,
             duration_ms: 100,
         }];
-        orchestrator.record_success(FallbackTier::SimplifiedLlm, &attempts1, 100).await;
-        
+        orchestrator
+            .record_success(FallbackTier::SimplifiedLlm, &attempts1, 100)
+            .await;
+
         // 2. Second request: 2 attempts, 200ms total
         let attempts2 = vec![
             FallbackAttempt {
@@ -1677,8 +1713,10 @@ mod tests {
                 duration_ms: 50,
             },
         ];
-        orchestrator.record_success(FallbackTier::Heuristic, &attempts2, 200).await;
-        
+        orchestrator
+            .record_success(FallbackTier::Heuristic, &attempts2, 200)
+            .await;
+
         let metrics = orchestrator.get_metrics().await;
         assert_eq!(metrics.total_requests, 2);
         // Avg attempts: (1 + 2) / 2 = 1.5
@@ -1693,10 +1731,7 @@ mod tests {
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
 
-        let agents = vec![
-            (1, create_test_snapshot(1)),
-            (2, create_test_snapshot(2)),
-        ];
+        let agents = vec![(1, create_test_snapshot(1)), (2, create_test_snapshot(2))];
 
         // Force FullLlm tier
         let results = orchestrator
@@ -1718,7 +1753,9 @@ mod tests {
         let snap = create_test_snapshot(1);
         let reg = create_test_registry();
 
-        let result = orchestrator.try_tier(FallbackTier::FullLlm, &client, &snap, &reg).await;
+        let result = orchestrator
+            .try_tier(FallbackTier::FullLlm, &client, &snap, &reg)
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().plan_id, "full");
     }
@@ -1733,7 +1770,9 @@ mod tests {
         let snap = create_test_snapshot(1);
         let reg = create_test_registry();
 
-        let result = orchestrator.try_tier(FallbackTier::SimplifiedLlm, &client, &snap, &reg).await;
+        let result = orchestrator
+            .try_tier(FallbackTier::SimplifiedLlm, &client, &snap, &reg)
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().plan_id, "simple");
     }

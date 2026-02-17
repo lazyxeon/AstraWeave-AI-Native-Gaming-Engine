@@ -656,7 +656,11 @@ mod tests {
     #[test]
     fn test_sync_save_creates_directory() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let file_path = temp_dir.path().join("subdir").join("nested").join("cell.ron");
+        let file_path = temp_dir
+            .path()
+            .join("subdir")
+            .join("nested")
+            .join("cell.ron");
 
         let cell = CellData::new([0, 0, 0]);
         save_cell_to_ron_sync(&file_path, &cell).expect("Failed to save");
@@ -680,14 +684,21 @@ mod tests {
         });
 
         // Save async
-        save_cell_to_ron(&file_path, &cell).await.expect("Failed to async save");
+        save_cell_to_ron(&file_path, &cell)
+            .await
+            .expect("Failed to async save");
 
         // Load async
-        let loaded = load_cell_from_ron(&file_path).await.expect("Failed to async load");
+        let loaded = load_cell_from_ron(&file_path)
+            .await
+            .expect("Failed to async load");
 
         assert_eq!(loaded.coord, [5, 6, 7]);
         assert!(loaded.metadata.is_some());
-        assert_eq!(loaded.metadata.as_ref().unwrap().description, Some("Async test".to_string()));
+        assert_eq!(
+            loaded.metadata.as_ref().unwrap().description,
+            Some("Async test".to_string())
+        );
     }
 
     #[tokio::test]
@@ -696,7 +707,9 @@ mod tests {
         let file_path = temp_dir.path().join("async_subdir").join("cell.ron");
 
         let cell = CellData::new([0, 0, 0]);
-        save_cell_to_ron(&file_path, &cell).await.expect("Failed to async save");
+        save_cell_to_ron(&file_path, &cell)
+            .await
+            .expect("Failed to async save");
 
         assert!(file_path.exists());
     }

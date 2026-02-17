@@ -6,8 +6,8 @@
 use proptest::prelude::*;
 use std::time::Duration;
 
-use astraweave_llm::retry::{RetryConfig, RetryableError};
 use astraweave_llm::circuit_breaker::{CircuitBreakerConfig, CircuitState};
+use astraweave_llm::retry::{RetryConfig, RetryableError};
 
 // ============================================================================
 // PROPTEST STRATEGIES
@@ -16,11 +16,11 @@ use astraweave_llm::circuit_breaker::{CircuitBreakerConfig, CircuitState};
 /// Strategy for generating RetryConfig values
 fn retry_config_strategy() -> impl Strategy<Value = RetryConfig> {
     (
-        0u32..10,          // max_attempts
-        1u64..1000,        // initial_backoff_ms
-        1.0f64..4.0,       // backoff_multiplier
-        100u64..10000,     // max_backoff_ms
-        any::<bool>(),     // jitter
+        0u32..10,      // max_attempts
+        1u64..1000,    // initial_backoff_ms
+        1.0f64..4.0,   // backoff_multiplier
+        100u64..10000, // max_backoff_ms
+        any::<bool>(), // jitter
     )
         .prop_map(|(attempts, initial, mult, max, jitter)| RetryConfig {
             max_attempts: attempts,
@@ -34,12 +34,12 @@ fn retry_config_strategy() -> impl Strategy<Value = RetryConfig> {
 /// Strategy for generating CircuitBreakerConfig values
 fn circuit_breaker_config_strategy() -> impl Strategy<Value = CircuitBreakerConfig> {
     (
-        1u32..20,          // failure_threshold
-        10u64..300,        // failure_window
-        1u32..50,          // minimum_requests
-        5u64..120,         // recovery_timeout
-        1u32..10,          // success_threshold
-        any::<bool>(),     // enabled
+        1u32..20,      // failure_threshold
+        10u64..300,    // failure_window
+        1u32..50,      // minimum_requests
+        5u64..120,     // recovery_timeout
+        1u32..10,      // success_threshold
+        any::<bool>(), // enabled
     )
         .prop_map(|(ft, fw, mr, rt, st, en)| CircuitBreakerConfig {
             failure_threshold: ft,
@@ -94,11 +94,11 @@ proptest! {
             let backoff = config.backoff_for_attempt(0);
             // The backoff is capped at max_backoff_ms
             let expected_base = config.initial_backoff_ms.min(config.max_backoff_ms);
-            
+
             if !config.jitter {
                 // Without jitter, should be exactly the capped value
                 prop_assert_eq!(
-                    backoff.as_millis() as u64, 
+                    backoff.as_millis() as u64,
                     expected_base,
                     "Backoff should be min(initial, max) = {}", expected_base
                 );
@@ -151,11 +151,11 @@ proptest! {
             max_backoff_ms,
             jitter: false,
         };
-        
+
         let backoff_0 = config.backoff_for_attempt(0);
         let backoff_1 = config.backoff_for_attempt(1);
         let backoff_2 = config.backoff_for_attempt(2);
-        
+
         // Each subsequent backoff should be >= previous (or both at cap)
         prop_assert!(
             backoff_1 >= backoff_0 || backoff_0.as_millis() as u64 >= max_backoff_ms,
@@ -278,7 +278,7 @@ proptest! {
         let closed = CircuitState::Closed;
         let open = CircuitState::Open;
         let half_open = CircuitState::HalfOpen;
-        
+
         prop_assert_ne!(closed.clone(), open.clone());
         prop_assert_ne!(closed, half_open.clone());
         prop_assert_ne!(open, half_open);

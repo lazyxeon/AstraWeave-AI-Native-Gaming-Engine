@@ -3,6 +3,8 @@
 //! 200+ tests targeting exact return values, boundary conditions, state
 //! transitions, operator sensitivity, and boolean return correctness.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use std::collections::BTreeMap;
 
 use glam::Vec3;

@@ -17,7 +17,6 @@
 use astraweave_core::{
     CompanionState, EnemyState, IVec2, PlayerState, Poi, Team, World, WorldSnapshot,
 };
-use std::collections::BTreeMap;
 
 // ============================================================================
 // IVEC2 MATHEMATICAL CORRECTNESS
@@ -591,6 +590,7 @@ fn test_world_determinism() {
 
 /// Verify snapshot construction is deterministic
 #[test]
+#[allow(clippy::field_reassign_with_default)]
 fn test_snapshot_construction_determinism() {
     let create_snapshot = || {
         let mut snap = WorldSnapshot::default();

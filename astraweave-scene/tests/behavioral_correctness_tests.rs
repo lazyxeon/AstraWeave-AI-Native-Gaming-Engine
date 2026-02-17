@@ -438,6 +438,7 @@ fn test_grid_coord_manhattan_distance() {
 // ============================================================================
 
 #[derive(Debug, Clone, Copy)]
+#[allow(clippy::upper_case_acronyms)]
 struct AABB {
     min: Vec3,
     max: Vec3,
@@ -624,7 +625,7 @@ fn test_streaming_radius_cells() {
     assert_eq!(cells_per_axis, 5, "500m / 100m = 5 cells");
 
     // Total cells in radius: (2r + 1)³ for 3D or (2r + 1)² for 2D (ignoring Y)
-    let total_2d = ((2 * cells_per_axis + 1) * (2 * cells_per_axis + 1)) as i32;
+    let total_2d = (2 * cells_per_axis + 1) * (2 * cells_per_axis + 1);
     assert_eq!(total_2d, 121, "(2*5 + 1)² = 11² = 121 cells");
 }
 

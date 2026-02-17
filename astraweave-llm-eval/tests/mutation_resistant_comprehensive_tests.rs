@@ -41,6 +41,7 @@ fn scenario_type_copy_semantics() {
 #[test]
 fn scenario_type_clone_semantics() {
     let a = ScenarioType::Exploration;
+    #[allow(clippy::clone_on_copy)]
     let b = a.clone();
     assert_eq!(a, b);
 }

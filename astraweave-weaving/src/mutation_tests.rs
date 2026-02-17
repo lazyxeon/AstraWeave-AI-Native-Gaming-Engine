@@ -70,9 +70,13 @@ mod world_metrics_tests {
 
     #[test]
     fn test_world_metrics_with_health() {
-        let mut metrics = WorldMetrics::default();
-        metrics.avg_health = 0.75;
-        metrics.critical_health_count = 3;
+        #[allow(clippy::field_reassign_with_default)]
+        let metrics = {
+            let mut m = WorldMetrics::default();
+            m.avg_health = 0.75;
+            m.critical_health_count = 3;
+            m
+        };
 
         assert_eq!(metrics.avg_health, 0.75);
         assert_eq!(metrics.critical_health_count, 3);
@@ -312,6 +316,7 @@ mod ability_type_tests {
     fn test_ability_type_copy_clone() {
         let original = AbilityType::EchoDash;
         let copied = original;
+        #[allow(clippy::clone_on_copy)]
         let cloned = original.clone();
 
         assert_eq!(original, copied);

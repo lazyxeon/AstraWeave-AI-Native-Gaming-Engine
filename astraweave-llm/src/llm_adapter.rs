@@ -20,7 +20,10 @@ pub fn safe_llm_invoke(prompt: &str) -> Result<String, String> {
 
 fn mock_llm_call(prompt: &str) -> Result<String, String> {
     // Placeholder for actual LLM call
-    Ok(format!("{{\"plan_id\":\"mock\",\"steps\":[]}} // echo: {}", prompt))
+    Ok(format!(
+        "{{\"plan_id\":\"mock\",\"steps\":[]}} // echo: {}",
+        prompt
+    ))
 }
 
 /// Check if a prompt is within acceptable length
@@ -230,6 +233,7 @@ mod tests {
     // ====================================================================
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_max_prompt_length_is_reasonable() {
         assert!(MAX_PROMPT_LENGTH > 0);
         assert!(MAX_PROMPT_LENGTH >= 1024); // At least 1KB

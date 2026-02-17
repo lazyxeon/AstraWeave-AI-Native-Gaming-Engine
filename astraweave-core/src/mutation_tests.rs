@@ -3,12 +3,12 @@
 //! These tests verify **exact computed values** and **behavioral correctness** to ensure
 //! mutations to formulas and logic are detected by `cargo mutants`.
 
-#![cfg(test)]
+#![allow(clippy::field_reassign_with_default)]
 
 use crate::schema::{
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, Poi, WorldSnapshot,
 };
-use crate::world::{Ammo, Health, Pose, Team, World};
+use crate::world::{Team, World};
 use std::collections::BTreeMap;
 
 // =============================================================================

@@ -106,6 +106,7 @@ impl Events {
     /// let mut events = Events::new();
     /// events.send(DamageEvent { amount: 10 });
     /// ```
+    #[allow(clippy::expect_used)] // INVARIANT: or_insert_with just inserted EventQueue<E>, downcast cannot fail
     pub fn send<E: Event>(&mut self, event: E) {
         let queue = self
             .queues

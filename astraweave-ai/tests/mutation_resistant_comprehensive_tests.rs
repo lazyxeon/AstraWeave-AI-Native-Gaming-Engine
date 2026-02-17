@@ -1160,6 +1160,7 @@ mod orchestrator_edge_cases {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn utility_time_encoded_in_plan_id() {
         let uo = UtilityOrchestrator::new();
         let mut snap = snapshot_with_enemy(0, 0, 10, 0, 50);

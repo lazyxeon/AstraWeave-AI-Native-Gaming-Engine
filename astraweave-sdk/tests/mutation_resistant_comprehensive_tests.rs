@@ -52,6 +52,7 @@ fn error_codes_all_distinct() {
 }
 
 #[test]
+#[allow(clippy::assertions_on_constants)]
 fn error_codes_signs() {
     assert!(AW_OK >= 0, "AW_OK should be non-negative");
     assert!(AW_ERR_NULL < 0);
@@ -61,6 +62,7 @@ fn error_codes_signs() {
 }
 
 #[test]
+#[allow(clippy::assertions_on_constants)]
 fn error_codes_ordering() {
     // Negative codes decrease: -1 > -2 > -3 > -4
     assert!(AW_ERR_NULL > AW_ERR_PARAM);
@@ -127,6 +129,7 @@ fn awversion_is_copy() {
 #[test]
 fn awversion_clone() {
     let v = aw_version();
+    #[allow(clippy::clone_on_copy)]
     let v2 = v.clone();
     assert_eq!(v2.major, v.major);
     assert_eq!(v2.minor, v.minor);
@@ -506,7 +509,7 @@ fn sdk_error_io_display() {
 
 #[test]
 fn sdk_error_from_io() {
-    let io_err = std::io::Error::new(std::io::ErrorKind::Other, "test");
+    let io_err = std::io::Error::other("test");
     let sdk_err: SdkError = io_err.into();
     assert!(matches!(sdk_err, SdkError::Io(_)));
 }

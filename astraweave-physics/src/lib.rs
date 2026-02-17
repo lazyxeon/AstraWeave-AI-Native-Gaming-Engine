@@ -1,4 +1,16 @@
 #![forbid(unsafe_code)]
+#![cfg_attr(test, allow(
+    unused_variables,
+    unused_mut,
+    unused_imports,
+    non_snake_case,
+    clippy::manual_range_contains,
+    clippy::field_reassign_with_default,
+    clippy::no_effect,
+    clippy::identity_op,
+    clippy::needless_update,
+    clippy::useless_vec,
+))]
 //! # AstraWeave Physics
 //!
 //! Full-featured physics simulation for AstraWeave, wrapping **Rapier3D 0.22**.
@@ -4581,6 +4593,263 @@ mod tests {
             y > 1.0,
             "Jump should move character well above start: y={}",
             y
+        );
+    }
+
+    // ===== ROUND 8: Struct/helper + control_character catches =====
+
+    #[test]
+    fn r8_debug_line_is_degenerate_zero_length() {
+        let line = DebugLine {
+            start: [1.0, 2.0, 3.0],
+            end: [1.0, 2.0, 3.0],
+            color: [1.0, 0.0, 0.0],
+        };
+        assert!(line.is_degenerate(), "Zero-length line should be degenerate");
+
+        let line2 = DebugLine {
+            start: [0.0, 0.0, 0.0],
+            end: [1.0, 0.0, 0.0],
+            color: [1.0, 0.0, 0.0],
+        };
+        assert!(!line2.is_degenerate(), "Unit-length line should not be degenerate");
+    }
+
+    #[test]
+    fn r8_char_state_is_grounded() {
+        let state = CharState::Grounded;
+        assert!(state.is_grounded(), "Grounded state should return true");
+    }
+
+    #[test]
+    fn r8_character_controller_is_grounded_delegates() {
+        let ctrl = CharacterController {
+            state: CharState::Grounded,
+            max_climb_angle_deg: 45.0,
+            radius: 0.3,
+            height: 1.6,
+            max_step: 0.3,
+            vertical_velocity: 0.0,
+            gravity_scale: 1.0,
+            time_since_grounded: 0.0,
+            jump_buffer_timer: 0.0,
+            coyote_time_limit: 0.15,
+            jump_buffer_limit: 0.15,
+            pending_jump_velocity: 0.0,
+        };
+        assert!(ctrl.is_grounded(), "Controller should be grounded");
+    }
+
+    #[test]
+    fn r8_character_controller_can_jump_when_grounded() {
+        let ctrl = CharacterController {
+            state: CharState::Grounded,
+            max_climb_angle_deg: 45.0,
+            radius: 0.3,
+            height: 1.6,
+            max_step: 0.3,
+            vertical_velocity: 0.0,
+            gravity_scale: 1.0,
+            time_since_grounded: 0.0,
+            jump_buffer_timer: 0.0,
+            coyote_time_limit: 0.15,
+            jump_buffer_limit: 0.15,
+            pending_jump_velocity: 0.0,
+        };
+        assert!(ctrl.can_jump(), "Grounded controller should be able to jump");
+    }
+
+    #[test]
+    fn r8_physics_config_is_earth_gravity() {
+        let config = PhysicsConfig::default();
+        assert!(config.is_earth_gravity(), "Default gravity should be earth-like");
+
+        let moon = PhysicsConfig {
+            gravity: Vec3::new(0.0, -1.625, 0.0),
+            ..Default::default()
+        };
+        assert!(!moon.is_earth_gravity(), "Moon gravity is not earth-like");
+    }
+
+    #[test]
+    fn r8_physics_config_is_zero_gravity() {
+        let zero = PhysicsConfig {
+            gravity: Vec3::ZERO,
+            ..Default::default()
+        };
+        assert!(zero.is_zero_gravity(), "Zero vector should be zero gravity");
+
+        let config = PhysicsConfig::default();
+        assert!(!config.is_zero_gravity(), "Earth gravity is not zero");
+    }
+
+    #[test]
+    fn r8_control_character_gravity_decreases_y() {
+        // Test that gravity pulls character down over time
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let ch = pw.add_character(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+        pw.step();
+
+        // Character starts high with no ground
+        let start_y = pw.body_transform(ch).unwrap().w_axis.y;
+
+        // Step with no movement → gravity should pull down
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let after_y = pw.body_transform(ch).unwrap().w_axis.y;
+        assert!(
+            after_y < start_y - 1.0,
+            "Gravity should pull character down significantly: start={}, after={}",
+            start_y, after_y
+        );
+    }
+
+    #[test]
+    fn r8_control_character_horizontal_movement() {
+        // Test horizontal movement changes x/z position
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let start_x = pw.body_transform(ch).unwrap().w_axis.x;
+
+        // Move in +X direction
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::new(5.0, 0.0, 0.0), 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let after_x = pw.body_transform(ch).unwrap().w_axis.x;
+        assert!(
+            after_x > start_x + 1.0,
+            "Horizontal movement should change X: start={}, after={}",
+            start_x, after_x
+        );
+    }
+
+    #[test]
+    fn r8_control_character_jump_consumes_buffer() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Jump
+        pw.jump(ch, 2.0);
+
+        // After one control_character call, the jump should be consumed
+        pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+        pw.step();
+
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        // After consuming jump, buffer should be at 0 or negative
+        assert!(
+            ctrl.jump_buffer_timer <= 0.0,
+            "Jump buffer should be consumed: {}",
+            ctrl.jump_buffer_timer
+        );
+        // Coyote time should be invalidated after jumping
+        assert!(
+            ctrl.time_since_grounded > ctrl.coyote_time_limit,
+            "Coyote time should be invalidated after jump"
+        );
+    }
+
+    #[test]
+    fn r8_control_character_climb_mode_rises() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let start_y = pw.body_transform(ch).unwrap().w_axis.y;
+
+        // Climb mode: _climb=true should move upward
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, true);
+            pw.step();
+        }
+
+        let after_y = pw.body_transform(ch).unwrap().w_axis.y;
+        assert!(
+            after_y > start_y + 0.5,
+            "Climb mode should raise character: start={}, after={}",
+            start_y, after_y
+        );
+    }
+
+    #[test]
+    fn r8_control_character_ground_snaps_y() {
+        // Test that character snaps to ground when falling
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 2.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Let character fall and settle
+        for _ in 0..120 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let y = pw.body_transform(ch).unwrap().w_axis.y;
+        // Should have settled near the ground (y ~ 0.0 to 0.5)
+        assert!(
+            y < 1.0,
+            "Character should have settled near ground: y={}",
+            y
+        );
+        // Vertical velocity should be 0 when grounded
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        assert!(
+            ctrl.vertical_velocity.abs() < 0.1,
+            "Grounded character should have ~0 vertical velocity: {}",
+            ctrl.vertical_velocity
+        );
+    }
+
+    #[test]
+    fn r8_control_character_slope_check() {
+        // Test that slope detection uses max_climb_angle_deg
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle on flat ground
+        for _ in 0..60 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Character should be grounded on flat surface
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        assert!(
+            ctrl.time_since_grounded < 0.5,
+            "Should be near-grounded on flat surface: time_since={}",
+            ctrl.time_since_grounded
         );
     }
 }

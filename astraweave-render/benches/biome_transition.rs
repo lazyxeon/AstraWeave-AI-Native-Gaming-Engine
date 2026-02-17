@@ -10,6 +10,8 @@
 //! These benchmarks validate that the biome transition system meets
 //! 60 FPS frame budgets (16.67ms).
 
+#![allow(clippy::field_reassign_with_default)]
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::hint::black_box;
 use std::time::Duration;
@@ -104,7 +106,7 @@ fn bench_transition_effect(c: &mut Criterion) {
             apply_tint: true,
             tint_alpha: 0.15,
         };
-        b.iter(|| black_box(TransitionEffect::new(config.clone())))
+        b.iter(|| black_box(TransitionEffect::new(config)))
     });
 
     // Benchmark starting a transition
@@ -138,7 +140,7 @@ fn bench_transition_effect(c: &mut Criterion) {
         };
         let dt = 1.0 / 60.0;
         b.iter(|| {
-            let mut effect = TransitionEffect::new(config.clone());
+            let mut effect = TransitionEffect::new(config);
             effect.start(Some(BiomeType::Forest), BiomeType::Tundra);
             for _ in 0..90 {
                 effect.update(dt);
@@ -244,7 +246,7 @@ fn bench_full_pipeline(c: &mut Criterion) {
     group.bench_function("biome_change_with_weather", |b| {
         let config = TransitionConfig::default();
         b.iter(|| {
-            let mut effect = TransitionEffect::new(config.clone());
+            let mut effect = TransitionEffect::new(config);
             effect.start(Some(BiomeType::Forest), BiomeType::Desert);
 
             let mut env = SceneEnvironment::default();

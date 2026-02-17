@@ -37,6 +37,7 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     }
 
     /// Get a value from the cache, updating its access time
+    #[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
     pub fn get(&self, key: &K) -> Option<V> {
         let mut inner = self
             .inner
@@ -59,6 +60,7 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     /// Put a value into the cache
     ///
     /// Returns true if an item was evicted, false otherwise
+    #[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
     pub fn put(&self, key: K, value: V) -> bool {
         let mut inner = self
             .inner
@@ -104,6 +106,7 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     }
 
     /// Get the current number of items in the cache
+    #[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
     pub fn len(&self) -> usize {
         self.inner
             .lock()
@@ -119,6 +122,7 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
 
     /// Clear all items from the cache
     #[allow(dead_code)]
+    #[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
     pub fn clear(&self) {
         let mut inner = self
             .inner
@@ -129,6 +133,7 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     }
 
     /// Phase 7: Get all keys in the cache (for similarity search)
+    #[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
     pub fn keys(&self) -> Vec<K> {
         let inner = self
             .inner

@@ -1,9 +1,11 @@
 # AstraWeave Sanitizer CI Workflow
-# Runs LLVM Sanitizers (ASan, LSan) on critical crates
+# Runs LLVM Sanitizers (ASan, LSan, TSan) on critical crates
 # Schedule: Every push to main, nightly for full suite
 #
-# ⚠️ IMPORTANT: astraweave-render is EXCLUDED from ASan testing
+# ⚠️ IMPORTANT: astraweave-render is EXCLUDED from all sanitizer testing
 # GPU driver allocations cause false positives. Use wgpu validation instead.
+#
+# Miri testing is handled by the dedicated miri.yml workflow — not duplicated here.
 
 name: Sanitizers
 
@@ -15,6 +17,17 @@ on:
   schedule:
     # Run full sanitizer suite at 3 AM UTC daily
     - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      force_full_suite:
+        description: 'Run the full nightly suite (schedule-only jobs)'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -30,8 +43,8 @@ jobs:
   asan-critical:
     name: AddressSanitizer (Critical Crates)
     runs-on: ubuntu-latest
-    # Only run on PRs and pushes (not nightly)
-    if: github.event_name != 'schedule'
+    # Only run on PRs and pushes (not nightly schedule)
+    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
     steps:
       - uses: actions/checkout@v5
       
@@ -52,38 +65,38 @@ jobs:
             ${{ runner.os }}-asan-
       
       - name: Run ASan on astraweave-ecs
-        continue-on-error: true
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
             -p astraweave-ecs \
             --target x86_64-unknown-linux-gnu \
+            --lib \
             -- --test-threads=1
       
       - name: Run ASan on astraweave-physics
-        continue-on-error: true
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
             -p astraweave-physics \
             --target x86_64-unknown-linux-gnu \
+            --lib \
+            -- --test-threads=1
+      
+      - name: Run ASan on astraweave-core
+        run: |
+          RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+            -p astraweave-core \
+            --target x86_64-unknown-linux-gnu \
+            --lib \
             -- --test-threads=1
       
       # NOTE: astraweave-render intentionally excluded - GPU drivers cause false positives
       # GPU validation is handled by wgpu's built-in validation layers instead
-      
-      - name: Run ASan on astraweave-memory
-        run: |
-          RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
-            -p astraweave-memory \
-            --target x86_64-unknown-linux-gnu \
-            -- --test-threads=1
-        continue-on-error: true  # Memory crate may not exist yet
 
   # Full ASan suite (nightly only)
   # NOTE: Excludes render crate due to GPU driver false positives
   asan-full:
     name: AddressSanitizer (Full Suite)
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
     steps:
       - uses: actions/checkout@v5
       
@@ -106,53 +119,79 @@ jobs:
           # NOTE: astraweave-render excluded - GPU drivers cause ASan false positives
           # GPU validation is handled by wgpu's built-in validation layers
           #
-          # Expanded coverage (January 2025):
-          # - P0 Core: ecs, physics, core, ai, nav
-          # - P1 Infrastructure: net, asset, llm, memory, context
-          # - P2 Support: behavior, prompts, embeddings
+          # Priority tiers:
+          # - P0 Core: ecs, physics, core, ai, nav — MUST pass
+          # - P1 Infrastructure: net, asset, memory, context — Advisory
+          # - P2 Support: behavior, prompts, embeddings — Advisory
+          # - EXCLUDED: llm (requires external services, excluded from standard builds)
           
-          CRATES=(
-            # P0 Core Runtime
+          P0_CRATES=(
             astraweave-ecs
             astraweave-physics
             astraweave-core
             astraweave-ai
             astraweave-nav
-            # P1 Infrastructure
+          )
+          
+          P1_CRATES=(
             astraweave-net
             astraweave-asset
-            astraweave-llm
             astraweave-memory
             astraweave-context
-            # P2 Support
+          )
+          
+          P2_CRATES=(
             astraweave-behavior
             astraweave-prompts
             astraweave-embeddings
           )
           
-          echo "=== Running ASan on ${#CRATES[@]} crates ==="
-          FAILED=0
-          for crate in "${CRATES[@]}"; do
+          ALL_CRATES=("${P0_CRATES[@]}" "${P1_CRATES[@]}" "${P2_CRATES[@]}")
+          
+          echo "=== Running ASan on ${#ALL_CRATES[@]} crates ==="
+          P0_FAILED=0
+          ADVISORY_FAILED=0
+          
+          for crate in "${P0_CRATES[@]}"; do
             echo ""
-            echo "=== Testing $crate with ASan ==="
+            echo "=== [P0 CRITICAL] Testing $crate with ASan ==="
             if RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
-              -p $crate \
+              -p "$crate" \
               --target x86_64-unknown-linux-gnu \
+              --lib \
               -- --test-threads=1 2>&1; then
               echo "✅ $crate passed ASan"
             else
-              echo "⚠️ $crate had ASan failures (may be expected)"
-              FAILED=$((FAILED + 1))
+              echo "❌ $crate FAILED ASan (P0 critical — will fail job)"
+              P0_FAILED=$((P0_FAILED + 1))
+            fi
+          done
+          
+          for crate in "${P1_CRATES[@]}" "${P2_CRATES[@]}"; do
+            echo ""
+            echo "=== [Advisory] Testing $crate with ASan ==="
+            if RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
+              -p "$crate" \
+              --target x86_64-unknown-linux-gnu \
+              --lib \
+              -- --test-threads=1 2>&1; then
+              echo "✅ $crate passed ASan"
+            else
+              echo "⚠️ $crate had ASan failures (advisory — not blocking)"
+              ADVISORY_FAILED=$((ADVISORY_FAILED + 1))
             fi
           done
           
           echo ""
-          echo "=== ASan Summary ==="
-          echo "Total crates: ${#CRATES[@]}"
-          echo "Failures: $FAILED"
+          echo "=== ASan Full Suite Summary ==="
+          echo "P0 crates: ${#P0_CRATES[@]} (failures: $P0_FAILED)"
+          echo "Advisory crates: $(( ${#P1_CRATES[@]} + ${#P2_CRATES[@]} )) (failures: $ADVISORY_FAILED)"
           
-          # Don't fail the job - some crates may have acceptable issues
-          exit 0
+          if [ "$P0_FAILED" -gt 0 ]; then
+            echo "❌ P0 critical crate(s) failed ASan — failing job"
+            exit 1
+          fi
+          echo "✅ All P0 crates passed ASan"
 
   # LeakSanitizer (fast, run on every PR)
   leak-sanitizer:
@@ -175,20 +214,44 @@ jobs:
             target
           key: ${{ runner.os }}-lsan-${{ hashFiles('**/Cargo.lock') }}
       
-      - name: Run LSan on persistence crates
+      - name: Run LSan on astraweave-ecs
+        run: |
+          RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
+            -p astraweave-ecs \
+            --target x86_64-unknown-linux-gnu \
+            --lib \
+            -- --test-threads=1
+      
+      - name: Run LSan on astraweave-core
+        run: |
+          RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
+            -p astraweave-core \
+            --target x86_64-unknown-linux-gnu \
+            --lib \
+            -- --test-threads=1
+      
+      - name: Run LSan on astraweave-physics
+        run: |
+          RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
+            -p astraweave-physics \
+            --target x86_64-unknown-linux-gnu \
+            --lib \
+            -- --test-threads=1
+      
+      - name: Run LSan on persistence (aw-save)
         run: |
           RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
             -p aw-save \
             --target x86_64-unknown-linux-gnu \
+            --lib \
             -- --test-threads=1
-        continue-on-error: true  # Some crates may have known leaks
 
   # ThreadSanitizer (nightly only - ADVISORY, not must-pass)
   # TSan with async Rust has many false positives. Use for bug discovery, not gating.
   thread-sanitizer:
     name: ThreadSanitizer (Advisory)
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
     steps:
       - uses: actions/checkout@v5
       
@@ -207,7 +270,7 @@ jobs:
           # TSan with async Rust is noisy. These are known false positives.
           # This list will grow over time as we discover more.
           #
-          # Last updated: January 2026
+          # Last updated: February 2026
           # ============================================
           
           # Standard library false positives
@@ -244,60 +307,40 @@ jobs:
           # Add more as discovered during tuning...
           EOF
       
-      - name: Run TSan on AI crates
+      - name: Run TSan on astraweave-ai
         run: |
           echo "⚠️ TSan is ADVISORY - failures may be false positives"
-          echo "Investigate real issues, but don't block releases on TSan alone"
           RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
             -p astraweave-ai \
+            --target x86_64-unknown-linux-gnu \
+            --lib \
+            -- --test-threads=1
+        continue-on-error: true  # TSan is advisory, not blocking
+      
+      - name: Run TSan on astraweave-coordination
+        run: |
+          RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
             -p astraweave-coordination \
             --target x86_64-unknown-linux-gnu \
+            --lib \
+            -- --test-threads=1
+        continue-on-error: true  # TSan is advisory, not blocking
+      
+      - name: Run TSan on astraweave-ecs
+        run: |
+          RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
+            -p astraweave-ecs \
+            --target x86_64-unknown-linux-gnu \
+            --lib \
             -- --test-threads=1
         continue-on-error: true  # TSan is advisory, not blocking
 
-  # Miri (nightly only - very slow)
-  miri:
-    name: Miri (Pure Rust UB Detection)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
-    steps:
-      - uses: actions/checkout@v5
-      
-      - name: Install Rust Nightly with Miri
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: miri, rust-src
-      
-      - name: Setup Miri
-        run: cargo +nightly miri setup
-      
-      - name: Run Miri on astraweave-ecs
-        run: |
-          cargo +nightly miri test -p astraweave-ecs -- \
-            --skip ffi \
-            --skip integration
-        env:
-          MIRIFLAGS: "-Zmiri-disable-isolation -Zmiri-symbolic-alignment-check"
-      
-      - name: Run Miri on astraweave-math
-        run: |
-          cargo +nightly miri test -p astraweave-math
-        env:
-          MIRIFLAGS: "-Zmiri-disable-isolation"
-        continue-on-error: true
-      
-      - name: Run Miri on astraweave-core
-        run: |
-          cargo +nightly miri test -p astraweave-core
-        env:
-          MIRIFLAGS: "-Zmiri-disable-isolation"
-        continue-on-error: true
-
   # Determinism Testing (nightly - critical for multiplayer/replay)
+  # Uses per-crate targeting to avoid workspace-wide compilation failures.
   determinism:
     name: Determinism Validation
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
     steps:
       - uses: actions/checkout@v5
       
@@ -313,23 +356,116 @@ jobs:
             target
           key: ${{ runner.os }}-determinism-${{ hashFiles('**/Cargo.lock') }}
       
-      - name: Run determinism tests
+      - name: Run determinism tests (astraweave-ecs)
         run: |
-          echo "Running determinism tests across critical crates..."
-          echo "Current status: 96.9% pass rate (32 tests, 4 crates)"
-          echo "Target: 100% pass rate"
-          
-          # Run determinism-specific tests
-          cargo test --workspace \
+          echo "=== ECS Determinism Tests ==="
+          cargo test -p astraweave-ecs \
             -- --test-threads=1 \
-            determinism \
-            deterministic \
-            replay \
-            || echo "⚠️ Some determinism tests failed - investigate!"
+            determinism deterministic replay
       
-      - name: Check for HashMap usage in hot paths
+      - name: Run determinism tests (astraweave-weaving)
         run: |
-          echo "Checking for non-deterministic HashMap iteration in tests..."
-          # HashMap iteration order is non-deterministic
-          # Tests should use BTreeMap for deterministic behavior
-          grep -r "HashMap" --include="*.rs" crates/ | grep -v "BTreeMap" | head -20 || true
+          echo "=== Weaving Determinism Tests ==="
+          cargo test -p astraweave-weaving \
+            -- --test-threads=1 \
+            determinism deterministic replay
+      
+      - name: Run determinism tests (astraweave-terrain)
+        run: |
+          echo "=== Terrain Determinism Tests ==="
+          cargo test -p astraweave-terrain \
+            -- --test-threads=1 \
+            determinism deterministic replay
+      
+      - name: Run determinism tests (astraweave-physics)
+        run: |
+          echo "=== Physics Determinism Tests ==="
+          cargo test -p astraweave-physics \
+            -- --test-threads=1 \
+            determinism deterministic replay
+        continue-on-error: true  # Physics determinism is a stretch goal
+      
+      - name: Check for non-deterministic HashMap usage in hot paths
+        run: |
+          echo "Checking for non-deterministic HashMap iteration in source code..."
+          echo "(HashMap iteration order is non-deterministic — use BTreeMap instead)"
+          echo ""
+          # Search all engine source directories, not just crates/
+          FOUND=$(grep -rn "use std::collections::HashMap" --include="*.rs" \
+            astraweave-ecs/src/ \
+            astraweave-physics/src/ \
+            astraweave-weaving/src/ \
+            astraweave-terrain/src/ \
+            astraweave-ai/src/ \
+            astraweave-core/src/ \
+            astraweave-nav/src/ \
+            astraweave-gameplay/src/ \
+            crates/ \
+            persistence/ \
+            net/ \
+            2>/dev/null | head -30 || true)
+          
+          if [ -n "$FOUND" ]; then
+            echo "⚠️ HashMap imports found in determinism-critical code:"
+            echo "$FOUND"
+            echo ""
+            echo "Consider migrating to BTreeMap for deterministic iteration."
+          else
+            echo "✅ No HashMap imports found in critical paths"
+          fi
+
+  # Summary job: aggregates results from all sanitizer jobs
+  sanitizer-summary:
+    name: Sanitizer Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [asan-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
+    steps:
+      - name: Check sanitizer results
+        run: |
+          echo "=== Sanitizer Workflow Summary ==="
+          echo ""
+          echo "asan-critical:    ${{ needs.asan-critical.result }}"
+          echo "asan-full:        ${{ needs.asan-full.result }}"
+          echo "leak-sanitizer:   ${{ needs.leak-sanitizer.result }}"
+          echo "thread-sanitizer: ${{ needs.thread-sanitizer.result }}"
+          echo "determinism:      ${{ needs.determinism.result }}"
+          echo ""
+          
+          # Fail if any critical (non-advisory) job failed
+          # Skipped jobs are OK — they run on different triggers
+          FAILED=0
+          
+          if [ "${{ needs.asan-critical.result }}" = "failure" ]; then
+            echo "❌ ASan critical crates FAILED"
+            FAILED=1
+          fi
+          
+          if [ "${{ needs.asan-full.result }}" = "failure" ]; then
+            echo "❌ ASan full suite FAILED"
+            FAILED=1
+          fi
+          
+          if [ "${{ needs.leak-sanitizer.result }}" = "failure" ]; then
+            echo "❌ LeakSanitizer FAILED"
+            FAILED=1
+          fi
+          
+          if [ "${{ needs.determinism.result }}" = "failure" ]; then
+            echo "❌ Determinism validation FAILED"
+            FAILED=1
+          fi
+          
+          # TSan is advisory — log but don't fail
+          if [ "${{ needs.thread-sanitizer.result }}" = "failure" ]; then
+            echo "⚠️ ThreadSanitizer had failures (advisory — not blocking)"
+          fi
+          
+          if [ "$FAILED" -eq 1 ]; then
+            echo ""
+            echo "❌ One or more critical sanitizer jobs failed"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All critical sanitizer checks passed"

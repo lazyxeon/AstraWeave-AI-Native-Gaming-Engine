@@ -99,6 +99,9 @@ fn assert_actions_recognized(plan: &PlanIntent, context: &str) {
             ActionStep::ModifyTerrain { .. } => {
                 // Valid action - continue
             }
+            _ => {
+                // Future action variants - still valid
+            }
         }
         // Verify step index is consistent
         assert!(

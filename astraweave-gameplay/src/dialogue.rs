@@ -49,6 +49,7 @@ pub struct DialogueState {
 }
 
 impl DialogueState {
+    #[allow(clippy::expect_used)] // INVARIANT: d.start must reference a valid node ID in the dialogue
     pub fn new(d: &Dialogue) -> Self {
         let map: HashMap<String, usize> = d
             .nodes

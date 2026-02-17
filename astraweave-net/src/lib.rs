@@ -658,6 +658,7 @@ impl GameServer {
                                 snap: filtered.clone(),
                             };
                             println!("Forcing full snapshot to viewer {}", vid);
+                            #[allow(clippy::unwrap_used)] // Msg implements Serialize; serialization is infallible for known enum variants
                             let _ = tx
                                 .send(Message::Text(serde_json::to_string(&msg).unwrap().into()))
                                 .await;
@@ -711,6 +712,7 @@ impl GameServer {
                                 }
                                 let msg = Msg::ServerDelta { delta };
                                 println!("Sending delta to viewer {}", vid);
+                                #[allow(clippy::unwrap_used)] // Msg Serialize is infallible
                                 let res = tx
                                     .send(Message::Text(
                                         serde_json::to_string(&msg).unwrap().into(),
@@ -722,6 +724,7 @@ impl GameServer {
                                     snap: filtered.clone(),
                                 };
                                 println!("Sending initial snapshot to viewer {}", vid);
+                                #[allow(clippy::unwrap_used)] // Msg Serialize is infallible
                                 let res = tx
                                     .send(Message::Text(
                                         serde_json::to_string(&msg).unwrap().into(),
@@ -733,6 +736,7 @@ impl GameServer {
                         } else {
                             // viewer not in snapshot; send full snapshot
                             let msg = Msg::ServerSnapshot { snap: snap.clone() };
+                            #[allow(clippy::unwrap_used)] // Msg Serialize is infallible
                             let _ = tx
                                 .send(Message::Text(serde_json::to_string(&msg).unwrap().into()))
                                 .await;
@@ -740,6 +744,7 @@ impl GameServer {
                         }
                     }
                     ServerEvent::ApplyResult { ok, err } => {
+                        #[allow(clippy::unwrap_used)] // Msg Serialize is infallible
                         let _ = tx
                             .send(Message::Text(
                                 serde_json::to_string(&Msg::ServerApplyResult { ok, err })
@@ -749,6 +754,7 @@ impl GameServer {
                             .await;
                     }
                     ServerEvent::Ack { seq, tick_applied } => {
+                        #[allow(clippy::unwrap_used)] // Msg Serialize is infallible
                         let _ = tx
                             .send(Message::Text(
                                 serde_json::to_string(&Msg::ServerAck { seq, tick_applied })

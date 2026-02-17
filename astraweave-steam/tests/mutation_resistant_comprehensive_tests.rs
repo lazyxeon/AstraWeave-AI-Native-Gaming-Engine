@@ -1,6 +1,12 @@
 //! Mutation-resistant comprehensive tests for astraweave-steam.
 //!
 //! Tests the MockPlatform (requires --features mock) and constants.
+//!
+//! Most tests require `MockPlatform` which is behind the `mock` feature.
+//! The CI passes `--all-features` so these tests always run there.
+//! Locally, run with: `cargo test -p astraweave-steam --features mock`
+
+#![cfg(feature = "mock")]
 
 use astraweave_steam::*;
 

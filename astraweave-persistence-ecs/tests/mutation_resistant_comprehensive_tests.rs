@@ -3,6 +3,8 @@
 //! These tests target exact return values, boundary conditions, operator swaps,
 //! negation bugs, and off-by-one errors to achieve 90%+ mutation kill rate.
 
+#![allow(clippy::unnecessary_to_owned)]
+
 use astraweave_core::ecs_components::*;
 use astraweave_core::IVec2;
 use astraweave_ecs::{Plugin, World};

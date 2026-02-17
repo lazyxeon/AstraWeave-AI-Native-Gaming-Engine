@@ -910,7 +910,10 @@ mod tests {
 
         let result = framework.create_experiment(experiment).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("name cannot be empty"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("name cannot be empty"));
     }
 
     #[tokio::test]
@@ -921,7 +924,10 @@ mod tests {
 
         let result = framework.create_experiment(experiment).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Control variant must have an ID"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Control variant must have an ID"));
     }
 
     #[tokio::test]
@@ -932,7 +938,10 @@ mod tests {
 
         let result = framework.create_experiment(experiment).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("At least one test variant"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("At least one test variant"));
     }
 
     #[tokio::test]
@@ -944,7 +953,10 @@ mod tests {
 
         let result = framework.create_experiment(experiment).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Traffic allocation must sum to 1.0"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Traffic allocation must sum to 1.0"));
     }
 
     #[tokio::test]
@@ -955,7 +967,10 @@ mod tests {
 
         let result = framework.create_experiment(experiment).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Variant IDs must be unique"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Variant IDs must be unique"));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1078,7 +1093,10 @@ mod tests {
         // Try to start again
         let result = framework.start_experiment(&experiment_id).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not in draft status"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not in draft status"));
     }
 
     #[tokio::test]
@@ -1286,8 +1304,10 @@ mod tests {
 
         // Test deserialization
         let _: AssignmentStrategy = serde_json::from_str(&hash_json).unwrap();
-        let _: AssignmentStrategy = serde_json::from_str(&serde_json::to_string(&weighted).unwrap()).unwrap();
-        let _: AssignmentStrategy = serde_json::from_str(&serde_json::to_string(&round_robin).unwrap()).unwrap();
+        let _: AssignmentStrategy =
+            serde_json::from_str(&serde_json::to_string(&weighted).unwrap()).unwrap();
+        let _: AssignmentStrategy =
+            serde_json::from_str(&serde_json::to_string(&round_robin).unwrap()).unwrap();
     }
 
     #[test]
@@ -1467,11 +1487,14 @@ mod tests {
         exp.name = "Experiment 3".to_string();
         exp.control_variant.id = "control-3".to_string();
         exp.test_variants[0].id = "test-3".to_string();
-        
+
         // Creation should work, but starting might fail
         let result = framework.create_experiment(exp).await;
         // With 2 running experiments and max_concurrent=2, creating a 3rd should fail
-        assert!(result.is_err(), "Expected error when exceeding max concurrent experiments");
+        assert!(
+            result.is_err(),
+            "Expected error when exceeding max concurrent experiments"
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════════

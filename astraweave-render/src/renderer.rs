@@ -4227,6 +4227,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         (out, count)
     }
 
+    /// Load a texture from disk for smoke testing / dev validation.
+    /// INVARIANT: Texture I/O failures here are unrecoverable dev-time errors.
+    #[allow(clippy::expect_used)]
     pub fn set_smoke_test_texture(&mut self, path: &str) {
         #[cfg(feature = "textures")]
         {

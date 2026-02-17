@@ -12,8 +12,8 @@
 
 use anyhow::Result;
 use astraweave_core::{
-    ActionStep, CompanionState, Constraints, EnemyState, IVec2, PlayerState, 
-    ToolRegistry, ToolSpec, WorldSnapshot,
+    ActionStep, CompanionState, Constraints, EnemyState, IVec2, PlayerState, ToolRegistry,
+    ToolSpec, WorldSnapshot,
 };
 use astraweave_llm::{clear_global_cache, plan_from_llm, LlmClient, PlanSource};
 use async_trait::async_trait;
@@ -41,15 +41,13 @@ fn create_test_snapshot() -> WorldSnapshot {
             stance: "crouch".into(),
             orders: vec!["engage".into()],
         },
-        enemies: vec![
-            EnemyState {
-                id: 1,
-                pos: IVec2 { x: 10, y: 10 },
-                hp: 50,
-                cover: "partial".into(),
-                last_seen: 0.5,
-            },
-        ],
+        enemies: vec![EnemyState {
+            id: 1,
+            pos: IVec2 { x: 10, y: 10 },
+            hp: 50,
+            cover: "partial".into(),
+            last_seen: 0.5,
+        }],
         pois: vec![],
         obstacles: vec![IVec2 { x: 7, y: 7 }],
         objective: Some("eliminate hostiles".into()),
@@ -139,7 +137,11 @@ impl LlmClient for RetryClient {
     async fn complete(&self, _prompt: &str) -> Result<String> {
         let count = self.failure_count.fetch_add(1, Ordering::SeqCst);
         if count < self.max_failures {
-            Err(anyhow::anyhow!("Simulated failure {}/{}", count + 1, self.max_failures))
+            Err(anyhow::anyhow!(
+                "Simulated failure {}/{}",
+                count + 1,
+                self.max_failures
+            ))
         } else {
             Ok(r#"{"plan_id": "retry-success", "steps": [{"act": "TakeCover"}]}"#.to_string())
         }
@@ -152,7 +154,8 @@ struct MalformedJsonClient;
 #[async_trait]
 impl LlmClient for MalformedJsonClient {
     async fn complete(&self, _prompt: &str) -> Result<String> {
-        Ok(r#"{"plan_id": "malformed", "steps": [{"act": "NonExistentTool"}]"#.to_string()) // Missing closing brace
+        Ok(r#"{"plan_id": "malformed", "steps": [{"act": "NonExistentTool"}]"#.to_string())
+        // Missing closing brace
     }
 }
 
@@ -213,13 +216,13 @@ impl LlmClient for StreamingClient {
 async fn test_fallback_chain_success_first_try() {
     //! Tests that successful LLM response is used directly
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = SuccessClient;
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Llm(plan) => {
             assert_eq!(plan.plan_id, "success-1");
@@ -231,6 +234,7 @@ async fn test_fallback_chain_success_first_try() {
             }
         }
         PlanSource::Fallback { .. } => panic!("Expected LLM plan, got fallback"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -238,13 +242,13 @@ async fn test_fallback_chain_success_first_try() {
 async fn test_fallback_chain_after_failures() {
     //! Tests that system retries and eventually uses fallback after repeated failures
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = RetryClient::new(10); // Will fail more than retry limit
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     // Should fall back after exhausting retries
     match result {
         PlanSource::Fallback { plan, reason } => {
@@ -256,6 +260,7 @@ async fn test_fallback_chain_after_failures() {
             let call_count = client.failure_count.load(Ordering::SeqCst);
             assert!(call_count > 1, "Should have retried: {} calls", call_count);
         }
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -263,25 +268,27 @@ async fn test_fallback_chain_after_failures() {
 async fn test_fallback_chain_malformed_json() {
     //! Tests fallback when LLM returns malformed JSON
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = MalformedJsonClient;
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Fallback { plan, reason } => {
             assert!(!plan.steps.is_empty(), "Fallback should produce valid plan");
             // Reason should mention JSON or parsing
             assert!(
-                reason.to_lowercase().contains("json") || 
-                reason.to_lowercase().contains("parse") ||
-                reason.contains("tier"),
-                "Reason should explain failure: {}", reason
+                reason.to_lowercase().contains("json")
+                    || reason.to_lowercase().contains("parse")
+                    || reason.contains("tier"),
+                "Reason should explain failure: {}",
+                reason
             );
         }
         PlanSource::Llm(_) => panic!("Expected fallback for malformed JSON"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -289,13 +296,13 @@ async fn test_fallback_chain_malformed_json() {
 async fn test_fallback_chain_hallucinated_tools() {
     //! Tests fallback when LLM returns non-existent tools
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = HallucinatedToolClient;
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Fallback { plan, .. } => {
             // Fallback should use only valid tools from the registry
@@ -316,6 +323,7 @@ async fn test_fallback_chain_hallucinated_tools() {
             }
         }
         PlanSource::Llm(_) => panic!("Expected fallback for hallucinated tools"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -323,15 +331,15 @@ async fn test_fallback_chain_hallucinated_tools() {
 async fn test_fallback_latency_budget() {
     //! Tests that slow LLM responses trigger fallback within latency budget
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = SlowClient { delay_ms: 100 }; // 100ms delay
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let start = Instant::now();
     let _result = plan_from_llm(&client, &snap, &reg).await;
     let elapsed = start.elapsed();
-    
+
     // Should complete even with slow client (either via LLM or fallback)
     // Total time should be bounded (not hang indefinitely)
     assert!(
@@ -345,22 +353,30 @@ async fn test_fallback_latency_budget() {
 async fn test_streaming_parser_assembly() {
     //! Tests that streaming responses are correctly assembled
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = StreamingClient::new();
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Llm(plan) => {
             assert_eq!(plan.plan_id, "stream-1");
-            assert!(!plan.steps.is_empty(), "Should have parsed streaming response");
+            assert!(
+                !plan.steps.is_empty(),
+                "Should have parsed streaming response"
+            );
         }
         PlanSource::Fallback { plan, reason } => {
             // Fallback is acceptable if streaming format not recognized
-            assert!(!plan.steps.is_empty(), "Fallback should have steps: {}", reason);
+            assert!(
+                !plan.steps.is_empty(),
+                "Fallback should have steps: {}",
+                reason
+            );
         }
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -368,29 +384,29 @@ async fn test_streaming_parser_assembly() {
 async fn test_fallback_plan_validity() {
     //! Tests that fallback plans are always valid and executable
     clear_global_cache(); // Ensure test isolation
-    
+
     // Force fallback with always-failing client
     struct AlwaysFailClient;
-    
+
     #[async_trait]
     impl LlmClient for AlwaysFailClient {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             Err(anyhow::anyhow!("Always fails"))
         }
     }
-    
+
     let client = AlwaysFailClient;
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Fallback { plan, .. } => {
             // Fallback plan must be valid
             assert!(!plan.plan_id.is_empty(), "Plan must have ID");
             assert!(!plan.steps.is_empty(), "Plan must have steps");
-            
+
             // Steps must be reasonable (less than 100)
             assert!(
                 plan.steps.len() <= 100,
@@ -399,6 +415,7 @@ async fn test_fallback_plan_validity() {
             );
         }
         PlanSource::Llm(_) => panic!("Always-fail client should trigger fallback"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -406,34 +423,43 @@ async fn test_fallback_plan_validity() {
 async fn test_concurrent_fallback_requests() {
     //! Tests that multiple concurrent fallback requests don't interfere
     clear_global_cache(); // Ensure test isolation
-    
+
     let client = Arc::new(RetryClient::new(5));
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     // Spawn 10 concurrent requests
     let mut handles = Vec::new();
     for i in 0..10 {
         let client_clone = Arc::clone(&client);
         let snap_clone = snap.clone();
         let reg_clone = reg.clone();
-        
+
         handles.push(tokio::spawn(async move {
             let result = plan_from_llm(&*client_clone, &snap_clone, &reg_clone).await;
             (i, result)
         }));
     }
-    
+
     // All should complete (either LLM or fallback)
     for handle in handles {
         let (id, result) = handle.await.unwrap();
         match result {
             PlanSource::Llm(plan) => {
-                assert!(!plan.steps.is_empty(), "Request {} LLM plan should have steps", id);
+                assert!(
+                    !plan.steps.is_empty(),
+                    "Request {} LLM plan should have steps",
+                    id
+                );
             }
             PlanSource::Fallback { plan, .. } => {
-                assert!(!plan.steps.is_empty(), "Request {} fallback plan should have steps", id);
+                assert!(
+                    !plan.steps.is_empty(),
+                    "Request {} fallback plan should have steps",
+                    id
+                );
             }
+            _ => panic!("Unexpected PlanSource variant for request {}", id),
         }
     }
 }
@@ -442,25 +468,25 @@ async fn test_concurrent_fallback_requests() {
 async fn test_fallback_preserves_context() {
     //! Tests that fallback plans consider the world state
     clear_global_cache(); // Ensure test isolation
-    
+
     struct ContextAwareFailClient;
-    
+
     #[async_trait]
     impl LlmClient for ContextAwareFailClient {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             Err(anyhow::anyhow!("Fail to trigger fallback"))
         }
     }
-    
+
     // Create snapshot with low ammo
     let mut snap = create_test_snapshot();
     snap.me.ammo = 0; // No ammo!
-    
+
     let client = ContextAwareFailClient;
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Fallback { plan, .. } => {
             // With 0 ammo, fallback should not include Attack as first action
@@ -469,6 +495,7 @@ async fn test_fallback_preserves_context() {
             assert!(!plan.steps.is_empty(), "Should produce fallback plan");
         }
         PlanSource::Llm(_) => panic!("Should have triggered fallback"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -476,19 +503,19 @@ async fn test_fallback_preserves_context() {
 async fn test_fallback_tier_progression() {
     //! Tests that fallback progresses through tiers correctly
     clear_global_cache(); // Ensure test isolation
-    
+
     let call_count = Arc::new(AtomicUsize::new(0));
     let call_count_clone = Arc::clone(&call_count);
-    
+
     struct ProgressionClient {
         call_count: Arc<AtomicUsize>,
     }
-    
+
     #[async_trait]
     impl LlmClient for ProgressionClient {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             let count = self.call_count.fetch_add(1, Ordering::SeqCst);
-            
+
             // Tier 1 (Full LLM): Fail
             // Tier 2 (Simplified): Fail
             // Then should fall back to heuristic
@@ -496,21 +523,26 @@ async fn test_fallback_tier_progression() {
                 Err(anyhow::anyhow!("Tier {} failed", count + 1))
             } else {
                 // Shouldn't be called if fallback kicks in at tier 3
-                Ok(r#"{"plan_id": "late-success", "steps": [{"act": "Wait", "duration": 1.0}]}"#.to_string())
+                Ok(
+                    r#"{"plan_id": "late-success", "steps": [{"act": "Wait", "duration": 1.0}]}"#
+                        .to_string(),
+                )
             }
         }
     }
-    
-    let client = ProgressionClient { call_count: call_count_clone };
+
+    let client = ProgressionClient {
+        call_count: call_count_clone,
+    };
     let snap = create_test_snapshot();
     let reg = create_test_registry();
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     // Should have attempted at least once
     let attempts = call_count.load(Ordering::SeqCst);
     assert!(attempts >= 1, "Should have made at least 1 attempt");
-    
+
     // Result should be valid (either LLM success or fallback)
     match result {
         PlanSource::Llm(plan) => {
@@ -521,8 +553,10 @@ async fn test_fallback_tier_progression() {
             // Reason should mention tier progression
             assert!(
                 reason.contains("tier") || reason.contains("attempt") || !reason.is_empty(),
-                "Should have informative reason: {}", reason
+                "Should have informative reason: {}",
+                reason
             );
         }
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }

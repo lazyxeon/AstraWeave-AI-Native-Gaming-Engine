@@ -7,6 +7,8 @@
 //! absorption_rate, blocks_flow, allows_water), CellFlags (bitflags),
 //! OptimizationStats (default), WaterVolumeGrid (new).
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_fluids::*;
 use glam::{UVec3, Vec3};
 

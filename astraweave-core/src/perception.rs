@@ -6,6 +6,7 @@ pub struct PerceptionConfig {
     pub los_max: i32,
 }
 
+#[allow(clippy::expect_used)] // These world queries are preconditions — caller guarantees entities have required components
 pub fn build_snapshot(
     w: &World,
     t_player: Entity,

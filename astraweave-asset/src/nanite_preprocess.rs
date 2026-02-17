@@ -9,7 +9,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-type SimplifiedMesh = (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>);
+type SimplifiedMesh = (
+    Vec<[f32; 3]>,
+    Vec<[f32; 3]>,
+    Vec<[f32; 4]>,
+    Vec<[f32; 2]>,
+    Vec<u32>,
+);
 
 /// Maximum vertices per meshlet (typical range: 64-128)
 pub const MAX_MESHLET_VERTICES: usize = 64;
@@ -363,7 +369,8 @@ pub fn generate_meshlets(
                 if meshlet_indices.is_empty() || distance < 10.0 {
                     // Add vertices to meshlet
                     for &idx in &[i0, i1, i2] {
-                        if let std::collections::hash_map::Entry::Vacant(e) = vertex_map.entry(idx) {
+                        if let std::collections::hash_map::Entry::Vacant(e) = vertex_map.entry(idx)
+                        {
                             let local_idx = meshlet_vertices.len() as u8;
                             e.insert(local_idx);
                             meshlet_vertices.push(idx);
@@ -514,7 +521,10 @@ impl PartialOrd for EdgeCollapse {
 impl Ord for EdgeCollapse {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // Reverse ordering for min-heap (lower error = higher priority)
-        other.error.partial_cmp(&self.error).unwrap_or(std::cmp::Ordering::Equal)
+        other
+            .error
+            .partial_cmp(&self.error)
+            .unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 
@@ -571,18 +581,9 @@ fn simplify_mesh(
         edges.insert((v2.min(v0), v2.max(v0)));
 
         // Track which faces use each vertex
-        vertex_faces
-            .entry(v0)
-            .or_default()
-            .insert(face_idx);
-        vertex_faces
-            .entry(v1)
-            .or_default()
-            .insert(face_idx);
-        vertex_faces
-            .entry(v2)
-            .or_default()
-            .insert(face_idx);
+        vertex_faces.entry(v0).or_default().insert(face_idx);
+        vertex_faces.entry(v1).or_default().insert(face_idx);
+        vertex_faces.entry(v2).or_default().insert(face_idx);
     }
 
     // PHASE 3: Build priority queue of edge collapses

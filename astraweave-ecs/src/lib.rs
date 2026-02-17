@@ -152,6 +152,7 @@ impl World {
     /// assert_eq!(world.entity_count(), 1);
     /// assert!(world.is_alive(entity));
     /// ```
+    #[allow(clippy::expect_used)] // INVARIANT: archetype just created by get_or_create_archetype
     pub fn spawn(&mut self) -> Entity {
         #[cfg(feature = "profiling")]
         span!("ECS::World::spawn");
@@ -225,6 +226,7 @@ impl World {
         self.move_entity_to_new_archetype(e, components_to_add, false);
     }
 
+    #[allow(clippy::expect_used)] // INVARIANT: archetype/entity existence validated by prior operations in each step
     fn move_entity_to_new_archetype(
         &mut self,
         entity: Entity,
@@ -413,6 +415,7 @@ impl World {
     /// assert_eq!(world.get::<i32>(a), Some(&10));
     /// assert_eq!(world.get::<i32>(b), Some(&20));
     /// ```
+    #[allow(clippy::expect_used)] // INVARIANT: archetype_ids sourced from archetypes_with_component
     pub fn each_mut<T: Component>(&mut self, mut f: impl FnMut(Entity, &mut T)) {
         let archetypes_with_t = self
             .archetypes
@@ -494,6 +497,7 @@ impl World {
     /// assert!(world.despawn(e));  // First despawn succeeds
     /// assert!(!world.despawn(e)); // Second despawn fails (stale)
     /// ```
+    #[allow(clippy::expect_used)] // INVARIANT: entity alive + has archetype validated above
     pub fn despawn(&mut self, entity: Entity) -> bool {
         // First validate entity is alive
         if !self.entity_allocator.is_alive(entity) {
@@ -664,6 +668,9 @@ impl World {
     ///
     /// # Panics
     /// Panics if the component type is not registered via `register_component<T>()`.
+    /// # Panics
+    /// Panics if the component type is not registered via `register_component<T>()`.
+    #[allow(clippy::panic)] // Documented API contract: unregistered type is a programmer error
     pub(crate) fn insert_boxed(
         &mut self,
         entity: Entity,
@@ -693,6 +700,9 @@ impl World {
     ///
     /// # Panics
     /// Panics if the component type is not registered via `register_component<T>()`.
+    /// # Panics
+    /// Panics if the component type is not registered via `register_component<T>()`.
+    #[allow(clippy::panic)] // Documented API contract: unregistered type is a programmer error
     pub(crate) fn remove_by_type_id(&mut self, entity: Entity, type_id: TypeId) {
         if !self.is_alive(entity) {
             return; // Stale entity, silently ignore

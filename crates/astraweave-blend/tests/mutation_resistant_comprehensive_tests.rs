@@ -3,6 +3,12 @@
 //! Targets all key functions with exact return-value verification to kill
 //! cargo-mutants mutations (replace return values, swap operators, etc.).
 
+#![allow(
+    clippy::nonminimal_bool,
+    clippy::io_other_error,
+    clippy::field_reassign_with_default
+)]
+
 use std::path::PathBuf;
 use std::time::Duration;
 

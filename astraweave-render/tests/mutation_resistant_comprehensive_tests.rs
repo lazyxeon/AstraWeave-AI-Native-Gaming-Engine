@@ -283,6 +283,7 @@ mod shadow_csm_mutations {
         splits[0] = near;
         splits[4] = far;
 
+        #[allow(clippy::needless_range_loop)]
         for i in 1..4 {
             let i_f = i as f32;
             let n_f = 4.0_f32;

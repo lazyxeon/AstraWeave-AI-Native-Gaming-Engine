@@ -32,9 +32,9 @@ pub mod blend_import {
     use tracing::{debug, info, warn};
 
     pub use astraweave_blend::{
-        BlendImporter, BlendImporterConfig, ConversionOptions, ConversionResult,
-        BlenderDiscovery, BlenderInstallation, ImportHandle,
-        CancellationToken, ConversionProgress, ProgressReceiver,
+        BlendImporter, BlendImporterConfig, BlenderDiscovery, BlenderInstallation,
+        CancellationToken, ConversionOptions, ConversionProgress, ConversionResult, ImportHandle,
+        ProgressReceiver,
     };
 
     /// State of the blend import system within the asset database.
@@ -115,7 +115,9 @@ pub mod blend_import {
             options: Option<ConversionOptions>,
             output_path: Option<PathBuf>,
         ) -> Result<ConversionResult> {
-            let importer = self.importer.as_mut()
+            let importer = self
+                .importer
+                .as_mut()
                 .context("Blend import system not initialized or Blender not available")?;
 
             info!("Importing blend file: {}", blend_path.display());
@@ -128,7 +130,9 @@ pub mod blend_import {
             // Use appropriate import method based on whether output path is specified
             let result = if let Some(out_path) = output_path {
                 if let Some(opts) = options {
-                    importer.import_to_with_options(blend_path, out_path, opts).await?
+                    importer
+                        .import_to_with_options(blend_path, out_path, opts)
+                        .await?
                 } else {
                     importer.import_to(blend_path, out_path).await?
                 }
@@ -150,14 +154,16 @@ pub mod blend_import {
         }
 
         /// Imports a .blend file with progress tracking.
-        /// 
+        ///
         /// Returns an import handle for monitoring progress and the result.
         pub async fn import_blend_with_progress(
             &mut self,
             blend_path: &Path,
             options: Option<ConversionOptions>,
         ) -> Result<ImportHandle> {
-            let importer = self.importer.as_mut()
+            let importer = self
+                .importer
+                .as_mut()
                 .context("Blend import system not initialized or Blender not available")?;
 
             let handle = if let Some(opts) = options {
@@ -178,7 +184,9 @@ pub mod blend_import {
 
         /// Returns the cache directory path if caching is enabled.
         pub fn cache_dir(&self) -> Option<PathBuf> {
-            self.project_root.as_ref().map(|p| p.join(".astraweave/blend_cache"))
+            self.project_root
+                .as_ref()
+                .map(|p| p.join(".astraweave/blend_cache"))
         }
     }
 
@@ -951,11 +959,15 @@ pub mod gltf_loader {
                     continue;
                 }
 
-                max_time = max_time.max(
-                    *times
-                        .last()
-                        .expect("times vec is non-empty (checked above)"),
-                );
+                // INVARIANT: times is non-empty (checked above)
+                #[allow(clippy::expect_used)]
+                {
+                    max_time = max_time.max(
+                        *times
+                            .last()
+                            .expect("times vec is non-empty (checked above)"),
+                    );
+                }
 
                 let interpolation = match channel.sampler().interpolation() {
                     gltf::animation::Interpolation::Linear => Interpolation::Linear,
@@ -1466,6 +1478,8 @@ pub mod gltf_loader {
                             _ => bail!("Anim outputs not rotations"),
                         };
                         if inputs.len() == outputs.len() && !inputs.is_empty() {
+                            // INVARIANT: inputs is non-empty (checked above)
+                            #[allow(clippy::expect_used)]
                             let duration = *inputs
                                 .last()
                                 .expect("inputs vec is non-empty (checked above)");
@@ -2725,11 +2739,11 @@ color = [1.0, 0.0, 0.0, 1.0]
         #[test]
         fn test_hot_reload_manager_debounce_skips_rapid_events() {
             let mut manager = HotReloadManager::new(500); // 500ms debounce
-            
+
             // First event goes through
             manager.add_event("guid1".to_string());
             assert_eq!(manager.pending_count(), 1);
-            
+
             // Immediate second event for same GUID is debounced (timestamp updated, not re-queued)
             manager.add_event("guid1".to_string());
             assert_eq!(manager.pending_count(), 1); // Still 1, not 2
@@ -2738,24 +2752,24 @@ color = [1.0, 0.0, 0.0, 1.0]
         #[test]
         fn test_hot_reload_manager_different_guids_not_debounced() {
             let mut manager = HotReloadManager::new(500);
-            
+
             manager.add_event("guid1".to_string());
             manager.add_event("guid2".to_string());
             manager.add_event("guid3".to_string());
-            
+
             assert_eq!(manager.pending_count(), 3);
         }
 
         #[test]
         fn test_hot_reload_manager_process_clears_queue() {
             let mut manager = HotReloadManager::new(0);
-            
+
             manager.add_event("a".to_string());
             manager.add_event("b".to_string());
-            
+
             manager.process_next();
             assert_eq!(manager.pending_count(), 1);
-            
+
             manager.process_next();
             assert_eq!(manager.pending_count(), 0);
         }
@@ -2956,10 +2970,7 @@ color = [1.0, 0.0, 0.0, 1.0]
         #[test]
         fn test_infer_double_extension() {
             // Only the last extension is considered
-            assert_eq!(
-                infer_asset_kind(Path::new("file.tar.gz")),
-                AssetKind::Other
-            );
+            assert_eq!(infer_asset_kind(Path::new("file.tar.gz")), AssetKind::Other);
             assert_eq!(
                 infer_asset_kind(Path::new("model.backup.glb")),
                 AssetKind::Mesh
@@ -3398,13 +3409,17 @@ pub mod import_pipelines {
         let rt = Runtime::new()?;
         rt.block_on(async {
             let mut importer = super::blend_import::BlendImportSystem::new();
-            importer.initialize(output.parent().map(|p| p.to_path_buf())).await?;
+            importer
+                .initialize(output.parent().map(|p| p.to_path_buf()))
+                .await?;
 
             if !importer.is_available() {
                 anyhow::bail!("Blender is not available for .blend file conversion");
             }
 
-            let result = importer.import_blend(source, None, Some(output.to_path_buf())).await?;
+            let result = importer
+                .import_blend(source, None, Some(output.to_path_buf()))
+                .await?;
 
             // Verify output was created
             if !result.output_path.exists() {
@@ -3419,8 +3434,8 @@ pub mod import_pipelines {
 /// Integration helper for using blend import with AssetDatabase.
 #[cfg(feature = "blend")]
 pub mod blend_asset_integration {
-    use super::*;
     use super::blend_import::BlendImportSystem;
+    use super::*;
 
     /// Integrates blend import capabilities with an AssetDatabase.
     pub struct BlendAssetIntegration {
@@ -3461,14 +3476,13 @@ pub mod blend_asset_integration {
             blend_path: &Path,
         ) -> Result<(String, String)> {
             // First, register the source blend file
-            let source_guid = db.register_asset(
-                blend_path,
-                AssetKind::BlenderSource,
-                vec![],
-            )?;
+            let source_guid = db.register_asset(blend_path, AssetKind::BlenderSource, vec![])?;
 
             // Convert to glTF
-            let result = self.blend_system.import_blend(blend_path, None, None).await?;
+            let result = self
+                .blend_system
+                .import_blend(blend_path, None, None)
+                .await?;
 
             // Register the converted mesh asset
             let mesh_guid = db.register_asset(

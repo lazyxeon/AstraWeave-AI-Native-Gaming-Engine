@@ -797,7 +797,7 @@ mod tests {
         );
 
         // Cache should still be functional with recent entries
-        assert!(cache.len() > 0, "Cache should not be empty after insertions");
+        assert!(!cache.is_empty(), "Cache should not be empty after insertions");
     }
 
     #[test]
@@ -860,7 +860,7 @@ mod tests {
             cache.put(&state, &goal, &actions, vec![actions[0].clone()]);
         }
 
-        assert!(cache.len() > 0, "Cache should have entries");
+        assert!(!cache.is_empty(), "Cache should have entries");
 
         // Clear
         cache.clear();

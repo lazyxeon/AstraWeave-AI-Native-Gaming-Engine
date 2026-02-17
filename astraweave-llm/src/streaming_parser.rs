@@ -127,7 +127,7 @@ impl StreamingBatchParser {
 
         // Try to parse the entire buffer as a complete JSON array
         let mut trimmed = self.buffer.trim();
-        
+
         // Handle trailing code fence
         if trimmed.ends_with("```") {
             trimmed = trimmed.trim_end_matches('`').trim();

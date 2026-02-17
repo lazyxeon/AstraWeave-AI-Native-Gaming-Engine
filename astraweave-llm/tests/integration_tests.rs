@@ -156,6 +156,7 @@ async fn test_end_to_end_valid_llm_response() {
             }
         }
         PlanSource::Fallback { .. } => panic!("Expected LLM plan, got fallback"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -189,6 +190,7 @@ async fn test_fallback_on_llm_failure() {
             );
             assert!(reason.contains("tier") || reason.contains("attempts"));
         }
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -386,6 +388,7 @@ async fn test_multiple_llm_calls() {
             PlanSource::Fallback { .. } => {
                 panic!("Call {}: Expected LLM plan, got fallback", i + 1);
             }
+            _ => panic!("Unexpected PlanSource variant"),
         }
     }
 }

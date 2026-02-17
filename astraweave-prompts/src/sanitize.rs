@@ -253,6 +253,9 @@ impl std::fmt::Display for SanitizationConfig {
 /// Patterns that commonly indicate prompt injection attempts
 static INJECTION_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
 
+// INVARIANT: All regex patterns below are compile-time constant literals;
+// Regex::new() is infallible for valid constant patterns.
+#[allow(clippy::expect_used)]
 fn get_injection_patterns() -> &'static Vec<Regex> {
     INJECTION_PATTERNS.get_or_init(|| {
         vec![
@@ -406,6 +409,8 @@ pub fn sanitize_variable_name(name: &str, config: &SanitizationConfig) -> Result
     }
 
     // Must start with letter or underscore
+    // INVARIANT: valid_chars is non-empty (checked above with is_empty bail)
+    #[allow(clippy::expect_used)]
     if !valid_chars
         .chars()
         .next()

@@ -107,7 +107,8 @@ impl BiomeMaterialSystem {
         Ok(self
             .hdri_catalog
             .as_ref()
-            .expect("hdri_catalog must be initialized"))
+            // INVARIANT: hdri_catalog set to Some in the block above
+            .ok_or_else(|| anyhow::anyhow!("hdri_catalog failed to initialize"))?)
     }
 
     /// Get the material directory for a biome, resolved from the assets root.
@@ -317,7 +318,7 @@ mod tests {
         for bt in BiomeType::all() {
             let mode = system
                 .resolve_sky_mode(*bt)
-                .expect(&format!("Failed to resolve sky mode for {:?}", bt));
+                .unwrap_or_else(|_| panic!("Failed to resolve sky mode for {:?}", bt));
             match mode {
                 SkyMode::HdrPath { biome, path } => {
                     assert_eq!(biome, bt.as_str());

@@ -116,6 +116,9 @@ impl Default for GpuMemoryBudget {
     }
 }
 
+// INVARIANT: All RwLock operations use `.expect("lock poisoned")` because lock
+// poisoning indicates a prior panic — no safe recovery is possible at this layer.
+#[allow(clippy::expect_used)]
 impl GpuMemoryBudget {
     /// Create a new budget manager with default limits
     pub fn new() -> Self {

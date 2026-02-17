@@ -2,6 +2,8 @@
 //! Targets exact return values, boundary conditions, default values,
 //! and operational correctness for 90%+ mutation kill rate.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_observability::*;
 use chrono::Utc;
 use std::collections::HashMap;

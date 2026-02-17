@@ -1,5 +1,7 @@
 //! Mutation-resistant comprehensive tests for astraweave-pcg.
 
+#![allow(clippy::manual_range_contains)]
+
 use astraweave_pcg::*;
 use glam::IVec2;
 

@@ -337,7 +337,7 @@ fn test_voice_bank_empty() {
     };
 
     assert!(bank.speakers.is_empty());
-    assert!(bank.speakers.get("Anyone").is_none());
+    assert!(!bank.speakers.contains_key("Anyone"));
 }
 
 // ============================================================================
@@ -391,7 +391,7 @@ fn test_dialogue_audio_map_missing_dialogue() {
         map: HashMap::new(),
     };
 
-    assert!(audio_map.map.get("unknown_dialogue").is_none());
+    assert!(!audio_map.map.contains_key("unknown_dialogue"));
 }
 
 // ============================================================================

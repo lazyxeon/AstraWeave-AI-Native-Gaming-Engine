@@ -12,6 +12,13 @@
 //! - Archetype: entity management, remove/swap, signature ops
 //! - CountingAlloc: counter arithmetic
 
+#![allow(
+    clippy::approx_constant,
+    clippy::nonminimal_bool,
+    clippy::manual_range_contains,
+    unused_imports
+)]
+
 use astraweave_ecs::blob_vec::BlobVec;
 use astraweave_ecs::component_meta::{ComponentMeta, ComponentMetaRegistry};
 use astraweave_ecs::entity_allocator::{Entity, EntityAllocator};

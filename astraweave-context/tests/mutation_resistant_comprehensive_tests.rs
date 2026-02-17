@@ -3,7 +3,6 @@
 //! format strings, and boundary conditions for 90%+ mutation kill rate.
 
 use astraweave_context::*;
-use std::collections::HashMap;
 
 // ========================================================================
 // CONTEXT CONFIG DEFAULTS

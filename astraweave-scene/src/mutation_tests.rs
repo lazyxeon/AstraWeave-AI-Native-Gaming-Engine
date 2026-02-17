@@ -245,7 +245,7 @@ mod node_mutation_tests {
     fn test_node_new_creates_correct_name() {
         let node = Node::new("test_name");
         assert_eq!(node.name, "test_name");
-        assert!(node.name != "");
+        assert!(!node.name.is_empty());
         assert!(node.name != "other_name");
     }
 
@@ -565,6 +565,7 @@ mod scene_mutation_tests {
 // ============================================================================
 
 #[cfg(all(test, feature = "ecs"))]
+#[allow(unused_imports, clippy::field_reassign_with_default)]
 mod ecs_mutation_tests {
     use super::*;
     use crate::ecs::*;

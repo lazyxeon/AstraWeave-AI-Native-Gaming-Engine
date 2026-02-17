@@ -52,7 +52,6 @@ async fn test_phase7_complete_fallback_chain() {
 
     let result = plan_from_llm(&client, &snap, &reg).await;
 
-    // Should fall back to heuristic or emergency tier
     match result {
         PlanSource::Fallback { plan, reason } => {
             // Verify fallback plan is generated
@@ -69,6 +68,7 @@ async fn test_phase7_complete_fallback_chain() {
             );
         }
         PlanSource::Llm(_) => panic!("Expected fallback, got LLM plan"),
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -113,6 +113,7 @@ async fn test_phase7_hallucination_detection() {
             // If somehow passed, verify no hallucinated tools
             panic!("Expected fallback due to hallucination detection");
         }
+        _ => { /* non_exhaustive */ }
     }
 }
 
@@ -235,6 +236,7 @@ async fn test_phase7_cache_similarity() {
                 println!("✅ Cache exact hit (even better!)");
             }
             CacheDecision::Miss => panic!("Expected cache hit, got miss"),
+            _ => panic!("Unexpected CacheDecision variant"),
         }
     } else {
         // Similarity might not be high enough with simple Jaccard

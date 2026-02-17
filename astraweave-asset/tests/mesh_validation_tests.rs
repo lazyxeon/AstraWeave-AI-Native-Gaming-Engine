@@ -466,8 +466,7 @@ mod mesh_validation_tests {
                 continue;
             }
 
-            let bytes = fs::read(&path)
-                .unwrap_or_else(|e| panic!("Failed to read {}: {e}", asset));
+            let bytes = fs::read(&path).unwrap_or_else(|e| panic!("Failed to read {}: {e}", asset));
             match load_first_mesh_from_glb_bytes(&bytes) {
                 Ok(mesh) => {
                     // Basic statistics

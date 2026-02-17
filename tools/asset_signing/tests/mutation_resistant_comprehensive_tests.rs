@@ -162,10 +162,10 @@ fn keystore_verify_detects_invalid_signature() {
     // Base64-encoded garbage signature (64 bytes of zeros)
     let bad_sig = base64::engine::general_purpose::STANDARD.encode([0u8; 64]);
     let result = KeyStore::verify(&verify_key, "test manifest", &bad_sig);
-    match result {
-        Ok(valid) => assert!(!valid, "garbage sig should not verify"),
-        Err(_) => {} // Also acceptable — some implementations error on bad sigs
+    if let Ok(valid) = result {
+        assert!(!valid, "garbage sig should not verify");
     }
+    // Err is also acceptable — some implementations error on bad sigs
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

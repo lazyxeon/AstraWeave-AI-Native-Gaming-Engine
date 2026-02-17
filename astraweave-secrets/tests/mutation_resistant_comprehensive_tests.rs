@@ -181,6 +181,7 @@ fn keyring_backend_new() {
 }
 
 #[test]
+#[allow(clippy::default_constructed_unit_structs)]
 fn keyring_backend_default() {
     let _kb = KeyringBackend::default();
     // Should not panic — derived Default

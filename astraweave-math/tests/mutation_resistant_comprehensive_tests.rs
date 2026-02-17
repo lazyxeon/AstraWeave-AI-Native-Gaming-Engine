@@ -564,8 +564,8 @@ fn update_positions_large_batch() {
     let mut pos = vec![Vec3::ZERO; n];
     let vel: Vec<Vec3> = (0..n).map(|i| Vec3::new(i as f32, 0.0, 0.0)).collect();
     update_positions_simd(&mut pos, &vel, 1.0);
-    for i in 0..n {
-        assert!((pos[i].x - i as f32).abs() < 1e-4, "entity {} correct", i);
+    for (i, p) in pos.iter().enumerate().take(n) {
+        assert!((p.x - i as f32).abs() < 1e-4, "entity {} correct", i);
     }
 }
 

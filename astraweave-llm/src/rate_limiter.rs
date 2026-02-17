@@ -629,7 +629,7 @@ mod tests {
         let rate_limiter = RateLimiter::new(config);
 
         let context = RateLimitContext {
-            user_id: None,  // No user ID
+            user_id: None, // No user ID
             model: "test-model".to_string(),
             estimated_tokens: 50,
             priority: RequestPriority::Normal,
@@ -677,10 +677,10 @@ mod tests {
 
         // Make some requests
         let _ = rate_limiter.check_rate_limit(&context).await;
-        
+
         // Clear all limits
         rate_limiter.clear().await;
-        
+
         // Status should be empty
         let status = rate_limiter.get_status().await;
         assert!(status.model_status.is_empty());

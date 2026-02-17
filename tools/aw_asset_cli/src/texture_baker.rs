@@ -197,6 +197,8 @@ fn generate_mipmap_chain(base: &DynamicImage) -> Result<Vec<DynamicImage>> {
         let next_h = (h / 2).max(1);
 
         // Use bilinear filtering for downsampling
+        // INVARIANT: mipmaps is non-empty (initialized with base above, only grows)
+        #[allow(clippy::unwrap_used)]
         let last_mip = mipmaps.last().unwrap();
         let resized = image::imageops::resize(
             last_mip,

@@ -79,6 +79,8 @@ impl<'a> DialoguePlayer<'a> {
                     }
                     if !pool.is_empty() {
                         let mut rng = rand::rng();
+                        // INVARIANT: pool is non-empty (checked above), so choose always returns Some
+                        #[allow(clippy::expect_used)]
                         let path = pool
                             .choose(&mut rng)
                             .expect("BUG: pool should have items after is_empty check")

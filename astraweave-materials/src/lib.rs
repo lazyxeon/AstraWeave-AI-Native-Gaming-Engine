@@ -967,8 +967,8 @@ mod tests {
         let sample = lut.sample(0.5, 0.5);
         assert!(sample.is_some());
         let [scale, bias] = sample.unwrap();
-        assert!(scale >= 0.0 && scale <= 1.0);
-        assert!(bias >= 0.0 && bias <= 1.0);
+        assert!((0.0..=1.0).contains(&scale));
+        assert!((0.0..=1.0).contains(&bias));
 
         // Edge cases
         assert!(lut.sample(0.0, 0.0).is_some());

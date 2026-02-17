@@ -15,6 +15,8 @@
 //!
 //! Phase 8.8: Production-Ready ECS Validation
 
+#![allow(clippy::unnecessary_cast, clippy::approx_constant)]
+
 use astraweave_ecs::{Event, World, Events};
 use std::collections::HashSet;
 

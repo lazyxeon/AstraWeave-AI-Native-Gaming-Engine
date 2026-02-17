@@ -29,6 +29,27 @@
 //! manager.update(delta_time, camera_pos, water_height);
 //! ```
 
+// Suppress test-specific clippy lints from mutation-resistant test patterns
+#![cfg_attr(
+    test,
+    allow(
+        clippy::field_reassign_with_default,
+        clippy::assertions_on_constants,
+        clippy::manual_range_contains,
+        clippy::useless_vec,
+        clippy::clone_on_copy,
+        clippy::needless_range_loop,
+        clippy::manual_div_ceil,
+        clippy::manual_abs_diff,
+        clippy::nonminimal_bool,
+        clippy::len_zero,
+        clippy::const_is_empty,
+        clippy::inefficient_to_string,
+        non_snake_case,
+        unused_variables,
+    )
+)]
+
 pub mod anisotropic;
 pub mod boundary;
 pub mod building;

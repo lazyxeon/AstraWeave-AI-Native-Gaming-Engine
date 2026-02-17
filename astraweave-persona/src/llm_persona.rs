@@ -896,6 +896,7 @@ Respond as {{persona.name}} would, staying true to your personality, current sta
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
     use astraweave_embeddings::{MockEmbeddingClient, VectorStore};

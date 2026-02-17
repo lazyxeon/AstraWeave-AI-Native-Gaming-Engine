@@ -7,6 +7,15 @@
 //! - Error paths
 //! - All enum variants
 
+#![allow(
+    clippy::field_reassign_with_default,
+    clippy::manual_range_contains,
+    clippy::drop_non_drop,
+    clippy::absurd_extreme_comparisons,
+    clippy::useless_vec,
+    unused_comparisons
+)]
+
 use astraweave_memory::{
     // Pattern detection
     ActionPattern,

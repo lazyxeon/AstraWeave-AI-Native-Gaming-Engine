@@ -184,9 +184,10 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn render_result_ok_works() {
         let r: RenderResult<u32> = Ok(42);
-        assert_eq!(r.unwrap(), 42);
+        assert_eq!(r.expect("test"), 42);
     }
 
     #[test]

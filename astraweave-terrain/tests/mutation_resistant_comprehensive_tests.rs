@@ -69,7 +69,7 @@ mod meshing_mutations {
         let mesh = dc.generate_mesh(&chunk);
         assert!(!mesh.is_empty(), "Single voxel must produce mesh vertices");
         assert!(
-            mesh.vertices.len() >= 1,
+            !mesh.vertices.is_empty(),
             "At least one vertex expected, got {}",
             mesh.vertices.len()
         );
@@ -656,7 +656,7 @@ mod climate_mutations {
         // Different positions may have different water distances
         // At least verify the output is reasonable
         let m = climate.sample_moisture(0.0, 0.0, 0.0);
-        assert!(m >= 0.0 && m <= 1.0);
+        assert!((0.0..=1.0).contains(&m));
     }
 
     #[test]

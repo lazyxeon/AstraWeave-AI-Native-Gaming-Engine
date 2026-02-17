@@ -176,6 +176,7 @@ mod sanitization_config_tests {
 // =============================================================================
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod boundary_condition_tests {
     use crate::{CacheConfig, SanitizationConfig, TrustLevel, ValidationConfig};
 
@@ -305,6 +306,7 @@ mod boundary_condition_tests {
 // =============================================================================
 
 #[cfg(test)]
+#[allow(clippy::nonminimal_bool)]
 mod comparison_operator_tests {
     use crate::{CacheConfig, TemplateFormat, TrustLevel, ValidationConfig};
 

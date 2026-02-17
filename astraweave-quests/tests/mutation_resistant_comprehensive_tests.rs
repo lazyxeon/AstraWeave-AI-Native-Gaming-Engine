@@ -7,6 +7,8 @@
 //! - llm_quests.rs (26 mutants): LLM quest data structures
 //! - lib.rs (3 mutants): Core Quest/QuestStep types
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_quests::*;
 use chrono::Utc;
 use std::collections::HashMap;
