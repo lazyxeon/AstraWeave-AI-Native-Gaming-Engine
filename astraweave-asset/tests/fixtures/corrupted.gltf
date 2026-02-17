@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:40dec843b408ac148ed1c1682c7c7e57a47d2c256649b2a741df8def1d88bf48
-size 146
+{
+  "asset": {
+    "version": "2.0"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0
+    }
+  ]
+  // Missing closing braces - invalid JSON
