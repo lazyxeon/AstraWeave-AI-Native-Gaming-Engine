@@ -1,5 +1,7 @@
 //! Mutation-resistant comprehensive tests for astraweave-net-ecs.
 
+#![allow(clippy::approx_constant)]
+
 use astraweave_ecs::Plugin;
 use astraweave_net_ecs::*;
 use std::collections::HashMap;

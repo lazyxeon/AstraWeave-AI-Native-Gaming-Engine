@@ -851,7 +851,7 @@ mod smooth_constants {
             Vec3::new(0.0, 0.0, 1.0),
             Vec3::new(1.0, 0.0, 0.0),
         )];
-        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        let _nav = NavMesh::bake(&tris, 0.4, 60.0);
 
         // We test smooth through find_path which calls smooth internally.
         // Instead, build a known scenario with 3+ waypoints.

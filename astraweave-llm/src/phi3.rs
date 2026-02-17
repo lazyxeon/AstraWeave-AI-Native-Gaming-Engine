@@ -299,7 +299,7 @@ impl Phi3Medium {
             let mut model_guard = model.blocking_lock();
             let mut tokens = tokens;
             let mut generated = Vec::new();
-            
+
             // Create deterministic RNG from seed (derived from prompt hash for reproducibility)
             use rand::SeedableRng;
             use std::collections::hash_map::DefaultHasher;
@@ -356,9 +356,9 @@ impl Phi3Medium {
     }
 
     /// Sample next token from logits using temperature and top-p
-    /// 
+    ///
     /// # Determinism
-    /// 
+    ///
     /// This method is deterministic when given the same logits and RNG state.
     #[cfg(feature = "phi3")]
     fn sample_token<R: rand::Rng>(

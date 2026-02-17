@@ -139,7 +139,7 @@ fn gravity_multiple_zones(c: &mut Criterion) {
                             max: Vec3::new(i as f32 * 20.0 + 10.0, 10.0, 10.0),
                         },
                         gravity: Vec3::new(0.0, i as f32, 0.0),
-                        priority: i as i32,
+                        priority: i,
                         ..Default::default()
                     });
                 }

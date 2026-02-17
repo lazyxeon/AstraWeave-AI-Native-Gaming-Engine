@@ -741,6 +741,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn depth_bias_is_positive() {
         assert!(DEPTH_BIAS > 0.0, "depth bias must be positive to prevent shadow acne");
         assert!(DEPTH_BIAS < 0.1, "depth bias should be small");

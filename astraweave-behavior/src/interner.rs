@@ -40,6 +40,7 @@ pub static GLOBAL_INTERNER: LazyLock<Mutex<StringInterner>> =
     LazyLock::new(|| Mutex::new(StringInterner::new()));
 
 /// Intern a string, returning a unique u32 ID
+#[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
 pub fn intern(s: &str) -> u32 {
     GLOBAL_INTERNER
         .lock()
@@ -48,6 +49,7 @@ pub fn intern(s: &str) -> u32 {
 }
 
 /// Resolve an ID back to a string
+#[allow(clippy::expect_used)] // Lock poisoning indicates a prior panic; propagating is correct
 pub fn resolve(id: u32) -> String {
     GLOBAL_INTERNER
         .lock()

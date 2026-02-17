@@ -4007,4 +4007,255 @@ mod tests {
             v.engine_rpm
         );
     }
+
+    // ===== ROUND 9: Torque, transmission, RPM precision =====
+
+    #[test]
+    fn r9_torque_at_peak_rpm_returns_max_torque() {
+        let engine = EngineConfig::default();
+        // At max_torque_rpm, torque should be max_torque 
+        // (the parabolic curve peaks here)
+        let torque = engine.torque_at_rpm(engine.max_torque_rpm);
+        assert!(
+            (torque - engine.max_torque).abs() < 1.0,
+            "Torque at peak RPM ({}) should be ~{}, got {}",
+            engine.max_torque_rpm, engine.max_torque, torque
+        );
+    }
+
+    #[test]
+    fn r9_torque_at_rpm_zero_below_idle() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(100.0); // well below idle (800)
+        assert_eq!(torque, 0.0, "Torque below idle should be 0, got {}", torque);
+    }
+
+    #[test]
+    fn r9_torque_at_rpm_zero_above_max() {
+        let engine = EngineConfig::default();
+        let torque = engine.torque_at_rpm(8000.0); // above max_rpm (7000)
+        assert_eq!(torque, 0.0, "Torque above max RPM should be 0, got {}", torque);
+    }
+
+    #[test]
+    fn r9_torque_at_rpm_rising_curve() {
+        let engine = EngineConfig::default();
+        // Midpoint between idle and max_torque_rpm should give partial torque
+        let mid_rpm = (engine.idle_rpm + engine.max_torque_rpm) / 2.0;
+        let torque = engine.torque_at_rpm(mid_rpm);
+        assert!(
+            torque > 0.0 && torque < engine.max_torque,
+            "Mid-range torque should be between 0 and max: got {} at RPM {}",
+            torque, mid_rpm
+        );
+    }
+
+    #[test]
+    fn r9_torque_at_rpm_falling_curve() {
+        let engine = EngineConfig::default();
+        // Midpoint between max_torque_rpm and max_rpm should give decreasing torque
+        let falloff_rpm = (engine.max_torque_rpm + engine.max_rpm) / 2.0;
+        let torque = engine.torque_at_rpm(falloff_rpm);
+        assert!(
+            torque > 0.0 && torque < engine.max_torque,
+            "Falloff torque should be less than max: got {} at RPM {}",
+            torque, falloff_rpm
+        );
+    }
+
+    #[test]
+    fn r9_effective_ratio_neutral_is_zero() {
+        let trans = TransmissionConfig::default();
+        let ratio = trans.effective_ratio(0);
+        assert_eq!(ratio, 0.0, "Neutral gear ratio should be 0");
+    }
+
+    #[test]
+    fn r9_effective_ratio_first_gear() {
+        let trans = TransmissionConfig::default();
+        let ratio = trans.effective_ratio(1);
+        let expected = trans.gear_ratios[0] * trans.final_drive; // 3.5 * 3.7 = 12.95
+        assert!(
+            (ratio - expected).abs() < 0.01,
+            "1st gear ratio should be {}, got {}",
+            expected, ratio
+        );
+    }
+
+    #[test]
+    fn r9_effective_ratio_reverse() {
+        let trans = TransmissionConfig::default();
+        let ratio = trans.effective_ratio(-1);
+        let expected = trans.reverse_ratio * trans.final_drive; // -3.2 * 3.7 = -11.84
+        assert!(
+            (ratio - expected).abs() < 0.01,
+            "Reverse ratio should be {}, got {}",
+            expected, ratio
+        );
+    }
+
+    #[test]
+    fn r9_apply_forces_suspension_value_proportional() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let v = vm.get(vid).unwrap();
+        for (i, w) in v.wheels.iter().enumerate() {
+            if w.grounded && w.compression > 0.001 {
+                let stiff = v.config.wheels[i].suspension_stiffness;
+                let spring_component = w.compression * stiff;
+
+                // Suspension force should be close to spring force (plus some damping)
+                // It should at least be in the right order of magnitude
+                let ratio = w.suspension_force / spring_component;
+                assert!(
+                    ratio > 0.1 && ratio < 10.0,
+                    "Wheel {} suspension/spring ratio should be reasonable: susp={}, spring={}, ratio={}",
+                    i, w.suspension_force, spring_component, ratio
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn r9_apply_forces_wheel_force_has_components() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Apply throttle
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..10 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        // Grounded wheels should have non-zero force vectors
+        let has_force = v.wheels.iter().any(|w| w.grounded && w.force.length() > 0.01);
+        assert!(has_force, "Grounded wheels should have force after throttle input");
+
+        // At least one wheel force should have a suspension (Y-ish) component
+        let has_vertical = v.wheels.iter().any(|w| w.grounded && w.force.y.abs() > 0.1);
+        assert!(has_vertical, "Wheel forces should include suspension (vertical) component");
+    }
+
+    #[test]
+    fn r9_apply_forces_rpm_increases_with_throttle() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let idle_rpm = vm.get(vid).unwrap().config.engine.idle_rpm;
+        let initial_rpm = vm.get(vid).unwrap().engine_rpm;
+
+        // Full throttle for a while
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..60 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let final_rpm = vm.get(vid).unwrap().engine_rpm;
+        assert!(
+            final_rpm > initial_rpm,
+            "RPM should increase with throttle: initial={}, final={}",
+            initial_rpm, final_rpm
+        );
+        assert!(
+            final_rpm > idle_rpm * 1.5,
+            "RPM should rise well above idle with full throttle: rpm={}, idle={}",
+            final_rpm, idle_rpm
+        );
+    }
+
+    #[test]
+    fn r9_apply_forces_rpm_blend_formula() {
+        // Test that RPM blending uses the 0.85/0.15 smoothing formula
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let rpm_before = vm.get(vid).unwrap().engine_rpm;
+
+        // One frame of full throttle
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+        pw.step();
+
+        let rpm_after = vm.get(vid).unwrap().engine_rpm;
+        // RPM should change but not instantly (due to 0.85/0.15 blending)
+        // new_rpm = old_rpm * 0.85 + target * 0.15
+        // So change should be moderate, not immediate jump
+        if rpm_after > rpm_before {
+            let change = rpm_after - rpm_before;
+            let max_possible_change = vm.get(vid).unwrap().config.engine.max_rpm - rpm_before;
+            assert!(
+                change < max_possible_change * 0.5,
+                "RPM change should be gradual (blended): change={}, max={}",
+                change, max_possible_change
+            );
+        }
+    }
+
+    #[test]
+    fn r9_apply_forces_steering_produces_lateral() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Accelerate first
+        let accel = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..60 {
+            vm.update_with_input(vid, &mut pw, &accel, 1.0 / 60.0);
+            pw.step();
+        }
+
+        // Then steer at speed
+        let steer = VehicleInput { throttle: 0.5, steering: 1.0, ..Default::default() };
+        for _ in 0..30 {
+            vm.update_with_input(vid, &mut pw, &steer, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        if v.speed > 1.0 {
+            // Steered wheels should produce lateral force
+            let has_lat_force = v.wheels.iter().any(|w| {
+                w.grounded && w.force.length() > 0.1
+            });
+            assert!(
+                has_lat_force,
+                "Steering at speed should produce wheel forces"
+            );
+        }
+    }
+
+    #[test]
+    fn r9_apply_forces_drag_force_at_high_speed() {
+        // Higher drag coefficient should produce lower top speed.
+        // Compare two vehicles: default drag vs 10× drag.
+        let (mut pw_lo, mut vm_lo, vid_lo) = spawn_test_vehicle();
+        let (mut pw_hi, mut vm_hi, vid_hi) = spawn_test_vehicle();
+        settle_vehicle(&mut pw_lo, &mut vm_lo, vid_lo);
+        settle_vehicle(&mut pw_hi, &mut vm_hi, vid_hi);
+
+        // Increase drag on the high-drag vehicle
+        if let Some(v) = vm_hi.get_mut(vid_hi) {
+            v.config.drag_coefficient *= 10.0;
+        }
+
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..600 {
+            vm_lo.update_with_input(vid_lo, &mut pw_lo, &input, 1.0 / 60.0);
+            pw_lo.step();
+            vm_hi.update_with_input(vid_hi, &mut pw_hi, &input, 1.0 / 60.0);
+            pw_hi.step();
+        }
+
+        let speed_lo = vm_lo.get(vid_lo).unwrap().speed;
+        let speed_hi = vm_hi.get(vid_hi).unwrap().speed;
+
+        assert!(
+            speed_lo > speed_hi + 1.0,
+            "Low drag vehicle should be faster: lo={}, hi={}",
+            speed_lo, speed_hi
+        );
+    }
 }

@@ -1357,7 +1357,7 @@ mod tests {
 
         // Should have non-zero shift at interface
         let shift_mag = (shift[0] * shift[0] + shift[1] * shift[1] + shift[2] * shift[2]).sqrt();
-        assert!(shift_mag > 0.0 || shift_mag == 0.0); // May be zero if distance check fails
+        assert!(shift_mag >= 0.0); // May be zero if distance check fails
     }
 
     #[test]

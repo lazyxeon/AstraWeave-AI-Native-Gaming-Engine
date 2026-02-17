@@ -2,8 +2,16 @@
 //! These tests are designed to catch subtle mutations like boundary condition changes,
 //! arithmetic operator substitutions, and conditional logic inversions.
 
+#![allow(
+    clippy::nonminimal_bool,
+    clippy::bool_assert_comparison,
+    clippy::assertions_on_constants,
+    clippy::approx_constant,
+    clippy::unnecessary_get_then_check
+)]
+
 #[cfg(test)]
-mod mutation_tests {
+mod tests {
     use crate::engine::{AudioEngine, ListenerPose, MusicTrack, PanMode};
     use glam::vec3;
 
@@ -1802,9 +1810,9 @@ mod boolean_return_path_tests {
             },
         );
         let bank = VoiceBank { speakers };
-        assert!(bank.speakers.get("hero").is_some());
-        assert!(bank.speakers.get("villain").is_some());
-        assert!(bank.speakers.get("unknown").is_none());
+        assert!(bank.speakers.contains_key("hero"));
+        assert!(bank.speakers.contains_key("villain"));
+        assert!(!bank.speakers.contains_key("unknown"));
         assert_eq!(bank.speakers.len(), 2);
     }
 
@@ -1834,7 +1842,7 @@ mod boolean_return_path_tests {
         let audio_map = DialogueAudioMap {
             map: HashMap::new(),
         };
-        assert!(audio_map.map.get("nonexistent").is_none());
+        assert!(!audio_map.map.contains_key("nonexistent"));
     }
 
     // ---------- Integration: Full Duck Cycle Tests ----------

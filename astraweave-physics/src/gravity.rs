@@ -1282,4 +1282,139 @@ mod tests {
         assert!((g.x - g.y).abs() < 0.01, "x and y should be equal");
         assert!((g.y - g.z).abs() < 0.01, "y and z should be equal");
     }
+
+    // ===== ROUND 8: GravityManager convenience constructors =====
+
+    #[test]
+    fn r8_add_zero_g_box_creates_zone() {
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let _zid = mgr.add_zero_g_box(Vec3::new(-5.0, -5.0, -5.0), Vec3::new(5.0, 5.0, 5.0), 10);
+
+        // Point inside box should get zero gravity (use body_id 0 with default settings)
+        let g = mgr.calculate_gravity(0, Vec3::ZERO);
+        assert!(
+            g.length() < 0.01,
+            "Zero-G box should give zero gravity inside: {:?}",
+            g
+        );
+
+        // Point outside box should get default gravity
+        let g_out = mgr.calculate_gravity(0, Vec3::new(20.0, 0.0, 0.0));
+        assert!(
+            g_out.y < -5.0,
+            "Outside zero-G box should have normal gravity: {:?}",
+            g_out
+        );
+    }
+
+    #[test]
+    fn r8_add_zero_g_sphere_creates_zone() {
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        let _zid = mgr.add_zero_g_sphere(Vec3::ZERO, 5.0, 10);
+
+        // Inside sphere
+        let g = mgr.calculate_gravity(0, Vec3::new(1.0, 0.0, 0.0));
+        assert!(
+            g.length() < 0.01,
+            "Zero-G sphere should give zero gravity inside: {:?}",
+            g
+        );
+
+        // Outside sphere
+        let g_out = mgr.calculate_gravity(0, Vec3::new(20.0, 0.0, 0.0));
+        assert!(
+            g_out.y < -5.0,
+            "Outside zero-G sphere should have normal gravity: {:?}",
+            g_out
+        );
+    }
+
+    #[test]
+    fn r8_add_attractor_creates_point_gravity() {
+        let mut mgr = GravityManager::new(Vec3::ZERO); // no default gravity
+        let _zid = mgr.add_attractor(Vec3::new(0.0, 0.0, 0.0), 20.0, 50.0, 10);
+
+        // Point near attractor should be pulled toward center
+        let g = mgr.calculate_gravity(0, Vec3::new(5.0, 0.0, 0.0));
+        assert!(
+            g.x < 0.0,
+            "Attractor should pull toward center (negative x): {:?}",
+            g
+        );
+        assert!(
+            g.length() > 0.1,
+            "Attractor should produce meaningful gravity: {:?}",
+            g
+        );
+    }
+
+    #[test]
+    fn r8_get_gravity_point_falloff() {
+        // Test the falloff formula: 1 - (dist/radius) squared
+        let shape = GravityZoneShape::Point {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            strength: 100.0,
+        };
+
+        // Very close → strong pull
+        let g_close = shape.get_gravity(Vec3::new(1.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+        // Far away but still inside → weak pull
+        let g_far = shape.get_gravity(Vec3::new(9.0, 0.0, 0.0), Vec3::ZERO).unwrap();
+
+        assert!(
+            g_close.length() > g_far.length(),
+            "Closer point should have stronger gravity: close={}, far={}",
+            g_close.length(), g_far.length()
+        );
+
+        // Direction should be toward center (negative x)
+        assert!(g_close.x < 0.0, "Should pull toward center");
+    }
+
+    // ===== ROUND 9: Additional gravity catches =====
+
+    #[test]
+    fn r9_add_directional_zone_uses_custom_gravity() {
+        let mut mgr = GravityManager::new(Vec3::new(0.0, -9.81, 0.0));
+        // Directional zone with UPWARD gravity (opposite to global)
+        let _zid = mgr.add_directional_zone(
+            Vec3::new(-10.0, -10.0, -10.0),
+            Vec3::new(10.0, 10.0, 10.0),
+            Vec3::new(0.0, 5.0, 0.0), // upward gravity
+            10,
+        );
+
+        // Inside zone → should get upward gravity (catches "delete field gravity" mutation)
+        let g = mgr.calculate_gravity(0, Vec3::ZERO);
+        assert!(
+            g.y > 0.0,
+            "Directional zone should apply upward gravity, got {:?}",
+            g
+        );
+        assert!(
+            (g.y - 5.0).abs() < 0.01,
+            "Gravity magnitude should be 5.0, got {}",
+            g.y
+        );
+    }
+
+    #[test]
+    fn r9_get_gravity_boundary_comparison() {
+        // Test GravityZoneShape::get_gravity with a point exactly at boundary
+        let shape = GravityZoneShape::Box {
+            min: Vec3::new(-1.0, -1.0, -1.0),
+            max: Vec3::new(1.0, 1.0, 1.0),
+        };
+        let zone_grav = Vec3::new(0.0, 5.0, 0.0);
+
+        // Well inside → should return Some
+        let inside = shape.get_gravity(Vec3::ZERO, zone_grav);
+        assert!(inside.is_some(), "Inside box should return gravity");
+        assert_eq!(inside.unwrap(), zone_grav);
+
+        // Outside → should return None
+        let outside = shape.get_gravity(Vec3::new(5.0, 0.0, 0.0), zone_grav);
+        assert!(outside.is_none(), "Outside box should return None");
+    }
 }

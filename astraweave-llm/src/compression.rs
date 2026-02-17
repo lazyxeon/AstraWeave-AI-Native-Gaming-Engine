@@ -339,10 +339,10 @@ mod tests {
     #[test]
     fn test_compress_generic_text() {
         let compressor = PromptCompressor::new();
-        
+
         let text = "The quick brown fox jumps over the lazy dog.";
         let compressed = compressor.compress(text);
-        
+
         // Stop words should be removed
         assert!(!compressed.contains(" the "));
         assert!(!compressed.contains(" a "));
@@ -354,10 +354,10 @@ mod tests {
     #[test]
     fn test_compress_removes_stop_words() {
         let compressor = PromptCompressor::new();
-        
+
         let text = "a an the is are was were that this of to in on at by for with";
         let compressed = compressor.compress(text);
-        
+
         // All stop words should be removed, resulting in empty or minimal string
         assert!(compressed.is_empty() || compressed.trim().is_empty());
     }
@@ -365,10 +365,10 @@ mod tests {
     #[test]
     fn test_compress_punctuation_spacing() {
         let compressor = PromptCompressor::new();
-        
+
         let text = "Hello , world . Test : value ( example )";
         let compressed = compressor.compress(text);
-        
+
         // Spaces around punctuation should be removed
         assert!(compressed.contains(","));
         assert!(!compressed.contains(" ,"));
@@ -381,10 +381,10 @@ mod tests {
     #[test]
     fn test_compress_whitespace_normalization() {
         let compressor = PromptCompressor::new();
-        
+
         let text = "Hello    world\n\ntest\t\ttab";
         let compressed = compressor.compress(text);
-        
+
         // Multiple whitespace should be normalized to single space
         assert!(!compressed.contains("  "));
         assert!(!compressed.contains("\n"));
@@ -419,7 +419,7 @@ mod tests {
         let stealth = PromptCompressor::compress_stealth_prompt();
         let support = PromptCompressor::compress_support_prompt();
         let exploration = PromptCompressor::compress_exploration_prompt();
-        
+
         // All prompts should include JSON schema
         assert!(tactical.contains("JSON:"));
         assert!(stealth.contains("JSON:"));
@@ -433,7 +433,7 @@ mod tests {
         let stealth = PromptCompressor::compress_stealth_prompt();
         let support = PromptCompressor::compress_support_prompt();
         let exploration = PromptCompressor::compress_exploration_prompt();
-        
+
         // All prompts should have rules section
         assert!(tactical.contains("Rules:"));
         assert!(stealth.contains("Rules:"));
@@ -450,7 +450,7 @@ mod tests {
         let snapshot = create_test_snapshot();
         let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-        
+
         assert!(parsed["plr"].is_object(), "Should have player section");
         assert!(parsed["me"].is_object(), "Should have me section");
         assert!(parsed["enemies"].is_array(), "Should have enemies section");
@@ -463,7 +463,7 @@ mod tests {
         let snapshot = create_test_snapshot();
         let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-        
+
         let me = &parsed["me"];
         assert!(me["pos"].is_array());
         assert!(me["morale"].is_number());
@@ -476,7 +476,7 @@ mod tests {
         let snapshot = create_test_snapshot();
         let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-        
+
         let enemy = &parsed["enemies"][0];
         assert_eq!(enemy["id"], 99);
         assert!(enemy["pos"].is_array());
@@ -490,7 +490,7 @@ mod tests {
         let snapshot = create_test_snapshot();
         let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-        
+
         let poi = &parsed["pois"][0];
         assert_eq!(poi["k"], "ammo");
         assert!(poi["pos"].is_array());
@@ -502,10 +502,10 @@ mod tests {
         snapshot.enemies.clear();
         snapshot.pois.clear();
         snapshot.obstacles.clear();
-        
+
         let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-        
+
         assert!(parsed["enemies"].as_array().unwrap().is_empty());
         assert!(parsed["pois"].as_array().unwrap().is_empty());
         assert!(parsed["obs"].as_array().unwrap().is_empty());
@@ -519,7 +519,7 @@ mod tests {
     fn test_build_optimized_prompt_support() {
         let snapshot = create_test_snapshot();
         let tools = "MoveTo|Revive|Throw";
-        
+
         let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "support");
         assert!(prompt.contains("Support AI"));
         assert!(prompt.contains("Tools:"));
@@ -530,7 +530,7 @@ mod tests {
     fn test_build_optimized_prompt_exploration() {
         let snapshot = create_test_snapshot();
         let tools = "MoveTo|Interact|Wait";
-        
+
         let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "exploration");
         assert!(prompt.contains("Exploration AI"));
     }
@@ -539,7 +539,7 @@ mod tests {
     fn test_build_optimized_prompt_unknown_role_defaults_to_tactical() {
         let snapshot = create_test_snapshot();
         let tools = "MoveTo|Attack";
-        
+
         let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "unknown_role");
         assert!(prompt.contains("Tactical AI")); // Default fallback
     }
@@ -548,9 +548,9 @@ mod tests {
     fn test_build_optimized_prompt_includes_snapshot() {
         let snapshot = create_test_snapshot();
         let tools = "MoveTo";
-        
+
         let prompt = PromptCompressor::build_optimized_prompt(&snapshot, tools, "tactical");
-        
+
         // Should include compact JSON snapshot
         assert!(prompt.contains("Snapshot:"));
         assert!(prompt.contains("\"plr\""));

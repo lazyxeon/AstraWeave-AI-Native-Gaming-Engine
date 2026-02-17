@@ -85,9 +85,9 @@ impl RetryConfig {
     }
 
     /// Calculate backoff duration with seeded RNG for external determinism control
-    /// 
+    ///
     /// # Determinism
-    /// 
+    ///
     /// Use this variant when you need control over the RNG source for replay systems.
     pub fn backoff_for_attempt_seeded<R: rand::Rng>(&self, attempt: u32, rng: &mut R) -> Duration {
         if self.max_attempts == 0 {
@@ -104,7 +104,8 @@ impl RetryConfig {
         // Add jitter (random ±25%) from provided RNG
         let final_backoff = if self.jitter {
             let jitter_range = (capped_backoff as f64 * 0.25) as u64;
-            let jitter = (rng.random::<u64>() % (jitter_range * 2 + 1)).saturating_sub(jitter_range);
+            let jitter =
+                (rng.random::<u64>() % (jitter_range * 2 + 1)).saturating_sub(jitter_range);
             capped_backoff.saturating_add(jitter)
         } else {
             capped_backoff
@@ -418,7 +419,13 @@ mod tests {
         assert_eq!(format!("{}", RetryableError::Timeout), "Request timeout");
         assert_eq!(format!("{}", RetryableError::NetworkError), "Network error");
         assert_eq!(format!("{}", RetryableError::RateLimited), "Rate limited");
-        assert_eq!(format!("{}", RetryableError::ServerError(500)), "Server error 500");
-        assert_eq!(format!("{}", RetryableError::Permanent("fail".into())), "Permanent error: fail");
+        assert_eq!(
+            format!("{}", RetryableError::ServerError(500)),
+            "Server error 500"
+        );
+        assert_eq!(
+            format!("{}", RetryableError::Permanent("fail".into())),
+            "Permanent error: fail"
+        );
     }
 }

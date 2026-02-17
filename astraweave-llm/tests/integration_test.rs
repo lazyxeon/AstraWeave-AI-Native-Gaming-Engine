@@ -16,6 +16,7 @@ async fn test_llm_integration_workflow() {
     let plan = match plan_source {
         PlanSource::Llm(p) => p,
         PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+        _ => panic!("Unexpected PlanSource variant"),
     };
 
     // Verify plan structure
@@ -120,6 +121,7 @@ async fn test_error_handling_scenarios() {
                 plan.plan_id
             );
         }
+        _ => panic!("Unexpected PlanSource variant"),
     }
 
     // Clear cache again before second test case to prevent race conditions with parallel tests
@@ -152,6 +154,7 @@ async fn test_error_handling_scenarios() {
                 plan.plan_id
             );
         }
+        _ => panic!("Unexpected PlanSource variant"),
     }
 }
 
@@ -294,6 +297,7 @@ async fn test_obstacle_single_blocking_path() {
     let plan = match plan_source {
         PlanSource::Llm(p) => p,
         PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+        _ => panic!("Unexpected PlanSource variant"),
     };
 
     // Plan should include movement steps that navigate around the obstacle
@@ -315,6 +319,7 @@ async fn test_obstacle_multiple_complex_layout() {
     let plan = match plan_source {
         PlanSource::Llm(p) => p,
         PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+        _ => panic!("Unexpected PlanSource variant"),
     };
 
     // Plan should be generated despite complex obstacle layout
@@ -332,6 +337,7 @@ async fn test_obstacle_surrounded_companion() {
     let plan = match plan_source {
         PlanSource::Llm(p) => p,
         PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+        _ => panic!("Unexpected PlanSource variant"),
     };
 
     // Plan should still be generated even with companion in confined space
@@ -349,6 +355,7 @@ async fn test_obstacle_edge_positions() {
     let plan = match plan_source {
         PlanSource::Llm(p) => p,
         PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+        _ => panic!("Unexpected PlanSource variant"),
     };
 
     // Plan should handle edge cases properly

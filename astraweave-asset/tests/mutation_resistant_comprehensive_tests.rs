@@ -6,6 +6,8 @@
 //! - Checking boundary conditions and edge cases
 //! - Testing return values from all public methods
 
+#![allow(unused_imports, clippy::assertions_on_constants)]
+
 use astraweave_asset::cell_loader::*;
 use astraweave_asset::nanite_preprocess::*;
 use astraweave_asset::*;
@@ -646,7 +648,9 @@ mod asset_database_tests {
     #[test]
     fn test_asset_database_get_guid_by_path_nonexistent() {
         let db = AssetDatabase::new();
-        assert!(db.get_guid_by_path(std::path::Path::new("fake.png")).is_none());
+        assert!(db
+            .get_guid_by_path(std::path::Path::new("fake.png"))
+            .is_none());
     }
 
     #[test]

@@ -7,6 +7,14 @@
 //! - Testing error paths and failure modes
 //! - Validating return values from all public methods
 
+#![allow(
+    unused_imports,
+    unused_variables,
+    clippy::clone_on_copy,
+    clippy::bool_comparison,
+    clippy::nonminimal_bool
+)]
+
 use astraweave_llm::*;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -501,17 +509,26 @@ mod fallback_tests {
 
     #[test]
     fn test_tier_next_full() {
-        assert_eq!(FallbackTier::FullLlm.next(), Some(FallbackTier::SimplifiedLlm));
+        assert_eq!(
+            FallbackTier::FullLlm.next(),
+            Some(FallbackTier::SimplifiedLlm)
+        );
     }
 
     #[test]
     fn test_tier_next_simplified() {
-        assert_eq!(FallbackTier::SimplifiedLlm.next(), Some(FallbackTier::Heuristic));
+        assert_eq!(
+            FallbackTier::SimplifiedLlm.next(),
+            Some(FallbackTier::Heuristic)
+        );
     }
 
     #[test]
     fn test_tier_next_heuristic() {
-        assert_eq!(FallbackTier::Heuristic.next(), Some(FallbackTier::Emergency));
+        assert_eq!(
+            FallbackTier::Heuristic.next(),
+            Some(FallbackTier::Emergency)
+        );
     }
 
     #[test]
@@ -676,7 +693,10 @@ mod plan_parser_tests {
 
     #[test]
     fn test_extraction_method_object() {
-        assert_eq!(ExtractionMethod::ObjectExtraction.as_str(), "object_extraction");
+        assert_eq!(
+            ExtractionMethod::ObjectExtraction.as_str(),
+            "object_extraction"
+        );
     }
 
     #[test]
@@ -1462,7 +1482,7 @@ mod compression_tests {
         let input = "Generate a tactical plan for the agent.";
         let result = compressor.compress(input);
         // Compression shouldn't increase size significantly
-        assert!(!result.is_empty() || input.is_empty());
+        assert!(!result.is_empty());
     }
 
     #[test]

@@ -488,15 +488,10 @@ impl NavMesh {
     }
 
     pub fn find_path(&self, start: Vec3, goal: Vec3) -> Vec<Vec3> {
-        let s = closest_tri(&self.tris, start);
-        let g = closest_tri(&self.tris, goal);
-        if s.is_none() || g.is_none() {
-            return vec![];
-        }
-        let (s, g) = (
-            s.expect("BUG: start triangle should be Some after is_none check"),
-            g.expect("BUG: goal triangle should be Some after is_none check"),
-        );
+        let (s, g) = match (closest_tri(&self.tris, start), closest_tri(&self.tris, goal)) {
+            (Some(s), Some(g)) => (s, g),
+            _ => return vec![],
+        };
         let idx_path = astar_tri(&self.tris, s, g);
         if idx_path.is_empty() {
             return vec![];

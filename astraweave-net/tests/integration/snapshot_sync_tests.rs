@@ -3,6 +3,8 @@
 //! Tests ECS world → Network snapshot → Delta → Reconstruct pipeline
 //! Part of Phase 1: Core Pipeline Integration (Bulletproof Validation Plan)
 
+#![allow(clippy::unnecessary_cast)]
+
 use astraweave_core::{IVec2, Team, World};
 use astraweave_net::{
     apply_delta, build_snapshot, diff_snapshots, filter_snapshot_for_viewer, EntityState,

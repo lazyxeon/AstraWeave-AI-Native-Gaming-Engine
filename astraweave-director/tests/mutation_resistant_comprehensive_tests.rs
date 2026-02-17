@@ -3,6 +3,8 @@
 //!          CTacticExecution, CDirectorMetrics, LlmDirectorConfig, TacticOutcome, integration helpers
 //! Focus: exact return values, boundary conditions, off-by-one, negation, operator swaps
 
+#![allow(clippy::identity_op, clippy::unnecessary_get_then_check)]
+
 use astraweave_core::{
     CompanionState, DirectorBudget, DirectorOp, EnemyState, IVec2, PlayerState, WorldSnapshot,
 };
@@ -912,7 +914,7 @@ fn tactic_execution_add_metadata() {
     exec.add_metadata("key2".to_string(), "value2".to_string());
     assert_eq!(exec.metadata.get("key1").unwrap(), "value1");
     assert_eq!(exec.metadata.get("key2").unwrap(), "value2");
-    assert!(exec.metadata.get("key3").is_none());
+    assert!(!exec.metadata.contains_key("key3"));
 }
 
 #[test]

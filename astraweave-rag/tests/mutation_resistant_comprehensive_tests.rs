@@ -4,6 +4,11 @@
 //! ConsolidationEngine, ForgettingEngine, InjectionEngine, RetrievalEngine,
 //! all Default impls with exact value assertions.
 
+#![allow(
+    dead_code,
+    clippy::field_reassign_with_default
+)]
+
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::*;
 use std::collections::HashMap;

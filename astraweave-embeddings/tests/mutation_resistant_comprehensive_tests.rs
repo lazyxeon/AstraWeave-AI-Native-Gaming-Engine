@@ -3,6 +3,11 @@
 //! Targets: VectorStore insert/search/remove/prune, SimilarityMetrics math,
 //! MemoryUtils creation/decay/forget/consolidation, TextPreprocessor, MockEmbeddingClient,
 //! EmbeddingConfig defaults, DistanceMetric/MemoryCategory/CombatOutcome enums.
+#![allow(
+    clippy::absurd_extreme_comparisons,
+    clippy::field_reassign_with_default,
+    unused_comparisons
+)]
 
 use astraweave_embeddings::*;
 use std::collections::HashMap;

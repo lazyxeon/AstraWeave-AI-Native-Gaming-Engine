@@ -279,6 +279,11 @@ fn apply_tint(color: vec3<f32>, scene: SceneEnvironment) -> vec3<f32> {
 // ─── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(
+    clippy::field_reassign_with_default,
+    clippy::const_is_empty,
+    clippy::clone_on_copy
+)]
 mod tests {
     use super::*;
     use crate::biome_transition::{EasingFunction, TransitionConfig, TransitionEffect};
@@ -892,7 +897,7 @@ mod tests {
     #[test]
     fn test_all_biomes_sky_water_distinct() {
         // Each biome pair should have at least one distinct sky or water colour
-        let biomes: Vec<BiomeType> = BiomeType::all().iter().copied().collect();
+        let biomes: Vec<BiomeType> = BiomeType::all().to_vec();
         for (i, &a) in biomes.iter().enumerate() {
             for &b in biomes.iter().skip(i + 1) {
                 let va = crate::biome_transition::BiomeVisuals::for_biome(a);

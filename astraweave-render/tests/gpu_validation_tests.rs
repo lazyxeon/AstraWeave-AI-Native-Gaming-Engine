@@ -995,14 +995,14 @@ mod compute_validation_tests {
             let result: &[f32] = bytemuck::cast_slice(&mapped);
 
             // Verify each value is doubled
-            for i in 0..64 {
+            for (i, &val) in result.iter().enumerate().take(64) {
                 let expected = (i as f32) * 2.0;
                 assert!(
-                    (result[i] - expected).abs() < 0.001,
+                    (val - expected).abs() < 0.001,
                     "Value at index {} should be {}, got {}",
                     i,
                     expected,
-                    result[i]
+                    val
                 );
             }
 
@@ -1087,8 +1087,8 @@ mod backend_tests {
 
             // Verify data integrity
             let result: &[f32] = bytemuck::cast_slice(&mapped);
-            for i in 0..16 {
-                assert_eq!(result[i], (i + 1) as f32);
+            for (i, &val) in result.iter().enumerate().take(16) {
+                assert_eq!(val, (i + 1) as f32);
             }
 
             drop(mapped);

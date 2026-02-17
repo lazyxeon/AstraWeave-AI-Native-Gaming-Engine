@@ -2,6 +2,8 @@
 //! Targets exact default values, enum variants, serde roundtrips,
 //! and boundary conditions for 90%+ mutation kill rate.
 
+#![allow(clippy::clone_on_copy, clippy::overly_complex_bool_expr)]
+
 use astraweave_audio::*;
 use glam::Vec3;
 

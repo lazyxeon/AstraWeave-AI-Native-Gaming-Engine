@@ -2,6 +2,8 @@
 //!
 //! Tests the synchronous entity generation functions and struct fields.
 
+#![allow(clippy::manual_range_contains, clippy::len_zero)]
+
 use astraweave_stress_test::*;
 
 // ═══════════════════════════════════════════════════════════════════════════

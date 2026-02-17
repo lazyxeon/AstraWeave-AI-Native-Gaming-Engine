@@ -5,6 +5,10 @@
 //! detect specific mutation patterns (value swap, sign flip, op replacement,
 //! condition inversion, off-by-one) that cargo-mutants would introduce.
 
+#![allow(
+    clippy::field_reassign_with_default
+)]
+
 use astraweave_gameplay::*;
 use glam::Vec3;
 use std::collections::HashMap;
@@ -1291,7 +1295,7 @@ mod dialogue_mutations {
 
     #[test]
     fn eval_eq_missing_key_returns_false() {
-        let vars: HashMap<String, String> = HashMap::new();
+        let _vars: HashMap<String, String> = HashMap::new();
         let d = Dialogue {
             id: "t".into(),
             start: "n0".into(),

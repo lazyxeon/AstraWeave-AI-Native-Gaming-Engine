@@ -2237,4 +2237,210 @@ mod tests {
             pts[2].x
         );
     }
+
+    // ===== ROUND 9: Projectile update + explosion precision =====
+
+    #[test]
+    fn r9_projectile_update_gravity_pulls_down() {
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::new(0.0, -9.81, 0.0);
+        mgr.wind = Vec3::ZERO;
+
+        let id = mgr.spawn(ProjectileConfig {
+            position: Vec3::new(0.0, 100.0, 0.0),
+            velocity: Vec3::new(10.0, 0.0, 0.0), // horizontal
+            gravity_scale: 1.0,
+            drag: 0.0,
+            ..Default::default()
+        });
+
+        // Step 10 frames at 60fps
+        for _ in 0..10 {
+            mgr.update(1.0 / 60.0, |_, _, _| None);
+        }
+
+        let p = mgr.get(id).unwrap();
+        // After 10/60s with gravity -9.81, y should decrease
+        // y_change = 0.5 * -9.81 * (10/60)^2 ≈ -0.136 (from velocity accumulation)
+        assert!(
+            p.position.y < 100.0,
+            "Projectile should fall under gravity: y={}",
+            p.position.y
+        );
+        // x should increase (moving forward)
+        assert!(
+            p.position.x > 0.0,
+            "Projectile should move forward: x={}",
+            p.position.x
+        );
+        // Velocity y should be negative (gravity accumulated)
+        assert!(
+            p.velocity.y < 0.0,
+            "Velocity y should be negative from gravity: vy={}",
+            p.velocity.y
+        );
+    }
+
+    #[test]
+    fn r9_projectile_update_drag_reduces_speed() {
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        mgr.wind = Vec3::ZERO;
+
+        let initial_speed = 50.0;
+        let id = mgr.spawn(ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::new(initial_speed, 0.0, 0.0),
+            gravity_scale: 0.0,
+            drag: 0.1,
+            ..Default::default()
+        });
+
+        for _ in 0..30 {
+            mgr.update(1.0 / 60.0, |_, _, _| None);
+        }
+
+        let p = mgr.get(id).unwrap();
+        let speed = p.velocity.length();
+        assert!(
+            speed < initial_speed,
+            "Drag should reduce speed: initial={}, now={}",
+            initial_speed, speed
+        );
+        assert!(
+            speed > 0.0,
+            "Speed should still be positive (not reversed): {}",
+            speed
+        );
+    }
+
+    #[test]
+    fn r9_projectile_update_wind_affects_velocity() {
+        let mut mgr = ProjectileManager::new();
+        mgr.gravity = Vec3::ZERO;
+        mgr.wind = Vec3::new(0.0, 0.0, 5.0); // wind in Z direction
+
+        let id = mgr.spawn(ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::new(10.0, 0.0, 0.0), // moving in X
+            gravity_scale: 0.0,
+            drag: 0.0,
+            ..Default::default()
+        });
+
+        for _ in 0..30 {
+            mgr.update(1.0 / 60.0, |_, _, _| None);
+        }
+
+        let p = mgr.get(id).unwrap();
+        // Wind should push projectile in Z direction
+        assert!(
+            p.velocity.z > 0.0,
+            "Wind should add Z velocity: vz={}",
+            p.velocity.z
+        );
+        assert!(
+            p.position.z > 0.0,
+            "Wind should push in Z: z={}",
+            p.position.z
+        );
+    }
+
+    #[test]
+    fn r9_explosion_force_scales_with_distance() {
+        let mgr = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            force: 1000.0,
+            upward_bias: 0.0,
+            ..Default::default()
+        };
+
+        let bodies = vec![
+            (1u64, Vec3::new(1.0, 0.0, 0.0)),  // close
+            (2u64, Vec3::new(8.0, 0.0, 0.0)),  // far
+        ];
+
+        let results = mgr.calculate_explosion(&config, bodies);
+        assert_eq!(results.len(), 2);
+
+        let close = &results[0];
+        let far = &results[1];
+
+        // Closer body should receive more force
+        assert!(
+            close.impulse.length() > far.impulse.length(),
+            "Close body impulse ({}) should exceed far body impulse ({})",
+            close.impulse.length(), far.impulse.length()
+        );
+
+        // Both should push outward (positive x)
+        assert!(close.impulse.x > 0.0, "Close impulse should push +X");
+        assert!(far.impulse.x > 0.0, "Far impulse should push +X");
+    }
+
+    #[test]
+    fn r9_explosion_upward_bias() {
+        let mgr = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::ZERO,
+            radius: 10.0,
+            force: 1000.0,
+            upward_bias: 0.5,
+            ..Default::default()
+        };
+
+        let bodies = vec![(1u64, Vec3::new(3.0, 0.0, 0.0))];
+        let results = mgr.calculate_explosion(&config, bodies);
+
+        assert_eq!(results.len(), 1);
+        let r = &results[0];
+
+        // With upward_bias=0.5, impulse should have both X and Y components
+        assert!(r.impulse.x > 0.0, "Should push outward: x={}", r.impulse.x);
+        assert!(r.impulse.y > 0.0, "Upward bias should add Y: y={}", r.impulse.y);
+    }
+
+    #[test]
+    fn r9_predict_trajectory_precise_gravity() {
+        // Zero drag, known gravity → verify exact positions
+        let pts = predict_trajectory(
+            Vec3::ZERO,
+            Vec3::new(10.0, 0.0, 0.0), // 10 m/s in X
+            Vec3::new(0.0, -10.0, 0.0), // gravity -10
+            0.0, // no drag
+            0.1, // dt = 0.1s
+            4,
+        );
+
+        // Point 0: (0, 0, 0)
+        assert_eq!(pts[0], Vec3::ZERO);
+
+        // After step 1: vel = (10, -1, 0), pos = (10*0.1, -0.1*0.1, 0) = (1.0, -0.1, 0)
+        // Actually: vel += gravity*dt = (10, 0-10*0.1, 0) = (10, -1, 0)
+        // pos += vel*dt = (0+10*0.1, 0+(-1*0.1), 0) = (1.0, -0.1, 0)
+        assert!(
+            (pts[1].x - 1.0).abs() < 0.01,
+            "Step 1 x should be 1.0, got {}",
+            pts[1].x
+        );
+        assert!(
+            (pts[1].y - (-0.1)).abs() < 0.01,
+            "Step 1 y should be -0.1, got {}",
+            pts[1].y
+        );
+
+        // Step 2: vel = (10, -2, 0), pos = (1.0+1.0, -0.1+(-0.2)) = (2.0, -0.3, 0)
+        assert!(
+            (pts[2].x - 2.0).abs() < 0.01,
+            "Step 2 x should be 2.0, got {}",
+            pts[2].x
+        );
+        assert!(
+            (pts[2].y - (-0.3)).abs() < 0.01,
+            "Step 2 y should be -0.3, got {}",
+            pts[2].y
+        );
+    }
 }

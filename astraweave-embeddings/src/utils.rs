@@ -202,6 +202,7 @@ impl MemoryUtils {
     }
 
     /// Merge a group of similar memories
+    #[allow(clippy::panic, clippy::expect_used)] // Documented precondition: group must be non-empty
     fn merge_memory_group(mut memories: Vec<Memory>) -> Memory {
         if memories.is_empty() {
             panic!("Cannot merge empty memory group");
@@ -407,7 +408,7 @@ fn text_similarity(a: &str, b: &str) -> f32 {
 pub fn current_timestamp() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .expect("system clock before UNIX epoch")
+        .unwrap_or_default()
         .as_secs()
 }
 

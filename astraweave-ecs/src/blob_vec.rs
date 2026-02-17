@@ -107,6 +107,7 @@ impl BlobVec {
     }
 
     /// Reserve space for at least `additional` more components
+    #[allow(clippy::expect_used)] // OOM/layout panics are the only correct response — no recovery possible
     pub fn reserve(&mut self, additional: usize) {
         let required_cap = self.len.checked_add(additional).expect("capacity overflow");
         if required_cap <= self.capacity {
@@ -409,6 +410,7 @@ impl BlobVec {
 }
 
 impl Drop for BlobVec {
+    #[allow(clippy::expect_used)] // INVARIANT: layout params are identical to those used at allocation time
     fn drop(&mut self) {
         self.clear();
 
@@ -867,8 +869,8 @@ mod tests {
         let p2 = blob.get_raw(2).unwrap();
 
         // Verify the pointers are exactly 64 bytes apart
-        let offset_01 = unsafe { (p1 as *const u8).offset_from(p0 as *const u8) };
-        let offset_12 = unsafe { (p2 as *const u8).offset_from(p1 as *const u8) };
+        let offset_01 = unsafe { (p1).offset_from(p0) };
+        let offset_12 = unsafe { (p2).offset_from(p1) };
         assert_eq!(offset_01, 64, "offset between [0] and [1] must be 64 bytes");
         assert_eq!(offset_12, 64, "offset between [1] and [2] must be 64 bytes");
 

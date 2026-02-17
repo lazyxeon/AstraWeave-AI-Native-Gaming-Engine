@@ -11,7 +11,6 @@
 //! - EntityBridge: mapping lifecycle
 
 use astraweave_core::schema::*;
-use std::collections::BTreeMap;
 
 // =============================================================================
 // MODULE 1: ActionStep::category() — every variant to its correct category

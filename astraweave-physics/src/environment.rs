@@ -2942,4 +2942,258 @@ mod tests {
             );
         }
     }
+
+    // ===== ROUND 8: buoyancy/water/falloff catches =====
+
+    #[test]
+    fn r8_buoyancy_force_at_submerged_sphere() {
+        let mut em = EnvironmentManager::default();
+        // Water at y=0, half_ext(50, 5, 50) → surface at y=5
+        let wid = em.add_water_volume(Vec3::ZERO, Vec3::new(50.0, 5.0, 50.0));
+        let wv = em.get_water_volume_mut(wid).unwrap();
+        wv.wave_amplitude = 0.0;
+
+        // Sphere at y=0, radius=1 → fully submerged (center below surface)
+        let force = em.buoyancy_force_at(Vec3::new(0.0, 0.0, 0.0), 4.189, 1.0);
+        assert!(
+            force.y > 0.0,
+            "Buoyancy should push up for submerged sphere: {:?}",
+            force
+        );
+    }
+
+    #[test]
+    fn r8_is_underwater_inside_volume() {
+        let mut em = EnvironmentManager::default();
+        let wid = em.add_water_volume(Vec3::ZERO, Vec3::new(50.0, 5.0, 50.0));
+        let wv = em.get_water_volume_mut(wid).unwrap();
+        wv.wave_amplitude = 0.0;
+
+        // Point well below surface (surface at y=5)
+        assert!(em.is_underwater(Vec3::new(0.0, 1.0, 0.0)), "Point at y=1 should be underwater");
+        // Point above surface
+        assert!(!em.is_underwater(Vec3::new(0.0, 10.0, 0.0)), "Point at y=10 should not be underwater");
+        // Point outside volume
+        assert!(!em.is_underwater(Vec3::new(100.0, 0.0, 0.0)), "Point outside volume should not be underwater");
+    }
+
+    #[test]
+    fn r8_water_drag_at_submerged() {
+        let mut em = EnvironmentManager::default();
+        let wid = em.add_water_volume(Vec3::ZERO, Vec3::new(50.0, 5.0, 50.0));
+        let wv = em.get_water_volume_mut(wid).unwrap();
+        wv.wave_amplitude = 0.0;
+        wv.linear_drag = 0.8;
+        wv.angular_drag = 0.6;
+
+        // Inside water
+        let (linear, angular) = em.water_drag_at(Vec3::new(0.0, 1.0, 0.0));
+        assert!(
+            (linear - 0.8).abs() < 0.01,
+            "Linear drag should match: got {}",
+            linear
+        );
+        assert!(
+            (angular - 0.6).abs() < 0.01,
+            "Angular drag should match: got {}",
+            angular
+        );
+
+        // Above water
+        let (lin_above, ang_above) = em.water_drag_at(Vec3::new(0.0, 20.0, 0.0));
+        assert!(
+            lin_above == 0.0 && ang_above == 0.0,
+            "No drag above water: ({}, {})",
+            lin_above, ang_above
+        );
+    }
+
+    #[test]
+    fn r8_wind_zone_falloff_sphere() {
+        // Sphere wind zone with falloff should reduce force towards edge
+        let config = WindZoneConfig {
+            position: Vec3::ZERO,
+            shape: WindZoneShape::Sphere { radius: 10.0 },
+            wind_type: WindType::Directional,
+            direction: Vec3::new(1.0, 0.0, 0.0),
+            strength: 20.0,
+            falloff: 1.0,
+            active: true,
+        };
+        let zone = WindZone::new(WindZoneId(0), config);
+
+        // At center → full strength
+        let force_center = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // At half radius → reduced
+        let force_half = zone.wind_force_at(Vec3::new(5.0, 0.0, 0.0), 1.0, 1.0);
+
+        assert!(
+            force_center.length() > force_half.length(),
+            "Force at center should be stronger than at half radius: center={}, half={}",
+            force_center.length(), force_half.length()
+        );
+
+        // Force at center should be non-zero
+        assert!(force_center.length() > 0.1, "Center force should be non-zero");
+    }
+
+    #[test]
+    fn r8_wind_zone_falloff_box() {
+        let config = WindZoneConfig {
+            position: Vec3::ZERO,
+            shape: WindZoneShape::Box { half_extents: Vec3::splat(10.0) },
+            wind_type: WindType::Directional,
+            direction: Vec3::new(0.0, 0.0, 1.0),
+            strength: 15.0,
+            falloff: 1.0,
+            active: true,
+        };
+        let zone = WindZone::new(WindZoneId(0), config);
+
+        let force_center = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        let force_edge = zone.wind_force_at(Vec3::new(9.0, 0.0, 0.0), 1.0, 1.0);
+
+        assert!(
+            force_center.length() > force_edge.length(),
+            "Center should have more force than edge: center={}, edge={}",
+            force_center.length(), force_edge.length()
+        );
+    }
+
+    #[test]
+    fn r8_wind_zone_falloff_cylinder() {
+        let config = WindZoneConfig {
+            position: Vec3::ZERO,
+            shape: WindZoneShape::Cylinder { radius: 10.0, height: 20.0 },
+            wind_type: WindType::Directional,
+            direction: Vec3::new(1.0, 0.0, 0.0),
+            strength: 15.0,
+            falloff: 1.0,
+            active: true,
+        };
+        let zone = WindZone::new(WindZoneId(0), config);
+
+        let force_center = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        let force_near_edge = zone.wind_force_at(Vec3::new(8.0, 0.0, 0.0), 1.0, 1.0);
+
+        assert!(
+            force_center.length() > force_near_edge.length(),
+            "Center > edge: center={}, edge={}",
+            force_center.length(), force_near_edge.length()
+        );
+    }
+
+    #[test]
+    fn r8_env_mgr_wind_force_at_with_zone() {
+        let mut em = EnvironmentManager::default();
+        em.add_wind_zone(WindZoneConfig {
+            position: Vec3::ZERO,
+            shape: WindZoneShape::Sphere { radius: 20.0 },
+            wind_type: WindType::Directional,
+            direction: Vec3::new(1.0, 0.0, 0.0),
+            strength: 10.0,
+            falloff: 0.0,
+            active: true,
+        });
+
+        // Point inside zone
+        let force_in = em.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        assert!(force_in.length() > 0.0, "Inside zone should have wind force");
+
+        // Point outside zone
+        let force_out = em.wind_force_at(Vec3::new(100.0, 0.0, 0.0), 1.0, 1.0);
+        // Outside zone, only global wind applies (default is zero)
+        assert!(
+            force_out.length() < force_in.length(),
+            "Outside zone should have less force"
+        );
+    }
+
+    // ===== ROUND 9: Environment precision tests =====
+
+    #[test]
+    fn r9_global_wind_force_magnitude() {
+        let mut mgr = EnvironmentManager::new();
+        mgr.global_wind = Vec3::new(10.0, 0.0, 0.0);
+        mgr.global_wind_strength = 1.0;
+
+        let drag_coeff = 1.0;
+        let cross_section = 2.0;
+        let force = mgr.wind_force_at(Vec3::ZERO, drag_coeff, cross_section);
+
+        // Expected: speed = 10.0 * 1.0 = 10.0
+        // force_mag = 0.5 * 1.225 * 10 * 10 * 1.0 * 2.0 = 0.5 * 1.225 * 100 * 2 = 122.5
+        // direction = (1, 0, 0)
+        let expected_mag = 0.5 * 1.225 * 100.0 * drag_coeff * cross_section;
+        assert!(
+            (force.length() - expected_mag).abs() < 1.0,
+            "Wind force magnitude should be ~{}, got {}",
+            expected_mag, force.length()
+        );
+        assert!(force.x > 0.0, "Wind force should be in +X: {:?}", force);
+    }
+
+    #[test]
+    fn r9_wind_zone_force_magnitude_with_falloff() {
+        // Test that wind zone's force_at multiplication chain works correctly
+        let zone = WindZone::new(
+            WindZoneId(1),
+            WindZoneConfig {
+                position: Vec3::ZERO,
+                shape: WindZoneShape::Sphere { radius: 10.0 },
+                wind_type: WindType::Directional,
+                direction: Vec3::X, // unit direction
+                strength: 5.0,      // speed = strength = 5.0 m/s
+                falloff: 1.0,       // linear falloff
+                active: true,
+            },
+        );
+
+        // At center (falloff=1.0 for sphere at distance 0)
+        let force_center = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+        // At edge (falloff approaches 0)
+        let force_edge = zone.wind_force_at(Vec3::new(9.5, 0.0, 0.0), 1.0, 1.0);
+
+        assert!(
+            force_center.length() > force_edge.length(),
+            "Center force ({}) should exceed edge force ({})",
+            force_center.length(), force_edge.length()
+        );
+
+        // Wind velocity = direction.normalize() * strength = (1,0,0) * 5.0
+        // speed = 5.0, force = 0.5 * 1.225 * 25.0 * 1.0 * 1.0 = 15.3125
+        let expected = 0.5 * 1.225 * 25.0;
+        assert!(
+            (force_center.length() - expected).abs() < 2.0,
+            "Center force should be ~{}, got {}",
+            expected, force_center.length()
+        );
+    }
+
+    #[test]
+    fn r9_water_current_at_returns_current_vector() {
+        let mut mgr = EnvironmentManager::new();
+        let wid = mgr.add_water_volume(Vec3::new(0.0, -5.0, 0.0), Vec3::new(10.0, 5.0, 10.0));
+        // Set current on the volume
+        if let Some(wv) = mgr.get_water_volume_mut(wid) {
+            wv.current = Vec3::new(2.0, 0.0, 1.0);
+            wv.surface_height = 0.0;
+        }
+
+        // Point below surface inside volume
+        let current = mgr.water_current_at(Vec3::new(0.0, -2.0, 0.0));
+        assert!(
+            (current - Vec3::new(2.0, 0.0, 1.0)).length() < 0.01,
+            "Should get water current vec: {:?}",
+            current
+        );
+
+        // Point above surface — should return zero
+        let above = mgr.water_current_at(Vec3::new(0.0, 5.0, 0.0));
+        assert!(
+            above.length() < 0.01,
+            "Above surface should have no current: {:?}",
+            above
+        );
+    }
 }

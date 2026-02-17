@@ -3,6 +3,8 @@
 //! Without the `profiling` feature (default), everything is a zero-cost no-op.
 //! These tests verify the exact deterministic return values.
 
+#![allow(clippy::bool_assert_comparison, clippy::drop_non_drop, clippy::useless_vec)]
+
 use astraweave_profiling::*;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -135,12 +137,14 @@ fn message_macro_compiles() {
 fn alloc_macro_compiles() {
     let data = vec![0u8; 100];
     alloc!(data.as_ptr(), data.len());
+    let _keep = data;
 }
 
 #[test]
 fn free_macro_compiles() {
     let data = vec![0u8; 100];
     free!(data.as_ptr());
+    let _keep = data;
 }
 
 #[test]

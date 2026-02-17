@@ -109,8 +109,8 @@ mod heightmap_tests {
         // Just verify they return reasonable values within range
         let upper_x = heightmap.sample_bilinear(0.999, 0.0);
         let upper_z = heightmap.sample_bilinear(0.0, 0.999);
-        assert!(upper_x >= 0.0 && upper_x <= 10.0);
-        assert!(upper_z >= 0.0 && upper_z <= 20.0);
+        assert!((0.0..=10.0).contains(&upper_x));
+        assert!((0.0..=20.0).contains(&upper_z));
     }
 
     #[test]
@@ -568,6 +568,7 @@ mod texture_splatting_tests {
     use crate::texture_splatting::{SplatWeights, MAX_SPLAT_LAYERS};
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_max_splat_layers_constant() {
         assert!(MAX_SPLAT_LAYERS >= 4);
         assert!(MAX_SPLAT_LAYERS <= 16);
@@ -1233,8 +1234,6 @@ mod comparison_operator_tests {
     use crate::heightmap::Heightmap;
     use crate::lod_manager::LodLevel;
     use crate::voxel_data::Voxel;
-    use glam::Vec3;
-
     // --- ChunkId equality ---
 
     #[test]

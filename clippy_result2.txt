@@ -1,0 +1,1217 @@
+    Checking coop_server v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\coop_server)
+    Checking astraweave-persona v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-persona)
+    Checking astraweave-net-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net-ecs)
+    Checking astraweave-security v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-security)
+    Checking astraweave-scripting v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scripting)
+    Checking aw_demo_builder v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_demo_builder)
+    Checking aw_texture_gen v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_texture_gen)
+    Checking astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+    Checking astraweave-persistence-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-persistence-ecs)
+    Checking save_integration v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\save_integration)
+    Checking phi3_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\phi3_demo)
+    Checking astraweave-memory v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-memory)
+    Checking astraweave-ipc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ipc)
+    Checking companion_profile v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\companion_profile)
+    Checking astraweave-net v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net)
+    Checking astraweave-rag v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-rag)
+    Checking astraweave-director v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director)
+    Checking astraweave-quests v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-quests)
+    Checking astraweave-context v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+    Checking astraweave-ai v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+    Checking astraweave-prompts v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+    Checking astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+    Checking astraweave-fluids v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-fluids)
+    Checking core_loop_goap_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\core_loop_goap_demo)
+    Checking astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+    Checking ecs_ai_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ecs_ai_showcase)
+    Checking core_loop_bt_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\core_loop_bt_demo)
+error: unused import: `super::*`
+   --> astraweave-scene\src\mutation_tests.rs:569:9
+    |
+569 |     use super::*;
+    |         ^^^^^^^^
+    |
+    = note: `-D unused-imports` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+    Checking hello_companion v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion)
+    Checking ecs_ai_demo v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ecs_ai_demo)
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-scene\src\mutation_tests.rs:692:9
+    |
+692 |         anim.time = 10.0;
+    |         ^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `ecs::CAnimator { time: 10.0, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-scene\src\mutation_tests.rs:691:9
+    |
+691 |         let mut anim = CAnimator::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+    = note: `-D clippy::field-reassign-with-default` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::field_reassign_with_default)]`
+
+error: could not compile `astraweave-scene` (lib test) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: unused variable: `avg`
+     --> astraweave-fluids\src\simd_ops.rs:24128:19
+      |
+24128 |         let (max, avg, frac) = batch_compute_density_errors(&densities, rest, tol);
+      |                   ^^^ help: if this is intentional, prefix it with an underscore: `_avg`
+      |
+      = note: `-D unused-variables` implied by `-D warnings`
+      = help: to override `-D warnings` add `#[allow(unused_variables)]`
+
+error: unused variable: `expected_factor`
+     --> astraweave-fluids\src\simd_ops.rs:24510:13
+      |
+24510 |         let expected_factor = -alpha_i * divergence_i * (1.0 / 1000.0);
+      |             ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expected_factor`
+
+error: unused variable: `sdf`
+     --> astraweave-fluids\src\simd_ops.rs:28665:14
+      |
+28665 |         let (sdf, weight) = particle_sdf_contribution([0.0, 0.0, 0.0], [5.0, 0.0, 0.0], 0.1, 1.0);
+      |              ^^^ help: if this is intentional, prefix it with an underscore: `_sdf`
+
+error: unused variable: `residual`
+     --> astraweave-fluids\src\simd_ops.rs:31418:26
+      |
+31418 |         let (iterations, residual) = conjugate_gradient_solve(&entries, &b, &mut x, &config);
+      |                          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_residual`
+
+error: using `clone` on type `AnisotropicData` which implements the `Copy` trait
+   --> astraweave-fluids\src\anisotropic.rs:199:22
+    |
+199 |         let cloned = data.clone();
+    |                      ^^^^^^^^^^^^ help: try removing the `clone` call: `data`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+    = note: `-D clippy::clone-on-copy` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::clone_on_copy)]`
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\anisotropic.rs:334:9
+    |
+334 |         data.axis1 = [2.0, 3.0, 4.0, 5.0];
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `anisotropic::AnisotropicData { axis1: [2.0, 3.0, 4.0, 5.0], ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\anisotropic.rs:333:9
+    |
+333 |         let mut data = AnisotropicData::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+    = note: `-D clippy::field-reassign-with-default` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::field_reassign_with_default)]`
+
+error: manual `RangeInclusive::contains` implementation
+   --> astraweave-fluids\src\caustics.rs:563:17
+    |
+563 |         assert!(sample >= 0.0 && sample <= 1.0);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use: `(0.0..=1.0).contains(&sample)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+    = note: `-D clippy::manual-range-contains` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_range_contains)]`
+
+error: this expression always evaluates to false
+   --> astraweave-fluids\src\caustics.rs:576:18
+    |
+576 |         assert!(!CAUSTICS_WGSL.is_empty());
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#const_is_empty
+    = note: `-D clippy::const-is-empty` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::const_is_empty)]`
+
+error: using `clone` on type `WaterBodyPreset` which implements the `Copy` trait
+    --> astraweave-fluids\src\editor.rs:4317:57
+     |
+4317 |             let config = FluidEditorConfig::from_preset(preset.clone());
+     |                                                         ^^^^^^^^^^^^^^ help: try removing the `clone` call: `preset`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\editor.rs:4674:9
+     |
+4674 |         config.max_particles = 200_000;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `editor::FluidEditorConfig { max_particles: 200_000, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\editor.rs:4673:9
+     |
+4673 |         let mut config = FluidEditorConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\editor.rs:4833:9
+     |
+4833 |         physics.smoothing_radius = 100.0;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `editor::PhysicsConfig { smoothing_radius: 100.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\editor.rs:4832:9
+     |
+4832 |         let mut physics = PhysicsConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\editor.rs:4851:9
+     |
+4851 |         thermal.ambient_temperature = 500.0;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `editor::ThermalConfig { ambient_temperature: 500.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\editor.rs:4850:9
+     |
+4850 |         let mut thermal = ThermalConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\editor.rs:5143:9
+     |
+5143 |         metrics.physics_time_ms = 1.0;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `editor::FluidPerformanceMetrics { physics_time_ms: 1.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\editor.rs:5141:9
+     |
+5141 |         let mut metrics = FluidPerformanceMetrics::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: manual `RangeInclusive::contains` implementation
+    --> astraweave-fluids\src\editor.rs:5196:25
+     |
+5196 |                 assert!(c >= 0.0 && c <= 1.0);
+     |                         ^^^^^^^^^^^^^^^^^^^^ help: use: `(0.0..=1.0).contains(&c)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: statement with no effect
+    --> astraweave-fluids\src\editor.rs:5329:9
+     |
+5329 |         config1.physics.viscosity;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#no_effect
+     = note: `-D clippy::no-effect` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::no_effect)]`
+
+error: this expression always evaluates to false
+   --> astraweave-fluids\src\god_rays.rs:617:18
+    |
+617 |         assert!(!GOD_RAYS_WGSL.is_empty());
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#const_is_empty
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\lod.rs:1089:9
+     |
+1089 |         config.particle_factors = [1.0, 0.8, 0.6, 0.4];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `lod::OptimizedLodConfig { particle_factors: [1.0, 0.8, 0.6, 0.4], ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\lod.rs:1088:9
+     |
+1088 |         let mut config = OptimizedLodConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\lod.rs:1118:9
+     |
+1118 |         config.auto_adjust_distances = true;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `lod::OptimizedLodConfig { auto_adjust_distances: true, target_frame_time_ms: 4.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\lod.rs:1117:9
+     |
+1117 |         let mut config = OptimizedLodConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1084:9
+     |
+1084 |         manager.water_surface = 0.0;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::AirPhaseManager { water_surface: 0.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1083:9
+     |
+1083 |         let mut manager = AirPhaseManager::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1151:9
+     |
+1151 |         config.surface_tension_model = SurfaceTensionModel::None;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::MultiPhaseConfig { surface_tension_model: SurfaceTensionModel::None, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1150:9
+     |
+1150 |         let mut config = MultiPhaseConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1176:9
+     |
+1176 |         config.surface_tension_model = SurfaceTensionModel::CSF;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::MultiPhaseConfig { surface_tension_model: SurfaceTensionModel::CSF, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1175:9
+     |
+1175 |         let mut config = MultiPhaseConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1188:9
+     |
+1188 |         config.surface_tension_model = SurfaceTensionModel::PCISPH;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::MultiPhaseConfig { surface_tension_model: SurfaceTensionModel::PCISPH, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1187:9
+     |
+1187 |         let mut config = MultiPhaseConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1290:9
+     |
+1290 |         manager.max_particles = 2;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::AirPhaseManager { max_particles: 2, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1289:9
+     |
+1289 |         let mut manager = AirPhaseManager::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1302:9
+     |
+1302 |         manager.max_particles = 1;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::AirPhaseManager { max_particles: 1, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1301:9
+     |
+1301 |         let mut manager = AirPhaseManager::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1313:9
+     |
+1313 |         manager.max_particles = 1;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `multi_phase::AirPhaseManager { max_particles: 1, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1312:9
+     |
+1312 |         let mut manager = AirPhaseManager::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: this binary expression can be simplified
+    --> astraweave-fluids\src\multi_phase.rs:1360:17
+     |
+1360 |         assert!(shift_mag > 0.0 || shift_mag == 0.0); // May be zero if distance check fails
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `shift_mag >= 0.0`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#double_comparisons
+     = note: `-D clippy::double-comparisons` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::double_comparisons)]`
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1440:9
+     |
+1440 |         p0.position = [0.0, 0.0, 0.0, 1.0]; // x,y,z,mass
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.0, 0.0, 0.0, 1.0], density: 1000.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1439:9
+     |
+1439 |         let mut p0 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1444:9
+     |
+1444 |         p1.position = [0.05, 0.0, 0.0, 1.0];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.05, 0.0, 0.0, 1.0], density: 1000.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1443:9
+     |
+1443 |         let mut p1 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1459:9
+     |
+1459 |         p0.position = [0.0, 0.0, 0.0, 1.0];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.0, 0.0, 0.0, 1.0], ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1458:9
+     |
+1458 |         let mut p0 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1476:9
+     |
+1476 |         p0.position = [0.0, 0.0, 0.0, 1.0];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.0, 0.0, 0.0, 1.0], density: 1000.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1475:9
+     |
+1475 |         let mut p0 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1480:9
+     |
+1480 |         p1.position = [0.5, 0.0, 0.0, 1.0];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.5, 0.0, 0.0, 1.0], density: 1000.0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1479:9
+     |
+1479 |         let mut p1 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1499:9
+     |
+1499 |         p0.position = [0.0, 0.0, 0.0, 1.0];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.0, 0.0, 0.0, 1.0], density: 1000.0, phase: 0, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1498:9
+     |
+1498 |         let mut p0 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\multi_phase.rs:1504:9
+     |
+1504 |         p1.position = [0.5, 0.0, 0.0, 1.0];
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchParticle { position: [0.5, 0.0, 0.0, 1.0], density: 800.0, phase: 1, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\multi_phase.rs:1503:9
+     |
+1503 |         let mut p1 = ResearchParticle::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\multi_phase.rs:1563:9
+     |
+1563 |         assert!(MIN_KERNEL_SUPPORT > 0.0);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+     = note: `-D clippy::assertions-on-constants` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::assertions_on_constants)]`
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\multi_phase.rs:1564:9
+     |
+1564 |         assert!(MIN_KERNEL_SUPPORT < 1e-5);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\multi_phase.rs:1574:9
+     |
+1574 |         assert!(COLOR_FIELD_THRESHOLD > 0.0);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\multi_phase.rs:1575:9
+     |
+1575 |         assert!(COLOR_FIELD_THRESHOLD < 1.0);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\particle_shifting.rs:659:13
+    |
+659 |             p.position = [i as f32 * 0.5, 0.0, 0.0, 1.0]; // Sparse spacing
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { position: [i as f32 * 0.5, 0.0, 0.0, 1.0], ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\particle_shifting.rs:658:13
+    |
+658 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\particle_shifting.rs:710:13
+    |
+710 |             p.position = [i as f32, 0.0, 0.0, 1.0];
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { position: [i as f32, 0.0, 0.0, 1.0], predicted_position: [i as f32, 0.0, 0.0, 1.0], shift_delta: [0.1, 0.2, 0.3], ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\particle_shifting.rs:709:13
+    |
+709 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1439:9
+     |
+1439 |         assert!(MAX_PARTICLES >= 100_000);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1440:9
+     |
+1440 |         assert!(MAX_PARTICLES <= 10_000_000);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1445:9
+     |
+1445 |         assert!(MAX_PCISPH_ITERATIONS >= 10);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1446:9
+     |
+1446 |         assert!(MAX_PCISPH_ITERATIONS <= 100);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1451:9
+     |
+1451 |         assert!(DEFAULT_DENSITY_THRESHOLD > 0.0);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1452:9
+     |
+1452 |         assert!(DEFAULT_DENSITY_THRESHOLD < 0.1); // Should be < 10%
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1458:9
+     |
+1458 |         assert!(WORKGROUP_SIZE >= 32);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1459:9
+     |
+1459 |         assert!(WORKGROUP_SIZE <= 256);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1464:9
+     |
+1464 |         assert!(DEFAULT_SMOOTHING_RADIUS > 0.0);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: `assert!(true)` will be optimized out by the compiler
+    --> astraweave-fluids\src\pcisph_system.rs:1465:9
+     |
+1465 |         assert!(DEFAULT_SMOOTHING_RADIUS < 10.0);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: remove it
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assertions_on_constants
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\pcisph_system.rs:1565:9
+     |
+1565 |         state.iteration = 10;
+     |         ^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `pcisph_system::IterationState { iteration: 10, converged: 1, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\pcisph_system.rs:1564:9
+     |
+1564 |         let mut state = IterationState::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+    --> astraweave-fluids\src\research.rs:1108:9
+     |
+1108 |         config.solver = SolverType::IISPH;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+note: consider initializing the variable with `research::ResearchFluidConfig { solver: SolverType::IISPH, ..Default::default() }` and removing relevant reassignments
+    --> astraweave-fluids\src\research.rs:1107:9
+     |
+1107 |         let mut config = ResearchFluidConfig::default();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: using `contains()` instead of `iter().any()` is more efficient
+     --> astraweave-fluids\src\simd_ops.rs:22394:25
+      |
+22394 |             let found = NEIGHBOR_OFFSETS.iter().any(|o| *o == opposite);
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `NEIGHBOR_OFFSETS.contains(&opposite)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_contains
+      = note: `-D clippy::manual-contains` implied by `-D warnings`
+      = help: to override `-D warnings` add `#[allow(clippy::manual_contains)]`
+
+error: the loop variable `i` is used to index `correction`
+     --> astraweave-fluids\src\simd_ops.rs:23752:18
+      |
+23752 |         for i in 0..3 {
+      |                  ^^^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+      = note: `-D clippy::needless-range-loop` implied by `-D warnings`
+      = help: to override `-D warnings` add `#[allow(clippy::needless_range_loop)]`
+help: consider using an iterator and enumerate()
+      |
+23752 -         for i in 0..3 {
+23752 +         for (i, <item>) in correction.iter().enumerate() {
+      |
+
+error: the loop variable `i` is used to index `rhs`
+     --> astraweave-fluids\src\simd_ops.rs:28361:18
+      |
+28361 |         for i in 0..3 {
+      |                  ^^^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+      |
+28361 -         for i in 0..3 {
+28361 +         for (i, <item>) in rhs.iter().enumerate().take(3) {
+      |
+
+error: the loop variable `i` is used to index `data`
+     --> astraweave-fluids\src\simd_ops.rs:28741:18
+      |
+28741 |         for i in 0..8 {
+      |                  ^^^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+      |
+28741 -         for i in 0..8 {
+28741 +         for (i, <item>) in data.iter().enumerate() {
+      |
+
+error: this binary expression can be simplified
+     --> astraweave-fluids\src\simd_ops.rs:30462:17
+      |
+30462 |         assert!(diffused > 900.0 || diffused < 900.0); // Some change
+      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `diffused != 900.0`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#double_comparisons
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:30916:9
+      |
+30916 |         fg.f = [[2.0, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 4.0]];
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::DeformationGradient { f: [[2.0, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 4.0]], ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:30915:9
+      |
+30915 |         let mut fg = DeformationGradient::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: the loop variable `i` is used to index `p`
+     --> astraweave-fluids\src\simd_ops.rs:30995:18
+      |
+30995 |         for i in 0..3 {
+      |                  ^^^^
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop
+help: consider using an iterator and enumerate()
+      |
+30995 -         for i in 0..3 {
+30995 +         for (i, <item>) in p.iter().enumerate() {
+      |
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:32044:9
+      |
+32044 |         config.dt_min = 1e-4; // Relatively high minimum
+      |         ^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::TimeStepConfig { dt_min: 1e-4, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:32043:9
+      |
+32043 |         let mut config = TimeStepConfig::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:32102:9
+      |
+32102 |         stats.current_dt = 0.001; // Pre-set to same value
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::TimeStepStatistics { current_dt: 0.001, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:32101:9
+      |
+32101 |         let mut stats = TimeStepStatistics::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:32137:9
+      |
+32137 |         particle.zeta_potential = 0.05; // Positive zeta
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::ParticleElectricalProperties { zeta_potential: 0.05, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:32136:9
+      |
+32136 |         let mut particle = ParticleElectricalProperties::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: manual `RangeInclusive::contains` implementation
+     --> astraweave-fluids\src\simd_ops.rs:32169:17
+      |
+32169 |         assert!(k >= -0.5 && k <= 1.0);
+      |                 ^^^^^^^^^^^^^^^^^^^^^ help: use: `(-0.5..=1.0).contains(&k)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:32175:9
+      |
+32175 |         particle.relative_permittivity = 100.0; // Higher than medium ΓåÆ pDEP
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::ParticleElectricalProperties { relative_permittivity: 100.0, conductivity: 0.1, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:32174:9
+      |
+32174 |         let mut particle = ParticleElectricalProperties::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:32634:9
+      |
+32634 |         config.solidus_temperature = 1000.0;
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::SolidificationConfig { solidus_temperature: 1000.0, liquidus_temperature: 1100.0, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:32633:9
+      |
+32633 |         let mut config = SolidificationConfig::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: manual `RangeInclusive::contains` implementation
+     --> astraweave-fluids\src\simd_ops.rs:33048:17
+      |
+33048 |         assert!(new_lambda >= 0.0 && new_lambda <= 1.0);
+      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use: `(0.0..=1.0).contains(&new_lambda)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: manual `RangeInclusive::contains` implementation
+     --> astraweave-fluids\src\simd_ops.rs:33827:17
+      |
+33827 |         assert!(z >= 0.0 && z <= 1.0);
+      |                 ^^^^^^^^^^^^^^^^^^^^ help: use: `(0.0..=1.0).contains(&z)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:34080:9
+      |
+34080 |         config.relative_permittivity = 2.25; // Glass n Γëê 1.5
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::ElectromagneticConfig { relative_permittivity: 2.25, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:34079:9
+      |
+34079 |         let mut config = ElectromagneticConfig::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:34118:9
+      |
+34118 |         config.conductivity = 5.96e7; // Copper
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::ElectromagneticConfig { conductivity: 5.96e7, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:34117:9
+      |
+34117 |         let mut config = ElectromagneticConfig::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+     --> astraweave-fluids\src\simd_ops.rs:34229:9
+      |
+34229 |         config.conductivity = 0.01; // Slightly lossy
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |
+note: consider initializing the variable with `simd_ops::ElectromagneticConfig { conductivity: 0.01, ..Default::default() }` and removing relevant reassignments
+     --> astraweave-fluids\src\simd_ops.rs:34228:9
+      |
+34228 |         let mut config = ElectromagneticConfig::default();
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: manual `RangeInclusive::contains` implementation
+     --> astraweave-fluids\src\simd_ops.rs:34664:17
+      |
+34664 |         assert!(f >= 0.0 && f <= 1.0);
+      |                 ^^^^^^^^^^^^^^^^^^^^ help: use: `(0.0..=1.0).contains(&f)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: manual `RangeInclusive::contains` implementation
+     --> astraweave-fluids\src\simd_ops.rs:34670:17
+      |
+34670 |         assert!(f >= 0.0 && f <= 1.0);
+      |                 ^^^^^^^^^^^^^^^^^^^^ help: use: `(0.0..=1.0).contains(&f)`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: using `clone` on type `UnderwaterUniforms` which implements the `Copy` trait
+   --> astraweave-fluids\src\underwater.rs:670:22
+    |
+670 |         let cloned = uniforms.clone();
+    |                      ^^^^^^^^^^^^^^^^ help: try removing the `clone` call: `uniforms`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+
+error: manual `RangeInclusive::contains` implementation
+   --> astraweave-fluids\src\unified_solver.rs:802:13
+    |
+802 |             gravity_mag >= 5.0 && gravity_mag <= 15.0,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use: `(5.0..=15.0).contains(&gravity_mag)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\unified_solver.rs:862:9
+    |
+862 |         stats.pressure_iterations = 10;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `unified_solver::SolverStats { pressure_iterations: 10, neighbor_time_ms: 1.5, pressure_solve_time_ms: 2.5, total_time_ms: 4.0, particle_count: 1000, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\unified_solver.rs:860:9
+    |
+860 |         let mut stats = SolverStats::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: manual `RangeInclusive::contains` implementation
+   --> astraweave-fluids\src\unified_solver.rs:956:17
+    |
+956 |                 ratio >= 1.5 && ratio <= 5.0,
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use: `(1.5..=5.0).contains(&ratio)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: manually reimplementing `div_ceil`
+   --> astraweave-fluids\src\viscosity_gpu.rs:472:27
+    |
+472 |         assert_eq!(count, (1000 + 63) / 64);
+    |                           ^^^^^^^^^^^^^^^^ help: consider using `.div_ceil()`: `1000_u32.div_ceil(64)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil
+    = note: `-D clippy::manual-div-ceil` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_div_ceil)]`
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\viscosity_gpu.rs:485:9
+    |
+485 |         config.solver = ViscositySolver::XSPH;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `viscosity_gpu::ViscosityGpuConfig { solver: ViscositySolver::XSPH, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\viscosity_gpu.rs:483:9
+    |
+483 |         let mut config = ViscosityGpuConfig::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\viscosity_gpu.rs:501:9
+    |
+501 |         config.max_iterations = 15;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `viscosity_gpu::ViscosityGpuConfig { max_iterations: 15, solver: ViscositySolver::Morris, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\viscosity_gpu.rs:500:9
+    |
+500 |         let mut config = ViscosityGpuConfig::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:554:13
+    |
+554 |             p.previous_pressure = i as f32 * 100.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { previous_pressure: i as f32 * 100.0, velocity: [0.0, 0.0, 0.0, 0.0], ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:553:13
+    |
+553 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:574:13
+    |
+574 |             p.previous_pressure = (i as f32 + 1.0) * 100.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { previous_pressure: (i as f32 + 1.0) * 100.0, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:573:13
+    |
+573 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:590:9
+    |
+590 |         config.max_pressure_clamp = 100.0;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `warm_start::WarmStartConfig { max_pressure_clamp: 100.0, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:589:9
+    |
+589 |         let mut config = WarmStartConfig::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:595:9
+    |
+595 |         p.previous_pressure = 1000.0; // Much higher than clamp
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { previous_pressure: 1000.0, velocity: [0.0, 0.0, 0.0, 0.0], ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:594:9
+    |
+594 |         let mut p = ResearchParticle::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:679:13
+    |
+679 |             p.previous_pressure = (i as f32 + 1.0) * 100.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { previous_pressure: (i as f32 + 1.0) * 100.0, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:678:13
+    |
+678 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:695:13
+    |
+695 |             p.alpha = (i as f32 + 1.0) * 0.1;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { alpha: (i as f32 + 1.0) * 0.1, kappa: (i as f32 + 1.0) * 0.05, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:694:13
+    |
+694 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\warm_start.rs:714:13
+    |
+714 |             p.previous_pressure = (i as f32 + 1.0) * 100.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `research::ResearchParticle { previous_pressure: (i as f32 + 1.0) * 100.0, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\warm_start.rs:713:13
+    |
+713 |             let mut p = ResearchParticle::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\water_effects.rs:777:9
+    |
+777 |         config.frame_budget_ms = 0.0;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `water_effects::WaterEffectsConfig { frame_budget_ms: 0.0, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\water_effects.rs:776:9
+    |
+776 |         let mut config = WaterEffectsConfig::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> astraweave-fluids\src\water_reflections.rs:581:9
+    |
+581 |         config.use_planar_fallback = false;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `water_reflections::WaterReflectionConfig { use_planar_fallback: false, ..Default::default() }` and removing relevant reassignments
+   --> astraweave-fluids\src\water_reflections.rs:580:9
+    |
+580 |         let mut config = WaterReflectionConfig::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+
+error: this expression always evaluates to false
+   --> astraweave-fluids\src\water_reflections.rs:588:18
+    |
+588 |         assert!(!SSR_WGSL.is_empty());
+    |                  ^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#const_is_empty
+
+error: length comparison to zero
+   --> astraweave-fluids\src\waterfall.rs:856:17
+    |
+856 |         assert!(droplets.len() > 0 || system.particle_count() == 0);
+    |                 ^^^^^^^^^^^^^^^^^^ help: using `!is_empty` is clearer and more explicit: `!droplets.is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+    = note: `-D clippy::len-zero` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::len_zero)]`
+
+error: using `clone` on type `WaterParticleType` which implements the `Copy` trait
+   --> astraweave-fluids\src\waterfall.rs:980:18
+    |
+980 |         let t3 = t1.clone();
+    |                  ^^^^^^^^^^ help: try removing the `clone` call: `t1`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+
+error: using `clone` on type `WaterParticle` which implements the `Copy` trait
+    --> astraweave-fluids\src\waterfall.rs:1013:22
+     |
+1013 |         let cloned = p.clone();
+     |                      ^^^^^^^^^ help: try removing the `clone` call: `p`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#clone_on_copy
+
+error: manual absolute difference pattern without using `abs_diff`
+    --> astraweave-fluids\src\lib.rs:3201:22
+     |
+3201 |           let diff12 = if code1 > code2 {
+     |  ______________________^
+3202 | |             code1 - code2
+3203 | |         } else {
+3204 | |             code2 - code1
+3205 | |         };
+     | |_________^ help: replace with `abs_diff`: `code1.abs_diff(code2)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_abs_diff
+     = note: `-D clippy::manual-abs-diff` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::manual_abs_diff)]`
+
+error: manual absolute difference pattern without using `abs_diff`
+    --> astraweave-fluids\src\lib.rs:3206:22
+     |
+3206 |           let diff13 = if code1 > code3 {
+     |  ______________________^
+3207 | |             code1 - code3
+3208 | |         } else {
+3209 | |             code3 - code1
+3210 | |         };
+     | |_________^ help: replace with `abs_diff`: `code1.abs_diff(code3)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_abs_diff
+
+error: manual `RangeInclusive::contains` implementation
+    --> astraweave-fluids\src\lib.rs:3619:17
+     |
+3619 |         assert!(iters >= 2 && iters <= 8);
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^ help: use: `(2..=8).contains(&iters)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: useless use of `vec!`
+    --> astraweave-fluids\src\lib.rs:2955:25
+     |
+2955 |           let positions = vec![
+     |  _________________________^
+2956 | |             [0.0, 0.0, 0.0],   // Inside region
+2957 | |             [10.0, 0.0, 0.0],  // Outside region
+2958 | |             [2.0, 2.0, 2.0],   // Inside region
+2959 | |             [-10.0, 0.0, 0.0], // Outside region
+2960 | |         ];
+     | |_________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+     = note: `-D clippy::useless-vec` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::useless_vec)]`
+help: you can use an array directly
+     |
+2955 ~         let positions = [[0.0, 0.0, 0.0],   // Inside region
+2956 +             [10.0, 0.0, 0.0],  // Outside region
+2957 +             [2.0, 2.0, 2.0],   // Inside region
+2958 ~             [-10.0, 0.0, 0.0]];
+     |
+
+error: useless use of `vec!`
+    --> astraweave-fluids\src\lib.rs:2964:23
+     |
+2964 |           let regions = vec![
+     |  _______________________^
+2965 | |             ([-5.0, -5.0, -5.0], [5.0, 5.0, 5.0]), // Region around origin
+2966 | |         ];
+     | |_________^ help: you can use an array directly: `[([-5.0, -5.0, -5.0], [5.0, 5.0, 5.0])]`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+
+error: useless use of `vec!`
+    --> astraweave-fluids\src\lib.rs:2999:25
+     |
+2999 |           let positions = vec![
+     |  _________________________^
+3000 | |             [0.0, 0.0, 0.0],   // Inside both regions
+3001 | |             [7.0, 0.0, 0.0],   // Inside second region only
+3002 | |             [-10.0, 0.0, 0.0], // Outside all regions
+3003 | |         ];
+     | |_________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+help: you can use an array directly
+     |
+2999 ~         let positions = [[0.0, 0.0, 0.0],   // Inside both regions
+3000 +             [7.0, 0.0, 0.0],   // Inside second region only
+3001 ~             [-10.0, 0.0, 0.0]];
+     |
+
+error: useless use of `vec!`
+    --> astraweave-fluids\src\lib.rs:3004:26
+     |
+3004 |         let mut active = vec![true; 3];
+     |                          ^^^^^^^^^^^^^ help: you can use an array directly: `[true; 3]`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+
+error: useless use of `vec!`
+    --> astraweave-fluids\src\lib.rs:3007:23
+     |
+3007 |           let regions = vec![
+     |  _______________________^
+3008 | |             ([-5.0, -5.0, -5.0], [5.0, 5.0, 5.0]),
+3009 | |             ([0.0, -5.0, -5.0], [10.0, 5.0, 5.0]),
+3010 | |         ];
+     | |_________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+help: you can use an array directly
+     |
+3007 ~         let regions = [([-5.0, -5.0, -5.0], [5.0, 5.0, 5.0]),
+3008 ~             ([0.0, -5.0, -5.0], [10.0, 5.0, 5.0])];
+     |
+
+error: useless use of `vec!`
+    --> astraweave-fluids\src\lib.rs:3042:25
+     |
+3042 |           let positions = vec![
+     |  _________________________^
+3043 | |             [-5.0, 0.0, 0.0],   // On min.x boundary (inside)
+3044 | |             [5.0, 0.0, 0.0],    // On max.x boundary (inside)
+3045 | |             [-5.001, 0.0, 0.0], // Just outside min.x
+3046 | |             [5.001, 0.0, 0.0],  // Just outside max.x
+3047 | |         ];
+     | |_________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+help: you can use an array directly
+     |
+3042 ~         let positions = [[-5.0, 0.0, 0.0],   // On min.x boundary (inside)
+3043 +             [5.0, 0.0, 0.0],    // On max.x boundary (inside)
+3044 +             [-5.001, 0.0, 0.0], // Just outside min.x
+3045 ~             [5.001, 0.0, 0.0]];
+     |
+
+error: useless use of `vec!`
+     --> astraweave-fluids\src\simd_ops.rs:24815:46
+      |
+24815 |         let lambda = compute_pbf_lambda(0.0, &vec![[100.0, 0.0, 0.0]], 1000.0, 1e-6);
+      |                                              ^^^^^^^^^^^^^^^^^^^^^^^^ help: you can use a slice directly: `&[[100.0, 0.0, 0.0]]`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+
+error: variable `Q` should have a snake case name
+     --> astraweave-fluids\src\simd_ops.rs:35433:13
+      |
+35433 |         let Q = compute_bohm_potential(density, laplacian, mass, hbar);
+      |             ^ help: convert the identifier to snake case: `q`
+      |
+      = note: `-D non-snake-case` implied by `-D warnings`
+      = help: to override `-D warnings` add `#[allow(non_snake_case)]`
+
+error: could not compile `astraweave-fluids` (lib test) due to 102 previous errors

@@ -83,7 +83,7 @@ fn srgb_encode_linear_threshold() {
 fn srgb_encode_midpoint_reasonable() {
     // Linear 0.5 → sRGB should be ~188 (sqrt-ish curve)
     let v = srgb_encode_u8(0.5);
-    assert!(v >= 180 && v <= 200, "srgb(0.5) = {v}, expected ~188");
+    assert!((180..=200).contains(&v), "srgb(0.5) = {v}, expected ~188");
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn srgb_encode_monotonic() {
 fn srgb_encode_quarter() {
     // Linear 0.25 → should be somewhere around 137 (sRGB is not linear)
     let v = srgb_encode_u8(0.25);
-    assert!(v >= 120 && v <= 150, "srgb(0.25) = {v}");
+    assert!((120..=150).contains(&v), "srgb(0.25) = {v}");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

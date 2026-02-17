@@ -1904,7 +1904,7 @@ mod tests {
             steps: vec![ActionStep::Reload],
         };
         let source = PlanSource::Llm(plan.clone());
-        
+
         if let PlanSource::Llm(p) = &source {
             assert_eq!(p.plan_id, "test-llm");
             assert_eq!(p.steps.len(), 1);
@@ -1923,7 +1923,7 @@ mod tests {
             plan: plan.clone(),
             reason: "LLM unavailable".to_string(),
         };
-        
+
         if let PlanSource::Fallback { plan: p, reason } = &source {
             assert_eq!(p.plan_id, "test-fallback");
             assert_eq!(reason, "LLM unavailable");
@@ -1940,7 +1940,7 @@ mod tests {
         };
         let source = PlanSource::Llm(plan);
         let cloned = source.clone();
-        
+
         if let PlanSource::Llm(p) = cloned {
             assert_eq!(p.plan_id, "clone-test");
         } else {
@@ -1958,9 +1958,12 @@ mod tests {
         let debug = format!("{:?}", source);
         assert!(debug.contains("Llm"));
         assert!(debug.contains("debug-test"));
-        
+
         let fallback = PlanSource::Fallback {
-            plan: PlanIntent { plan_id: "fb".to_string(), steps: vec![] },
+            plan: PlanIntent {
+                plan_id: "fb".to_string(),
+                steps: vec![],
+            },
             reason: "test".to_string(),
         };
         let debug = format!("{:?}", fallback);
@@ -1971,13 +1974,13 @@ mod tests {
     async fn test_mock_llm_returns_valid_steps() {
         let client = MockLlm;
         let response = client.complete("test").await.unwrap();
-        
+
         // Parse as JSON to verify structure
         let json: serde_json::Value = serde_json::from_str(&response).unwrap();
-        
+
         assert!(json.get("plan_id").is_some());
         assert!(json.get("steps").is_some());
-        
+
         let steps = json.get("steps").unwrap().as_array().unwrap();
         assert!(!steps.is_empty());
     }
@@ -1986,7 +1989,7 @@ mod tests {
     async fn test_always_err_mock() {
         let client = AlwaysErrMock;
         let result = client.complete("test").await;
-        
+
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("AlwaysErrMock"));
@@ -1996,15 +1999,15 @@ mod tests {
     async fn test_llm_client_streaming_default() {
         let client = MockLlm;
         use futures_util::StreamExt;
-        
+
         // MockLlm uses default streaming implementation
         let mut stream = client.complete_streaming("test").await.unwrap();
-        
+
         let mut chunks = Vec::new();
         while let Some(chunk) = stream.next().await {
             chunks.push(chunk.unwrap());
         }
-        
+
         // Default implementation returns single chunk
         assert_eq!(chunks.len(), 1);
         assert!(chunks[0].contains("llm-mock"));
@@ -2013,12 +2016,12 @@ mod tests {
     #[test]
     fn test_create_test_registry_content() {
         let reg = create_test_registry();
-        
+
         // Verify registry has expected tools
         assert!(reg.tools.iter().any(|t| t.name == "MoveTo"));
         assert!(reg.tools.iter().any(|t| t.name == "Attack"));
         assert!(reg.tools.iter().any(|t| t.name == "CoverFire"));
-        
+
         // Verify constraints
         assert!(reg.constraints.enforce_cooldowns);
         assert!(reg.constraints.enforce_los);
@@ -2027,7 +2030,7 @@ mod tests {
     #[test]
     fn test_create_test_world_snapshot_content() {
         let snap = create_test_world_snapshot();
-        
+
         assert_eq!(snap.t, 1.0);
         assert_eq!(snap.player.hp, 100);
         assert_eq!(snap.me.ammo, 30);
@@ -2041,7 +2044,7 @@ mod tests {
         let client = TestLlmClient {
             response: r#"{"plan_id": "configured", "steps": []}"#.to_string(),
         };
-        
+
         let result = client.complete("ignored prompt").await.unwrap();
         assert!(result.contains("configured"));
     }
@@ -2070,7 +2073,7 @@ mod tests {
         let client = MockLlm;
 
         let result = plan_from_llm(&client, &snap, &reg).await;
-        
+
         // MockLlm returns valid plan with ThrowSmoke, MoveTo, Attack
         if let PlanSource::Llm(plan) = result {
             assert!(!plan.steps.is_empty());
@@ -2083,11 +2086,11 @@ mod tests {
     #[test]
     fn test_parse_llm_plan_with_case_variations() {
         let reg = create_test_registry();
-        
+
         // Test with different JSON formatting
         let compact = r#"{"plan_id":"compact","steps":[{"act":"MoveTo","x":1,"y":1}]}"#;
         assert!(parse_llm_plan(compact, &reg).is_ok());
-        
+
         // Test with extra whitespace
         let spaced = r#"  {  "plan_id" : "spaced" , "steps" : [ { "act" : "MoveTo" , "x" : 1 , "y" : 1 } ] }  "#;
         assert!(parse_llm_plan(spaced, &reg).is_ok());
@@ -2237,7 +2240,7 @@ Done!"#;
         let mut snap = create_test_world_snapshot();
         snap.objective = Some("extract".to_string());
         snap.me.pos = IVec2 { x: 100, y: 100 }; // Far from player
-        
+
         let mut reg = create_test_registry();
         reg.tools.push(ToolSpec {
             name: "move_to".into(),
@@ -2290,19 +2293,30 @@ Done!"#;
         let plan = fallback_heuristic_plan(&snap, &reg);
         // Should have CoverFire step since we have enemies and the tool
         assert!(!plan.steps.is_empty());
-        assert!(plan.steps.iter().any(|s| matches!(s, ActionStep::CoverFire { .. })));
+        assert!(plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::CoverFire { .. })));
     }
 
     #[test]
     fn test_sanitize_plan_removes_out_of_bounds() {
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
-        
+
         let mut plan = PlanIntent {
             plan_id: "sanitize-test".to_string(),
             steps: vec![
-                ActionStep::MoveTo { x: 5, y: 5, speed: None },
-                ActionStep::MoveTo { x: 999, y: 999, speed: None }, // Out of bounds
+                ActionStep::MoveTo {
+                    x: 5,
+                    y: 5,
+                    speed: None,
+                },
+                ActionStep::MoveTo {
+                    x: 999,
+                    y: 999,
+                    speed: None,
+                }, // Out of bounds
             ],
         };
 
@@ -2314,12 +2328,20 @@ Done!"#;
     fn test_sanitize_plan_validates_throw_items() {
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
-        
+
         let mut plan = PlanIntent {
             plan_id: "throw-test".to_string(),
             steps: vec![
-                ActionStep::Throw { item: "smoke".to_string(), x: 5, y: 5 },
-                ActionStep::Throw { item: "invalid".to_string(), x: 5, y: 5 }, // Invalid item
+                ActionStep::Throw {
+                    item: "smoke".to_string(),
+                    x: 5,
+                    y: 5,
+                },
+                ActionStep::Throw {
+                    item: "invalid".to_string(),
+                    x: 5,
+                    y: 5,
+                }, // Invalid item
             ],
         };
 
@@ -2331,14 +2353,26 @@ Done!"#;
     fn test_sanitize_plan_validates_cover_fire() {
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
-        
+
         let mut plan = PlanIntent {
             plan_id: "cover-test".to_string(),
             steps: vec![
-                ActionStep::CoverFire { target_id: 99, duration: 3.0 }, // Valid target
-                ActionStep::CoverFire { target_id: 999, duration: 3.0 }, // Invalid target
-                ActionStep::CoverFire { target_id: 99, duration: 0.0 }, // Invalid duration
-                ActionStep::CoverFire { target_id: 99, duration: 100.0 }, // Duration too long
+                ActionStep::CoverFire {
+                    target_id: 99,
+                    duration: 3.0,
+                }, // Valid target
+                ActionStep::CoverFire {
+                    target_id: 999,
+                    duration: 3.0,
+                }, // Invalid target
+                ActionStep::CoverFire {
+                    target_id: 99,
+                    duration: 0.0,
+                }, // Invalid duration
+                ActionStep::CoverFire {
+                    target_id: 99,
+                    duration: 100.0,
+                }, // Duration too long
             ],
         };
 
@@ -2350,7 +2384,7 @@ Done!"#;
     fn test_sanitize_plan_allows_other_steps() {
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
-        
+
         let mut plan = PlanIntent {
             plan_id: "other-test".to_string(),
             steps: vec![
@@ -2369,52 +2403,72 @@ Done!"#;
     fn test_validate_plan_disallowed_move_to() {
         let mut reg = create_test_registry();
         reg.tools.retain(|t| t.name != "MoveTo");
-        
+
         let plan = PlanIntent {
             plan_id: "validate-test".to_string(),
-            steps: vec![ActionStep::MoveTo { x: 5, y: 5, speed: None }],
+            steps: vec![ActionStep::MoveTo {
+                x: 5,
+                y: 5,
+                speed: None,
+            }],
         };
 
         let result = validate_plan(&plan, &reg);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("disallowed tool MoveTo"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("disallowed tool MoveTo"));
     }
 
     #[test]
     fn test_validate_plan_disallowed_throw() {
         let mut reg = create_test_registry();
         reg.tools.retain(|t| t.name != "Throw");
-        
+
         let plan = PlanIntent {
             plan_id: "validate-throw".to_string(),
-            steps: vec![ActionStep::Throw { item: "smoke".to_string(), x: 1, y: 1 }],
+            steps: vec![ActionStep::Throw {
+                item: "smoke".to_string(),
+                x: 1,
+                y: 1,
+            }],
         };
 
         let result = validate_plan(&plan, &reg);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("disallowed tool Throw"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("disallowed tool Throw"));
     }
 
     #[test]
     fn test_validate_plan_disallowed_cover_fire() {
         let mut reg = create_test_registry();
         reg.tools.retain(|t| t.name != "CoverFire");
-        
+
         let plan = PlanIntent {
             plan_id: "validate-cover".to_string(),
-            steps: vec![ActionStep::CoverFire { target_id: 1, duration: 2.0 }],
+            steps: vec![ActionStep::CoverFire {
+                target_id: 1,
+                duration: 2.0,
+            }],
         };
 
         let result = validate_plan(&plan, &reg);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("disallowed tool CoverFire"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("disallowed tool CoverFire"));
     }
 
     #[test]
     fn test_validate_plan_disallowed_revive() {
         let mut reg = create_test_registry();
         reg.tools.retain(|t| t.name != "Revive");
-        
+
         let plan = PlanIntent {
             plan_id: "validate-revive".to_string(),
             steps: vec![ActionStep::Revive { ally_id: 1 }],
@@ -2422,13 +2476,16 @@ Done!"#;
 
         let result = validate_plan(&plan, &reg);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("disallowed tool Revive"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("disallowed tool Revive"));
     }
 
     #[test]
     fn test_validate_plan_allows_generic_steps() {
         let reg = create_test_registry();
-        
+
         let plan = PlanIntent {
             plan_id: "generic-test".to_string(),
             steps: vec![
@@ -2452,7 +2509,7 @@ Done!"#;
     fn test_build_prompt_includes_enemies() {
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
-        
+
         let prompt = build_prompt(&snap, &reg);
         // Should include enemy information
         assert!(prompt.contains("99") || prompt.contains("enemy"));
@@ -2462,7 +2519,7 @@ Done!"#;
     fn test_build_prompt_includes_world_state() {
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
-        
+
         let prompt = build_prompt(&snap, &reg);
         // Should include position and state info
         assert!(prompt.contains("pos"));

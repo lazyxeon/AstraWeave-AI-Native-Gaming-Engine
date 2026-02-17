@@ -1,5 +1,7 @@
 //! Mutation-resistant comprehensive tests for astraweave-persistence-player.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_persistence_player::*;
 
 // ═══════════════════════════════════════════════════════════════════════════

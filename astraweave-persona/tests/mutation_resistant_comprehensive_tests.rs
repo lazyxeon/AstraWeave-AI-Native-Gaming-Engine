@@ -3,6 +3,8 @@
 //! These tests target exact default values, boundary conditions, operator swaps,
 //! negation bugs, and off-by-one errors to achieve 90%+ mutation kill rate.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use astraweave_persona::*;
 use std::collections::HashMap;
 

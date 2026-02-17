@@ -2,8 +2,8 @@
 // Simulates 1000+ requests with realistic prompt patterns
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use std::collections::HashMap;
+use std::hint::black_box;
 use std::sync::{Arc, Mutex};
 
 // Simulated cache for benchmarking

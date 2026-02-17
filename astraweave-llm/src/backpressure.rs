@@ -745,7 +745,9 @@ mod tests {
     #[test]
     fn test_backpressure_result_variants() {
         // Test Accepted
-        let accepted = BackpressureResult::Accepted { request_id: "test".to_string() };
+        let accepted = BackpressureResult::Accepted {
+            request_id: "test".to_string(),
+        };
         assert!(matches!(accepted, BackpressureResult::Accepted { .. }));
 
         // Test Queued
@@ -753,7 +755,11 @@ mod tests {
             position: 5,
             estimated_wait: Duration::from_secs(10),
         };
-        if let BackpressureResult::Queued { position, estimated_wait } = queued {
+        if let BackpressureResult::Queued {
+            position,
+            estimated_wait,
+        } = queued
+        {
             assert_eq!(position, 5);
             assert_eq!(estimated_wait, Duration::from_secs(10));
         }
@@ -763,7 +769,11 @@ mod tests {
             reason: "System overload".to_string(),
             retry_after: Some(Duration::from_secs(60)),
         };
-        if let BackpressureResult::Rejected { reason, retry_after } = rejected {
+        if let BackpressureResult::Rejected {
+            reason,
+            retry_after,
+        } = rejected
+        {
             assert_eq!(reason, "System overload");
             assert_eq!(retry_after, Some(Duration::from_secs(60)));
         }
@@ -1027,7 +1037,11 @@ mod tests {
             reason: "No capacity".to_string(),
             retry_after: None,
         };
-        if let BackpressureResult::Rejected { reason, retry_after } = rejected {
+        if let BackpressureResult::Rejected {
+            reason,
+            retry_after,
+        } = rejected
+        {
             assert_eq!(reason, "No capacity");
             assert!(retry_after.is_none());
         }
@@ -1068,11 +1082,15 @@ mod tests {
             tags: HashMap::new(),
         };
 
-        let _ = manager.submit_request(Priority::High, None, metadata.clone()).await;
+        let _ = manager
+            .submit_request(Priority::High, None, metadata.clone())
+            .await;
         let _ = manager.submit_request(Priority::Low, None, metadata).await;
 
         let metrics = manager.get_metrics().await;
-        assert!(metrics.queue_sizes_by_priority.contains_key(&Priority::High));
+        assert!(metrics
+            .queue_sizes_by_priority
+            .contains_key(&Priority::High));
         assert!(metrics.queue_sizes_by_priority.contains_key(&Priority::Low));
         assert!(!metrics.last_updated.is_empty());
         manager.stop().await;
@@ -1097,7 +1115,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(matches!(result, BackpressureResult::Accepted { .. } | BackpressureResult::Queued { .. }));
+        assert!(matches!(
+            result,
+            BackpressureResult::Accepted { .. } | BackpressureResult::Queued { .. }
+        ));
         manager.stop().await;
     }
 
@@ -1113,9 +1134,18 @@ mod tests {
             ..Default::default()
         };
 
-        assert_eq!(metrics.queue_sizes_by_priority.get(&Priority::Critical), Some(&1));
-        assert_eq!(metrics.queue_sizes_by_priority.get(&Priority::High), Some(&5));
-        assert_eq!(metrics.queue_sizes_by_priority.get(&Priority::Normal), Some(&10));
+        assert_eq!(
+            metrics.queue_sizes_by_priority.get(&Priority::Critical),
+            Some(&1)
+        );
+        assert_eq!(
+            metrics.queue_sizes_by_priority.get(&Priority::High),
+            Some(&5)
+        );
+        assert_eq!(
+            metrics.queue_sizes_by_priority.get(&Priority::Normal),
+            Some(&10)
+        );
     }
 
     #[test]
@@ -1151,7 +1181,10 @@ mod tests {
     fn test_backpressure_config_clone() {
         let config = BackpressureConfig::default();
         let cloned = config.clone();
-        assert_eq!(config.max_concurrent_requests, cloned.max_concurrent_requests);
+        assert_eq!(
+            config.max_concurrent_requests,
+            cloned.max_concurrent_requests
+        );
         assert_eq!(config.target_latency_ms, cloned.target_latency_ms);
     }
 
@@ -1191,7 +1224,11 @@ mod tests {
             position: 5,
             estimated_wait: Duration::from_secs(10),
         };
-        if let BackpressureResult::Queued { position, estimated_wait } = result {
+        if let BackpressureResult::Queued {
+            position,
+            estimated_wait,
+        } = result
+        {
             assert_eq!(position, 5);
             assert_eq!(estimated_wait, Duration::from_secs(10));
         } else {
@@ -1214,7 +1251,9 @@ mod tests {
 
     #[test]
     fn test_backpressure_result_accepted() {
-        let result = BackpressureResult::Accepted { request_id: "test".to_string() };
+        let result = BackpressureResult::Accepted {
+            request_id: "test".to_string(),
+        };
         assert!(matches!(result, BackpressureResult::Accepted { .. }));
     }
 
@@ -1304,11 +1343,13 @@ mod tests {
         };
 
         // Submit request to create active request
-        let _ = manager.submit_request(Priority::Normal, None, metadata).await;
-        
+        let _ = manager
+            .submit_request(Priority::Normal, None, metadata)
+            .await;
+
         // Give it a moment to register
         tokio::time::sleep(Duration::from_millis(50)).await;
-        
+
         // Get metrics to check tracking
         let metrics = manager.get_metrics().await;
         // Should have tracked at least one request
@@ -1353,7 +1394,9 @@ mod tests {
 
         // Test all priority levels
         for priority in Priority::all() {
-            let result = manager.submit_request(priority, None, metadata.clone()).await;
+            let result = manager
+                .submit_request(priority, None, metadata.clone())
+                .await;
             assert!(result.is_ok());
         }
 

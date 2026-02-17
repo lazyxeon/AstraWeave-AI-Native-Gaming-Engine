@@ -5,7 +5,7 @@
 
 use astraweave_llm::{
     circuit_breaker::{CircuitBreakerConfig, CircuitBreakerManager, CircuitState},
-    rate_limiter::{RateLimiter, RateLimiterConfig, RateLimitContext, RequestPriority},
+    rate_limiter::{RateLimitContext, RateLimiter, RateLimiterConfig, RequestPriority},
     retry::{RetryConfig, RetryExecutor, RetryableError},
 };
 use std::time::Duration;
@@ -212,7 +212,11 @@ fn test_jitter_adds_variance() {
 
     // Should be within ±25% of 100ms = 75-125ms
     for b in &backoffs {
-        assert!(*b >= 75 && *b <= 125, "Jitter should stay within ±25%: {}", b);
+        assert!(
+            *b >= 75 && *b <= 125,
+            "Jitter should stay within ±25%: {}",
+            b
+        );
     }
 }
 
@@ -346,7 +350,11 @@ async fn test_circuit_opens_after_threshold_failures() {
     }
 
     let status = manager.get_status("test-model").await.unwrap();
-    assert_eq!(status.state, CircuitState::Open, "Circuit should open after threshold failures");
+    assert_eq!(
+        status.state,
+        CircuitState::Open,
+        "Circuit should open after threshold failures"
+    );
 }
 
 #[tokio::test]
@@ -365,7 +373,9 @@ async fn test_circuit_execute_rejects_when_open() {
     manager.open_circuit("test-model").await;
 
     // Execute should fail
-    let result = manager.execute("test-model", || async { Ok::<_, anyhow::Error>(42) }).await;
+    let result = manager
+        .execute("test-model", || async { Ok::<_, anyhow::Error>(42) })
+        .await;
     assert!(result.result.is_err(), "Should reject when circuit is open");
 }
 
@@ -427,7 +437,9 @@ async fn test_circuit_breaker_disabled_always_allows() {
     }
 
     // Execute should still work when disabled
-    let result = manager.execute("test-model", || async { Ok::<_, anyhow::Error>(42) }).await;
+    let result = manager
+        .execute("test-model", || async { Ok::<_, anyhow::Error>(42) })
+        .await;
     assert!(
         result.result.is_ok(),
         "Disabled circuit breaker should always allow"
@@ -464,7 +476,9 @@ async fn test_circuit_execute_records_success() {
     let manager = CircuitBreakerManager::new(config);
 
     // Execute a successful operation
-    let result = manager.execute("test-model", || async { Ok::<_, anyhow::Error>(42) }).await;
+    let result = manager
+        .execute("test-model", || async { Ok::<_, anyhow::Error>(42) })
+        .await;
     assert!(result.result.is_ok());
 
     // Check status shows success
@@ -478,9 +492,11 @@ async fn test_circuit_execute_records_failure() {
     let manager = CircuitBreakerManager::new(config);
 
     // Execute a failing operation
-    let result = manager.execute("test-model", || async { 
-        Err::<i32, _>(anyhow::anyhow!("test failure")) 
-    }).await;
+    let result = manager
+        .execute("test-model", || async {
+            Err::<i32, _>(anyhow::anyhow!("test failure"))
+        })
+        .await;
     assert!(result.result.is_err());
 
     // Check status shows failure

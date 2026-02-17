@@ -115,6 +115,7 @@ impl<'w, T: Component> Query<'w, T> {
     }
 }
 
+#[allow(clippy::expect_used)] // INVARIANT: archetype_ids sourced from World; entities guaranteed to have queried components
 impl<'w, T: Component> Iterator for Query<'w, T> {
     type Item = (Entity, &'w T);
     fn next(&mut self) -> Option<Self::Item> {
@@ -180,6 +181,7 @@ impl<'w, A: Component, B: Component> Query2<'w, A, B> {
     }
 }
 
+#[allow(clippy::expect_used)] // INVARIANT: archetype_ids sourced from World; entities guaranteed to have queried components
 impl<'w, A: Component, B: Component> Iterator for Query2<'w, A, B> {
     type Item = (Entity, &'w A, &'w B);
     fn next(&mut self) -> Option<Self::Item> {
@@ -252,6 +254,7 @@ impl<'w, A: Component, B: Component> Query2Mut<'w, A, B> {
     }
 }
 
+#[allow(clippy::expect_used)] // INVARIANT: archetype_ids sourced from World; entities guaranteed to have queried components
 impl<'w, A: Component, B: Component> Iterator for Query2Mut<'w, A, B> {
     type Item = (Entity, &'w mut A, &'w B);
     fn next(&mut self) -> Option<Self::Item> {

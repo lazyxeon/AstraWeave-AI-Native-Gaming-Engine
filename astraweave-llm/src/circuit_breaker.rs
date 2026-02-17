@@ -728,7 +728,7 @@ mod tests {
 
         let all_status = manager.get_all_status().await;
         assert_eq!(all_status.len(), 3);
-        
+
         // Check that all models are present
         let model_names: Vec<_> = all_status.iter().map(|s| s.model.as_str()).collect();
         assert!(model_names.contains(&"model1"));
@@ -887,7 +887,11 @@ mod tests {
         assert_eq!(metrics.total_failures, 0);
         // success_rate = (requests - failures) / requests = 10/10 = 1.0
         // But there might be floating point precision issues
-        assert!(metrics.success_rate > 0.99, "Expected high success rate, got {}", metrics.success_rate);
+        assert!(
+            metrics.success_rate > 0.99,
+            "Expected high success rate, got {}",
+            metrics.success_rate
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -917,7 +921,11 @@ mod tests {
         assert_eq!(status.state, CircuitState::Closed);
         assert_eq!(status.request_count, 2);
         // Verify we have some counts - exact values depend on implementation
-        assert!(status.failure_count >= 1, "Expected at least 1 failure, got {}", status.failure_count);
+        assert!(
+            status.failure_count >= 1,
+            "Expected at least 1 failure, got {}",
+            status.failure_count
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -930,9 +938,7 @@ mod tests {
         let manager = CircuitBreakerManager::new(config);
 
         let result = manager
-            .execute("test-model", || async {
-                Ok::<i32, anyhow::Error>(42)
-            })
+            .execute("test-model", || async { Ok::<i32, anyhow::Error>(42) })
             .await;
 
         assert!(result.result.is_ok());
@@ -954,6 +960,10 @@ mod tests {
             .await;
 
         assert!(result.result.is_err());
-        assert!(result.result.unwrap_err().to_string().contains("test error"));
+        assert!(result
+            .result
+            .unwrap_err()
+            .to_string()
+            .contains("test error"));
     }
 }

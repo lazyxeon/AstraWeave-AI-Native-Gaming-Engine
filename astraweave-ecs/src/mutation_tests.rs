@@ -4,6 +4,11 @@
 //! mutations to formulas and logic are detected by `cargo mutants`.
 
 #![cfg(test)]
+#![allow(
+    clippy::manual_range_contains,
+    clippy::len_zero,
+    clippy::duplicated_attributes
+)]
 
 use crate::{World, Entity, Rng, Events, Event, SystemStage};
 

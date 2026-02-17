@@ -81,9 +81,10 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn scene_result_ok_and_err() {
         let ok: SceneResult<i32> = Ok(42);
-        assert_eq!(ok.unwrap(), 42);
+        assert_eq!(ok.expect("test"), 42);
 
         let err: SceneResult<i32> = Err(SceneError::CellNotFound("x".into()));
         assert!(err.is_err());

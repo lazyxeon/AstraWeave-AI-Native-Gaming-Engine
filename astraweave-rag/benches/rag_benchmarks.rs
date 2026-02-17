@@ -49,6 +49,7 @@ fn create_test_memories(count: usize) -> Vec<Memory> {
                 MemoryCategory::Gameplay => "gameplay",
                 MemoryCategory::Quest => "quest",
                 MemoryCategory::Dialogue => "dialogue",
+                _ => "other",
             }
         );
 

@@ -7,6 +7,11 @@
 //! - Testing error paths and failure modes
 //! - Validating return values from all public methods
 
+#![allow(
+    clippy::clone_on_copy,
+    clippy::field_reassign_with_default
+)]
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MENU STATE ENUM TESTS
 // ═══════════════════════════════════════════════════════════════════════════

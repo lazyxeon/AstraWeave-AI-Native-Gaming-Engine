@@ -47,6 +47,7 @@ impl TypeRegistry {
     /// let mut registry = TypeRegistry::new();
     /// registry.register::<Position>();
     /// ```
+    #[allow(clippy::panic)] // Documented API contract: downcast failure means caller passed wrong type
     pub fn register<T: Component>(&mut self) {
         let type_id = TypeId::of::<T>();
         let type_name = std::any::type_name::<T>();
@@ -85,6 +86,7 @@ impl TypeRegistry {
     ///
     /// # Panics
     /// Panics if the type is not registered or if downcast fails.
+    #[allow(clippy::panic)] // Documented API contract: unregistered type is a programmer error
     pub fn insert_boxed(
         &self,
         world: &mut crate::World,
@@ -106,6 +108,7 @@ impl TypeRegistry {
     ///
     /// # Panics
     /// Panics if the type is not registered.
+    #[allow(clippy::panic)] // Documented API contract: unregistered type is a programmer error
     pub fn remove_by_type_id(
         &self,
         world: &mut crate::World,

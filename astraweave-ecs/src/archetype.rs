@@ -154,6 +154,7 @@ impl Archetype {
     }
 
     /// Add an entity with its components (must match signature)
+    #[allow(clippy::expect_used)] // INVARIANT: signature components always have matching columns (created together)
     pub fn add_entity(
         &mut self,
         entity: Entity,

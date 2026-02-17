@@ -541,7 +541,7 @@ mod behavioral_tests {
             let tri = NavTri::new(0, [Vec3::ZERO; 3], normal, Vec3::ZERO);
             let slope = tri.slope_degrees();
             assert!(
-                slope >= 0.0 && slope <= 180.0,
+                (0.0..=180.0).contains(&slope),
                 "Slope should be 0-180, got {}",
                 slope
             );
@@ -988,6 +988,7 @@ mod comparison_operator_tests {
 // Catches mutations: return true vs false, logic inversions, early returns
 // ============================================================================
 
+#[allow(clippy::bool_assert_comparison)]
 mod boolean_return_path_tests {
     use super::*;
 

@@ -73,6 +73,7 @@ impl BossDirector {
 }
 
 #[cfg(test)]
+#[allow(clippy::identity_op, clippy::erasing_op)]
 mod tests {
     use super::*;
     use astraweave_core::{

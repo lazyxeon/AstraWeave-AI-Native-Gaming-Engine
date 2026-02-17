@@ -228,6 +228,8 @@ impl MaterialManager {
                 },
             ));
         }
+        // INVARIANT: bind_group_layout set to Some in the if-block above
+        #[allow(clippy::expect_used)]
         self.bind_group_layout
             .as_ref()
             .expect("BUG: bind_group_layout should be Some after creation above")

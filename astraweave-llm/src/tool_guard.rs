@@ -335,6 +335,7 @@ impl ValidationStats {
 }
 
 #[cfg(test)]
+#[allow(unused_must_use)]
 mod tests {
     use super::*;
 
@@ -498,25 +499,27 @@ mod tests {
     #[test]
     fn test_validation_result_is_valid() {
         assert!(ValidationResult::Valid.is_valid());
-        
+
         assert!(!ValidationResult::Invalid {
             reason: "test".to_string(),
-        }.is_valid());
-        
+        }
+        .is_valid());
+
         assert!(!ValidationResult::Denied {
             action: "test".to_string(),
-        }.is_valid());
+        }
+        .is_valid());
     }
 
     #[test]
     fn test_validation_result_reason() {
         assert!(ValidationResult::Valid.reason().is_none());
-        
+
         let invalid = ValidationResult::Invalid {
             reason: "test error".to_string(),
         };
         assert_eq!(invalid.reason(), Some("test error"));
-        
+
         let denied = ValidationResult::Denied {
             action: "Forbidden".to_string(),
         };
@@ -532,9 +535,12 @@ mod tests {
         let allowed = ToolPolicy::Allowed;
         let restricted = ToolPolicy::Restricted;
         let denied = ToolPolicy::Denied;
-        
+
         assert_eq!(serde_json::to_string(&allowed).unwrap(), "\"Allowed\"");
-        assert_eq!(serde_json::to_string(&restricted).unwrap(), "\"Restricted\"");
+        assert_eq!(
+            serde_json::to_string(&restricted).unwrap(),
+            "\"Restricted\""
+        );
         assert_eq!(serde_json::to_string(&denied).unwrap(), "\"Denied\"");
     }
 
@@ -543,7 +549,7 @@ mod tests {
         let allowed: ToolPolicy = serde_json::from_str("\"Allowed\"").unwrap();
         let restricted: ToolPolicy = serde_json::from_str("\"Restricted\"").unwrap();
         let denied: ToolPolicy = serde_json::from_str("\"Denied\"").unwrap();
-        
+
         assert_eq!(allowed, ToolPolicy::Allowed);
         assert_eq!(restricted, ToolPolicy::Restricted);
         assert_eq!(denied, ToolPolicy::Denied);
@@ -576,7 +582,7 @@ mod tests {
             result: "valid".to_string(),
             reason: None,
         };
-        
+
         let json = serde_json::to_string(&entry).unwrap();
         assert!(json.contains("MoveTo"));
         assert!(json.contains("valid"));
@@ -590,7 +596,7 @@ mod tests {
             result: "invalid".to_string(),
             reason: Some("Target out of range".to_string()),
         };
-        
+
         let json = serde_json::to_string(&entry).unwrap();
         assert!(json.contains("Target out of range"));
     }
@@ -603,7 +609,7 @@ mod tests {
             result: "valid".to_string(),
             reason: None,
         };
-        
+
         let cloned = entry.clone();
         assert_eq!(entry.action_type, cloned.action_type);
         assert_eq!(entry.result, cloned.result);
@@ -616,7 +622,7 @@ mod tests {
     #[test]
     fn test_default_policy() {
         let guard = ToolGuard::new();
-        
+
         // Unknown action should use default policy (Restricted)
         let unknown_policy = guard.get_policy("UnknownAction");
         assert_eq!(unknown_policy, ToolPolicy::Restricted);
@@ -626,7 +632,7 @@ mod tests {
     fn test_set_default_policy() {
         let mut guard = ToolGuard::new();
         guard.set_default_policy(ToolPolicy::Denied);
-        
+
         let unknown_policy = guard.get_policy("UnknownAction");
         assert_eq!(unknown_policy, ToolPolicy::Denied);
     }
@@ -638,24 +644,25 @@ mod tests {
     #[test]
     fn test_clear_audit_log() {
         let guard = ToolGuard::new();
-        
+
         // Add some entries
         guard.validate_action(
-            &ActionStep::MoveTo { x: 0, y: 0, speed: None },
+            &ActionStep::MoveTo {
+                x: 0,
+                y: 0,
+                speed: None,
+            },
             &|_| true,
         );
-        guard.validate_action(
-            &ActionStep::Wait { duration: 1.0 },
-            &|_| true,
-        );
-        
+        guard.validate_action(&ActionStep::Wait { duration: 1.0 }, &|_| true);
+
         // Verify entries exist
         let log_before = guard.get_audit_log(10);
         assert_eq!(log_before.len(), 2);
-        
+
         // Clear log
         guard.clear_audit_log();
-        
+
         // Verify empty
         let log_after = guard.get_audit_log(10);
         assert_eq!(log_after.len(), 0);
@@ -706,10 +713,10 @@ mod tests {
             invalid: 5,
             denied: 2,
         };
-        
+
         let json = serde_json::to_string(&stats).unwrap();
         let parsed: ValidationStats = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(stats.valid, parsed.valid);
         assert_eq!(stats.invalid, parsed.invalid);
         assert_eq!(stats.denied, parsed.denied);
@@ -724,16 +731,29 @@ mod tests {
         use astraweave_core::IVec2;
         // Test a variety of action types to ensure action_name() handles them
         let actions: Vec<ActionStep> = vec![
-            ActionStep::Approach { target_id: 1, distance: 5.0 },
-            ActionStep::Retreat { target_id: 1, distance: 10.0 },
+            ActionStep::Approach {
+                target_id: 1,
+                distance: 5.0,
+            },
+            ActionStep::Retreat {
+                target_id: 1,
+                distance: 10.0,
+            },
             ActionStep::TakeCover { position: None },
-            ActionStep::Strafe { target_id: 1, direction: astraweave_core::StrafeDirection::Left },
+            ActionStep::Strafe {
+                target_id: 1,
+                direction: astraweave_core::StrafeDirection::Left,
+            },
             ActionStep::Patrol { waypoints: vec![] },
             ActionStep::Attack { target_id: 1 },
             ActionStep::AimedShot { target_id: 1 },
             ActionStep::QuickAttack { target_id: 1 },
             ActionStep::HeavyAttack { target_id: 1 },
-            ActionStep::AoEAttack { x: 0, y: 0, radius: 5.0 },
+            ActionStep::AoEAttack {
+                x: 0,
+                y: 0,
+                radius: 5.0,
+            },
             ActionStep::ThrowExplosive { x: 0, y: 0 },
             ActionStep::Charge { target_id: 1 },
             ActionStep::Block,
@@ -741,23 +761,37 @@ mod tests {
             ActionStep::Parry,
             ActionStep::ThrowSmoke { x: 0, y: 0 },
             ActionStep::Heal { target_id: Some(1) },
-            ActionStep::UseDefensiveAbility { ability_name: "shield".to_string() },
-            ActionStep::EquipWeapon { weapon_name: "sword".to_string() },
+            ActionStep::UseDefensiveAbility {
+                ability_name: "shield".to_string(),
+            },
+            ActionStep::EquipWeapon {
+                weapon_name: "sword".to_string(),
+            },
             ActionStep::SwitchWeapon { slot: 1 },
             ActionStep::Reload,
-            ActionStep::UseItem { item_name: "potion".to_string() },
-            ActionStep::DropItem { item_name: "junk".to_string() },
+            ActionStep::UseItem {
+                item_name: "potion".to_string(),
+            },
+            ActionStep::DropItem {
+                item_name: "junk".to_string(),
+            },
             ActionStep::CallReinforcements { count: 3 },
             ActionStep::MarkTarget { target_id: 1 },
             ActionStep::RequestCover { duration: 5.0 },
             ActionStep::CoordinateAttack { target_id: 1 },
-            ActionStep::SetAmbush { position: IVec2 { x: 10, y: 10 } },
+            ActionStep::SetAmbush {
+                position: IVec2 { x: 10, y: 10 },
+            },
             ActionStep::Distract { target_id: 1 },
-            ActionStep::Regroup { rally_point: IVec2 { x: 5, y: 5 } },
+            ActionStep::Regroup {
+                rally_point: IVec2 { x: 5, y: 5 },
+            },
             ActionStep::Scan { radius: 15.0 },
             ActionStep::Wait { duration: 2.0 },
             ActionStep::Interact { target_id: 1 },
-            ActionStep::UseAbility { ability_name: "fireball".to_string() },
+            ActionStep::UseAbility {
+                ability_name: "fireball".to_string(),
+            },
             ActionStep::Taunt { target_id: 1 },
         ];
 
@@ -765,7 +799,7 @@ mod tests {
         for action in actions {
             let _ = guard.validate_action(&action, &|_| true);
         }
-        
+
         // Verify we logged all actions
         let log = guard.get_audit_log(50);
         assert!(log.len() >= 30, "Should have logged many actions");

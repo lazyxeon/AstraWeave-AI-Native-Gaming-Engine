@@ -270,8 +270,9 @@ impl SkyRenderer {
                     resource: self
                         .uniform_buffer
                         .as_ref()
-                        .expect("BUG: uniform_buffer should be Some after creation above")
-                        .as_entire_binding(),
+                        // INVARIANT: uniform_buffer set to Some at L242 above
+                        .map(|b| b.as_entire_binding())
+                        .unwrap_or_else(|| unreachable!()),
                 }],
             }),
         );
@@ -685,7 +686,7 @@ impl SkyRenderer {
             let bind_group = self
                 .bind_group
                 .as_ref()
-                .expect("bind_group must be initialized");
+                .ok_or_else(|| anyhow::anyhow!("bind_group must be initialized before render"))?;
             render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.set_vertex_buffer(0, vertices.slice(..));
             render_pass.set_index_buffer(indices.slice(..), wgpu::IndexFormat::Uint16);

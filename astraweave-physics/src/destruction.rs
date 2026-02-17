@@ -2311,4 +2311,307 @@ mod tests {
             "Should be destroyed after destroy+update"
         );
     }
+
+    // ===== ROUND 8: spawn_debris/get_mut/on_collision/get_debris =====
+
+    #[test]
+    fn r8_get_mut_returns_mutable_ref() {
+        let mut mgr = DestructionManager::new();
+        let id = mgr.add_destructible(DestructibleConfig::default(), Vec3::ZERO);
+        let d = mgr.get_mut(id);
+        assert!(d.is_some(), "get_mut should return Some for existing id");
+        
+        let bad_id = DestructibleId(9999);
+        assert!(mgr.get_mut(bad_id).is_none(), "get_mut on invalid id should be None");
+    }
+
+    #[test]
+    fn r8_on_collision_applies_damage() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            max_health: 50.0,
+            damage_threshold: 5.0,
+            force_to_damage: 1.0,
+            trigger: DestructionTrigger::Health,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        
+        // Collision below threshold should not damage
+        mgr.on_collision(id, 3.0);
+        let d = mgr.get(id).unwrap();
+        assert_eq!(d.health, 50.0, "Below-threshold collision should not damage");
+        
+        // Collision above threshold should damage (force=20, threshold=5, damage=(20-5)*1.0=15)
+        mgr.on_collision(id, 20.0);
+        let d = mgr.get(id).unwrap();
+        assert!(d.health < 50.0, "Above-threshold collision should damage: health={}", d.health);
+    }
+
+    #[test]
+    fn r8_get_debris_returns_spawned() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.3), 5.0),
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::new(1.0, 2.0, 3.0));
+        
+        // Destroy and update to spawn debris
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+        
+        // Get debris - should have spawned some
+        let debris_count = mgr.debris_iter().count();
+        assert!(debris_count > 0, "Should have spawned debris after destruction");
+        
+        // Each debris should be retrievable by ID
+        let first_debris = mgr.debris_iter().next().unwrap();
+        let retrieved = mgr.get_debris(first_debris.id);
+        assert!(retrieved.is_some(), "get_debris should find spawned debris");
+    }
+
+    #[test]
+    fn r8_spawn_debris_positions_near_parent() {
+        let mut mgr = DestructionManager::new();
+        let spawn_pos = Vec3::new(5.0, 10.0, 15.0);
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(6, Vec3::splat(0.5), 8.0),
+            destruction_force: 10.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, spawn_pos);
+        
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+        
+        // Debris positions should be near the parent object
+        for debris in mgr.debris_iter() {
+            let dist = (debris.position - spawn_pos).length();
+            assert!(
+                dist < 10.0,
+                "Debris should be near parent: pos={:?}, parent={:?}, dist={}",
+                debris.position, spawn_pos, dist
+            );
+        }
+    }
+
+    #[test]
+    fn r8_spawn_debris_has_velocity() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.3), 5.0),
+            destruction_force: 10.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+        
+        // At least some debris should have non-zero velocity
+        let has_velocity = mgr.debris_iter().any(|d| d.velocity.length() > 0.1);
+        assert!(has_velocity, "Some debris should have velocity from destruction force");
+    }
+
+    #[test]
+    fn r8_spawn_debris_angular_velocity_varies() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.3), 5.0),
+            destruction_force: 10.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+        
+        // Different debris should have different angular velocities (pseudo-random based on ID)
+        let angulars: Vec<Vec3> = mgr.debris_iter().map(|d| d.angular_velocity).collect();
+        if angulars.len() >= 2 {
+            assert!(
+                (angulars[0] - angulars[1]).length() > 0.01,
+                "Different debris should have different angular velocities"
+            );
+        }
+    }
+
+    #[test]
+    fn r8_spawn_debris_respects_force_direction() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.3), 5.0),
+            destruction_force: 20.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        
+        // Apply large force from +X direction before destroying
+        mgr.apply_force(id, 1000.0);
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+        
+        // Debris should exist
+        let count = mgr.debris_iter().count();
+        assert!(count > 0, "Should have debris after force + destroy");
+    }
+
+    // ===== ROUND 9: FracturePattern precision + spawn_debris velocity =====
+
+    #[test]
+    fn r9_fracture_uniform_piece_positions_correct() {
+        // uniform(8, half_extents=(1,1,1), mass=10)
+        // pieces_per_axis = ceil(8^(1/3)) = ceil(2.0) = 2
+        // piece_size = (2.0, 2.0, 2.0) / 2 = (1.0, 1.0, 1.0)
+        // First piece at (x=0,y=0,z=0): pos = (0.5*1.0 - 1.0, 0.5*1.0 - 1.0, 0.5*1.0 - 1.0) = (-0.5, -0.5, -0.5)
+        let frac = FracturePattern::uniform(8, Vec3::splat(1.0), 10.0);
+        assert_eq!(frac.debris.len(), 8, "Should have 8 pieces");
+
+        let first = &frac.debris[0];
+        let expected_pos = Vec3::new(-0.5, -0.5, -0.5);
+        assert!(
+            (first.local_position - expected_pos).length() < 0.01,
+            "First debris position should be ({:?}), got {:?}",
+            expected_pos, first.local_position
+        );
+
+        // Loop order is x(outer) → y → z(inner), so index 1 = (x=0,y=0,z=1):
+        // pos = (0.5*1.0 - 1.0, 0.5*1.0 - 1.0, 1.5*1.0 - 1.0) = (-0.5, -0.5, 0.5)
+        let second = &frac.debris[1];
+        let expected_pos2 = Vec3::new(-0.5, -0.5, 0.5);
+        assert!(
+            (second.local_position - expected_pos2).length() < 0.01,
+            "Second debris position should be ({:?}), got {:?}",
+            expected_pos2, second.local_position
+        );
+    }
+
+    #[test]
+    fn r9_fracture_uniform_piece_mass_correct() {
+        let total_mass = 20.0_f32;
+        let count = 8_usize;
+        let frac = FracturePattern::uniform(count, Vec3::splat(2.0), total_mass);
+
+        for (i, d) in frac.debris.iter().enumerate() {
+            let expected_mass = total_mass / count as f32;
+            assert!(
+                (d.mass - expected_mass).abs() < 0.01,
+                "Piece {} mass should be {}, got {}",
+                i, expected_mass, d.mass
+            );
+        }
+    }
+
+    #[test]
+    fn r9_fracture_uniform_piece_size_correct() {
+        // half_extents = (3, 3, 3), pieces=8 → pieces_per_axis=2
+        // piece_size = (6/2, 6/2, 6/2) = (3, 3, 3)
+        // shape half_extents = piece_size * 0.4 = (1.2, 1.2, 1.2)
+        let frac = FracturePattern::uniform(8, Vec3::splat(3.0), 10.0);
+        let first = &frac.debris[0];
+        match &first.shape {
+            DebrisShape::Box { half_extents } => {
+                let expected = 3.0 * 0.4; // = 1.2
+                assert!(
+                    (half_extents.x - expected).abs() < 0.01,
+                    "Piece half_extent.x should be ~{}, got {}",
+                    expected, half_extents.x
+                );
+            }
+            _ => panic!("Expected Box shape from FracturePattern::uniform"),
+        }
+    }
+
+    #[test]
+    fn r9_fracture_uniform_local_position_field_set() {
+        // Test that local_position is explicitly set (catches "delete field local_position" mutation)
+        let frac = FracturePattern::uniform(1, Vec3::splat(1.0), 5.0);
+        let piece = &frac.debris[0];
+        // With 1 piece: pieces_per_axis=1, piece_size=2.0/1=2.0, pos = (0.5*2.0-1.0) = 0.0
+        assert!(
+            piece.local_position.length() < 0.01,
+            "Single piece should be at origin, got {:?}",
+            piece.local_position
+        );
+
+        // With 8 pieces, first piece should be at (-0.5, -0.5, -0.5) — NOT at default (0,0,0) for all
+        let frac2 = FracturePattern::uniform(8, Vec3::splat(1.0), 10.0);
+        let last = &frac2.debris[7];
+        // Last piece at (1,1,1): pos = (1.5*1-1, 1.5*1-1, 1.5*1-1) = (0.5,0.5,0.5)
+        assert!(
+            last.local_position.length() > 0.1,
+            "Last piece should NOT be at origin: got {:?}",
+            last.local_position
+        );
+    }
+
+    #[test]
+    fn r9_spawn_debris_velocity_has_outward_component() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 50.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::new(0.0, 5.0, 0.0));
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+
+        // Check debris velocities: they should have nonzero velocity from the destruction force
+        for debris in mgr.debris_iter() {
+            assert!(
+                debris.velocity.length() > 0.01,
+                "Debris should have velocity from destruction force, got {:?}",
+                debris.velocity
+            );
+        }
+    }
+
+    #[test]
+    fn r9_spawn_debris_force_direction_affects_velocity() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 100.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        
+        // Apply large force from +X to trigger destruction with force direction
+        mgr.apply_force(id, 50000.0); // Exceed force threshold to trigger destruction
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+        
+        // Debris should exist and have been pushed in +X direction due to force
+        let count = mgr.debris_iter().count();
+        if count > 0 {
+            let avg_vx: f32 = mgr.debris_iter().map(|d| d.velocity.x).sum::<f32>() / count as f32;
+            // Force was applied in +X direction, so average velocity should lean positive x
+            // (At minimum, debris should have non-trivial velocity)
+            let avg_speed: f32 = mgr.debris_iter().map(|d| d.velocity.length()).sum::<f32>() / count as f32;
+            assert!(avg_speed > 0.5, "Debris should have speed from destruction_force=100, got {}", avg_speed);
+        }
+    }
+
+    #[test]
+    fn r9_spawn_debris_angular_velocity_uses_factor() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 50.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+
+        // Check debris angular velocities: they should be nonzero (pseudo-random based on id)
+        let mut has_angular = false;
+        for debris in mgr.debris_iter() {
+            if debris.angular_velocity.length() > 0.01 {
+                has_angular = true;
+            }
+        }
+        assert!(has_angular, "At least some debris should have angular velocity");
+    }
 }

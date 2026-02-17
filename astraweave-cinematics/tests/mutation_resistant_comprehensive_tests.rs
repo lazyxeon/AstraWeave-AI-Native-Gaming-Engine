@@ -225,6 +225,7 @@ mod time_tests {
     // --- Serde roundtrip ---
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn time_serde_roundtrip() {
         let t = Time(3.14);
         let json = serde_json::to_string(&t).unwrap();

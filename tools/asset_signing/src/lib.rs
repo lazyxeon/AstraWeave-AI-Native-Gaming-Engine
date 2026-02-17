@@ -16,24 +16,26 @@ fn hash_file(path: &str) -> Result<[u8; 32], String> {
     Ok(out.into())
 }
 
+#[allow(clippy::expect_used)] // INVARIANT: private_key length validated at function entry
 pub fn sign_asset(path: &str, private_key: &[u8]) -> Result<Vec<u8>, String> {
     if private_key.len() != SECRET_KEY_LENGTH {
         return Err("private key must be 32 bytes (ed25519 seed)".into());
     }
     let hash = hash_file(path)?;
-    let sk = SigningKey::from_bytes(private_key.try_into().unwrap());
+    let sk = SigningKey::from_bytes(private_key.try_into().expect("BUG: length checked above"));
     let sig: Signature = sk.sign(&hash);
     Ok(sig.to_bytes().to_vec())
 }
 
+#[allow(clippy::expect_used)] // INVARIANT: public_key/signature lengths validated at function entry
 pub fn verify_asset(path: &str, public_key: &[u8], signature: &[u8]) -> Result<bool, String> {
     if public_key.len() != 32 || signature.len() != 64 {
         return Err("invalid key or signature size".into());
     }
     let hash = hash_file(path)?;
     let vk =
-        VerifyingKey::from_bytes(public_key.try_into().unwrap()).map_err(|e| format!("vk: {e}"))?;
-    let sig = Signature::from_bytes(signature.try_into().unwrap());
+        VerifyingKey::from_bytes(public_key.try_into().expect("BUG: length checked above")).map_err(|e| format!("vk: {e}"))?;
+    let sig = Signature::from_bytes(signature.try_into().expect("BUG: length checked above"));
     Ok(vk.verify_strict(&hash, &sig).is_ok())
 }
 

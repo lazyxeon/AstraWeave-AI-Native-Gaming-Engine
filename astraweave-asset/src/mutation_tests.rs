@@ -1,3 +1,4 @@
+#![allow(clippy::assertions_on_constants, clippy::useless_vec)]
 //! Mutation-killing tests for astraweave-asset
 //!
 //! These tests are designed to detect common mutations:
@@ -112,7 +113,7 @@ mod asset_kind_tests {
             AssetKind::BlenderSource,
             AssetKind::Other,
         ];
-        
+
         // Each variant should only match itself
         for (i, kind1) in kinds.iter().enumerate() {
             for (j, kind2) in kinds.iter().enumerate() {
@@ -202,18 +203,14 @@ mod aabb_tests {
         let aabb1 = AABB::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
         let aabb2 = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(3.0, 3.0, 3.0));
         let merged = aabb1.merge(&aabb2);
-        
+
         assert_eq!(merged.min, Vec3::new(-1.0, -1.0, -1.0));
         assert_eq!(merged.max, Vec3::new(3.0, 3.0, 3.0));
     }
 
     #[test]
     fn test_aabb_from_points() {
-        let points = vec![
-            [0.0, 0.0, 0.0],
-            [1.0, 2.0, 3.0],
-            [-1.0, -2.0, -3.0],
-        ];
+        let points = vec![[0.0, 0.0, 0.0], [1.0, 2.0, 3.0], [-1.0, -2.0, -3.0]];
         let aabb = AABB::from_points(&points);
         assert_eq!(aabb.min, Vec3::new(-1.0, -2.0, -3.0));
         assert_eq!(aabb.max, Vec3::new(1.0, 2.0, 3.0));
@@ -241,7 +238,7 @@ mod bounding_cone_tests {
         let positions: Vec<[f32; 3]> = vec![];
         let normals: Vec<[f32; 3]> = vec![];
         let indices: Vec<u32> = vec![];
-        
+
         let cone = BoundingCone::from_triangles(&positions, &normals, &indices);
         assert_eq!(cone.apex, Vec3::ZERO);
         assert_eq!(cone.axis, Vec3::Z);
@@ -251,18 +248,10 @@ mod bounding_cone_tests {
     #[test]
     fn test_bounding_cone_cutoff_range() {
         // Cutoff should be in range [-1, 1] (cosine value)
-        let positions = vec![
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-        ];
-        let normals = vec![
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-        ];
+        let positions = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+        let normals = vec![[0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]];
         let indices = vec![0, 1, 2];
-        
+
         let cone = BoundingCone::from_triangles(&positions, &normals, &indices);
         assert!(cone.cutoff >= -1.0 && cone.cutoff <= 1.0);
     }
@@ -274,7 +263,7 @@ mod bounding_cone_tests {
             axis: Vec3::Z,
             cutoff: 0.0,
         };
-        
+
         // Looking opposite to cone axis
         assert!(cone.is_backfacing(-Vec3::Z));
     }
@@ -286,7 +275,7 @@ mod bounding_cone_tests {
             axis: Vec3::Z,
             cutoff: -0.5,
         };
-        
+
         // Looking along cone axis (should be visible)
         assert!(!cone.is_backfacing(Vec3::Z));
     }
@@ -325,7 +314,7 @@ mod meshlet_constants_tests {
 // ============================================================================
 
 mod meshlet_tests {
-    use crate::nanite_preprocess::{Meshlet, AABB, BoundingCone};
+    use crate::nanite_preprocess::{BoundingCone, Meshlet, AABB};
     use glam::Vec3;
 
     #[test]
@@ -343,7 +332,7 @@ mod meshlet_tests {
             lod_error: 0.0,
             parent_index: None,
         };
-        
+
         assert_eq!(meshlet.vertex_count(), 5);
     }
 
@@ -362,7 +351,7 @@ mod meshlet_tests {
             lod_error: 0.0,
             parent_index: None,
         };
-        
+
         // 6 indices / 3 = 2 triangles
         assert_eq!(meshlet.triangle_count(), 2);
     }
@@ -382,7 +371,7 @@ mod meshlet_tests {
             lod_error: 0.0,
             parent_index: None,
         };
-        
+
         assert_eq!(meshlet.vertex_count(), 0);
         assert_eq!(meshlet.triangle_count(), 0);
     }
@@ -393,22 +382,30 @@ mod meshlet_tests {
             vertices: vec![0],
             indices: vec![],
             bounds: AABB::new(Vec3::ZERO, Vec3::ONE),
-            cone: BoundingCone { apex: Vec3::ZERO, axis: Vec3::Z, cutoff: 0.0 },
+            cone: BoundingCone {
+                apex: Vec3::ZERO,
+                axis: Vec3::Z,
+                cutoff: 0.0,
+            },
             lod_level: 0,
             lod_error: 0.0,
             parent_index: None,
         };
-        
+
         let lod1 = Meshlet {
             vertices: vec![0],
             indices: vec![],
             bounds: AABB::new(Vec3::ZERO, Vec3::ONE),
-            cone: BoundingCone { apex: Vec3::ZERO, axis: Vec3::Z, cutoff: 0.0 },
+            cone: BoundingCone {
+                apex: Vec3::ZERO,
+                axis: Vec3::Z,
+                cutoff: 0.0,
+            },
             lod_level: 1,
             lod_error: 0.01,
             parent_index: Some(0),
         };
-        
+
         assert_eq!(lod0.lod_level, 0);
         assert_eq!(lod1.lod_level, 1);
         assert!(lod0.lod_error <= lod1.lod_error);
@@ -420,22 +417,30 @@ mod meshlet_tests {
             vertices: vec![],
             indices: vec![],
             bounds: AABB::new(Vec3::ZERO, Vec3::ONE),
-            cone: BoundingCone { apex: Vec3::ZERO, axis: Vec3::Z, cutoff: 0.0 },
+            cone: BoundingCone {
+                apex: Vec3::ZERO,
+                axis: Vec3::Z,
+                cutoff: 0.0,
+            },
             lod_level: 0,
             lod_error: 0.0,
             parent_index: None,
         };
-        
+
         let child = Meshlet {
             vertices: vec![],
             indices: vec![],
             bounds: AABB::new(Vec3::ZERO, Vec3::ONE),
-            cone: BoundingCone { apex: Vec3::ZERO, axis: Vec3::Z, cutoff: 0.0 },
+            cone: BoundingCone {
+                apex: Vec3::ZERO,
+                axis: Vec3::Z,
+                cutoff: 0.0,
+            },
             lod_level: 1,
             lod_error: 0.01,
             parent_index: Some(0),
         };
-        
+
         assert!(root.parent_index.is_none());
         assert_eq!(child.parent_index, Some(0));
     }
@@ -508,7 +513,7 @@ mod asset_metadata_tests {
             last_modified: 1234567890,
             size_bytes: 1024,
         };
-        
+
         assert_eq!(meta.guid, "test-guid-123");
         assert_eq!(meta.path, "/assets/test.mesh");
         assert!(matches!(meta.kind, AssetKind::Mesh));
@@ -529,7 +534,7 @@ mod asset_metadata_tests {
             last_modified: 0,
             size_bytes: 0,
         };
-        
+
         assert_eq!(meta.dependencies.len(), 2);
         assert!(meta.dependencies.contains(&"parent-1".to_string()));
         assert!(meta.dependencies.contains(&"parent-2".to_string()));
@@ -546,7 +551,7 @@ mod asset_metadata_tests {
             last_modified: 999,
             size_bytes: 512,
         };
-        
+
         let cloned = original.clone();
         assert_eq!(original.guid, cloned.guid);
         assert_eq!(original.path, cloned.path);
@@ -568,7 +573,7 @@ mod asset_metadata_tests {
             size_bytes: 0,
         };
         assert_eq!(meta_zero.size_bytes, 0);
-        
+
         // Test large size
         let meta_large = AssetMetadata {
             guid: "".to_string(),
@@ -716,7 +721,7 @@ mod gltf_loader_tests {
             texcoords: vec![[0.5, 0.5]],
             indices: vec![0],
         };
-        
+
         let cloned = mesh.clone();
         assert_eq!(mesh.positions, cloned.positions);
         assert_eq!(mesh.normals, cloned.normals);
@@ -731,7 +736,9 @@ mod gltf_loader_tests {
 // ============================================================================
 
 mod cell_loader_tests {
-    use crate::cell_loader::{CellData, EntityData, AssetRef, CellMetadata, AssetKind as CellAssetKind};
+    use crate::cell_loader::{
+        AssetKind as CellAssetKind, AssetRef, CellData, CellMetadata, EntityData,
+    };
 
     #[test]
     fn test_cell_data_new() {
@@ -756,9 +763,8 @@ mod cell_loader_tests {
     #[test]
     fn test_cell_data_add_entity() {
         let mut cell = CellData::new([0, 0, 0]);
-        let entity = EntityData::new([0.0, 0.0, 0.0])
-            .with_name("test_entity");
-        
+        let entity = EntityData::new([0.0, 0.0, 0.0]).with_name("test_entity");
+
         cell.add_entity(entity);
         assert_eq!(cell.entities.len(), 1);
         assert_eq!(cell.entities[0].name, Some("test_entity".to_string()));
@@ -768,7 +774,7 @@ mod cell_loader_tests {
     fn test_cell_data_add_asset() {
         let mut cell = CellData::new([0, 0, 0]);
         let asset = AssetRef::new("assets/mesh.glb", CellAssetKind::Mesh);
-        
+
         cell.add_asset(asset);
         assert_eq!(cell.assets.len(), 1);
     }
@@ -778,7 +784,7 @@ mod cell_loader_tests {
         let mut cell = CellData::new([0, 0, 0]);
         let asset1 = AssetRef::new("assets/mesh.glb", CellAssetKind::Mesh);
         let asset2 = AssetRef::new("assets/mesh.glb", CellAssetKind::Mesh);
-        
+
         cell.add_asset(asset1);
         cell.add_asset(asset2);
         // Duplicates should not be added
@@ -799,7 +805,7 @@ mod cell_loader_tests {
             tags: vec!["forest".to_string(), "spawn".to_string()],
             version: 1,
         };
-        
+
         assert_eq!(meta.description, Some("Test cell".to_string()));
         assert_eq!(meta.tags.len(), 2);
         assert_eq!(meta.version, 1);
@@ -810,7 +816,7 @@ mod cell_loader_tests {
         let entity = EntityData::new([1.0, 2.0, 3.0])
             .with_name("player_spawn")
             .with_mesh("meshes/player.glb");
-        
+
         assert_eq!(entity.name, Some("player_spawn".to_string()));
         assert!(entity.mesh.is_some());
         assert_eq!(entity.position, [1.0, 2.0, 3.0]);
@@ -840,8 +846,8 @@ mod cell_loader_tests {
 
     #[test]
     fn test_asset_ref_with_guid() {
-        let asset = AssetRef::new("path/to/asset.glb", CellAssetKind::Texture)
-            .with_guid("some-guid-123");
+        let asset =
+            AssetRef::new("path/to/asset.glb", CellAssetKind::Texture).with_guid("some-guid-123");
         assert_eq!(asset.guid, Some("some-guid-123".to_string()));
     }
 
@@ -853,7 +859,7 @@ mod cell_loader_tests {
         let audio = CellAssetKind::Audio;
         let anim = CellAssetKind::Animation;
         let other = CellAssetKind::Other;
-        
+
         assert!(matches!(mesh, CellAssetKind::Mesh));
         assert!(matches!(tex, CellAssetKind::Texture));
         assert!(matches!(mat, CellAssetKind::Material));
@@ -880,10 +886,10 @@ mod hash_tests {
     fn test_guid_for_path_deterministic() {
         let path1 = "/assets/mesh.obj";
         let path2 = "/assets/mesh.obj";
-        
+
         let guid1 = guid_for_path(path1);
         let guid2 = guid_for_path(path2);
-        
+
         assert_eq!(guid1, guid2);
     }
 
@@ -891,7 +897,7 @@ mod hash_tests {
     fn test_guid_for_path_unique_for_different_paths() {
         let guid1 = guid_for_path("/assets/mesh1.obj");
         let guid2 = guid_for_path("/assets/mesh2.obj");
-        
+
         assert_ne!(guid1, guid2);
     }
 
@@ -931,7 +937,7 @@ mod hash_tests {
 #[cfg(test)]
 mod behavioral_correctness_tests {
     use super::*;
-    use crate::cell_loader::{CellData, EntityData, AssetRef, AssetKind as CellAssetKind};
+    use crate::cell_loader::{AssetKind as CellAssetKind, AssetRef, CellData, EntityData};
 
     #[test]
     fn test_guid_is_deterministic() {
@@ -940,7 +946,7 @@ mod behavioral_correctness_tests {
         let guid1 = guid_for_path(path);
         let guid2 = guid_for_path(path);
         let guid3 = guid_for_path(path);
-        
+
         assert_eq!(guid1, guid2, "GUID must be deterministic");
         assert_eq!(guid2, guid3, "GUID must be deterministic");
     }
@@ -955,13 +961,16 @@ mod behavioral_correctness_tests {
             "models/a.glb",
             "textures/a.png",
         ];
-        
+
         let guids: Vec<_> = paths.iter().map(|p| guid_for_path(p)).collect();
-        
+
         for i in 0..guids.len() {
-            for j in (i+1)..guids.len() {
-                assert_ne!(guids[i], guids[j], 
-                    "Different paths must have different GUIDs: {} vs {}", paths[i], paths[j]);
+            for j in (i + 1)..guids.len() {
+                assert_ne!(
+                    guids[i], guids[j],
+                    "Different paths must have different GUIDs: {} vs {}",
+                    paths[i], paths[j]
+                );
             }
         }
     }
@@ -973,12 +982,18 @@ mod behavioral_correctness_tests {
             "a.txt",
             "very/long/path/to/some/deeply/nested/file.glb",
             "x",
-        ].iter().map(|p| guid_for_path(p)).collect();
-        
+        ]
+        .iter()
+        .map(|p| guid_for_path(p))
+        .collect();
+
         let expected_len = guids[0].len();
         for guid in &guids {
-            assert_eq!(guid.len(), expected_len, 
-                "All GUIDs should have consistent length");
+            assert_eq!(
+                guid.len(),
+                expected_len,
+                "All GUIDs should have consistent length"
+            );
         }
     }
 
@@ -986,7 +1001,7 @@ mod behavioral_correctness_tests {
     fn test_entity_data_identity_rotation_is_default() {
         // Behavioral: default rotation should be identity quaternion
         let entity = EntityData::new([0.0, 0.0, 0.0]);
-        
+
         // Identity quaternion: (0, 0, 0, 1)
         assert_eq!(entity.rotation[0], 0.0, "X should be 0");
         assert_eq!(entity.rotation[1], 0.0, "Y should be 0");
@@ -998,7 +1013,7 @@ mod behavioral_correctness_tests {
     fn test_entity_data_uniform_scale_is_default() {
         // Behavioral: default scale should be uniform 1
         let entity = EntityData::new([0.0, 0.0, 0.0]);
-        
+
         assert_eq!(entity.scale[0], 1.0, "X scale should be 1");
         assert_eq!(entity.scale[1], 1.0, "Y scale should be 1");
         assert_eq!(entity.scale[2], 1.0, "Z scale should be 1");
@@ -1009,7 +1024,7 @@ mod behavioral_correctness_tests {
         // Behavioral: coord should match what was passed to constructor
         let pos = [42, -17, 99];
         let cell = CellData::new(pos);
-        
+
         assert_eq!(cell.coord, pos, "Cell coord must match constructor");
     }
 
@@ -1018,7 +1033,7 @@ mod behavioral_correctness_tests {
         // Behavioral: memory estimate should always be positive
         let cell = CellData::new([0, 0, 0]);
         let estimate = cell.memory_estimate();
-        
+
         assert!(estimate > 0, "Memory estimate must be positive");
     }
 
@@ -1036,7 +1051,7 @@ mod behavioral_correctness_tests {
             AssetKind::BlenderSource,
             AssetKind::Other,
         ];
-        
+
         for kind in kinds {
             assert_eq!(kind.clone(), kind, "AssetKind equality must be reflexive");
         }
@@ -1047,7 +1062,7 @@ mod behavioral_correctness_tests {
         // Behavioral: path should be preserved exactly
         let path = "assets/models/hero.glb";
         let asset = AssetRef::new(path, CellAssetKind::Mesh);
-        
+
         assert_eq!(asset.path, path, "Asset path must be preserved exactly");
     }
 
@@ -1063,7 +1078,11 @@ mod behavioral_correctness_tests {
         // Behavioral: with_guid should set the GUID
         let guid = "abc123";
         let asset = AssetRef::new("test.glb", CellAssetKind::Mesh).with_guid(guid);
-        
-        assert_eq!(asset.guid, Some(guid.to_string()), "with_guid should set GUID");
+
+        assert_eq!(
+            asset.guid,
+            Some(guid.to_string()),
+            "with_guid should set GUID"
+        );
     }
 }

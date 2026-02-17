@@ -3,6 +3,8 @@
 //! These tests target exact return values, boundary conditions, operator swaps,
 //! negation bugs, and off-by-one errors to achieve 90%+ mutation kill rate.
 
+#![allow(clippy::approx_constant)]
+
 use astraweave_core::{IVec2, PlanIntent, Team, World};
 use astraweave_net::*;
 use std::collections::BTreeSet;

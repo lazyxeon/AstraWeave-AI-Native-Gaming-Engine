@@ -59,6 +59,7 @@ impl Default for ObservabilityPlugin {
 }
 
 impl Plugin for ObservabilityPlugin {
+    #[allow(clippy::expect_used)] // Plugin initialization failure is fatal — no recovery possible
     fn build(&self, app: &mut App) {
         // Initialize tracing
         init_tracing(&self.config).expect("Failed to initialize tracing");

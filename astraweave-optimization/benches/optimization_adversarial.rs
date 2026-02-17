@@ -11,6 +11,7 @@ use std::hint::black_box as std_black_box;
 // ============================================================================
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct InferenceRequest {
     id: u64,
     prompt: String,
@@ -28,6 +29,7 @@ enum Priority {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct BatchedRequest {
     requests: Vec<InferenceRequest>,
     combined_tokens: usize,
@@ -35,6 +37,7 @@ struct BatchedRequest {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct CacheEntry {
     key: String,
     tokens: Vec<u32>,
@@ -106,6 +109,7 @@ struct LoadBalancer {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct WorkerState {
     id: u32,
     current_load: f32,
@@ -159,6 +163,7 @@ impl LoadBalancer {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct TokenOptimizer {
     vocab_size: usize,
     merges: Vec<(String, String, String)>, // (a, b, merged)
@@ -221,17 +226,16 @@ fn bench_batch_inference(c: &mut Criterion) {
                     for req in &requests {
                         let req_tokens = req.prompt.len() + req.max_tokens as usize;
 
-                        if current_batch.len() >= batch_size
-                            || current_tokens + req_tokens > max_tokens_per_batch
+                        if (current_batch.len() >= batch_size
+                            || current_tokens + req_tokens > max_tokens_per_batch)
+                            && !current_batch.is_empty()
                         {
-                            if !current_batch.is_empty() {
-                                batches.push(BatchedRequest {
-                                    requests: std::mem::take(&mut current_batch),
-                                    combined_tokens: current_tokens,
-                                    max_batch_size: batch_size,
-                                });
-                                current_tokens = 0;
-                            }
+                            batches.push(BatchedRequest {
+                                requests: std::mem::take(&mut current_batch),
+                                combined_tokens: current_tokens,
+                                max_batch_size: batch_size,
+                            });
+                            current_tokens = 0;
                         }
 
                         current_batch.push(req.clone());
@@ -592,10 +596,10 @@ fn bench_compression(c: &mut Criterion) {
         let attention_matrices: Vec<Vec<Vec<f32>>> = (0..100)
             .map(|i| {
                 (0..32)
-                    .map(|j| {
+                    .map(|j: usize| {
                         (0..32)
-                            .map(|k| {
-                                if (j as i32 - k as i32).abs() < 5 || (i + j + k) % 10 == 0 {
+                            .map(|k: usize| {
+                                if j.abs_diff(k) < 5 || (i + j + k) % 10 == 0 {
                                     ((i + j + k) as f32 * 0.1).exp() / 10.0
                                 } else {
                                     0.0

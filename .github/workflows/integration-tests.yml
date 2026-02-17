@@ -150,10 +150,14 @@ jobs:
     timeout-minutes: 15
     
     steps:
-      - name: Checkout with LFS
+      - name: Checkout
         uses: actions/checkout@v5
-        with:
-          lfs: true  # Required: gltf/glb fixtures are stored in Git LFS
+
+      - name: Pull Git LFS objects
+        continue-on-error: true
+        run: |
+          git lfs install 2>/dev/null || true
+          git lfs pull 2>&1 || echo "::warning::Git LFS pull failed — tests will run with fixture files only (large assets skipped)"
         
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

@@ -472,7 +472,7 @@ mod tests {
             path: "/root".to_string(),
         };
         let cloned = err.clone();
-        
+
         match cloned {
             ValidationError::MissingField { field, path } => {
                 assert_eq!(field, "test");
@@ -527,7 +527,10 @@ mod tests {
         let json: Value = serde_json::from_str(r#"{}"#).unwrap();
         let result = TestPlan::require_string(&json, "name");
         assert!(result.is_some());
-        assert!(matches!(result.unwrap(), ValidationError::MissingField { .. }));
+        assert!(matches!(
+            result.unwrap(),
+            ValidationError::MissingField { .. }
+        ));
     }
 
     #[test]
@@ -550,7 +553,10 @@ mod tests {
         let json: Value = serde_json::from_str(r#"{}"#).unwrap();
         let result = TestPlan::require_array(&json, "items");
         assert!(result.is_some());
-        assert!(matches!(result.unwrap(), ValidationError::MissingField { .. }));
+        assert!(matches!(
+            result.unwrap(),
+            ValidationError::MissingField { .. }
+        ));
     }
 
     #[test]
@@ -580,7 +586,10 @@ mod tests {
         let json: Value = serde_json::from_str(r#"{}"#).unwrap();
         let result = TestPlan::require_number(&json, "count");
         assert!(result.is_some());
-        assert!(matches!(result.unwrap(), ValidationError::MissingField { .. }));
+        assert!(matches!(
+            result.unwrap(),
+            ValidationError::MissingField { .. }
+        ));
     }
 
     // ============================================================

@@ -3,8 +3,6 @@
 //! These tests verify **exact computed values** and **behavioral correctness** to ensure
 //! mutations to formulas and logic are detected by `cargo mutants`.
 
-#![cfg(test)]
-
 use crate::core_loop::{CAiController, PlannerMode};
 use crate::orchestrator::{Orchestrator, RuleOrchestrator};
 use astraweave_core::{ActionStep, CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};

@@ -678,8 +678,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_cache_expiration() {
-        let mut config = PromptCacheConfig::default();
-        config.entry_ttl = Duration::from_millis(100);
+        let config = PromptCacheConfig {
+            entry_ttl: Duration::from_millis(100),
+            ..PromptCacheConfig::default()
+        };
         let cache = PromptCache::new(config);
 
         // Store a response

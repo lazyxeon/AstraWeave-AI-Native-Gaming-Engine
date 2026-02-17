@@ -8,6 +8,11 @@
 //! - Return value mutations (replacing with default/empty)
 //! - String replacement mutations (swapping literals)
 
+#![allow(
+    clippy::field_reassign_with_default,
+    clippy::approx_constant
+)]
+
 // =============================================================================
 // lib.rs — CacheConfig EXACT VALUE TESTS
 // =============================================================================

@@ -598,6 +598,7 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
 "#;
 
 #[cfg(test)]
+#[allow(clippy::manual_range_contains, clippy::const_is_empty)]
 mod tests {
     use super::*;
 

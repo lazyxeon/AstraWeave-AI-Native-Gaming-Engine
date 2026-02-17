@@ -234,6 +234,7 @@ impl EntityAllocator {
     /// let e1 = allocator.spawn();  // Entity(0v0)
     /// let e2 = allocator.spawn();  // Entity(1v0)
     /// ```
+    #[allow(clippy::expect_used)] // u32 overflow after 4B entities — no recovery possible
     pub fn spawn(&mut self) -> Entity {
         let id = if let Some(id) = self.free_list.pop() {
             // Reuse recycled ID with current generation

@@ -1,3 +1,4 @@
+#![allow(unused_imports, clippy::field_reassign_with_default)]
 //! Comprehensive mutation-resistant tests for astraweave-physics.
 //!
 //! Targets every numeric constant, boundary condition, arithmetic operator,

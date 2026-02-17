@@ -2,8 +2,8 @@ use astraweave_core::*;
 use astraweave_net::*;
 use proptest::prelude::*;
 
-/// Property-based tests for astraweave-net using proptest
-/// These tests verify invariants hold across arbitrary inputs
+// Property-based tests for astraweave-net using proptest.
+// These tests verify invariants hold across arbitrary inputs.
 
 // Strategy for generating valid EntityState
 fn entity_state_strategy() -> impl Strategy<Value = EntityState> {

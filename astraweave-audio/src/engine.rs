@@ -1664,7 +1664,7 @@ mod tests {
     #[test]
     fn mutation_stop_ambient_not_noop() {
         // Targets: engine.rs:279 replace stop_ambient with ()
-        let mut e = AudioEngine::new().unwrap();
+        let e = AudioEngine::new().unwrap();
         e.stop_ambient();
         // Just verifying stop_ambient does something (doesn't panic)
     }

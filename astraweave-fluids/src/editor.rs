@@ -5326,7 +5326,6 @@ mod tests {
     fn test_config_interpolate_half() {
         let config1 = FluidEditorConfig::custom();
         let mut config2 = FluidEditorConfig::custom();
-        config1.physics.viscosity;
         config2.physics.viscosity = 20.0;
 
         let result = config1.interpolate(&config2, 0.5);

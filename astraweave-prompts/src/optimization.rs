@@ -265,6 +265,9 @@ impl ABTestingEngine {
             }
             // Simple round-robin or random selection
             // For determinism in tests, we'll pick based on total selections
+            // INVARIANT: metrics and variants are initialized together;
+            // if variants.get() succeeds, metrics entry exists.
+            #[allow(clippy::expect_used)]
             let metrics = self
                 .metrics
                 .get_mut(test_name)

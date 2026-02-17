@@ -429,7 +429,7 @@ mod tests {
     #[test]
     fn test_request_priority_clone() {
         let priority = RequestPriority::High;
-        let cloned = priority;  // Copy
+        let cloned = priority; // Copy
         assert_eq!(priority, cloned);
     }
 
@@ -450,7 +450,7 @@ mod tests {
     #[test]
     fn test_request_status_clone() {
         let status = RequestStatus::Processing;
-        let cloned = status;  // Copy
+        let cloned = status; // Copy
         assert_eq!(status, cloned);
     }
 
@@ -542,7 +542,7 @@ mod tests {
     async fn test_get_status_nonexistent() {
         let scheduler = LlmScheduler::new(Arc::new(MockLlm), 5, 30);
         let fake_id = Uuid::new_v4();
-        
+
         // Should return None for unknown request
         let status = scheduler.get_status(fake_id);
         assert!(status.is_none());

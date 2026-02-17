@@ -668,7 +668,7 @@ mod tests {
         // A small light at center should occupy at least 1 cluster
         assert!(total >= 1, "centered light must occupy at least 1 cluster, got {total}");
         // Should not occupy ALL clusters (it's small)
-        let max_clusters = (dims.x * dims.y * dims.z) as u32;
+        let max_clusters = dims.x * dims.y * dims.z;
         assert!(total < max_clusters, "small light should not fill all {max_clusters} clusters");
         // All indices must be 0 (only one light)
         assert!(indices.iter().all(|&i| i == 0), "only light index 0 should appear");
@@ -691,7 +691,7 @@ mod tests {
             &lights, dims, (320, 180), near, far, fov_y,
         );
         let total: u32 = counts.iter().sum();
-        let max_clusters = (dims.x * dims.y * dims.z) as u32;
+        let max_clusters = dims.x * dims.y * dims.z;
         // Should fill all or nearly all clusters
         assert!(
             total >= max_clusters / 2,

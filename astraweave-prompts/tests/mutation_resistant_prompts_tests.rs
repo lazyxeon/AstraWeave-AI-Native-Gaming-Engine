@@ -4,7 +4,7 @@
 //! are detected by `cargo mutants`. Each test asserts on specific numerical or
 //! string results rather than just checking relative comparisons.
 
-#![cfg(test)]
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_prompts::sanitize::{
     sanitize_input, sanitize_variable_name, truncate_input, validate_safe_charset, PromptSanitizer,

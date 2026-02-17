@@ -422,6 +422,7 @@ fn max_toml_equals_max_ron() {
 }
 
 #[test]
+#[allow(clippy::assertions_on_constants)]
 fn max_json_greater_than_toml() {
     assert!(MAX_JSON_BYTES > MAX_TOML_BYTES);
 }

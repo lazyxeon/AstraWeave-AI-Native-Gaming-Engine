@@ -225,12 +225,30 @@ mod tests {
     fn create_full_registry() -> ToolRegistry {
         ToolRegistry {
             tools: vec![
-                ToolSpec { name: "move_to".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "attack".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "heal".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "reload".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "take_cover".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "scan".to_string(), args: BTreeMap::new() },
+                ToolSpec {
+                    name: "move_to".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "attack".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "heal".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "reload".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "take_cover".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "scan".to_string(),
+                    args: BTreeMap::new(),
+                },
             ],
             constraints: Constraints {
                 enforce_cooldowns: true,
@@ -259,7 +277,10 @@ mod tests {
     fn test_heuristic_config_default() {
         let config = HeuristicConfig::default();
         assert!(!config.rules.is_empty(), "Default config should have rules");
-        assert!(config.rules.len() >= 6, "Default config should have at least 6 rules");
+        assert!(
+            config.rules.len() >= 6,
+            "Default config should have at least 6 rules"
+        );
     }
 
     #[test]
@@ -273,12 +294,10 @@ mod tests {
     #[test]
     fn test_heuristic_config_custom_rules() {
         let config = HeuristicConfig {
-            rules: vec![
-                HeuristicRule {
-                    condition: HeuristicCondition::Always,
-                    action: HeuristicAction::Scan { radius: 5.0 },
-                },
-            ],
+            rules: vec![HeuristicRule {
+                condition: HeuristicCondition::Always,
+                action: HeuristicAction::Scan { radius: 5.0 },
+            }],
         };
         assert_eq!(config.rules.len(), 1);
     }
@@ -291,24 +310,24 @@ mod tests {
     fn test_condition_low_morale_true() {
         let mut snap = create_basic_snapshot();
         snap.me.morale = 20.0;
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::LowMorale { threshold: 30.0 },
             action: HeuristicAction::HealSelf,
         };
-        
+
         assert!(rule.check_condition(&snap));
     }
 
     #[test]
     fn test_condition_low_morale_false() {
         let snap = create_basic_snapshot(); // morale = 80.0
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::LowMorale { threshold: 30.0 },
             action: HeuristicAction::HealSelf,
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
@@ -316,24 +335,24 @@ mod tests {
     fn test_condition_low_ammo_true() {
         let mut snap = create_basic_snapshot();
         snap.me.ammo = 0;
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::LowAmmo { threshold: 0 },
             action: HeuristicAction::Reload,
         };
-        
+
         assert!(rule.check_condition(&snap));
     }
 
     #[test]
     fn test_condition_low_ammo_false() {
         let snap = create_basic_snapshot(); // ammo = 10
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::LowAmmo { threshold: 0 },
             action: HeuristicAction::Reload,
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
@@ -347,12 +366,12 @@ mod tests {
             cover: "none".to_string(),
             last_seen: 0.0,
         });
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::EnemyNearby { max_distance: 3.0 },
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         assert!(rule.check_condition(&snap));
     }
 
@@ -366,24 +385,24 @@ mod tests {
             cover: "none".to_string(),
             last_seen: 0.0,
         });
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::EnemyNearby { max_distance: 3.0 },
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
     #[test]
     fn test_condition_enemy_nearby_false_no_enemies() {
         let snap = create_basic_snapshot();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::EnemyNearby { max_distance: 3.0 },
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
@@ -397,24 +416,24 @@ mod tests {
             cover: "none".to_string(),
             last_seen: 0.0,
         });
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::EnemyVisible,
             action: HeuristicAction::TakeCover { distance: 2.0 },
         };
-        
+
         assert!(rule.check_condition(&snap));
     }
 
     #[test]
     fn test_condition_enemy_visible_false() {
         let snap = create_basic_snapshot();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::EnemyVisible,
             action: HeuristicAction::TakeCover { distance: 2.0 },
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
@@ -422,12 +441,14 @@ mod tests {
     fn test_condition_objective_contains_true() {
         let mut snap = create_basic_snapshot();
         snap.objective = Some("extract to helipad".to_string()); // lowercase to match keyword
-        
+
         let rule = HeuristicRule {
-            condition: HeuristicCondition::ObjectiveContains { keyword: "extract".to_string() },
+            condition: HeuristicCondition::ObjectiveContains {
+                keyword: "extract".to_string(),
+            },
             action: HeuristicAction::MoveToObjective,
         };
-        
+
         assert!(rule.check_condition(&snap));
     }
 
@@ -435,36 +456,40 @@ mod tests {
     fn test_condition_objective_contains_false_no_match() {
         let mut snap = create_basic_snapshot();
         snap.objective = Some("Defend position".to_string());
-        
+
         let rule = HeuristicRule {
-            condition: HeuristicCondition::ObjectiveContains { keyword: "extract".to_string() },
+            condition: HeuristicCondition::ObjectiveContains {
+                keyword: "extract".to_string(),
+            },
             action: HeuristicAction::MoveToObjective,
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
     #[test]
     fn test_condition_objective_contains_false_no_objective() {
         let snap = create_basic_snapshot();
-        
+
         let rule = HeuristicRule {
-            condition: HeuristicCondition::ObjectiveContains { keyword: "extract".to_string() },
+            condition: HeuristicCondition::ObjectiveContains {
+                keyword: "extract".to_string(),
+            },
             action: HeuristicAction::MoveToObjective,
         };
-        
+
         assert!(!rule.check_condition(&snap));
     }
 
     #[test]
     fn test_condition_always() {
         let snap = create_basic_snapshot();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::Scan { radius: 10.0 },
         };
-        
+
         assert!(rule.check_condition(&snap));
     }
 
@@ -476,27 +501,30 @@ mod tests {
     fn test_action_heal_self_with_tool() {
         let snap = create_basic_snapshot();
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::HealSelf,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
-        assert!(matches!(action.unwrap(), ActionStep::Heal { target_id: Some(0) }));
+        assert!(matches!(
+            action.unwrap(),
+            ActionStep::Heal { target_id: Some(0) }
+        ));
     }
 
     #[test]
     fn test_action_heal_self_no_tool() {
         let snap = create_basic_snapshot();
         let reg = create_empty_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::HealSelf,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -505,12 +533,12 @@ mod tests {
     fn test_action_reload_with_tool() {
         let snap = create_basic_snapshot();
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::Reload,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
         assert!(matches!(action.unwrap(), ActionStep::Reload));
@@ -520,12 +548,12 @@ mod tests {
     fn test_action_reload_no_tool() {
         let snap = create_basic_snapshot();
         let reg = create_empty_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::Reload,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -541,12 +569,12 @@ mod tests {
             last_seen: 0.0,
         });
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
         match action.unwrap() {
@@ -559,12 +587,12 @@ mod tests {
     fn test_action_attack_nearest_enemy_no_enemies() {
         let snap = create_basic_snapshot();
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -580,12 +608,12 @@ mod tests {
             last_seen: 0.0,
         });
         let reg = create_empty_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -602,18 +630,21 @@ mod tests {
             last_seen: 0.0,
         });
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::TakeCover { distance: 2.0 },
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
         match action.unwrap() {
             ActionStep::TakeCover { position } => {
                 let pos = position.unwrap();
-                assert!(pos.x > snap.me.pos.x, "Cover should be away from enemy (right)");
+                assert!(
+                    pos.x > snap.me.pos.x,
+                    "Cover should be away from enemy (right)"
+                );
             }
             _ => panic!("Expected TakeCover action"),
         }
@@ -631,18 +662,21 @@ mod tests {
             last_seen: 0.0,
         });
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::TakeCover { distance: 2.0 },
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
         match action.unwrap() {
             ActionStep::TakeCover { position } => {
                 let pos = position.unwrap();
-                assert!(pos.x < snap.me.pos.x, "Cover should be away from enemy (left)");
+                assert!(
+                    pos.x < snap.me.pos.x,
+                    "Cover should be away from enemy (left)"
+                );
             }
             _ => panic!("Expected TakeCover action"),
         }
@@ -652,12 +686,12 @@ mod tests {
     fn test_action_take_cover_no_enemies() {
         let snap = create_basic_snapshot();
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::TakeCover { distance: 2.0 },
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -670,12 +704,12 @@ mod tests {
             pos: IVec2 { x: 15, y: 15 },
         });
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::MoveToObjective,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
         match action.unwrap() {
@@ -691,12 +725,12 @@ mod tests {
     fn test_action_move_to_objective_no_poi() {
         let snap = create_basic_snapshot();
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::MoveToObjective,
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -705,12 +739,12 @@ mod tests {
     fn test_action_scan_with_tool() {
         let snap = create_basic_snapshot();
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::Scan { radius: 15.0 },
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_some());
         match action.unwrap() {
@@ -723,12 +757,12 @@ mod tests {
     fn test_action_scan_no_tool() {
         let snap = create_basic_snapshot();
         let reg = create_empty_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::Always,
             action: HeuristicAction::Scan { radius: 15.0 },
         };
-        
+
         let action = rule.create_action(&snap, &reg);
         assert!(action.is_none());
     }
@@ -742,12 +776,12 @@ mod tests {
         let mut snap = create_basic_snapshot();
         snap.me.morale = 20.0;
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::LowMorale { threshold: 30.0 },
             action: HeuristicAction::HealSelf,
         };
-        
+
         let result = rule.evaluate(&snap, &reg);
         assert!(result.is_some());
     }
@@ -756,12 +790,12 @@ mod tests {
     fn test_evaluate_returns_none_when_condition_false() {
         let snap = create_basic_snapshot(); // morale = 80.0
         let reg = create_full_registry();
-        
+
         let rule = HeuristicRule {
             condition: HeuristicCondition::LowMorale { threshold: 30.0 },
             action: HeuristicAction::HealSelf,
         };
-        
+
         let result = rule.evaluate(&snap, &reg);
         assert!(result.is_none());
     }
@@ -776,10 +810,12 @@ mod tests {
         let json = serde_json::to_string(&condition).unwrap();
         assert!(json.contains("LowMorale"));
         assert!(json.contains("25"));
-        
+
         let parsed: HeuristicCondition = serde_json::from_str(&json).unwrap();
         match parsed {
-            HeuristicCondition::LowMorale { threshold } => assert!((threshold - 25.0).abs() < 0.001),
+            HeuristicCondition::LowMorale { threshold } => {
+                assert!((threshold - 25.0).abs() < 0.001)
+            }
             _ => panic!("Wrong condition type"),
         }
     }
@@ -789,7 +825,7 @@ mod tests {
         let action = HeuristicAction::Scan { radius: 12.5 };
         let json = serde_json::to_string(&action).unwrap();
         assert!(json.contains("Scan"));
-        
+
         let parsed: HeuristicAction = serde_json::from_str(&json).unwrap();
         match parsed {
             HeuristicAction::Scan { radius } => assert!((radius - 12.5).abs() < 0.001),
@@ -803,10 +839,10 @@ mod tests {
             condition: HeuristicCondition::EnemyNearby { max_distance: 5.0 },
             action: HeuristicAction::AttackNearestEnemy,
         };
-        
+
         let json = serde_json::to_string(&rule).unwrap();
         let parsed: HeuristicRule = serde_json::from_str(&json).unwrap();
-        
+
         // Verify condition
         match &parsed.condition {
             HeuristicCondition::EnemyNearby { max_distance } => {
@@ -814,7 +850,7 @@ mod tests {
             }
             _ => panic!("Wrong condition type"),
         }
-        
+
         // Verify action
         assert!(matches!(parsed.action, HeuristicAction::AttackNearestEnemy));
     }

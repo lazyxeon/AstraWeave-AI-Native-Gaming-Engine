@@ -14,6 +14,13 @@
 //!
 //! Phase 8.8: Production-Ready Memory Validation
 
+#![allow(
+    clippy::absurd_extreme_comparisons,
+    clippy::neg_cmp_op_on_partial_ord,
+    unused_variables,
+    unused_comparisons
+)]
+
 use astraweave_memory::{
     ForgettingConfig, ForgettingCurve, ForgettingEngine, Memory, MemoryContent, MemoryMetadata,
     MemorySource, MemoryType, SpatialTemporalContext,

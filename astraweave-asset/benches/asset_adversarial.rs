@@ -195,9 +195,7 @@ fn bench_asset_loading(c: &mut Criterion) {
         bencher.iter(|| {
             let valid: Vec<_> = paths
                 .iter()
-                .filter(|p| {
-                    !p.contains("..") && !p.starts_with('/') && !p.contains(':')
-                })
+                .filter(|p| !p.contains("..") && !p.starts_with('/') && !p.contains(':'))
                 .collect();
             std_black_box(valid.len())
         });
@@ -295,7 +293,10 @@ fn bench_mesh_processing(c: &mut Criterion) {
 
                 bencher.iter(|| {
                     let valid = mesh.positions.len() == mesh.normals.len()
-                        && mesh.indices.iter().all(|&i| (i as usize) < mesh.vertex_count);
+                        && mesh
+                            .indices
+                            .iter()
+                            .all(|&i| (i as usize) < mesh.vertex_count);
                     std_black_box(valid)
                 });
             },
@@ -473,7 +474,11 @@ fn bench_hot_reload(c: &mut Criterion) {
 
         let current_times: HashMap<String, u64> = (0..1000)
             .map(|i| {
-                let time = if i % 10 == 0 { i as u64 * 1000 + 1 } else { i as u64 * 1000 };
+                let time = if i % 10 == 0 {
+                    i as u64 * 1000 + 1
+                } else {
+                    i as u64 * 1000
+                };
                 (format!("assets/file_{}.bin", i), time)
             })
             .collect();

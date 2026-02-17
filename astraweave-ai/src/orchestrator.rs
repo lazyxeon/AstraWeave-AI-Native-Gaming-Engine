@@ -1427,7 +1427,7 @@ mod tests {
 
     #[test]
     fn rule_orchestrator_default_impl() {
-        let rule1 = RuleOrchestrator::default();
+        let rule1 = RuleOrchestrator;
         let rule2 = RuleOrchestrator::new();
         // Both should produce same results
         let snap = snap_basic(0, 0, 5, 0, 0.0);
@@ -1453,7 +1453,7 @@ mod tests {
 
     #[test]
     fn utility_orchestrator_default_impl() {
-        let util1 = UtilityOrchestrator::default();
+        let util1 = UtilityOrchestrator;
         let util2 = UtilityOrchestrator::new();
         // Both should produce same results for same input
         let snap = snap_basic(0, 0, 5, 0, 0.0);
@@ -1482,7 +1482,7 @@ mod tests {
 
     #[test]
     fn goap_orchestrator_default_impl() {
-        let goap1 = GoapOrchestrator::default();
+        let goap1 = GoapOrchestrator;
         let goap2 = GoapOrchestrator::new();
         // Both should produce same results
         let snap = snap_basic(0, 0, 5, 0, 0.0);

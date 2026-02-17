@@ -5,6 +5,11 @@
 //! - Status effect processing
 //! - Combat formulas
 
+#![allow(
+    clippy::nonminimal_bool,
+    clippy::bool_assert_comparison
+)]
+
 use crate::{DamageType, Stats, StatusEffect};
 
 // ============================================================================
