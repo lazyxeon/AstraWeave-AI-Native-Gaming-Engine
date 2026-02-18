@@ -2443,4 +2443,210 @@ mod tests {
             pts[2].y
         );
     }
+
+    // ============================================================================
+    // R12: Targeted mutation-kill tests
+    // ============================================================================
+
+    #[test]
+    fn r12_bounce_restitution_exact_velocity() {
+        // Targets: L371 replace * with + and * with / in reflect * restitution
+        // reflect * restitution should scale velocity by restitution factor
+        let mut manager = ProjectileManager::new();
+        manager.gravity = Vec3::ZERO;
+
+        let config = ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::new(20.0, 0.0, 0.0),
+            gravity_scale: 0.0,
+            max_bounces: 3,
+            restitution: 0.5,
+            drag: 0.0,
+            ..Default::default()
+        };
+        let id = manager.spawn(config);
+
+        // Wall at X=5, normal = (-1, 0, 0)
+        let raycast =
+            |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+                if origin.x < 5.0 && dir.x > 0.0 {
+                    let dist = 5.0 - origin.x;
+                    if dist < max {
+                        return Some((
+                            Vec3::new(5.0, 0.0, 0.0),
+                            Vec3::new(-1.0, 0.0, 0.0),
+                            Some(1),
+                            dist,
+                        ));
+                    }
+                }
+                None
+            };
+
+        // After bounce: reflected velocity = v - 2*dot(v,n)*n = (20,0,0) - 2*(-20)*(-1,0,0) = (20-40, 0, 0) = (-20, 0, 0)
+        // Then scaled by restitution 0.5: (-10, 0, 0)
+        manager.update(1.0, raycast);
+
+        let proj = manager.get(id).unwrap();
+        // With * restitution: velocity.x should be -10.0
+        // With + restitution: velocity.x would be -20.0 + 0.5 = -19.5 (WRONG)
+        // With / restitution: velocity.x would be -20.0 / 0.5 = -40.0 (WRONG)
+        assert!(
+            (proj.velocity.x - (-10.0)).abs() < 0.5,
+            "Bounce velocity should be reflect*restitution = -10.0, got {}",
+            proj.velocity.x
+        );
+    }
+
+    #[test]
+    fn r12_bounce_reflection_formula_exact() {
+        // Targets: L369 replace * with / in velocity.dot(normal) * normal
+        // Reflection uses element-wise multiply by normal scalar components
+        // If * → /, result changes dramatically for non-unit-axis normals
+        let mut manager = ProjectileManager::new();
+        manager.gravity = Vec3::ZERO;
+
+        // 45-degree wall: normal = normalize(-1, 1, 0) = (-0.707, 0.707, 0)
+        let n = Vec3::new(-1.0, 1.0, 0.0).normalize();
+        let wall_x = 5.0;
+
+        let config = ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::new(20.0, 0.0, 0.0), // Moving right
+            gravity_scale: 0.0,
+            max_bounces: 3,
+            restitution: 1.0, // Perfect elastic to isolate reflection formula
+            drag: 0.0,
+            ..Default::default()
+        };
+        let id = manager.spawn(config);
+
+        let raycast = move |origin: Vec3, dir: Vec3, max: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> {
+            if origin.x < wall_x && dir.x > 0.0 {
+                let dist = wall_x - origin.x;
+                if dist < max {
+                    return Some((Vec3::new(wall_x, 0.0, 0.0), n, Some(1), dist));
+                }
+            }
+            None
+        };
+
+        manager.update(1.0, raycast);
+
+        let proj = manager.get(id).unwrap();
+        // v = (20, 0, 0), n = (-0.707, 0.707, 0)
+        // dot(v, n) = 20*(-0.707) = -14.14
+        // reflect = v - 2*dot*n = (20, 0, 0) - 2*(-14.14)*(-0.707, 0.707, 0)
+        //         = (20, 0, 0) - (20, -20, 0) = (0, 20, 0)
+        // With restitution=1.0: velocity = (0, 20, 0)
+        assert!(
+            proj.velocity.x.abs() < 1.0,
+            "After 45-deg bounce, x velocity should be ~0, got {}",
+            proj.velocity.x
+        );
+        assert!(
+            (proj.velocity.y - 20.0).abs() < 1.0,
+            "After 45-deg bounce, y velocity should be ~20, got {}",
+            proj.velocity.y
+        );
+    }
+
+    #[test]
+    fn r12_explosion_nonzero_center_direction() {
+        // Targets: L438 replace - with + in `body_pos - config.center`
+        // With non-zero center, the direction body-center matters
+        let manager = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::new(5.0, 0.0, 0.0), // Non-zero center
+            radius: 20.0,
+            force: 1000.0,
+            falloff: FalloffCurve::Constant,
+            upward_bias: 0.0,
+        };
+
+        // Body at (10, 0, 0) → should be pushed in +X (away from center at 5)
+        let bodies = vec![(1, Vec3::new(10.0, 0.0, 0.0))];
+        let results = manager.calculate_explosion(&config, bodies);
+
+        assert_eq!(results.len(), 1);
+        // Correct: to_body = (10,0,0) - (5,0,0) = (5,0,0) → push +X
+        // Mutated: to_body = (10,0,0) + (5,0,0) = (15,0,0) → still +X but different distance
+        // Actually with + the distance = 15, still < 20 radius, still pushes +X...
+        // Need a case where - vs + gives opposite directions!
+        // Body at (3, 0, 0), center at (5, 0, 0):
+        // Correct: to_body = 3-5 = (-2,0,0) → push in -X (away from center)
+        // Mutated: to_body = 3+5 = (8,0,0) → push in +X (WRONG direction!)
+        let bodies2 = vec![(2, Vec3::new(3.0, 0.0, 0.0))];
+        let results2 = manager.calculate_explosion(&config, bodies2);
+
+        assert_eq!(results2.len(), 1);
+        assert!(
+            results2[0].impulse.x < 0.0,
+            "Body at x=3 with center at x=5 should be pushed in -X: impulse.x={}",
+            results2[0].impulse.x
+        );
+    }
+
+    #[test]
+    fn r12_explosion_distance_with_nonzero_center() {
+        // Targets: L438 more precisely — check exact distance computation
+        let manager = ProjectileManager::new();
+        let config = ExplosionConfig {
+            center: Vec3::new(10.0, 0.0, 0.0),
+            radius: 20.0,
+            force: 1000.0,
+            falloff: FalloffCurve::Linear,
+            upward_bias: 0.0,
+        };
+
+        // Body at (15, 0, 0) → distance should be 5.0
+        let bodies = vec![(1, Vec3::new(15.0, 0.0, 0.0))];
+        let results = manager.calculate_explosion(&config, bodies);
+
+        assert_eq!(results.len(), 1);
+        assert!(
+            (results[0].distance - 5.0).abs() < 0.01,
+            "Distance from center(10,0,0) to body(15,0,0) should be 5.0, got {}",
+            results[0].distance
+        );
+        // Linear falloff at dist=5, radius=20: 1.0 - 5/20 = 0.75
+        assert!(
+            (results[0].falloff_multiplier - 0.75).abs() < 0.01,
+            "Falloff should be 0.75, got {}",
+            results[0].falloff_multiplier
+        );
+    }
+
+    #[test]
+    fn r12_projectile_drag_not_applied_at_zero_speed() {
+        // Targets: L332 boundary behavior and drag application correctness
+        // A stationary projectile with drag > 0 should not have velocity affected by drag
+        let mut manager = ProjectileManager::new();
+        manager.gravity = Vec3::ZERO;
+
+        let config = ProjectileConfig {
+            position: Vec3::ZERO,
+            velocity: Vec3::ZERO, // Stationary
+            gravity_scale: 0.0,
+            drag: 10.0, // Very high drag
+            ..Default::default()
+        };
+        let id = manager.spawn(config);
+
+        let raycast = |_: Vec3, _: Vec3, _: f32| -> Option<(Vec3, Vec3, Option<u64>, f32)> { None };
+
+        manager.update(1.0, raycast);
+
+        let proj = manager.get(id).unwrap();
+        // Velocity should remain zero - no NaN or weird values from drag calculation
+        assert!(
+            proj.velocity.length() < 0.001,
+            "Stationary projectile should stay still: vel={}",
+            proj.velocity
+        );
+        assert!(
+            !proj.velocity.x.is_nan() && !proj.velocity.y.is_nan(),
+            "No NaN from drag at zero velocity"
+        );
+    }
 }

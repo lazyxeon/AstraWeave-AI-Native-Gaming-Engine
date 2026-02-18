@@ -5078,4 +5078,278 @@ mod tests {
             v1, v4
         );
     }
+
+    // ============================================================================
+    // R11 — Targeted mutation tests for control_character and jump
+    // ============================================================================
+
+    #[test]
+    fn r11_jump_uses_multiply_not_divide() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        pw.create_ground_plane(Vec3::new(100.0, 0.01, 100.0), 0.5);
+        let ch = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+
+        pw.jump(ch, 2.0);
+        let ctrl = pw.char_map.get(&ch).unwrap();
+
+        // v = sqrt(2 * g * h) = sqrt(2 * 9.81 * 2.0) = sqrt(39.24) ≈ 6.26
+        let expected = (2.0 * 9.81 * 2.0_f32).sqrt();
+        assert!(
+            (ctrl.pending_jump_velocity - expected).abs() < 0.1,
+            "Jump velocity should be sqrt(2*g*h)={}: got={}",
+            expected, ctrl.pending_jump_velocity
+        );
+    }
+
+    #[test]
+    fn r11_control_character_gravity_exact_accumulation() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        pw.create_ground_plane(Vec3::new(100.0, 0.01, 100.0), 0.5);
+        // Place character high so it won't hit ground
+        let ch = pw.add_character(Vec3::new(0.0, 100.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+
+        // Move with no ground contact — gravity should accumulate
+        let dt = 1.0 / 60.0;
+        pw.control_character(ch, Vec3::ZERO, dt, false);
+
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        // vertical_velocity -= 9.81 * gravity_scale * dt = -9.81 * 1.0 * (1/60)
+        let expected = -9.81 * dt;
+        assert!(
+            (ctrl.vertical_velocity - expected).abs() < 0.1,
+            "Vertical velocity should be -9.81*dt={}: got={}",
+            expected, ctrl.vertical_velocity
+        );
+    }
+
+    #[test]
+    fn r11_control_character_climb_zeroes_gravity() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        pw.create_ground_plane(Vec3::new(100.0, 0.01, 100.0), 0.5);
+        let ch = pw.add_character(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.3, 0.9, 0.3));
+
+        // First, apply gravity
+        pw.control_character(ch, Vec3::ZERO, 0.1, false);
+        let v_after_gravity = pw.char_map.get(&ch).unwrap().vertical_velocity;
+        assert!(v_after_gravity < -0.5, "Should have negative velocity from gravity");
+
+        // Now climb — should zero vertical velocity
+        pw.control_character(ch, Vec3::ZERO, 0.1, true);
+        let v_after_climb = pw.char_map.get(&ch).unwrap().vertical_velocity;
+        assert!(
+            v_after_climb.abs() < 0.01,
+            "Climb should zero vertical velocity: got={}",
+            v_after_climb
+        );
+    }
+
+    #[test]
+    fn r11_control_character_coyote_invalidation() {
+        // After jumping, time_since_grounded = coyote_time_limit + 1.0
+        // Mutation: + with * → coyote_time_limit * 1.0 = 0.1 (still within coyote)
+        // We need to verify that after jumping, can_jump becomes false
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        pw.create_ground_plane(Vec3::new(100.0, 0.01, 100.0), 0.5);
+        // Character on ground
+        let ch = pw.add_character(Vec3::new(0.0, 0.1, 0.0), Vec3::new(0.3, 0.9, 0.3));
+
+        // Move to establish ground contact
+        for _ in 0..5 {
+            pw.control_character(ch, Vec3::ZERO, 1.0/60.0, false);
+            pw.step();
+        }
+
+        // Jump
+        pw.jump(ch, 1.0);
+        pw.control_character(ch, Vec3::ZERO, 1.0/60.0, false);
+
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        // After successful jump, time_since_grounded should be > coyote_time_limit
+        assert!(
+            ctrl.time_since_grounded > ctrl.coyote_time_limit,
+            "After jump, time_since_grounded={} should exceed coyote_time_limit={}",
+            ctrl.time_since_grounded, ctrl.coyote_time_limit
+        );
+    }
+
+    #[test]
+    fn r11_buoyancy_force_formula() {
+        // buoyancy_force = volume * fluid_density * 9.81
+        // Mutation: * with + or / would change the magnitude dramatically
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        pw.water_level = 10.0;
+        pw.fluid_density = 1000.0;
+
+        let id = pw.add_dynamic_box(Vec3::new(0.0, 5.0, 0.0), Vec3::splat(0.5), 10.0, Layers::DEFAULT);
+        pw.add_buoyancy(id, 2.0, 0.0); // volume=2, drag=0
+
+        // Before buoyancy
+        let vel_before = pw.get_velocity(id).unwrap();
+
+        // Apply buoyancy and step
+        pw.apply_buoyancy_forces();
+        pw.step();
+
+        // After buoyancy: force = 2.0 * 1000.0 * 9.81 = 19620 N upward
+        // This should counteract gravity significantly for a 10kg body
+        let vel_after = pw.get_velocity(id).unwrap();
+        assert!(
+            vel_after.y > vel_before.y,
+            "Buoyancy should push body upward: before_y={}, after_y={}",
+            vel_before.y, vel_after.y
+        );
+    }
+
+    #[test]
+    fn r11_radial_impulse_direction_outward() {
+        // to_body = body_pos - center → radial direction
+        // If - changed to +, direction would be wrong
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, 0.0, 0.0)); // no gravity
+        let id = pw.add_dynamic_box(Vec3::new(5.0, 0.0, 0.0), Vec3::splat(0.3), 1.0, Layers::DEFAULT);
+
+        let affected = pw.apply_radial_impulse(
+            Vec3::ZERO,    // center
+            10.0,          // radius
+            100.0,         // force
+            crate::projectile::FalloffCurve::Linear,
+            0.0,           // no upward bias
+        );
+        assert_eq!(affected, 1);
+
+        pw.step();
+        let vel = pw.get_velocity(id).unwrap();
+        // Body at (5,0,0), center at (0,0,0) → should be pushed in +X direction
+        assert!(
+            vel.x > 1.0,
+            "Radial impulse should push body away from center in +X: vx={}",
+            vel.x
+        );
+    }
+
+    // ============================================================================
+    // R12: Targeted mutation-kill tests
+    // ============================================================================
+
+    #[test]
+    fn r12_jump_velocity_with_gravity_scale_2() {
+        // Targets: lib.rs jump() L1233: `9.81 * ctrl.gravity_scale` — * vs /
+        // Also: L1234: `(2.0 * g * height).sqrt()` — * vs + or /
+        // With gravity_scale=2.0:
+        //   g = 9.81 * 2.0 = 19.62
+        //   jump_vel = sqrt(2 * 19.62 * 3.0) = sqrt(117.72) ≈ 10.85
+        // With mutation * → /:
+        //   g = 9.81 / 2.0 = 4.905
+        //   jump_vel = sqrt(2 * 4.905 * 3.0) = sqrt(29.43) ≈ 5.42 — DIFFERENT!
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 50.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+
+        // Override gravity_scale to 2.0
+        pw.char_map.get_mut(&char_id).unwrap().gravity_scale = 2.0;
+        // Force grounded so jump can trigger
+        pw.char_map.get_mut(&char_id).unwrap().time_since_grounded = 0.0;
+
+        // Request jump with height=3.0
+        pw.jump(char_id, 3.0);
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        // pending_jump_velocity = sqrt(2 * 9.81 * 2.0 * 3.0) = sqrt(117.72) ≈ 10.85
+        let expected = (2.0_f32 * 9.81 * 2.0 * 3.0).sqrt();
+        assert!(
+            (ctrl.pending_jump_velocity - expected).abs() < 0.1,
+            "Jump vel with gravity_scale=2 should be ~{:.2}, got {:.2}",
+            expected,
+            ctrl.pending_jump_velocity
+        );
+    }
+
+    #[test]
+    fn r12_jump_velocity_formula_2g_h() {
+        // Targets: L1234 `(2.0 * g * height).sqrt()` — specifically 2.0 * g and g * height
+        // With 2.0 * g mutated to 2.0 + g: sqrt((2.0+9.81)*3.0) = sqrt(35.43) ≈ 5.95
+        // Correct: sqrt(2.0 * 9.81 * 3.0) = sqrt(58.86) ≈ 7.67
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 50.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        // Keep gravity_scale=1.0 (default) but jump with specific height
+        pw.jump(char_id, 3.0);
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        let expected = (2.0_f32 * 9.81 * 3.0).sqrt(); // ≈ 7.67
+        assert!(
+            (ctrl.pending_jump_velocity - expected).abs() < 0.05,
+            "Jump vel should be sqrt(2*g*h) = {:.3}, got {:.3}",
+            expected,
+            ctrl.pending_jump_velocity
+        );
+
+        // Also test with different height to catch g*height mutations
+        let char_id2 = pw.add_character(Vec3::new(5.0, 50.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        pw.jump(char_id2, 5.0);
+
+        let ctrl2 = pw.char_map.get(&char_id2).unwrap();
+        let expected2 = (2.0_f32 * 9.81 * 5.0).sqrt(); // ≈ 9.90
+        assert!(
+            (ctrl2.pending_jump_velocity - expected2).abs() < 0.05,
+            "Jump vel for h=5 should be {:.3}, got {:.3}",
+            expected2,
+            ctrl2.pending_jump_velocity
+        );
+    }
+
+    #[test]
+    fn r12_radial_impulse_nonzero_center_direction() {
+        // Targets: apply_radial_impulse `body_pos - center` — - vs +
+        // With center=(10,0,0) and body at (15,0,0):
+        //   Correct: to_body = (5,0,0) → push +X
+        //   Mutated (+ instead of -): to_body = (25,0,0) → still +X but wrong distance
+        // Use body at (7,0,0), center at (10,0,0):
+        //   Correct: to_body = (-3,0,0) → push -X (away from center)
+        //   Mutated: to_body = (17,0,0) → push +X (WRONG!)
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, 0.0, 0.0)); // no gravity
+        let id = pw.add_dynamic_box(Vec3::new(7.0, 0.0, 0.0), Vec3::splat(0.3), 1.0, Layers::DEFAULT);
+
+        pw.step(); // Init
+
+        let affected = pw.apply_radial_impulse(
+            Vec3::new(10.0, 0.0, 0.0), // center at x=10
+            10.0,                        // radius
+            100.0,                       // force
+            crate::projectile::FalloffCurve::Linear,
+            0.0,
+        );
+        assert_eq!(affected, 1);
+
+        pw.step();
+        let vel = pw.get_velocity(id).unwrap();
+        // Body at x=7, center at x=10: body is LEFT of center → pushed LEFT (−X)
+        assert!(
+            vel.x < -0.5,
+            "Body at x=7 with center at x=10 should be pushed in -X: vx={}",
+            vel.x
+        );
+    }
+
+    #[test]
+    fn r12_control_character_gravity_accumulation_nonunit_scale() {
+        // Targets: lib.rs:1258 `ctrl.vertical_velocity -= 9.81 * ctrl.gravity_scale * dt`
+        // With gravity_scale=3.0 and dt=0.1:
+        //   Correct: vertical_velocity -= 9.81 * 3.0 * 0.1 = -2.943
+        //   With * → /: -= 9.81 / 3.0 * 0.1 = -0.327 (WRONG)
+        //   With * → +: -= (9.81 + 3.0) * 0.1 = -1.281 (WRONG)
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let char_id = pw.add_character(Vec3::new(0.0, 50.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+
+        pw.char_map.get_mut(&char_id).unwrap().gravity_scale = 3.0;
+
+        // One frame of freefall
+        pw.control_character(char_id, Vec3::ZERO, 0.1, false);
+
+        let ctrl = pw.char_map.get(&char_id).unwrap();
+        let expected_dv = -9.81 * 3.0 * 0.1; // = -2.943
+        assert!(
+            (ctrl.vertical_velocity - expected_dv).abs() < 0.05,
+            "gravity with scale=3: expected v={:.3}, got {:.3}",
+            expected_dv,
+            ctrl.vertical_velocity
+        );
+    }
 }

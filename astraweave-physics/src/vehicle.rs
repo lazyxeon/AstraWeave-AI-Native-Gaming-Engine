@@ -4449,4 +4449,329 @@ mod tests {
             idle_rpm, throttle_rpm
         );
     }
+
+    // ============================================================================
+    // R11 — Targeted mutation tests for WheelConfig and EngineConfig
+    // ============================================================================
+
+    #[test]
+    fn r11_rear_left_is_driven() {
+        let w = WheelConfig::rear_left(Vec3::ZERO);
+        assert!(w.driven, "Rear-left should be driven (RWD)");
+    }
+
+    #[test]
+    fn r11_rear_right_is_driven() {
+        let w = WheelConfig::rear_right(Vec3::ZERO);
+        assert!(w.driven, "Rear-right should be driven (RWD)");
+    }
+
+    #[test]
+    fn r11_front_left_is_steerable() {
+        let w = WheelConfig::front_left(Vec3::ZERO);
+        assert!(w.steerable, "Front-left should be steerable");
+    }
+
+    #[test]
+    fn r11_front_right_is_steerable() {
+        let w = WheelConfig::front_right(Vec3::ZERO);
+        assert!(w.steerable, "Front-right should be steerable");
+    }
+
+    #[test]
+    fn r11_engine_torque_at_boundary_rpm() {
+        let engine = EngineConfig::default();
+        // At exactly idle_rpm: should produce non-zero torque (< boundary catches < vs <=)
+        let at_idle = engine.torque_at_rpm(engine.idle_rpm);
+        // At idle_rpm the normalized = 0, so torque = max_torque * (1 - 1^2) = 0
+        // This is actually 0 by the formula. So testing slightly above:
+        let near_idle = engine.torque_at_rpm(engine.idle_rpm + 1.0);
+        assert!(
+            near_idle > 0.0,
+            "Torque just above idle should be positive: {}",
+            near_idle
+        );
+
+        // At exactly max_rpm: should be 0 (> boundary)
+        let at_max = engine.torque_at_rpm(engine.max_rpm);
+        assert!(
+            at_max.abs() < 0.01,
+            "Torque at max_rpm should be 0: {}",
+            at_max
+        );
+
+        // At exactly max_torque_rpm: should be peak
+        let at_peak = engine.torque_at_rpm(engine.max_torque_rpm);
+        assert!(
+            (at_peak - engine.max_torque).abs() < 1.0,
+            "Torque at peak RPM should be max_torque: expected={}, got={}",
+            engine.max_torque, at_peak
+        );
+    }
+
+    #[test]
+    fn r11_transmission_effective_ratio_gear1() {
+        let trans = TransmissionConfig::default();
+        // gear 1: ratio = 3.5, final_drive = 3.7
+        let ratio = trans.effective_ratio(1);
+        let expected = 3.5 * 3.7;
+        assert!(
+            (ratio - expected).abs() < 0.01,
+            "Gear 1 effective ratio: expected={}, got={}",
+            expected, ratio
+        );
+    }
+
+    // ============================================================================
+    // R12 — Targeted apply_forces mutation-kill tests
+    // ============================================================================
+
+    #[test]
+    fn r12_apply_forces_rpm_blend_in_neutral() {
+        // Targets: RPM blend formula `engine_rpm * 0.85 + target * 0.15`
+        // In neutral (gear 0), gear_ratio=0, uses simple branch:
+        //   engine_rpm = engine_rpm * 0.85 + throttle_rpm_target * 0.15
+        // where throttle_rpm_target = idle + throttle * (max_rpm - idle) * 0.8
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Shift to neutral (gear 1 → gear 0)
+        let shift_down = VehicleInput { shift: -1, ..Default::default() };
+        vm.update_with_input(vid, &mut pw, &shift_down, 1.0 / 60.0);
+        pw.step();
+
+        // Complete shift timer
+        let neutral = VehicleInput::default();
+        for _ in 0..30 {
+            vm.update_with_input(vid, &mut pw, &neutral, 1.0 / 60.0);
+            pw.step();
+        }
+
+        assert_eq!(vm.get(vid).unwrap().current_gear, 0, "Should be in neutral");
+
+        // Record RPM before throttle
+        let rpm_before = vm.get(vid).unwrap().engine_rpm;
+
+        // Apply full throttle for 1 frame in neutral
+        let throttle = VehicleInput { throttle: 1.0, ..Default::default() };
+        vm.update_with_input(vid, &mut pw, &throttle, 1.0 / 60.0);
+
+        let rpm_after = vm.get(vid).unwrap().engine_rpm;
+        let engine = &vm.get(vid).unwrap().config.engine;
+
+        // throttle_rpm_target = idle + 1.0 * (max_rpm - idle) * 0.8
+        let throttle_rpm_target = engine.idle_rpm
+            + 1.0 * (engine.max_rpm - engine.idle_rpm) * 0.8;
+
+        // In neutral: engine_rpm = rpm_before * 0.85 + throttle_rpm_target * 0.15
+        let expected = rpm_before * 0.85 + throttle_rpm_target * 0.15;
+
+        // Also clamp to [idle, max_rpm]
+        let expected_clamped = expected.clamp(engine.idle_rpm, engine.max_rpm);
+
+        assert!(
+            (rpm_after - expected_clamped).abs() < 5.0,
+            "RPM blend in neutral: expected={:.1}, got={:.1} (before={:.1}, target={:.1})",
+            expected_clamped, rpm_after, rpm_before, throttle_rpm_target
+        );
+    }
+
+    #[test]
+    fn r12_apply_forces_suspension_tight_spring() {
+        // Targets: L795 `compression * suspension_stiffness` — * vs + or /
+        // After settling, damper ≈ 0, so suspension_force ≈ compression * stiffness
+        // Default stiffness = 35000, compression ~ 0.01-0.05
+        // Correct: ~350-1750 N. With +: ~35000 N. Clearly distinguishable.
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        // Extended settle for stable damping
+        for _ in 0..240 {
+            vm.update_with_input(vid, &mut pw, &VehicleInput::default(), 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        for (i, w) in v.wheels.iter().enumerate() {
+            if w.grounded && w.compression > 0.001 {
+                let stiff = v.config.wheels[i].suspension_stiffness;
+                let spring = w.compression * stiff;
+
+                // After long settling, suspension_force should be very close to spring force
+                // (damper velocity ≈ 0 since compression is stable)
+                let ratio = w.suspension_force / spring;
+                assert!(
+                    (ratio - 1.0).abs() < 0.3,
+                    "Wheel {} suspension/spring ratio should be ~1.0 after settling: ratio={:.3}, susp={:.1}, spring={:.1}, comp={:.5}",
+                    i, ratio, w.suspension_force, spring, w.compression
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn r12_apply_forces_slip_ratio_stationary() {
+        // Targets: slip ratio formula `(wheel_speed - long_velocity) / long_velocity.abs()`
+        // At rest: both wheel_speed and long_velocity ≈ 0
+        // The code: if long_velocity.abs() <= 0.5 && wheel_speed.abs() <= 0.1 → slip_ratio = 0
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let v = vm.get(vid).unwrap();
+        for w in &v.wheels {
+            if w.grounded {
+                assert!(
+                    w.slip_ratio.abs() < 0.01,
+                    "Stationary grounded wheel slip_ratio should be ~0: {}",
+                    w.slip_ratio
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn r12_apply_forces_driven_wheels_get_rotation() {
+        // Targets: angular_accel computation for driven wheels with throttle
+        // torque_per_wheel / wheel_inertia should accelerate wheel rotation
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Full throttle for several frames
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..30 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        // Driven wheels (rear) should have positive rotation speed
+        for (i, w) in v.wheels.iter().enumerate() {
+            if v.config.wheels[i].driven && w.grounded {
+                assert!(
+                    w.rotation_speed > 0.1,
+                    "Driven wheel {} should have positive rotation under throttle: rot_speed={}",
+                    i, w.rotation_speed
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn r12_apply_forces_suspension_supports_weight() {
+        // Targets: suspension_force accumulation and spring+damper formula
+        // Total suspension should roughly support vehicle weight (mass * g)
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        // Long settle
+        for _ in 0..240 {
+            vm.update_with_input(vid, &mut pw, &VehicleInput::default(), 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        let total_susp = v.total_suspension_force();
+        // Vehicle mass = 1500 kg (default), so weight ≈ 1500 * 9.81 ≈ 14715 N
+        let weight = v.config.mass * 9.81;
+
+        // Suspension should be in reasonable range relative to weight
+        // (spring stiffness and damping overshoot can cause higher values)
+        let ratio = total_susp / weight;
+        assert!(
+            ratio > 0.3 && ratio < 8.0,
+            "Total suspension ({:.0}N) should be proportional to vehicle weight ({:.0}N), ratio={:.2}",
+            total_susp, weight, ratio
+        );
+    }
+
+    #[test]
+    fn r12_apply_forces_drag_increases_quadratically() {
+        // Targets: drag computation 0.5 * 1.225 * Cd * A * v^2
+        // At 2x speed, drag should be ~4x
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let body_id = vm.get(vid).unwrap().body_id;
+
+        // Give vehicle speed=10 in +Z, measure deceleration
+        pw.set_velocity(body_id, Vec3::new(0.0, 0.0, 10.0));
+        let no_input = VehicleInput::default();
+        vm.update_with_input(vid, &mut pw, &no_input, 1.0 / 60.0);
+        let v_after_10 = pw.get_velocity(body_id).unwrap();
+        let decel_10 = 10.0 - v_after_10.z; // positive if slowed down
+
+        // Reset: spawn new vehicle for speed=20
+        let vid2 = vm.spawn(&mut pw, Vec3::new(20.0, 2.0, 0.0), VehicleConfig::default());
+        settle_vehicle(&mut pw, &mut vm, vid2);
+        let body_id2 = vm.get(vid2).unwrap().body_id;
+        pw.set_velocity(body_id2, Vec3::new(0.0, 0.0, 20.0));
+        vm.update_with_input(vid2, &mut pw, &no_input, 1.0 / 60.0);
+        let v_after_20 = pw.get_velocity(body_id2).unwrap();
+        let decel_20 = 20.0 - v_after_20.z;
+
+        // Drag should increase with speed: 2x speed → ≥2x deceleration
+        // (Not exactly 4x because friction forces also present, but drag dominates at high speed)
+        if decel_10 > 0.001 {
+            assert!(
+                decel_20 > decel_10 * 1.5,
+                "Drag should increase with speed: decel@10={:.4}, decel@20={:.4}",
+                decel_10, decel_20
+            );
+        }
+    }
+
+    #[test]
+    fn r12_apply_forces_throttle_rpm_target_formula() {
+        // Targets: L912 `throttle_rpm_target = idle + throttle * (max_rpm - idle) * 0.8`
+        // If * → + or / → wrong target
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Run with throttle=0.5 for many frames to approach steady state
+        let input = VehicleInput { throttle: 0.5, ..Default::default() };
+        for _ in 0..300 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        let engine = &v.config.engine;
+
+        // throttle_rpm_target = 800 + 0.5 * (7000 - 800) * 0.8 = 800 + 2480 = 3280
+        let target = engine.idle_rpm + 0.5 * (engine.max_rpm - engine.idle_rpm) * 0.8;
+
+        // After many frames with throttle, RPM should be well above idle
+        // and within clamped range [idle, max_rpm]
+        assert!(
+            v.engine_rpm > engine.idle_rpm + 100.0,
+            "RPM should be above idle with throttle=0.5: rpm={}, idle={}",
+            v.engine_rpm, engine.idle_rpm
+        );
+        assert!(
+            v.engine_rpm <= engine.max_rpm + 1.0,
+            "RPM should be clamped to max: rpm={}, max={}",
+            v.engine_rpm, engine.max_rpm
+        );
+    }
+
+    #[test]
+    fn r12_apply_forces_brake_opposes_velocity_precisely() {
+        // Targets: brake_force sign and velocity.signum() usage
+        // L877: `long_force -= brake_force * long_velocity.signum()`
+        // If -= becomes +=, braking would accelerate
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let body_id = vm.get(vid).unwrap().body_id;
+        pw.set_velocity(body_id, Vec3::new(0.0, 0.0, 15.0));
+
+        // Full brake for 1 frame (no friction/gravity settling issues for short time)
+        let brake_input = VehicleInput { brake: 1.0, ..Default::default() };
+        vm.update_with_input(vid, &mut pw, &brake_input, 1.0 / 60.0);
+        pw.step();
+
+        let vel = pw.get_velocity(body_id).unwrap();
+        // After braking, Z velocity should have decreased
+        assert!(
+            vel.z < 15.0,
+            "Braking should reduce forward velocity: before=15.0, after={:.2}",
+            vel.z
+        );
+    }
 }

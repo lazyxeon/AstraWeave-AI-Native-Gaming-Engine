@@ -3196,4 +3196,172 @@ mod tests {
             above
         );
     }
+
+    // ============================================================================
+    // R11 — Targeted mutation tests for WindZone force calculations
+    // ============================================================================
+
+    #[test]
+    fn r11_wind_force_directional_exact_magnitude() {
+        // F = 0.5 * 1.225 * speed^2 * drag * area
+        // With direction=(1,0,0), strength=10, drag=1, area=1, no falloff
+        let zone = WindZone::new(
+            WindZoneId(100),
+            WindZoneConfig {
+                position: Vec3::ZERO,
+                shape: WindZoneShape::Sphere { radius: 100.0 },
+                wind_type: WindType::Directional,
+                direction: Vec3::X,
+                strength: 10.0,
+                falloff: 0.0, // no falloff
+                active: true,
+            },
+        );
+        let force = zone.wind_force_at(Vec3::new(1.0, 0.0, 0.0), 1.0, 1.0);
+        // speed = 10.0, F = 0.5 * 1.225 * 100 * 1 * 1 = 61.25
+        let expected = 0.5 * 1.225 * 100.0;
+        assert!(
+            (force.x - expected).abs() < 1.0,
+            "Force magnitude should be 0.5*1.225*speed^2: expected={}, got={}",
+            expected, force.x
+        );
+        assert!(
+            force.y.abs() < 0.1,
+            "Force should be along X only: y={}",
+            force.y
+        );
+    }
+
+    #[test]
+    fn r11_wind_force_vortex_tangent_direction() {
+        // The tangent direction should be (-z, 0, x) of the horizontal vector to center
+        let zone = WindZone::new(
+            WindZoneId(101),
+            WindZoneConfig {
+                position: Vec3::ZERO,
+                shape: WindZoneShape::Sphere { radius: 100.0 },
+                wind_type: WindType::Vortex {
+                    tangential_speed: 10.0,
+                    inward_pull: 0.0,
+                    updraft: 0.0,
+                },
+                direction: Vec3::X,
+                strength: 0.0,
+                falloff: 0.0,
+                active: true,
+            },
+        );
+        // Point at (5, 0, 0) — horizontal to_center = (0, 0, 0) - (5, 0, 0) = (-5, 0, 0)
+        // tangent = (-horizontal.z, 0, horizontal.x) = (0, 0, -5).normalize() = (0, 0, -1)
+        // Wind velocity = tangent * tangential_speed = (0, 0, -10)
+        let force = zone.wind_force_at(Vec3::new(5.0, 0.0, 0.0), 1.0, 1.0);
+
+        // Force should be in -Z direction
+        assert!(
+            force.z < -1.0,
+            "Vortex tangent force should be in -Z for point on +X axis: z={}",
+            force.z
+        );
+        assert!(
+            force.x.abs() < force.z.abs() * 0.5,
+            "Force should be primarily tangential, not radial: fx={}, fz={}",
+            force.x, force.z
+        );
+    }
+
+    #[test]
+    fn r11_wind_force_vortex_inward_pull() {
+        let zone = WindZone::new(
+            WindZoneId(102),
+            WindZoneConfig {
+                position: Vec3::ZERO,
+                shape: WindZoneShape::Sphere { radius: 100.0 },
+                wind_type: WindType::Vortex {
+                    tangential_speed: 0.0,
+                    inward_pull: 10.0,
+                    updraft: 0.0,
+                },
+                direction: Vec3::X,
+                strength: 0.0,
+                falloff: 0.0,
+                active: true,
+            },
+        );
+        // Point at (5, 0, 0) — inward pull should point toward center (-X)
+        let force = zone.wind_force_at(Vec3::new(5.0, 0.0, 0.0), 1.0, 1.0);
+
+        assert!(
+            force.x < -1.0,
+            "Inward pull should create -X force for point at +X: fx={}",
+            force.x
+        );
+    }
+
+    #[test]
+    fn r11_calculate_falloff_sphere_subtraction() {
+        // falloff = (1 - normalized_dist * falloff_param).max(0)
+        // If - changed to +, result would be > 1 (wrong)
+        let zone = WindZone::new(
+            WindZoneId(103),
+            WindZoneConfig {
+                position: Vec3::ZERO,
+                shape: WindZoneShape::Sphere { radius: 10.0 },
+                wind_type: WindType::Directional,
+                direction: Vec3::X,
+                strength: 10.0,
+                falloff: 1.0, // full falloff
+                active: true,
+            },
+        );
+        // At center: normalized_dist=0, factor=1.0
+        let center_force = zone.wind_force_at(Vec3::ZERO, 1.0, 1.0);
+
+        // At radius/2: normalized_dist=0.5, factor=(1-0.5*1)=0.5
+        let mid_force = zone.wind_force_at(Vec3::new(5.0, 0.0, 0.0), 1.0, 1.0);
+
+        // Mid-point force should be less than center (falloff reduces it)
+        assert!(
+            mid_force.length() < center_force.length(),
+            "Force should decrease with falloff: center={}, mid={}",
+            center_force.length(), mid_force.length()
+        );
+
+        // Force at edge should be near zero  
+        let edge_force = zone.wind_force_at(Vec3::new(9.9, 0.0, 0.0), 1.0, 1.0);
+        assert!(
+            edge_force.length() < center_force.length() * 0.2,
+            "Force at edge should be very small: edge={}, center={}",
+            edge_force.length(), center_force.length()
+        );
+    }
+
+    #[test]
+    fn r11_wind_update_frequency_scales_phase() {
+        // update: noise_phase += dt * frequency
+        // If * changed to /, higher frequency would slow phase advancement
+        let mut zone = WindZone::new(
+            WindZoneId(104),
+            WindZoneConfig {
+                position: Vec3::ZERO,
+                shape: WindZoneShape::Global,
+                wind_type: WindType::Turbulent {
+                    intensity: 1.0,
+                    frequency: 5.0,
+                },
+                direction: Vec3::X,
+                strength: 10.0,
+                falloff: 0.0,
+                active: true,
+            },
+        );
+        zone.update(1.0);
+        let phase1 = zone.noise_phase;
+
+        // Phase should advance by dt * frequency = 1.0 * 5.0 = 5.0
+        assert!(
+            (phase1 - 5.0).abs() < 0.1,
+            "Phase should be dt*frequency=5.0: got={}",
+            phase1
+        );
+    }
 }
