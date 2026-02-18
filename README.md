@@ -7,6 +7,9 @@
 <div align="center">
   
 [![Kani Formal Verification](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/kani.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/kani.yml) [![OpenSSF Scorecard](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/scorecard.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/scorecard.yml) [![Miri UB Detection](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/miri.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/miri.yml) [![Security Audit](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/security-audit.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/security-audit.yml) [![Mutation Testing](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/mutation-testing.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/mutation-testing.yml) [![Sanitizers](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/sanitizers.yml) [![CodeQL Analysis](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/codeql-analysis.yml)
+
+</div>
+
   <p align="center">
   <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/stargazers"><img src="https://img.shields.io/github/stars/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge&logo=github" alt="GitHub stars" /></a>
   <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE"><img src="https://img.shields.io/github/license/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge" alt="License" /></a>
@@ -113,35 +116,53 @@ flowchart TB
 1. Pre-Simulation → 2. Perception → 3. Simulation → 4. AI Planning → 5. Physics → 6. Post-Simulation → 7. Presentation
 
 ---
-
+<div align="center">
+  
 ## ✨ Key Features
 
 ### 🧠 AI & Agents
--   **Multi-Modal Intelligence**: 6 validated AI modes including LLM (Hermes 2 Pro), GOAP, Behavior Trees, and Hybrid ensembles.
--   **Massive Scale**: Orchestrates 12,700+ agents @ 60 FPS.
--   **LLM Integration**: Streaming API, batch executor, and response caching.
--   **Dynamic Terrain**: ✅ **Production** AI-orchestrated terrain generation with LLM integration.
--   **Scripting**: **Active/Alpha** Rhai-based scripting system for behavior logic (`astraweave-scripting`).
--   **Generative AI**: **Experimental** Asset generation pipeline (`astraweave-ai-gen`).
+  **Multi-Modal Intelligence**: 6 validated AI modes including LLM (Hermes 2 Pro), GOAP, Behavior Trees, and Hybrid ensembles.
+  
+  **Massive Scale**: Orchestrates 12,700+ agents @ 60 FPS.
+  
+  **LLM Integration**: Streaming API, batch executor, and response caching.
+  
+  **Dynamic Terrain**: ✅ **Production** AI-orchestrated terrain generation with LLM integration.
+  
+  **Scripting**: **Active/Alpha** Rhai-based scripting system for behavior logic (`astraweave-scripting`).
+  
+  **Generative AI**: **Experimental** Asset generation pipeline (`astraweave-ai-gen`).
 
 ### ⚙️ Core Engine
--   **Deterministic ECS**: 100% bit-identical replay validation, **Miri-validated memory safety**.
--   **Memory Safety**: All unsafe code validated with Miri (977 tests, 0 UB).
--   **Performance**: Fixed 60Hz simulation, SIMD acceleration (glam), cache-friendly archetype storage.
--   **Networking**: Client-server architecture with delta encoding and state synchronization.
--   **Persistence**: ECS world save/load with version migration.
+  **Deterministic ECS**: 100% bit-identical replay validation, **Miri-validated memory safety**.
+  
+  **Memory Safety**: All unsafe code validated with Miri (977 tests, 0 UB).
+  
+  **Performance**: Fixed 60Hz simulation, SIMD acceleration (glam), cache-friendly archetype storage.
+  
+  **Networking**: Client-server architecture with delta encoding and state synchronization.
+  
+  **Persistence**: ECS world save/load with version migration.
 
 ### 🎨 Rendering (wgpu)
--   **AAA Pipeline**: Cook-Torrance PBR, IBL, and clustered forward lighting (100k+ lights).
--   **Advanced Effects**: VXGI, Volumetric Fog, SSAO, SSR, Bloom, DOF, Motion Blur.
--   **Optimization**: Nanite-inspired virtualized geometry, GPU occlusion culling.
--   **Materials**: Advanced shaders (Clearcoat, SSS, Anisotropy).
+ **AAA Pipeline**: Cook-Torrance PBR, IBL, and clustered forward lighting (100k+ lights).
+ 
+ **Advanced Effects**: VXGI, Volumetric Fog, SSAO, SSR, Bloom, DOF, Motion Blur.
+ 
+ **Optimization**: Nanite-inspired virtualized geometry, GPU occlusion culling.
+ 
+ **Materials**: Advanced shaders (Clearcoat, SSS, Anisotropy).
 
 ### 🍎 Physics & Simulation
--   **Rapier3D Integration**: Rigid bodies, character controllers, and spatial queries.
--   **Navigation**: Navmesh generation (Delaunay) + A* pathfinding (142k queries/sec).
--   **Terrain**: Voxel-based terrain with AI-orchestrated dynamic modification.
--   **Audio**: Spatial audio with occlusion and dialogue runtime.
+ **Rapier3D Integration**: Rigid bodies, character controllers, and spatial queries.
+ 
+ **Navigation**: Navmesh generation (Delaunay) + A* pathfinding (142k queries/sec).
+ 
+ **Terrain**: Voxel-based terrain with AI-orchestrated dynamic modification.
+ 
+ **Audio**: Spatial audio with occlusion and dialogue runtime.
+
+</div>
 
 ---
 
