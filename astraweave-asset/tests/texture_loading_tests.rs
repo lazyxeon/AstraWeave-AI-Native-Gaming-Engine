@@ -419,6 +419,7 @@ fn test_texture_path_resolution() {
 
     if found == 0 {
         eprintln!("⚠ No texture files found in materials directory (Git LFS objects may not be pulled) — skipping assertion");
+        return;
     }
 }
 

@@ -87,7 +87,9 @@ pub(crate) mod material_loader_impl {
                 if meta.color_space != ColorSpace::Srgb {
                     log::warn!(
                         "[materials] WARN {}/{} albedo has {:?} color-space, expected Srgb",
-                        biome_name, material_key, meta.color_space
+                        biome_name,
+                        material_key,
+                        meta.color_space
                     );
                 }
             }
@@ -95,7 +97,10 @@ pub(crate) mod material_loader_impl {
                 if meta.color_space != ColorSpace::Linear {
                     log::warn!(
                         "[materials] WARN {}/{} {} has {:?} color-space, expected Linear",
-                        biome_name, material_key, texture_type, meta.color_space
+                        biome_name,
+                        material_key,
+                        texture_type,
+                        meta.color_space
                     );
                 }
             }
@@ -320,7 +325,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         // In ktx2 0.4+, check supercompression_scheme instead of data_format_descriptors
         let has_basis_data = reader.header().supercompression_scheme.is_some();
 
-        log::debug!("[ktx2] Loading texture: {} ({}x{}, basis={:?})",
+        log::debug!(
+            "[ktx2] Loading texture: {} ({}x{}, basis={:?})",
             path.display(),
             width,
             height,
@@ -373,8 +379,12 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 || format_desc.contains("BC3");
             let is_bc1 = format_desc.contains("131") || format_desc.contains("BC1");
 
-            log::debug!("[ktx2] Decoding BC format: BC7={}, BC5={}, BC3={}, BC1={}",
-                is_bc7, is_bc5, is_bc3, is_bc1
+            log::debug!(
+                "[ktx2] Decoding BC format: BC7={}, BC5={}, BC3={}, BC1={}",
+                is_bc7,
+                is_bc5,
+                is_bc3,
+                is_bc1
             );
 
             if is_bc7 {
@@ -737,7 +747,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     } else {
                         log::info!(
                             "[materials] WARN no metadata for {}/{} albedo → assuming sRGB",
-                            biome_name, key
+                            biome_name,
+                            key
                         );
                     }
 
@@ -780,7 +791,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     // 1x1 policy mentioned → we log and keep the neutral (already written full-res neutral)
                     log::warn!(
                         "[materials] WARN albedo not provided for {}/{} → substituting 1×1 neutral",
-                        biome_name, key
+                        biome_name,
+                        key
                     );
                     stats.albedo_substituted += 1;
                 }
@@ -795,7 +807,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     } else {
                         log::info!(
                             "[materials] WARN no metadata for {}/{} normal → assuming Linear RG",
-                            biome_name, key
+                            biome_name,
+                            key
                         );
                     }
 
@@ -843,7 +856,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 } else {
                     log::warn!(
                         "[materials] WARN normal not provided for {}/{} → substituting neutral",
-                        biome_name, key
+                        biome_name,
+                        key
                     );
                     stats.normal_substituted += 1;
                 }
@@ -858,7 +872,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     } else {
                         log::info!(
                             "[materials] WARN no metadata for {}/{} mra → assuming Linear RGBA",
-                            biome_name, key
+                            biome_name,
+                            key
                         );
                     }
 
@@ -892,7 +907,9 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                         Err(e) => {
                             log::warn!(
                                 "[materials] WARN missing/bad MRA for {}/{}: {}",
-                                biome_name, key, e
+                                biome_name,
+                                key,
+                                e
                             );
                             // Try packing from separate channels
                             if let (Some(m), Some(r), Some(a)) =
@@ -1004,7 +1021,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                         _ => {
                             log::warn!(
                                 "[materials] WARN cannot pack MRA for {}/{} → substituting neutral",
-                                biome_name, key
+                                biome_name,
+                                key
                             );
                             stats.mra_substituted += 1;
                         }
@@ -1012,7 +1030,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 } else {
                     log::warn!(
                         "[materials] WARN MRA not provided for {}/{} → substituting neutral",
-                        biome_name, key
+                        biome_name,
+                        key
                     );
                     stats.mra_substituted += 1;
                 }

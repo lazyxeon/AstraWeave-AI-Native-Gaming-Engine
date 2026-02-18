@@ -258,7 +258,10 @@ mod tests {
         rm.load_asset("tex_a").unwrap();
         let mem_after_first = rm.current_memory_mb;
         rm.load_asset("tex_a").unwrap(); // duplicate
-        assert_eq!(rm.current_memory_mb, mem_after_first, "duplicate load should not increase memory");
+        assert_eq!(
+            rm.current_memory_mb, mem_after_first,
+            "duplicate load should not increase memory"
+        );
     }
 
     #[test]
@@ -287,7 +290,10 @@ mod tests {
         rm.touch_asset("a"); // move "a" to back
         rm.evict_lru().unwrap();
         // Now "b" should be evicted (it's the LRU)
-        assert!(rm.loaded_assets.contains_key("a"), "touched 'a' should survive");
+        assert!(
+            rm.loaded_assets.contains_key("a"),
+            "touched 'a' should survive"
+        );
         assert!(!rm.loaded_assets.contains_key("b"), "'b' should be evicted");
     }
 
@@ -301,7 +307,10 @@ mod tests {
         assert!(rm.loaded_assets.contains_key("big"));
         rm.load_asset("new").unwrap();
         // big should have been evicted to make room
-        assert!(!rm.loaded_assets.contains_key("big"), "big should be evicted");
+        assert!(
+            !rm.loaded_assets.contains_key("big"),
+            "big should be evicted"
+        );
         assert!(rm.loaded_assets.contains_key("new"));
     }
 

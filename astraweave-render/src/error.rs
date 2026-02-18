@@ -159,7 +159,10 @@ mod tests {
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing");
         let e: RenderError = io_err.into();
         let msg = format!("{e}");
-        assert!(msg.contains("I/O error"), "should display I/O prefix, got: {msg}");
+        assert!(
+            msg.contains("I/O error"),
+            "should display I/O prefix, got: {msg}"
+        );
         assert!(msg.contains("missing"), "should contain original message");
     }
 

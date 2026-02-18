@@ -713,7 +713,10 @@ mod tests {
         assert_eq!(a, b);
         assert_ne!(a, c);
         assert!(a < c, "same mesh_id, lower material_id should be less");
-        assert!(c < d, "lower mesh_id should be less regardless of material_id");
+        assert!(
+            c < d,
+            "lower mesh_id should be less regardless of material_id"
+        );
     }
 
     #[test]
@@ -789,7 +792,11 @@ mod tests {
             }
         };
         let get_mesh = |bid: BatchId| {
-            if bid.mesh_id == 0 { (24u32, 0u32) } else { (36, 24) }
+            if bid.mesh_id == 0 {
+                (24u32, 0u32)
+            } else {
+                (36, 24)
+            }
         };
         let batches = batch_visible_instances(&visible, get_batch, get_mesh);
         assert_eq!(batches.len(), 2, "should produce 2 distinct batches");
@@ -810,11 +817,7 @@ mod tests {
 
     #[test]
     fn batch_visible_instances_empty_input() {
-        let batches = batch_visible_instances(
-            &[],
-            |_| BatchId::new(0, 0),
-            |_| (36, 0),
-        );
+        let batches = batch_visible_instances(&[], |_| BatchId::new(0, 0), |_| (36, 0));
         assert!(batches.is_empty());
     }
 
@@ -837,7 +840,11 @@ mod tests {
             InstanceAABB::new(Vec3::new(100.0, 0.0, -50.0), Vec3::splat(1.0), 42),
         ];
         let visible = cpu_frustum_cull(&instances, &frustum);
-        assert_eq!(visible, vec![99], "should return the actual instance_index field value");
+        assert_eq!(
+            visible,
+            vec![99],
+            "should return the actual instance_index field value"
+        );
     }
 
     #[test]

@@ -436,7 +436,8 @@ impl MaterialManager {
             if l.tiling[0] <= 0.0 || l.tiling[1] <= 0.0 {
                 log::warn!(
                     "[materials] Warning: Layer '{}' has invalid tiling {:?}, using default",
-                    l.key, l.tiling
+                    l.key,
+                    l.tiling
                 );
             }
 
@@ -582,7 +583,8 @@ pub fn validate_array_layout(layout: &ArrayLayout) -> Result<()> {
         if max_index >= layout.count {
             log::warn!(
                 "[materials] Warning: Max index {} >= count {}, possible gap",
-                max_index, layout.count
+                max_index,
+                layout.count
             );
         }
 

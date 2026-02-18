@@ -367,9 +367,15 @@ mod tests {
     #[test]
     fn render_graph_add_node_increases_count() {
         let mut g = RenderGraph::new();
-        g.add_node(TestNode { name: "a", log: vec![] });
+        g.add_node(TestNode {
+            name: "a",
+            log: vec![],
+        });
         assert_eq!(g.nodes.len(), 1);
-        g.add_node(TestNode { name: "b", log: vec![] });
+        g.add_node(TestNode {
+            name: "b",
+            log: vec![],
+        });
         assert_eq!(g.nodes.len(), 2);
     }
 
@@ -416,14 +422,19 @@ mod tests {
             power_preference: wgpu::PowerPreference::LowPower,
             compatible_surface: None,
             force_fallback_adapter: false,
-        })).expect("adapter");
-        let (device, _queue) = pollster::block_on(
-            adapter.request_device(&wgpu::DeviceDescriptor::default())
-        ).expect("device");
+        }))
+        .expect("adapter");
+        let (device, _queue) =
+            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default()))
+                .expect("device");
 
         let tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("primary"),
-            size: wgpu::Extent3d { width: 64, height: 64, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 64,
+                height: 64,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,

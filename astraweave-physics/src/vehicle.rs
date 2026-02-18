@@ -4258,4 +4258,195 @@ mod tests {
             speed_lo, speed_hi
         );
     }
+
+    // ===== ROUND 10: apply_forces arithmetic, suspension, wheel rotation =====
+
+    #[test]
+    fn r10_apply_forces_suspension_spring_damper() {
+        // Verify suspension force = spring + damper = compression * stiffness + vel * damping
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let input = VehicleInput::default(); // no throttle
+        vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+
+        let v = vm.get(vid).unwrap();
+        // At rest, grounded wheels should have positive suspension force
+        for (i, ws) in v.wheels.iter().enumerate() {
+            if ws.grounded {
+                assert!(
+                    ws.suspension_force > 0.0,
+                    "Wheel {} suspension force should be positive at rest: {}",
+                    i, ws.suspension_force
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn r10_apply_forces_wheel_rotation_under_throttle() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let v_before = vm.get(vid).unwrap().clone();
+        let driven_before: Vec<f32> = v_before
+            .wheels
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| v_before.config.wheels[*i].driven)
+            .map(|(_, w)| w.rotation_speed)
+            .collect();
+
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..30 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v_after = vm.get(vid).unwrap();
+        let driven_after: Vec<f32> = v_after
+            .wheels
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| v_after.config.wheels[*i].driven)
+            .map(|(_, w)| w.rotation_speed)
+            .collect();
+
+        // Driven wheels should spin faster under throttle
+        for (before, after) in driven_before.iter().zip(driven_after.iter()) {
+            assert!(
+                after.abs() > before.abs() + 0.1,
+                "Driven wheel should spin faster: before={}, after={}",
+                before, after
+            );
+        }
+    }
+
+    #[test]
+    fn r10_apply_forces_brake_reduces_speed() {
+        // Verify that brake input causes wheel forces to include braking component
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Accelerate to get wheels spinning
+        let accel = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..60 {
+            vm.update_with_input(vid, &mut pw, &accel, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let speed_accel = vm.get(vid).unwrap().speed;
+        assert!(speed_accel > 1.0, "Should have some speed: {}", speed_accel);
+
+        // Check that wheel forces exist after braking input
+        let brake_input = VehicleInput { brake: 1.0, ..Default::default() };
+        vm.update_with_input(vid, &mut pw, &brake_input, 1.0 / 60.0);
+
+        let v = vm.get(vid).unwrap();
+        let has_brake_force = v.wheels.iter().any(|w| w.grounded && w.force.length() > 0.01);
+        assert!(
+            has_brake_force,
+            "Brake should produce wheel forces"
+        );
+    }
+
+    #[test]
+    fn r10_apply_forces_handbrake_rear_wheels() {
+        // Compare coasting vs handbrake: handbrake should result in lower speed
+        let (mut pw_coast, mut vm_coast, vid_coast) = spawn_test_vehicle();
+        let (mut pw_hb, mut vm_hb, vid_hb) = spawn_test_vehicle();
+        settle_vehicle(&mut pw_coast, &mut vm_coast, vid_coast);
+        settle_vehicle(&mut pw_hb, &mut vm_hb, vid_hb);
+
+        // Accelerate both
+        let accel = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..90 {
+            vm_coast.update_with_input(vid_coast, &mut pw_coast, &accel, 1.0 / 60.0);
+            pw_coast.step();
+            vm_hb.update_with_input(vid_hb, &mut pw_hb, &accel, 1.0 / 60.0);
+            pw_hb.step();
+        }
+
+        // Coast vs handbrake
+        let coast_input = VehicleInput::default();
+        let hb_input = VehicleInput { handbrake: 1.0, ..Default::default() };
+        for _ in 0..90 {
+            vm_coast.update_with_input(vid_coast, &mut pw_coast, &coast_input, 1.0 / 60.0);
+            pw_coast.step();
+            vm_hb.update_with_input(vid_hb, &mut pw_hb, &hb_input, 1.0 / 60.0);
+            pw_hb.step();
+        }
+
+        let speed_coast = vm_coast.get(vid_coast).unwrap().speed;
+        let speed_hb = vm_hb.get(vid_hb).unwrap().speed;
+        assert!(
+            speed_hb < speed_coast,
+            "Handbrake should slow more than coasting: hb={}, coast={}",
+            speed_hb, speed_coast
+        );
+    }
+
+    #[test]
+    fn r10_update_vehicle_orientation_from_physics() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // After settling, vehicle should have reasonable forward vector
+        let v = vm.get(vid).unwrap();
+        // Forward should be roughly unit length
+        assert!(
+            v.forward.length() > 0.9 && v.forward.length() < 1.1,
+            "Forward should be unit: {:?}",
+            v.forward
+        );
+        // Up should point mostly upward
+        assert!(
+            v.up.y > 0.5,
+            "Up should point upward: {:?}",
+            v.up
+        );
+    }
+
+    #[test]
+    fn r10_apply_forces_slip_ratio_computed() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        // Accelerate to get some speed + wheel spin
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..60 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+
+        let v = vm.get(vid).unwrap();
+        // At least some wheels should have non-zero slip ratio
+        let has_slip = v.wheels.iter().any(|w| w.slip_ratio.abs() > 0.001);
+        assert!(
+            has_slip,
+            "Driven wheels should have some slip ratio under throttle"
+        );
+    }
+
+    #[test]
+    fn r10_apply_forces_engine_rpm_responds_to_throttle() {
+        let (mut pw, mut vm, vid) = spawn_test_vehicle();
+        settle_vehicle(&mut pw, &mut vm, vid);
+
+        let idle_rpm = vm.get(vid).unwrap().engine_rpm;
+
+        // Apply throttle
+        let input = VehicleInput { throttle: 1.0, ..Default::default() };
+        for _ in 0..60 {
+            vm.update_with_input(vid, &mut pw, &input, 1.0 / 60.0);
+            pw.step();
+        }
+        let throttle_rpm = vm.get(vid).unwrap().engine_rpm;
+
+        assert!(
+            throttle_rpm > idle_rpm + 500.0,
+            "RPM should increase with throttle: idle={}, throttle={}",
+            idle_rpm, throttle_rpm
+        );
+    }
 }

@@ -16,7 +16,7 @@ fn test_ibl_manager_creation() {
             .request_adapter(&wgpu::RequestAdapterOptions::default())
             .await
             .expect("no adapter");
-        let (device, queue) = adapter
+        let (device, _queue) = adapter
             .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");

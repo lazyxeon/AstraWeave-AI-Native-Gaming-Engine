@@ -77,7 +77,8 @@ mod tests {
         let n = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
         let pid = std::process::id();
         let dir = std::env::temp_dir();
-        format!("{}\\aw_cr_{}_{}_{}.json", dir.display(), pid, n, label)
+        let file_name = format!("aw_cr_{}_{}_{}.json", pid, n, label);
+        dir.join(file_name).to_string_lossy().into_owned()
     }
 
     #[test]

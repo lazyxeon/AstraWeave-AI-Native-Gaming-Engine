@@ -515,9 +515,7 @@ mod tests {
 
     #[test]
     fn joint_palette_stores_translation() {
-        let matrices = vec![
-            Mat4::from_translation(glam::Vec3::new(3.0, 4.0, 5.0)),
-        ];
+        let matrices = vec![Mat4::from_translation(glam::Vec3::new(3.0, 4.0, 5.0))];
         let palette = JointPalette::from_matrices(&matrices);
         assert_eq!(palette.joint_count, 1);
         // Mat4 column-major: col 3 is translation
@@ -528,9 +526,15 @@ mod tests {
 
     #[test]
     fn skinning_shader_constant_is_nonempty() {
-        assert!(!SKINNING_GPU_SHADER.is_empty());
-        assert!(SKINNING_GPU_SHADER.contains("apply_skinning"), "must define apply_skinning fn");
-        assert!(SKINNING_GPU_SHADER.contains("joint_palette"), "must reference joint_palette");
+        // Implicitly validates non-empty via contains() checks below
+        assert!(
+            SKINNING_GPU_SHADER.contains("apply_skinning"),
+            "must define apply_skinning fn"
+        );
+        assert!(
+            SKINNING_GPU_SHADER.contains("joint_palette"),
+            "must reference joint_palette"
+        );
     }
 
     #[test]
@@ -584,7 +588,7 @@ mod gpu_tests {
     #[tokio::test]
     async fn test_pipeline_creation() {
         let (device, queue) = create_test_device().await;
-        let mut manager = JointPaletteManager::new(&device, &queue);
+        let manager = JointPaletteManager::new(&device, &queue);
 
         // Create dummy bind group layouts for testing
         let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

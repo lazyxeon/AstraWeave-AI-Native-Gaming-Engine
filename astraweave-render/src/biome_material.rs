@@ -104,11 +104,10 @@ impl BiomeMaterialSystem {
                 .context("Failed to load HDRI catalog")?;
             self.hdri_catalog = Some(catalog);
         }
-        Ok(self
-            .hdri_catalog
+        self.hdri_catalog
             .as_ref()
             // INVARIANT: hdri_catalog set to Some in the block above
-            .ok_or_else(|| anyhow::anyhow!("hdri_catalog failed to initialize"))?)
+            .ok_or_else(|| anyhow::anyhow!("hdri_catalog failed to initialize"))
     }
 
     /// Get the material directory for a biome, resolved from the assets root.

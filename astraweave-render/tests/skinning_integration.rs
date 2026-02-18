@@ -220,7 +220,9 @@ fn test_hierarchical_transform_propagation() {
 
 #[cfg(feature = "skinning-gpu")]
 mod gpu_tests {
+    #[allow(unused_imports)] // Needed for future GPU integration tests
     use super::*;
+    #[allow(unused_imports)]
     use astraweave_render::JointPaletteManager;
 
     // GPU tests require wgpu instance - these are placeholders for integration tests

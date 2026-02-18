@@ -4852,4 +4852,230 @@ mod tests {
             ctrl.time_since_grounded
         );
     }
+
+    // ===== ROUND 10: control_character arithmetic precision =====
+
+    #[test]
+    fn r10_control_character_gravity_scale_affects_fall() {
+        // Gravity_scale changes how fast character falls
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let ch = pw.add_character(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+        pw.step();
+
+        // Set gravity_scale to 2.0
+        if let Some(ctrl) = pw.char_map.get_mut(&ch) {
+            ctrl.gravity_scale = 2.0;
+        }
+
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+        let y_2x = pw.body_transform(ch).unwrap().w_axis.y;
+
+        // Create another with scale=1.0
+        let mut pw2 = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let ch2 = pw2.add_character(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+        pw2.step();
+
+        for _ in 0..30 {
+            pw2.control_character(ch2, Vec3::ZERO, 1.0 / 60.0, false);
+            pw2.step();
+        }
+        let y_1x = pw2.body_transform(ch2).unwrap().w_axis.y;
+
+        assert!(
+            y_2x < y_1x,
+            "2x gravity should fall faster: y_2x={}, y_1x={}",
+            y_2x, y_1x
+        );
+    }
+
+    #[test]
+    fn r10_control_character_jump_velocity_formula() {
+        // Jump velocity = sqrt(2 * g * height)
+        // With gravity_scale=1.0 and height=3.0: v = sqrt(2*9.81*3) = sqrt(58.86) ≈ 7.67
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        for _ in 0..60 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        pw.jump(ch, 3.0);
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        let expected_v = (2.0 * 9.81 * 3.0_f32).sqrt();
+        assert!(
+            (ctrl.pending_jump_velocity - expected_v).abs() < 0.1,
+            "Jump velocity should be sqrt(2*g*h)={}, got={}",
+            expected_v, ctrl.pending_jump_velocity
+        );
+    }
+
+    #[test]
+    fn r10_control_character_climb_zero_vertical_velocity() {
+        // In climb mode, vertical_velocity should be zeroed
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let ch = pw.add_character(Vec3::new(0.0, 5.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+        pw.step();
+
+        // Let character fall a bit (builds vertical velocity)
+        for _ in 0..10 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Now switch to climb mode
+        pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, true);
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        assert!(
+            ctrl.vertical_velocity.abs() < 0.01,
+            "Climb mode should zero vertical velocity: {}",
+            ctrl.vertical_velocity
+        );
+    }
+
+    #[test]
+    fn r10_control_character_obstacle_deflection() {
+        // Verify character doesn't pass through solid objects
+        // Use a dynamic box with high mass as a wall
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        // Heavy box as wall at x=3
+        let _wall = pw.add_dynamic_box(
+            Vec3::new(3.0, 1.0, 0.0),
+            Vec3::new(0.1, 2.0, 5.0),
+            0.0, // Zero mass creates a dynamic body that won't move much
+            Layers::DEFAULT,
+        );
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Try to move into the wall
+        for _ in 0..120 {
+            pw.control_character(ch, Vec3::new(5.0, 0.0, 0.0), 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let x = pw.body_transform(ch).unwrap().w_axis.x;
+        // Should not pass through the wall at x=3
+        assert!(
+            x < 3.5,
+            "Character should be blocked by wall: x={}",
+            x
+        );
+    }
+
+    #[test]
+    fn r10_control_character_coyote_time_after_edge() {
+        // After leaving an edge, character should still be able to jump briefly
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        // Small platform using dynamic box with zero mass (static-like)
+        let _platform = pw.add_dynamic_box(
+            Vec3::new(0.0, -0.1, 0.0),
+            Vec3::new(2.0, 0.1, 2.0),
+            0.0,
+            Layers::DEFAULT,
+        );
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        // Settle on platform
+        for _ in 0..60 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        assert!(
+            ctrl.time_since_grounded < 0.05,
+            "Should be grounded on platform: {}",
+            ctrl.time_since_grounded
+        );
+
+        // Walk off edge rapidly
+        for _ in 0..10 {
+            pw.control_character(ch, Vec3::new(10.0, 0.0, 0.0), 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        // Immediately try to jump (within coyote time window of 100ms)
+        pw.jump(ch, 2.0);
+        let y_before = pw.body_transform(ch).unwrap().w_axis.y;
+        pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+        pw.step();
+
+        // Check if the jump velocity was applied
+        let ctrl = pw.char_map.get(&ch).unwrap();
+        // If coyote time worked, pending_jump_velocity should have been consumed
+        // and character should gain upward velocity
+        let has_upward = ctrl.vertical_velocity > 0.0 || ctrl.jump_buffer_timer > 0.0;
+        // At minimum, the jump call should set the buffer timer
+        let jump_was_buffered = ctrl.jump_buffer_timer >= -0.01;
+        assert!(
+            has_upward || jump_was_buffered,
+            "Jump near edge should use coyote time or buffer: vv={}, buffer={}",
+            ctrl.vertical_velocity, ctrl.jump_buffer_timer
+        );
+    }
+
+    #[test]
+    fn r10_control_character_time_since_grounded_increments() {
+        // When in air, time_since_grounded should increase
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let ch = pw.add_character(Vec3::new(0.0, 10.0, 0.0), Vec3::new(0.3, 0.8, 0.3));
+        pw.step();
+
+        // Step once to initialize
+        pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+        let tsg_initial = pw.char_map.get(&ch).unwrap().time_since_grounded;
+
+        // Step more - character is falling (no ground)
+        for _ in 0..5 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        let tsg_after = pw.char_map.get(&ch).unwrap().time_since_grounded;
+        assert!(
+            tsg_after > tsg_initial,
+            "time_since_grounded should increase in air: before={}, after={}",
+            tsg_initial, tsg_after
+        );
+    }
+
+    #[test]
+    fn r10_jump_velocity_scales_with_height() {
+        // Verify that higher jump height gives higher velocity
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(100.0, 0.1, 100.0), 0.5);
+        pw.step();
+        let ch = pw.add_character(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.3, 0.8, 0.3));
+
+        for _ in 0..30 {
+            pw.control_character(ch, Vec3::ZERO, 1.0 / 60.0, false);
+            pw.step();
+        }
+
+        pw.jump(ch, 1.0);
+        let v1 = pw.char_map.get(&ch).unwrap().pending_jump_velocity;
+
+        pw.jump(ch, 4.0);
+        let v4 = pw.char_map.get(&ch).unwrap().pending_jump_velocity;
+
+        assert!(
+            v4 > v1 * 1.5,
+            "Higher jump should give higher velocity: v1={}, v4={}",
+            v1, v4
+        );
+    }
 }

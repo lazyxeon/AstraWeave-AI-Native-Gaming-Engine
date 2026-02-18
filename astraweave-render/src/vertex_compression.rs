@@ -451,8 +451,8 @@ mod tests {
         for phi_i in 0..8 {
             for theta_i in 1..4 {
                 let phi = phi_i as f32 * std::f32::consts::TAU / 8.0;
-                let theta = std::f32::consts::PI * 0.5
-                    + theta_i as f32 * std::f32::consts::PI * 0.5 / 4.0;
+                let theta =
+                    std::f32::consts::PI * 0.5 + theta_i as f32 * std::f32::consts::PI * 0.5 / 4.0;
                 let normal = Vec3::new(
                     theta.sin() * phi.cos(),
                     theta.sin() * phi.sin(),
@@ -482,7 +482,14 @@ mod tests {
 
     #[test]
     fn octahedral_axis_aligned_normals_exact() {
-        for axis in [Vec3::X, Vec3::Y, Vec3::Z, Vec3::NEG_X, Vec3::NEG_Y, Vec3::NEG_Z] {
+        for axis in [
+            Vec3::X,
+            Vec3::Y,
+            Vec3::Z,
+            Vec3::NEG_X,
+            Vec3::NEG_Y,
+            Vec3::NEG_Z,
+        ] {
             let encoded = OctahedralEncoder::encode(axis);
             let decoded = OctahedralEncoder::decode(encoded);
             assert!(
@@ -514,8 +521,12 @@ mod tests {
 
     #[test]
     fn memory_reduction_constant_matches_calculation() {
-        let reduction =
-            1.0 - (CompressedVertex::COMPRESSED_SIZE as f32 / CompressedVertex::STANDARD_SIZE as f32);
-        assert_relative_eq!(reduction, CompressedVertex::MEMORY_REDUCTION, epsilon = 0.001);
+        let reduction = 1.0
+            - (CompressedVertex::COMPRESSED_SIZE as f32 / CompressedVertex::STANDARD_SIZE as f32);
+        assert_relative_eq!(
+            reduction,
+            CompressedVertex::MEMORY_REDUCTION,
+            epsilon = 0.001
+        );
     }
 }

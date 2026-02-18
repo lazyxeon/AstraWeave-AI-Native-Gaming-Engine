@@ -2614,4 +2614,149 @@ mod tests {
         }
         assert!(has_angular, "At least some debris should have angular velocity");
     }
+
+    // ===== ROUND 10: spawn_debris exact arithmetic verification =====
+
+    #[test]
+    fn r10_spawn_debris_angular_velocity_exact_id1() {
+        // Debris IDs start at 1 (next_debris_id = 1 in DestructionManager::new).
+        // Angular velocity formula for id N:
+        //   Vec3(sin(N*1.234)*5, sin(N*2.345)*5, sin(N*3.456)*5) * ang_factor
+        // Default ang_factor from DebrisConfig = 0.5
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 50.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+
+        // Access specific debris by ID
+        let d1 = mgr.get_debris(DebrisId(1)).expect("Debris 1 should exist");
+        let ang_factor = 0.5_f32;
+        let expected_x = (1.0_f32 * 1.234).sin() * 5.0 * ang_factor;
+        let expected_y = (1.0_f32 * 2.345).sin() * 5.0 * ang_factor;
+        let expected_z = (1.0_f32 * 3.456).sin() * 5.0 * ang_factor;
+        let expected = Vec3::new(expected_x, expected_y, expected_z);
+
+        assert!(
+            (d1.angular_velocity - expected).length() < 0.01,
+            "Debris 1 angular vel should match formula: expected={:?}, got={:?}",
+            expected, d1.angular_velocity
+        );
+    }
+
+    #[test]
+    fn r10_spawn_debris_angular_velocity_exact_id2() {
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 50.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+
+        let d2 = mgr.get_debris(DebrisId(2)).expect("Debris 2 should exist");
+        let ang_factor = 0.5_f32;
+        let expected = Vec3::new(
+            (2.0_f32 * 1.234).sin() * 5.0 * ang_factor,
+            (2.0_f32 * 2.345).sin() * 5.0 * ang_factor,
+            (2.0_f32 * 3.456).sin() * 5.0 * ang_factor,
+        );
+        assert!(
+            (d2.angular_velocity - expected).length() < 0.01,
+            "Debris 2 angular vel: expected={:?}, got={:?}",
+            expected, d2.angular_velocity
+        );
+    }
+
+    #[test]
+    fn r10_spawn_debris_velocity_formula_outward_plus_force() {
+        // velocity = (outward * destruction_force + force_dir * destruction_force * 0.5)
+        //            * velocity_factor
+        // force_direction defaults to Vec3::Y in update()
+        let mut mgr = DestructionManager::new();
+        let config = DestructibleConfig {
+            fracture_pattern: FracturePattern::uniform(4, Vec3::splat(0.5), 5.0),
+            destruction_force: 100.0,
+            ..Default::default()
+        };
+        let id = mgr.add_destructible(config, Vec3::ZERO);
+        mgr.destroy(id);
+        mgr.update(1.0 / 60.0, Vec3::new(0.0, -9.81, 0.0));
+
+        // First debris (ID=1) has local_position from FracturePattern::uniform
+        let d1 = mgr.get_debris(DebrisId(1)).expect("Debris 1");
+        // After one update frame, velocity has been modified by gravity
+        // But the initial velocity was set during spawn. Let's check that it has a Y
+        // component above zero (force_direction * 0.5 gives +Y bias of 50)
+        // Even after 1 frame of gravity (9.81 * 1/60 ≈ 0.16), the Y component should
+        // still be positive if force direction contributed
+
+        // Check velocity is non-trivial (destruction_force=100 gives high initial speed)
+        assert!(
+            d1.velocity.length() > 10.0,
+            "Debris velocity should be significant: {:?}",
+            d1.velocity
+        );
+
+        // Y component should include the force_direction (Vec3::Y) contribution
+        // At minimum, some debris should have positive Y velocity from the +Y force component
+        let has_positive_y = mgr
+            .debris_iter()
+            .any(|d| d.velocity.y > 5.0);
+        assert!(
+            has_positive_y,
+            "Force direction +Y should give some debris positive Y velocity"
+        );
+    }
+
+    #[test]
+    fn r10_spawn_debris_velocity_factor_scales() {
+        // If velocity_factor matters, changing it should change debris speed
+        // Create two destructibles with different velocity_factor patterns
+        let make_pattern = |vel_factor: f32| FracturePattern {
+            debris: vec![DebrisConfig {
+                local_position: Vec3::new(0.5, 0.0, 0.0),
+                velocity_factor: vel_factor,
+                angular_velocity_factor: 0.5,
+                mass: 1.0,
+                ..Default::default()
+            }],
+            center_of_mass: Vec3::ZERO,
+        };
+
+        let mut mgr1 = DestructionManager::new();
+        let c1 = DestructibleConfig {
+            fracture_pattern: make_pattern(1.0),
+            destruction_force: 100.0,
+            ..Default::default()
+        };
+        let id1 = mgr1.add_destructible(c1, Vec3::ZERO);
+        mgr1.destroy(id1);
+        mgr1.update(0.0, Vec3::ZERO); // dt=0, no gravity
+
+        let mut mgr2 = DestructionManager::new();
+        let c2 = DestructibleConfig {
+            fracture_pattern: make_pattern(0.5),
+            destruction_force: 100.0,
+            ..Default::default()
+        };
+        let id2 = mgr2.add_destructible(c2, Vec3::ZERO);
+        mgr2.destroy(id2);
+        mgr2.update(0.0, Vec3::ZERO);
+
+        let v1 = mgr1.get_debris(DebrisId(1)).unwrap().velocity.length();
+        let v2 = mgr2.get_debris(DebrisId(1)).unwrap().velocity.length();
+
+        assert!(
+            (v1 - v2 * 2.0).abs() < v1 * 0.1,
+            "velocity_factor 1.0 should be ~2x of 0.5: v1={}, v2={}",
+            v1, v2
+        );
+    }
 }
