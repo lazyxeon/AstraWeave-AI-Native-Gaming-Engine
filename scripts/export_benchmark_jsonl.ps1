@@ -44,6 +44,52 @@ function Get-GitMetadata {
     }
 }
 
+function Get-HardwareProfile {
+    <#
+    .SYNOPSIS
+    Detects the current hardware and returns a stable ID + human-readable label.
+    This allows the dashboard to separate baseline (HP Pavilion) data from user runs.
+    #>
+    try {
+        $cpu = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name.Trim()
+        $ramGB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
+        $model = (Get-CimInstance Win32_ComputerSystem).Model.Trim()
+        $manufacturer = (Get-CimInstance Win32_ComputerSystem).Manufacturer.Trim()
+        $os = [System.Environment]::OSVersion.VersionString
+
+        # Build a stable hash from CPU + RAM + model so the same machine always gets the same ID
+        $raw = "$cpu|${ramGB}GB|$model"
+        $hashBytes = [System.Security.Cryptography.SHA256]::Create().ComputeHash(
+            [System.Text.Encoding]::UTF8.GetBytes($raw)
+        )
+        $hardwareId = [BitConverter]::ToString($hashBytes[0..3]).Replace('-','').ToLower()
+
+        # Human-friendly label
+        $label = "$manufacturer $model ($cpu, ${ramGB}GB)"
+
+        return @{
+            hardware_id    = $hardwareId
+            hardware_label = $label
+            cpu            = $cpu
+            ram_gb         = $ramGB
+            model          = $model
+            manufacturer   = $manufacturer
+            os             = $os
+        }
+    }
+    catch {
+        return @{
+            hardware_id    = "unknown"
+            hardware_label = "Unknown Hardware"
+            cpu            = "unknown"
+            ram_gb         = 0
+            model          = "unknown"
+            manufacturer   = "unknown"
+            os             = "unknown"
+        }
+    }
+}
+
 function Parse-CriterionEstimates {
     param([string]$EstimatesJsonPath)
     
@@ -222,9 +268,12 @@ function Export-BenchmarkResults {
         Write-Log "Loaded $($existingEntries.Count) existing entries for deduplication"
     }
     
-    # Get git metadata
+    # Get git metadata and hardware profile
     $git = Get-GitMetadata
+    $hw = Get-HardwareProfile
     $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    
+    Write-Log "Hardware: $($hw.hardware_label) [ID: $($hw.hardware_id)]"
     
     # Find all benchmark results (Criterion stores in */base/estimates.json)
     $benchmarkDirs = Get-ChildItem -Path $BenchmarkRoot -Recurse -Filter "estimates.json" -File |
@@ -304,7 +353,7 @@ function Export-BenchmarkResults {
             continue
         }
         
-        # Create JSONL entry
+        # Create JSONL entry (includes hardware identification for baseline vs user tracking)
         $entry = @{
             timestamp = $timestamp
             benchmark_name = $fullName
@@ -318,6 +367,8 @@ function Export-BenchmarkResults {
             crate = $crate
             group = $group
             name = $benchName
+            hardware_id = $hw.hardware_id
+            hardware_label = $hw.hardware_label
         } | ConvertTo-Json -Compress
         
         $entries += $entry

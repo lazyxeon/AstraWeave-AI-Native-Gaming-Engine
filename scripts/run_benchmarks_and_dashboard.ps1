@@ -57,10 +57,14 @@ Write-Success "Benchmark data exported to target/benchmark-data/history.jsonl"
 # Step 3: Generate Graphs
 Write-Step "Step 3/4: Generating Graphs"
 
-# Get Python executable path
-$pythonExe = "C:/Users/pv2br/AppData/Local/Microsoft/WindowsApps/python3.13.exe"
-if (-not (Test-Path $pythonExe)) {
-    $pythonExe = "python"
+# Get Python executable path (check common locations)
+$pythonExe = "python"
+if (Get-Command "python3" -ErrorAction SilentlyContinue) {
+    $pythonExe = "python3"
+}
+$winAppPython = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\python3.exe"
+if (Test-Path $winAppPython) {
+    $pythonExe = $winAppPython
 }
 
 & $pythonExe scripts/generate_benchmark_graphs.py --input target/benchmark-data/history.jsonl --out-dir gh-pages/graphs
@@ -93,6 +97,7 @@ if (-not $NoBrowser) {
 }
 
 # Start HTTP server (blocks until Ctrl+C)
+# IMPORTANT: Serve from the dashboard directory so relative data paths work
 Push-Location $dashboardPath
 try {
     & $pythonExe -m http.server $Port

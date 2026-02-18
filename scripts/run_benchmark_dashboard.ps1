@@ -187,13 +187,15 @@ catch {
 # Step 3: Generate graphs
 Write-Step "Generating visualization graphs..." "RUNNING"
 
-# Find Python executable
+# Find Python executable dynamically
 $pythonExe = "python"
 if (Test-Command "python3") {
     $pythonExe = "python3"
 }
-if (Test-Path "C:/Users/pv2br/AppData/Local/Microsoft/WindowsApps/python3.13.exe") {
-    $pythonExe = "C:/Users/pv2br/AppData/Local/Microsoft/WindowsApps/python3.13.exe"
+# Try Windows Store / WindowsApps python (any version)
+$windowsAppsPython = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WindowsApps\python*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($windowsAppsPython) {
+    $pythonExe = $windowsAppsPython.FullName
 }
 
 # Ensure required Python packages are installed
