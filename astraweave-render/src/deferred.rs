@@ -501,7 +501,11 @@ mod tests {
     fn deferred_light_shader_parses() {
         let module = naga::front::wgsl::parse_str(DEFERRED_LIGHT_SHADER)
             .expect("deferred light WGSL should parse");
-        let names: Vec<&str> = module.entry_points.iter().map(|e| e.name.as_str()).collect();
+        let names: Vec<&str> = module
+            .entry_points
+            .iter()
+            .map(|e| e.name.as_str())
+            .collect();
         assert!(names.contains(&"vs_main"), "must have vertex entry point");
         assert!(names.contains(&"fs_main"), "must have fragment entry point");
     }
@@ -511,14 +515,20 @@ mod tests {
         // 4 textures + 1 sampler in group(0)
         let src = DEFERRED_LIGHT_SHADER;
         let binding_count = src.matches("@binding").count();
-        assert_eq!(binding_count, 5, "shader should have 5 bindings (4 tex + 1 sampler)");
+        assert_eq!(
+            binding_count, 5,
+            "shader should have 5 bindings (4 tex + 1 sampler)"
+        );
     }
 
     #[test]
     fn gbuffer_formats_are_distinct_types() {
         let f = GBufferFormats::default();
         // Albedo and emissive are sRGB (8-bit), normal and position are float16
-        assert_ne!(f.albedo, f.normal, "albedo should differ from normal format");
+        assert_ne!(
+            f.albedo, f.normal,
+            "albedo should differ from normal format"
+        );
         assert_ne!(f.depth, f.albedo, "depth should differ from color format");
         // Normal and position share format
         assert_eq!(f.normal, f.position);

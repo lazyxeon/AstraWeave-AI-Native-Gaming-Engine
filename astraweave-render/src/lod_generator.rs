@@ -670,8 +670,16 @@ mod tests {
         let err1 = q.evaluate(Vec3::new(0.0, 1.0, 0.0));
         let err2 = q.evaluate(Vec3::new(0.0, 2.0, 0.0));
         // Error should be distance^2: err1 = 1, err2 = 4
-        assert!((err1 - 1.0).abs() < 1e-10, "err1 should be 1.0, got {}", err1);
-        assert!((err2 - 4.0).abs() < 1e-10, "err2 should be 4.0, got {}", err2);
+        assert!(
+            (err1 - 1.0).abs() < 1e-10,
+            "err1 should be 1.0, got {}",
+            err1
+        );
+        assert!(
+            (err2 - 4.0).abs() < 1e-10,
+            "err2 should be 4.0, got {}",
+            err2
+        );
     }
 
     #[test]

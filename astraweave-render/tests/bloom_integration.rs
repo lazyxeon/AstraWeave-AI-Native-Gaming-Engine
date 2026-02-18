@@ -29,6 +29,7 @@ fn test_bloom_pipeline_creation() {
 
 #[test]
 #[cfg(feature = "bloom")]
+#[allow(clippy::field_reassign_with_default)]
 fn test_bloom_config_validation() {
     let config = BloomConfig::default();
     assert!(config.validate().is_ok(), "Default config should be valid");

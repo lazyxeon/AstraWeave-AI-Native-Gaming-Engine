@@ -64,20 +64,42 @@ mod tests {
     #[test]
     fn screen_quad_has_six_vertices() {
         let quad = create_screen_quad();
-        assert_eq!(quad.len(), 6, "Fullscreen quad must have 6 vertices (2 tris)");
+        assert_eq!(
+            quad.len(),
+            6,
+            "Fullscreen quad must have 6 vertices (2 tris)"
+        );
     }
 
     #[test]
     fn screen_quad_covers_ndc_range() {
         let quad = create_screen_quad();
-        let min_x = quad.iter().map(|v| v.position[0]).fold(f32::INFINITY, f32::min);
-        let max_x = quad.iter().map(|v| v.position[0]).fold(f32::NEG_INFINITY, f32::max);
-        let min_y = quad.iter().map(|v| v.position[1]).fold(f32::INFINITY, f32::min);
-        let max_y = quad.iter().map(|v| v.position[1]).fold(f32::NEG_INFINITY, f32::max);
+        let min_x = quad
+            .iter()
+            .map(|v| v.position[0])
+            .fold(f32::INFINITY, f32::min);
+        let max_x = quad
+            .iter()
+            .map(|v| v.position[0])
+            .fold(f32::NEG_INFINITY, f32::max);
+        let min_y = quad
+            .iter()
+            .map(|v| v.position[1])
+            .fold(f32::INFINITY, f32::min);
+        let max_y = quad
+            .iter()
+            .map(|v| v.position[1])
+            .fold(f32::NEG_INFINITY, f32::max);
 
-        assert!((min_x - (-1.0)).abs() < f32::EPSILON, "min_x should be -1.0");
+        assert!(
+            (min_x - (-1.0)).abs() < f32::EPSILON,
+            "min_x should be -1.0"
+        );
         assert!((max_x - 1.0).abs() < f32::EPSILON, "max_x should be 1.0");
-        assert!((min_y - (-1.0)).abs() < f32::EPSILON, "min_y should be -1.0");
+        assert!(
+            (min_y - (-1.0)).abs() < f32::EPSILON,
+            "min_y should be -1.0"
+        );
         assert!((max_y - 1.0).abs() < f32::EPSILON, "max_y should be 1.0");
     }
 

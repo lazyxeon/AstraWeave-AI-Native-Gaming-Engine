@@ -446,7 +446,10 @@ mod tests {
         let module = naga::front::wgsl::parse_str(PARTICLE_UPDATE_SHADER)
             .expect("particle update WGSL should parse");
         assert!(
-            module.entry_points.iter().any(|e| e.name == "update_particles"),
+            module
+                .entry_points
+                .iter()
+                .any(|e| e.name == "update_particles"),
             "must have update_particles entry point"
         );
     }
@@ -456,7 +459,10 @@ mod tests {
         let module = naga::front::wgsl::parse_str(PARTICLE_EMIT_SHADER)
             .expect("particle emit WGSL should parse");
         assert!(
-            module.entry_points.iter().any(|e| e.name == "emit_particles"),
+            module
+                .entry_points
+                .iter()
+                .any(|e| e.name == "emit_particles"),
             "must have emit_particles entry point"
         );
     }
